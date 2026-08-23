@@ -285,9 +285,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-005 — Establish test, fake-service, and visual tooling
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `F-001`, `F-003`, `F-004`,
-  all complete. The orchestrator owns integration; the bounded worker and
-  worktree are recorded in the Current Checkpoint.
+- **Status/dependencies:** `COMPLETE`; depends on `F-001`, `F-003`, `F-004`,
+  all complete. Worker commit `0c6787f` was integrated as `f22c7c3`; the
+  required foundation and F-005 validation commands pass from `master`.
 - **Ownership:** `src/test-support/**`, test configuration, `e2e/support/**`,
   visual scripts; no production behavior.
 - **Scope/non-goals:** provide deterministic clock/ID/network fixtures, fake
@@ -1119,8 +1119,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   eight Markdown fence lines are balanced; `git status --short --branch` is
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Active wave:** `F-001` through `F-004` are `COMPLETE`; `F-005` is the active
-  test, fake-service, and visual-tooling task.
+- **Active wave:** `F-001` through `F-005` are `COMPLETE`; `R-100` is the next
+  dependency-ready foundation gate.
 - **Active worktrees and dispatch order:**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1153,9 +1153,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     `~/git/worktrees/did-it-become-what-you-like-f-005-tooling`, base `f7cd08d`;
     ownership `src/test-support/**`, test configuration, `e2e/support/**`, and
     visual scripts; agent `Faraday` (`01a030b5-c8b8-7733-919e-acc0eadfda07`);
-    merge after the bounded review.
-- **Interrupted tasks:** none. F-001 through F-004 are integrated and complete;
-  F-005 is the only active foundation task.
+    worker commit `0c6787f` is integrated by `f22c7c3`; the worktree is clean
+    and preserved pending later final-wave cleanup; the worker is shut down.
+- **Interrupted tasks:** none. F-001 through F-005 are integrated and complete;
+  no unintegrated worker changes remain.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1209,21 +1210,32 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   validators passed, and the generated production service worker/manifest use
   the repository base path. Hosted Actions, Pages, and live service-worker
   inspection remain unavailable until the later release checks.
+- **F-005 handoff/integration evidence:** worker commit `0c6787f` was reviewed
+  and integrated as `f22c7c3`. From `master`, `deno task fmt:check`, `deno task
+  lint`, `deno task check`, `deno task test` (15 passed), `deno task
+  test:integration` (2 passed), `deno task test:component` (1 passed), `deno
+  task test:e2e` (2 passed), `deno task browser:install`, `deno task
+  browser:verify` (visual, accessibility-tree, and axe smoke passed), and `git
+  diff --check` all exited 0. The checksum-failure and intentional-nonzero
+  E2E tests passed; browser binaries, profiles, screenshots, traces, and
+  Playwright artifacts remain ignored. No live credentials or product behavior
+  were added.
 - **Dispatch evidence:** the three compatibility agents and `F-004` worker
   received bounded prompts with their owned files, non-goals, acceptance
   criteria, and exact validation/handoff requirements; no worker is permitted
   to edit this ledger or push `master`.
-- **Known technical follow-ups, not owner ambiguities:** F-004 must consume the
-  pinned Deno/TypeScript/Playwright commands; F-005 must pin agent-browser and
-  Chrome for Testing; Automerge's alpha adapter and browser type-check
-  limitation remain recorded for later review.
-- **Current task:** `F-005` test, fake-service, and visual tooling is active.
+- **Known technical follow-ups, not owner ambiguities:** Automerge's alpha
+  adapter and browser type-check limitation remain recorded for later review;
+  R-100 must independently review the F-005 native browser metadata and
+  installer boundaries.
+- **Current task:** `R-100` foundation independent review gate is next.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none. The next action is to dispatch the bounded F-005 worker in
-  its recorded worktree, then inspect and integrate its commit.
+- **Blocker:** none. The next action is to dispatch the independent, read-only
+  R-100 review against the integrated foundation and record any scoped findings
+  before proceeding to M2.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

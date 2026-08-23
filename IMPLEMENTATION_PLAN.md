@@ -1222,6 +1222,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   E2E tests passed; browser binaries, profiles, screenshots, traces, and
   Playwright artifacts remain ignored. No live credentials or product behavior
   were added.
+- **R-100 review findings (Bohr, read-only):** approval is blocked pending
+  scoped fixes. Severity 2: the F-002 Automerge spike lockfile is stale and
+  lacks frozen-lock enforcement; CI and Pages use mutable `v2.x` Deno instead
+  of the verified pinned version; and `index.html` CSP has drifted from the
+  reviewed F-003 GIS/API/frame/blob allowlist. Severity 3: Linux ARM64 pairs
+  native agent-browser with x64 Chrome without emulation, and GitHub Actions
+  dependencies use mutable major tags instead of reviewed commit SHAs. Bohr's
+  full command matrix passed, including 15 tests, 2 integration tests, 1
+  component test, 2 E2E tests, build, Pages/CI/toolchain validators, browser
+  install/visual smoke, and a deliberate nonzero redacted failure path.
+- **R-100 fix ownership:** the lockfile/frozen spike fix belongs to F-002;
+  Deno pin, CSP/validator, and action-SHA fixes belong to F-004; native browser
+  platform metadata/decision belongs to F-005. These are review fixes only and
+  must not expand product scope.
 - **Dispatch evidence:** the three compatibility agents and `F-004` worker
   received bounded prompts with their owned files, non-goals, acceptance
   criteria, and exact validation/handoff requirements; no worker is permitted
@@ -1230,15 +1244,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later review;
   R-100 must independently review the F-005 native browser metadata and
   installer boundaries.
-- **Current task:** `R-100` foundation independent review gate is in progress;
-  reviewer Bohr is read-only and must return exact findings and command results.
+- **Current task:** `R-100` scoped-fix wave is in progress for the five recorded
+  findings; the independent review is complete but approval remains blocked.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none. The next action is to receive Bohr's independent R-100
-  report, address any severity-1/2 findings through scoped fixes, then rerun
-  the complete foundation gate before proceeding to M2.
+- **Blocker:** R-100 approval is blocked by the recorded severity-2 findings
+  (and two severity-3 hardening findings). The next action is to apply the
+  disjoint F-002/F-004/F-005 fixes, then dispatch a fresh read-only closure
+  review and rerun the complete foundation gate before proceeding to M2.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

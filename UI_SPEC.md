@@ -13,8 +13,9 @@ visual design system.
 
 ## Agreed Foundation
 
-- The visual character is calm and minimal, with neutral surfaces and one
-  restrained accent color. Exact design tokens remain open.
+- The visual character is calm and minimal. The MVP has one comfortable dark
+  theme with layered neutral surfaces and one restrained accent color. Exact
+  design tokens remain open.
 - Mobile uses bottom navigation for **Expenses**, central **Add**,
   **Organize**, and **Settings**. Desktop presents the same structure in a left
   navigation rail.
@@ -61,8 +62,10 @@ Agreed visual principles:
   full window; and
 - display offline, unsaved, synchronization, and conflict states consistently.
 
-The exact color palette, typography, icon family, density, corner treatment,
-and light/dark theme behavior remain open decisions.
+The exact dark palette, typography, icon family, density, and corner treatment
+remain open design-system decisions. A light palette is explicitly deferred
+beyond MVP, but the token and component architecture must allow one to be added
+later without redesigning application screens.
 
 ## Proposed Navigation Tree
 
@@ -1060,6 +1063,37 @@ not a separate interface or component set.
 - Desktop retains useful density without turning the expense experience into a
   separate table product. Shared list and card primitives may reveal additional
   columns or place actions inline when space permits.
+
+### Accessibility and MVP Theme
+
+**Status: approved.** The MVP targets
+[WCAG 2.2 Level AA](https://www.w3.org/TR/WCAG22/) and ships only a dark theme.
+
+- Interactive controls normally provide at least a 44-by-44 CSS-pixel target
+  with adequate separation, including icon-only controls and compact navigation.
+- Every action is keyboard operable with a visible focus indicator and logical
+  focus order. Dialogs and sheets contain focus while open, close through
+  standard keyboard behavior, and restore focus to the invoking control.
+- Validation identifies fields semantically and moves focus to a useful error
+  summary or invalid field when submission fails.
+- Controls use semantic HTML and explicit accessible names. Saves, errors,
+  synchronization, updates, and other important status changes use restrained
+  live announcements without repeatedly interrupting or moving screen-reader
+  focus.
+- Signed amounts, validation, categories, conflicts, and other meaning never
+  rely on color alone. Text, signs, labels, icons, or structure provide the same
+  information, and required AA contrast applies in every state.
+- Motion respects the reduced-motion preference. Essential state changes remain
+  understandable without animation.
+- The MVP exposes no theme switch and implements no light palette. Its dark
+  theme uses comfortable near-black or charcoal foundation surfaces, subtle
+  layered elevation, readable non-glaring text, and a restrained accent. It
+  avoids an undifferentiated pitch-black canvas, excessive high-contrast glare,
+  neon accents, and decorative glow.
+- All component colors come from semantic theme tokens rather than screen-local
+  hard-coded values. A future light token set must be addable without changing
+  component APIs, information hierarchy, or application workflows; creating
+  that palette is deferred and excluded from MVP work.
 
 ## Screen Approval Checklist
 

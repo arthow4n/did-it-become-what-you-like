@@ -522,6 +522,25 @@ and multi-device synchronization according to the agreed sync design.
   information hierarchy, validation, and accessibility behavior. Responsive
   composition may reveal or reposition content but must not create a separate
   desktop workflow or table-only product.
+- The MVP must target WCAG 2.2 Level AA. Interactive controls normally require
+  at least a 44-by-44 CSS-pixel target with adequate separation.
+- Every action must be keyboard operable with visible focus and logical focus
+  order. Dialogs and sheets contain and restore focus appropriately, and failed
+  validation moves focus to a useful error summary or invalid field.
+- Semantic HTML, explicit labels and accessible names, and restrained live
+  announcements must make saves, failures, sync, and update status usable with
+  assistive technology without stealing focus unnecessarily.
+- Color must never be the sole carrier for signed amounts, categories, errors,
+  conflicts, or other meaning. Every UI state must meet the agreed contrast
+  target, and motion must respect the reduced-motion preference.
+- The MVP ships only a comfortable dark theme and has no theme switch. It uses
+  layered near-black or charcoal neutral surfaces, readable non-glaring text,
+  and a restrained accent rather than an undifferentiated pitch-black canvas,
+  harsh glare, neon accents, or decorative glow.
+- All component colors must use semantic theme tokens. The infrastructure must
+  allow a future light token set without changing component APIs, information
+  hierarchy, or workflows, but designing and implementing that light theme is
+  explicitly deferred beyond MVP.
 - Offline, loading, saving, scanning, syncing, conflict, and error states must
   be visible and understandable to the user.
 - First launch must offer three useful paths: create the first local project,

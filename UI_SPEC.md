@@ -669,9 +669,39 @@ Agreed behavior:
 
 ### Screen 10B: Known Devices
 
-**Status: open.** Device labels, current-device identification, last-seen and
-retirement acknowledgement presentation, and lost-device handling require
-separate approval.
+**Status: approved.**
+
+```text
++----------------------------------+
+| < Google Drive    Known devices  |
+|                                  |
+| Stockholm phone                  |
+| This device · Seen now           |
+|                         [Rename] |
+|                                  |
+| Laptop                           |
+| Seen 2 days ago         [Rename] |
+|                                  |
+| Old tablet                       |
+| Seen 5 months ago       [Rename] |
+|                                  |
+| Devices receive changes only     |
+| when the app reconnects.         |
++----------------------------------+
+```
+
+- New devices receive neutral default labels such as `Device 1`; labels may be
+  renamed and synchronize so the owner can recognize them on other devices.
+- The list identifies the current device and shows approximate last-seen and,
+  when relevant, dataset-retirement/deletion-acknowledgement status.
+- Opaque device IDs stay out of the ordinary interface and appear only in an
+  optional technical-details view for diagnostics.
+- Devices are never automatically removed merely because they have been
+  inactive for a long time.
+- Ordinary synchronization has no casual **Remove device** or **Mark lost**
+  action. Lost-device handling and forced finalization exist only inside the
+  strongly warned **Delete Everywhere** workflow, where their consequences are
+  relevant and explicit.
 
 ### Screen 11: Gemini Receipt-Scanning Settings
 

@@ -406,9 +406,16 @@ agreed.
   its generation's marker, it must erase that entire local generation,
   acknowledge retirement if the protocol supports acknowledgements, and enter a
   durable disconnected/retired state without uploading.
-- Synchronization must maintain a registry of opaque known-device IDs, optional
-  recognizable device labels, and last-seen/acknowledgement status so deletion
-  progress can identify which devices remain outstanding.
+- Synchronization must maintain a registry of opaque known-device IDs,
+  recognizable synchronized device labels, and last-seen/acknowledgement
+  status so deletion progress can identify which devices remain outstanding.
+  New devices receive neutral default labels such as `Device 1`, and the owner
+  can rename them. The UI identifies the current device and presents last-seen
+  times approximately rather than implying exact presence information.
+- Opaque device IDs must normally remain hidden and be available only in an
+  optional technical-details view for diagnostics. A device must never be
+  automatically removed from the registry merely because it has been inactive
+  for a long time.
 - The application must show whether deletion is pending, removed from Drive,
   awaiting known devices, or complete. It must state that a browser cannot erase
   a device which never runs and reconnects.
@@ -420,6 +427,9 @@ agreed.
   lost or never reconnects. Its inaccessible local browser copy cannot be
   erased, but revoked authorization and the durable retirement marker must
   prevent it from silently recreating the retired cloud dataset if used later.
+  Ordinary synchronization settings must not offer casual device removal or
+  lost-device actions; these controls belong only to the strongly warned
+  Delete Everywhere workflow.
 - Ordinary deletion of an individual expense uses the synchronized tombstone
   model and does not promise immediate erasure from Automerge history in the
   initial release. Full physical history destruction is guaranteed by the

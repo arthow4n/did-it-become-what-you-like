@@ -412,11 +412,71 @@ Agreed behavior:
 
 ### Screen 7: Manage Projects and Project Editor
 
-**Status: open.** This discussion must settle the complete project list,
-creating and editing a project, selecting the current project, ordering,
-archival, empty-project deletion, bulk deletion of a project containing
-expenses, and whether each operation uses a full screen, bottom sheet, or
-confirmation dialog.
+**Status: approved except for the proposed populated-project deletion child
+workflow below.**
+
+```text
++----------------------------------+
+| < Organize      Manage projects  |
+|                                  |
+| Current project                  |
+| Sweden                    SEK    |
+|                         [ Edit ]  |
+|                                  |
+| Other projects                   |
+| Taiwan                    TWD    |
+|              [ Use ] [ Edit ]    |
+|                                  |
+| Japan trip                JPY    |
+|              [ Use ] [ Edit ]    |
+|                                  |
+| [ + Create project             ] |
+| Archived projects (2)   [ Show ] |
++----------------------------------+
+```
+
+Agreed behavior:
+
+- Current, Other, and initially collapsed Archived sections organize the full
+  project list.
+- Switching requires an explicit **Use** action rather than an accidental row
+  tap; editing is a separate action.
+- Create and Edit use a focused bottom sheet on mobile and compact modal on
+  desktop, containing at least project name and default currency. Renaming
+  preserves the stable project ID and all relationships.
+- The current project remains first. Other active projects support custom order
+  through drag and accessible move controls.
+- Archiving preserves a project and all of its expenses while hiding it from
+  ordinary project switching. The current project must be switched before it
+  can be archived. Archived projects can be restored.
+- An empty project can be deleted after ordinary confirmation. At least one
+  active project must remain so every new expense always has a valid project.
+
+#### Screen 7A: Delete a Populated Project
+
+**Status: proposed; requires explicit approval.**
+
+“Delete project” must mean more than deleting its label. Recommended behavior:
+
+- the confirmation identifies the project and counts its expenses, receipt
+  parents, purchase lines, adjustments, and affected currencies/date range;
+- a complete JSON safety export is offered before deletion;
+- confirmation requires typing the project name;
+- commit atomically creates synchronized tombstones for the project and every
+  expense, receipt parent, receipt line, and project-derived index entry which
+  belongs to it;
+- global categories, other projects, their records, the Gemini key, and
+  unrelated settings remain unchanged;
+- Drive synchronization carries the tombstones to other devices, and stale
+  offline devices cannot resurrect the records under the agreed merge rules;
+- this is logical synchronized deletion, not privacy erasure of Automerge
+  history. Only the already-agreed delete-everywhere workflow physically
+  destroys the entire dataset generation and history; and
+- recovery after confirmation is through the safety JSON import rather than a
+  casual toast Undo which could race with synchronization.
+
+The current or sole active project cannot enter this workflow until another
+active project is selected or created.
 
 ### Screen 8: Manage Categories and Category Editor
 

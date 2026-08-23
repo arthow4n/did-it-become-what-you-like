@@ -180,6 +180,8 @@ agreed.
   own stable record and identifier referencing the receipt. Records must remain
   independently editable and mergeable rather than requiring every receipt
   change to replace one large nested object.
+- A receipt parent belongs to the same single project as all of its lines and
+  carries a stable `projectId`; one receipt cannot span projects.
 - A purchased-item line should preserve quantity, unit price, and line total
   when that information is available from manual entry or receipt extraction.
 - The merchant-printed line total is authoritative when it differs from the
@@ -598,6 +600,10 @@ These questions must be resolved incrementally before implementation.
 
 - Detailed project-switching navigation and visual UI design will be specified
   and approved through `UI_SPEC.md`.
+- The exact populated-project deletion workflow in `UI_SPEC.md` Screen 7A is
+  still proposed. It must explicitly settle all related-record deletion,
+  safety export, synchronization, and the distinction between tombstoning and
+  physical CRDT-history erasure before it becomes required.
 
 ### 3. Currency Behavior
 

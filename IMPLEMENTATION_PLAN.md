@@ -308,9 +308,10 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-100 — Foundation independent review gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `F-004`, `F-005`, both
-  complete. Independent reviewer Bohr (`01a030d4-4ac8-7773-8970-20578def7874`)
-  is auditing the integrated foundation read-only.
+- **Status/dependencies:** `COMPLETE`; depends on `F-004`, `F-005`, both
+  complete. Bohr found five issues; scoped fixes were integrated and fresh
+  reviewer Russell (`01a030e8-5ae2-7633-a97a-75eb8fd4dddc`) approved closure
+  with no unresolved severity-1/2/3/4 findings.
 - **Ownership:** read-only review first; findings in this ledger; fixes return to
   owning task/files through a scoped fix commit.
 - **Scope/non-goals:** independently review reproducibility, Deno-only execution,
@@ -1121,8 +1122,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   eight Markdown fence lines are balanced; `git status --short --branch` is
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Active wave:** `F-001` through `F-005` are `COMPLETE`; `R-100` is the active
-  independent foundation gate.
+- **Active wave:** `F-001` through `F-005` and `R-100` are `COMPLETE`; `D-101`
+  is the next dependency-ready M2 task.
 - **Active worktrees and dispatch order:**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1261,26 +1262,29 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   were reviewed and cherry-picked as `3157d31`, `aca5ac5`, and `cd3ec8f`.
   All scoped-fix workers completed and were shut down; their worktrees remain
   clean and preserved.
-- **R-100 closure dispatch:** fresh independent reviewer Russell
+- **R-100 closure evidence:** fresh independent reviewer Russell
   (`01a030e8-5ae2-7633-a97a-75eb8fd4dddc`) is auditing the post-fix master
-  read-only and will rerun the complete foundation matrix before approval.
+  read-only and reran the complete foundation matrix. Russell approved closure:
+  no unresolved severity-1/2/3/4 findings; `master` was clean and synced with
+  `origin/master`; all preserved worktrees were clean; no Pages workflow was
+  triggered.
 - **Dispatch evidence:** the three compatibility agents and `F-004` worker
   received bounded prompts with their owned files, non-goals, acceptance
   criteria, and exact validation/handoff requirements; no worker is permitted
   to edit this ledger or push `master`.
 - **Known technical follow-ups, not owner ambiguities:** Automerge's alpha
-  adapter and browser type-check limitation remain recorded for later review;
-  R-100 must independently review the F-005 native browser metadata and
-  installer boundaries.
-- **Current task:** `R-100` closure review is in progress after the five recorded
-  findings were fixed and the complete post-fix foundation matrix passed.
+  adapter and browser type-check limitation remain recorded for later M2/release
+  review; R-100 closure confirmed the foundation fixes and compatibility
+  decisions are sufficient to proceed.
+- **Current task:** `D-101` canonical domain schema, money, migrations, and
+  export shape is next after the approved R-100 foundation gate.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none after the scoped fixes. The next action is to receive
-  Russell's read-only closure report; if it approves, mark R-100 complete and
-  proceed to the M2 dependency-ready tasks.
+- **Blocker:** none. The next action is to dispatch D-101, then unlock the
+  dependency-ready D-102, D-103, and U-104 workstreams according to the M2
+  dependency graph.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

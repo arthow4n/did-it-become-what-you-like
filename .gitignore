@@ -9,3 +9,7 @@
 # https://docs.deno.com/runtime/reference/cli/coverage/
 coverage/
 *.lcov
+
+# Deno-managed npm links and disposable F-001 build output
+/node_modules/
+/spikes/toolchain/.tmp/

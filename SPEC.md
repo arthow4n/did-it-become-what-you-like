@@ -187,18 +187,27 @@ agreed.
 
 - The application must remain useful locally and must not depend on Google
   Drive being continuously available.
-- Expense data must be automatically backed up or synchronized to the owner's
-  Google Drive after authorization.
+- Expense data must use two-way Google Drive synchronization after
+  authorization so changes made on one device can appear on another.
+- Synchronization data must use Google Drive's hidden application-data folder to
+  reduce accidental manual modification of internal sync state.
 - The user must be able to export their data directly as a plain file,
   independently of Google Drive.
 - Stored and exported data must use simple, documented, broadly readable
-  formats. Versioned JSON is the provisional lossless canonical/export format
-  because it can preserve receipt relationships and sync metadata. CSV is a
-  flattened analysis export rather than the source of truth.
+  formats. Versioned JSON is the lossless canonical/export format because it can
+  preserve receipt relationships and sync metadata. CSV is a flattened analysis
+  export rather than the source of truth. SQLite or another opaque/binary
+  database file is not the interchange format.
 - The data must not require a proprietary database or the application itself
   for basic inspection and analysis.
 - Import/restore from the application's plain export is provisionally expected,
   but its merge, replacement, validation, and duplicate rules remain open.
+- Local changes must be saved to IndexedDB first and remain successful even when
+  Drive is unavailable. Synchronization must then be attempted after changes,
+  on app launch, when connectivity returns, and through a manual sync action.
+- Deletions must synchronize as tombstones rather than immediate physical
+  removal, preventing an offline device from accidentally restoring deleted
+  data. Tombstone retention and safe compaction remain to be specified.
 
 ### Initial Currency Presentation
 
@@ -339,8 +348,6 @@ These questions must be resolved incrementally before implementation.
 
 ### 4. Canonical Data and File Exchange
 
-- Should JSON be the lossless canonical format with CSV as a flattened analysis
-  export, or should CSV itself be canonical?
 - Is import from exported files required as well as export?
 - Should exports include all projects in one file or separate files?
 - How will schema versions and future migrations be represented?
@@ -349,14 +356,9 @@ These questions must be resolved incrementally before implementation.
 
 ### 5. Local Persistence and Google Drive Sync
 
-- Does "automatic backup" mean one-way snapshots, two-way multi-device sync,
-  or both?
-- Should Drive data use a normal user-visible folder or Google's hidden
-  application-data folder?
-- How quickly should local changes sync, and what manual sync/retry controls
-  are needed?
 - What happens when the user is signed out, offline, or revokes Drive access?
-- How are edits and deletions represented and recovered?
+- How long are deletion tombstones retained, and when can they be compacted
+  without allowing a long-offline device to restore deleted records?
 - How should simultaneous edits from multiple devices be merged? Candidate
   approaches include append-only records, per-record IDs and revisions,
   tombstones for deletion, deterministic field/record merging, or explicit

@@ -1160,8 +1160,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     visual scripts; agent `Faraday` (`01a030b5-c8b8-7733-919e-acc0eadfda07`);
     worker commit `0c6787f` is integrated by `f22c7c3`; the worktree is clean
     and preserved pending later final-wave cleanup; the worker is shut down.
-- **Interrupted tasks:** none. F-001 through F-005 are integrated and complete;
-  all scoped-fix workers have completed; no unintegrated worker changes remain.
+- **Interrupted tasks:** D-101 worker Pauli was interrupted after repeated
+  bounded windows with no filesystem changes; F-001 through F-005 are
+  integrated and complete, and all R-100 scoped-fix workers have completed.
+  No unintegrated worker changes remain.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1280,17 +1282,19 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   decisions are sufficient to proceed.
 - **Current task:** `D-101` canonical domain schema, money, migrations, and
   export shape is in progress after the approved R-100 foundation gate.
-- **D-101 active worktree:** branch `task/d-101-domain`, worktree
+- **D-101 recovery worktree:** branch `task/d-101-domain`, worktree
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain`, based at
-  `bd6fd68`; worker Pauli owns the scoped domain/schema files and must not edit
-  this ledger or push `master`.
+  `bd6fd68`; worker Pauli (`01a030ed-e9e6-7670-a3ff-16b76f3e0917`) was
+  interrupted without creating files. The worktree is clean and preserved; the
+  orchestrator owns recovery and will implement D-101 there without editing
+  this ledger from the worktree.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none. The next action is to dispatch D-101, then unlock the
-  dependency-ready D-102, D-103, and U-104 workstreams according to the M2
-  dependency graph.
+- **Blocker:** none. The next action is to implement and integrate D-101 from
+  the preserved recovery worktree, then unlock the dependency-ready D-102,
+  D-103, and U-104 workstreams according to the M2 dependency graph.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

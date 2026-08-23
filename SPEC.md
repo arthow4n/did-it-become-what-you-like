@@ -166,13 +166,20 @@ agreed.
   succeeds, fails, or is cancelled.
 - Generated entries must be presented for user review and correction before
   they are saved. The review must show all entries about to be created and allow
-  the owner to correct AI-generated values.
+  the owner to add missing lines, edit AI-generated values, and remove incorrect
+  lines.
+- Saving a reviewed receipt must commit its parent record and all accepted lines
+  atomically. A failure must leave none of that receipt partially saved.
 - The extracted receipt total must be checked against the sum of its draft
   purchase and adjustment lines. A mismatch must be clearly warned about, but
   the owner may explicitly confirm and save despite the mismatch.
 - Extraction results must identify uncertain fields, inconsistencies, and other
   potential issues, with a useful explanation rather than silently inventing a
   confident value.
+- AI-assisted receipt scanning requires an internet connection. When offline,
+  the application must explain that scanning is unavailable while keeping
+  manual entry fully usable. It must not retain or queue a selected receipt
+  image for later submission.
 - `@google/genai`, used with a Google AI Studio API key, is the provisional
   default SDK and service for this feature.
 

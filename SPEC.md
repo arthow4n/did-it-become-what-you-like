@@ -108,11 +108,12 @@ agreed.
   credits must be retained when present. They must not be discarded or forced
   into the same semantics as an ordinary expense.
 - The owner's previous application required folding discounts into an item's
-  final price. This was a tool limitation rather than a preferred model. The
-  provisional replacement is a receipt containing purchase lines and signed
-  adjustment lines which sum to its total. An adjustment may optionally refer
-  to an item but must also support receipt-wide discounts that cannot be
-  allocated honestly to one item.
+  final price. This was a tool limitation rather than a preferred model. A
+  receipt instead contains purchase lines and signed adjustment lines which sum
+  to its total.
+- An adjustment may refer to a particular item when that relationship can be
+  determined confidently. Linking is optional: receipt-wide or otherwise
+  ambiguous adjustments must remain valid without an item link.
 - Generated entries must be presented for user review and correction before
   they are saved.
 - `@google/genai`, used with a Google AI Studio API key, is the provisional
@@ -133,6 +134,15 @@ agreed.
   for basic inspection and analysis.
 - Import/restore from the application's plain export is provisionally expected,
   but its merge, replacement, validation, and duplicate rules remain open.
+
+### Initial Currency Presentation
+
+- The initial release must not automatically convert currencies.
+- When a filtered result contains multiple currencies, totals must be presented
+  separately for each currency rather than combined into a misleading value.
+- Every entry must preserve its original amount and currency. The data model
+  should also retain the historical information needed to add optional currency
+  conversion later without changing original records.
 
 ## User Experience
 
@@ -246,8 +256,6 @@ These questions must be resolved incrementally before implementation.
 
 ### 1. Expense Record and Invoice Semantics
 
-- Should the provisional receipt model be approved: separate purchase and
-  adjustment lines, with an optional item link for adjustments when known?
 - How are the receipt total, merchant, tax, tip, quantity, and shared receipt
   represented while every purchased item remains a separate entry?
 - What sign convention and terminology clearly represent money paid and money
@@ -266,11 +274,8 @@ These questions must be resolved incrementally before implementation.
 
 ### 3. Currency Behavior
 
-- Is the domestic currency only the default for new entries, or must all
-  expenses also show a converted domestic value?
-- If conversion is required, are exchange rates entered manually, fetched
-  automatically, or captured from the actual card/bank conversion?
-- Must historical exchange rates and the source of each rate be preserved?
+- For possible post-MVP conversion, which historical rate information should
+  the initial data model be capable of adding later?
 - What precision and rounding rules are required?
 
 ### 4. Canonical Data and File Exchange

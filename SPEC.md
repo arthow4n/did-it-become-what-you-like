@@ -90,6 +90,10 @@ agreed.
   decimal strings, never as JavaScript `Number` values or implicit integer minor
   units. Examples include `"-10.99"` for an outflow and `"1.25"` for a
   quantity.
+- Canonical decimal strings represent mathematical value rather than entered
+  formatting: redundant leading/trailing zeros are normalized, so `"10.90"`
+  may persist as `"10.9"`. Currency-aware display formatting restores the
+  appropriate presentation.
 - All arithmetic over persisted decimal values must use a pinned
   arbitrary-precision decimal library. `big.js` in strict mode is the
   provisional default because it is small, browser/Deno compatible, and can
@@ -169,6 +173,9 @@ agreed.
   change to replace one large nested object.
 - A purchased-item line should preserve quantity, unit price, and line total
   when that information is available from manual entry or receipt extraction.
+- The merchant-printed line total is authoritative when it differs from the
+  mathematical product of quantity and unit price. The source quantity and unit
+  price remain preserved, and the discrepancy may be shown during review.
 - Tax/VAT is not stored as a separate value for the initial consumer use case;
   recorded prices are treated as tax-inclusive.
 - A tip shown on a receipt must be retained as an outgoing expense line rather
@@ -260,6 +267,9 @@ agreed.
   required connectivity and authorization return.
 - Switching to a different Google account must require explicit confirmation.
   Data from different Drive accounts must never merge automatically.
+- Only one Google account may be configured for synchronization at a time.
+- Drive authorization must request the least-privilege hidden application-data
+  scope and must not request general access to the owner's Drive files.
 
 ### Import and Synchronization
 
@@ -289,6 +299,23 @@ agreed.
 - After a successful replacement synchronizes, other devices must recognize the
   generation change and require explicit adoption instead of merging old local
   changes into it automatically.
+
+### Disconnecting and Deleting Cloud Data
+
+- The application must distinguish disconnecting only the current device from
+  deleting the synchronized cloud dataset and disconnecting every device.
+- A global cloud deletion initiated on one device must remove synchronized
+  financial payloads from the configured Google account and prevent any other
+  device from recreating them from an old local copy.
+- An offline device can learn of the global deletion only after reconnecting. It
+  must check remote authorization/retirement state before attempting any upload
+  and transition to a durable disconnected/retired state when detected.
+- The provisional implementation sequence is to publish a non-financial dataset
+  retirement marker, delete synchronized payloads, and then use Google Identity
+  Services to revoke all scopes granted to the application. Other devices must
+  treat revoked authorization as a stop condition, not an automatic retry loop.
+- Reconnecting after global deletion must be an explicit recovery or
+  reinitialization workflow. It must never silently upload an old local dataset.
 
 ### Initial Currency Presentation
 
@@ -398,6 +425,9 @@ agreed.
   may be revisited if the threat model or deployment scope changes.
 - Sending invoice images and extracted content to an LLM provider must be made
   clear to the user before submission.
+- The public PWA requires no separate application login. Local data is available
+  only in its browser origin, while Google OAuth independently protects Drive
+  synchronization.
 
 ## Quality and Development Process
 
@@ -431,7 +461,8 @@ These questions must be resolved incrementally before implementation.
 
 ### 3. Currency Behavior
 
-- What precision and rounding rules are required?
+- Which explicit rounding modes are needed later for derived values such as
+  currency conversion? Original entered and receipt values are never rounded.
 
 ### 4. Local Persistence and Google Drive Sync
 
@@ -440,10 +471,6 @@ These questions must be resolved incrementally before implementation.
 
 ### 5. Google Access and Privacy
 
-- Which Google Drive OAuth scopes are acceptable?
-- Is synchronization limited to one configured Google account at a time?
-- Since GitHub Pages is public, does the app shell need any additional access
-  control, or is control of the connected Drive account sufficient?
 - What data may be sent to Gemini, and what must be redacted or confirmed?
 
 ### 6. Gemini API-Key Architecture

@@ -200,8 +200,11 @@ agreed.
   database file is not the interchange format.
 - The data must not require a proprietary database or the application itself
   for basic inspection and analysis.
-- Import/restore from the application's plain export is provisionally expected,
-  but its merge, replacement, validation, and duplicate rules remain open.
+- A complete JSON export must contain every project and support restoring the
+  application. CSV export must reflect the currently filtered analysis view.
+- JSON import must be validated and previewed before mutation, then offer both
+  merge and replace modes. Either mode must be atomic and must never leave a
+  partially imported dataset.
 - Local changes must be saved to IndexedDB first and remain successful even when
   Drive is unavailable. Synchronization must then be attempted after changes,
   on app launch, when connectivity returns, and through a manual sync action.
@@ -237,6 +240,31 @@ agreed.
   must verify its current release with Deno 2, the production browser build,
   repository-namespaced IndexedDB, conflict inspection/resolution, and a Google
   Drive round trip.
+- Signing out, going offline, or revoking Drive access must not block local use.
+  Synchronization pauses with a visible status and resumes only after the
+  required connectivity and authorization return.
+- Switching to a different Google account must require explicit confirmation.
+  Data from different Drive accounts must never merge automatically.
+
+### Import and Synchronization
+
+- Import is an explicit workflow with validating, previewing, preparing,
+  committing, synchronizing, conflict-resolution, and failure modes. The XState
+  actor must prevent ordinary synchronization from running concurrently with an
+  import commit.
+- Before import, the application should synchronize the latest Drive state when
+  possible and generate a safety export of the current local dataset.
+- Merge import treats imported records as incoming revisions in the current
+  dataset. Stable IDs and Automerge rules merge non-conflicting changes and
+  surface genuine conflicts through the normal resolution workflow.
+- Replace import creates a new dataset generation rather than pretending that
+  every imported record is a newer edit. This prevents stale remote or
+  long-offline devices from silently restoring the replaced generation.
+- After a successful replacement synchronizes, other devices must recognize the
+  generation change and require explicit adoption instead of merging old local
+  changes into it automatically.
+- The exact rules for offline replace, safety-export delivery, and treatment of
+  unsynchronized changes from the replaced generation remain to be approved.
 
 ### Initial Currency Presentation
 
@@ -380,22 +408,19 @@ These questions must be resolved incrementally before implementation.
 
 ### 4. Canonical Data and File Exchange
 
-- Is import from exported files required as well as export?
-- Should exports include all projects in one file or separate files?
 - How will schema versions and future migrations be represented?
 - Should monetary amounts use integer minor units, decimal strings, or another
   exact representation that avoids binary floating-point errors?
 
 ### 5. Local Persistence and Google Drive Sync
 
-- What happens when the user is signed out, offline, or revokes Drive access?
 - Does the Automerge compatibility check validate the complete agreed behavior,
   or must another established library be evaluated before implementation?
 
 ### 6. Google Access and Privacy
 
 - Which Google Drive OAuth scopes are acceptable?
-- Is access limited to one configured Google account?
+- Is synchronization limited to one configured Google account at a time?
 - Since GitHub Pages is public, does the app shell need any additional access
   control, or is control of the connected Drive account sufficient?
 - What data may be sent to Gemini, and what must be redacted or confirmed?

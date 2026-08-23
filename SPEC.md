@@ -308,6 +308,11 @@ agreed.
     devices; and
   - delete everywhere, meaning eventual deletion from Drive and every device
     which later reconnects.
+- Deleting local data must offer removal of the locally stored Gemini API key
+  through a checkbox enabled by default.
+- Before deleting everywhere, the application must offer a complete JSON safety
+  export. The owner may explicitly decline it to perform intentional permanent
+  deletion.
 - A global cloud deletion initiated on one device must remove synchronized
   financial payloads from the configured Google account and prevent any other
   device from recreating them from an old local copy.
@@ -326,6 +331,9 @@ agreed.
   its generation's marker, it must erase that entire local generation,
   acknowledge retirement if the protocol supports acknowledgements, and enter a
   durable disconnected/retired state without uploading.
+- Synchronization must maintain a registry of opaque known-device IDs, optional
+  recognizable device labels, and last-seen/acknowledgement status so deletion
+  progress can identify which devices remain outstanding.
 - The application must show whether deletion is pending, removed from Drive,
   awaiting known devices, or complete. It must state that a browser cannot erase
   a device which never runs and reconnects.
@@ -333,6 +341,15 @@ agreed.
   for synchronized retirement. Revocation must not happen so early that known
   offline devices are prevented from reading the retirement marker unless the
   owner explicitly finalizes despite those devices.
+- The owner may force finalization after a strong warning when a known device is
+  lost or never reconnects. Its inaccessible local browser copy cannot be
+  erased, but revoked authorization and the durable retirement marker must
+  prevent it from silently recreating the retired cloud dataset if used later.
+- Ordinary deletion of an individual expense uses the synchronized tombstone
+  model and does not promise immediate erasure from Automerge history in the
+  initial release. Full physical history destruction is guaranteed by the
+  delete-everywhere workflow; per-record hard erasure is deferred unless a
+  concrete need justifies generation compaction.
 - Reconnecting after global deletion must be an explicit recovery or
   reinitialization workflow. It must never silently upload an old local dataset.
 

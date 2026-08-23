@@ -207,7 +207,22 @@ agreed.
   on app launch, when connectivity returns, and through a manual sync action.
 - Deletions must synchronize as tombstones rather than immediate physical
   removal, preventing an offline device from accidentally restoring deleted
-  data. Tombstone retention and safe compaction remain to be specified.
+  data. Tombstones are retained indefinitely in the initial release; later
+  compaction requires a separately approved proof that no supported device can
+  resurrect deleted records.
+- Every synchronized record must have stable identity and revision ancestry.
+  Concurrent edits to different fields merge automatically without discarding
+  either change.
+- Concurrent edits to the same field must preserve both candidate values and
+  require explicit owner resolution. A concurrent deletion and edit must also
+  require the owner to choose whether to keep or delete the record.
+- Resolving a conflict creates a new revision which references every conflicting
+  revision it resolves. Once synchronized, other devices can therefore prove
+  that the new revision supersedes both branches and must not show the same
+  conflict again.
+- Wall-clock timestamps may support display and ordering but must not be the
+  sole authority for conflict resolution, because device clocks and offline
+  upload order are unreliable.
 
 ### Initial Currency Presentation
 
@@ -253,6 +268,9 @@ agreed.
 - Asynchronous workflows such as local persistence, Google Drive sync, invoice
   processing, retries, and conflict handling must be modeled explicitly with
   XState actors and statecharts.
+- The synchronization actor must explicitly distinguish idle, offline,
+  synchronizing, conflict-resolution, and error/retry modes. Unresolved conflict
+  data must be durable rather than existing only in transient machine context.
 - UI availability and rendering must be derived from XState snapshots, state
   matching, tags, selectors, and permitted events rather than duplicated
   component-level workflow flags.
@@ -357,14 +375,8 @@ These questions must be resolved incrementally before implementation.
 ### 5. Local Persistence and Google Drive Sync
 
 - What happens when the user is signed out, offline, or revokes Drive access?
-- How long are deletion tombstones retained, and when can they be compacted
-  without allowing a long-offline device to restore deleted records?
-- How should simultaneous edits from multiple devices be merged? Candidate
-  approaches include append-only records, per-record IDs and revisions,
-  tombstones for deletion, deterministic field/record merging, or explicit
-  user conflict resolution. No strategy is agreed yet.
-- What happens when two devices modify the same expense, category, or
-  project while offline?
+- What exact portable revision/log representation best implements the agreed
+  merge behavior with Google Drive's browser API?
 - Which IndexedDB helper, if any, should be used while preserving transparent
   schema control and Deno 2 compatibility?
 

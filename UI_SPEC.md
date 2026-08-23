@@ -15,7 +15,7 @@ visual design system.
 
 - The visual character is calm and minimal. The MVP has one comfortable dark
   theme with layered neutral surfaces and one restrained accent color. Exact
-  design tokens remain open.
+  roles, values, and component rules are defined in `DESIGN_SYSTEM.md`.
 - Mobile uses bottom navigation for **Expenses**, central **Add**,
   **Organize**, and **Settings**. Desktop presents the same structure in a left
   navigation rail.
@@ -62,10 +62,11 @@ Agreed visual principles:
   full window; and
 - display offline, unsaved, synchronization, and conflict states consistently.
 
-The exact dark palette, typography, icon family, density, and corner treatment
-remain open design-system decisions. A light palette is explicitly deferred
-beyond MVP, but the token and component architecture must allow one to be added
-later without redesigning application screens.
+The dark palette, typography, icon family, density, corner treatment, component
+responsibilities, and screen mapping are defined in `DESIGN_SYSTEM.md`. A light
+palette is explicitly deferred beyond MVP, but the token and component
+architecture allows one to be added later without redesigning application
+screens.
 
 ## Proposed Navigation Tree
 

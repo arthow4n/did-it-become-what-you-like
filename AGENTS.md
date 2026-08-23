@@ -35,8 +35,8 @@
   planning do not imply implementation approval.
 - Finish and obtain approval for the relevant product requirements, screens,
   workflows, and cross-cutting states before selecting detailed UI styling.
-- Before implementing or changing application UI, read `UI_SPEC.md` and the
-  repository's approved design-system documentation and components. Reuse its
+- Before implementing or changing application UI, read `UI_SPEC.md` and
+  `DESIGN_SYSTEM.md`, then inspect the implemented shared components. Reuse its
   tokens, primitives, interaction patterns, and responsive rules instead of
   creating parallel one-off UI.
 - When an approved pattern is missing, update the design system deliberately and
@@ -45,3 +45,12 @@
   dependency-ordered milestone plan. Identify foundational prerequisites,
   acceptance and verification gates, and workstreams which can safely proceed
   in parallel without inventing conflicting interfaces or data contracts.
+- Put that executable plan, orchestration procedure, task statuses, current
+  checkpoint, review/fix loop, and resumable coding-agent prompt in the single
+  `IMPLEMENTATION_PLAN.md` source of truth. Do not scatter live progress across
+  several planning files.
+- Once `IMPLEMENTATION_PLAN.md` exists, an implementing or orchestrating agent
+  must read it first, reconcile its checkpoint with the repository and test
+  state, update it after every completed or blocked task, and resume from the
+  next dependency-ready item. It must not treat a stale checklist as stronger
+  evidence than the actual repository.

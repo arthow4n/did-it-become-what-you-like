@@ -8,11 +8,11 @@ after discussion and agreement. Implementation must not begin until the repo
 owner explicitly approves the specification.
 
 After product and screen decisions are complete, the project must define and
-approve a shared design system before planning UI implementation. It must then
-turn the approved specifications into dependency-ordered milestones, identify
-prerequisites and safe parallel workstreams, and attach verification criteria.
-Neither design-system work nor milestone planning constitutes approval to begin
-application implementation.
+approve the shared `DESIGN_SYSTEM.md` before planning UI implementation. It
+must then turn the approved specifications into dependency-ordered milestones,
+identify prerequisites and safe parallel workstreams, and attach verification
+criteria. Neither design-system work nor milestone planning constitutes
+approval to begin application implementation.
 
 The terms in this document have the following meanings:
 
@@ -499,10 +499,13 @@ and multi-device synchronization according to the agreed sync design.
 
 ## User Experience
 
-- [`UI_SPEC.md`](UI_SPEC.md) contains the provisional navigation tree, ASCII
-  wireframes, cross-cutting states, and screen-level open decisions. Its
-  contents are discussion material and remain unapproved until the owner agrees
-  to each relevant screen and workflow.
+- [`UI_SPEC.md`](UI_SPEC.md) contains the approved navigation tree, ASCII
+  wireframes, responsive composition, accessibility rules, and cross-cutting
+  workflow states. Its agreed screen decisions are product requirements.
+- [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) defines the shared accessible React
+  foundation, semantic dark-theme tokens, reusable component responsibilities,
+  responsive rules, and screen-to-component mapping. Screens must reuse it
+  rather than creating parallel UI patterns.
 - Mobile is the primary form factor. Entry, invoice capture, filtering, and
   synchronization status must be comfortable on small touch screens.
 - Desktop browsers must also provide a complete and usable experience.
@@ -637,8 +640,15 @@ and multi-device synchronization according to the agreed sync design.
   component handlers.
 - Durable expense records may live in an appropriate persistence layer, but
   access to and mutation of them must be coordinated by the actor system.
-- React with `@xstate/react` is the provisional UI framework; it is not yet a
-  final decision.
+- React with `@xstate/react` is the confirmed UI framework.
+- Repository-owned design-system components must use React Aria Components for
+  behavior-heavy accessible primitives, ordinary CSS with semantic custom
+  properties for styling, and directly imported Lucide React icons. The MVP
+  must not add Tailwind, runtime CSS-in-JS, or a second styled component library
+  without a newly agreed requirement.
+- Screens bind XState actors to components defined by `DESIGN_SYSTEM.md`.
+  Application screens must not independently style raw React Aria controls into
+  competing button, field, overlay, notice, or status systems.
 
 ### Future Automation Extension
 
@@ -760,6 +770,41 @@ and multi-device synchronization according to the agreed sync design.
 - How `agent-browser` is pinned, installed, and invoked while preserving the
   Deno 2-only toolchain requirement remains an open tooling decision.
 
+### Post-Design Implementation Orchestration Deliverable
+
+After the design system is approved, planning must create one living
+`IMPLEMENTATION_PLAN.md`. It is the only source of truth for implementation
+orchestration and must be sufficient for a coding agent to resume work without
+reconstructing the plan from chat history.
+
+That file must contain:
+
+- the approved MVP scope, deferred exclusions, architecture baseline, and
+  definition of done;
+- a dependency graph and ordered milestones with stable task IDs;
+- for every task: scope and non-goals, prerequisites, allowed file/contract
+  ownership, expected outputs, acceptance criteria, verification commands, and
+  status;
+- explicit parallel lanes and collision rules so sub-agents are dispatched only
+  where work is genuinely independent;
+- the current checkpoint, completed evidence, blockers, and next
+  dependency-ready work;
+- a sub-agent orchestration procedure which uses bounded tasks, minimizes
+  duplicate context and work, and scales concurrency only when it is useful;
+- a review loop of implementer self-check, independent review, automated tests,
+  `agent-browser` visual/accessibility inspection where applicable, scoped fix,
+  and full re-verification before completion;
+- commit/push and plan-update checkpoints which leave the repository resumable
+  after interruption; and
+- a ready-to-use orchestration prompt instructing a coding agent to reconcile
+  the recorded checkpoint with actual Git/test state, dispatch the next safe
+  work, update the file, and continue until the approved definition of done or a
+  genuine owner decision is required.
+
+The later planning discussion will decide the concrete milestones, task graph,
+review independence, sub-agent ownership, and concurrency limits. This section
+records the required format and outcome, not those implementation decisions.
+
 ## Open Questions and Ambiguities
 
 These questions must be resolved incrementally before implementation.
@@ -772,8 +817,8 @@ These questions must be resolved incrementally before implementation.
 
 ### 2. Project Behavior
 
-- Detailed project-switching navigation and visual UI design will be specified
-  and approved through `UI_SPEC.md`.
+- There are no remaining MVP UI decisions in this section. Project switching,
+  organization, and deletion are specified in `UI_SPEC.md`.
 
 ### 3. Currency Behavior — Deferred Beyond MVP
 
@@ -809,17 +854,13 @@ These questions must be resolved incrementally before implementation.
 
 ### 8. Framework, PWA, and Browser Support
 
-- Should React be confirmed, or is another UI layer preferred?
-- Which UI component library or design system, if any, should provide the
-  agreed screens and detailed visual style? This decision is deliberately
-  deferred until every screen and workflow in `UI_SPEC.md` is approved.
+- React and the component/design-system foundation are defined in
+  `DESIGN_SYSTEM.md`.
 - Which mobile and desktop browsers and minimum versions must be supported?
 - What, if anything, must work offline beyond the approved local browsing,
   expense mutation, first-project creation, and JSON-restore behaviors?
 - How will the app handle GitHub Pages' repository base path, direct loads, and
   service-worker scope?
-- Any cross-cutting state or accessibility behavior still marked open in
-  `UI_SPEC.md` remains unapproved until explicitly agreed.
 
 ### 9. Testing and Visual Acceptance
 

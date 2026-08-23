@@ -86,6 +86,16 @@ agreed.
   cashback, bottle-deposit returns, and other inflows are positive. This sign
   convention must also support possible future income records without a data
   migration that reverses existing meanings.
+- Monetary amounts, quantities, and unit prices must be persisted as canonical
+  decimal strings, never as JavaScript `Number` values or implicit integer minor
+  units. Examples include `"-10.99"` for an outflow and `"1.25"` for a
+  quantity.
+- All arithmetic over persisted decimal values must use a pinned
+  arbitrary-precision decimal library. `big.js` in strict mode is the
+  provisional default because it is small, browser/Deno compatible, and can
+  reject accidental primitive-number inputs. Native JavaScript Decimal may
+  replace it only after that proposal is standardized and supported by the
+  agreed browser baseline.
 - Categories must be fully customizable.
 - A built-in `Uncategorized` category must always exist. It behaves as the
   fallback category for entries which have not been classified and cannot be
@@ -93,6 +103,9 @@ agreed.
 - Categories are shared globally across projects because the owner
   generally uses the same category set in every context. Switching projects
   isolates expense views but does not create a separate category catalogue.
+- Categories and projects must have stable immutable IDs. Expenses reference
+  `categoryId` and `projectId`, never mutable display names, so renaming a
+  category or project cannot break or rewrite relationships.
 - The expense view must support filtering by:
   - day, month, and year; and
   - category.
@@ -198,6 +211,8 @@ agreed.
   preserve receipt relationships and sync metadata. CSV is a flattened analysis
   export rather than the source of truth. SQLite or another opaque/binary
   database file is not the interchange format.
+- CSV import is excluded from the initial release because it cannot safely
+  preserve receipt relationships, revision ancestry, or merge semantics.
 - The data must not require a proprietary database or the application itself
   for basic inspection and analysis.
 - A complete JSON export must contain every project and support restoring the
@@ -281,8 +296,9 @@ agreed.
 - When a filtered result contains multiple currencies, totals must be presented
   separately for each currency rather than combined into a misleading value.
 - Every entry must preserve its original amount and currency. The data model
-  should also retain the historical information needed to add optional currency
-  conversion later without changing original records.
+  must also preserve its transaction date. These source values are sufficient
+  to attach or look up historical exchange-rate data later without changing the
+  original record.
 
 ## User Experience
 
@@ -347,6 +363,10 @@ agreed.
   address the same storage.
 - Multi-record mutations and imports must be transactional. Schema migrations
   must be explicit, versioned, and tested.
+- Persisted data and complete JSON exports must carry an explicit schema
+  version. A centralized migration registry must define each supported ordered
+  migration, apply migrations atomically, and be tested against every supported
+  source version.
 - `localStorage` must not be used for expense or other application data. The
   user-entered Google AI Studio API key is the single approved exception.
 - Service-worker caches may hold the application shell and other explicitly
@@ -411,22 +431,14 @@ These questions must be resolved incrementally before implementation.
 
 ### 3. Currency Behavior
 
-- For possible post-MVP conversion, which historical rate information should
-  the initial data model be capable of adding later?
 - What precision and rounding rules are required?
 
-### 4. Canonical Data and File Exchange
-
-- How will schema versions and future migrations be represented?
-- Should monetary amounts use integer minor units, decimal strings, or another
-  exact representation that avoids binary floating-point errors?
-
-### 5. Local Persistence and Google Drive Sync
+### 4. Local Persistence and Google Drive Sync
 
 - Does the Automerge compatibility check validate the complete agreed behavior,
   or must another established library be evaluated before implementation?
 
-### 6. Google Access and Privacy
+### 5. Google Access and Privacy
 
 - Which Google Drive OAuth scopes are acceptable?
 - Is synchronization limited to one configured Google account at a time?
@@ -434,7 +446,7 @@ These questions must be resolved incrementally before implementation.
   control, or is control of the connected Drive account sufficient?
 - What data may be sent to Gemini, and what must be redacted or confirmed?
 
-### 7. Gemini API-Key Architecture
+### 6. Gemini API-Key Architecture
 
 - Should the accepted `localStorage` default remain, or should the application
   store only passphrase-encrypted key ciphertext in IndexedDB and require an
@@ -451,7 +463,7 @@ These questions must be resolved incrementally before implementation.
 - Which Gemini model, structured-output schema, image limits, failure behavior,
   and usage controls are required?
 
-### 8. Filtering and Reporting
+### 7. Filtering and Reporting
 
 - Do day/month/year filters mean a chosen calendar period, rolling periods, or
   both?
@@ -462,7 +474,7 @@ These questions must be resolved incrementally before implementation.
   complicating the initial UI?
 - What timezone defines day/month/year boundaries?
 
-### 9. Framework, PWA, and Browser Support
+### 8. Framework, PWA, and Browser Support
 
 - Should React be confirmed, or is another UI layer preferred?
 - Which mobile and desktop browsers and minimum versions must be supported?
@@ -471,7 +483,7 @@ These questions must be resolved incrementally before implementation.
 - How will the app handle GitHub Pages' repository base path, direct loads, and
   service-worker scope?
 
-### 10. Testing and Visual Acceptance
+### 9. Testing and Visual Acceptance
 
 - Which unit-test and end-to-end frameworks best satisfy the Deno 2-only
   constraint?

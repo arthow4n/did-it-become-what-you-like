@@ -508,6 +508,20 @@ and multi-device synchronization according to the agreed sync design.
 - Desktop browsers must also provide a complete and usable experience.
 - The application must be responsive rather than maintaining separate mobile
   and desktop applications.
+- Navigation changes from the mobile bottom bar to a desktop left rail according
+  to available layout width, not device-name detection. Exact thresholds belong
+  to the later approved design system.
+- Wide Expenses layouts use a larger list column with a narrower contextual
+  column for category summaries, active filters, and related totals. Selecting
+  a record may open details beside the list; narrow layouts use a focused detail
+  screen with ordinary Back behavior.
+- Forms must use readable maximum widths. Suitable review and list/detail flows
+  may use two columns when space permits and collapse to the same natural-height
+  mobile sequence when it does not.
+- Mobile and desktop must reuse the same semantic components, actor events,
+  information hierarchy, validation, and accessibility behavior. Responsive
+  composition may reveal or reposition content but must not create a separate
+  desktop workflow or table-only product.
 - Offline, loading, saving, scanning, syncing, conflict, and error states must
   be visible and understandable to the user.
 - First launch must offer three useful paths: create the first local project,
@@ -785,9 +799,8 @@ These questions must be resolved incrementally before implementation.
   expense mutation, first-project creation, and JSON-restore behaviors?
 - How will the app handle GitHub Pages' repository base path, direct loads, and
   service-worker scope?
-- The navigation structure, screen hierarchy, mobile and desktop layouts, and
-  every applicable empty/loading/offline/error/conflict/destructive state in
-  `UI_SPEC.md` remain open until explicitly approved.
+- Any cross-cutting state or accessibility behavior still marked open in
+  `UI_SPEC.md` remains unapproved until explicitly agreed.
 
 ### 9. Testing and Visual Acceptance
 

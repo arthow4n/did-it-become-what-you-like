@@ -1021,6 +1021,46 @@ than only its ideal populated state:
   are owned by the relevant focused actor. Hydration restores its persisted
   snapshot rather than guessing a state from loose context fields.
 
+### Desktop Adaptation
+
+**Status: approved.** Desktop is a responsive arrangement of the same product,
+not a separate interface or component set.
+
+```text
++----------+---------------------------------------+
+| Expenses | Sweden project               Synced  |
+|    +     | [Today] [Month] [Year] [Filters]     |
+| Organize |                                       |
+| Settings | Net spent   Outflows   Money back     |
+|          |----------------------+----------------|
+|          | Expense list         | By category    |
+|          |                      | Active filters |
+|          | Select an expense -> | Summary/detail |
++----------+----------------------+----------------+
+```
+
+- Navigation changes from the mobile bottom bar to the left rail when content
+  has sufficient available width. The transition is based on layout capacity,
+  not user-agent device names; exact design-system breakpoints remain to be
+  selected later.
+- On wide Expenses layouts, the expense list is the larger primary column and a
+  narrower companion column holds the category summary, active filters, and
+  other contextual summary content.
+- Selecting an expense may open its details beside the list when width permits,
+  preserving list context. Narrow layouts use the already-approved focused
+  detail screen with ordinary Back behavior.
+- Forms use readable maximum widths rather than stretching controls across the
+  viewport. Receipt review and other naturally paired content may use two
+  columns when doing so improves comparison, then collapse into the agreed
+  natural-height mobile sequence.
+- Mobile and desktop reuse the same semantic components, actor events,
+  information hierarchy, validation, and accessibility behavior. Responsive
+  composition may reposition them but must not create a divergent desktop-only
+  workflow.
+- Desktop retains useful density without turning the expense experience into a
+  separate table product. Shared list and card primitives may reveal additional
+  columns or place actions inline when space permits.
+
 ## Screen Approval Checklist
 
 A screen is not approved until the owner agrees on:

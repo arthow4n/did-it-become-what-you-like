@@ -1118,23 +1118,26 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
     base `43998c4`; ownership `spikes/toolchain/**`, `deno.json`,
     `deno.lock`, and toolchain-only decision/proof files; agent pending dispatch;
-    merge first.
+    agent `Cicero` (`01a03092-5f84-7a83-992a-ff40b904dfc1`); merge first.
   - `F-002`: branch `task/f-002-automerge`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-002-automerge`,
     base `43998c4`; ownership `spikes/automerge/**` and its decision record;
-    agent pending dispatch; merge second.
+    agent `Kuhn` (`01a03092-6002-7bd1-85dc-f33d89f800ac`); merge second.
   - `F-003`: branch `task/f-003-browser-integrations`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-003-browser-integrations`,
     base `43998c4`; ownership `spikes/browser-integrations/**` and its decision
-    record; agent pending dispatch; merge third.
+    record; agent `Popper` (`01a03092-6086-7b42-ade7-dc16d28f1aef`); merge third.
 - **Interrupted tasks:** none. No worker has been dispatched yet; all three
-  worktrees are clean and contain no unpushed task commits.
+  worktrees were clean at dispatch and contained no unpushed task commits.
+- **Dispatch evidence:** all three agents received bounded prompts with their
+  owned files, non-goals, acceptance criteria, and exact validation/handoff
+  requirements; no worker is permitted to edit this ledger or push `master`.
 - **Known technical gates, not owner ambiguities:** exact pinned dependencies and
   E2E invocation (`F-001`); Automerge proof (`F-002`); Google/image/PWA browser
   proof (`F-003`); exact agent-browser binary/Chromium pins (`F-005`).
-- **Blocker:** none. The next action is to dispatch one bounded worker per
-  recorded worktree, then inspect and integrate their commits in the stated
-  order.
+- **Current task:** foundation compatibility wave (`F-001`–`F-003`) is active.
+- **Blocker:** none. The next action is to monitor the bounded workers while
+  preparing the ordered integration and review checks.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

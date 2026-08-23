@@ -112,10 +112,22 @@ agreed.
 - Categories must be fully customizable.
 - A built-in `Uncategorized` category must always exist. It behaves as the
   fallback category for entries which have not been classified and cannot be
-  deleted through category management.
+  renamed, archived, reordered, or deleted through category management.
 - Categories are shared globally across projects because the owner
   generally uses the same category set in every context. Switching projects
   isolates expense views but does not create a separate category catalogue.
+- Active categories have a global custom order used by manual pickers and the
+  Gemini category catalogue. A category requires a case-insensitively unique
+  trimmed active name, may have an optional color which is never its sole
+  identifier, and does not require an icon in the initial release.
+- Archiving a category preserves historical relationships while excluding it
+  from new-entry and Gemini choices. Empty custom categories can be deleted.
+  Deleting a used category requires atomic reassignment of all references
+  across all projects to an explicitly selected replacement, defaulting to
+  `Uncategorized`, followed by a synchronized tombstone for the old category.
+- A deleted-category tombstone retains its replacement category ID so a late
+  offline expense referencing the deleted ID is deterministically redirected
+  rather than resurrecting the category or retaining a broken reference.
 - Categories and projects must have stable immutable IDs. Expenses reference
   `categoryId` and `projectId`, never mutable display names, so renaming a
   category or project cannot break or rewrite relationships.

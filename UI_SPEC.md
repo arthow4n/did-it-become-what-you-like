@@ -480,11 +480,51 @@ active project is selected or created.
 
 ### Screen 8: Manage Categories and Category Editor
 
-**Status: open.** This discussion must settle the complete category list,
-creating and editing a category, optional color, ordering and accessible move
-controls, reassignment on deletion, the protected `Uncategorized` behavior,
-and whether each operation uses a full screen, bottom sheet, or confirmation
-dialog.
+**Status: approved.**
+
+```text
++----------------------------------+
+| < Organize     Manage categories |
+|                                  |
+| [ Search categories            ] |
+|                                  |
+| =  ● Groceries            [Edit] |
+| =  ● Transport            [Edit] |
+| =  ● Restaurants          [Edit] |
+|    ○ Uncategorized       Built-in|
+|                                  |
+| [ + Create category            ] |
+| Archived categories (2)  [Show]  |
++----------------------------------+
+```
+
+Agreed behavior:
+
+- Active categories appear in their global custom order; archived categories
+  are initially collapsed. Search covers both sections and identifies archived
+  matches.
+- Create and Edit use a focused bottom sheet on mobile and compact modal on
+  desktop. Name is required, color is optional, and icons are not part of the
+  MVP. Color is never the only category identifier.
+- After trimming surrounding whitespace, active category names are unique
+  without regard to letter case. Restoring an archived category whose name now
+  conflicts requires renaming it.
+- Drag handles and accessible Move up/Move down actions change the same global
+  order used by category pickers and the Gemini category catalogue.
+- Archiving a used category preserves all historical relationships and keeps
+  the category visible where old expenses require it, while excluding it from
+  new-entry and Gemini choices. An empty custom category may be deleted after
+  confirmation.
+- **Delete and reassign** requires selecting a replacement category, defaulting
+  to `Uncategorized`; previews the number of affected records across every
+  project; atomically changes every reference and tombstones the old category;
+  and synchronizes the operation to other devices.
+- A deleted-category tombstone retains its replacement category ID. If a late
+  offline revision arrives referencing the deleted category, synchronization
+  deterministically redirects that reference to the replacement instead of
+  resurrecting the category or leaving a broken relationship.
+- Built-in `Uncategorized` has a stable semantic ID and cannot be renamed,
+  archived, reordered, or deleted.
 
 ### Screen 9: Settings
 

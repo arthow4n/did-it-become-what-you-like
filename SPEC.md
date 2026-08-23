@@ -105,6 +105,8 @@ agreed.
   selected project while remaining manually changeable.
 - The application must persist the most recently selected project and reopen
   that project on the next launch.
+- Normal expense lists, filters, and totals are scoped to the selected project.
+  Entries from other projects remain hidden until the user switches projects.
 - Domain-level tags are not part of the initial release. They may be added later
   if a concrete cross-project labeling need emerges. Stable record identifiers
   must allow this extension without redesigning existing data.
@@ -296,8 +298,8 @@ These questions must be resolved incrementally before implementation.
 
 ### 2. Project Behavior
 
-- Should project be an additional filter alongside category, or should
-  switching projects create isolated views and settings?
+- Detailed project-switching navigation and visual UI design will be specified
+  during the later UI/UX discussion.
 
 ### 3. Currency Behavior
 

@@ -257,14 +257,23 @@ agreed.
 - Merge import treats imported records as incoming revisions in the current
   dataset. Stable IDs and Automerge rules merge non-conflicting changes and
   surface genuine conflicts through the normal resolution workflow.
+- Merge import is permitted while offline. Its resulting local revisions enter
+  the normal synchronization workflow when connectivity returns.
 - Replace import creates a new dataset generation rather than pretending that
   every imported record is a newer edit. This prevents stale remote or
   long-offline devices from silently restoring the replaced generation.
+- When Drive synchronization is configured, replace import requires an online,
+  successful synchronization immediately before replacement. Without Drive
+  configured, local replacement remains available offline.
+- Before replacement commits, the application must download a complete JSON
+  safety export of the current dataset. If the safety export cannot be created,
+  replacement must not proceed.
+- Unsynchronized changes belonging to the replaced generation are preserved in
+  that safety export but must not automatically merge into the new generation.
+  They may be recovered later through an explicit merge import.
 - After a successful replacement synchronizes, other devices must recognize the
   generation change and require explicit adoption instead of merging old local
   changes into it automatically.
-- The exact rules for offline replace, safety-export delivery, and treatment of
-  unsynchronized changes from the replaced generation remain to be approved.
 
 ### Initial Currency Presentation
 

@@ -412,8 +412,8 @@ Agreed behavior:
 
 ### Screen 7: Manage Projects and Project Editor
 
-**Status: approved except for the proposed populated-project deletion child
-workflow below.**
+**Status: approved, including the populated-project deletion child workflow
+below.**
 
 ```text
 +----------------------------------+
@@ -454,9 +454,9 @@ Agreed behavior:
 
 #### Screen 7A: Delete a Populated Project
 
-**Status: proposed; requires explicit approval.**
+**Status: approved.**
 
-“Delete project” must mean more than deleting its label. Recommended behavior:
+“Delete project” means more than deleting its label. Agreed behavior:
 
 - the confirmation identifies the project and counts its expenses, receipt
   parents, purchase lines, adjustments, and affected currencies/date range;

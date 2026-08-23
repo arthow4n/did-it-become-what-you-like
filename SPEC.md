@@ -141,6 +141,19 @@ agreed.
   that project on the next launch.
 - Normal expense lists, filters, and totals are scoped to the selected project.
   Entries from other projects remain hidden until the user switches projects.
+- Project archival is reversible and preserves every related record while
+  hiding the project from ordinary switching. Deleting an empty project removes
+  only that project after confirmation, and at least one active project must
+  remain.
+- Deleting a populated project follows the approved `UI_SPEC.md` Screen 7A
+  workflow: offer a complete JSON safety export, require strong confirmation,
+  and atomically create synchronized tombstones for the project and every
+  expense, receipt parent, receipt line, adjustment, and derived index entry
+  belonging to it. Global categories, other projects, their records, the
+  Gemini key, and unrelated settings remain unchanged.
+- Populated-project deletion is logical synchronized deletion, not physical
+  privacy erasure from Automerge history. Physical destruction of the complete
+  dataset generation and history remains exclusive to Delete Everywhere.
 - Domain-level tags are not part of the initial release. They may be added later
   if a concrete cross-project labeling need emerges. Stable record identifiers
   must allow this extension without redesigning existing data.
@@ -600,10 +613,6 @@ These questions must be resolved incrementally before implementation.
 
 - Detailed project-switching navigation and visual UI design will be specified
   and approved through `UI_SPEC.md`.
-- The exact populated-project deletion workflow in `UI_SPEC.md` Screen 7A is
-  still proposed. It must explicitly settle all related-record deletion,
-  safety export, synchronization, and the distinction between tombstoning and
-  physical CRDT-history erasure before it becomes required.
 
 ### 3. Currency Behavior
 

@@ -372,35 +372,65 @@ Agreed behavior:
 - The receipt image remains unpersisted under the previously agreed ephemeral
   inference-input rule.
 
-### Screen 6: Organize and Settings
+### Screen 6: Organize
+
+**Status: approved.**
 
 ```text
-+----------------------------------+  +----------------------------------+
-| Organize                         |  | Settings                         |
-|                                  |  |                                  |
-| Projects                         |  | Google Drive       Synced      > |
-| Sweden                    SEK  > |  | Gemini scanning    Configured  > |
-| Taiwan                   TWD  > |  | Import and export               > |
-| Trips                         > |  | Application preferences        > |
-|                         [+ Add] |  |                                  |
-|                                  |  | Data removal                     |
-| Categories                       |  | Delete local data               > |
-| Groceries                     > |  | Delete everywhere               > |
-| Transport                     > |  |                                  |
-| Uncategorized        Built-in   |  | Version and disclosure          > |
-|                         [+ Add] |  |                                  |
-|                                  |  |                                  |
-| Expenses   [+]  Organize Settings|  | Expenses   [+]  Organize Settings|
-+----------------------------------+  +----------------------------------+
++----------------------------------+
+| Organize                         |
+|                                  |
+| Projects                         |
+| ● Sweden                  SEK    |
+|   Taiwan                  TWD    |
+|   Japan trip              JPY    |
+| [ Manage projects ] [ + New ]    |
+|                                  |
+| Categories                       |
+|   Groceries                      |
+|   Transport                      |
+|   Uncategorized          Built-in|
+| [ Manage categories ] [ + New ]  |
+|                                  |
+| Expenses   [+]  Organize Settings|
++----------------------------------+
 ```
 
-These may become separate Projects and Categories screens if a combined page
-is too long. Destructive actions must not visually compete with everyday
-settings and require their already-specified confirmation workflows.
+Agreed behavior:
 
-Open decisions: combined versus separate organization screens, category
-reordering, project archival versus deletion, and grouping of advanced data and
-sync controls.
+- Organize is one landing destination containing compact Projects and
+  Categories sections.
+- Each section previews up to three records and provides clearly labeled
+  **Manage** and **New** actions. Larger collections remain on dedicated list
+  screens rather than making the landing page excessively long.
+- A project preview shows name, default currency, and the current-project
+  indicator. Expense counts are not shown here.
+- A category preview shows its name and identifies the built-in
+  `Uncategorized` category.
+- Sections and controls use natural-height responsive layout and ordinary
+  vertical page scrolling.
+
+### Screen 7: Manage Projects and Project Editor
+
+**Status: open.** This discussion must settle the complete project list,
+creating and editing a project, selecting the current project, ordering,
+archival, empty-project deletion, bulk deletion of a project containing
+expenses, and whether each operation uses a full screen, bottom sheet, or
+confirmation dialog.
+
+### Screen 8: Manage Categories and Category Editor
+
+**Status: open.** This discussion must settle the complete category list,
+creating and editing a category, optional color, ordering and accessible move
+controls, reassignment on deletion, the protected `Uncategorized` behavior,
+and whether each operation uses a full screen, bottom sheet, or confirmation
+dialog.
+
+### Screen 9: Settings
+
+**Status: open.** This discussion must settle the Settings landing page and its
+Google Drive/synchronization, Gemini, import/export, application preferences,
+data removal, version, and disclosure child workflows.
 
 ## Cross-Cutting UI States
 

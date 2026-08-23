@@ -54,3 +54,10 @@
   state, update it after every completed or blocked task, and resume from the
   next dependency-ready item. It must not treat a stale checklist as stronger
   evidence than the actual repository.
+- Every implementation task must include and pass its appropriate tests before
+  it is marked complete. Prefer pure unit tests and XState actor/machine tests
+  for business rules and workflows; use component unit tests for rendering,
+  accessibility semantics, variants, and event wiring.
+- Keep E2E coverage deliberately small and limited to critical journeys and
+  browser-integration seams which unit, actor, and component tests cannot prove.
+  Do not duplicate the same state-transition assertions at every test layer.

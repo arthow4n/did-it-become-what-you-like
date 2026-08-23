@@ -760,6 +760,16 @@ and multi-device synchronization according to the agreed sync design.
   logic. End-to-end tests remain required for a smaller set of critical
   browser journeys because machine tests cannot prove layout, focus behavior,
   IndexedDB/service-worker integration, or external browser APIs work together.
+- Prefer the lowest reliable test layer for each behavior. Pure domain logic,
+  schema validation, migrations, formatting, selectors, and utilities use unit
+  tests; workflow behavior uses XState actor/machine tests; components use unit
+  tests for rendering, accessibility semantics, variants, and event dispatch.
+  E2E tests are intentionally minimal and prove only critical integration seams
+  and complete owner journeys which lower layers cannot establish.
+- A feature task is not complete when tests are postponed to a later cleanup
+  milestone. Its appropriate unit/actor/component tests must be implemented and
+  passing in the same task, while critical E2E coverage may be added at the
+  milestone integration gate after the required screens and adapters exist.
 - During development, the coding agent must use
   [`agent-browser`](https://github.com/vercel-labs/agent-browser) with Chromium
   to inspect and exercise the running UI.
@@ -784,7 +794,8 @@ That file must contain:
 - a dependency graph and ordered milestones with stable task IDs;
 - for every task: scope and non-goals, prerequisites, allowed file/contract
   ownership, expected outputs, acceptance criteria, verification commands, and
-  status;
+  status, including the cheapest appropriate unit, actor, component, or E2E
+  test layer and the exact tests delivered with that task;
 - explicit parallel lanes and collision rules so sub-agents are dispatched only
   where work is genuinely independent;
 - the current checkpoint, completed evidence, blockers, and next
@@ -794,6 +805,9 @@ That file must contain:
 - a review loop of implementer self-check, independent review, automated tests,
   `agent-browser` visual/accessibility inspection where applicable, scoped fix,
   and full re-verification before completion;
+- milestone test gates which keep the E2E suite compact, prevent state-machine
+  assertions from being duplicated through the UI stack, and reject tasks whose
+  required lower-layer tests were deferred;
 - commit/push and plan-update checkpoints which leave the repository resumable
   after interruption; and
 - a ready-to-use orchestration prompt instructing a coding agent to reconcile

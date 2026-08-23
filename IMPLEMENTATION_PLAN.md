@@ -308,7 +308,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-100 — Foundation independent review gate
 
-- **Status/dependencies:** `PENDING`; depends on `F-004`, `F-005`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `F-004`, `F-005`, both
+  complete. Independent reviewer Bohr (`01a030d4-4ac8-7773-8970-20578def7874`)
+  is auditing the integrated foundation read-only.
 - **Ownership:** read-only review first; findings in this ledger; fixes return to
   owning task/files through a scoped fix commit.
 - **Scope/non-goals:** independently review reproducibility, Deno-only execution,
@@ -1119,8 +1121,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   eight Markdown fence lines are balanced; `git status --short --branch` is
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Active wave:** `F-001` through `F-005` are `COMPLETE`; `R-100` is the next
-  dependency-ready foundation gate.
+- **Active wave:** `F-001` through `F-005` are `COMPLETE`; `R-100` is the active
+  independent foundation gate.
 - **Active worktrees and dispatch order:**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1156,7 +1158,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     worker commit `0c6787f` is integrated by `f22c7c3`; the worktree is clean
     and preserved pending later final-wave cleanup; the worker is shut down.
 - **Interrupted tasks:** none. F-001 through F-005 are integrated and complete;
-  no unintegrated worker changes remain.
+  R-100 reviewer Bohr is active; no unintegrated worker changes remain.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1228,14 +1230,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later review;
   R-100 must independently review the F-005 native browser metadata and
   installer boundaries.
-- **Current task:** `R-100` foundation independent review gate is next.
+- **Current task:** `R-100` foundation independent review gate is in progress;
+  reviewer Bohr is read-only and must return exact findings and command results.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none. The next action is to dispatch the independent, read-only
-  R-100 review against the integrated foundation and record any scoped findings
-  before proceeding to M2.
+- **Blocker:** none. The next action is to receive Bohr's independent R-100
+  report, address any severity-1/2 findings through scoped fixes, then rerun
+  the complete foundation gate before proceeding to M2.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

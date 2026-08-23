@@ -1152,7 +1152,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   - `F-005`: branch `task/f-005-tooling`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-005-tooling`, base `f7cd08d`;
     ownership `src/test-support/**`, test configuration, `e2e/support/**`, and
-    visual scripts; agent pending dispatch; merge after the bounded review.
+    visual scripts; agent `Faraday` (`01a030b5-c8b8-7733-919e-acc0eadfda07`);
+    merge after the bounded review.
 - **Interrupted tasks:** none. F-001 through F-004 are integrated and complete;
   F-005 is the only active foundation task.
 - **F-003 handoff evidence:** `deno run -A

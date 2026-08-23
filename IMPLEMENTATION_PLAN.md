@@ -348,8 +348,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### D-102 — Define the XState actor system and event contracts
 
-- **Status/dependencies:** `PENDING`; depends on `D-101`, `F-005`; may run in
-  parallel with `D-103` and `U-104` after `D-101`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `D-101`, `F-005`, both
+  complete. Worker Harvey (`01a03104-b17d-70c0-ad0d-8d62875f6c7e`) owns the
+  bounded XState v5 contract work; the orchestrator owns integration.
 - **Ownership:** `src/actors/contracts/**`, actor topology documentation and
   compile-only machine shells; no concrete service adapters or screen markup.
 - **Scope/non-goals:** define root/shell, expense form, receipt scan/review,
@@ -370,8 +371,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### D-103 — Define adapter ports and deterministic fakes
 
-- **Status/dependencies:** `PENDING`; depends on `D-101`, `F-005`; parallel with
-  `D-102` and `U-104`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `D-101`, `F-005`, both
+  complete. Worker Heisenberg (`01a03104-b25c-73a1-87eb-4cb012f47eb9`) owns the
+  bounded adapter-port/fake work; the orchestrator owns integration.
 - **Ownership:** `src/adapters/ports/**`, `src/test-support/fakes/**`; no real
   Google/IndexedDB implementation.
 - **Scope/non-goals:** typed ports for local transactions/query, causal sync,
@@ -386,8 +388,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### U-104 — Implement and verify the shared design-system foundation
 
-- **Status/dependencies:** `PENDING`; depends on `R-100`, `D-101`; may run in
-  parallel with `D-102` and `D-103` after the canonical domain types exist.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-100`, `D-101`, both
+  complete. Worker Erdos (`01a03104-b332-72a3-970b-166787ec0638`) owns the
+  bounded design-system/gallery work; the orchestrator owns integration.
 - **Ownership:** `src/design-system/**` and component gallery only; no feature
   business logic.
 - **Scope/non-goals:** implement semantic dark tokens, immediate-motion policy,
@@ -1126,8 +1129,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
 - **Active wave:** `F-001` through `F-005`, `R-100`, and `D-101` are `COMPLETE`;
-  `D-102`, `D-103`, and `U-104` are the next parallel dependency-ready M2
-  tasks.
+  `D-102`, `D-103`, and `U-104` are the active parallel M2 tasks.
 - **Active worktrees and dispatch order:**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1282,8 +1284,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** `D-102`, `D-103`, and `U-104` are next after the completed
-  D-101 domain contract; they may run in parallel with disjoint ownership.
+- **Current task:** `D-102`, `D-103`, and `U-104` are in progress after the
+  completed D-101 domain contract; they are running in parallel with disjoint
+  ownership.
 - **D-101 recovery worktree:** branch `task/d-101-domain`, worktree
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain`, based at
   `bd6fd68`; worker Pauli (`01a030ed-e9e6-7670-a3ff-16b76f3e0917`) was
@@ -1298,13 +1301,25 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   record schemas/invariants, strict big.js decimal arithmetic, explicit v0-to-v1
   migration and unsupported down policy, deterministic export/import, portable
   versus device-local settings, schema documentation, and secret-free fixtures.
+- **D-102 active worktree:** branch `task/d-102-actors`, worktree
+  `~/git/worktrees/did-it-become-what-you-like-d-102-actors`, based at
+  `7307f58`; Harvey owns `src/actors/contracts/**` and its topology/tests.
+- **D-103 active worktree:** branch `task/d-103-adapters`, worktree
+  `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`, based at
+  `7307f58`; Heisenberg owns `src/adapters/ports/**` and
+  `src/test-support/fakes/**` plus their focused tests.
+- **U-104 active worktree:** branch `task/u-104-design-system`, worktree
+  `~/git/worktrees/did-it-become-what-you-like-u-104-design-system`, based at
+  `7307f58`; Erdos owns `src/design-system/**` and the gallery fixture/tests.
+  These three ownership sets are disjoint; no worker may edit the plan, shared
+  task configuration, or push `master`.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none. The next action is to dispatch D-102, D-103, and U-104 in
-  separate worktrees, capped at three workers, then integrate and review them
-  before R-200.
+- **Blocker:** none. The next action is to receive the three worker handoffs,
+  integrate them in dependency order, wire shared test/gallery task aliases at
+  the root, then dispatch R-200.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

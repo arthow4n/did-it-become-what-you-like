@@ -176,7 +176,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### P-000 — Freeze coherent approved documentation
 
-- **Status/dependencies:** `IN_PROGRESS`; no dependencies.
+- **Status/dependencies:** `COMPLETE`; no dependencies. Draft `e9e0822`, review
+  fixes `5165d60`, and independent closure verification are pushed/recorded.
 - **Ownership:** `SPEC.md`, `UI_SPEC.md`, `DESIGN_SYSTEM.md`, `AGENTS.md`,
   `README.md`, and this file only.
 - **Scope/non-goals:** create this executable plan, obtain an independent review,
@@ -994,14 +995,17 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   plan`).
 - **Completed implementation tasks:** none. No implementation worktree, spike,
   dependency setup, or application source has been started.
-- **Current task:** `P-000` — the independent Luna `xhigh` review reported one
-  severity-1, ten severity-2, and three severity-3 documentation findings. All
-  are addressed in the current review-fix changes; closure verification and the
-  final fix/checkpoint commits are still required before `P-000` is `COMPLETE`.
-- **P-000 evidence so far:** unique 37 task/review IDs; all task blocks contain
-  status/dependencies, ownership, scope/non-goals, outputs/acceptance, tests, and
-  verification; balanced Markdown fences; `git diff --check` passed before the
-  independent review. Final evidence will be recorded after closure review.
+- **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
+  reviewed; all one severity-1, ten severity-2, and three severity-3 findings
+  were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`
+  confirmed all 14 closed, found no new severity-1/2/3 regression, and approved
+  `P-000` completion.
+- **P-000 verification evidence:** `git diff --check` passed; 37 task/review IDs
+  are unique; every task block contains status/dependencies, ownership,
+  scope/non-goals, outputs/acceptance, tests, and verification; Markdown fences
+  are balanced; dependency graph/ledger and E2E/agent-browser ownership were
+  independently checked; `git status --short --branch` was clean at `5165d60`.
+- **Current task:** none. Planning and coherence review are complete.
 - **Next dependency-ready work after owner authorization:** `F-001`, `F-002`,
   and `F-003`, with the orchestrator assigning disjoint worktrees and prioritizing
   integration in that order.

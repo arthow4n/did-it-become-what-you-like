@@ -623,10 +623,49 @@ Agreed behavior:
 
 ### Screen 10A: Conflict Review
 
-**Status: open.** The conflict list, candidate comparison, field resolution,
-delete-versus-edit decisions, offline resolution, and completion behavior
-require separate approval. This screen is reachable from both the Expenses
-banner and Google Drive settings.
+**Status: approved.** This screen is reachable from both the Expenses banner
+and Google Drive settings.
+
+```text
++----------------------------------+
+| < Back        Conflicts 1 of 2   |
+|                                  |
+| ICA Maxi Solna · 22 Aug          |
+| Conflicting field: Category      |
+|                                  |
+| Option 1                         |
+| Groceries                        |
+| Stockholm phone · 10:42          |
+| [ Choose this value            ] |
+|                                  |
+| Option 2                         |
+| Household                        |
+| Laptop · 10:45                   |
+| [ Choose this value            ] |
+|                                  |
+| [ Enter a different value      ] |
+| [ Save and review next         ] |
++----------------------------------+
+```
+
+Agreed behavior:
+
+- The workflow begins with conflicts grouped by affected expense or receipt,
+  then reviews one conflicting field at a time. Mobile navigates list to detail;
+  desktop may use an equivalent two-column layout.
+- Every candidate is presented neutrally, with a device label and timestamp
+  when known. Neither presentation order nor timestamp identifies an automatic
+  winner.
+- The owner may select any candidate or enter another value which passes the
+  field's normal validation.
+- Delete-versus-edit conflicts present explicit **Keep edited record** and
+  **Delete record** actions and summarize the edits which deletion discards.
+- Each successful choice commits locally as a resolution revision referencing
+  all conflicting parents. Resolution works offline and joins normal sync
+  later. The conflict count/banner changes only after the local commit succeeds.
+- Workflow progress and unresolved candidates are durable, so closing,
+  reloading, or a failed sync cannot lose completed resolutions or make the UI
+  claim a conflict is resolved prematurely.
 
 ### Screen 10B: Known Devices
 

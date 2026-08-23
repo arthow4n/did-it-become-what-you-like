@@ -313,6 +313,13 @@ agreed.
   revision it resolves. Once synchronized, other devices can therefore prove
   that the new revision supersedes both branches and must not show the same
   conflict again.
+- Conflict Review groups conflicts by affected record and presents all
+  same-field candidates neutrally. The owner may choose any candidate or enter
+  another valid value. Delete-versus-edit conflicts explicitly compare keeping
+  the edited record with deleting it and summarize the edits deletion discards.
+- Conflict resolution can commit locally while offline. Durable workflow state
+  and unresolved candidate data must survive reloads; conflict indicators
+  update only after the local resolution revision commits successfully.
 - Wall-clock timestamps may support display and ordering but must not be the
   sole authority for conflict resolution, because device clocks and offline
   upload order are unreliable.

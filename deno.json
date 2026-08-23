@@ -36,10 +36,10 @@
     "dev": "deno run -A npm:vite@8.2.2 --host 127.0.0.1",
     "fmt:check": "deno fmt --check deno.json tsconfig.app.json vite.config.ts index.html src scripts e2e spikes/toolchain",
     "lint": "deno lint src scripts e2e vite.config.ts spikes/toolchain",
-    "check": "deno run -A npm:typescript@7.0.2/tsc --noEmit --project tsconfig.app.json && deno run -A npm:typescript@7.0.2/tsc --noEmit --project spikes/toolchain/tsconfig.json && deno check --config deno.json scripts/verify-pages.ts scripts/verify-ci.ts scripts/install-browsers.ts scripts/browser/installer.ts scripts/browser/metadata.ts scripts/browser/zip.ts scripts/verify-browser-tooling.ts scripts/tests/foundation_test.ts scripts/tests/f005_tooling_test.ts e2e/playwright.ts e2e/playwright.config.ts e2e/support/browser-state.ts e2e/support/fake-services.ts e2e/support/intentional-failure.ts e2e/support/journeys.ts e2e/support/journey-boundaries.spec.ts e2e/support/redacted-trace.ts",
-    "test": "deno test --allow-read --allow-write --allow-run --allow-env src/test-support scripts/tests spikes/toolchain/tests",
-    "test:unit": "deno test --allow-read --allow-write --allow-run --allow-env src/test-support/fixtures.test.ts",
-    "test:domain": "deno test --allow-read --allow-write --allow-run --allow-env src/test-support/fixtures.test.ts --filter='deterministic clock'",
+    "check": "deno run -A npm:typescript@7.0.2/tsc --noEmit --project tsconfig.app.json && deno run -A npm:typescript@7.0.2/tsc --noEmit --project spikes/toolchain/tsconfig.json && deno check --config deno.json scripts/verify-pages.ts scripts/verify-ci.ts scripts/install-browsers.ts scripts/browser/installer.ts scripts/browser/metadata.ts scripts/browser/zip.ts scripts/verify-browser-tooling.ts scripts/verify-schema-docs.ts scripts/tests/foundation_test.ts scripts/tests/f005_tooling_test.ts e2e/playwright.ts e2e/playwright.config.ts e2e/support/browser-state.ts e2e/support/fake-services.ts e2e/support/intentional-failure.ts e2e/support/journeys.ts e2e/support/journey-boundaries.spec.ts e2e/support/redacted-trace.ts",
+    "test": "deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests src/test-support scripts/tests spikes/toolchain/tests",
+    "test:unit": "deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests src/test-support/fixtures.test.ts",
+    "test:domain": "deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests",
     "test:actor": "deno test --allow-read --allow-write --allow-run --allow-env spikes/toolchain/tests/actor_test.ts",
     "test:integration": "deno test --allow-read --allow-write --allow-run --allow-env src/test-support/fixtures.test.ts --filter='fake'",
     "test:component": "deno test --allow-read --allow-write --allow-run --allow-env src/test-support/component-harness.test.tsx",
@@ -50,6 +50,7 @@
     "browser:verify": "deno run -A scripts/verify-browser-tooling.ts",
     "verify:test-tooling": "deno test --allow-read --allow-write --allow-run --allow-env scripts/tests/f005_tooling_test.ts",
     "verify:toolchain": "deno run -A spikes/toolchain/verify.ts",
+    "verify:schema-docs": "deno run -A scripts/verify-schema-docs.ts",
     "verify:pages": "deno run -A scripts/verify-pages.ts",
     "verify:ci": "deno run -A scripts/verify-ci.ts"
   }

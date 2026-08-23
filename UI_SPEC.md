@@ -1107,7 +1107,7 @@ A screen is not approved until the owner agrees on:
    target expectations; and
 6. acceptance examples suitable for later end-to-end and visual testing.
 
-## Prioritized Open Decisions
+## Decision Sequence
 
 The UI should be agreed incrementally in this order:
 

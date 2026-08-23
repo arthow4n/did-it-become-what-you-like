@@ -133,6 +133,10 @@ agreed.
 - The future extraction prompt and review model must request and preserve the
   most specific merchant/shop identity visible on the receipt, including its
   branch or location when available.
+- The AI must suggest a category for every extracted item using only the
+  owner's existing category catalogue.
+- The AI must never create categories. When no existing category can be chosen
+  confidently, it must use `Uncategorized` for the draft.
 - A scanned receipt or invoice must produce a separate draft entry for every
   purchased line item rather than only one entry for the receipt total.
 - Extracted discounts, refunds, cashback, bottle-deposit returns, and similar
@@ -161,7 +165,14 @@ agreed.
   temporary in-memory or browser-managed copy must be released after inference
   succeeds, fails, or is cancelled.
 - Generated entries must be presented for user review and correction before
-  they are saved.
+  they are saved. The review must show all entries about to be created and allow
+  the owner to correct AI-generated values.
+- The extracted receipt total must be checked against the sum of its draft
+  purchase and adjustment lines. A mismatch must be clearly warned about, but
+  the owner may explicitly confirm and save despite the mismatch.
+- Extraction results must identify uncertain fields, inconsistencies, and other
+  potential issues, with a useful explanation rather than silently inventing a
+  confident value.
 - `@google/genai`, used with a Google AI Studio API key, is the provisional
   default SDK and service for this feature.
 

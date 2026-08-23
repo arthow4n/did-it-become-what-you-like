@@ -135,7 +135,6 @@ agreed.
   - day, month, and year; and
   - category.
 - Multiple currencies must be supported.
-- The user must be able to set a domestic/default currency.
 - The application must support multiple user-defined projects.
 - Each project represents a distinct life or travel context whose
   expenses should not be mixed in ordinary views. Examples include the owner's
@@ -143,7 +142,7 @@ agreed.
   another country.
 - A project must have a default/local currency so expenses can be recorded
   naturally in the currency of that context without requiring immediate
-  conversion to the owner's domestic currency.
+  conversion to a common reporting currency.
 - The project currency is a default, not a restriction. An individual entry
   may override it, and one project may contain entries in multiple
   currencies.
@@ -456,12 +455,19 @@ agreed.
 ### Initial Currency Presentation
 
 - The initial release must not automatically convert currencies.
+- Project default currency is sufficient for the initial release. There is no
+  separate domestic or reporting currency setting in the MVP.
 - When a filtered result contains multiple currencies, totals must be presented
   separately for each currency rather than combined into a misleading value.
 - Every entry must preserve its original amount and currency. The data model
   must also preserve its transaction date. These source values are sufficient
   to attach or look up historical exchange-rate data later without changing the
   original record.
+- Cross-currency totals and comparisons are explicitly deferred and must not be
+  implemented during MVP work. When pursued later, domestic/reporting currency,
+  historical exchange-rate import or lookup, rate provenance, conversion, and
+  rounding behavior must be designed and delivered together as one coherent
+  feature batch.
 
 ## User Experience
 
@@ -550,10 +556,10 @@ agreed.
 
 ### Local Browser Storage
 
-- Domestic currency and expense-day boundary are synchronized personal domain
-  preferences and belong to the portable dataset. Last-selected project,
-  OAuth tokens, device-specific UI state, Gemini API key, selected Gemini
-  model, and image-preparation preference remain device-local.
+- Expense-day boundary is a synchronized personal domain preference and belongs
+  to the portable dataset. Last-selected project, OAuth tokens, device-specific
+  UI state, Gemini API key, selected Gemini model, and image-preparation
+  preference remain device-local.
 - IndexedDB is required for all locally persisted application data, including
   expenses, categories, projects, settings, sync metadata, migrations,
   and extracted receipt records. Source receipt images are explicitly excluded
@@ -670,10 +676,11 @@ These questions must be resolved incrementally before implementation.
 - Detailed project-switching navigation and visual UI design will be specified
   and approved through `UI_SPEC.md`.
 
-### 3. Currency Behavior
+### 3. Currency Behavior — Deferred Beyond MVP
 
-- Which explicit rounding modes are needed later for derived values such as
-  currency conversion? Original entered and receipt values are never rounded.
+- There are no remaining MVP decisions in this section. Cross-currency
+  reporting and its historical exchange-rate, provenance, and rounding rules
+  are one deferred feature batch and are not part of current specification work.
 
 ### 4. Local Persistence and Google Drive Sync
 

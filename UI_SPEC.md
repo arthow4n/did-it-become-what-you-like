@@ -548,7 +548,7 @@ Agreed behavior:
 | Key and model configured  [Open] |
 |                                  |
 | Preferences                      |
-| SEK · Expense day 03:00   [Open] |
+| Expense day 03:00         [Open] |
 |                                  |
 | Import and export         [Open] |
 | Data and privacy          [Open] |
@@ -563,15 +563,14 @@ Agreed behavior:
 - The six groups appear in the order shown, prioritizing ordinary sync,
   scanning, and preference tasks over infrequent data administration.
 - Rows show useful current summaries such as last synchronization, Gemini
-  configuration, domestic currency, and expense-day boundary.
+  configuration, and expense-day boundary.
 - Destructive actions are inside **Data and privacy**, not exposed directly on
   the landing screen.
 - Settings search is excluded initially and may be added only if the collection
   grows enough to justify it.
-- Domestic currency and expense-day boundary are synchronized personal domain
-  preferences. API key, selected Gemini model, image-preparation preference,
-  last-selected project, OAuth tokens, and device-specific UI state remain
-  local to each device.
+- Expense-day boundary is a synchronized personal domain preference. API key,
+  selected Gemini model, image-preparation preference, last-selected project,
+  OAuth tokens, and device-specific UI state remain local to each device.
 
 ### Screen 10: Google Drive and Synchronization
 
@@ -805,8 +804,12 @@ offer the native share sheet; a normal file download is always available.
 
 ### Screen 13: Preferences
 
-**Status: open.** Domestic currency, expense-day boundary, and later visual or
-accessibility preferences require separate approval.
+**Status: open.** Project currency is sufficient for the MVP. Domestic/reporting
+currency and cross-currency conversion are deferred as one later feature batch
+with historical exchange-rate support and must not be implemented during MVP
+work. Expense-day boundary presentation and timezone behavior still require
+approval; later visual or accessibility preferences remain out of scope unless
+a concrete need emerges.
 
 ### Screen 14: Data and Privacy
 

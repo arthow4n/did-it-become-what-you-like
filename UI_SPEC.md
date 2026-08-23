@@ -892,8 +892,43 @@ implemented during MVP work.
 
 ### Screen 15: About and Disclosure
 
-**Status: open.** Version, AI disclosure, privacy explanation, licenses, and
-update information require separate approval.
+**Status: approved.**
+
+```text
++----------------------------------+
+| < Settings               About   |
+|                                  |
+| did-it-become-what-you-like      |
+| Version 0.1.0 · build abc1234    |
+| [ Check for updates            ] |
+|                                  |
+| Generative AI usage disclosure   |
+| This application is 100%         |
+| vibe-coded using ChatGPT Codex    |
+| and Google Antigravity.           |
+|                                  |
+| Privacy                          |
+| Local-first · no analytics or ads |
+| [ Data and privacy details     ] |
+|                                  |
+| [ Open-source licenses         ] |
+| [ View source on GitHub        ] |
++----------------------------------+
+```
+
+- Version information includes the release version and short Git commit hash so
+  a deployed build can be identified precisely during diagnosis.
+- The generative-AI disclosure uses the exact wording already published in
+  `README.md`.
+- The privacy summary states that the app is local-first and has no analytics,
+  advertising, or unrelated tracking, with a link to the detailed Data and
+  Privacy screen.
+- Open-source information presents the application's license and third-party
+  notices. The source action opens this repository on GitHub.
+- **Check for updates** has explicit checking, up-to-date, update-ready,
+  offline, and failure modes. When a new service worker is ready, the owner gets
+  an explicit **Reload to update** action; the app never surprises the owner
+  with a reload which could discard unsaved input.
 
 ## Cross-Cutting UI States
 
@@ -925,15 +960,19 @@ A screen is not approved until the owner agrees on:
 
 The UI should be agreed incrementally in this order:
 
-1. overall visual character and shell navigation;
+1. shell navigation and information architecture;
 2. Expenses list, period selection, filters, search, and totals;
 3. manual entry and expense detail/editing;
 4. receipt capture and review;
 5. project and category organization;
 6. synchronization, conflicts, import/export, and deletion;
-7. first-use, installation, updates, offline, and other PWA states; and
+7. first-use, installation, updates, offline, and other PWA states;
 8. desktop adaptations and final accessibility/visual acceptance criteria;
-   and
 9. only after all screens and workflows are agreed, select the UI component
    library/design system and settle detailed visual styling such as tokens,
-   typography, icons, density, corners, and theme behavior.
+   typography, icons, density, corners, and theme behavior;
+10. document reusable components, interaction patterns, and responsive rules in
+    the chosen design system before implementing application screens; and
+11. only then create a dependency-ordered implementation plan with milestones,
+    prerequisites, acceptance checks, and safe parallel workstreams for owner
+    approval. Planning does not itself authorize implementation.

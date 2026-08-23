@@ -27,3 +27,21 @@
   change.
 - Never force-push or overwrite unrelated work to satisfy the automatic-push
   preference. Integrate concurrent remote changes safely.
+
+## UI and Implementation Workflow
+
+- Do not begin application implementation until the repo owner explicitly
+  approves it. Requirements discussion, design-system definition, and milestone
+  planning do not imply implementation approval.
+- Finish and obtain approval for the relevant product requirements, screens,
+  workflows, and cross-cutting states before selecting detailed UI styling.
+- Before implementing or changing application UI, read `UI_SPEC.md` and the
+  repository's approved design-system documentation and components. Reuse its
+  tokens, primitives, interaction patterns, and responsive rules instead of
+  creating parallel one-off UI.
+- When an approved pattern is missing, update the design system deliberately and
+  keep its documentation, reusable component, and affected screens consistent.
+- After the design system is approved and before implementation, create a
+  dependency-ordered milestone plan. Identify foundational prerequisites,
+  acceptance and verification gates, and workstreams which can safely proceed
+  in parallel without inventing conflicting interfaces or data contracts.

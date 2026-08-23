@@ -7,6 +7,13 @@ requirements, user experience, and implementation details will be refined only
 after discussion and agreement. Implementation must not begin until the repo
 owner explicitly approves the specification.
 
+After product and screen decisions are complete, the project must define and
+approve a shared design system before planning UI implementation. It must then
+turn the approved specifications into dependency-ordered milestones, identify
+prerequisites and safe parallel workstreams, and attach verification criteria.
+Neither design-system work nor milestone planning constitutes approval to begin
+application implementation.
+
 The terms in this document have the following meanings:
 
 - **Required**: agreed direction.
@@ -498,6 +505,13 @@ agreed.
   and desktop applications.
 - Offline, loading, saving, scanning, syncing, conflict, and error states must
   be visible and understandable to the user.
+- The About screen must show the release version and short Git commit hash, the
+  exact generative-AI disclosure from `README.md`, a local-first/no-tracking
+  privacy summary, application and third-party license information, and a link
+  to this repository.
+- PWA update checks must explicitly distinguish checking, up-to-date,
+  update-ready, offline, and failure modes. An update-ready state must offer an
+  explicit reload action and must not automatically reload over unsaved input.
 
 ## Architecture and Hosting
 
@@ -732,7 +746,7 @@ These questions must be resolved incrementally before implementation.
   deferred until every screen and workflow in `UI_SPEC.md` is approved.
 - Which mobile and desktop browsers and minimum versions must be supported?
 - What must work offline beyond browsing and manual entry?
-- How should install prompts, updates, and unsaved changes be communicated?
+- How should install prompts and other unsaved-change exits be communicated?
 - How will the app handle GitHub Pages' repository base path, direct loads, and
   service-worker scope?
 - The navigation structure, screen hierarchy, mobile and desktop layouts, and
@@ -757,4 +771,10 @@ These questions must be resolved incrementally before implementation.
 3. Define local persistence, Google Drive sync, and conflict behavior.
 4. Define the remaining Gemini model, privacy, and key UX details.
 5. Confirm React, browser support, and detailed PWA behavior.
-6. Agree on acceptance criteria and test tooling.
+6. Approve every screen and applicable cross-cutting UI/PWA state.
+7. Select and document the UI library, design system, tokens, reusable
+   components, responsive rules, and interaction patterns.
+8. Agree on acceptance criteria and test tooling.
+9. Break the approved scope into dependency-ordered milestones, prerequisites,
+   verification gates, and safe parallel workstreams.
+10. Obtain explicit owner approval before beginning implementation.

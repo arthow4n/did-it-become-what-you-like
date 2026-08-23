@@ -202,6 +202,38 @@ agreed.
   image for later submission.
 - `@google/genai`, used with a Google AI Studio API key, is the provisional
   default SDK and service for this feature.
+- The owner chooses which compatible Gemini model performs receipt extraction.
+  The application must use the SDK's model-listing API to refresh models
+  available to the entered API key rather than permanently hard-coding one
+  model name. It should recommend a suitable stable, fast model by default
+  while allowing the owner to select another compatible model.
+- A model appearing in the API's list is not sufficient proof that it supports
+  every required receipt feature or that it has free-tier quota. The model
+  picker must identify or validate support for image input, content generation,
+  and the required structured-output schema, explain incompatibility clearly,
+  and recover when a previously selected model is removed or deprecated.
+- Receipt extraction must use Gemini's schema-constrained structured output,
+  not parse an unconstrained prose response. The response schema must be
+  versioned, cover the agreed receipt parent, lines, uncertainty, and mismatch
+  information, and be validated again in the browser before review data is
+  accepted.
+- Runtime validation and static types must share a maintainable source of truth.
+  Zod 4 is the provisional validator when a schema library is useful; Zod 3
+  must not be introduced. JSON Schema sent to Gemini and the corresponding
+  runtime validator must be generated from one definition where practical, or
+  otherwise be tested to remain equivalent. No type assertion may substitute
+  for validating model output.
+- Receipt-image resizing and compression are enabled by default to reduce
+  upload size and latency while preserving text readability. The owner may
+  disable this preparation in settings and send the selected image unchanged.
+  Preparation happens only in memory, and neither the original nor prepared
+  image is retained after the request succeeds, fails, or is cancelled.
+- A failed, invalid, or incompatible extraction must save no receipt or expense
+  records. The UI must explain the failure and offer retry, choosing another
+  image or model, and switching to manual entry.
+- Gemini may be contacted only following an explicit owner action such as
+  **Scan with AI**. The application must never scan receipts automatically or
+  make background inference requests.
 
 ### Local Data, Export, and Google Drive
 
@@ -379,6 +411,13 @@ agreed.
 - The frontend must be deployable as a static site on GitHub Pages.
 - The project must use Deno 2 to execute all development and build tooling,
   including the frontend toolchain.
+- Application and test source code must use TypeScript 7 with strict type
+  checking. The project must pin the official stable `typescript@7` package,
+  and the canonical `deno task check` workflow must invoke that package's
+  `tsc` executable through Deno 2. Deno's separate experimental
+  `--unstable-tsgo` integration is neither required nor a substitute for this
+  dependency. Silently falling back to an older TypeScript checker is not
+  acceptable for the required type-checking gate.
 - `deno task` must be the canonical interface for project-owned development,
   formatting, linting, testing, building, and maintenance commands.
 - Development, testing, and deployment must not require a Node.js, npm, pnpm,
@@ -398,6 +437,11 @@ agreed.
 - Asynchronous workflows such as local persistence, Google Drive sync, invoice
   processing, retries, and conflict handling must be modeled explicitly with
   XState actors and statecharts.
+- The receipt-scanning actor must explicitly represent idle, optional in-memory
+  image preparation, requesting, validating structured output, review, and
+  failure modes. Retry, model/image replacement, cancellation, and manual-entry
+  events must be permitted only in the appropriate states, and no failed path
+  may persist draft receipt data as accepted expenses.
 - The synchronization actor must explicitly distinguish idle, offline,
   synchronizing, conflict-resolution, and error/retry modes. Unresolved conflict
   data must be durable rather than existing only in transient machine context.
@@ -519,8 +563,11 @@ These questions must be resolved incrementally before implementation.
 
 ### 6. Gemini API-Key Architecture
 
-- Which Gemini model, structured-output schema, image limits, failure behavior,
-  and usage controls are required?
+- What exact compatibility rules should the model picker apply when the model
+  API does not expose a required capability directly, and should the selected
+  model be a device-local or synchronized preference?
+- What image dimensions, byte limits, compression quality, and formats should
+  the default preparation policy use?
 
 ### 7. Filtering and Reporting
 

@@ -18,3 +18,4 @@ coverage/
 /test-results/
 /.chrome-for-testing/
 /.agent-browser/
+/.e2e-artifacts/

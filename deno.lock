@@ -9,6 +9,7 @@
     "npm:@types/react@19.2.18": "19.2.18",
     "npm:@vitejs/plugin-react@6.1.0": "6.1.0_vite@8.2.2",
     "npm:@xstate/react@6.1.0": "6.1.0_react@19.2.8_xstate@5.32.5",
+    "npm:axe-core@4.11.0": "4.11.0",
     "npm:big.js@7.0.1": "7.0.1",
     "npm:happy-dom@20.11.6": "20.11.6",
     "npm:lucide-react@1.33.0": "1.33.0_react@19.2.8",
@@ -1407,6 +1408,9 @@
       "dependencies": [
         "possible-typed-array-names"
       ]
+    },
+    "axe-core@4.11.0": {
+      "integrity": "sha512-ilYanEU8vxxBexpJd8cWM4ElSQq4QctCLKih0TSfjIfCQTeyH/6zVrmIJfLPrKTKJRbiG+cfnZbQIjAlJmF1jQ=="
     },
     "babel-plugin-polyfill-corejs2@0.4.17_@babel+core@7.29.7": {
       "integrity": "sha512-aTyf30K/rqAsNwN76zYrdtx8obu0E4KoUME29B1xj+B3WxgvWkp943vYQ+z8Mv3lw9xHXMHpvSPOBxzAkIa94w==",
@@ -3139,6 +3143,7 @@
       "npm:@types/react@19.2.18",
       "npm:@vitejs/plugin-react@6.1.0",
       "npm:@xstate/react@6.1.0",
+      "npm:axe-core@4.11.0",
       "npm:big.js@7.0.1",
       "npm:happy-dom@20.11.6",
       "npm:lucide-react@1.33.0",

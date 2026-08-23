@@ -705,8 +705,48 @@ Agreed behavior:
 
 ### Screen 11: Gemini Receipt-Scanning Settings
 
-**Status: open.** API-key replacement/removal, model selection, image
-preparation, and capability-validation states require separate approval.
+**Status: approved.**
+
+```text
++----------------------------------+
+| < Settings      Gemini scanning  |
+|                                  |
+| API key                          |
+| ••••••••••••ABCD        [Remove] |
+| Stored only on this device       |
+|                                  |
+| Model                            |
+| [ Search models...             ] |
+| Gemini … · Compatible            |
+| Gemini … · Incompatible          |
+| [ Refresh available models     ] |
+|                                  |
+| Image preparation          [ On ]|
+| Resize/compress before sending   |
+| Changeable while scanning        |
+|                                  |
+| [ Test configuration           ] |
++----------------------------------+
+```
+
+- A stored key is masked and has a single **Remove** action. There is no
+  redundant **Replace** action: to change the key, remove it and enter the new
+  key in the empty state. Removing it disables only AI scanning and leaves all
+  expense data untouched.
+- The model picker has type-ahead search because the returned model list may be
+  long. It identifies receipt-compatible choices and explains why an exposed
+  model is incompatible rather than treating every returned model as usable.
+- Refreshing models uses the entered key's available-model list. If the selected
+  model disappears or becomes incompatible, scanning pauses and asks for a new
+  selection instead of silently substituting one.
+- Image preparation is a device-local on/off default and can be overridden for
+  an individual scan.
+- **Test configuration** checks the key, chosen model, and required capabilities
+  without sending a real receipt or expense data.
+- The screen distinguishes an invalid key, unavailable or deprecated model,
+  quota/rate limit, offline state, and an otherwise unknown service error, and
+  gives a relevant corrective action for each. These are explicit workflow
+  modes rather than overlapping UI booleans.
 
 ### Screen 12: Import and Export
 

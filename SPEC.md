@@ -242,7 +242,8 @@ agreed.
   The application must use the SDK's model-listing API to refresh models
   available to the entered API key rather than permanently hard-coding one
   model name. It should recommend a suitable stable, fast model by default
-  while allowing the owner to select another compatible model.
+  while allowing the owner to select another compatible model. The picker must
+  provide type-ahead search because the returned list may be long.
 - A model appearing in the API's list is not sufficient proof that it supports
   every required receipt feature or that it has free-tier quota. The model
   picker must identify or validate support for image input, content generation,
@@ -267,6 +268,14 @@ agreed.
 - A failed, invalid, or incompatible extraction must save no receipt or expense
   records. The UI must explain the failure and offer retry, choosing another
   image or model, and switching to manual entry.
+- If a selected model disappears or becomes incompatible after the available
+  models are refreshed, receipt scanning must pause and require a new selection;
+  the application must not silently substitute another model.
+- Gemini settings must offer a configuration test which validates the entered
+  key, selected model, and required capabilities without sending a real receipt
+  or expense data. Errors must distinguish at least an invalid key, unavailable
+  or deprecated model, quota/rate limiting, offline state, and an unknown
+  service error, with a relevant corrective action for each.
 - Gemini may be contacted only following an explicit owner action such as
   **Scan with AI**. The application must never scan receipts automatically or
   make background inference requests.
@@ -580,14 +589,19 @@ agreed.
   `did-it-become-what-you-like`.
 - The key is device-specific and must never be synchronized or included in any
   data export. It is remembered automatically until the owner explicitly
-  replaces or deletes it; there is no separate remember-key or session-only
-  option in the initial release.
+  deletes it; there is no separate remember-key or session-only option in the
+  initial release. The settings UI shows a stored key in masked form with only
+  a **Remove** action. Changing it means removing it and then entering the new
+  key; there is no redundant **Replace** control. Removing the key disables only
+  AI scanning and does not remove expense data.
 - The selected Gemini model and image-preparation preference are also
   device-local because available models, keys, and device capabilities may
   differ. They are neither synchronized nor included in complete data exports.
+  Image preparation is an on/off device default which may be overridden for an
+  individual scan.
 - The UI must state that this locally stored key is not a browser secret and can
   be read by JavaScript executing on the same origin. It must provide clear
-  controls to replace and remove the key.
+  controls to enter and remove the key.
 - Starting AI scanning without a configured key must open an in-place quick
   setup rather than redirecting away from the selected receipt. The setup must
   use a masked API-key input with paste and explicit reveal controls, repeat the

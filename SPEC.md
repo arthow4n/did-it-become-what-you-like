@@ -587,6 +587,9 @@ These questions must be resolved incrementally before implementation.
 ### 8. Framework, PWA, and Browser Support
 
 - Should React be confirmed, or is another UI layer preferred?
+- Which UI component library or design system, if any, should provide the
+  agreed screens and detailed visual style? This decision is deliberately
+  deferred until every screen and workflow in `UI_SPEC.md` is approved.
 - Which mobile and desktop browsers and minimum versions must be supported?
 - What must work offline beyond browsing and manual entry?
 - How should install prompts, updates, and unsaved changes be communicated?

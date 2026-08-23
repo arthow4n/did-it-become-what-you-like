@@ -174,24 +174,38 @@ Agreed behavior:
 
 ### Screen 2: Add Choice
 
+**Status: approved.**
+
 ```text
 +----------------------------------+
-| Expenses                         |
+| Expenses screen, dimmed          |
 |                                  |
-|          Add an expense          |
-|                                  |
-|  [ Edit  Add manually          ] |
-|  [ Scan  Scan receipt with AI  ] |
-|                                  |
-|  Scanning sends the image and    |
-|  extracted content to Gemini.    |
-|                                  |
-|                    [ Cancel ]    |
+| +------------------------------+ |
+| | Add an expense             X | |
+| |                              | |
+| | [ +  Add manually          ] | |
+| |      Enter the details       | |
+| |                              | |
+| | [ Scan receipt with AI     ] | |
+| |      Use camera or an image  | |
+| |      Sends receipt to Gemini | |
+| +------------------------------+ |
 +----------------------------------+
 ```
 
-Open decisions: bottom sheet versus full screen, whether the camera can be
-launched directly by holding the Add button, and the final labels/icons.
+Agreed behavior:
+
+- Add Choice is a mobile bottom sheet over Expenses rather than a separate
+  otherwise-empty page. Desktop uses the equivalent compact modal or popover.
+- Manual entry is the first option and AI scanning is second. Both are large,
+  full-width, labeled touch targets and do not depend on icon recognition.
+- The AI choice includes a concise reminder that the receipt is sent to
+  Gemini. The first-ever scan still presents the fuller agreed disclosure.
+- The sheet closes through its labeled close control, browser Back, Escape, or
+  tapping outside. Keyboard focus is contained and restored appropriately.
+- When offline, manual entry remains enabled while AI scanning is visibly
+  disabled with an explanation that an internet connection is required.
+- No hidden long-press gesture is required for the initial release.
 
 ### Screen 3: Manual Expense
 
@@ -339,4 +353,8 @@ The UI should be agreed incrementally in this order:
 5. project and category organization;
 6. synchronization, conflicts, import/export, and deletion;
 7. first-use, installation, updates, offline, and other PWA states; and
-8. desktop adaptations and final accessibility/visual acceptance criteria.
+8. desktop adaptations and final accessibility/visual acceptance criteria;
+   and
+9. only after all screens and workflows are agreed, select the UI component
+   library/design system and settle detailed visual styling such as tokens,
+   typography, icons, density, corners, and theme behavior.

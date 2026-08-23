@@ -89,6 +89,9 @@ agreed.
 - A collection must have a default/local currency so expenses can be recorded
   naturally in the currency of that context without requiring immediate
   conversion to the owner's domestic currency.
+- The collection currency is a default, not a restriction. An individual entry
+  may override it, and one collection may contain entries in multiple
+  currencies.
 - Creating, viewing, editing, and deleting an expense offline are provisional
   baseline behaviors; exact validation, ordering, and deletion/undo behavior
   remain to be specified.
@@ -104,6 +107,12 @@ agreed.
 - Extracted discounts, refunds, cashback, bottle-deposit returns, and similar
   credits must be retained when present. They must not be discarded or forced
   into the same semantics as an ordinary expense.
+- The owner's previous application required folding discounts into an item's
+  final price. This was a tool limitation rather than a preferred model. The
+  provisional replacement is a receipt containing purchase lines and signed
+  adjustment lines which sum to its total. An adjustment may optionally refer
+  to an item but must also support receipt-wide discounts that cannot be
+  allocated honestly to one item.
 - Generated entries must be presented for user review and correction before
   they are saved.
 - `@google/genai`, used with a Google AI Studio API key, is the provisional
@@ -237,8 +246,8 @@ These questions must be resolved incrementally before implementation.
 
 ### 1. Expense Record and Invoice Semantics
 
-- Should discounts, refunds, cashback, and bottle-deposit returns be separate
-  entries, or adjustments linked to particular purchased items or a receipt?
+- Should the provisional receipt model be approved: separate purchase and
+  adjustment lines, with an optional item link for adjustments when known?
 - How are the receipt total, merchant, tax, tip, quantity, and shared receipt
   represented while every purchased item remains a separate entry?
 - What sign convention and terminology clearly represent money paid and money
@@ -257,8 +266,6 @@ These questions must be resolved incrementally before implementation.
 
 ### 3. Currency Behavior
 
-- Must every entry use its collection's currency, or is that currency only the
-  default which individual entries may override?
 - Is the domestic currency only the default for new entries, or must all
   expenses also show a converted domestic value?
 - If conversion is required, are exchange rates entered manually, fetched

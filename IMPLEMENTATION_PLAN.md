@@ -199,8 +199,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-001 — Prove and pin the Deno frontend/test toolchain
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `P-000`. The orchestrator
-  owns integration; the bounded worker is assigned in the Current Checkpoint.
+- **Status/dependencies:** `COMPLETE`; depends on `P-000`. Worker commit
+  `96240de` was integrated by `db1d9b4`; the required foundation validations
+  passed from `master`.
 - **Ownership:** `spikes/toolchain/**`, `deno.json`, `deno.lock`, toolchain-only
   scripts and a compatibility decision record; no product feature source.
 - **Scope/non-goals:** prove Deno 2 execution of strict `typescript@7`, React,
@@ -221,8 +222,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 #### F-002 — Prove Automerge and IndexedDB semantics
 
 - **Status/dependencies:** `IN_PROGRESS`; depends on `P-000`. The orchestrator
-  owns integration; the bounded worker is assigned in the Current Checkpoint.
-  This runs parallel with `F-001` and `F-003`.
+  owns integration; worker commit `bec8d08` is awaiting the second merge slot.
+  This ran in parallel with `F-001` and `F-003`.
 - **Ownership:** `spikes/automerge/**` and its decision record only.
 - **Scope/non-goals:** test current Automerge with Deno/browser build,
   repository-namespaced IndexedDB, stable IDs/decimal strings, concurrent edits,
@@ -1110,9 +1111,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   eight Markdown fence lines are balanced; `git status --short --branch` is
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Active wave:** `F-001`, `F-002`, and `F-003` are `IN_PROGRESS` under the
-  orchestrator's integration ownership. They run in separate worktrees and will
-  be integrated in that order after each bounded worker reports exact evidence.
+- **Active wave:** `F-001` is `COMPLETE`; `F-002` and `F-003` remain under the
+  orchestrator's integration ownership. They ran in separate worktrees and are
+  integrated in the recorded order after exact evidence review.
 - **Active worktrees and dispatch order:**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1124,16 +1125,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   - `F-002`: branch `task/f-002-automerge`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-002-automerge`,
     base `43998c4`; ownership `spikes/automerge/**` and its decision record;
-    agent `Kuhn` (`01a03092-6002-7bd1-85dc-f33d89f800ac`); merge second.
+    agent `Kuhn` (`01a03092-6002-7bd1-85dc-f33d89f800ac`); local commit
+    `bec8d08` (`Prove Automerge IndexedDB semantics`) is clean and awaiting the
+    second merge slot.
   - `F-003`: branch `task/f-003-browser-integrations`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-003-browser-integrations`,
     base `43998c4`; ownership `spikes/browser-integrations/**` and its decision
     record; agent `Popper` (`01a03092-6086-7b42-ade7-dc16d28f1aef`); local
     commit `c6b2f8f` (`Prove browser integrations`) is clean and awaiting the
     third merge slot.
-- **Interrupted tasks:** none. `F-001` and `F-002` remain active; `F-003` has
+- **Interrupted tasks:** none. `F-001` is integrated and complete; `F-002` has
   completed its bounded worker handoff but is not integrated or complete until
-  the ordered review and merge finish.
+  the ordered review and merge finish; `F-003` remains clean and unintegrated.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1151,16 +1154,30 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   canonical because a transitive `@types/node` declaration fails; the required
   TypeScript 7 checker passes. Generated `node_modules` and Playwright browser
   binaries are ignored/external and were not committed.
+- **F-001 integration evidence:** merge commit `db1d9b4` is currently one local
+  commit ahead of `origin/master`; from `master`, `deno task verify:toolchain`
+  passed TypeScript 7 version and strict-failure proofs, formatting, lint,
+  strict check, 3 unit/component tests, Vite/PWA build, Playwright Chromium
+  installation, and the Playwright smoke page.
+- **F-002 handoff evidence:** local commit `bec8d08` passed `deno run -A
+  spikes/automerge/verify.ts`; the seeded `--seed=20260823 --rounds=64` run
+  passed twice; `deno fmt --check spikes/automerge`, `deno lint
+  spikes/automerge`, `deno check --config spikes/automerge/deno.json
+  spikes/automerge/verify.ts spikes/automerge/browser-fixture.ts`, browser
+  bundling with `--platform browser --no-check`, `git diff --check`, and
+  `git diff --cached --check` all passed. Native browser runtime and browser
+  bundle `--check=all` are unavailable due to documented DOM/Node declaration
+  conflicts.
 - **Dispatch evidence:** all three agents received bounded prompts with their
   owned files, non-goals, acceptance criteria, and exact validation/handoff
   requirements; no worker is permitted to edit this ledger or push `master`.
 - **Known technical gates, not owner ambiguities:** exact pinned dependencies and
   E2E invocation (`F-001`); Automerge proof (`F-002`); Google/image/PWA browser
   proof (`F-003`); exact agent-browser binary/Chromium pins (`F-005`).
-- **Current task:** foundation compatibility wave (`F-001`–`F-003`) is active.
-- **Blocker:** none. The next action is to inspect and integrate `F-001`, then
-  receive `F-002` and integrate it before reviewing and integrating `F-003` in
-  the recorded order.
+- **Current task:** foundation compatibility wave; `F-001` is complete and
+  `F-002` is next for inspection and integration.
+- **Blocker:** none. The next action is to inspect and integrate `F-002`, then
+  review and integrate `F-003` in the recorded order, followed by `R-100`.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

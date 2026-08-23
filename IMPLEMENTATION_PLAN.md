@@ -285,8 +285,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-005 — Establish test, fake-service, and visual tooling
 
-- **Status/dependencies:** `READY`; depends on `F-001`, `F-003`, `F-004`, all
-  complete. The orchestrator will assign this tooling task next.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `F-001`, `F-003`, `F-004`,
+  all complete. The orchestrator owns integration; the bounded worker and
+  worktree are recorded in the Current Checkpoint.
 - **Ownership:** `src/test-support/**`, test configuration, `e2e/support/**`,
   visual scripts; no production behavior.
 - **Scope/non-goals:** provide deterministic clock/ID/network fixtures, fake
@@ -1118,8 +1119,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   eight Markdown fence lines are balanced; `git status --short --branch` is
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Active wave:** `F-001` through `F-004` are `COMPLETE`. `F-005` is the next
-  dependency-ready tooling task.
+- **Active wave:** `F-001` through `F-004` are `COMPLETE`; `F-005` is the active
+  test, fake-service, and visual-tooling task.
 - **Active worktrees and dispatch order:**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1148,8 +1149,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     `Halley` (`01a030a7-b8c0-70f0-91e0-c8d4998a1fac`); worker commits
     `d398608` and `fe38734` are integrated as `612f5c5` and `3f40033`; worktree
     is clean and preserved pending later cleanup.
+  - `F-005`: branch `task/f-005-tooling`, worktree
+    `~/git/worktrees/did-it-become-what-you-like-f-005-tooling`, base `f7cd08d`;
+    ownership `src/test-support/**`, test configuration, `e2e/support/**`, and
+    visual scripts; agent pending dispatch; merge after the bounded review.
 - **Interrupted tasks:** none. F-001 through F-004 are integrated and complete;
-  no active foundation worker remains.
+  F-005 is the only active foundation task.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1211,9 +1216,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   pinned Deno/TypeScript/Playwright commands; F-005 must pin agent-browser and
   Chrome for Testing; Automerge's alpha adapter and browser type-check
   limitation remain recorded for later review.
-- **Current task:** `F-005` test, fake-service, and visual tooling is next.
-- **Blocker:** none. The next action is to create and record the F-005 worktree,
-  then dispatch its bounded worker.
+- **Current task:** `F-005` test, fake-service, and visual tooling is active.
+- **Blocker:** none. The next action is to dispatch the bounded F-005 worker in
+  its recorded worktree, then inspect and integrate its commit.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

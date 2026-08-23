@@ -450,6 +450,10 @@ agreed.
   will enter their own Google AI Studio API key at runtime, and the application
   will persist it in `localStorage` under a key namespaced with
   `did-it-become-what-you-like`.
+- The key is device-specific and must never be synchronized or included in any
+  data export. It is remembered automatically until the owner explicitly
+  replaces or deletes it; there is no separate remember-key or session-only
+  option in the initial release.
 - The UI must state that this locally stored key is not a browser secret and can
   be read by JavaScript executing on the same origin. It must provide clear
   controls to replace and remove the key.
@@ -459,8 +463,12 @@ agreed.
   surface.
 - This accepted key design does not currently justify a Deno Deploy backend. It
   may be revisited if the threat model or deployment scope changes.
-- Sending invoice images and extracted content to an LLM provider must be made
-  clear to the user before submission.
+- A custom domain is not required. Deployment uses the repository's standard
+  GitHub Pages URL, with explicit acceptance that other projects on the same
+  owner origin may share the browser-storage security boundary.
+- Before first use, the application must explain that invoice images and their
+  extracted content are sent to Google Gemini. Later scan flows retain a visible
+  reminder without requiring repetitive confirmation before every scan.
 - The public PWA requires no separate application login. Local data is available
   only in its browser origin, while Google OAuth independently protects Drive
   synchronization.
@@ -511,18 +519,6 @@ These questions must be resolved incrementally before implementation.
 
 ### 6. Gemini API-Key Architecture
 
-- Should the accepted `localStorage` default remain, or should the application
-  store only passphrase-encrypted key ciphertext in IndexedDB and require an
-  unlock each browser session? Neither browser-only option protects the key
-  from malicious JavaScript running in the application's origin after unlock.
-- Is a WebAuthn/passkey-assisted key-wrapping option worth its additional
-  compatibility, recovery, and UX complexity?
-- Should the application use a dedicated custom domain to isolate its browser
-  origin from the owner's other GitHub Pages projects?
-- Should the API key remain device-specific, or be manually entered on each
-  device? It must not be included in ordinary expense-data sync or exports.
-- Should the user opt into remembering the key, or is persistent
-  `localStorage` always expected after entry?
 - Which Gemini model, structured-output schema, image limits, failure behavior,
   and usage controls are required?
 

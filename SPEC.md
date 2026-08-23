@@ -53,9 +53,13 @@ agreed.
 - The owner currently uses a similar expense application, but it is simpler and
   requires more manual work. Fast invoice-assisted capture and richer review
   should reduce that friction without making ordinary manual entry complicated.
-- The product name provisionally expresses reflection on whether past spending
-  became something the owner values or likes. The exact intended meaning and
-  whether it implies an explicit product feature remain open.
+- The product name is philosophical. It does not imply a feature for rating or
+  judging whether individual purchases were worthwhile.
+- The essential review experience is expense lists and spending totals broken
+  down by category and selected day, month, or year.
+- Comparisons and trends between periods are not required for the initial
+  release. They are possible future enhancements, so the data model must retain
+  clean historical fields and must not prevent adding them later.
 
 ## Required Product Capabilities
 
@@ -303,8 +307,10 @@ These questions must be resolved incrementally before implementation.
 - Do day/month/year filters mean a chosen calendar period, rolling periods, or
   both?
 - Can filters be combined across date, category, currency, and collection/tag?
-- Are totals, domestic-currency totals, charts, search, sorting, or saved filter
-  views required?
+- Which list search and sorting controls are required for the initial release?
+- Comparisons, trends, and charts are post-MVP possibilities. What historical
+  fields or invariants must be retained now to support them later without
+  complicating the initial UI?
 - What timezone defines day/month/year boundaries?
 
 ### 9. Framework, PWA, and Browser Support

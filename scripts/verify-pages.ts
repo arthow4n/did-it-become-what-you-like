@@ -47,6 +47,7 @@ async function assertFile(path: string): Promise<void> {
 await runBuild();
 
 const index = await read(`${DIST}/index.html`);
+const sourceIndex = await read("index.html");
 const manifest = JSON.parse(await read(`${DIST}/manifest.webmanifest`)) as {
   start_url?: string;
   scope?: string;
@@ -71,6 +72,14 @@ assert(
 assert(
   !index.includes('src="/assets/'),
   "index.html must not contain an origin-root asset URL",
+);
+assert(
+  !sourceIndex.includes("unsafe-inline"),
+  "source CSP must not allow unsafe-inline",
+);
+assert(
+  !index.includes("unsafe-inline"),
+  "built CSP must not allow unsafe-inline",
 );
 assert(
   manifest.start_url === BASE_PATH,

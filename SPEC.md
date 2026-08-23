@@ -70,10 +70,18 @@ agreed.
 
 - An expense must support at least:
   - date;
-  - description;
   - amount and currency; and
   - category.
+- An expense may additionally contain:
+  - merchant/shop; and
+  - description.
+- Merchant/shop and description are separate optional fields. Merchant/shop
+  should preserve the exact merchant branch or location when known rather than
+  reducing it to only a generic chain name.
 - Categories must be fully customizable.
+- Categories are shared globally across collections/projects because the owner
+  generally uses the same category set in every context. Switching projects
+  isolates expense views but does not create a separate category catalogue.
 - The expense view must support filtering by:
   - day, month, and year; and
   - category.
@@ -104,6 +112,9 @@ agreed.
   and selecting/importing an existing image from the device.
 - The LLM should produce draft expense entries for the relevant items on the
   invoice to reduce manual entry.
+- The future extraction prompt and review model must request and preserve the
+  most specific merchant/shop identity visible on the receipt, including its
+  branch or location when available.
 - A scanned receipt or invoice must produce a separate draft entry for every
   purchased line item rather than only one entry for the receipt total.
 - Extracted discounts, refunds, cashback, bottle-deposit returns, and similar

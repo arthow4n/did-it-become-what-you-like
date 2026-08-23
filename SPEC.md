@@ -318,6 +318,32 @@ and multi-device synchronization according to the agreed sync design.
 - Gemini may be contacted only following an explicit owner action such as
   **Scan with AI**. The application must never scan receipts automatically or
   make background inference requests.
+- A receipt request may send only the selected receipt image, the versioned
+  extraction instructions/schema, active category stable IDs and names, device
+  locale, and the current project's default currency code. The API credential
+  is necessarily used to authorize that request. Expense history, project
+  names, merchant history, Google Drive contents, other device identifiers or
+  details, and sync metadata must never be included.
+- The application does not attempt automatic visual redaction because an
+  unreliable redactor could either leak content or remove information required
+  for extraction. The owner must see the selected image before transmission and
+  may use it, choose another image, or retake the photo.
+- Image privacy sanitization is mandatory and separate from optional image
+  preparation. EXIF and other embedded metadata, including location and device
+  details, must always be removed in memory before transmission. Turning
+  preparation off preserves the source pixel dimensions and avoids optional
+  resize/compression, but it never disables metadata removal.
+- A model whose returned metadata does not establish every required receipt
+  capability is labeled **Needs test**, not assumed compatible. Its synthetic
+  configuration test must pass for the current key and model before that model
+  can be used to scan a real receipt. Test evidence is device-local and must be
+  invalidated when the relevant key, model, schema/compatibility version, or
+  capability requirements change.
+- Exact preparation dimensions, byte targets, compression quality, and accepted
+  browser-decodable formats are compatibility-tuning outputs rather than owner
+  preferences. The implementation-plan compatibility task must derive them from
+  then-current official Gemini limits and verify them with representative
+  receipt-legibility tests before the scanning feature is accepted.
 
 ### Local Data, Export, and Google Drive
 
@@ -872,14 +898,15 @@ These questions must be resolved incrementally before implementation.
 
 ### 5. Google Access and Privacy
 
-- What data may be sent to Gemini, and what must be redacted or confirmed?
+- There are no remaining MVP decisions in this section. The permitted Gemini
+  request data, mandatory metadata sanitization, owner preview, and excluded
+  local/synchronized data are specified above.
 
 ### 6. Gemini API-Key Architecture
 
-- What exact compatibility rules should the model picker apply when the model
-  API does not expose a required capability directly?
-- What image dimensions, byte limits, compression quality, and formats should
-  the default preparation policy use?
+- There are no remaining owner-preference decisions in this section. Unknown
+  model capabilities require a passing synthetic test, while exact image
+  preparation thresholds are an evidence-based compatibility-task output.
 
 ### 7. Filtering and Reporting
 

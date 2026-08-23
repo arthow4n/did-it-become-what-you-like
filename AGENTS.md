@@ -12,7 +12,7 @@
   when different interpretations would meaningfully change the result.
 - Keep questions and decision prompts in small, prioritized batches that are
   easy to read and answer in a terminal.
-- When gathering requirements, normally ask no more than five numbered
+- When gathering requirements, normally ask no more than ten numbered
   questions in one batch. Use fewer when the topic benefits from a tighter
   exchange.
 - Give each question a concise explanation, a short concrete example when it

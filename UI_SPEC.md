@@ -351,13 +351,22 @@ Agreed behavior:
 - **Take photo** invokes the device's native camera directly. The initial
   release does not build a custom camera viewfinder. **Choose image** uses the
   device's ordinary image picker.
-- The chosen image is previewed before transmission and has clear Replace and
-  Remove actions.
+- The chosen image is previewed before transmission. **Scan with AI** is the
+  explicit use-and-send action; **Choose another**, **Retake**, and **Remove**
+  are available as applicable instead of one ambiguous generic Replace action.
 - The selected Gemini model and image-preparation status are summarized on the
   screen. **Options** expands model and preparation controls for this scan;
   persistent defaults also remain available in Settings.
 - The concise Gemini transmission reminder remains visible. First use still
   requires the fuller agreed disclosure.
+- That disclosure and the detailed Data and privacy screen state exactly what
+  may be sent: this receipt image, the extraction schema/instructions, active
+  category IDs/names, device locale, and project currency code. They also state
+  that expense history, project names, Drive data, other device identifiers or
+  details, and sync metadata are excluded.
+- EXIF and other embedded metadata are always removed before sending. Disabling
+  image preparation disables optional resize/compression only; the UI must not
+  imply that privacy sanitization is disabled.
 - When offline, scanning is disabled with an explanation while manual entry
   remains reachable. No selected image is queued for later transmission.
 - With no API key, activating **Scan with AI** opens an in-place setup sheet
@@ -800,11 +809,15 @@ Agreed behavior:
 - The model picker has type-ahead search because the returned model list may be
   long. It identifies receipt-compatible choices and explains why an exposed
   model is incompatible rather than treating every returned model as usable.
+- When listing metadata cannot establish the required capabilities, the model
+  is labeled **Needs test** and remains unavailable for receipt scanning until
+  its synthetic configuration test passes on this device.
 - Refreshing models uses the entered key's available-model list. If the selected
   model disappears or becomes incompatible, scanning pauses and asks for a new
   selection instead of silently substituting one.
 - Image preparation is a device-local on/off default and can be overridden for
-  an individual scan.
+  an individual scan. Turning it off retains source pixel dimensions and skips
+  optional resize/compression, while mandatory metadata removal still occurs.
 - **Test configuration** checks the key, chosen model, and required capabilities
   without sending a real receipt or expense data.
 - The screen distinguishes an invalid key, unavailable or deprecated model,

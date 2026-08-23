@@ -1158,8 +1158,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     worker commit `0c6787f` is integrated by `f22c7c3`; the worktree is clean
     and preserved pending later final-wave cleanup; the worker is shut down.
 - **Interrupted tasks:** none. F-001 through F-005 are integrated and complete;
-  the three R-100 scoped-fix workers are active; no unintegrated worker changes
-  are yet reported.
+  all scoped-fix workers have completed; no unintegrated worker changes remain.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1233,6 +1232,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   full command matrix passed, including 15 tests, 2 integration tests, 1
   component test, 2 E2E tests, build, Pages/CI/toolchain validators, browser
   install/visual smoke, and a deliberate nonzero redacted failure path.
+- **R-100 post-fix evidence:** from `master`, the full canonical matrix passed:
+  `deno task fmt:check`, `deno task lint`, `deno task check`, `deno task test`
+  (15 passed), `deno task test:integration` (2 passed), `deno task
+  test:component` (1 passed), `deno task test:e2e` (2 passed), `deno task build`,
+  `deno task verify:pages`, `deno task verify:ci`, `deno task
+  verify:toolchain`, `deno task browser:install`, `deno task browser:verify`,
+  `deno audit --frozen`, and `git diff --check`. Both frozen seeded F-002
+  repetitions (`--seed=20260823 --rounds=64`) passed 12/12; F-003 passed
+  11/11; and the intentional failure exited 1 with `[REDACTED]` credentials.
 - **R-100 fix ownership:** the lockfile/frozen spike fix belongs to F-002;
   Deno pin, CSP/validator, and action-SHA fixes belong to F-004; native browser
   platform metadata/decision belongs to F-005. These are review fixes only and
@@ -1246,6 +1254,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `~/git/worktrees/did-it-become-what-you-like-f-005-tooling`. Ownership is
   disjoint; workers must commit scoped fixes and must not edit this ledger or
   push `master`.
+- **R-100 scoped-fix integration:** Copernicus committed `4165ac1` (frozen
+  Automerge main/browser lockfiles), Jason committed `7de833f` (pinned Deno and
+  immutable Actions, CSP alignment and validator assertions), and Arendt
+  committed `59683e2` (Linux ARM64 explicit unavailability); all three commits
+  were reviewed and cherry-picked as `3157d31`, `aca5ac5`, and `cd3ec8f`.
+  All scoped-fix workers completed and were shut down; their worktrees remain
+  clean and preserved.
 - **Dispatch evidence:** the three compatibility agents and `F-004` worker
   received bounded prompts with their owned files, non-goals, acceptance
   criteria, and exact validation/handoff requirements; no worker is permitted
@@ -1254,16 +1269,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later review;
   R-100 must independently review the F-005 native browser metadata and
   installer boundaries.
-- **Current task:** `R-100` scoped-fix wave is in progress for the five recorded
-  findings; the independent review is complete but approval remains blocked.
+- **Current task:** `R-100` closure review is next after the five recorded
+  findings were fixed and the complete post-fix foundation matrix passed.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** R-100 approval is blocked by the recorded severity-2 findings
-  (and two severity-3 hardening findings). The next action is to apply the
-  disjoint F-002/F-004/F-005 fixes, then dispatch a fresh read-only closure
-  review and rerun the complete foundation gate before proceeding to M2.
+- **Blocker:** none after the scoped fixes. The next action is to dispatch a
+  fresh read-only R-100 closure review; if it approves, mark R-100 complete and
+  proceed to the M2 dependency-ready tasks.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

@@ -798,6 +798,9 @@ That file must contain:
   test layer and the exact tests delivered with that task;
 - explicit parallel lanes and collision rules so sub-agents are dispatched only
   where work is genuinely independent;
+- a worktree policy identifying when isolated worktrees are worthwhile, their
+  disjoint file/contract ownership, the integration owner and merge order, and
+  how unintegrated work is protected;
 - the current checkpoint, completed evidence, blockers, and next
   dependency-ready work;
 - a sub-agent orchestration procedure which uses bounded tasks, minimizes

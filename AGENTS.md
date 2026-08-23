@@ -61,3 +61,11 @@
 - Keep E2E coverage deliberately small and limited to critical journeys and
   browser-integration seams which unit, actor, and component tests cannot prove.
   Do not duplicate the same state-transition assertions at every test layer.
+- Git worktrees may be used for concurrent implementation agents when isolation
+  materially reduces file collisions or integration risk. Do not create them
+  for ordinary documentation, sequential work, or concurrency without genuinely
+  independent dependency-ready tasks.
+- When worktrees are used, the orchestration plan must assign disjoint ownership,
+  name one integration owner, define merge and verification order, and preserve
+  every unintegrated change. Never remove a worktree containing uncommitted or
+  unmerged work.

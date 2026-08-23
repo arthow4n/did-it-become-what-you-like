@@ -54,6 +54,12 @@
   state, update it after every completed or blocked task, and resume from the
   next dependency-ready item. It must not treat a stale checklist as stronger
   evidence than the actual repository.
+- After a rate limit, lost session, machine restart, or interrupted sub-agent,
+  follow the Interruption and Recovery Protocol in `IMPLEMENTATION_PLAN.md`
+  before dispatching or editing. Audit `master`, its upstream, every branch and
+  worktree, uncommitted changes, unpushed commits, recorded validations, and
+  stale `IN_PROGRESS` ownership. Preserve all work and never guess that a task
+  is complete merely because a commit or checklist entry exists.
 - Every implementation task must include and pass its appropriate tests before
   it is marked complete. Prefer pure unit tests and XState actor/machine tests
   for business rules and workflows; use component unit tests for rendering,

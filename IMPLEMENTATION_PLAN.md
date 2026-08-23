@@ -22,6 +22,10 @@ blocked specification issue, not permission to choose whichever text is easier.
 - `READY`: every dependency is complete, but work has not begun.
 - `PENDING`: a dependency is incomplete.
 - `IN_PROGRESS`: exactly one integration owner is accountable for the task.
+- `INTERRUPTED`: work may exist, but its previous agent/session is no longer
+  reliably active. The Current Checkpoint must identify the branch/worktree,
+  last known evidence, and exact recovery action. This is resumable state, not
+  a product blocker.
 - `BLOCKED`: a concrete unresolved owner decision or failed prerequisite is
   recorded. Difficulty alone is not a blocker.
 
@@ -955,6 +959,93 @@ one integration task owns those collision points.
 - Never force-push. Reconcile remote changes, actual Git history, tests, and the
   recorded checkpoint before resuming. A checkbox is not evidence.
 
+## Interruption and Recovery Protocol
+
+This protocol applies to rate limits, context/session loss, terminal closure,
+machine restart, network failure during push, interrupted sub-agents, and any
+other case where the recorded integration owner may no longer be active. An
+interruption does not broaden authorization, justify destructive cleanup, or
+turn incomplete work into a completed task.
+
+### Before a predictable interruption
+
+When a rate/token limit or shutdown is approaching, the orchestrator must stop
+dispatching new work and perform the safest possible handoff:
+
+1. Collect each active worker's task ID, branch/worktree, diff/commit state,
+   exact validation commands/results, and next intended action. Do not wait so
+   long that the handoff itself is lost.
+2. Commit and push only a coherent increment which passes the mandatory
+   pre-commit baseline and its additive layer checks. Never create a knowingly
+   failing “WIP” commit merely to empty a worktree.
+3. Preserve incomplete or unvalidated changes in their existing named worktree.
+   Record its absolute path, branch, base and latest commit, `git status`/diff
+   summary, files owned, tests already run, failures or unknowns, and the first
+   recovery command. Do not stash, discard, relocate, or delete it.
+4. Update this ledger: keep genuinely active owned work `IN_PROGRESS`, mark work
+   whose agent/session will stop as `INTERRUPTED`, record any local commit whose
+   push is still pending, and identify the next safe recovery action. Commit and
+   push that checkpoint when possible.
+5. If the checkpoint cannot be pushed, leave a local checkpoint commit when it
+   is coherent and record/preserve it. The next session must compare local and
+   remote history rather than assuming `origin/master` contains the handoff.
+
+### Mandatory audit after any interruption
+
+A fresh or resumed orchestrator performs this read-only audit before changing
+files, creating worktrees, reassigning agents, pulling, merging, or marking a
+task complete:
+
+```text
+git status --short --branch
+git log --oneline --decorate -n 20
+git branch -vv
+git worktree list --porcelain
+git rev-list --left-right --count origin/master...master
+```
+
+When network access is available, run `git fetch --prune origin` and repeat the
+upstream comparison. For every recorded or discovered worktree, run its own
+`git status --short --branch`, inspect staged and unstaged diffs, list commits
+not integrated into `master`, and compare them with the task's allowed ownership.
+Also check whether any previously launched process or agent is actually still
+running; a stale `IN_PROGRESS` label is not proof of a live owner.
+
+Then reconcile this ledger with evidence:
+
+- A clean, pushed integrated commit is not `COMPLETE` until the task's required
+  validations and review evidence are present; rerun missing or stale checks.
+- A committed worker branch remains unintegrated work. Review and verify it in
+  the recorded merge order; never recreate the same task in parallel.
+- An uncommitted worktree is preserved and inspected. Resume the same bounded
+  task there, or reassign that exact worktree with a precise handoff. Never
+  delete, overwrite, or independently reimplement its changes.
+- A dirty `master` is treated as recovery work of unknown completeness. Inspect
+  ownership and diffs before continuing; do not reset, checkout over, stash, or
+  commit it until its task and validation state are understood.
+- A local commit not on `origin/master` is inspected and validated, then pushed
+  normally. If remote history advanced, integrate it safely without force-push.
+- A task recorded `IN_PROGRESS` or `INTERRUPTED` with no surviving work is moved
+  back to `READY` only when all dependencies remain complete and no output was
+  lost; otherwise record the exact missing evidence or genuine blocker.
+- Surviving worktree paths can change after a machine rebuild. Locate by branch
+  and commit, record the new absolute path, and never assume absence from the
+  old path means the work was safely integrated.
+
+Before resuming edits, update the Current Checkpoint with actual HEAD/upstream,
+active and interrupted tasks, every surviving branch/worktree, validation
+evidence, unpushed commits, and one exact next action. Push this reconciliation
+checkpoint if it changes shared state. Only then resume the dependency graph.
+
+### Recovery completion
+
+Recovery is complete when every discovered change is assigned exactly once,
+no worker unknowingly duplicates another branch, the ledger matches Git and
+test evidence, and the next action is dependency-safe. The normal implement,
+review, validate, commit, push, and checkpoint loop then continues. Rate limits
+and restarts are operational interruptions, not reasons to mark a task
+`BLOCKED`, skip review, weaken tests, or request product decisions.
+
 ## Review and Fix Loop
 
 For every implementation task:
@@ -1014,9 +1105,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   proof (`F-003`); exact agent-browser binary/Chromium pins (`F-005`).
 - **Blocker:** explicit owner authorization in a new implementation session.
 
-Every checkpoint update must record completed task IDs, integrated commit hashes,
-verification commands/results, active worktrees/agents, unresolved findings or
-blockers, and the exact next dependency-ready tasks.
+Every checkpoint update must record completed, active, and interrupted task IDs;
+integrated and unpushed commit hashes; verification commands/results; active or
+preserved worktrees/agents; unresolved findings or blockers; recovery notes when
+applicable; and the exact next dependency-ready task or recovery action.
 
 ## Ready-to-Use Orchestration Prompt
 
@@ -1029,7 +1121,10 @@ Before changing anything:
 1. Read IMPLEMENTATION_PLAN.md completely.
 2. Reconcile its Current Checkpoint with the actual branch,
    origin, commits, worktrees, files, and test results. Actual repository state
-   wins; update the ledger if stale. Preserve all uncommitted/unintegrated work.
+   wins; update the ledger if stale. If any prior session, machine, push, or
+   worker was interrupted—or the state does not match exactly—execute the full
+   Interruption and Recovery Protocol before editing or dispatching. Preserve
+   all uncommitted/unintegrated work.
 3. Read AGENTS.md, SPEC.md, UI_SPEC.md, DESIGN_SYSTEM.md, README.md, and every
    applicable skill instruction completely before selecting or changing a task.
 4. Confirm that the owner has explicitly authorized implementation. If not,
@@ -1061,4 +1156,8 @@ required:
 If blocked by a real owner decision, preserve and push all safe completed work,
 record the exact blocker and next possible task in IMPLEMENTATION_PLAN.md, and
 ask one concise numbered decision batch. Otherwise keep advancing the graph.
+If interrupted by a rate limit, session loss, machine restart, failed push, or
+worker disappearance, do not call it a product blocker: preserve the work,
+record `INTERRUPTED` state when possible, and make the next session begin with
+the Interruption and Recovery Protocol.
 ```

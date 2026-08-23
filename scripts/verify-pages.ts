@@ -1,6 +1,7 @@
 /// <reference path="./deno.d.ts" />
 
 import { hashRouteUrl } from "../src/app/routing.ts";
+import { assertRestrictiveCsp } from "../spikes/browser-integrations/pwa.ts";
 import {
   isWithinRepositoryServiceWorkerScope,
   serviceWorkerRegistrationTarget,
@@ -44,6 +45,15 @@ async function assertFile(path: string): Promise<void> {
   }
 }
 
+function extractCsp(html: string, source: string): string {
+  const metaTag = html.match(/<meta\b[^>]*>/gi)?.find((tag) =>
+    /\bhttp-equiv=["']Content-Security-Policy["']/i.test(tag)
+  );
+  const csp = metaTag?.match(/\bcontent=(["'])(.*?)\1/i)?.[2];
+  assert(csp, `${source} must contain a Content-Security-Policy meta tag`);
+  return csp;
+}
+
 await runBuild();
 
 const index = await read(`${DIST}/index.html`);
@@ -73,14 +83,8 @@ assert(
   !index.includes('src="/assets/'),
   "index.html must not contain an origin-root asset URL",
 );
-assert(
-  !sourceIndex.includes("unsafe-inline"),
-  "source CSP must not allow unsafe-inline",
-);
-assert(
-  !index.includes("unsafe-inline"),
-  "built CSP must not allow unsafe-inline",
-);
+assertRestrictiveCsp(extractCsp(sourceIndex, "source index.html"));
+assertRestrictiveCsp(extractCsp(index, "built dist/index.html"));
 assert(
   manifest.start_url === BASE_PATH,
   "manifest start_url must be the repository base path",

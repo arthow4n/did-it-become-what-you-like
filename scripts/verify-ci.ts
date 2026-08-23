@@ -10,8 +10,14 @@ const workflows = [ci, pages];
 
 for (const [index, workflow] of workflows.entries()) {
   assert(
-    workflow.includes("denoland/setup-deno@v2"),
-    `workflow ${index + 1} must install Deno through the official setup action`,
+    workflow.includes(
+      "denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3",
+    ),
+    `workflow ${index + 1} must use the reviewed immutable Deno setup action`,
+  );
+  assert(
+    workflow.includes("deno-version: v2.9.5"),
+    `workflow ${index + 1} must pin Deno to v2.9.5`,
   );
   assert(
     !/\b(?:npm|pnpm|yarn|bun)\b/i.test(workflow),
@@ -48,12 +54,25 @@ assert(
   "Pages deployment must verify the production artifact before upload",
 );
 assert(
-  pages.includes("actions/upload-pages-artifact@v3"),
-  "Pages deployment must upload the verified dist artifact",
+  pages.includes(
+    "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2",
+  ) &&
+    ci.includes(
+      "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2",
+    ),
+  "workflows must use the reviewed immutable checkout action",
 );
 assert(
-  pages.includes("actions/deploy-pages@v4"),
-  "Pages deployment must use the official deployment action",
+  pages.includes(
+    "actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1",
+  ),
+  "Pages deployment must upload the verified dist artifact with the reviewed action",
+);
+assert(
+  pages.includes(
+    "actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5",
+  ),
+  "Pages deployment must use the reviewed immutable deployment action",
 );
 assert(
   /deploy:\s*\n(?:.|\n)*?permissions:\s*\n\s+pages:\s+write\s*\n\s+id-token:\s+write/m

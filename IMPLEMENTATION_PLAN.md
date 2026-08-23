@@ -1261,6 +1261,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   were reviewed and cherry-picked as `3157d31`, `aca5ac5`, and `cd3ec8f`.
   All scoped-fix workers completed and were shut down; their worktrees remain
   clean and preserved.
+- **R-100 closure dispatch:** fresh independent reviewer Russell
+  (`01a030e8-5ae2-7633-a97a-75eb8fd4dddc`) is auditing the post-fix master
+  read-only and will rerun the complete foundation matrix before approval.
 - **Dispatch evidence:** the three compatibility agents and `F-004` worker
   received bounded prompts with their owned files, non-goals, acceptance
   criteria, and exact validation/handoff requirements; no worker is permitted
@@ -1269,14 +1272,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later review;
   R-100 must independently review the F-005 native browser metadata and
   installer boundaries.
-- **Current task:** `R-100` closure review is next after the five recorded
+- **Current task:** `R-100` closure review is in progress after the five recorded
   findings were fixed and the complete post-fix foundation matrix passed.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none after the scoped fixes. The next action is to dispatch a
-  fresh read-only R-100 closure review; if it approves, mark R-100 complete and
+- **Blocker:** none after the scoped fixes. The next action is to receive
+  Russell's read-only closure report; if it approves, mark R-100 complete and
   proceed to the M2 dependency-ready tasks.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;

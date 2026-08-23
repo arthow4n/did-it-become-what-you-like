@@ -150,6 +150,12 @@ agreed.
   own stable record and identifier referencing the receipt. Records must remain
   independently editable and mergeable rather than requiring every receipt
   change to replace one large nested object.
+- A purchased-item line should preserve quantity, unit price, and line total
+  when that information is available from manual entry or receipt extraction.
+- Tax/VAT is not stored as a separate value for the initial consumer use case;
+  recorded prices are treated as tax-inclusive.
+- A tip shown on a receipt must be retained as an outgoing expense line rather
+  than discarded or treated as tax.
 - Receipt images are ephemeral inference inputs only. They must not be retained
   in IndexedDB, synchronized to Google Drive, or included in exports. Any
   temporary in-memory or browser-managed copy must be released after inference
@@ -299,7 +305,8 @@ These questions must be resolved incrementally before implementation.
 ### 1. Expense Record and Invoice Semantics
 
 - Which shared receipt metadata and line-level fields are required beyond the
-  agreed merchant, date, currency, total, and independent line records?
+  agreed merchant, date, currency, total, quantity, unit price, line total, and
+  independent purchase/adjustment/tip records?
 
 ### 2. Project Behavior
 

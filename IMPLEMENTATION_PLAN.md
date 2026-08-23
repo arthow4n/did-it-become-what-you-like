@@ -1137,7 +1137,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     commits `c6b2f8f` and `200a9a5` are integrated by `dd20e31` and `0ccfea6`;
     worktree is clean and preserved pending later cleanup.
   - `F-004`: branch `task/f-004-foundation`, worktree
-    `/home/hevar/git/worktrees/did-it-become-what-you-like-f-004-foundation`,
+    `~/git/worktrees/did-it-become-what-you-like-f-004-foundation`,
     base `2bdb59c`; ownership root tool configs, `.github/workflows/**`,
     `scripts/**`, minimal `src/app/**`, and static PWA placeholders; agent
     `Halley` (`01a030a7-b8c0-70f0-91e0-c8d4998a1fac`); merge after the bounded

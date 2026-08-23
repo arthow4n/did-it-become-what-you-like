@@ -130,6 +130,9 @@ Application shell
 +----------------------------------+
 | Sweden project             Synced|
 |                                  |
+| ! 2 conflicts need review        |
+| [ Review conflicts             ] |
+|                                  |
 | [Today][Month][Year][Custom]     |
 | [All categories] [Filters] [Find]|
 |                                  |
@@ -171,6 +174,10 @@ Agreed behavior:
   criteria represented by removable chips.
 - The category breakdown and all three totals always reflect exactly the same
   selected project and filters as the expense list.
+- When unresolved conflicts exist anywhere in the dataset, Expenses shows a
+  persistent, non-color-only banner with the count and a labeled Review action.
+  The banner remains until resolution but does not block local entry, review,
+  or synchronization of non-conflicting data.
 
 ### Screen 2: Add Choice
 
@@ -568,9 +575,64 @@ Agreed behavior:
 
 ### Screen 10: Google Drive and Synchronization
 
-**Status: open.** Connection, account identity, manual and automatic sync,
-offline/error/conflict states, known devices, account switching, and local
-disconnection require separate approval.
+**Status: approved.** Conflict review and known-device management remain
+separate child screens.
+
+```text
++----------------------------------+
+| < Settings      Google Drive     |
+|                                  |
+| Connected account                |
+| owner@example.com                |
+|                                  |
+| Status: Synced                   |
+| Last sync: 2 minutes ago         |
+| Pending local changes: 0         |
+| [ Sync now                     ] |
+|                                  |
+| Automatic sync                   |
+| After changes, launch, reconnect |
+|                                  |
+| Known devices: 2       [ Manage ]|
+|                                  |
+| [ Switch Google account        ] |
+| [ Disconnect this device       ] |
+|                                  |
+| Cloud deletion: Data and privacy|
++----------------------------------+
+```
+
+Agreed behavior:
+
+- The disconnected state offers **Connect Google Drive** and explains that the
+  application requests only its hidden application-data folder.
+- The connected state shows account identity, current sync mode, last
+  successful sync, pending local changes, and **Sync now**.
+- Automatic synchronization is attempted after local changes, on launch, and
+  when connectivity or authorization returns.
+- A prominent conflict card appears when needed, includes the unresolved count,
+  and opens Conflict Review. Non-conflicting data may keep synchronizing.
+- **Manage devices** shows the current device, optional editable labels, last
+  seen, and deletion acknowledgement state for every known device.
+- Offline mode truthfully shows locally saved pending changes rather than
+  presenting them as lost. Manual sync is unavailable until online.
+- Authorization failure offers Reconnect. Switching accounts requires explicit
+  confirmation and never merges accounts automatically. **Disconnect this
+  device** preserves local and cloud data; cloud deletion remains under Data
+  and privacy.
+
+### Screen 10A: Conflict Review
+
+**Status: open.** The conflict list, candidate comparison, field resolution,
+delete-versus-edit decisions, offline resolution, and completion behavior
+require separate approval. This screen is reachable from both the Expenses
+banner and Google Drive settings.
+
+### Screen 10B: Known Devices
+
+**Status: open.** Device labels, current-device identification, last-seen and
+retirement acknowledgement presentation, and lost-device handling require
+separate approval.
 
 ### Screen 11: Gemini Receipt-Scanning Settings
 

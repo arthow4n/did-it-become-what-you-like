@@ -199,8 +199,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-001 — Prove and pin the Deno frontend/test toolchain
 
-- **Status/dependencies:** `BLOCKED`; depends on `P-000` and explicit owner
-  implementation authorization. Change to `READY` only after both are true.
+- **Status/dependencies:** `READY`; depends on `P-000`. The owner explicitly
+  authorized implementation in the current session.
 - **Ownership:** `spikes/toolchain/**`, `deno.json`, `deno.lock`, toolchain-only
   scripts and a compatibility decision record; no product feature source.
 - **Scope/non-goals:** prove Deno 2 execution of strict `typescript@7`, React,
@@ -220,9 +220,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-002 — Prove Automerge and IndexedDB semantics
 
-- **Status/dependencies:** `BLOCKED`; depends on `P-000` and explicit owner
-  implementation authorization; may run parallel with `F-001` and `F-003` after
-  both conditions are true.
+- **Status/dependencies:** `READY`; depends on `P-000`. The owner explicitly
+  authorized implementation in the current session; this may run parallel with
+  `F-001` and `F-003`.
 - **Ownership:** `spikes/automerge/**` and its decision record only.
 - **Scope/non-goals:** test current Automerge with Deno/browser build,
   repository-namespaced IndexedDB, stable IDs/decimal strings, concurrent edits,
@@ -241,9 +241,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-003 — Prove browser Google, image, and PWA integrations
 
-- **Status/dependencies:** `BLOCKED`; depends on `P-000` and explicit owner
-  implementation authorization; may run parallel with `F-001` and `F-002` after
-  both conditions are true.
+- **Status/dependencies:** `READY`; depends on `P-000`. The owner explicitly
+  authorized implementation in the current session; this may run parallel with
+  `F-001` and `F-002`.
 - **Ownership:** `spikes/browser-integrations/**` and its decision record only.
 - **Scope/non-goals:** prove browser-safe use of Google Identity/Drive app-data,
   `@google/genai` model listing and structured image output, ephemeral camera/file
@@ -1077,8 +1077,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 
 ## Current Checkpoint
 
-- **Plan state:** documentation planning only; application implementation is
-  explicitly unauthorized in this session.
+- **Plan state:** implementation authorized; foundation compatibility wave is
+  being dispatched under the recorded worktree policy.
 - **Reconciled branch/upstream:** `master` at `efd6440` (`Define interruption
   recovery protocol`), tracking `origin/master` at the same commit. `git fetch
   --prune origin` completed successfully; the branch is clean and neither ahead
@@ -1093,6 +1093,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `master` and `origin/master`; there are no unpushed plan commits.
 - **Completed implementation tasks:** none. No implementation worktree, spike,
   dependency setup, or application source has been started.
+- **Owner authorization:** received in this session; it authorizes the approved
+  implementation scope and does not expand the MVP or deferred exclusions.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`
@@ -1108,15 +1110,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   eight Markdown fence lines are balanced; `git status --short --branch` is
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Current task:** none. Planning and coherence review are complete.
-- **Next dependency-ready work after owner authorization:** `F-001`, `F-002`,
-  and `F-003`, with the orchestrator assigning disjoint worktrees and prioritizing
-  integration in that order. Until authorization is given, they remain
-  `BLOCKED` by the explicit implementation gate in their task entries.
+- **Active wave:** `F-001`, `F-002`, and `F-003` are `READY` for separate
+  compatibility-proof worktrees. The orchestrator will integrate them in that
+  order after each bounded worker reports its exact evidence.
 - **Known technical gates, not owner ambiguities:** exact pinned dependencies and
   E2E invocation (`F-001`); Automerge proof (`F-002`); Google/image/PWA browser
   proof (`F-003`); exact agent-browser binary/Chromium pins (`F-005`).
-- **Blocker:** explicit owner authorization in a new implementation session.
+- **Blocker:** none. The next action is to create and record the three
+  foundation worktrees, then dispatch one bounded worker per task.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

@@ -528,9 +528,74 @@ Agreed behavior:
 
 ### Screen 9: Settings
 
-**Status: open.** This discussion must settle the Settings landing page and its
-Google Drive/synchronization, Gemini, import/export, application preferences,
-data removal, version, and disclosure child workflows.
+**Status: approved.** Child workflows remain open and are reviewed separately.
+
+```text
++----------------------------------+
+| Settings                         |
+|                                  |
+| Google Drive and sync            |
+| Synced 2 minutes ago      [Open] |
+|                                  |
+| Gemini receipt scanning          |
+| Key and model configured  [Open] |
+|                                  |
+| Preferences                      |
+| SEK · Expense day 03:00   [Open] |
+|                                  |
+| Import and export         [Open] |
+| Data and privacy          [Open] |
+| About and disclosure      [Open] |
+|                                  |
+| Expenses   [+]  Organize Settings|
++----------------------------------+
+```
+
+Agreed behavior:
+
+- The six groups appear in the order shown, prioritizing ordinary sync,
+  scanning, and preference tasks over infrequent data administration.
+- Rows show useful current summaries such as last synchronization, Gemini
+  configuration, domestic currency, and expense-day boundary.
+- Destructive actions are inside **Data and privacy**, not exposed directly on
+  the landing screen.
+- Settings search is excluded initially and may be added only if the collection
+  grows enough to justify it.
+- Domestic currency and expense-day boundary are synchronized personal domain
+  preferences. API key, selected Gemini model, image-preparation preference,
+  last-selected project, OAuth tokens, and device-specific UI state remain
+  local to each device.
+
+### Screen 10: Google Drive and Synchronization
+
+**Status: open.** Connection, account identity, manual and automatic sync,
+offline/error/conflict states, known devices, account switching, and local
+disconnection require separate approval.
+
+### Screen 11: Gemini Receipt-Scanning Settings
+
+**Status: open.** API-key replacement/removal, model selection, image
+preparation, and capability-validation states require separate approval.
+
+### Screen 12: Import and Export
+
+**Status: open.** JSON/CSV export and merge/replace import workflows require
+separate approval.
+
+### Screen 13: Preferences
+
+**Status: open.** Domestic currency, expense-day boundary, and later visual or
+accessibility preferences require separate approval.
+
+### Screen 14: Data and Privacy
+
+**Status: open.** Disconnect, local deletion, Delete Everywhere, device
+retirement, progress, and safety-export presentation require separate approval.
+
+### Screen 15: About and Disclosure
+
+**Status: open.** Version, AI disclosure, privacy explanation, licenses, and
+update information require separate approval.
 
 ## Cross-Cutting UI States
 

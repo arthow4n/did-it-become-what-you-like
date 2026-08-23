@@ -518,6 +518,10 @@ agreed.
 
 ### Local Browser Storage
 
+- Domestic currency and expense-day boundary are synchronized personal domain
+  preferences and belong to the portable dataset. Last-selected project,
+  OAuth tokens, device-specific UI state, Gemini API key, selected Gemini
+  model, and image-preparation preference remain device-local.
 - IndexedDB is required for all locally persisted application data, including
   expenses, categories, projects, settings, sync metadata, migrations,
   and extracted receipt records. Source receipt images are explicitly excluded
@@ -561,6 +565,9 @@ agreed.
   data export. It is remembered automatically until the owner explicitly
   replaces or deletes it; there is no separate remember-key or session-only
   option in the initial release.
+- The selected Gemini model and image-preparation preference are also
+  device-local because available models, keys, and device capabilities may
+  differ. They are neither synchronized nor included in complete data exports.
 - The UI must state that this locally stored key is not a browser secret and can
   be read by JavaScript executing on the same origin. It must provide clear
   controls to replace and remove the key.
@@ -643,8 +650,7 @@ These questions must be resolved incrementally before implementation.
 ### 6. Gemini API-Key Architecture
 
 - What exact compatibility rules should the model picker apply when the model
-  API does not expose a required capability directly, and should the selected
-  model be a device-local or synchronized preference?
+  API does not expose a required capability directly?
 - What image dimensions, byte limits, compression quality, and formats should
   the default preparation policy use?
 

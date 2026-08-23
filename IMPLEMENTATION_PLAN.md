@@ -326,9 +326,10 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### D-101 — Define canonical domain schema, money, migrations, and export shape
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-100`, which is
-  complete. Worker Pauli (`01a030ed-e9e6-7670-a3ff-16b76f3e0917`) owns the
-  bounded domain/schema implementation; the orchestrator owns integration.
+- **Status/dependencies:** `COMPLETE`; depends on `R-100`, which is complete.
+  Worker commit `9bd7be0` was integrated as `99f0984`; the orchestrator
+  completed recovery after the worker interruption and the required D-101
+  validations pass from `master`.
 - **Ownership:** `src/domain/schema/**`, `money/**`, `migrations/**`, documented
   canonical JSON schema and domain fixtures; no persistence/service/UI code.
 - **Scope/non-goals:** versioned Zod 4 schemas and TypeScript types for projects,
@@ -1124,8 +1125,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   eight Markdown fence lines are balanced; `git status --short --branch` is
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Active wave:** `F-001` through `F-005` and `R-100` are `COMPLETE`; `D-101`
-  is the next dependency-ready M2 task.
+- **Active wave:** `F-001` through `F-005`, `R-100`, and `D-101` are `COMPLETE`;
+  `D-102`, `D-103`, and `U-104` are the next parallel dependency-ready M2
+  tasks.
 - **Active worktrees and dispatch order:**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1161,9 +1163,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     worker commit `0c6787f` is integrated by `f22c7c3`; the worktree is clean
     and preserved pending later final-wave cleanup; the worker is shut down.
 - **Interrupted tasks:** D-101 worker Pauli was interrupted after repeated
-  bounded windows with no filesystem changes; F-001 through F-005 are
-  integrated and complete, and all R-100 scoped-fix workers have completed.
-  No unintegrated worker changes remain.
+  bounded windows with no filesystem changes; the orchestrator recovered in the
+  preserved worktree and integrated D-101. F-001 through F-005, R-100, and
+  D-101 are complete; no unintegrated worker changes remain.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1280,21 +1282,29 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** `D-101` canonical domain schema, money, migrations, and
-  export shape is in progress after the approved R-100 foundation gate.
+- **Current task:** `D-102`, `D-103`, and `U-104` are next after the completed
+  D-101 domain contract; they may run in parallel with disjoint ownership.
 - **D-101 recovery worktree:** branch `task/d-101-domain`, worktree
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain`, based at
   `bd6fd68`; worker Pauli (`01a030ed-e9e6-7670-a3ff-16b76f3e0917`) was
-  interrupted without creating files. The worktree is clean and preserved; the
-  orchestrator owns recovery and will implement D-101 there without editing
-  this ledger from the worktree.
+  interrupted without creating files. The orchestrator recovered in the clean
+  preserved worktree; commit `9bd7be0` is integrated as `99f0984`.
+- **D-101 integration evidence:** recovery commit `9bd7be0` was reviewed and
+  cherry-picked as `99f0984`. From `master`, `deno task fmt:check`, `deno task
+  lint`, `deno task check`, `deno task test --filter domain` (5 passed),
+  `deno task test` (20 passed), `deno task build`, `deno task
+  verify:schema-docs`, `deno task verify:pages`, `deno task verify:ci`, and
+  `git diff --check` all exited 0. The domain source of truth includes Zod 4
+  record schemas/invariants, strict big.js decimal arithmetic, explicit v0-to-v1
+  migration and unsupported down policy, deterministic export/import, portable
+  versus device-local settings, schema documentation, and secret-free fixtures.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none. The next action is to implement and integrate D-101 from
-  the preserved recovery worktree, then unlock the dependency-ready D-102,
-  D-103, and U-104 workstreams according to the M2 dependency graph.
+- **Blocker:** none. The next action is to dispatch D-102, D-103, and U-104 in
+  separate worktrees, capped at three workers, then integrate and review them
+  before R-200.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

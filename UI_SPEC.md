@@ -34,9 +34,11 @@ visual design system.
   screen. The summary distinguishes **Outflows**, **Money back**, and **Net
   spent** so positive adjustments are visible rather than silently hidden.
 - Quick period choices include **Today**, **This month**, **This year**, and a
-  custom calendar day/month/year. Secondary filtering can include category,
-  currency, merchant search, and other later-agreed criteria. Every summary and
-  list updates from the same active filter selection.
+  custom calendar day/month/year. These are current or specifically selected
+  calendar periods, not rolling windows. Within the selected project, a period
+  combines with at most one category, one currency, merchant/description
+  search, and an optional amount range. Every summary and list updates from the
+  same active filter selection.
 - Responsive layouts must give content a natural width and height, wrap where
   appropriate, and never depend on page-level horizontal scrolling. A control
   row which genuinely benefits from horizontal overflow, such as compact quick
@@ -209,7 +211,9 @@ carousel.
 Agreed behavior:
 
 - **This month** is the initial period. Today, This month, This year, and custom
-  calendar selection remain quickly available.
+  calendar day/month/year selection remain quickly available. The quick
+  choices mean the current local calendar periods; rolling periods are not in
+  the initial release.
 - The three largest categories are shown initially with **View all**. Selecting
   a category applies it as a filter.
 - A scanned receipt is summarized as one expandable row so a long receipt does
@@ -220,7 +224,12 @@ Agreed behavior:
   its details screen.
 - Quick periods and category remain directly available. Search, currency,
   amount range, and other secondary criteria use a filter panel, with active
-  criteria represented by removable chips.
+  criteria represented by removable chips. Search matches merchant and
+  description. These criteria combine within the selected project rather than
+  replacing one another.
+- The list defaults to newest first by stored calendar date and optional time.
+  The filter panel offers oldest first as the only alternate initial sort and
+  ordering remains deterministic when records share the same date and time.
 - The category breakdown and all three totals always reflect exactly the same
   selected project and filters as the expense list.
 - When unresolved conflicts exist anywhere in the dataset, Expenses shows a

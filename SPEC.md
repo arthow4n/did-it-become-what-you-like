@@ -81,6 +81,9 @@ and multi-device synchronization according to the agreed sync design.
 - An expense may additionally contain:
   - merchant/shop; and
   - description.
+- A standalone manually created expense may have an empty description. A saved
+  receipt purchase or adjustment line instead requires a non-empty line
+  description so an expanded receipt remains understandable.
 - Merchant/shop and description are separate optional fields. Merchant/shop
   should preserve the exact merchant branch or location when known rather than
   reducing it to only a generic chain name.
@@ -144,8 +147,19 @@ and multi-device synchronization according to the agreed sync design.
 - The expense view must support filtering by:
   - day, month, and year; and
   - category.
+- **Today**, **This month**, and **This year** mean the corresponding current
+  local calendar period. Custom selection chooses one specific calendar day,
+  month, or year. Rolling periods such as “last 30 days” are not part of the
+  initial release.
 - Day, month, and year filters operate directly on each record's stored calendar
   date; they do not reinterpret those dates across timezones.
+- Within the currently selected project, a period can be combined with one
+  category, one currency, merchant/description text search, and an optional
+  amount range. The expense list, category breakdown, and totals all use this
+  same combined filter state.
+- Expense lists default to newest first using stored calendar date followed by
+  optional time-of-day. The initial release also offers oldest first, uses a
+  deterministic stable tie-breaker, and does not add other sort modes.
 - Multiple currencies must be supported.
 - The application must support multiple user-defined projects.
 - Each project represents a distinct life or travel context whose
@@ -211,13 +225,21 @@ and multi-device synchronization according to the agreed sync design.
 - An adjustment may refer to a particular item when that relationship can be
   determined confidently. Linking is optional: receipt-wide or otherwise
   ambiguous adjustments must remain valid without an item link.
-- A receipt is a logical parent record for shared metadata such as merchant,
-  date, currency, and receipt total. Each purchased item or adjustment has its
-  own stable record and identifier referencing the receipt. Records must remain
-  independently editable and mergeable rather than requiring every receipt
-  change to replace one large nested object.
+- A receipt is a logical parent record. Its initial fields are merchant/shop,
+  project, calendar date, optional time-of-day, currency, and the printed
+  receipt total. Payment method, address, receipt number, and separate tax/VAT
+  fields are excluded from the initial model. Each purchased item or adjustment
+  has its own stable record and identifier referencing the receipt. Records
+  must remain independently editable and mergeable rather than requiring every
+  receipt change to replace one large nested object.
 - A receipt parent belongs to the same single project as all of its lines and
   carries a stable `projectId`; one receipt cannot span projects.
+- Receipt time-of-day is stored once on the parent. Its lines inherit that time
+  for display and ordering and do not duplicate an independently editable time.
+- Every saved receipt purchase or adjustment line requires a non-empty
+  description. An AI line whose identity is unreadable or too incomplete to
+  satisfy that rule starts unselected in review and explains the issue; the
+  owner may correct and select it before saving.
 - A purchased-item line should preserve quantity, unit price, and line total
   when that information is available from manual entry or receipt extraction.
 - The merchant-printed line total is authoritative when it differs from the
@@ -828,9 +850,9 @@ These questions must be resolved incrementally before implementation.
 
 ### 1. Expense Record and Invoice Semantics
 
-- Which shared receipt metadata and line-level fields are required beyond the
-  agreed merchant, date, currency, total, quantity, unit price, line total, and
-  independent purchase/adjustment/tip records?
+- There are no remaining MVP decisions in this section. Receipt parents,
+  independently editable lines, required line descriptions, monetary signs,
+  and optional quantity/unit-price fields are specified above.
 
 ### 2. Project Behavior
 
@@ -861,13 +883,12 @@ These questions must be resolved incrementally before implementation.
 
 ### 7. Filtering and Reporting
 
-- Do day/month/year filters mean a chosen calendar period, rolling periods, or
-  both?
-- Can filters be combined across date, category, currency, and project?
-- Which list search and sorting controls are required for the initial release?
-- Comparisons, trends, and charts are post-MVP possibilities. What historical
-  fields or invariants must be retained now to support them later without
-  complicating the initial UI?
+- There are no remaining MVP interaction decisions in this section. Calendar
+  periods, combinable project-scoped filters, search, sorting, and multi-currency
+  totals are specified above and in `UI_SPEC.md`.
+- Comparisons, trends, and charts remain post-MVP possibilities. Stable IDs,
+  original signed decimal amounts and currencies, immutable transaction dates,
+  and preserved historical records provide their initial data foundation.
 
 ### 8. Framework, PWA, and Browser Support
 

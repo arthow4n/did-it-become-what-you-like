@@ -397,6 +397,10 @@ agreed.
 
 ## User Experience
 
+- [`UI_SPEC.md`](UI_SPEC.md) contains the provisional navigation tree, ASCII
+  wireframes, cross-cutting states, and screen-level open decisions. Its
+  contents are discussion material and remain unapproved until the owner agrees
+  to each relevant screen and workflow.
 - Mobile is the primary form factor. Entry, invoice capture, filtering, and
   synchronization status must be comfortable on small touch screens.
 - Desktop browsers must also provide a complete and usable experience.
@@ -545,7 +549,7 @@ These questions must be resolved incrementally before implementation.
 ### 2. Project Behavior
 
 - Detailed project-switching navigation and visual UI design will be specified
-  during the later UI/UX discussion.
+  and approved through `UI_SPEC.md`.
 
 ### 3. Currency Behavior
 
@@ -588,6 +592,9 @@ These questions must be resolved incrementally before implementation.
 - How should install prompts, updates, and unsaved changes be communicated?
 - How will the app handle GitHub Pages' repository base path, direct loads, and
   service-worker scope?
+- The navigation structure, screen hierarchy, mobile and desktop layouts, and
+  every applicable empty/loading/offline/error/conflict/destructive state in
+  `UI_SPEC.md` remain open until explicitly approved.
 
 ### 9. Testing and Visual Acceptance
 

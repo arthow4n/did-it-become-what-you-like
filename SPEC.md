@@ -261,6 +261,12 @@ These questions must be resolved incrementally before implementation.
 
 ### 7. Gemini API-Key Architecture
 
+- Should the accepted `localStorage` default remain, or should the application
+  store only passphrase-encrypted key ciphertext in IndexedDB and require an
+  unlock each browser session? Neither browser-only option protects the key
+  from malicious JavaScript running in the application's origin after unlock.
+- Is a WebAuthn/passkey-assisted key-wrapping option worth its additional
+  compatibility, recovery, and UX complexity?
 - Should the API key remain device-specific, or be manually entered on each
   device? It must not be included in ordinary expense-data sync or exports.
 - Should the user opt into remembering the key, or is persistent

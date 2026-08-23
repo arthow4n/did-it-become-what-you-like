@@ -12,6 +12,12 @@
   when different interpretations would meaningfully change the result.
 - Keep questions and decision prompts in small, prioritized batches that are
   easy to read and answer in a terminal.
+- When gathering requirements, normally ask no more than five numbered
+  questions in one batch. Use fewer when the topic benefits from a tighter
+  exchange.
+- Give each question a concise explanation, a short concrete example when it
+  improves understanding, and a clearly labeled recommendation. Make it easy
+  for the owner to answer by number or accept all recommendations at once.
 
 ## Git Workflow
 

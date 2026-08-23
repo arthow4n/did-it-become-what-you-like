@@ -325,30 +325,52 @@ that workflow rather than recreating it with unrelated booleans.
 
 ### Screen 5: Receipt Review
 
+**Status: approved.**
+
 ```text
 +----------------------------------+
-| < Discard     Review receipt     |
-| ICA Maxi Solna | 23 Aug | SEK    |
+| X          Review receipt        |
 |                                  |
-| ! Lines differ from total by 2.00|
+| ICA Maxi Solna                   |
+| Sat 22 Aug · SEK          [Edit] |
 |                                  |
-| [x] Milk       Groceries  -18.90 |
-|     qty 1 x 18.90      [ Edit ]  |
-| [x] Bread      Groceries  -32.00 |
-|     qty 2 x 16.00      [ Edit ]  |
-| [x] Discount   Groceries   +5.00 |
-|     Linked to Bread?     [ Edit ]|
-| [ ] Unclear line  Uncategorized  |
+| Receipt total          -45.90    |
+| Selected lines         -43.90    |
+| Difference               2.00    |
+| ! Review totals before saving    |
+|                                  |
+| [x] Milk                         |
+|     Groceries            -18.90  |
+|     1 x 18.90              Edit  |
+|                                  |
+| [x] Discount              +5.00  |
+|     Possibly linked to Bread     |
+|                                  |
+| [ ] Unclear item                 |
+|     Uncategorized                |
 |     AI: text was partly hidden   |
 |                                  |
-| [+ Add line]     Total: -45.90   |
-|       [ Save 3 selected lines ]  |
+| [ Add missing line             ] |
+| [ Save 3 selected entries      ] |
 +----------------------------------+
 ```
 
-Open decisions: card versus table-like lines, inline versus separate editing,
-how selected/skipped lines behave, and the strength and placement of mismatch
-and uncertainty explanations.
+Agreed behavior:
+
+- Exact merchant, date, currency, and printed receipt total appear at the top.
+  Edit opens a compact receipt-metadata form.
+- Lines use responsive natural-height cards. Editing or adding a line opens a
+  focused bottom sheet containing description, category, signed amount,
+  quantity, unit price, and an optional adjustment-to-item link.
+- Confident, structurally valid extracted lines start selected. Seriously
+  uncertain or incomplete lines start unselected and visibly explain why.
+- Printed total, selected-line total, and their exact signed difference update
+  continuously as lines are selected or edited.
+- Saving atomically commits the parent receipt and every selected line. A
+  remaining mismatch requires explicit confirmation. Closing a modified review
+  requires discard confirmation.
+- The receipt image remains unpersisted under the previously agreed ephemeral
+  inference-input rule.
 
 ### Screen 6: Organize and Settings
 

@@ -447,6 +447,11 @@ agreed.
 ### UI and Application State
 
 - XState v5 is required to drive application behavior and UI state.
+- The actor system must have a coarse root application actor for shared
+  lifecycle and navigation, with focused invoked or spawned actors owning
+  expense editing, receipt scanning/review, synchronization, conflicts,
+  import, deletion, and other substantial workflows. It must not become one
+  giant global statechart.
 - Asynchronous workflows such as local persistence, Google Drive sync, invoice
   processing, retries, and conflict handling must be modeled explicitly with
   XState actors and statecharts.
@@ -461,10 +466,28 @@ agreed.
 - UI availability and rendering must be derived from XState snapshots, state
   matching, tags, selectors, and permitted events rather than duplicated
   component-level workflow flags.
+- Business operations must be expressed as stable, typed, domain-oriented
+  events with runtime-validated payloads where events cross an untrusted or
+  serialized boundary. UI components dispatch those events and render actor
+  snapshots; they must not bypass actors to reproduce business decisions in
+  component handlers.
 - Durable expense records may live in an appropriate persistence layer, but
   access to and mutation of them must be coordinated by the actor system.
 - React with `@xstate/react` is the provisional UI framework; it is not yet a
   final decision.
+
+### Future Automation Extension
+
+- Post-MVP, a constrained LLM adapter may translate structured tool calls into
+  the same public domain events used by the human UI, allowing assisted
+  navigation and operation without inventing a second application-control API.
+- This possibility is not an initial-release feature and must not add chat,
+  remote control, or background AI behavior to the MVP.
+- Any future adapter must validate its structured input and obey the same actor
+  guards, conflict handling, permission checks, review steps, and destructive
+  confirmations as a human action. It may not mutate actor context, IndexedDB,
+  or navigation state directly or gain a privileged bypass around the normal
+  workflows.
 
 ### Local Browser Storage
 
@@ -541,6 +564,16 @@ agreed.
 - The application must have unit tests.
 - The application must have end-to-end tests covering its critical user
   journeys.
+- Business rules, guards, transitions, retries, cancellation, and actor
+  coordination should be tested primarily at the XState actor/machine level,
+  including generated path/model tests where they add useful coverage. This is
+  the main logic-test layer and should prevent duplicating the same behavioral
+  assertions across many UI tests.
+- Component tests should focus on snapshot-to-view rendering, event wiring,
+  validation presentation, and accessibility rather than re-testing statechart
+  logic. End-to-end tests remain required for a smaller set of critical
+  browser journeys because machine tests cannot prove layout, focus behavior,
+  IndexedDB/service-worker integration, or external browser APIs work together.
 - During development, the coding agent must use
   [`agent-browser`](https://github.com/vercel-labs/agent-browser) with Chromium
   to inspect and exercise the running UI.

@@ -1117,8 +1117,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
     base `43998c4`; ownership `spikes/toolchain/**`, `deno.json`,
-    `deno.lock`, and toolchain-only decision/proof files; agent pending dispatch;
-    agent `Cicero` (`01a03092-5f84-7a83-992a-ff40b904dfc1`); merge first.
+    `deno.lock`, and toolchain-only decision/proof files; agent `Cicero`
+    (`01a03092-5f84-7a83-992a-ff40b904dfc1`); merge first.
   - `F-002`: branch `task/f-002-automerge`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-002-automerge`,
     base `43998c4`; ownership `spikes/automerge/**` and its decision record;
@@ -1126,9 +1126,21 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   - `F-003`: branch `task/f-003-browser-integrations`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-003-browser-integrations`,
     base `43998c4`; ownership `spikes/browser-integrations/**` and its decision
-    record; agent `Popper` (`01a03092-6086-7b42-ade7-dc16d28f1aef`); merge third.
-- **Interrupted tasks:** none. No worker has been dispatched yet; all three
-  worktrees were clean at dispatch and contained no unpushed task commits.
+    record; agent `Popper` (`01a03092-6086-7b42-ade7-dc16d28f1aef`); local
+    commit `c6b2f8f` (`Prove browser integrations`) is clean and awaiting the
+    third merge slot.
+- **Interrupted tasks:** none. `F-001` and `F-002` remain active; `F-003` has
+  completed its bounded worker handoff but is not integrated or complete until
+  the ordered review and merge finish.
+- **F-003 handoff evidence:** `deno run -A
+  spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
+  --check spikes/browser-integrations`, `deno lint
+  spikes/browser-integrations`, `deno check
+  spikes/browser-integrations/verify.ts`, `git diff --check`, and `git diff
+  --cached --check` all exited 0. Live OAuth/Drive/Gemini, Chromium/Playwright/
+  agent-browser, mobile/cross-browser, production-build, real CSP delivery,
+  and real service-worker registration checks are explicitly unavailable and
+  recorded in the decision document.
 - **Dispatch evidence:** all three agents received bounded prompts with their
   owned files, non-goals, acceptance criteria, and exact validation/handoff
   requirements; no worker is permitted to edit this ledger or push `master`.
@@ -1136,8 +1148,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   E2E invocation (`F-001`); Automerge proof (`F-002`); Google/image/PWA browser
   proof (`F-003`); exact agent-browser binary/Chromium pins (`F-005`).
 - **Current task:** foundation compatibility wave (`F-001`–`F-003`) is active.
-- **Blocker:** none. The next action is to monitor the bounded workers while
-  preparing the ordered integration and review checks.
+- **Blocker:** none. The next action is to receive and inspect `F-001` and
+  `F-002`, integrate them first, then review and integrate `F-003` in the
+  recorded order.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

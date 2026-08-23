@@ -326,7 +326,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### D-101 — Define canonical domain schema, money, migrations, and export shape
 
-- **Status/dependencies:** `PENDING`; depends on `R-100`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-100`, which is
+  complete. Worker Pauli (`01a030ed-e9e6-7670-a3ff-16b76f3e0917`) owns the
+  bounded domain/schema implementation; the orchestrator owns integration.
 - **Ownership:** `src/domain/schema/**`, `money/**`, `migrations/**`, documented
   canonical JSON schema and domain fixtures; no persistence/service/UI code.
 - **Scope/non-goals:** versioned Zod 4 schemas and TypeScript types for projects,
@@ -1277,7 +1279,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
 - **Current task:** `D-101` canonical domain schema, money, migrations, and
-  export shape is next after the approved R-100 foundation gate.
+  export shape is in progress after the approved R-100 foundation gate.
+- **D-101 active worktree:** branch `task/d-101-domain`, worktree
+  `~/git/worktrees/did-it-become-what-you-like-d-101-domain`, based at
+  `bd6fd68`; worker Pauli owns the scoped domain/schema files and must not edit
+  this ledger or push `master`.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment

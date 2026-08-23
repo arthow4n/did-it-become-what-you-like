@@ -100,6 +100,8 @@ agreed.
 
 - The application must provide LLM-assisted entry from a scanned or
   photographed invoice.
+- The PWA must support both capturing a new receipt image with the device camera
+  and selecting/importing an existing image from the device.
 - The LLM should produce draft expense entries for the relevant items on the
   invoice to reduce manual entry.
 - A scanned receipt or invoice must produce a separate draft entry for every
@@ -114,6 +116,15 @@ agreed.
 - An adjustment may refer to a particular item when that relationship can be
   determined confidently. Linking is optional: receipt-wide or otherwise
   ambiguous adjustments must remain valid without an item link.
+- A receipt is a logical parent record for shared metadata such as merchant,
+  date, currency, and receipt total. Each purchased item or adjustment has its
+  own stable record and identifier referencing the receipt. Records must remain
+  independently editable and mergeable rather than requiring every receipt
+  change to replace one large nested object.
+- Receipt images are ephemeral inference inputs only. They must not be retained
+  in IndexedDB, synchronized to Google Drive, or included in exports. Any
+  temporary in-memory or browser-managed copy must be released after inference
+  succeeds, fails, or is cancelled.
 - Generated entries must be presented for user review and correction before
   they are saved.
 - `@google/genai`, used with a Google AI Studio API key, is the provisional
@@ -128,8 +139,9 @@ agreed.
 - The user must be able to export their data directly as a plain file,
   independently of Google Drive.
 - Stored and exported data must use simple, documented, broadly readable
-  formats. JSON and CSV are the current candidates; the canonical format and
-  export variants remain open.
+  formats. Versioned JSON is the provisional lossless canonical/export format
+  because it can preserve receipt relationships and sync metadata. CSV is a
+  flattened analysis export rather than the source of truth.
 - The data must not require a proprietary database or the application itself
   for basic inspection and analysis.
 - Import/restore from the application's plain export is provisionally expected,
@@ -191,7 +203,8 @@ agreed.
 
 - IndexedDB is required for all locally persisted application data, including
   expenses, categories, collections/tags, settings, sync metadata, migrations,
-  and retained invoice data if invoice retention is later approved.
+  and extracted receipt records. Source receipt images are explicitly excluded
+  because they are not retained.
 - The IndexedDB database name must be namespaced with the repository name,
   `did-it-become-what-you-like`, so it cannot collide with databases created by
   other projects hosted on the same GitHub Pages origin.
@@ -256,13 +269,11 @@ These questions must be resolved incrementally before implementation.
 
 ### 1. Expense Record and Invoice Semantics
 
-- How are the receipt total, merchant, tax, tip, quantity, and shared receipt
-  represented while every purchased item remains a separate entry?
+- Which shared receipt metadata and line-level fields are required beyond the
+  agreed merchant, date, currency, total, and independent line records?
 - What sign convention and terminology clearly represent money paid and money
   returned without confusing totals?
 - Is time-of-day needed, or only a calendar date?
-- Should attachments be retained after LLM processing? If so, locally, in
-  Google Drive, or both?
 
 ### 2. Collections, Projects, and Tags
 

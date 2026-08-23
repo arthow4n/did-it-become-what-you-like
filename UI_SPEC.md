@@ -840,8 +840,55 @@ implemented during MVP work.
 
 ### Screen 14: Data and Privacy
 
-**Status: open.** Disconnect, local deletion, Delete Everywhere, device
-retirement, progress, and safety-export presentation require separate approval.
+**Status: approved.**
+
+```text
++----------------------------------+
+| < Settings      Data & privacy   |
+|                                  |
+| Receipt images                   |
+| Never stored after AI processing |
+|                                  |
+| Gemini API key                   |
+| Stored only on this device       |
+|                                  |
+| Data actions                     |
+| [ Disconnect this device       ] |
+| Keeps local and Drive data       |
+|                                  |
+| [ Delete this device's data    ] |
+| Keeps Drive and other devices    |
+|                                  |
+| Delete everywhere                |
+| Erases Drive and reconnecting     |
+| devices                           |
+| [ Review deletion              ] |
++----------------------------------+
+```
+
+- The three actions are visually separate and state their scope before the
+  owner enters any confirmation flow.
+- **Disconnect this device** stops synchronization but preserves this device's
+  local dataset and all synchronized Drive data.
+- **Delete this device's data** erases this device's local dataset and also
+  disconnects it, preventing an immediate cloud re-download. It does not affect
+  Drive or other devices. Its confirmation includes **Remove Gemini API key**,
+  checked by default.
+- **Delete everywhere** first offers a complete JSON safety export. Declining
+  the export requires an additional explicit confirmation before the destructive
+  action can continue.
+- Delete Everywhere progress distinguishes publishing retirement, deleting the
+  Drive generation, erasing this device, and acknowledgement by each known
+  device. It explains that an offline device cannot be erased until it runs and
+  reconnects.
+- Lost-device finalization exists only within this progress workflow, behind a
+  strong warning that the inaccessible browser copy cannot be erased. It is not
+  an ordinary device-list action.
+- The focused deletion actor owns explicit scope selection, confirmation,
+  safety export, retirement publication, Drive deletion, local erasure,
+  awaiting-device, forced-finalization, completed, and failure modes. Its
+  non-financial progress state must survive reloads until the workflow reaches a
+  terminal state.
 
 ### Screen 15: About and Disclosure
 

@@ -403,11 +403,14 @@ agreed.
     devices; and
   - delete everywhere, meaning eventual deletion from Drive and every device
     which later reconnects.
+- Deleting this device's local data must also leave that device disconnected so
+  the preserved Drive dataset is not immediately downloaded again. This local
+  disconnection does not alter Drive data or another device's connection.
 - Deleting local data must offer removal of the locally stored Gemini API key
   through a checkbox enabled by default.
 - Before deleting everywhere, the application must offer a complete JSON safety
   export. The owner may explicitly decline it to perform intentional permanent
-  deletion.
+  deletion, but declining requires an additional explicit confirmation.
 - A global cloud deletion initiated on one device must remove synchronized
   financial payloads from the configured Google account and prevent any other
   device from recreating them from an old local copy.
@@ -438,7 +441,8 @@ agreed.
   for a long time.
 - The application must show whether deletion is pending, removed from Drive,
   awaiting known devices, or complete. It must state that a browser cannot erase
-  a device which never runs and reconnects.
+  a device which never runs and reconnects. Progress must show acknowledgement
+  status for each known device rather than only a single aggregate spinner.
 - Revoking Google OAuth scopes is the final disconnection step, not a substitute
   for synchronized retirement. Revocation must not happen so early that known
   offline devices are prevented from reading the retirement marker unless the
@@ -450,6 +454,12 @@ agreed.
   Ordinary synchronization settings must not offer casual device removal or
   lost-device actions; these controls belong only to the strongly warned
   Delete Everywhere workflow.
+- Delete Everywhere must be owned by a focused XState actor with explicit scope
+  selection, confirmation, safety-export, retirement-publication, Drive-delete,
+  local-erasure, awaiting-device, forced-finalization, completed, and failure
+  modes. The minimum non-financial workflow state required to resume and show
+  honest progress must persist across reloads until a terminal state; erased
+  financial payloads must never be copied into that progress snapshot.
 - Ordinary deletion of an individual expense uses the synchronized tombstone
   model and does not promise immediate erasure from Automerge history in the
   initial release. Full physical history destruction is guaranteed by the

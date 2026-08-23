@@ -5,7 +5,6 @@ export const CHROME_FOR_TESTING_VERSION = "152.0.7977.54";
 
 export type BrowserPlatform =
   | "linux-x64"
-  | "linux-arm64"
   | "darwin-arm64"
   | "darwin-x64"
   | "win32-x64";
@@ -31,23 +30,6 @@ export const PLATFORM_ARTIFACTS: Record<BrowserPlatform, {
         `https://github.com/vercel-labs/agent-browser/releases/download/v${AGENT_BROWSER_VERSION}/agent-browser-linux-x64`,
       sha256:
         "a9481c197c8eaa04f3f5cc947923309a4960bff1cc20843fb4cf68763b7b3012",
-    },
-    chrome: {
-      fileName: "chrome-linux64.zip",
-      url:
-        `https://storage.googleapis.com/chrome-for-testing-public/${CHROME_FOR_TESTING_VERSION}/linux64/chrome-linux64.zip`,
-      sha256:
-        "88af83664e1e5f79dc1c1378d0699b98dddd69690a748addf4ccbe322bfacedf",
-      executable: "chrome-linux64/chrome",
-    },
-  },
-  "linux-arm64": {
-    agentBrowser: {
-      fileName: "agent-browser-linux-arm64",
-      url:
-        `https://github.com/vercel-labs/agent-browser/releases/download/v${AGENT_BROWSER_VERSION}/agent-browser-linux-arm64`,
-      sha256:
-        "29cc76d96e9f02a699cec4d835855aa0bcb4739841cf8ad7dcdd013b6760481f",
     },
     chrome: {
       fileName: "chrome-linux64.zip",
@@ -118,7 +100,6 @@ export function detectBrowserPlatform(
   arch: string = Deno.build.arch,
 ): BrowserPlatform | undefined {
   if (os === "linux" && arch === "x86_64") return "linux-x64";
-  if (os === "linux" && arch === "aarch64") return "linux-arm64";
   if (os === "darwin" && arch === "aarch64") return "darwin-arm64";
   if (os === "darwin" && arch === "x86_64") return "darwin-x64";
   if (os === "windows" && arch === "x86_64") return "win32-x64";

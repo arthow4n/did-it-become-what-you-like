@@ -8,11 +8,11 @@ the reviewed official release/storage URLs in scripts/browser/metadata.ts,
 verifies SHA-256 before renaming any artifact, and extracts the verified Chrome
 archive without invoking a package manager.
 
-The current metadata covers Linux x64/arm64, macOS x64/arm64, and Windows x64.
-Windows ARM64 and other operating-system/architecture pairs are explicit
-unsupported-platform results. The Chrome Linux ARM64 entry intentionally uses
-Google's Linux x64 CfT archive because that is the published Chrome artifact for
-this platform pair; the native agent-browser binary remains arm64.
+The current metadata covers four supported native pairs: Linux x64, macOS
+x64/arm64, and Windows x64. Linux ARM64 is unavailable: the available Chrome for
+Testing artifact is x64, and no emulation path has been verified. Linux aarch64,
+Windows ARM64, and other operating-system/architecture pairs are explicit
+unsupported-platform results that fail nonzero.
 
 ## Ownership boundary
 
@@ -29,7 +29,7 @@ behavior, or mobile-device behavior.
 ## Platform evidence
 
 - The metadata hashes were computed from the pinned official artifacts for all
-  five supported platform keys.
+  four supported platform keys.
 - The install/visual command reports the exact Deno.build.os and Deno.build.arch
   pair on failure and exits nonzero; it never reports a successful smoke when
   the platform or native binary is unavailable.

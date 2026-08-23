@@ -21,14 +21,23 @@ function assert(
   if (!condition) throw new Error(message);
 }
 
-async function assertRejects(action: () => Promise<unknown>): Promise<void> {
-  let rejected = false;
+async function assertRejects(
+  action: () => Promise<unknown>,
+  message?: string,
+): Promise<void> {
+  let error: unknown;
   try {
     await action();
-  } catch {
-    rejected = true;
+  } catch (caught) {
+    error = caught;
   }
-  assert(rejected, "Expected promise to reject");
+  assert(error !== undefined, "Expected promise to reject");
+  if (message) {
+    assert(
+      String(error).includes(message),
+      `Expected rejection to include ${message}, got ${String(error)}`,
+    );
+  }
 }
 
 Deno.test("checksum failure aborts before an artifact is installed", async () => {
@@ -55,13 +64,18 @@ Deno.test("checksum failure aborts before an artifact is installed", async () =>
 
 Deno.test("browser metadata maps only reviewed native platform pairs", () => {
   assertEquals(detectBrowserPlatform("linux", "x86_64"), "linux-x64");
+  assertEquals(detectBrowserPlatform("linux", "aarch64"), undefined);
   assertEquals(detectBrowserPlatform("darwin", "aarch64"), "darwin-arm64");
   assertEquals(detectBrowserPlatform("windows", "aarch64"), undefined);
+  assertEquals(Object.keys(PLATFORM_ARTIFACTS).length, 4);
   for (const artifact of Object.values(PLATFORM_ARTIFACTS)) {
     assert(/^[a-f0-9]{64}$/.test(artifact.agentBrowser.sha256));
     assert(/^[a-f0-9]{64}$/.test(artifact.chrome.sha256));
   }
-  return assertRejects(() => installAgentBrowser("freebsd", "x86_64"));
+  return assertRejects(
+    () => installAgentBrowser("linux", "aarch64"),
+    "UNAVAILABLE: no pinned agent-browser/Chrome for Testing pair for linux/aarch64",
+  );
 });
 
 Deno.test("intentional E2E failure leaves a useful redacted trace and exits nonzero", async () => {

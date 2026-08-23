@@ -141,6 +141,10 @@ agreed.
   other projects hosted on the same GitHub Pages origin.
 - Any related browser-storage identifiers must use the same repository
   namespace where the storage API exposes a shared origin-level key space.
+- Repository namespacing prevents accidental collisions but is not a security
+  boundary. Browser storage is origin-scoped rather than URL-path-scoped, so
+  other GitHub Pages projects served from the same owner origin may be able to
+  address the same storage.
 - Multi-record mutations and imports must be transactional. Schema migrations
   must be explicit, versioned, and tested.
 - `localStorage` must not be used for expense or other application data. The
@@ -267,6 +271,8 @@ These questions must be resolved incrementally before implementation.
   from malicious JavaScript running in the application's origin after unlock.
 - Is a WebAuthn/passkey-assisted key-wrapping option worth its additional
   compatibility, recovery, and UX complexity?
+- Should the application use a dedicated custom domain to isolate its browser
+  origin from the owner's other GitHub Pages projects?
 - Should the API key remain device-specific, or be manually entered on each
   device? It must not be included in ordinary expense-data sync or exports.
 - Should the user opt into remembering the key, or is persistent

@@ -79,6 +79,9 @@ agreed.
   should preserve the exact merchant branch or location when known rather than
   reducing it to only a generic chain name.
 - Categories must be fully customizable.
+- A built-in `Uncategorized` category must always exist. It behaves as the
+  fallback category for entries which have not been classified and cannot be
+  deleted through category management.
 - Categories are shared globally across collections/projects because the owner
   generally uses the same category set in every context. Switching projects
   isolates expense views but does not create a separate category catalogue.
@@ -288,8 +291,11 @@ These questions must be resolved incrementally before implementation.
 
 ### 2. Collections, Projects, and Tags
 
-- Does an expense belong to exactly one life/travel collection, or can it have
-  additional cross-cutting tags?
+- The provisional recommendation is that every expense belongs to exactly one
+  life/travel collection, defaulting to the currently selected collection while
+  remaining manually changeable. Truly shared costs can be split, and optional
+  cross-cutting tags can be considered separately. Does this match the owner's
+  needs, or is multi-collection membership genuinely required?
 - Should collection be an additional filter alongside category, or should
   switching collections create isolated views and settings?
 - What should this concept be called in the UI?

@@ -209,26 +209,51 @@ Agreed behavior:
 
 ### Screen 3: Manual Expense
 
+**Status: approved.** The same form is used to create and edit an expense.
+
 ```text
 +----------------------------------+
-| < Cancel      New expense    Save|
+| X            New expense         |
 |                                  |
-| Amount                           |
-| [ -  ][        0.00 ][ SEK v ]   |
+| Direction                        |
+| [ Spent ]       [ Money back ]   |
 |                                  |
-| Category *   [ Groceries      v ]|
-| Project *    [ Sweden         v ]|
-| Date *       [ 2026-08-23       ]|
-| Time         [ --:--             ]|
-| Merchant     [                    ]|
-| Description  [                    ]|
+| Amount *     [       0.00 ][SEK] |
+| Merchant     [ ICA Maxi Solna  X]|
+| Category *   [ Groceries       ] |
+| Date *       [ Sat 22 Aug      ] |
+|               Default expense day|
+| Project *    [ Sweden          ] |
+| Description  [                  ]|
+| Time         [ --:--            ]|
 |                                  |
-|              [ Save expense ]    |
+| [ Save expense                 ] |
+| [ Save and add another         ] |
 +----------------------------------+
 ```
 
-Open decisions: fastest signed-amount control, field order, whether uncommon
-fields collapse under “More details,” and post-save destination.
+Agreed behavior:
+
+- The owner enters a positive magnitude and chooses **Spent** or **Money
+  back**. The form maps those choices to the agreed negative and positive
+  persisted signs; it does not require manually typing a minus sign.
+- A new form defaults to the current project's currency and project,
+  `Uncategorized`, and the calendar date produced by the configured local
+  expense-day boundary. Every default remains changeable.
+- The chosen concrete date is always visible. For example, a form opened at
+  01:30 with a 03:00 boundary shows the previous calendar date and identifies
+  it as the default expense day rather than showing only an ambiguous “Today.”
+- Amount, merchant, category, date, project, description, and time all remain
+  visible; optional description and time are not hidden under a disclosure.
+- Merchant is initially empty. Previously used exact merchant/branch names are
+  offered as local suggestions, with recent matches prioritized, but no
+  suggestion is forced. A one-tap clear control removes the field value.
+- Saving returns to Expenses and briefly offers Undo. **Save and add another**
+  clears record-specific values while retaining sensible defaults for batch
+  entry. Closing a changed form requires discard confirmation.
+- Opening an existing expense uses this same form populated with its current
+  values. Every editable expense field can be changed, and saving updates the
+  existing stable record rather than creating a replacement record.
 
 ### Screen 4: Scan Receipt
 

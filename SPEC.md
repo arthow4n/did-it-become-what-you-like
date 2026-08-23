@@ -81,6 +81,15 @@ agreed.
 - Calendar date is required. Time-of-day is optional and should be preserved
   when entered manually or extracted from a receipt so same-day records can be
   ordered more accurately.
+- Application preferences must include a configurable local **expense-day
+  boundary** for automatic manual-entry dates. For example, with a boundary of
+  03:00, a new form opened at 01:30 defaults to the previous calendar date,
+  matching the owner's lived day after returning home past midnight.
+- The expense-day boundary affects only the initial date suggested for a new
+  manual expense. It must not rewrite a date explicitly chosen by the owner or
+  a transaction date extracted from a receipt or supplied by import. The form
+  must display the resulting concrete calendar date so the offset is never
+  hidden behind only a relative label such as “Today.”
 - Monetary amounts follow their natural direction from the owner's perspective:
   purchases and other outflows are negative, while discounts, refunds,
   cashback, bottle-deposit returns, and other inflows are positive. This sign

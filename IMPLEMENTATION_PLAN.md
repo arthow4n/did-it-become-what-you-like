@@ -908,7 +908,10 @@ Create a worktree only for a dependency-ready task expected to produce a
 meaningful independent commit. Name branches `task/<task-id>-<slug>` and place
 worktrees outside the repository directory. Record absolute worktree path,
 branch, base commit, assigned files/contracts, agent, and expected merge order
-in the Current Checkpoint before dispatch.
+in the Current Checkpoint before dispatch. For privacy in new checkpoints,
+worker prompts, and status reports, write the home-directory prefix as `~` (for
+example, `~/git/worktrees/...`) rather than exposing the owner's account name;
+existing historical records need not be rewritten.
 
 The root/orchestrator is the sole integration owner and the only agent allowed
 to update `master` or this ledger while parallel work is active. Workers commit

@@ -20,6 +20,25 @@ make everyday entry and review of expenses fast, work especially well on a
 phone, and keep its data in simple formats that remain easy to inspect and
 analyze outside the application.
 
+The device-local copy is the primary working copy. Core entry and review flows
+should remain available offline, while Google Drive provides automatic backup
+or multi-device synchronization according to the sync design still to be
+agreed.
+
+## Product Principles
+
+- **Local first:** local work must not wait for a network service.
+- **Portable data:** records remain inspectable and exportable in plain,
+  documented formats.
+- **Private by default:** no analytics, advertising, session replay, or
+  unrelated transmission of financial data.
+- **Low-friction entry:** adding and correcting expenses is the primary mobile
+  interaction.
+- **Accessible and responsive:** core flows must support touch, keyboards,
+  assistive technology, narrow screens, and desktop screens.
+- **Progressive enhancement:** the browser experience must remain usable
+  without installing the PWA.
+
 ## Required Product Capabilities
 
 ### Expense Entry and Organization
@@ -38,6 +57,9 @@ analyze outside the application.
 - The application must provide a way to separate or group expenses into
   multiple user-defined collections. The final concept and name (for example,
   project, tag, ledger, or account) remain open.
+- Creating, viewing, editing, and deleting an expense offline are provisional
+  baseline behaviors; exact validation, ordering, and deletion/undo behavior
+  remain to be specified.
 
 ### Invoice-Assisted Entry
 
@@ -63,6 +85,8 @@ analyze outside the application.
   export variants remain open.
 - The data must not require a proprietary database or the application itself
   for basic inspection and analysis.
+- Import/restore from the application's plain export is provisionally expected,
+  but its merge, replacement, validation, and duplicate rules remain open.
 
 ## User Experience
 
@@ -80,6 +104,11 @@ analyze outside the application.
 - The frontend must be deployable as a static site on GitHub Pages.
 - The project must use Deno 2 to execute all development and build tooling,
   including the frontend toolchain.
+- `deno task` must be the canonical interface for project-owned development,
+  formatting, linting, testing, building, and maintenance commands.
+- Development, testing, and deployment must not require a Node.js, npm, pnpm,
+  Yarn, or Bun project toolchain. Dependencies and tools must be compatible
+  with Deno 2 and reproducibly pinned or locked.
 - A backend should be avoided unless an agreed product requirement cannot be
   met reasonably and safely in the client.
 - If a backend becomes necessary, it must be designed for and deployed on Deno
@@ -102,6 +131,23 @@ analyze outside the application.
 - React with `@xstate/react` is the provisional UI framework; it is not yet a
   final decision.
 
+### Local Browser Storage
+
+- IndexedDB is required for all locally persisted application data, including
+  expenses, categories, collections/tags, settings, sync metadata, migrations,
+  and retained invoice data if invoice retention is later approved.
+- The IndexedDB database name must be namespaced with the repository name,
+  `did-it-become-what-you-like`, so it cannot collide with databases created by
+  other projects hosted on the same GitHub Pages origin.
+- Any related browser-storage identifiers must use the same repository
+  namespace where the storage API exposes a shared origin-level key space.
+- Multi-record mutations and imports must be transactional. Schema migrations
+  must be explicit, versioned, and tested.
+- `localStorage` must not be used for expense or other application data. The
+  user-entered Google AI Studio API key is the single approved exception.
+- Service-worker caches may hold the application shell and other explicitly
+  approved cacheable resources; they are not a source of truth for user data.
+
 ### Browser Integrations and Security
 
 - Google Drive authorization and API access should be implemented directly in
@@ -113,8 +159,19 @@ analyze outside the application.
   recommends a server-side implementation for production environments.
 - No API key may be committed to the repository or embedded in the published
   application bundle.
-- The choice between a user-supplied browser key and a Deno Deploy proxy is
-  open and must consider that a static frontend cannot keep a key secret.
+- The owner has accepted the personal-app risk of direct browser use. The user
+  will enter their own Google AI Studio API key at runtime, and the application
+  will persist it in `localStorage` under a key namespaced with
+  `did-it-become-what-you-like`.
+- The UI must state that this locally stored key is not a browser secret and can
+  be read by JavaScript executing on the same origin. It must provide clear
+  controls to replace and remove the key.
+- The frontend must minimize this accepted risk with a restrictive Content
+  Security Policy, no runtime CDN dependencies or unrelated third-party
+  scripts, safe rendering of user/LLM text, and a deliberately small dependency
+  surface.
+- This accepted key design does not currently justify a Deno Deploy backend. It
+  may be revisited if the threat model or deployment scope changes.
 - Sending invoice images and extracted content to an LLM provider must be made
   clear to the user before submission.
 
@@ -172,6 +229,8 @@ These questions must be resolved incrementally before implementation.
 - Is import from exported files required as well as export?
 - Should exports include all collections in one file or separate files?
 - How will schema versions and future migrations be represented?
+- Should monetary amounts use integer minor units, decimal strings, or another
+  exact representation that avoids binary floating-point errors?
 
 ### 5. Local Persistence and Google Drive Sync
 
@@ -189,6 +248,8 @@ These questions must be resolved incrementally before implementation.
   user conflict resolution. No strategy is agreed yet.
 - What happens when two devices modify the same expense, category, or
   collection while offline?
+- Which IndexedDB helper, if any, should be used while preserving transparent
+  schema control and Deno 2 compatibility?
 
 ### 6. Google Access and Privacy
 
@@ -200,12 +261,10 @@ These questions must be resolved incrementally before implementation.
 
 ### 7. Gemini API-Key Architecture
 
-- Is entering and storing the owner's own API key locally in the browser an
-  acceptable security tradeoff for this personal application?
-- If not, should the invoice feature be the sole reason for introducing a
-  minimal Deno Deploy backend?
-- Where would a browser-supplied key be stored, how would it be cleared, and
-  what should happen on a second device?
+- Should the API key remain device-specific, or be manually entered on each
+  device? It must not be included in ordinary expense-data sync or exports.
+- Should the user opt into remembering the key, or is persistent
+  `localStorage` always expected after entry?
 - Which Gemini model, structured-output schema, image limits, failure behavior,
   and usage controls are required?
 
@@ -224,6 +283,8 @@ These questions must be resolved incrementally before implementation.
 - Which mobile and desktop browsers and minimum versions must be supported?
 - What must work offline beyond browsing and manual entry?
 - How should install prompts, updates, and unsaved changes be communicated?
+- How will the app handle GitHub Pages' repository base path, direct loads, and
+  service-worker scope?
 
 ### 10. Testing and Visual Acceptance
 
@@ -242,6 +303,6 @@ These questions must be resolved incrementally before implementation.
 2. Decide whether collections and tags are distinct concepts.
 3. Define canonical storage/export data and multi-currency semantics.
 4. Define local persistence, Google Drive sync, and conflict behavior.
-5. Decide the Gemini API-key security architecture.
+5. Define the remaining Gemini model, privacy, and key UX details.
 6. Confirm React, browser support, and detailed PWA behavior.
 7. Agree on acceptance criteria and test tooling.

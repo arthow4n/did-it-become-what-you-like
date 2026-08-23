@@ -102,7 +102,7 @@ Application shell
     |   +-- Model
     |   +-- Image preparation
     +-- Data portability
-    |   +-- Export JSON / CSV
+    |   +-- Export JSON
     |   +-- Import and preview
     +-- Application preferences
 ```
@@ -750,8 +750,58 @@ Agreed behavior:
 
 ### Screen 12: Import and Export
 
-**Status: open.** JSON/CSV export and merge/replace import workflows require
-separate approval.
+**Status: approved.** CSV is deferred beyond the MVP; this screen uses only the
+lossless, versioned JSON format.
+
+```text
++----------------------------------+
+| < Settings      Import & export  |
+|                                  |
+| Export                           |
+| [ Export complete backup       ] |
+| Versioned JSON · all projects    |
+| Suitable for inspection/restore  |
+|                                  |
+| Import                           |
+| [ Choose JSON backup           ] |
+| Validated and previewed first     |
++----------------------------------+
+```
+
+When the browser supports sharing files, a successful export may additionally
+offer the native share sheet; a normal file download is always available.
+
+```text
++----------------------------------+
+| < Import          Preview        |
+|                                  |
+| Valid JSON backup                |
+| Schema 2 · no migration needed   |
+| 3 projects · 18 categories       |
+| 1,240 expenses · 42 receipts     |
+|                                  |
+| [ Merge into current data      ] |
+| Recommended · works offline      |
+|                                  |
+| Replace all current data         |
+| Creates a new dataset generation |
+| [ Review replacement risks     ] |
++----------------------------------+
+```
+
+- Validation and preview show the schema version, record counts, required
+  migrations, warnings, and blocking errors before any mutation. An invalid
+  file cannot advance to commit.
+- **Merge** is the prominent recommended action. It works offline, commits
+  atomically, and sends resulting conflicts and revisions through the ordinary
+  synchronization and conflict-review workflows.
+- **Replace** is visually separated as destructive. It requires a successful
+  automatic JSON safety export and strong confirmation. With Drive configured,
+  it also requires an online pre-sync; without Drive, local replacement remains
+  available offline.
+- The focused import actor owns explicit choosing, validating, previewing,
+  preparing, committing, synchronizing, conflict, completed, and failure modes.
+  The UI derives progress and available actions from those modes.
 
 ### Screen 13: Preferences
 

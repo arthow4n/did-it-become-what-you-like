@@ -292,15 +292,16 @@ agreed.
   independently of Google Drive.
 - Stored and exported data must use simple, documented, broadly readable
   formats. Versioned JSON is the lossless canonical/export format because it can
-  preserve receipt relationships and sync metadata. CSV is a flattened analysis
-  export rather than the source of truth. SQLite or another opaque/binary
-  database file is not the interchange format.
-- CSV import is excluded from the initial release because it cannot safely
-  preserve receipt relationships, revision ancestry, or merge semantics.
+  preserve receipt relationships and sync metadata. SQLite or another
+  opaque/binary database file is not the interchange format.
+- CSV import and export are excluded from the initial release. A flattened
+  analysis export may be reconsidered later if it proves useful, but it is not
+  part of the MVP.
 - The data must not require a proprietary database or the application itself
   for basic inspection and analysis.
 - A complete JSON export must contain every project and support restoring the
-  application. CSV export must reflect the currently filtered analysis view.
+  application. Export must always support a normal file download and may also
+  offer the native share sheet when the browser supports sharing files.
 - JSON import must be validated and previewed before mutation, then offer both
   merge and replace modes. Either mode must be atomic and must never leave a
   partially imported dataset.
@@ -341,7 +342,7 @@ agreed.
   mapping.
 - Automerge's compact internal representation may remain an implementation
   detail in IndexedDB and hidden Drive sync data. User-controlled interchange
-  remains versioned JSON and CSV.
+  in the initial release remains versioned JSON.
 - Before implementation commits to Automerge, a focused compatibility check
   must verify its current release with Deno 2, the production browser build,
   repository-namespaced IndexedDB, conflict inspection/resolution, and a Google
@@ -361,13 +362,17 @@ agreed.
   committing, synchronizing, conflict-resolution, and failure modes. The XState
   actor must prevent ordinary synchronization from running concurrently with an
   import commit.
+- Import preview must show the schema version, record counts, required
+  migrations, warnings, and blocking validation errors before mutation. An
+  invalid file cannot advance to commit.
 - Before import, the application should synchronize the latest Drive state when
   possible and generate a safety export of the current local dataset.
 - Merge import treats imported records as incoming revisions in the current
   dataset. Stable IDs and Automerge rules merge non-conflicting changes and
   surface genuine conflicts through the normal resolution workflow.
 - Merge import is permitted while offline. Its resulting local revisions enter
-  the normal synchronization workflow when connectivity returns.
+  the normal synchronization workflow when connectivity returns. It is the
+  prominent recommended choice in the UI.
 - Replace import creates a new dataset generation rather than pretending that
   every imported record is a newer edit. This prevents stale remote or
   long-offline devices from silently restoring the replaced generation.
@@ -376,7 +381,8 @@ agreed.
   configured, local replacement remains available offline.
 - Before replacement commits, the application must download a complete JSON
   safety export of the current dataset. If the safety export cannot be created,
-  replacement must not proceed.
+  replacement must not proceed. Replace must be visually separated as a
+  destructive choice and require strong confirmation.
 - Unsynchronized changes belonging to the replaced generation are preserved in
   that safety export but must not automatically merge into the new generation.
   They may be recovered later through an explicit merge import.

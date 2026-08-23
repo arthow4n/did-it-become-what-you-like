@@ -85,11 +85,15 @@ agreed.
   boundary** for automatic manual-entry dates. For example, with a boundary of
   03:00, a new form opened at 01:30 defaults to the previous calendar date,
   matching the owner's lived day after returning home past midnight.
+- The boundary uses the device's current local wall-clock time and timezone when
+  a new manual form opens, including while travelling. Its native time input
+  must show a live example with concrete dates.
 - The expense-day boundary affects only the initial date suggested for a new
   manual expense. It must not rewrite a date explicitly chosen by the owner or
   a transaction date extracted from a receipt or supplied by import. The form
   must display the resulting concrete calendar date so the offset is never
-  hidden behind only a relative label such as “Today.”
+  hidden behind only a relative label such as “Today.” Once stored, the calendar
+  date is stable and must not change when the device enters another timezone.
 - Monetary amounts follow their natural direction from the owner's perspective:
   purchases and other outflows are negative, while discounts, refunds,
   cashback, bottle-deposit returns, and other inflows are positive. This sign
@@ -134,6 +138,8 @@ agreed.
 - The expense view must support filtering by:
   - day, month, and year; and
   - category.
+- Day, month, and year filters operate directly on each record's stored calendar
+  date; they do not reinterpret those dates across timezones.
 - Multiple currencies must be supported.
 - The application must support multiple user-defined projects.
 - Each project represents a distinct life or travel context whose
@@ -707,7 +713,6 @@ These questions must be resolved incrementally before implementation.
 - Comparisons, trends, and charts are post-MVP possibilities. What historical
   fields or invariants must be retained now to support them later without
   complicating the initial UI?
-- What timezone defines day/month/year boundaries?
 
 ### 8. Framework, PWA, and Browser Support
 

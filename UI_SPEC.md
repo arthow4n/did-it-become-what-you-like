@@ -804,12 +804,39 @@ offer the native share sheet; a normal file download is always available.
 
 ### Screen 13: Preferences
 
-**Status: open.** Project currency is sufficient for the MVP. Domestic/reporting
-currency and cross-currency conversion are deferred as one later feature batch
-with historical exchange-rate support and must not be implemented during MVP
-work. Expense-day boundary presentation and timezone behavior still require
-approval; later visual or accessibility preferences remain out of scope unless
-a concrete need emerges.
+**Status: approved.** Project currency is sufficient for the MVP.
+Domestic/reporting currency and cross-currency conversion are deferred as one
+later feature batch with historical exchange-rate support and must not be
+implemented during MVP work.
+
+```text
++----------------------------------+
+| < Settings          Preferences  |
+|                                  |
+| Expense-day boundary             |
+| [ 03:00                         ] |
+|                                  |
+| Before this local time, a new     |
+| manual expense defaults to the    |
+| previous calendar date.           |
+|                                  |
+| Example                          |
+| Entered at 01:30 on 24 August     |
+| Suggested date: 23 August         |
++----------------------------------+
+```
+
+- The boundary uses the platform's native time input and shows a live example
+  with concrete dates so its effect is unambiguous.
+- It is evaluated using the device's current local wall-clock time and timezone
+  when a new manual form opens, including while travelling.
+- The calculation only chooses the initial calendar-date value. Once chosen or
+  edited, that stored date is stable and is not changed when the device later
+  enters another timezone.
+- Day, month, and year filters operate on stored calendar dates rather than
+  converting them between timezones.
+- No speculative visual or accessibility preferences are added to this screen;
+  those can be introduced later only when a concrete need emerges.
 
 ### Screen 14: Data and Privacy
 

@@ -82,7 +82,7 @@ agreed.
 - A built-in `Uncategorized` category must always exist. It behaves as the
   fallback category for entries which have not been classified and cannot be
   deleted through category management.
-- Categories are shared globally across collections/projects because the owner
+- Categories are shared globally across projects because the owner
   generally uses the same category set in every context. Switching projects
   isolates expense views but does not create a separate category catalogue.
 - The expense view must support filtering by:
@@ -90,19 +90,22 @@ agreed.
   - category.
 - Multiple currencies must be supported.
 - The user must be able to set a domestic/default currency.
-- The application must provide a way to separate or group expenses into
-  multiple user-defined collections. The final concept and name (for example,
-  project, tag, ledger, or account) remain open.
-- Each such collection represents a distinct life or travel context whose
+- The application must support multiple user-defined projects.
+- Each project represents a distinct life or travel context whose
   expenses should not be mixed in ordinary views. Examples include the owner's
   former life in Taiwan, current life in Sweden, or an individual trip to
   another country.
-- A collection must have a default/local currency so expenses can be recorded
+- A project must have a default/local currency so expenses can be recorded
   naturally in the currency of that context without requiring immediate
   conversion to the owner's domestic currency.
-- The collection currency is a default, not a restriction. An individual entry
-  may override it, and one collection may contain entries in multiple
+- The project currency is a default, not a restriction. An individual entry
+  may override it, and one project may contain entries in multiple
   currencies.
+- Every expense belongs to exactly one project, defaulting to the currently
+  selected project while remaining manually changeable.
+- Domain-level tags are not part of the initial release. They may be added later
+  if a concrete cross-project labeling need emerges. Stable record identifiers
+  must allow this extension without redesigning existing data.
 - Creating, viewing, editing, and deleting an expense offline are provisional
   baseline behaviors; exact validation, ordering, and deletion/undo behavior
   remain to be specified.
@@ -216,7 +219,7 @@ agreed.
 ### Local Browser Storage
 
 - IndexedDB is required for all locally persisted application data, including
-  expenses, categories, collections/tags, settings, sync metadata, migrations,
+  expenses, categories, projects, settings, sync metadata, migrations,
   and extracted receipt records. Source receipt images are explicitly excluded
   because they are not retained.
 - The IndexedDB database name must be namespaced with the repository name,
@@ -289,16 +292,10 @@ These questions must be resolved incrementally before implementation.
   returned without confusing totals?
 - Is time-of-day needed, or only a calendar date?
 
-### 2. Collections, Projects, and Tags
+### 2. Project Behavior
 
-- The provisional recommendation is that every expense belongs to exactly one
-  life/travel collection, defaulting to the currently selected collection while
-  remaining manually changeable. Truly shared costs can be split, and optional
-  cross-cutting tags can be considered separately. Does this match the owner's
-  needs, or is multi-collection membership genuinely required?
-- Should collection be an additional filter alongside category, or should
-  switching collections create isolated views and settings?
-- What should this concept be called in the UI?
+- Should project be an additional filter alongside category, or should
+  switching projects create isolated views and settings?
 
 ### 3. Currency Behavior
 
@@ -311,7 +308,7 @@ These questions must be resolved incrementally before implementation.
 - Should JSON be the lossless canonical format with CSV as a flattened analysis
   export, or should CSV itself be canonical?
 - Is import from exported files required as well as export?
-- Should exports include all collections in one file or separate files?
+- Should exports include all projects in one file or separate files?
 - How will schema versions and future migrations be represented?
 - Should monetary amounts use integer minor units, decimal strings, or another
   exact representation that avoids binary floating-point errors?
@@ -331,7 +328,7 @@ These questions must be resolved incrementally before implementation.
   tombstones for deletion, deterministic field/record merging, or explicit
   user conflict resolution. No strategy is agreed yet.
 - What happens when two devices modify the same expense, category, or
-  collection while offline?
+  project while offline?
 - Which IndexedDB helper, if any, should be used while preserving transparent
   schema control and Deno 2 compatibility?
 
@@ -364,7 +361,7 @@ These questions must be resolved incrementally before implementation.
 
 - Do day/month/year filters mean a chosen calendar period, rolling periods, or
   both?
-- Can filters be combined across date, category, currency, and collection/tag?
+- Can filters be combined across date, category, currency, and project?
 - Which list search and sorting controls are required for the initial release?
 - Comparisons, trends, and charts are post-MVP possibilities. What historical
   fields or invariants must be retained now to support them later without
@@ -394,9 +391,8 @@ These questions must be resolved incrementally before implementation.
 ## Recommended Decision Order
 
 1. Define expense and invoice record semantics.
-2. Decide whether collections and tags are distinct concepts.
-3. Define canonical storage/export data and multi-currency semantics.
-4. Define local persistence, Google Drive sync, and conflict behavior.
-5. Define the remaining Gemini model, privacy, and key UX details.
-6. Confirm React, browser support, and detailed PWA behavior.
-7. Agree on acceptance criteria and test tooling.
+2. Define canonical storage/export data and multi-currency semantics.
+3. Define local persistence, Google Drive sync, and conflict behavior.
+4. Define the remaining Gemini model, privacy, and key UX details.
+5. Confirm React, browser support, and detailed PWA behavior.
+6. Agree on acceptance criteria and test tooling.

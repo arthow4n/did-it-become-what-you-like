@@ -103,6 +103,8 @@ agreed.
   currencies.
 - Every expense belongs to exactly one project, defaulting to the currently
   selected project while remaining manually changeable.
+- The application must persist the most recently selected project and reopen
+  that project on the next launch.
 - Domain-level tags are not part of the initial release. They may be added later
   if a concrete cross-project labeling need emerges. Stable record identifiers
   must allow this extension without redesigning existing data.

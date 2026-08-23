@@ -535,7 +535,7 @@ Agreed behavior:
 
 ### Screen 9: Settings
 
-**Status: approved.** Child workflows remain open and are reviewed separately.
+**Status: approved.** Its child workflows are specified and approved below.
 
 ```text
 +----------------------------------+
@@ -574,8 +574,8 @@ Agreed behavior:
 
 ### Screen 10: Google Drive and Synchronization
 
-**Status: approved.** Conflict review and known-device management remain
-separate child screens.
+**Status: approved.** Conflict review and known-device management are separate
+approved child screens below.
 
 ```text
 +----------------------------------+

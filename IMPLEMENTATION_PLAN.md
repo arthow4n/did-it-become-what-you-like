@@ -1118,7 +1118,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
     base `43998c4`; ownership `spikes/toolchain/**`, `deno.json`,
     `deno.lock`, and toolchain-only decision/proof files; agent `Cicero`
-    (`01a03092-5f84-7a83-992a-ff40b904dfc1`); merge first.
+    (`01a03092-5f84-7a83-992a-ff40b904dfc1`); local commit `96240de`
+    (`Prove Deno frontend toolchain`) is clean and awaiting the first merge
+    slot.
   - `F-002`: branch `task/f-002-automerge`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-002-automerge`,
     base `43998c4`; ownership `spikes/automerge/**` and its decision record;
@@ -1141,6 +1143,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   agent-browser, mobile/cross-browser, production-build, real CSP delivery,
   and real service-worker registration checks are explicitly unavailable and
   recorded in the decision document.
+- **F-001 handoff evidence:** local commit `96240de` passed `deno task
+  fmt:check`, `deno task lint`, `deno task check`, `deno task test` (3 passed),
+  `deno task build`, `deno task browser:install`, `deno task test:e2e` (1
+  passed), `deno task verify:toolchain`, `git diff --cached --check`, and a
+  clean `git status --short --branch`. Direct `deno check` was tested but is not
+  canonical because a transitive `@types/node` declaration fails; the required
+  TypeScript 7 checker passes. Generated `node_modules` and Playwright browser
+  binaries are ignored/external and were not committed.
 - **Dispatch evidence:** all three agents received bounded prompts with their
   owned files, non-goals, acceptance criteria, and exact validation/handoff
   requirements; no worker is permitted to edit this ledger or push `master`.
@@ -1148,9 +1158,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   E2E invocation (`F-001`); Automerge proof (`F-002`); Google/image/PWA browser
   proof (`F-003`); exact agent-browser binary/Chromium pins (`F-005`).
 - **Current task:** foundation compatibility wave (`F-001`–`F-003`) is active.
-- **Blocker:** none. The next action is to receive and inspect `F-001` and
-  `F-002`, integrate them first, then review and integrate `F-003` in the
-  recorded order.
+- **Blocker:** none. The next action is to inspect and integrate `F-001`, then
+  receive `F-002` and integrate it before reviewing and integrating `F-003` in
+  the recorded order.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

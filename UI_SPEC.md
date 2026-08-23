@@ -36,6 +36,11 @@ visual design system.
   custom calendar day/month/year. Secondary filtering can include category,
   currency, merchant search, and other later-agreed criteria. Every summary and
   list updates from the same active filter selection.
+- Responsive layouts must give content a natural width and height, wrap where
+  appropriate, and never depend on page-level horizontal scrolling. A control
+  row which genuinely benefits from horizontal overflow, such as compact quick
+  period choices on a very narrow screen, must be touch-draggable and keyboard
+  operable. It must not use an unexplained arrow as a substitute for scrolling.
 
 ## Proposed Experience
 
@@ -119,21 +124,25 @@ Application shell
 
 ### Screen 1: Expenses
 
+**Status: approved.**
+
 ```text
 +----------------------------------+
 | Sweden project             Synced|
-| v                                |
 |                                  |
-| [Today][This month][Year][Custom]|
-| [ All categories v ][ Filters ]  |
+| [Today][Month][Year][Custom]     |
+| [All categories] [Filters] [Find]|
 |                                  |
 | Net spent          SEK 4,358.50  |
 | Outflows 4,382.50 | Back 24.00   |
-| Groceries 2,140  Travel 1,020 ...|
+|                                  |
+| By category              View all|
+| Groceries                  2,140  |
+| Travel                     1,020  |
 |                                  |
 | Sun 23 Aug                       |
-| ICA Maxi, Solna                  |
-| Groceries       SEK -286.40      |
+| ICA Maxi Solna · 8 receipt lines |
+| Receipt          SEK -286.40     |
 |                                  |
 | SL                               |
 | Transport        SEK -43.00      |
@@ -145,9 +154,23 @@ Application shell
 +----------------------------------+
 ```
 
-Open decisions: the default period, category-breakdown presentation, search
-placement, detailed filter behavior, receipt grouping, and how much information
-each expense row shows.
+Agreed behavior:
+
+- **This month** is the initial period. Today, This month, This year, and custom
+  calendar selection remain quickly available.
+- The three largest categories are shown initially with **View all**. Selecting
+  a category applies it as a filter.
+- A scanned receipt is summarized as one expandable row so a long receipt does
+  not overwhelm the list; expanding it reveals its independently editable
+  lines.
+- An individual row shows merchant or description, category, signed amount,
+  currency, and optional time when present. Full information is available from
+  its details screen.
+- Quick periods and category remain directly available. Search, currency,
+  amount range, and other secondary criteria use a filter panel, with active
+  criteria represented by removable chips.
+- The category breakdown and all three totals always reflect exactly the same
+  selected project and filters as the expense list.
 
 ### Screen 2: Add Choice
 

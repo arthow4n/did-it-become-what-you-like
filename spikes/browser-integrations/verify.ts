@@ -1,3 +1,5 @@
+/// <reference lib="deno.ns" />
+
 import { BrowserFixture } from "./browser-fixture.ts";
 import {
   DRIVE_APP_DATA_SCOPE,

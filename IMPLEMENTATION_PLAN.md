@@ -242,9 +242,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-003 — Prove browser Google, image, and PWA integrations
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `P-000`. The orchestrator
-  owns integration; the bounded worker is assigned in the Current Checkpoint.
-  This runs parallel with `F-001` and `F-002`.
+- **Status/dependencies:** `COMPLETE`; depends on `P-000`. Worker commit
+  `c6b2f8f` and scoped fix `200a9a5` were integrated by `dd20e31` and
+  `0ccfea6`; the required browser-integration proofs pass from `master`.
 - **Ownership:** `spikes/browser-integrations/**` and its decision record only.
 - **Scope/non-goals:** prove browser-safe use of Google Identity/Drive app-data,
   `@google/genai` model listing and structured image output, ephemeral camera/file
@@ -265,7 +265,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-004 — Create the application skeleton and CI/deployment pipeline
 
-- **Status/dependencies:** `PENDING`; depends on `F-001`, `F-002`, `F-003`.
+- **Status/dependencies:** `READY`; depends on `F-001`, `F-002`, `F-003`, all
+  complete. The orchestrator will assign this root-configuration task next.
 - **Ownership:** root tool configs, `.github/workflows/**`, `scripts/**`, minimal
   `src/app` entry, static manifest/icons placeholders generated without product
   styling; not domain/features.
@@ -1111,18 +1112,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   eight Markdown fence lines are balanced; `git status --short --branch` is
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Active wave:** `F-001` and `F-002` are `COMPLETE`; `F-003` remains under the
-  orchestrator's integration ownership. The foundation tasks ran in separate
-  worktrees and are integrated in the recorded order after exact evidence
-  review.
+- **Active wave:** `F-001`, `F-002`, and `F-003` are `COMPLETE`. `F-004` is the
+  next dependency-ready task; `F-005` remains pending on `F-004`.
 - **Active worktrees and dispatch order:**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
     base `43998c4`; ownership `spikes/toolchain/**`, `deno.json`,
     `deno.lock`, and toolchain-only decision/proof files; agent `Cicero`
-    (`01a03092-5f84-7a83-992a-ff40b904dfc1`); local commit `96240de`
-    (`Prove Deno frontend toolchain`) is clean and awaiting the first merge
-    slot.
+    (`01a03092-5f84-7a83-992a-ff40b904dfc1`); worker commit `96240de` is
+    integrated by `db1d9b4`; worktree is clean and preserved pending later
+    cleanup.
   - `F-002`: branch `task/f-002-automerge`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-002-automerge`,
     base `43998c4`; ownership `spikes/automerge/**` and its decision record;
@@ -1133,11 +1132,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   - `F-003`: branch `task/f-003-browser-integrations`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-003-browser-integrations`,
     base `43998c4`; ownership `spikes/browser-integrations/**` and its decision
-    record; agent `Popper` (`01a03092-6086-7b42-ade7-dc16d28f1aef`); local
-    commit `c6b2f8f` (`Prove browser integrations`) is clean and awaiting the
-    third merge slot.
-- **Interrupted tasks:** none. `F-001` and `F-002` are integrated and complete;
-  `F-003` remains clean and unintegrated.
+    record; agent `Popper` (`01a03092-6086-7b42-ade7-dc16d28f1aef`); worker
+    commits `c6b2f8f` and `200a9a5` are integrated by `dd20e31` and `0ccfea6`;
+    worktree is clean and preserved pending later cleanup.
+- **Interrupted tasks:** none. All three compatibility tasks are integrated and
+  complete; no active foundation worker remains.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1174,16 +1173,24 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   format, lint, strict Deno check, browser bundling with `--platform browser
   --no-check`, and `git diff --check`. The runner reported all 12 checks
   passing on each run.
+- **F-003 integration evidence:** merge commits `dd20e31` and `0ccfea6` passed
+  from `master` the 11/11 browser-integration proofs, `deno fmt --check
+  spikes/browser-integrations`, `deno lint spikes/browser-integrations`, `deno
+  check spikes/browser-integrations/verify.ts`, and `git diff --check`. The
+  initial integrated type-check failure was fixed by the scoped `deno.ns`
+  reference in `200a9a5`; the documented live-service, native-browser, and
+  production-delivery checks remain intentionally unavailable.
 - **Dispatch evidence:** all three agents received bounded prompts with their
   owned files, non-goals, acceptance criteria, and exact validation/handoff
   requirements; no worker is permitted to edit this ledger or push `master`.
-- **Known technical gates, not owner ambiguities:** exact pinned dependencies and
-  E2E invocation (`F-001`); Automerge proof (`F-002`); Google/image/PWA browser
-  proof (`F-003`); exact agent-browser binary/Chromium pins (`F-005`).
-- **Current task:** foundation compatibility wave; `F-003` is next for final
-  inspection and integration.
-- **Blocker:** none. The next action is to integrate `F-003`, then run the full
-  `R-100` independent foundation review gate.
+- **Known technical follow-ups, not owner ambiguities:** F-004 must consume the
+  pinned Deno/TypeScript/Playwright commands; F-005 must pin agent-browser and
+  Chrome for Testing; Automerge's alpha adapter and browser type-check
+  limitation remain recorded for later review.
+- **Current task:** `F-004` application skeleton and CI/deployment foundation is
+  next.
+- **Blocker:** none. The next action is to assign and implement `F-004` under
+  root integration ownership, then run `F-005` before `R-100`.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

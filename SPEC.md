@@ -39,6 +39,24 @@ agreed.
 - **Progressive enhancement:** the browser experience must remain usable
   without installing the PWA.
 
+## User Needs and Usage
+
+- Expense capture must fit several real-life moments:
+  - immediately after a purchase, commonly by scanning its receipt or invoice;
+  - manually later the same day; and
+  - processing multiple expenses in a later session.
+- The application is primarily a trustworthy record for later reflection, not
+  a tool that must provide an immediate response after every entry.
+- The owner wants to return later and answer questions such as:
+  - how much was spent on a particular day, month, or year; and
+  - how much was spent in each category during that period.
+- The owner currently uses a similar expense application, but it is simpler and
+  requires more manual work. Fast invoice-assisted capture and richer review
+  should reduce that friction without making ordinary manual entry complicated.
+- The product name provisionally expresses reflection on whether past spending
+  became something the owner values or likes. The exact intended meaning and
+  whether it implies an explicit product feature remain open.
+
 ## Required Product Capabilities
 
 ### Expense Entry and Organization

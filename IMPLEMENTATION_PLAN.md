@@ -265,9 +265,10 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-004 — Create the application skeleton and CI/deployment pipeline
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `F-001`, `F-002`, `F-003`,
-  all complete. The orchestrator owns integration; the bounded worker and
-  worktree are recorded in the Current Checkpoint.
+- **Status/dependencies:** `COMPLETE`; depends on `F-001`, `F-002`, `F-003`,
+  all complete. Worker commit `d398608` and CSP fix `fe38734` were integrated
+  as `612f5c5` and `3f40033`; the canonical foundation gate passes from
+  `master`.
 - **Ownership:** root tool configs, `.github/workflows/**`, `scripts/**`, minimal
   `src/app` entry, static manifest/icons placeholders generated without product
   styling; not domain/features.
@@ -284,7 +285,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-005 — Establish test, fake-service, and visual tooling
 
-- **Status/dependencies:** `PENDING`; depends on `F-001`, `F-003`, `F-004`.
+- **Status/dependencies:** `READY`; depends on `F-001`, `F-003`, `F-004`, all
+  complete. The orchestrator will assign this tooling task next.
 - **Ownership:** `src/test-support/**`, test configuration, `e2e/support/**`,
   visual scripts; no production behavior.
 - **Scope/non-goals:** provide deterministic clock/ID/network fixtures, fake
@@ -1116,8 +1118,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   eight Markdown fence lines are balanced; `git status --short --branch` is
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Active wave:** `F-001`, `F-002`, and `F-003` are `COMPLETE`. `F-004` is the
-  active root-configuration task; `F-005` remains pending on `F-004`.
+- **Active wave:** `F-001` through `F-004` are `COMPLETE`. `F-005` is the next
+  dependency-ready tooling task.
 - **Active worktrees and dispatch order:**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1143,10 +1145,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     `~/git/worktrees/did-it-become-what-you-like-f-004-foundation`,
     base `2bdb59c`; ownership root tool configs, `.github/workflows/**`,
     `scripts/**`, minimal `src/app/**`, and static PWA placeholders; agent
-    `Halley` (`01a030a7-b8c0-70f0-91e0-c8d4998a1fac`); merge after the bounded
-    review.
-- **Interrupted tasks:** none. The three compatibility tasks are integrated and
-  complete; `F-004` is the only active implementation task.
+    `Halley` (`01a030a7-b8c0-70f0-91e0-c8d4998a1fac`); worker commits
+    `d398608` and `fe38734` are integrated as `612f5c5` and `3f40033`; worktree
+    is clean and preserved pending later cleanup.
+- **Interrupted tasks:** none. F-001 through F-004 are integrated and complete;
+  no active foundation worker remains.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1190,6 +1193,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   initial integrated type-check failure was fixed by the scoped `deno.ns`
   reference in `200a9a5`; the documented live-service, native-browser, and
   production-delivery checks remain intentionally unavailable.
+- **F-004 handoff evidence:** worker commit `d398608` and fix `fe38734` passed
+  `deno task fmt:check`, `deno task lint`, `deno task check`, `deno task test`
+  (6 passed), `deno task build`, `deno task verify:pages`, `deno task
+  verify:ci`, `deno task verify:toolchain`, `git diff --check`, and
+  `git diff --cached --check`.
+- **F-004 integration evidence:** cherry-picks `612f5c5` and `3f40033` passed
+  from `master` the same full canonical gate; the Pages artifact and CI policy
+  validators passed, and the generated production service worker/manifest use
+  the repository base path. Hosted Actions, Pages, and live service-worker
+  inspection remain unavailable until the later release checks.
 - **Dispatch evidence:** the three compatibility agents and `F-004` worker
   received bounded prompts with their owned files, non-goals, acceptance
   criteria, and exact validation/handoff requirements; no worker is permitted
@@ -1198,10 +1211,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   pinned Deno/TypeScript/Playwright commands; F-005 must pin agent-browser and
   Chrome for Testing; Automerge's alpha adapter and browser type-check
   limitation remain recorded for later review.
-- **Current task:** `F-004` application skeleton and CI/deployment foundation is
-  active.
-- **Blocker:** none. The next action is to dispatch the bounded `F-004` worker
-  in its recorded worktree, then inspect and integrate its commit.
+- **Current task:** `F-005` test, fake-service, and visual tooling is next.
+- **Blocker:** none. The next action is to create and record the F-005 worktree,
+  then dispatch its bounded worker.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

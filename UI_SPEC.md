@@ -292,6 +292,9 @@ Agreed behavior:
 - A new form defaults to the current project's currency and project,
   `Uncategorized`, and the calendar date produced by the configured local
   expense-day boundary. Every default remains changeable.
+- An unfinished create or edit form is saved as a device-local IndexedDB draft
+  and restored after an accidental reload. Saving or explicitly discarding the
+  form removes that draft; it is never synchronized or included in an export.
 - The chosen concrete date is always visible. For example, a form opened at
   01:30 with a 03:00 boundary shows the previous calendar date and identifies
   it as the default expense day rather than showing only an ambiguous “Today.”
@@ -421,6 +424,10 @@ Agreed behavior:
 - Saving atomically commits the parent receipt and every selected line. A
   remaining mismatch requires explicit confirmation. Closing a modified review
   requires discard confirmation.
+- Once structured extraction has passed browser validation, the review draft
+  and its workflow snapshot are persisted device-locally so review can resume
+  after an accidental reload. Saving or explicitly discarding clears the draft;
+  it is never synchronized or exported as an accepted record before Save.
 - The receipt image remains unpersisted under the previously agreed ephemeral
   inference-input rule.
 
@@ -988,6 +995,31 @@ than only its ideal populated state:
 - form validation, unsaved changes, and cancellation;
 - import preview, replacement warning, and migration failure; and
 - deletion pending, awaiting devices, finalized, and forced finalization.
+
+### Drafts, Local Saving, and Unsaved Exits
+
+**Status: approved.**
+
+- Manual expense forms and validated structured receipt-review drafts persist
+  to the repository-namespaced IndexedDB as device-local workflow snapshots.
+  Source receipt images remain strictly in memory and are never part of a
+  snapshot.
+- Drafts restore after accidental reload or browser restart. A successful Save
+  or explicit **Discard changes** removes the corresponding draft.
+- In-app navigation away from a dirty form offers **Keep editing** and
+  **Discard changes**. Closing or reloading the page requests the browser's
+  standard unsaved-change warning where supported; draft persistence remains the
+  fallback because browsers do not guarantee that warning.
+- Save actions enter an explicit local-saving mode which prevents duplicate
+  submission. Navigation occurs only after the IndexedDB transaction succeeds.
+- A local-save failure keeps all entered data visible, explains that the record
+  was not saved, and offers **Retry**. It never renders or navigates as though
+  persistence succeeded.
+- **Reload to update** is unavailable as an immediate action while a workflow is
+  dirty. It first requires the owner to save or explicitly discard changes.
+- Draft persistence, dirty state, saving, saved, save-failed, retry, and discard
+  are owned by the relevant focused actor. Hydration restores its persisted
+  snapshot rather than guessing a state from loose context fields.
 
 ## Screen Approval Checklist
 

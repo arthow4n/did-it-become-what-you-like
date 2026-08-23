@@ -235,6 +235,12 @@ and multi-device synchronization according to the agreed sync design.
   they are saved. The review must show all entries about to be created and allow
   the owner to add missing lines, edit AI-generated values, and remove incorrect
   lines.
+- Once structured extraction has passed browser validation, its review draft
+  and focused workflow snapshot must persist device-locally in IndexedDB so an
+  accidental reload does not lose completed inference work. The structured
+  draft is cleared on Save or explicit discard and is neither synchronized nor
+  exported as an accepted record before Save. The source image remains strictly
+  ephemeral and must never enter the persisted snapshot.
 - Saving a reviewed receipt must commit its parent record and all accepted lines
   atomically. A failure must leave none of that receipt partially saved.
 - The extracted receipt total must be checked against the sum of its draft
@@ -524,6 +530,20 @@ and multi-device synchronization according to the agreed sync design.
 - PWA update checks must explicitly distinguish checking, up-to-date,
   update-ready, offline, and failure modes. An update-ready state must offer an
   explicit reload action and must not automatically reload over unsaved input.
+  When a workflow is dirty, reloading to update requires saving or explicitly
+  discarding its changes first.
+- Unfinished manual create/edit forms must persist as device-local IndexedDB
+  drafts and restore after accidental reload. Manual and receipt-review drafts
+  are cleared after successful Save or explicit discard, and are not
+  synchronized or included in data exports.
+- In-app navigation away from a dirty workflow must offer **Keep editing** and
+  **Discard changes**. Page close or reload should request the browser's native
+  unsaved-change warning when supported, while durable drafts protect against
+  browsers which do not show it.
+- Saving must have explicit local-saving, saved, and save-failed modes. The UI
+  prevents duplicate submission while saving, navigates only after the IndexedDB
+  transaction commits, and retains all entered data with a **Retry** action if
+  local persistence fails.
 
 ## Architecture and Hosting
 
@@ -559,6 +579,10 @@ and multi-device synchronization according to the agreed sync design.
   expense editing, receipt scanning/review, synchronization, conflicts,
   import, deletion, and other substantial workflows. It must not become one
   giant global statechart.
+- Focused form and receipt-review actors must own dirty, draft-persisting,
+  saving, saved, save-failed, retry, and discard behavior. Durable workflow
+  state must use persisted XState snapshots for hydration rather than
+  reconstructing a state value from ad hoc booleans and partial context.
 - Asynchronous workflows such as local persistence, Google Drive sync, invoice
   processing, retries, and conflict handling must be modeled explicitly with
   XState actors and statecharts.
@@ -604,8 +628,8 @@ and multi-device synchronization according to the agreed sync design.
   preference remain device-local.
 - IndexedDB is required for all locally persisted application data, including
   expenses, categories, projects, settings, sync metadata, migrations,
-  and extracted receipt records. Source receipt images are explicitly excluded
-  because they are not retained.
+  device-local workflow drafts/snapshots, and extracted receipt records. Source
+  receipt images are explicitly excluded because they are not retained.
 - The IndexedDB database name must be namespaced with the repository name,
   `did-it-become-what-you-like`, so it cannot collide with databases created by
   other projects hosted on the same GitHub Pages origin.
@@ -759,7 +783,6 @@ These questions must be resolved incrementally before implementation.
 - Which mobile and desktop browsers and minimum versions must be supported?
 - What, if anything, must work offline beyond the approved local browsing,
   expense mutation, first-project creation, and JSON-restore behaviors?
-- How should unsaved-change exits be communicated?
 - How will the app handle GitHub Pages' repository base path, direct loads, and
   service-worker scope?
 - The navigation structure, screen hierarchy, mobile and desktop layouts, and

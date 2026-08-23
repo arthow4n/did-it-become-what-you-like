@@ -223,6 +223,20 @@ agreed.
 - Wall-clock timestamps may support display and ordering but must not be the
   sole authority for conflict resolution, because device clocks and offline
   upload order are unreliable.
+- Automerge is the provisional default for causal revision, merge, and conflict
+  primitives. The application must not hand-roll the distributed merge
+  algorithm when Automerge provides the required behavior.
+- Automerge's browser IndexedDB storage adapter may be used with the required
+  repository-namespaced database. Application code must still provide the
+  Google Drive transport, expense schema, conflict-review workflow, and export
+  mapping.
+- Automerge's compact internal representation may remain an implementation
+  detail in IndexedDB and hidden Drive sync data. User-controlled interchange
+  remains versioned JSON and CSV.
+- Before implementation commits to Automerge, a focused compatibility check
+  must verify its current release with Deno 2, the production browser build,
+  repository-namespaced IndexedDB, conflict inspection/resolution, and a Google
+  Drive round trip.
 
 ### Initial Currency Presentation
 
@@ -375,10 +389,8 @@ These questions must be resolved incrementally before implementation.
 ### 5. Local Persistence and Google Drive Sync
 
 - What happens when the user is signed out, offline, or revokes Drive access?
-- What exact portable revision/log representation best implements the agreed
-  merge behavior with Google Drive's browser API?
-- Which IndexedDB helper, if any, should be used while preserving transparent
-  schema control and Deno 2 compatibility?
+- Does the Automerge compatibility check validate the complete agreed behavior,
+  or must another established library be evaluated before implementation?
 
 ### 6. Google Access and Privacy
 

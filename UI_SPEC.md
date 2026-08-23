@@ -2,14 +2,40 @@
 
 ## Status
 
-This document is a provisional discussion aid, not an approved design or an
-implementation plan. Every screen and workflow remains open until the repo
-owner explicitly agrees to it. No UI implementation may begin merely because a
-wireframe appears here.
+This document is a living discussion aid, not an implementation plan. Decisions
+explicitly listed as agreed are requirements; the remaining screen details and
+workflows stay open until the repo owner approves them. No UI implementation
+may begin merely because a wireframe appears here.
 
 The wireframes are intentionally low fidelity. They define information
 hierarchy, navigation, and important actions without prematurely choosing a
 visual design system.
+
+## Agreed Foundation
+
+- The visual character is calm and minimal, with neutral surfaces and one
+  restrained accent color. Exact design tokens remain open.
+- Mobile uses bottom navigation for **Expenses**, central **Add**,
+  **Organize**, and **Settings**. Desktop presents the same structure in a left
+  navigation rail.
+- The current project selector belongs in the Expenses header rather than in a
+  separate permanent navigation destination.
+- **Add** opens a choice between manual entry and **Scan with AI**. It is an
+  action rather than an otherwise empty tab, and the initial design does not
+  depend on a hidden long-press shortcut.
+- **Organize** provides one landing screen for Projects and Categories; editing
+  a project or category opens its own focused screen.
+- Expenses is the primary read/review screen. Filters select which records are
+  being examined, the expense list explains what was recorded, summary totals
+  explain how much the selection represents, and the category breakdown
+  explains where that money went.
+- Totals are integrated into Expenses rather than placed on a separate totals
+  screen. The summary distinguishes **Outflows**, **Money back**, and **Net
+  spent** so positive adjustments are visible rather than silently hidden.
+- Quick period choices include **Today**, **This month**, **This year**, and a
+  custom calendar day/month/year. Secondary filtering can include category,
+  currency, merchant search, and other later-agreed criteria. Every summary and
+  list updates from the same active filter selection.
 
 ## Proposed Experience
 
@@ -19,7 +45,7 @@ reviewing historical spending should foreground readable amounts and category
 totals. Advanced synchronization and data-management controls should remain
 available without dominating ordinary use.
 
-Provisional visual principles:
+Agreed visual principles:
 
 - use a quiet neutral surface with one restrained accent color;
 - make signed amounts and currencies unambiguous without relying on red and
@@ -31,7 +57,7 @@ Provisional visual principles:
 - display offline, unsaved, synchronization, and conflict states consistently.
 
 The exact color palette, typography, icon family, density, corner treatment,
-and light/dark theme behavior are open decisions.
+and light/dark theme behavior remain open decisions.
 
 ## Proposed Navigation Tree
 
@@ -76,7 +102,7 @@ Application shell
     +-- Application preferences
 ```
 
-### Shell proposal
+### Agreed shell
 
 - Mobile uses a bottom bar with **Expenses**, central **Add**, **Organize**, and
   **Settings**. Add is an action which opens a choice between manual entry and
@@ -98,11 +124,12 @@ Application shell
 | Sweden project             Synced|
 | v                                |
 |                                  |
-| [ Aug 2026 v ] [ Filters (1) ]   |
+| [Today][This month][Year][Custom]|
+| [ All categories v ][ Filters ]  |
 |                                  |
-| Total                            |
-| SEK -4,382.50                    |
-| Food -2,140  Travel -1,020  ...  |
+| Net spent          SEK 4,358.50  |
+| Outflows 4,382.50 | Back 24.00   |
+| Groceries 2,140  Travel 1,020 ...|
 |                                  |
 | Sun 23 Aug                       |
 | ICA Maxi, Solna                  |
@@ -118,9 +145,9 @@ Application shell
 +----------------------------------+
 ```
 
-Open decisions: how period selection works, whether category totals are chips,
-cards, or a compact list, where search appears, and how much information each
-expense row shows.
+Open decisions: the default period, category-breakdown presentation, search
+placement, detailed filter behavior, receipt grouping, and how much information
+each expense row shows.
 
 ### Screen 2: Add Choice
 

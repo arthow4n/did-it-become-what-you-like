@@ -514,6 +514,12 @@ agreed.
 - The UI must state that this locally stored key is not a browser secret and can
   be read by JavaScript executing on the same origin. It must provide clear
   controls to replace and remove the key.
+- Starting AI scanning without a configured key must open an in-place quick
+  setup rather than redirecting away from the selected receipt. The setup must
+  use a masked API-key input with paste and explicit reveal controls, repeat the
+  concise client-side exposure warning, validate the key, persist it according
+  to the agreed automatic-remember behavior, and continue the pending scan
+  after successful setup. Validation errors remain in the setup for correction.
 - The frontend must minimize this accepted risk with a restrictive Content
   Security Policy, no runtime CDN dependencies or unrelated third-party
   scripts, safe rendering of user/LLM text, and a deliberately small dependency

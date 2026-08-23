@@ -257,32 +257,71 @@ Agreed behavior:
 
 ### Screen 4: Scan Receipt
 
+**Status: approved.**
+
 ```text
 +----------------------------------+
-| < Back       Scan receipt        |
+| X            Scan receipt        |
 |                                  |
-|     +----------------------+     |
-|     |                      |     |
-|     |  Receipt preview /   |     |
-|     |  camera viewfinder   |     |
-|     |                      |     |
-|     +----------------------+     |
+| +------------------------------+ |
+| |       Receipt preview        | |
+| +------------------------------+ |
 |                                  |
-| [ Camera ]   [ Choose image ]    |
+| [ Take photo ] [ Choose image ]  |
 |                                  |
-| Model [ compatible Gemini ... v ]|
-| Image preparation: On            |
+| Gemini: selected model           |
+| Image preparation: On  [Options] |
 |                                  |
-|          [ Scan with AI ]        |
+| Receipt is sent to Google Gemini.|
+|                                  |
+| [ Scan with AI                 ] |
 +----------------------------------+
 ```
 
-The same workflow must visibly represent preparing, requesting, validating,
-offline, failure, and cancellation states. The XState scan actor owns these
-modes; the UI must not infer them from unrelated booleans.
+Agreed behavior:
 
-Open decisions: whether model and preparation controls remain visible here or
-live only in Settings, and the preferred progress presentation.
+- **Take photo** invokes the device's native camera directly. The initial
+  release does not build a custom camera viewfinder. **Choose image** uses the
+  device's ordinary image picker.
+- The chosen image is previewed before transmission and has clear Replace and
+  Remove actions.
+- The selected Gemini model and image-preparation status are summarized on the
+  screen. **Options** expands model and preparation controls for this scan;
+  persistent defaults also remain available in Settings.
+- The concise Gemini transmission reminder remains visible. First use still
+  requires the fuller agreed disclosure.
+- When offline, scanning is disabled with an explanation while manual entry
+  remains reachable. No selected image is queued for later transmission.
+- With no API key, activating **Scan with AI** opens an in-place setup sheet
+  over the scan screen rather than losing the selected image or navigating to
+  Settings:
+
+  ```text
+  +------------------------------+
+  | Set up Gemini             X  |
+  |                              |
+  | API key                      |
+  | [ **************** ] [Show]  |
+  |                              |
+  | Stored on this device. It is |
+  | not a browser secret.        |
+  |                              |
+  | [ Save and continue        ] |
+  +------------------------------+
+  ```
+
+- The quick setup supports paste and explicit reveal/hide, validates the key,
+  displays validation errors without closing, automatically remembers a valid
+  key under the agreed namespaced `localStorage` rule, and resumes the pending
+  scan after success. A native `window.prompt()` is not used.
+- Scanning visibly progresses through in-memory preparation, requesting, and
+  structured-output validation. It can be cancelled. Success opens Receipt
+  Review; failure offers Retry, another image or model, and manual entry.
+
+The XState scan actor owns image-selected, key-setup, key-validating,
+preparing, requesting, output-validating, review-ready, offline, failed, and
+cancelled modes. UI components must derive availability and rendering from
+that workflow rather than recreating it with unrelated booleans.
 
 ### Screen 5: Receipt Review
 

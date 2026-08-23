@@ -60,6 +60,9 @@ agreed.
 - Comparisons and trends between periods are not required for the initial
   release. They are possible future enhancements, so the data model must retain
   clean historical fields and must not prevent adding them later.
+- Although general income tracking is not required initially, the monetary data
+  model must represent both outgoing expenses and money returned to the owner.
+  It must not assume that every recorded amount has the same direction.
 
 ## Required Product Capabilities
 
@@ -79,6 +82,13 @@ agreed.
 - The application must provide a way to separate or group expenses into
   multiple user-defined collections. The final concept and name (for example,
   project, tag, ledger, or account) remain open.
+- Each such collection represents a distinct life or travel context whose
+  expenses should not be mixed in ordinary views. Examples include the owner's
+  former life in Taiwan, current life in Sweden, or an individual trip to
+  another country.
+- A collection must have a default/local currency so expenses can be recorded
+  naturally in the currency of that context without requiring immediate
+  conversion to the owner's domestic currency.
 - Creating, viewing, editing, and deleting an expense offline are provisional
   baseline behaviors; exact validation, ordering, and deletion/undo behavior
   remain to be specified.
@@ -89,6 +99,11 @@ agreed.
   photographed invoice.
 - The LLM should produce draft expense entries for the relevant items on the
   invoice to reduce manual entry.
+- A scanned receipt or invoice must produce a separate draft entry for every
+  purchased line item rather than only one entry for the receipt total.
+- Extracted discounts, refunds, cashback, bottle-deposit returns, and similar
+  credits must be retained when present. They must not be discarded or forced
+  into the same semantics as an ordinary expense.
 - Generated entries must be presented for user review and correction before
   they are saved.
 - `@google/genai`, used with a Google AI Studio API key, is the provisional
@@ -222,25 +237,28 @@ These questions must be resolved incrementally before implementation.
 
 ### 1. Expense Record and Invoice Semantics
 
-- Is an expense one purchased line item, one receipt/invoice total, or either?
-- When invoice items become separate entries, how is the invoice total,
-  merchant, tax, discount, tip, quantity, and shared receipt image represented?
+- Should discounts, refunds, cashback, and bottle-deposit returns be separate
+  entries, or adjustments linked to particular purchased items or a receipt?
+- How are the receipt total, merchant, tax, tip, quantity, and shared receipt
+  represented while every purchased item remains a separate entry?
+- What sign convention and terminology clearly represent money paid and money
+  returned without confusing totals?
 - Is time-of-day needed, or only a calendar date?
 - Should attachments be retained after LLM processing? If so, locally, in
   Google Drive, or both?
 
 ### 2. Collections, Projects, and Tags
 
-- Does an expense belong to exactly one separate collection, or can it have
-  multiple tags?
-- Is the intended separation about a trip/project, a financial account, a
-  person, or another concept?
+- Does an expense belong to exactly one life/travel collection, or can it have
+  additional cross-cutting tags?
 - Should collection be an additional filter alongside category, or should
   switching collections create isolated views and settings?
 - What should this concept be called in the UI?
 
 ### 3. Currency Behavior
 
+- Must every entry use its collection's currency, or is that currency only the
+  default which individual entries may override?
 - Is the domestic currency only the default for new entries, or must all
   expenses also show a converted domestic value?
 - If conversion is required, are exchange rates entered manually, fetched

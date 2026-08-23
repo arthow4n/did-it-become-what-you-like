@@ -1140,7 +1140,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-004-foundation`,
     base `2bdb59c`; ownership root tool configs, `.github/workflows/**`,
     `scripts/**`, minimal `src/app/**`, and static PWA placeholders; agent
-    pending dispatch; merge after the bounded review.
+    `Halley` (`01a030a7-b8c0-70f0-91e0-c8d4998a1fac`); merge after the bounded
+    review.
 - **Interrupted tasks:** none. The three compatibility tasks are integrated and
   complete; `F-004` is the only active implementation task.
 - **F-003 handoff evidence:** `deno run -A
@@ -1186,9 +1187,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   initial integrated type-check failure was fixed by the scoped `deno.ns`
   reference in `200a9a5`; the documented live-service, native-browser, and
   production-delivery checks remain intentionally unavailable.
-- **Dispatch evidence:** all three agents received bounded prompts with their
-  owned files, non-goals, acceptance criteria, and exact validation/handoff
-  requirements; no worker is permitted to edit this ledger or push `master`.
+- **Dispatch evidence:** the three compatibility agents and `F-004` worker
+  received bounded prompts with their owned files, non-goals, acceptance
+  criteria, and exact validation/handoff requirements; no worker is permitted
+  to edit this ledger or push `master`.
 - **Known technical follow-ups, not owner ambiguities:** F-004 must consume the
   pinned Deno/TypeScript/Playwright commands; F-005 must pin agent-browser and
   Chrome for Testing; Automerge's alpha adapter and browser type-check

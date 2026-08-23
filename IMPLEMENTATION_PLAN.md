@@ -194,8 +194,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-001 — Prove and pin the Deno frontend/test toolchain
 
-- **Status/dependencies:** `READY` only after explicit implementation approval;
-  depends on `P-000`.
+- **Status/dependencies:** `BLOCKED`; depends on `P-000` and explicit owner
+  implementation authorization. Change to `READY` only after both are true.
 - **Ownership:** `spikes/toolchain/**`, `deno.json`, `deno.lock`, toolchain-only
   scripts and a compatibility decision record; no product feature source.
 - **Scope/non-goals:** prove Deno 2 execution of strict `typescript@7`, React,
@@ -205,18 +205,19 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   executed only through `deno task`; `agent-browser` remains a separate agent
   visual/a11y tool. Do not build app behavior.
 - **Outputs/acceptance:** pinned versions/lockfile; exact canonical task commands;
-  a minimal compile/render/actor/component/browser proof; documented fallback
-  selected only if Playwright cannot run reproducibly without a Node/npm
-  project toolchain.
+  a self-contained spike compile/render/actor/component/browser proof which does
+  not depend on the later production harness; documented fallback selected only
+  if Playwright cannot run reproducibly without a Node/npm project toolchain.
 - **Tests:** strict compile failure fixture, XState actor transition, React Aria
   render/event, Testing Library role query, and one Playwright smoke page.
-- **Verification:** `deno task verify:toolchain`; `deno task check`;
-  `deno task test:component`; `deno task test:e2e --grep toolchain-smoke`.
+- **Verification:** `deno task verify:toolchain`, which runs every disposable
+  spike proof and fails on any incompatibility; `git diff --check`.
 
 #### F-002 — Prove Automerge and IndexedDB semantics
 
-- **Status/dependencies:** `READY` after authorization; depends on `P-000`; may
-  run parallel with `F-001` and `F-003` in an isolated worktree.
+- **Status/dependencies:** `BLOCKED`; depends on `P-000` and explicit owner
+  implementation authorization; may run parallel with `F-001` and `F-003` after
+  both conditions are true.
 - **Ownership:** `spikes/automerge/**` and its decision record only.
 - **Scope/non-goals:** test current Automerge with Deno/browser build,
   repository-namespaced IndexedDB, stable IDs/decimal strings, concurrent edits,
@@ -228,13 +229,16 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   only on failure and marked owner-visible before architecture changes.
 - **Tests:** one deterministic test per required merge primitive, two-device
   convergence, restart from IndexedDB, and retirement preventing resurrection.
-- **Verification:** `deno task verify:automerge`; repeat with randomized operation
-  ordering under a recorded seed; `git diff --check`.
+- **Verification:** `deno run -A spikes/automerge/verify.ts`; repeat that runner
+  with randomized operation ordering under a recorded seed;
+  `deno fmt --check spikes/automerge`; `deno lint spikes/automerge`;
+  `git diff --check`.
 
 #### F-003 — Prove browser Google, image, and PWA integrations
 
-- **Status/dependencies:** `READY` after authorization; depends on `P-000`; may
-  run parallel with `F-001` and `F-002`.
+- **Status/dependencies:** `BLOCKED`; depends on `P-000` and explicit owner
+  implementation authorization; may run parallel with `F-001` and `F-002` after
+  both conditions are true.
 - **Ownership:** `spikes/browser-integrations/**` and its decision record only.
 - **Scope/non-goals:** prove browser-safe use of Google Identity/Drive app-data,
   `@google/genai` model listing and structured image output, ephemeral camera/file
@@ -247,8 +251,11 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   a browser requirement truly fails.
 - **Tests:** fake SDK contract tests; metadata-removal fixture; structured-output
   validation; hash refresh/base-path/service-worker-scope browser proofs.
-- **Verification:** `deno task verify:browser-integrations`; `deno task build`;
-  CSP console/network inspection with `agent-browser`.
+- **Verification:** `deno run -A spikes/browser-integrations/verify.ts`, using
+  its self-contained runner and browser fixture;
+  `deno fmt --check spikes/browser-integrations`;
+  `deno lint spikes/browser-integrations`; `git diff --check`. Production build
+  and browser-agent inspection begin only after `F-004`/`F-005` own them.
 
 #### F-004 — Create the application skeleton and CI/deployment pipeline
 
@@ -362,8 +369,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### U-104 — Implement and verify the shared design-system foundation
 
-- **Status/dependencies:** `PENDING`; depends on `R-100`; parallel with `D-101`
-  initially, but domain composites wait for `D-101`.
+- **Status/dependencies:** `PENDING`; depends on `R-100`, `D-101`; may run in
+  parallel with `D-102` and `D-103` after the canonical domain types exist.
 - **Ownership:** `src/design-system/**` and component gallery only; no feature
   business logic.
 - **Scope/non-goals:** implement semantic dark tokens, immediate-motion policy,
@@ -418,15 +425,19 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 - **Status/dependencies:** `PENDING`; depends on `L-201`, `D-102`.
 - **Ownership:** project/category domain services, actors, selectors; no screens
   except headless actor fixtures.
-- **Scope/non-goals:** first/default/last-selected project, rename/archive/empty
-  delete, default currency, global ordered categories, protected Uncategorized,
-  archive/delete-and-reassign, deleted-category redirection, offline operations.
-  Populated-project destructive workflow belongs to `X-501`.
+- **Scope/non-goals:** first/default/last-selected project, stable custom project
+  ordering, rename/archive/restore/empty delete, the guard requiring a switch
+  away before archiving the current project, default currency, global ordered
+  categories, protected Uncategorized, archive/delete-and-reassign,
+  deleted-category redirection, and offline operations. Populated-project
+  destructive workflow belongs to `X-501`.
 - **Outputs/acceptance:** invariants are transactional and actor snapshots expose
   exact available actions/errors without UI-only rules.
-- **Tests:** at-least-one project, last selection, rename identity, category
-  uniqueness/order/archive, Uncategorized protection, reassignment atomics, late
-  reference redirection, and local failure/retry.
+- **Tests:** at-least-one project, last selection, project reorder and stable
+  identity, current-project archive rejection then switch/archive, restore,
+  confirmed empty-project deletion, category uniqueness/order/archive,
+  Uncategorized protection, reassignment atomics, late reference redirection,
+  and local failure/retry.
 - **Verification:** `deno task test --filter 'project|category'`;
   `deno task test:integration --filter organize`; `deno task check`.
 
@@ -473,15 +484,19 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   editor composition; no Gemini/Drive/destructive workflows.
 - **Scope/non-goals:** first-use local path, responsive navigation, Expenses
   totals/list/filter/search/receipt expansion, Add Choice, manual create/edit,
-  Organize, project/category management, Settings landing, draft/error/offline
+  Organize, accessible project ordering, explicit project Use/Edit actions,
+  current-project archive guard, archive/restore and confirmed empty-project
+  deletion, category management, Settings landing, and draft/error/offline
   states. Populated project delete action may be visibly unavailable until
   `X-501`; it must not be faked.
 - **Outputs/acceptance:** approved mobile and desktop behavior uses shared
   components, no horizontal page scrolling, keyboard/focus and browser Back
   work, reload restores drafts/last project, no tutorial or decorative motion.
 - **Tests:** component snapshot-to-view/event wiring for every screen state;
-  accessibility names/focus; one local manual-save browser integration journey;
-  narrow/long-content responsive assertions.
+  accessible project drag/move ordering, switch-before-archive feedback,
+  archive/restore and empty-delete confirmation; accessibility names/focus; one
+  local manual-save browser integration journey; narrow/long-content responsive
+  assertions.
 - **Verification:** `deno task test:component --filter local-ui`;
   `deno task test:e2e --grep local-first-manual`; agent-browser screen matrix at
   three viewports; `deno task a11y`.
@@ -509,15 +524,18 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   schema mapping; no receipt actor/UI.
 - **Scope/non-goals:** API-key/model listing/test, capability labels including
   Needs test, schema-constrained request, browser revalidation, permitted prompt
-  context only, EXIF stripping always, optional resize/compression, ephemeral
-  memory cleanup, cancellation, typed failures. No background calls or image
-  persistence.
+  context only, the repository-namespaced `localStorage` secret port with
+  automatic persistence until explicit removal, EXIF stripping always, optional
+  resize/compression, ephemeral memory cleanup, cancellation, and typed failures.
+  The key never enters IndexedDB, sync, export, fixtures, or logs. No background
+  calls or image persistence.
 - **Outputs/acceptance:** synthetic adapter contract passes; inspection proves no
   forbidden request data; invalid output cannot reach review; key is redacted
   from all errors/logs; task locks tested image thresholds from `F-003`.
-- **Tests:** model compatibility/cache invalidation, invalid/quota/offline errors,
-  schema equivalence, hostile model text, metadata removal prep on/off, abort/
-  retry, object URL/buffer cleanup, and request allowlist snapshot.
+- **Tests:** namespaced key persistence/read/removal and export/sync exclusion;
+  model compatibility/cache invalidation; invalid/quota/offline errors; schema
+  equivalence; hostile model text; metadata removal prep on/off; abort/retry;
+  object URL/buffer cleanup; request allowlist snapshot and log redaction.
 - **Verification:** `deno task test --filter 'gemini|image-preparation'`;
   `deno task test:integration --filter gemini-fake`; CSP/network inspection.
 
@@ -548,16 +566,21 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 - **Scope/non-goals:** native Take photo/Choose image, preview/use/retake/remove,
   visible disclosure, options, inline key setup, scanning/failure states,
   editable review with uncertainty/mismatch, model type-ahead/compatibility,
-  key remove flow and configuration test. No custom camera or image editor.
+  automatic key remembering, masked stored-key display with Remove as the sole
+  replacement path, pending-scan continuation after successful quick setup, and
+  configuration test. No custom camera or image editor.
 - **Outputs/acceptance:** exact approved data disclosure; source images disappear
   after terminal paths; all review actions keyboard/touch accessible; long
   receipts use natural-height responsive cards and desktop adaptation.
 - **Tests:** component rendering/events for every actor mode, focus and disclosure,
-  key masking/removal, model search, line selection/edit, mismatch confirmation;
-  fake-Gemini E2E capture through atomic save.
+  automatic key persistence, masking/removal-only replacement, setup validation
+  retaining the selected image and continuing the pending scan, model search,
+  line selection/edit, mismatch confirmation; fake-Gemini E2E capture through
+  atomic save.
 - **Verification:** `deno task test:component --filter receipt-ui`;
-  `deno task test:e2e --grep receipt-review`; agent-browser a11y/network/memory
-  and screenshots at three viewports.
+  `deno task test:e2e --grep receipt-review`; Playwright request-allowlist and
+  cleanup assertions; separate agent-browser visual/a11y/tree inspection and
+  screenshots at three viewports.
 
 #### R-400 — Receipt independent review gate
 
@@ -599,13 +622,16 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 - **Scope/non-goals:** local-first dirty state, explicit/connect/reconnect sync,
   pull-before-push, causal change exchange, deterministic convergence, offline/
   auth/quota/failure modes, known-device labels/last-seen/acknowledgements, account
-  switch confirmation, and retirement-before-upload. No wall-clock auto-winner.
+  switch confirmation, and retirement-before-upload. Opaque device IDs remain a
+  diagnostic identifier and are not ordinary presentation data. No wall-clock
+  auto-winner.
 - **Outputs/acceptance:** sync never blocks local commits; reconnect cannot
   resurrect retired data; multiple actor triggers coalesce safely; status is
   honest and resumable.
 - **Tests:** two/three-device schedules, offline edits, duplicate/out-of-order
   changes, failed upload after pull, token expiry, quota, account mismatch,
-  device rename, restart hydration, retirement detection, and convergence.
+  device rename, ordinary projection excluding opaque IDs, restart hydration,
+  retirement detection, and convergence.
 - **Verification:** `deno task test --filter sync-actor`;
   `deno task test:integration --filter sync-schedules`; seeded stress run.
 
@@ -632,15 +658,18 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   no Screen 12 markup.
 - **Scope/non-goals:** complete documented JSON download/share, validate/preview,
   merge as causal imported changes, replace as a new generation with safety
-  backup, interruption recovery, sync coordination, and device-local exclusions.
-  No CSV or opaque database export.
+  backup, interruption recovery, mandatory successful online pre-sync immediately
+  before replace whenever Drive is configured, generation coordination, and
+  device-local exclusions. No CSV or opaque database export.
 - **Outputs/acceptance:** import is atomic; merge deduplicates stable history;
   replace cannot be undone by another device's old generation; key/drafts/images
-  are excluded; export restores all synchronized records and metadata required
-  for correctness.
+  are excluded; a configured-Drive pre-sync failure makes no mutation; export
+  restores all synchronized records and metadata required for correctness.
 - **Tests:** exact round trip, old schema migration, malformed/unknown future
   version, duplicates, merge conflicts, replace cancellation/failure/restart,
-  synchronized replacement, share unavailable fallback, secret exclusions.
+  configured Drive offline/pre-sync failure with no mutation, successful pre-sync
+  immediately followed by synchronized replacement, unconfigured offline local
+  replacement, share unavailable fallback, and secret exclusions.
 - **Verification:** `deno task test --filter 'import|export'`;
   `deno task test:integration --filter import-sync`; schema-doc verification.
 
@@ -652,13 +681,16 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   no adapter/domain contract changes.
 - **Scope/non-goals:** connect/account/status/sync-now/disconnect entry, conflict
   banner/list/field resolution, known-device labels/status, export and import
-  merge/replace previews/warnings/progress/recovery. No live-call E2E.
+  merge/replace previews/warnings/progress/recovery. Ordinary Known Devices hides
+  opaque IDs; an optional labeled technical-details view may reveal them only
+  for diagnosis. No live-call E2E.
 - **Outputs/acceptance:** global conflict banner persists correctly; offline
   operations remain available; destructive/import focus and warnings are
   accessible; UI derives availability/status from actors, not duplicated flags.
 - **Tests:** component modes/events/focus for all screens; fake-Drive reconnect
   E2E proves boundary wiring; conflict E2E; import component integration; long
-  device/error strings and narrow layouts.
+  device/error strings, opaque-ID absence from ordinary UI and presence only in
+  technical details, and narrow layouts.
 - **Verification:** `deno task test:component --filter 'sync|conflict|import'`;
   `deno task test:e2e --grep 'drive-reconnect|conflict-resolution'`;
   agent-browser screen/a11y audit.
@@ -681,7 +713,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### X-501 — Implement populated-project deletion
 
-- **Status/dependencies:** `PENDING`; depends on `S-402`, `S-404`, `L-202`.
+- **Status/dependencies:** `PENDING`; depends on `R-500`, `L-202`.
 - **Ownership:** project-deletion actor/domain and Screen 7A composition; no
   global Delete Everywhere behavior.
 - **Scope/non-goals:** record-count warning, complete safety export, exact-name
@@ -703,18 +735,25 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 - **Ownership:** disconnect/global-deletion actor, retirement/generation erase
   coordination, Screens 10/14 destructive paths; no unrelated settings.
 - **Scope/non-goals:** disconnect with keep-local semantics; local-only erase;
-  delete synchronized account via safety export, retirement publication, Drive
-  generation/history deletion, initiating-device erasure, per-device acks,
-  waiting/lost-device forced finalization, revocation ordering, durable minimal
-  progress and explicit recovery/reinitialize. Cannot erase an inaccessible
-  browser and must say so.
+  local erase offers **Remove Gemini API key** checked by default and persists
+  the checked/unchecked choice before erasure; Delete Everywhere offers a
+  complete safety export and, if explicitly declined, requires a distinct
+  additional confirmation before retirement can begin; then retirement
+  publication, Drive generation/history deletion, initiating-device erasure,
+  per-device acks, waiting/lost-device forced finalization, revocation ordering,
+  durable minimal progress, and explicit recovery/reinitialize. It cannot erase
+  an inaccessible browser and must say so.
 - **Outputs/acceptance:** retired payload cannot be re-uploaded; erased financial
-  data never enters progress snapshots; each scope is unmistakable; real cloud
+  data never enters progress snapshots; export acceptance and explicit
+  decline-plus-second-confirmation are separate guarded paths; local key removal
+  honors the default-checked choice; each scope is unmistakable; real cloud
   deletion state is reported honestly.
-- **Tests:** every state/transition/failure/reload; retirement-before-upload;
-  Drive-delete failure; local erase failure; multiple acknowledgements; offline
-  device; forced finalization; revocation ordering; old-device reconnect; no
-  payload in durable progress/logs.
+- **Tests:** every state/transition/failure/reload; accepted safety export;
+  declined export blocked without second confirmation and allowed only after it;
+  export failure; retirement-before-upload; Drive-delete failure; local erase
+  failure; default-checked key removal and explicit unchecked key preservation;
+  multiple acknowledgements; offline device; forced finalization; revocation
+  ordering; old-device reconnect; no payload/key in durable progress/logs.
 - **Verification:** `deno task test --filter delete-everywhere`;
   `deno task test:integration --filter retirement`; component destructive-flow
   tests and agent-browser focus/warning audit.
@@ -849,8 +888,8 @@ fewer when fewer dependency-ready tasks have disjoint ownership. Approved
 parallel waves are:
 
 - `F-001`, `F-002`, `F-003` in separate spike worktrees.
-- After `D-101`, `D-102`, `D-103`, and the non-domain portion of `U-104`, capped
-  at three active workers.
+- After `D-101`, run `D-102`, `D-103`, and `U-104` in parallel, capped at three
+  active workers.
 - After `R-200`, `L-201`, `L-203`, `A-301`, and `S-401` are logically disjoint;
   schedule at most three and prioritize the local vertical slice.
 - Later UI tasks are not parallel with changes to their actor/contract owner
@@ -885,6 +924,10 @@ one integration task owns those collision points.
   build configuration, routing, PWA behavior, or generated assets changed. A
   required failing command blocks the commit; it is never deferred to a review
   gate or another agent.
+- Before `F-004` establishes the canonical task aliases, the isolated foundation
+  spikes run the equivalent direct Deno commands written in their task entries;
+  this is not permission to skip formatting, linting, type/proof execution, or
+  diff validation.
 - **Additive layer matrix:** domain and actor changes run focused unit/actor
   tests; persistence and service adapters run focused integration tests;
   design-system/component/screen changes run component and accessibility tests;
@@ -947,9 +990,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Branch/upstream at draft creation:** `master`, tracking `origin/master`.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
-- **Current task:** `P-000` — draft written; independent review and fixes still
-  required before it becomes `COMPLETE`.
-- **Implementation tasks:** none started; no implementation worktrees exist.
+- **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
+  plan`).
+- **Completed implementation tasks:** none. No implementation worktree, spike,
+  dependency setup, or application source has been started.
+- **Current task:** `P-000` — the independent Luna `xhigh` review reported one
+  severity-1, ten severity-2, and three severity-3 documentation findings. All
+  are addressed in the current review-fix changes; closure verification and the
+  final fix/checkpoint commits are still required before `P-000` is `COMPLETE`.
+- **P-000 evidence so far:** unique 37 task/review IDs; all task blocks contain
+  status/dependencies, ownership, scope/non-goals, outputs/acceptance, tests, and
+  verification; balanced Markdown fences; `git diff --check` passed before the
+  independent review. Final evidence will be recorded after closure review.
 - **Next dependency-ready work after owner authorization:** `F-001`, `F-002`,
   and `F-003`, with the orchestrator assigning disjoint worktrees and prioritizing
   integration in that order.
@@ -970,12 +1022,13 @@ gpt-5.6-luna with xhigh reasoning for the orchestrator and for bounded workers
 and independent reviewers when available and useful.
 
 Before changing anything:
-1. Read AGENTS.md, SPEC.md, UI_SPEC.md, DESIGN_SYSTEM.md, and
-   IMPLEMENTATION_PLAN.md completely, plus every applicable skill instruction.
-2. Reconcile IMPLEMENTATION_PLAN.md's Current Checkpoint with the actual branch,
+1. Read IMPLEMENTATION_PLAN.md completely.
+2. Reconcile its Current Checkpoint with the actual branch,
    origin, commits, worktrees, files, and test results. Actual repository state
    wins; update the ledger if stale. Preserve all uncommitted/unintegrated work.
-3. Confirm that the owner has explicitly authorized implementation. If not,
+3. Read AGENTS.md, SPEC.md, UI_SPEC.md, DESIGN_SYSTEM.md, README.md, and every
+   applicable skill instruction completely before selecting or changing a task.
+4. Confirm that the owner has explicitly authorized implementation. If not,
    stop without implementing.
 
 Then continue until the Definition of Done or a genuine owner decision is

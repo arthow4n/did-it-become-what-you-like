@@ -1,11 +1,12 @@
-# UI/UX Specification Draft
+# UI/UX Specification
 
 ## Status
 
-This document is a living discussion aid, not an implementation plan. Decisions
-explicitly listed as agreed are requirements; the remaining screen details and
-workflows stay open until the repo owner approves them. No UI implementation
-may begin merely because a wireframe appears here.
+This document records the owner-approved MVP UI/UX requirements. Every screen,
+workflow, responsive rule, cross-cutting state, and approval checklist below is
+approved for planning. `IMPLEMENTATION_PLAN.md` orders the work; neither this
+approval nor the plan authorizes implementation without a later explicit owner
+instruction.
 
 The wireframes are intentionally low fidelity. They define information
 hierarchy, navigation, and important actions without prematurely choosing a
@@ -1137,9 +1138,9 @@ A screen is not approved until the owner agrees on:
    target expectations; and
 6. acceptance examples suitable for later end-to-end and visual testing.
 
-## Decision Sequence
+## Completed Decision Sequence
 
-The UI should be agreed incrementally in this order:
+The UI was agreed incrementally in this order:
 
 1. shell navigation and information architecture;
 2. Expenses list, period selection, filters, search, and totals;
@@ -1156,4 +1157,5 @@ The UI should be agreed incrementally in this order:
     the chosen design system before implementing application screens; and
 11. only then create a dependency-ordered implementation plan with milestones,
     prerequisites, acceptance checks, and safe parallel workstreams for owner
-    approval. Planning does not itself authorize implementation.
+    approval. That plan now exists; planning still does not itself authorize
+    implementation.

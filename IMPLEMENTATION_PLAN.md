@@ -265,8 +265,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-004 — Create the application skeleton and CI/deployment pipeline
 
-- **Status/dependencies:** `READY`; depends on `F-001`, `F-002`, `F-003`, all
-  complete. The orchestrator will assign this root-configuration task next.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `F-001`, `F-002`, `F-003`,
+  all complete. The orchestrator owns integration; the bounded worker and
+  worktree are recorded in the Current Checkpoint.
 - **Ownership:** root tool configs, `.github/workflows/**`, `scripts/**`, minimal
   `src/app` entry, static manifest/icons placeholders generated without product
   styling; not domain/features.
@@ -1113,7 +1114,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
 - **Active wave:** `F-001`, `F-002`, and `F-003` are `COMPLETE`. `F-004` is the
-  next dependency-ready task; `F-005` remains pending on `F-004`.
+  active root-configuration task; `F-005` remains pending on `F-004`.
 - **Active worktrees and dispatch order:**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1135,8 +1136,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     record; agent `Popper` (`01a03092-6086-7b42-ade7-dc16d28f1aef`); worker
     commits `c6b2f8f` and `200a9a5` are integrated by `dd20e31` and `0ccfea6`;
     worktree is clean and preserved pending later cleanup.
-- **Interrupted tasks:** none. All three compatibility tasks are integrated and
-  complete; no active foundation worker remains.
+  - `F-004`: branch `task/f-004-foundation`, worktree
+    `/home/hevar/git/worktrees/did-it-become-what-you-like-f-004-foundation`,
+    base `2bdb59c`; ownership root tool configs, `.github/workflows/**`,
+    `scripts/**`, minimal `src/app/**`, and static PWA placeholders; agent
+    pending dispatch; merge after the bounded review.
+- **Interrupted tasks:** none. The three compatibility tasks are integrated and
+  complete; `F-004` is the only active implementation task.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1188,9 +1194,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   Chrome for Testing; Automerge's alpha adapter and browser type-check
   limitation remain recorded for later review.
 - **Current task:** `F-004` application skeleton and CI/deployment foundation is
-  next.
-- **Blocker:** none. The next action is to assign and implement `F-004` under
-  root integration ownership, then run `F-005` before `R-100`.
+  active.
+- **Blocker:** none. The next action is to dispatch the bounded `F-004` worker
+  in its recorded worktree, then inspect and integrate its commit.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

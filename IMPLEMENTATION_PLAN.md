@@ -1218,6 +1218,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   Chrome for Testing; Automerge's alpha adapter and browser type-check
   limitation remain recorded for later review.
 - **Current task:** `F-005` test, fake-service, and visual tooling is active.
+- **Deployment state:** the GitHub Pages workflow is intentionally committed
+  but manually disabled by the owner until the MVP is complete. Agents must not
+  enable or trigger deployment as part of implementation; hosted deployment
+  remains a later release-gate check.
 - **Blocker:** none. The next action is to dispatch the bounded F-005 worker in
   its recorded worktree, then inspect and integrate its commit.
 

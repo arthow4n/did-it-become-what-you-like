@@ -302,18 +302,37 @@ agreed.
 
 ### Disconnecting and Deleting Cloud Data
 
-- The application must distinguish disconnecting only the current device from
-  deleting the synchronized cloud dataset and disconnecting every device.
+- The application must provide three clearly distinct actions:
+  - disconnect this device while preserving its local data and all cloud data;
+  - delete this device's local data without affecting cloud data or other
+    devices; and
+  - delete everywhere, meaning eventual deletion from Drive and every device
+    which later reconnects.
 - A global cloud deletion initiated on one device must remove synchronized
   financial payloads from the configured Google account and prevent any other
   device from recreating them from an old local copy.
 - An offline device can learn of the global deletion only after reconnecting. It
   must check remote authorization/retirement state before attempting any upload
   and transition to a durable disconnected/retired state when detected.
-- The provisional implementation sequence is to publish a non-financial dataset
-  retirement marker, delete synchronized payloads, and then use Google Identity
-  Services to revoke all scopes granted to the application. Other devices must
-  treat revoked authorization as a stop condition, not an automatic retry loop.
+- Deleting everywhere must first publish a minimal non-financial dataset
+  retirement marker outside the sensitive Automerge document. It must then
+  physically remove the retired Automerge generation and its change history
+  from Drive and remove that generation from the initiating device's IndexedDB.
+- Clearing or deleting current Automerge fields is not privacy erasure because
+  prior values may remain in CRDT change history. Sensitive data must never be
+  copied into the retirement marker; the retired document/history itself must
+  be destroyed.
+- Every device must check retirement state before upload. When a device observes
+  its generation's marker, it must erase that entire local generation,
+  acknowledge retirement if the protocol supports acknowledgements, and enter a
+  durable disconnected/retired state without uploading.
+- The application must show whether deletion is pending, removed from Drive,
+  awaiting known devices, or complete. It must state that a browser cannot erase
+  a device which never runs and reconnects.
+- Revoking Google OAuth scopes is the final disconnection step, not a substitute
+  for synchronized retirement. Revocation must not happen so early that known
+  offline devices are prevented from reading the retirement marker unless the
+  owner explicitly finalizes despite those devices.
 - Reconnecting after global deletion must be an explicit recovery or
   reinitialization workflow. It must never silently upload an old local dataset.
 

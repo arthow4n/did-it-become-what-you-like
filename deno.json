@@ -32,13 +32,15 @@
     "happy-dom": "npm:happy-dom@20.11.6"
   },
   "tasks": {
-    "fmt:check": "deno fmt --check deno.json spikes/toolchain",
-    "lint": "deno lint spikes/toolchain",
-    "check": "deno run -A npm:typescript@7.0.2/tsc --noEmit --project spikes/toolchain/tsconfig.json",
-    "test": "deno test --allow-read --allow-env spikes/toolchain/tests",
-    "build": "deno run -A npm:vite@8.2.2 build --config spikes/toolchain/vite.config.ts",
+    "fmt:check": "deno fmt --check deno.json tsconfig.app.json vite.config.ts index.html src scripts spikes/toolchain",
+    "lint": "deno lint src scripts vite.config.ts spikes/toolchain",
+    "check": "deno run -A npm:typescript@7.0.2/tsc --noEmit --project tsconfig.app.json && deno run -A npm:typescript@7.0.2/tsc --noEmit --project spikes/toolchain/tsconfig.json && deno check --config deno.json scripts/verify-pages.ts scripts/verify-ci.ts scripts/tests/foundation_test.ts",
+    "test": "deno test --allow-read --allow-env scripts/tests spikes/toolchain/tests",
+    "build": "deno run -A npm:vite@8.2.2 build --config vite.config.ts && deno run -A npm:vite@8.2.2 build --config spikes/toolchain/vite.config.ts",
     "browser:install": "deno x -p npm:@playwright/test@1.62.1 playwright install chromium",
     "test:e2e": "deno x -p npm:@playwright/test@1.62.1 playwright test --config=spikes/toolchain/playwright.config.ts",
-    "verify:toolchain": "deno run -A spikes/toolchain/verify.ts"
+    "verify:toolchain": "deno run -A spikes/toolchain/verify.ts",
+    "verify:pages": "deno run -A scripts/verify-pages.ts",
+    "verify:ci": "deno run -A scripts/verify-ci.ts"
   }
 }

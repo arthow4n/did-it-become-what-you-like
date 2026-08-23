@@ -13,3 +13,8 @@ coverage/
 # Deno-managed npm links and disposable F-001 build output
 /node_modules/
 /spikes/toolchain/.tmp/
+/dist/
+/playwright-report/
+/test-results/
+/.chrome-for-testing/
+/.agent-browser/

@@ -78,6 +78,14 @@ agreed.
 - Merchant/shop and description are separate optional fields. Merchant/shop
   should preserve the exact merchant branch or location when known rather than
   reducing it to only a generic chain name.
+- Calendar date is required. Time-of-day is optional and should be preserved
+  when entered manually or extracted from a receipt so same-day records can be
+  ordered more accurately.
+- Monetary amounts follow their natural direction from the owner's perspective:
+  purchases and other outflows are negative, while discounts, refunds,
+  cashback, bottle-deposit returns, and other inflows are positive. This sign
+  convention must also support possible future income records without a data
+  migration that reverses existing meanings.
 - Categories must be fully customizable.
 - A built-in `Uncategorized` category must always exist. It behaves as the
   fallback category for entries which have not been classified and cannot be
@@ -292,9 +300,6 @@ These questions must be resolved incrementally before implementation.
 
 - Which shared receipt metadata and line-level fields are required beyond the
   agreed merchant, date, currency, total, and independent line records?
-- What sign convention and terminology clearly represent money paid and money
-  returned without confusing totals?
-- Is time-of-day needed, or only a calendar date?
 
 ### 2. Project Behavior
 

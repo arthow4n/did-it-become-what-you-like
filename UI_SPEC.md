@@ -120,6 +120,51 @@ Application shell
 - A compact global status indicator communicates offline, syncing, conflict,
   or error state. Activating it opens the relevant synchronization details.
 
+### First Use and Installation
+
+**Status: approved.** There is no tutorial, walkthrough, or onboarding
+carousel.
+
+```text
++----------------------------------+
+| did-it-become-what-you-like      |
+|                                  |
+| Start tracking expenses          |
+|                                  |
+| [ Create first project         ] |
+| Start with local data             |
+|                                  |
+| [ Restore JSON backup          ] |
+| Validate and preview before import|
+|                                  |
+| [ Connect Google Drive         ] |
+| Continue with synchronized data   |
++----------------------------------+
+```
+
+- First launch presents only three useful paths: create the first local
+  project, restore a versioned JSON backup, or connect Google Drive. Each path
+  enters the already-approved focused workflow.
+- Gemini configuration is optional and remains discoverable from **Scan with
+  AI** and Settings; it does not block ordinary first use.
+- The app assumes the owner can understand its plain labels. It never inserts a
+  tutorial, feature tour, walkthrough, or carousel before useful work.
+- The browser's install opportunity is not shown immediately on arrival. After
+  the owner completes a durable useful action, such as saving the first expense
+  or restoring data, a dismissible **Install app** action may appear when the
+  platform supports it. Dismissal never blocks use, and installation remains
+  available later from About when supported.
+- Once the application shell and local data are cached, an offline launch opens
+  normally. A compact, non-blocking offline indicator appears; local browsing,
+  manual creation, editing, and deletion remain available. Drive sync and AI
+  scanning are unavailable with concise explanations and resume when online.
+- On a first launch while offline, creating a local project and restoring a
+  local JSON backup remain available; Google Drive connection is disabled with
+  an explanation.
+- Online, offline, and reconnecting are explicit shell modes. Screen actions
+  derive their availability from the actor snapshot so offline restrictions are
+  consistent rather than recreated independently by each component.
+
 ## Mobile Wireframes
 
 ### Screen 1: Expenses

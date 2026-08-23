@@ -29,8 +29,7 @@ analyze outside the application.
 
 The device-local copy is the primary working copy. Core entry and review flows
 should remain available offline, while Google Drive provides automatic backup
-or multi-device synchronization according to the sync design still to be
-agreed.
+and multi-device synchronization according to the agreed sync design.
 
 ## Product Principles
 
@@ -181,9 +180,9 @@ agreed.
 - Domain-level tags are not part of the initial release. They may be added later
   if a concrete cross-project labeling need emerges. Stable record identifiers
   must allow this extension without redesigning existing data.
-- Creating, viewing, editing, and deleting an expense offline are provisional
-  baseline behaviors; exact validation, ordering, and deletion/undo behavior
-  remain to be specified.
+- Creating, viewing, editing, and deleting an expense offline are required
+  baseline behaviors and use the same validation, ordering, deletion, and undo
+  rules as online local operations.
 
 ### Invoice-Assisted Entry
 
@@ -505,6 +504,19 @@ agreed.
   and desktop applications.
 - Offline, loading, saving, scanning, syncing, conflict, and error states must
   be visible and understandable to the user.
+- First launch must offer three useful paths: create the first local project,
+  restore a validated versioned JSON backup, or connect Google Drive. There must
+  be no tutorial, feature tour, walkthrough, or onboarding carousel.
+- Gemini setup is optional and must not block first use or manual entry.
+- The application must not present an installation prompt immediately on
+  arrival. After the owner completes a durable useful action, it may show a
+  dismissible **Install app** action when supported. Dismissal never blocks use,
+  and installation remains reachable later from About when supported.
+- After the application shell has been cached, offline launch must open existing
+  local data normally with a compact non-blocking indicator. Local browsing and
+  expense creation, editing, and deletion remain enabled; Drive and Gemini
+  actions explain that they require connectivity. First-use project creation
+  and local JSON restoration also remain available offline.
 - The About screen must show the release version and short Git commit hash, the
   exact generative-AI disclosure from `README.md`, a local-first/no-tracking
   privacy summary, application and third-party license information, and a link
@@ -745,8 +757,9 @@ These questions must be resolved incrementally before implementation.
   agreed screens and detailed visual style? This decision is deliberately
   deferred until every screen and workflow in `UI_SPEC.md` is approved.
 - Which mobile and desktop browsers and minimum versions must be supported?
-- What must work offline beyond browsing and manual entry?
-- How should install prompts and other unsaved-change exits be communicated?
+- What, if anything, must work offline beyond the approved local browsing,
+  expense mutation, first-project creation, and JSON-restore behaviors?
+- How should unsaved-change exits be communicated?
 - How will the app handle GitHub Pages' repository base path, direct loads, and
   service-worker scope?
 - The navigation structure, screen hierarchy, mobile and desktop layouts, and

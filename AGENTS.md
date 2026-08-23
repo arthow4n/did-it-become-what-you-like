@@ -58,6 +58,19 @@
   it is marked complete. Prefer pure unit tests and XState actor/machine tests
   for business rules and workflows; use component unit tests for rendering,
   accessibility semantics, variants, and event wiring.
+- Before committing any implementation change, run `deno task fmt:check`,
+  `deno task lint`, `deno task check`, and every test command relevant to the
+  changed scope. Also run `deno task build` whenever production source,
+  dependencies, build configuration, routing, PWA behavior, or generated assets
+  changed. Do not commit while a required validation is failing.
+- Layer-specific pre-commit validation is additive: domain/actor work runs its
+  focused unit or actor tests; adapters and persistence run their integration
+  tests; components and screens run component/accessibility tests; and changes
+  affecting an approved browser journey run its focused E2E test. UI work also
+  receives the specified `agent-browser` inspection before its task is complete.
+- Sub-agents must report the exact validation commands and results with their
+  handoff. An unsupported summary such as “tests pass” is not sufficient
+  evidence for integration.
 - Keep E2E coverage deliberately small and limited to critical journeys and
   browser-integration seams which unit, actor, and component tests cannot prove.
   Do not duplicate the same state-transition assertions at every test layer.

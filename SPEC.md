@@ -823,6 +823,17 @@ and multi-device synchronization according to the agreed sync design.
 - The application must have unit tests.
 - The application must have end-to-end tests covering its critical user
   journeys.
+- Deno's built-in `deno test` runner with `@std/assert` is the default for pure
+  domain, XState actor, adapter integration, and component suites. React
+  component tests use React Testing Library with `happy-dom`, subject to the
+  foundation compatibility gate; Jest and Vitest are not introduced without a
+  demonstrated compatibility need.
+- Browser E2E uses a proper test dependency which produces deterministic
+  assertions, failures, traces, and nonzero exits. Playwright is the provisional
+  choice and must pass the Deno-only compatibility gate before it is pinned.
+  `agent-browser` is deliberately not the E2E assertion framework; it remains
+  the coding agent's separate visual, interaction, accessibility-tree, and axe
+  inspection tool.
 - Business rules, guards, transitions, retries, cancellation, and actor
   coordination should be tested primarily at the XState actor/machine level,
   including generated path/model tests where they add useful coverage. This is
@@ -871,8 +882,11 @@ and multi-device synchronization according to the agreed sync design.
   not only automated DOM assertions.
 - Browser checks should include screenshots and accessibility-tree inspection
   where useful, and should exercise offline and error states when applicable.
-- How `agent-browser` is pinned, installed, and invoked while preserving the
-  Deno 2-only toolchain requirement remains an open tooling decision.
+- `agent-browser` is installed reproducibly through a Deno-run installer which
+  downloads a pinned native release for the current platform, verifies a
+  repository-pinned SHA-256, and installs the corresponding Chrome for Testing.
+  Exact implementation-time versions and hashes are compatibility-task outputs;
+  Node/npm is not a project toolchain.
 
 ### Post-Design Implementation Orchestration Deliverable
 
@@ -974,14 +988,14 @@ These questions must be resolved incrementally before implementation.
 
 ### 9. Testing and Visual Acceptance
 
-- Which unit-test and end-to-end frameworks best satisfy the Deno 2-only
-  constraint?
+- There are no remaining owner-preference decisions in this section. `deno
+  test`, React Testing Library/`happy-dom`, a proper provisional Playwright E2E
+  dependency, and separately installed `agent-browser` are subject to the
+  recorded foundation compatibility gates.
 - Critical E2E journeys, representative viewports, accessibility gates, and the
   fake-adapter boundary are specified above. Detailed synchronization and
   Gemini behaviors belong at lower test layers; CI never requires live service
   credentials.
-- What is the Deno-compatible, reproducible installation strategy for
-  `agent-browser` and its Chromium dependency?
 
 ## Recommended Decision Order
 

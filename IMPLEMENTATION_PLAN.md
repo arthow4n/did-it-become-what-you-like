@@ -199,8 +199,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-001 — Prove and pin the Deno frontend/test toolchain
 
-- **Status/dependencies:** `READY`; depends on `P-000`. The owner explicitly
-  authorized implementation in the current session.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `P-000`. The orchestrator
+  owns integration; the bounded worker is assigned in the Current Checkpoint.
 - **Ownership:** `spikes/toolchain/**`, `deno.json`, `deno.lock`, toolchain-only
   scripts and a compatibility decision record; no product feature source.
 - **Scope/non-goals:** prove Deno 2 execution of strict `typescript@7`, React,
@@ -220,9 +220,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-002 — Prove Automerge and IndexedDB semantics
 
-- **Status/dependencies:** `READY`; depends on `P-000`. The owner explicitly
-  authorized implementation in the current session; this may run parallel with
-  `F-001` and `F-003`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `P-000`. The orchestrator
+  owns integration; the bounded worker is assigned in the Current Checkpoint.
+  This runs parallel with `F-001` and `F-003`.
 - **Ownership:** `spikes/automerge/**` and its decision record only.
 - **Scope/non-goals:** test current Automerge with Deno/browser build,
   repository-namespaced IndexedDB, stable IDs/decimal strings, concurrent edits,
@@ -241,9 +241,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### F-003 — Prove browser Google, image, and PWA integrations
 
-- **Status/dependencies:** `READY`; depends on `P-000`. The owner explicitly
-  authorized implementation in the current session; this may run parallel with
-  `F-001` and `F-002`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `P-000`. The orchestrator
+  owns integration; the bounded worker is assigned in the Current Checkpoint.
+  This runs parallel with `F-001` and `F-002`.
 - **Ownership:** `spikes/browser-integrations/**` and its decision record only.
 - **Scope/non-goals:** prove browser-safe use of Google Identity/Drive app-data,
   `@google/genai` model listing and structured image output, ephemeral camera/file
@@ -1110,14 +1110,31 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   eight Markdown fence lines are balanced; `git status --short --branch` is
   clean; `git worktree list --porcelain` shows only the root worktree; no task
   branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Active wave:** `F-001`, `F-002`, and `F-003` are `READY` for separate
-  compatibility-proof worktrees. The orchestrator will integrate them in that
-  order after each bounded worker reports its exact evidence.
+- **Active wave:** `F-001`, `F-002`, and `F-003` are `IN_PROGRESS` under the
+  orchestrator's integration ownership. They run in separate worktrees and will
+  be integrated in that order after each bounded worker reports exact evidence.
+- **Active worktrees and dispatch order:**
+  - `F-001`: branch `task/f-001-toolchain`, worktree
+    `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
+    base `43998c4`; ownership `spikes/toolchain/**`, `deno.json`,
+    `deno.lock`, and toolchain-only decision/proof files; agent pending dispatch;
+    merge first.
+  - `F-002`: branch `task/f-002-automerge`, worktree
+    `/home/hevar/git/worktrees/did-it-become-what-you-like-f-002-automerge`,
+    base `43998c4`; ownership `spikes/automerge/**` and its decision record;
+    agent pending dispatch; merge second.
+  - `F-003`: branch `task/f-003-browser-integrations`, worktree
+    `/home/hevar/git/worktrees/did-it-become-what-you-like-f-003-browser-integrations`,
+    base `43998c4`; ownership `spikes/browser-integrations/**` and its decision
+    record; agent pending dispatch; merge third.
+- **Interrupted tasks:** none. No worker has been dispatched yet; all three
+  worktrees are clean and contain no unpushed task commits.
 - **Known technical gates, not owner ambiguities:** exact pinned dependencies and
   E2E invocation (`F-001`); Automerge proof (`F-002`); Google/image/PWA browser
   proof (`F-003`); exact agent-browser binary/Chromium pins (`F-005`).
-- **Blocker:** none. The next action is to create and record the three
-  foundation worktrees, then dispatch one bounded worker per task.
+- **Blocker:** none. The next action is to dispatch one bounded worker per
+  recorded worktree, then inspect and integrate their commits in the stated
+  order.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

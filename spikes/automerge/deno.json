@@ -1,4 +1,8 @@
 {
+  "lock": {
+    "path": "./deno.lock",
+    "frozen": true
+  },
   "imports": {
     "automerge": "npm:@automerge/automerge@3.4.1",
     "automerge-idb": "npm:@automerge/automerge-repo-storage-indexeddb@2.6.0-alpha.3",

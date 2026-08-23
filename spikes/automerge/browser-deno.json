@@ -1,4 +1,8 @@
 {
+  "lock": {
+    "path": "./browser-deno.lock",
+    "frozen": true
+  },
   "imports": {
     "automerge-idb": "npm:@automerge/automerge-repo-storage-indexeddb@2.6.0-alpha.3",
     "automerge-repo": "npm:@automerge/automerge-repo@2.6.0-alpha.3"

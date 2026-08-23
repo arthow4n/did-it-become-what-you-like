@@ -120,9 +120,13 @@ role name guarantees contrast.
 - Shadows are subtle and reserved for overlays or materially raised surfaces.
   Ordinary hierarchy comes from surface and border roles, not glow.
 - A visible focus ring is 2px with a 2px offset and must remain unobscured.
-- Motion durations are 120ms for immediate feedback, 180ms for ordinary
-  transitions, and 240ms for overlays. Reduced-motion mode removes non-essential
-  movement while preserving state feedback.
+- Ordinary state changes, navigation, overlays, expansion, and responsive
+  recomposition are immediate: the default transition duration is `0ms` for
+  every user, not only in reduced-motion mode. Motion is permitted only when it
+  communicates ongoing work or another state which would otherwise be unclear,
+  such as an indeterminate progress indicator; it must be restrained and never
+  delay interaction. Reduced-motion mode removes even non-essential functional
+  movement while preserving equivalent static state feedback.
 
 ### Responsive layout
 
@@ -284,8 +288,9 @@ It must render:
 - compact, medium, and wide compositions;
 - long labels, large monetary values, empty values, errors, pending, disabled,
   selected, and focus-visible states;
-- reduced-motion and forced-colors/high-contrast behavior where the browser
-  supports inspection; and
+- the immediate-by-default motion policy, reduced-motion fallback for the few
+  functional indicators, and forced-colors/high-contrast behavior where the
+  browser supports inspection; and
 - representative mobile and desktop screenshots plus accessibility-tree checks
   through `agent-browser` and Chromium.
 

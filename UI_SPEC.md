@@ -170,6 +170,10 @@ carousel.
 - Online, offline, and reconnecting are explicit shell modes. Screen actions
   derive their availability from the actor snapshot so offline restrictions are
   consistent rather than recreated independently by each component.
+- Beyond the already specified local capabilities, the MVP adds no speculative
+  offline-only feature set. Expense browsing/mutation, project and category
+  management, conflict resolution, and JSON import/export work locally while
+  offline; Drive and Gemini operations wait visibly for connectivity.
 
 ## Mobile Wireframes
 
@@ -1106,8 +1110,11 @@ not a separate interface or component set.
 - Signed amounts, validation, categories, conflicts, and other meaning never
   rely on color alone. Text, signs, labels, icons, or structure provide the same
   information, and required AA contrast applies in every state.
-- Motion respects the reduced-motion preference. Essential state changes remain
-  understandable without animation.
+- Navigation, overlays, expansion, responsive recomposition, and ordinary state
+  transitions are immediate for everyone; the application does not add
+  decorative or transition animation. Restrained motion is allowed only for
+  functional ongoing-work feedback such as an indeterminate progress indicator,
+  and reduced-motion mode provides equivalent static feedback.
 - The MVP exposes no theme switch and implements no light palette. Its dark
   theme uses comfortable near-black or charcoal foundation surfaces, subtle
   layered elevation, readable non-glaring text, and a restrained accent. It

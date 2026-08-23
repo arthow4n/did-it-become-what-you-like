@@ -412,6 +412,14 @@ and multi-device synchronization according to the agreed sync design.
   must verify its current release with Deno 2, the production browser build,
   repository-namespaced IndexedDB, conflict inspection/resolution, and a Google
   Drive round trip.
+- That gate must exercise every critical agreed synchronization primitive,
+  including concurrent independent changes, same-field conflicts, additions,
+  synchronized tombstones, delete-versus-edit, resolution revisions, offline
+  replay, generation retirement, export mapping, and deterministic restoration.
+  A fake Drive transport may prove the transport contract and round trip; live
+  credentials are not a prerequisite. Another established merge library is
+  evaluated only if Automerge fails this gate rather than as speculative
+  parallel research.
 - Signing out, going offline, or revoking Drive access must not block local use.
   Synchronization pauses with a visible status and resumes only after the
   required connectivity and authorization return.
@@ -583,7 +591,13 @@ and multi-device synchronization according to the agreed sync design.
   assistive technology without stealing focus unnecessarily.
 - Color must never be the sole carrier for signed amounts, categories, errors,
   conflicts, or other meaning. Every UI state must meet the agreed contrast
-  target, and motion must respect the reduced-motion preference.
+  target.
+- UI state changes are immediate by default for every owner: navigation,
+  overlays, expansion, and responsive changes do not animate or delay input.
+  Restrained motion is allowed only as functional feedback for otherwise
+  unclear ongoing work, such as an indeterminate progress indicator. The
+  reduced-motion preference must replace even that movement with equivalent
+  static feedback where practical.
 - The MVP ships only a comfortable dark theme and has no theme switch. It uses
   layered near-black or charcoal neutral surfaces, readable non-glaring text,
   and a restrained accent rather than an undifferentiated pitch-black canvas,
@@ -633,6 +647,12 @@ and multi-device synchronization according to the agreed sync design.
 
 - The application must be a Progressive Web App (PWA).
 - The frontend must be deployable as a static site on GitHub Pages.
+- Deployment must use repository-relative assets and hash-based application
+  routes so every route can be loaded or refreshed at the repository's standard
+  GitHub Pages URL without a custom-domain or `404.html` routing workaround.
+- The service worker must be registered with scope restricted to this
+  repository's GitHub Pages base path. It must not intercept or cache requests
+  belonging to another repository on the same owner origin.
 - The project must use Deno 2 to execute all development and build tooling,
   including the frontend toolchain.
 - Application and test source code must use TypeScript 7 with strict type
@@ -786,6 +806,11 @@ and multi-device synchronization according to the agreed sync design.
 - A custom domain is not required. Deployment uses the repository's standard
   GitHub Pages URL, with explicit acceptance that other projects on the same
   owner origin may share the browser-storage security boundary.
+- The supported browser policy is the latest two major releases of Chrome,
+  Edge, Firefox, and Safari. Current iOS Safari and Android Chrome are equal
+  primary mobile targets for camera/image selection, IndexedDB, offline launch,
+  and PWA installation where the platform exposes it. An unsupported browser
+  receives a concise explanation rather than an unreliable degraded workflow.
 - Before first use, the application must explain that invoice images and their
   extracted content are sent to Google Gemini. Later scan flows retain a visible
   reminder without requiring repetitive confirmation before every scan.
@@ -814,6 +839,27 @@ and multi-device synchronization according to the agreed sync design.
   tests for rendering, accessibility semantics, variants, and event dispatch.
   E2E tests are intentionally minimal and prove only critical integration seams
   and complete owner journeys which lower layers cannot establish.
+- The initial E2E suite contains five journeys: local first use through manual
+  expense save; receipt capture/review using a fake Gemini adapter; Drive
+  reconnect and visible synchronization using a deterministic fake Drive
+  adapter; conflict review/resolution; and offline/update recovery.
+- The Drive E2E journey proves only browser/UI/actor/adapter wiring. Merge
+  causality, retries, replay, conflict cases, and transport behavior belong in
+  cheaper domain, actor, and adapter integration tests and must not be repeated
+  across the E2E suite.
+- Normal automated tests use deterministic fake Gemini and Drive adapters and
+  never require live credentials in CI. Optional manual smoke tests may use
+  credentials explicitly supplied by the owner and must never persist them in
+  fixtures, logs, screenshots, or repository files.
+- Responsive acceptance uses `320x568` as a narrow stress viewport, `390x844`
+  as a common phone viewport, and `1280x800` as desktop. Tablet-specific checks
+  are added only for a component or screen whose composition materially changes
+  at that width.
+- Accessibility acceptance requires complete keyboard operation, visible
+  focus, correct names/roles/states and landmarks, functional static feedback
+  under reduced motion, and automated accessibility checks. Critical journeys
+  also receive `agent-browser` Chromium screenshots and accessibility-tree
+  inspection at the representative mobile and desktop viewports.
 - A feature task is not complete when tests are postponed to a later cleanup
   milestone. Its appropriate unit/actor/component tests must be implemented and
   passing in the same task, while critical E2E coverage may be added at the
@@ -893,8 +939,9 @@ These questions must be resolved incrementally before implementation.
 
 ### 4. Local Persistence and Google Drive Sync
 
-- Does the Automerge compatibility check validate the complete agreed behavior,
-  or must another established library be evaluated before implementation?
+- There are no remaining owner-preference decisions in this section. Automerge
+  receives one comprehensive compatibility gate; alternatives are evaluated
+  only if it fails.
 
 ### 5. Google Access and Privacy
 
@@ -921,20 +968,18 @@ These questions must be resolved incrementally before implementation.
 
 - React and the component/design-system foundation are defined in
   `DESIGN_SYSTEM.md`.
-- Which mobile and desktop browsers and minimum versions must be supported?
-- What, if anything, must work offline beyond the approved local browsing,
-  expense mutation, first-project creation, and JSON-restore behaviors?
-- How will the app handle GitHub Pages' repository base path, direct loads, and
-  service-worker scope?
+- Browser versions, equal iOS/Android mobile targets, offline boundaries,
+  hash-based GitHub Pages routing, repository-relative assets, and
+  repository-scoped service-worker behavior are specified above.
 
 ### 9. Testing and Visual Acceptance
 
 - Which unit-test and end-to-end frameworks best satisfy the Deno 2-only
   constraint?
-- Which exact critical journeys and viewport/device sizes form the acceptance
-  suite?
-- How should Google Drive, Gemini, offline behavior, and merge conflicts be
-  tested without making live external calls on every run?
+- Critical E2E journeys, representative viewports, accessibility gates, and the
+  fake-adapter boundary are specified above. Detailed synchronization and
+  Gemini behaviors belong at lower test layers; CI never requires live service
+  credentials.
 - What is the Deno-compatible, reproducible installation strategy for
   `agent-browser` and its Chromium dependency?
 

@@ -61,6 +61,13 @@
 - Keep E2E coverage deliberately small and limited to critical journeys and
   browser-integration seams which unit, actor, and component tests cannot prove.
   Do not duplicate the same state-transition assertions at every test layer.
+- A fake Drive E2E journey verifies only that the browser UI, actors, and adapter
+  boundary are wired together. Test merge rules, retries, causal replay, and
+  conflict combinations at the domain, actor, or adapter integration layer.
+- UI interaction and state changes are immediate by default. Do not add
+  decorative navigation, overlay, expansion, or layout animations. Motion is
+  reserved for restrained functional progress feedback and must retain an
+  equivalent static reduced-motion presentation.
 - Git worktrees may be used for concurrent implementation agents when isolation
   materially reduces file collisions or integration risk. Do not create them
   for ordinary documentation, sequential work, or concurrency without genuinely

@@ -1158,7 +1158,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
     worker commit `0c6787f` is integrated by `f22c7c3`; the worktree is clean
     and preserved pending later final-wave cleanup; the worker is shut down.
 - **Interrupted tasks:** none. F-001 through F-005 are integrated and complete;
-  R-100 reviewer Bohr is active; no unintegrated worker changes remain.
+  the three R-100 scoped-fix workers are active; no unintegrated worker changes
+  are yet reported.
 - **F-003 handoff evidence:** `deno run -A
   spikes/browser-integrations/verify.ts` passed 11/11 proofs; `deno fmt
   --check spikes/browser-integrations`, `deno lint
@@ -1236,6 +1237,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   Deno pin, CSP/validator, and action-SHA fixes belong to F-004; native browser
   platform metadata/decision belongs to F-005. These are review fixes only and
   must not expand product scope.
+- **R-100 scoped-fix dispatch:** F-002 worker Copernicus
+  (`01a030de-45ca-7133-9c9a-24d47c75a50b`) owns
+  `~/git/worktrees/did-it-become-what-you-like-f-002-automerge`; F-004 worker
+  Jason (`01a030de-46a1-7772-a32b-bf4ba38f4ad1`) owns
+  `~/git/worktrees/did-it-become-what-you-like-f-004-foundation`; and F-005
+  worker Arendt (`01a030de-4760-7bb1-bf50-c29b4efbb87c`) owns
+  `~/git/worktrees/did-it-become-what-you-like-f-005-tooling`. Ownership is
+  disjoint; workers must commit scoped fixes and must not edit this ledger or
+  push `master`.
 - **Dispatch evidence:** the three compatibility agents and `F-004` worker
   received bounded prompts with their owned files, non-goals, acceptance
   criteria, and exact validation/handoff requirements; no worker is permitted

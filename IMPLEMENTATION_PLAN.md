@@ -412,10 +412,10 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 - **Status/dependencies:** `IN_PROGRESS`; depends on `D-101`, `D-102`, `D-103`,
   `U-104`, all complete. Fresh read-only reviewer Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) is reviewing integrated `master` at
-  `186ff05`; that reviewer stalled and was shut down without a handoff. A
-  fresh reviewer Banach (`01a0312e-b8bb-7582-8ae0-e8fbc7ca9eef`) is now
-  reviewing the pushed recovery checkpoint `8941dd6`; the orchestrator owns the
-  gate decision and any scoped fixes.
+  `186ff05`; that reviewer stalled and was shut down without a handoff. Fresh
+  reviewer Banach (`01a0312e-b8bb-7582-8ae0-e8fbc7ca9eef`) completed a
+  read-only review of pushed checkpoint `b398037` and returned `BLOCK`; the
+  orchestrator owns the gate decision and scoped fixes.
 - **Ownership:** read-only first; scoped fixes by original owner/integration
   owner; contract changes documented with affected downstream tasks.
 - **Scope/non-goals:** review schema completeness, actor decomposition/v5
@@ -1365,7 +1365,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   decisions are sufficient to proceed.
 - **Current task:** Banach is performing the fresh independent `R-200`
   read-only review from the clean root against the integrated M2 contracts and
-  design-system foundation; no implementation work is active.
+  design-system foundation; the review is complete and scoped fixes are next.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1375,6 +1375,60 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   clean; and no unintegrated or uncommitted worker changes were found. The
   first recovery action is to dispatch one fresh read-only R-200 reviewer from
   the clean root.
+- **R-200 review handoff:** Banach's 19-command matrix passed from clean pushed
+  `b398037`: `timeout 120s deno task fmt:check` (106 files), `lint` (95),
+  `check`, `test` (45), `test:integration` (2), actor-contract tests (9),
+  adapter-contract tests (9), component tests (8), design-system component
+  tests (7), E2E tests (2), build, gallery, 3-viewport gallery a11y, schema
+  docs, Pages, CI, toolchain, frozen audit, and `git diff --check` all exited
+  0. The deliberate invalid fake-Gemini path rejected
+  `fake-gemini-needs-test` with `unsupported` as intended. Hosted Pages/Actions,
+  live services, non-Chromium platforms, and forced-colors inspection were
+  unavailable or intentionally not triggered; Pages remained committed and
+  disabled.
+- **R-200 severity-2 findings blocking the gate:**
+  1. D-101 accepts invalid `expense.receiptLineId` references and does not
+     enforce line/receipt/project consistency (`src/domain/schema/records.ts`
+     lines 78-106; `src/domain/schema/dataset.ts` 116-138). Fix owner D-101;
+     add unknown-line, mismatched-receipt, and cross-project regression tests.
+  2. D-102 collapses typed offline/authorization/quota/retired/retryable actor
+     failures into generic messages (`src/actors/contracts/sync.ts` 121-128;
+     `receipt.ts` 111-117; codes in `ports.ts` 10-23). Fix owner D-102 with
+     D-103 coordination; preserve code, retryability, and required UI action in
+     actor snapshots and tests.
+  3. D-102 defines `canPreSync` but does not use it, permits `import.commit`
+     with `mode: null`, and can enter replacement pre-sync offline
+     (`src/actors/contracts/import.ts` 55-59, 125-153). Fix owner D-102;
+     reject missing mode, block offline replace, and test online pre-sync.
+  4. D-102 never increments `forcedDeviceCount` during Delete Everywhere
+     finalization (`src/actors/contracts/deletion.ts` 372-400, 409-416). Fix
+     owner D-102; add forced-finalization progress regression coverage.
+  5. D-102 retains completed expense/receipt drafts in persisted actor context
+     after Save or Discard (`src/actors/contracts/expense-form.ts` 113-119;
+     `receipt.ts` 321-326; `durable-workflow.ts` 255-260). Fix owner D-102,
+     with L-201 persistence integration; add clear/delete snapshot assertions.
+  6. D-103's adapter error taxonomy has no `retired` code although actor ports
+     require it (`src/actors/contracts/ports.ts` 10-17;
+     `src/adapters/ports/errors.ts` 3-20). Fix owner D-103; add exhaustive
+     non-retryable retirement mapping tests.
+  7. D-103 permits direct `AdapterError` construction with arbitrary foreign
+     messages/details, bypassing the safer mapper (`src/adapters/ports/errors.ts`
+     41-45, 69-84, 102-108). Fix owner D-103; test credential-bearing input,
+     serialization, and logs for redaction/allowlisting.
+  8. U-104's gallery omits required primitive/pattern states including
+     `ColorChoiceField`, `FileField`, `Chip`, `DefinitionList`, dialogs,
+     `Popover`, `Menu`, `Tooltip`, `ErrorSummary`, `FilterBar`, and picker/
+     filter patterns (`DESIGN_SYSTEM.md` 280-300;
+     `src/design-system/gallery.tsx` 3-55). Fix owner U-104; add gallery and
+     component/a11y coverage for every omitted item.
+- **R-200 severity-3 findings:** D-101 uses locale-dependent `localeCompare`
+  for canonical export ordering (`src/domain/schema/dataset.ts` 216-227),
+  risking nondeterministic JSON; replace it with a locale-independent code-unit
+  comparator and regression tests. U-104 keeps `AdaptiveDialog` bottom-aligned
+  at desktop (`src/design-system/components.tsx` 1098-1132;
+  `src/design-system/tokens.css` 674-699); add compact bottom-sheet and wide
+  modal positioning coverage at all three viewports. Both are scoped fixes and
+  must be resolved before R-200 closure.
 - **D-101 recovery worktree:** branch `task/d-101-domain`, worktree
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain`, based at
   `bd6fd68`; worker Pauli (`01a030ed-e9e6-7670-a3ff-16b76f3e0917`) was
@@ -1413,11 +1467,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none. After Banach's handoff, record exact findings and
-  validation results here. If approved, mark `R-200` complete and dispatch the
-  next dependency-ready M3 work; if findings exist, assign only scoped fixes to
-  the owning task. No GitHub Pages workflow may be enabled or triggered because
-  the owner has intentionally disabled it until MVP completion.
+- **Blocker:** the R-200 gate is blocked by the eight severity-2 findings above;
+  no owner decision is required. Dispatch disjoint D-101, D-102, and U-104
+  fixes first, then D-103 when a worker slot is available; integrate, rerun the
+  full matrix, and obtain a fresh independent closure review. No GitHub Pages
+  workflow may be enabled or triggered because the owner has intentionally
+  disabled it until MVP completion.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

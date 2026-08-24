@@ -50,6 +50,10 @@ function previewForContract(
     expenseCount: preview.expenseCount,
     receiptCount: preview.receiptCount,
     migrationRequired: preview.migrationRequired,
+    changeCount: preview.changeCount,
+    migrations: [...preview.migrations],
+    warnings: [...preview.warnings],
+    errors: [...preview.errors],
   };
 }
 

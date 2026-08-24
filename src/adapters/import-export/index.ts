@@ -3,6 +3,7 @@ import {
   type CausalApplyResult,
   type CausalChange,
   type CausalSnapshot,
+  type CausalSyncPacket,
   type CausalSyncPort,
   type ClockPort,
   type FilePayload,
@@ -370,19 +371,68 @@ async function restorePreparedRecovery(
 export function createGenerationProtectedCausalSyncPort(
   base: CausalSyncPort,
 ): CausalSyncPort {
+  // A higher generation is a replacement/adoption boundary, not another
+  // causal branch. Keep retired history out of this composition's public
+  // packet so it cannot be re-uploaded by an import retry or export.
+  const retiredChangeIds = new Set<StableId>();
+
+  const visibleSnapshot = (snapshot: CausalSnapshot): CausalSnapshot => ({
+    ...clone(snapshot),
+    heads: snapshot.heads.filter((head) => !retiredChangeIds.has(head)),
+    changes: snapshot.changes.filter((change) =>
+      !retiredChangeIds.has(change.id)
+    ),
+  });
+
+  const visiblePacket = (packet: CausalSyncPacket): CausalSyncPacket => ({
+    ...packet,
+    heads: packet.heads.filter((head) => !retiredChangeIds.has(head)),
+    changes: packet.changes.filter((change) =>
+      !retiredChangeIds.has(change.id)
+    ),
+  });
+
+  const adoptionPacket = (
+    packet: CausalSyncPacket,
+    current: CausalSnapshot,
+  ): CausalSyncPacket => {
+    const packetChangeIds = new Set(packet.changes.map((change) => change.id));
+    return {
+      ...packet,
+      changes: packet.changes.map((change) =>
+        change.parents.some((parent) => packetChangeIds.has(parent))
+          ? clone(change)
+          : { ...clone(change), parents: [...current.heads] }
+      ),
+    };
+  };
+
   return {
-    read: (options) => base.read(options),
-    exportPacket: (options) => base.exportPacket(options),
+    read: async (options) => visibleSnapshot(await base.read(options)),
+    exportPacket: async (options) =>
+      visiblePacket(await base.exportPacket(options)),
     applyPacket: async (packet, options): Promise<CausalApplyResult> => {
       const current = await base.read(options);
       if (packet.generation < current.generation) {
         return {
-          snapshot: clone(current),
+          snapshot: visibleSnapshot(current),
           appliedChangeIds: [],
           conflicts: [],
         };
       }
-      return base.applyPacket(packet, options);
+      if (packet.generation > current.generation) {
+        for (const change of current.changes) retiredChangeIds.add(change.id);
+        const result = await base.applyPacket(
+          adoptionPacket(packet, current),
+          options,
+        );
+        return {
+          ...result,
+          snapshot: visibleSnapshot(result.snapshot),
+        };
+      }
+      const result = await base.applyPacket(packet, options);
+      return { ...result, snapshot: visibleSnapshot(result.snapshot) };
     },
   };
 }
@@ -793,7 +843,9 @@ async function commitReplace(
   const localTarget: CausalSnapshot = {
     generation: generation.nextGeneration,
     heads: [replacement.id],
-    changes: [...current.changes, replacement],
+    // A replacement starts a new generation. Keeping prior-generation changes
+    // here would let a later export re-upload the replaced history.
+    changes: [replacement],
     dataset: clone(document.dataset),
   };
   await dependencies.local.transaction("readwrite", async (transaction) => {

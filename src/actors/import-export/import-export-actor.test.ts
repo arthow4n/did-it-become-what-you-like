@@ -100,6 +100,7 @@ function setupAdapter(options: {
 Deno.test("import actor: validates, previews, and commits merge through v5 states", async () => {
   const { adapter } = setupAdapter();
   const source = await adapter.exportDocument();
+  const expectedPreview = adapter.previewImport(source.json);
   const actor = createImportActor({ adapter }).start();
   actor.send({
     type: "import.open",
@@ -109,6 +110,20 @@ Deno.test("import actor: validates, previews, and commits merge through v5 state
   actor.send({ type: "import.file-selected", contents: source.json });
   await waitFor(() => actor.getSnapshot().value === "previewing", "no preview");
   assert(actor.getSnapshot().context.preview?.dataset !== undefined);
+  assertEquals(
+    {
+      changeCount: actor.getSnapshot().context.preview?.changeCount,
+      migrations: actor.getSnapshot().context.preview?.migrations,
+      warnings: actor.getSnapshot().context.preview?.warnings,
+      errors: actor.getSnapshot().context.preview?.errors,
+    },
+    {
+      changeCount: expectedPreview.changeCount,
+      migrations: expectedPreview.migrations,
+      warnings: expectedPreview.warnings,
+      errors: expectedPreview.errors,
+    },
+  );
   actor.send({ type: "import.choose-merge" });
   actor.send({ type: "import.commit" });
   await waitFor(

@@ -31,6 +31,12 @@ export type CanonicalImportPreview = {
   readonly document: CanonicalExport;
   readonly sourceSchemaVersion: number;
   readonly migrationRequired: boolean;
+  /** Ordered schema migrations which will run before the import commits. */
+  readonly migrations: readonly string[];
+  /** Non-blocking validation or compatibility notes for the owner. */
+  readonly warnings: readonly string[];
+  /** Blocking validation messages; a returned preview has none. */
+  readonly errors: readonly string[];
   readonly projectCount: number;
   readonly categoryCount: number;
   readonly expenseCount: number;

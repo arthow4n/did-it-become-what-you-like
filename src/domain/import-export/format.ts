@@ -164,6 +164,18 @@ function sortCodeUnits(left: string, right: string): number {
   return left.length - right.length;
 }
 
+function migrationDescriptions(sourceSchemaVersion: number): readonly string[] {
+  const migrations: string[] = [];
+  for (
+    let version = sourceSchemaVersion;
+    version < CURRENT_SCHEMA_VERSION;
+    version += 1
+  ) {
+    migrations.push(`schema ${version} -> ${version + 1}`);
+  }
+  return migrations;
+}
+
 function sortJson(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortJson);
   if (!value || typeof value !== "object") return value;
@@ -295,10 +307,16 @@ export function parseCanonicalExport(json: string): {
 export function previewCanonicalImport(json: string): CanonicalImportPreview {
   const parsed = parseCanonicalExport(json);
   const { dataset } = parsed.document;
+  const migrations = migrationDescriptions(parsed.sourceSchemaVersion);
   return {
     document: parsed.document,
     sourceSchemaVersion: parsed.sourceSchemaVersion,
     migrationRequired: parsed.migrationRequired,
+    migrations,
+    warnings: migrations.length === 0
+      ? []
+      : ["This backup requires schema migration before import."],
+    errors: [],
     projectCount: dataset.projects.length,
     categoryCount: dataset.categories.length,
     expenseCount: dataset.expenses.length,

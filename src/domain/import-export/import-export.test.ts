@@ -4,6 +4,7 @@ import {
   deduplicateImportedHistory,
   ImportExportDomainError,
   parseCanonicalExport,
+  previewCanonicalImport,
   replacementGeneration,
   serializeCanonicalExport,
 } from "./index.ts";
@@ -129,6 +130,12 @@ Deno.test(
     const migrated = parseCanonicalExport(JSON.stringify(legacy));
     assert(migrated.migrationRequired);
     assertEquals(migrated.document.dataset.schemaVersion, 1);
+    const preview = previewCanonicalImport(JSON.stringify(legacy));
+    assertEquals(preview.migrations, ["schema 0 -> 1"]);
+    assertEquals(preview.warnings, [
+      "This backup requires schema migration before import.",
+    ]);
+    assertEquals(preview.errors, []);
 
     let future: unknown;
     try {

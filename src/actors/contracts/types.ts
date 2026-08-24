@@ -256,6 +256,12 @@ export type ImportPreview = {
   readonly expenseCount: number;
   readonly receiptCount: number;
   readonly migrationRequired: boolean;
+  /** Additive preview details; older contract consumers may omit them. */
+  readonly changeCount?: number;
+  readonly migrations?: readonly string[];
+  readonly warnings?: readonly string[];
+  /** Blocking validation messages; a successful preview normally has none. */
+  readonly errors?: readonly string[];
 };
 
 export type ImportCommitInput = {

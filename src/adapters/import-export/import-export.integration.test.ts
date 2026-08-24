@@ -7,7 +7,11 @@ import {
   createFakeIdPort,
   createFakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
-import { initialCausalSnapshot } from "../sync/causal.ts";
+import {
+  createDatasetChange,
+  createInMemoryCausalSyncPort,
+  initialCausalSnapshot,
+} from "../sync/causal.ts";
 import {
   adapterError,
   type CausalSyncPort,
@@ -282,8 +286,9 @@ Deno.test("import-export adapter: replacement failure leaves durable recovery an
 
 Deno.test("import-export adapter: unconfigured offline replacement is local and advances generation", async () => {
   const deps = dependencies();
+  await seed(deps.local, expenseDataset("-10"));
   const adapter = createImportExportAdapter(deps);
-  const document = (await adapter.exportDocument()).document;
+  const document = createCanonicalExport({ dataset: emptyDataset() });
   const result = await adapter.commitImport({
     document,
     mode: "replace",
@@ -292,7 +297,60 @@ Deno.test("import-export adapter: unconfigured offline replacement is local and 
   });
   assertEquals(result.mode, "replace");
   assertEquals(result.generation, 2);
+  const exported = await adapter.exportDocument();
+  assertEquals(exported.document.dataset.expenses, []);
+  assertEquals(exported.document.changes.length, 1);
 });
+
+Deno.test(
+  "import-export adapter: higher-generation replacement adopts and retires stale history",
+  async () => {
+    const oldDataset = expenseDataset("-10");
+    const oldChange = createDatasetChange({
+      id: "change-old",
+      actorId: "device-old",
+      sequence: 1,
+      parents: [],
+      dataset: oldDataset,
+    });
+    const base = createInMemoryCausalSyncPort({
+      initialSnapshot: {
+        generation: 1,
+        heads: [oldChange.id],
+        changes: [oldChange],
+        dataset: oldDataset,
+      },
+    });
+    const protectedPort = createGenerationProtectedCausalSyncPort(base);
+    const replacement = createDatasetChange({
+      id: "change-replacement",
+      actorId: "device-replacement",
+      sequence: 1,
+      parents: [],
+      dataset: emptyDataset(),
+    });
+
+    const applied = await protectedPort.applyPacket({
+      generation: 2,
+      heads: [replacement.id],
+      changes: [replacement],
+    });
+    assertEquals(applied.snapshot.generation, 2);
+    assertEquals(applied.snapshot.dataset.expenses, []);
+    assertEquals(
+      (await protectedPort.exportPacket()).changes.map((change) => change.id),
+      [replacement.id],
+    );
+
+    const stale = await protectedPort.applyPacket({
+      generation: 1,
+      heads: [oldChange.id],
+      changes: [oldChange],
+    });
+    assertEquals(stale.appliedChangeIds, []);
+    assertEquals(stale.snapshot.dataset.expenses, []);
+  },
+);
 
 Deno.test("import-export adapter: old generation packets cannot undo a replacement", async () => {
   const base = createFakeCausalSyncPort(initialCausalSnapshot(emptyDataset()));

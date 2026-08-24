@@ -1256,7 +1256,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the bounded R-400 compact-layout fix is integrated, and R-400 is the active
   independent closure gate.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `c3885da` after pushing the closure-3 dispatch checkpoint. The root worktree
+  `3410eeb` after pushing the blocked closure-3 result. The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1284,7 +1284,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
   browser build`). The latest integrated implementation is `ba63635`; the
   latest pushed orchestration checkpoint before this ledger update is
-  `c3885da`.
+  `3410eeb`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1313,7 +1313,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `c3885da`; the root worktree contains only the intentionally untracked
+  at `3410eeb`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
@@ -2358,6 +2358,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   corresponding focused tests; it must not alter data, adapter, actor,
   portable schema, model-selection, sticky-layout, Pages, or deferred-memory
   behavior.
+- **R-400 contrast advisor dispatch:** Laplace
+  (`01a03383-31dc-7620-ad4f-5e1baa6ebc8e`) is the read-only advisor in
+  `~/git/worktrees/did-it-become-what-you-like-r-400-contrast-advisor`, branch
+  `review/r-400-contrast-advisor`, based at `3410eeb`. Its only writable
+  artifact is the timestamped untracked
+  `R-400-contrast-advisor-progress.md`; it must diagnose the computed
+  warning-text/background ancestry and axe interpretation, recommend the
+  smallest bounded fix and regression evidence, and end with explicit
+  `ADVICE READY` or `BLOCK`. It must not alter source, this plan, `master`,
+  remotes, commits, or worktrees.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

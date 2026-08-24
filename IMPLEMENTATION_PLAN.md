@@ -1314,6 +1314,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; a fresh R-300 closure
   review is the only active gate.
+- **Active review:** Curie (`01a03285-474b-7c61-ace3-485265e56041`) owns the
+  read-only R-300 closure review in
+  `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
+  `review/r-300-closure-4`, based at `9cc9f26`. Only its untracked
+  `R-300-progress.md` handover may change in that worktree; the reviewer must
+  inspect the historical root handover and the `3424ed6` follow-up, run the
+  complete aggregate/local/browser matrix, and return an explicit APPROVE or
+  BLOCK. The root handover remains preserved and downstream M4 remains gated.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -2022,6 +2030,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   is pushed, the root worktree has only the intentionally untracked
   `R-300-progress.md`, and R-300 remains BLOCKED pending a fresh independent
   closure reviewer.
+- **R-300 closure dispatch:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
+  was dispatched read-only from root checkpoint `9cc9f26` in preserved
+  `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
+  `review/r-300-closure-4`. The prompt requires timestamped progress and a
+  final complete handoff, inspection of the historical and partial Mencius
+  evidence, aggregate verification, local E2E, and native local-screen
+  inspection at 320x568, 390x844, and 1280x800. No source, plan, master,
+  remote, commit, or Pages changes are authorized; preserve the worktree and
+  handover for orchestration recovery.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

@@ -540,7 +540,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-300 — Local vertical-slice independent review gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `L-205`.
+- **Status/dependencies:** `BLOCKED`; depends on `L-205`; blocked by the
+  substantiated R-300 findings recorded below.
 - **Ownership:** review read-only first; fixes remain scoped to M3 owners.
 - **Scope/non-goals:** review financial correctness, local durability, XState/UI
   separation, responsive/accessibility fidelity, design-system reuse, and all
@@ -1251,9 +1252,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `c943c48` and tracks
+- **Reconciled branch/upstream:** `master` is at `27020ea` and tracks
   `origin/master` at the same commit (`0 0`). The root worktree is clean before
-  updating this completion ledger.
+  preserving the untracked R-300 review handover.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1284,18 +1285,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
-  is recorded below. A-301 source integration and its bounded contract
+  is recorded below. R-300 is BLOCKED by the preserved 7-S2/3-S3 review
+  handoff; A-301 source integration and its bounded contract
   follow-up passed the root matrix, and the root canonical task includes
   `src/adapters/gemini`; the exact `A-301` filter is the authoritative focused
   command. The implementation plan task-heading count remains 37 with no
-  duplicate IDs; `master` and its upstream are aligned at `c943c48`; the
-  root worktree is clean before this completion-ledger edit. Preserved
+  duplicate IDs; `master` and its upstream are aligned at `27020ea`; the
+  root worktree contains only the intentionally untracked R-300 handover
+  before this fix-wave ledger edit. Preserved
   worktrees are
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
-  `A-301` are `COMPLETE`; `R-300` is `IN_PROGRESS` as the independent review
-  gate.
+  `A-301` are `COMPLETE`; `R-300` is `BLOCKED`; its bounded L-204/L-205/U-104
+  fix wave and aggregate verification correction are `IN_PROGRESS`.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1913,6 +1916,24 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   with no horizontal overflow or browser errors. L-205 is complete; its
   worktree remains preserved and the worker is shut down. R-300 is now
   dependency-ready.
+- **R-300 review handoff:** Turing (`01a03234-7319-7601-8bd9-05cff5a641df`)
+  performed the fresh read-only review from `~/git/did-it-become-what-you-like`
+  at root `27020ea`, preserving the untracked `R-300-progress.md` handover.
+  The gate is `BLOCKED`: 0 S1, 7 S2, 3 S3, and 0 S4 findings. The full evidence,
+  exact validation results, affected paths, and bounded recommendations are in
+  that handover. The reviewer made no tracked, plan, master, remote, commit,
+  or push changes and was shut down after handoff.
+- **R-300 bounded fix wave:** three disjoint owners are active before review
+  rerun. The L-204 actor owner handles typed manual completion/Undo and safe
+  hydration/open retry behavior in `src/actors/manual-expense.ts` plus actor
+  tests. The L-205 UI owner handles Save-and-add-another, custom period
+  selection, actionable loading/error states, Add Choice dialog semantics, and
+  final local-screen evidence/E2E coverage. The U-104 design-system owner
+  handles searchable currency choices, positive signed display, and shared
+  SearchField/Merchant clearing. The integration owner adds the missing
+  aggregate `deno task verify`, reconciles this checkpoint, and reruns R-300;
+  no owner may weaken approved requirements or broaden into Gemini/Drive,
+  external sync, or populated-project destructive workflows.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

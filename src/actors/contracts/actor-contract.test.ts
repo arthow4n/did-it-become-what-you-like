@@ -210,6 +210,55 @@ Deno.test("actor-contract: project deletion requires exact confirmation text", (
   actor.stop();
 });
 
+Deno.test(
+  "actor-contract: project deletion gates confirmation on required safety export",
+  async () => {
+    let exportCalls = 0;
+    let commitCalls = 0;
+    const deletionWithPorts = projectDeletionMachine.provide({
+      actors: {
+        exportSafety: fromPromise(
+          ({ input }: { input: ProjectDeletionTarget }) => {
+            void input;
+            exportCalls += 1;
+            return Promise.resolve("safety-export.json");
+          },
+        ),
+        commitProjectDeletion: fromPromise(
+          ({ input }: { input: ProjectDeletionTarget }) => {
+            void input;
+            commitCalls += 1;
+            return new Promise<ProjectDeletionOutput>(() => {});
+          },
+        ),
+      },
+    });
+    const actor = createActor(deletionWithPorts).start();
+    actor.send({
+      type: "project-delete.open",
+      target: deletionTarget,
+      safetyExportRequired: true,
+    });
+    actor.send({ type: "project-delete.type-name", value: "Sweden" });
+    assertEquals(actor.getSnapshot().value, "reviewing");
+
+    actor.send({ type: "project-delete.confirm" });
+    assertEquals(actor.getSnapshot().value, "reviewing");
+    assertEquals(commitCalls, 0);
+
+    actor.send({ type: "project-delete.export-safety" });
+    assertEquals(actor.getSnapshot().value, "exporting");
+    await settle();
+    assertEquals(exportCalls, 1);
+    assertEquals(actor.getSnapshot().value, "confirming");
+
+    actor.send({ type: "project-delete.confirm" });
+    assertEquals(actor.getSnapshot().value, "deleting");
+    assertEquals(commitCalls, 1);
+    actor.stop();
+  },
+);
+
 Deno.test("actor-contract: Delete Everywhere requires a second confirmation after declining export", () => {
   const deleteEverywhereWithPendingRetirement = deleteEverywhereMachine.provide(
     {
@@ -357,8 +406,7 @@ Deno.test("actor-contract: sync rejects non-retryable shaped failures without se
         return Promise.reject({
           code: "unauthorized",
           message: `Authorization failed with ${secret}`,
-          retryable: false,
-          retry: "never",
+          retry: "backoff",
         });
       }),
     },
@@ -385,6 +433,47 @@ Deno.test("actor-contract: sync rejects non-retryable shaped failures without se
   assert(!failure.message.includes(secret));
   actor.stop();
 });
+
+Deno.test(
+  "actor-contract: sync keeps retired failures non-retryable despite hostile retry metadata",
+  async () => {
+    const secret = "test-gemini-api-key-D102-retired-secret";
+    const syncWithFailure = syncMachine.provide({
+      actors: {
+        syncTransport: fromPromise(({ input }: { input: SyncRequest }) => {
+          void input;
+          return Promise.reject({
+            code: "retired",
+            message: `Retired dataset response included ${secret}`,
+            retryable: true,
+            retry: "backoff",
+          });
+        }),
+      },
+    });
+    const actor = createActor(syncWithFailure).start();
+    actor.send({
+      type: "sync.configure",
+      accountEmail: "owner@example.test",
+      online: true,
+    });
+    actor.send({ type: "sync.request", request: { reason: "manual" } });
+    await settle();
+
+    assertEquals(actor.getSnapshot().value, "error");
+    assertEquals(actor.getSnapshot().context.error, {
+      code: "retired",
+      message: "This dataset has been retired.",
+      retryable: false,
+    });
+    assert(!actor.getSnapshot().hasTag("retryable"));
+    assert(!actor.getSnapshot().can({ type: "sync.retry" }));
+    const failure = actor.getSnapshot().context.error;
+    assert(failure !== null);
+    assert(!failure.message.includes(secret));
+    actor.stop();
+  },
+);
 
 Deno.test("actor-contract: receipt scan preserves typed quota failures", async () => {
   const scanInput: ReceiptScanInput = {

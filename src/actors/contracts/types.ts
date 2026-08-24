@@ -97,10 +97,10 @@ export function contractFailureFromError(
   if (!isRecord(error) || !isPortErrorCode(error.code)) return fallback;
 
   const message = PORT_ERROR_MESSAGES[error.code];
-  const retryable = typeof error.retryable === "boolean"
-    ? error.retryable
-    : error.retry === "backoff" || error.retry === "when-online" ||
-      error.retry === "immediate" || RETRYABLE_PORT_ERRORS.has(error.code);
+  // The code is the canonical actor-facing failure taxonomy. Plain rejection
+  // shapes may carry arbitrary retry directives, so they must not override a
+  // code's safe retry policy (especially `unauthorized` and `retired`).
+  const retryable = RETRYABLE_PORT_ERRORS.has(error.code);
 
   return { code: error.code, message, retryable };
 }

@@ -51,11 +51,12 @@ const projectDeletionSetup = setup({
     >("project tombstone commit"),
   },
   guards: {
-    nameMatches: ({ context }) =>
+    safetyExportReady: ({ context }) =>
+      !context.safetyExportRequired || context.safetyExported,
+    canCommit: ({ context }) =>
       context.target !== null &&
-      context.typedName === context.target.projectName,
-    needsSafetyExport: ({ context }) =>
-      context.safetyExportRequired && !context.safetyExported,
+      context.typedName === context.target.projectName &&
+      (!context.safetyExportRequired || context.safetyExported),
   },
 });
 
@@ -90,10 +91,16 @@ export const projectDeletionMachine = projectDeletionSetup.createMachine({
       tags: ["destructive", "reviewing"],
       on: {
         "project-delete.export-safety": "exporting",
-        "project-delete.type-name": {
-          target: "confirming",
-          actions: assign({ typedName: ({ event }) => event.value }),
-        },
+        "project-delete.type-name": [
+          {
+            target: "confirming",
+            guard: "safetyExportReady",
+            actions: assign({ typedName: ({ event }) => event.value }),
+          },
+          {
+            actions: assign({ typedName: ({ event }) => event.value }),
+          },
+        ],
         "project-delete.cancel": "cancelled",
       },
     },
@@ -107,7 +114,7 @@ export const projectDeletionMachine = projectDeletionSetup.createMachine({
           actions: assign({ safetyExported: () => true, error: () => null }),
         },
         onError: {
-          target: "failed",
+          target: "exportFailed",
           actions: assign({
             error: ({ event }) =>
               contractFailureFromError(event.error, {
@@ -120,6 +127,13 @@ export const projectDeletionMachine = projectDeletionSetup.createMachine({
       },
       on: { "project-delete.cancel": "cancelled" },
     },
+    exportFailed: {
+      tags: ["destructive", "error"],
+      on: {
+        "project-delete.retry": "exporting",
+        "project-delete.cancel": "cancelled",
+      },
+    },
     confirming: {
       tags: ["destructive", "confirming"],
       on: {
@@ -127,15 +141,18 @@ export const projectDeletionMachine = projectDeletionSetup.createMachine({
           actions: assign({ typedName: ({ event }) => event.value }),
         },
         "project-delete.confirm": [
-          { target: "deleting", guard: "nameMatches" },
+          { target: "deleting", guard: "canCommit" },
           {
-            actions: assign({
-              error: () => ({
+            actions: assign(({ context }) => ({
+              error: {
                 code: "invalid",
-                message: "Type the project name exactly.",
+                message: context.safetyExportRequired &&
+                    !context.safetyExported
+                  ? "Complete the safety export before confirming deletion."
+                  : "Type the project name exactly.",
                 retryable: false,
-              }),
-            }),
+              },
+            })),
           },
         ],
         "project-delete.cancel": "cancelled",

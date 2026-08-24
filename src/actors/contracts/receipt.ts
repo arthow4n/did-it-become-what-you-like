@@ -11,13 +11,15 @@ import {
 } from "./types.ts";
 
 export type ReceiptScanEvent =
-  | { readonly type: "receipt.open" }
+  | { readonly type: "receipt.open"; readonly disclosureRequired?: boolean }
   | { readonly type: "receipt.image-selected" }
   | { readonly type: "receipt.scan"; readonly input: ReceiptScanInput }
   | { readonly type: "receipt.retry"; readonly input: ReceiptScanInput }
   | { readonly type: "receipt.replace-image" }
   | { readonly type: "receipt.network.offline" }
   | { readonly type: "receipt.network.online" }
+  | { readonly type: "receipt.disclosure.accept" }
+  | { readonly type: "receipt.disclosure.decline" }
   | { readonly type: "receipt.cancel" }
   | { readonly type: "receipt.use-manual" };
 
@@ -54,7 +56,10 @@ const receiptScanSetup = setup({
   },
   guards: {
     prepareImage: ({ event }) =>
-      event.type === "receipt.scan" && event.input.prepareImage,
+      (event.type === "receipt.scan" || event.type === "receipt.retry") &&
+      event.input.prepareImage,
+    requiresDisclosure: ({ event }) =>
+      event.type === "receipt.open" && event.disclosureRequired === true,
   },
 });
 
@@ -65,8 +70,19 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
   states: {
     idle: {
       on: {
-        "receipt.open": "selecting",
+        "receipt.open": [
+          { target: "disclosure", guard: "requiresDisclosure" },
+          "selecting",
+        ],
         "receipt.network.offline": "offline",
+      },
+    },
+    disclosure: {
+      tags: ["disclosure"],
+      on: {
+        "receipt.disclosure.accept": "selecting",
+        "receipt.disclosure.decline": "cancelled",
+        "receipt.cancel": "cancelled",
       },
     },
     selecting: {
@@ -178,10 +194,17 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
     reviewReady: {
       tags: ["review-ready"],
       on: {
-        "receipt.retry": {
-          target: "requesting",
-          actions: assign({ review: () => null, error: () => null }),
-        },
+        "receipt.retry": [
+          {
+            target: "preparing",
+            guard: "prepareImage",
+            actions: assign({ review: () => null, error: () => null }),
+          },
+          {
+            target: "requesting",
+            actions: assign({ review: () => null, error: () => null }),
+          },
+        ],
         "receipt.use-manual": "manualEntry",
         "receipt.cancel": "cancelled",
       },
@@ -189,10 +212,17 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
     failed: {
       tags: ["error"],
       on: {
-        "receipt.retry": {
-          target: "requesting",
-          actions: assign({ error: () => null }),
-        },
+        "receipt.retry": [
+          {
+            target: "preparing",
+            guard: "prepareImage",
+            actions: assign({ error: () => null }),
+          },
+          {
+            target: "requesting",
+            actions: assign({ error: () => null }),
+          },
+        ],
         "receipt.replace-image": "selecting",
         "receipt.use-manual": "manualEntry",
         "receipt.cancel": "cancelled",

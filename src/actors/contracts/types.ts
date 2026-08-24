@@ -1,6 +1,5 @@
 import type {
   CalendarDate,
-  CanonicalDecimal,
   Category,
   CurrencyCode,
   Expense,
@@ -9,9 +8,15 @@ import type {
   ReceiptAdjustment,
   ReceiptParent,
   ReceiptPurchaseLine,
+  ReceiptReviewDraft,
   StableId,
 } from "../../domain/index.ts";
 import type { PortErrorCode } from "./ports.ts";
+
+export type {
+  ReceiptDraftLine,
+  ReceiptReviewDraft,
+} from "../../domain/index.ts";
 
 export type ShellRoute =
   | "first-use"
@@ -133,6 +138,11 @@ export type ReceiptImageRef = {
   readonly byteLength: number;
 };
 
+export type ReceiptDisclosure = {
+  readonly version: string;
+  readonly accepted: true;
+};
+
 export type ReceiptScanInput = {
   readonly image: ReceiptImageRef;
   readonly projectId: StableId;
@@ -141,36 +151,8 @@ export type ReceiptScanInput = {
   readonly categoryCatalogue: readonly Pick<Category, "id" | "name">[];
   readonly model: string;
   readonly prepareImage: boolean;
-};
-
-export type ReceiptDraftLine =
-  | {
-    readonly type: "purchase";
-    readonly id: StableId;
-    readonly description: string;
-    readonly categoryId: StableId;
-    readonly quantity?: CanonicalDecimal;
-    readonly unitPrice?: CanonicalDecimal;
-    readonly lineTotal: CanonicalDecimal;
-    readonly selected: boolean;
-    readonly uncertain: boolean;
-  }
-  | {
-    readonly type: "adjustment";
-    readonly id: StableId;
-    readonly description: string;
-    readonly categoryId: StableId;
-    readonly amount: CanonicalDecimal;
-    readonly lineId?: StableId;
-    readonly selected: boolean;
-    readonly uncertain: boolean;
-  };
-
-export type ReceiptReviewDraft = {
-  readonly parent: Omit<ReceiptParent, "id" | "schemaVersion" | "type">;
-  readonly lines: readonly ReceiptDraftLine[];
-  readonly uncertainty: readonly string[];
-  readonly printedTotalMismatch: boolean;
+  /** Optional proof that the approved transmission disclosure was accepted. */
+  readonly disclosure?: ReceiptDisclosure;
 };
 
 export type ReceiptScanOutput = {

@@ -828,9 +828,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-600 — Destructive/PWA independent review gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `P-503`, `R-500`; the
-  second bounded fix wave is integrated and a fresh independent closure review
-  is required before completion.
+- **Status/dependencies:** `COMPLETE`; depends on `P-503`, `R-500`; the second
+  bounded fix wave is integrated and closure-3 independently approved the gate
+  with no unresolved severity-1/2/3/4 finding.
 - **Ownership:** read-only review first; scoped fixes by M6 owners.
 - **Scope/non-goals:** review destructive truthfulness and ordering, data leakage,
   reload recovery, offline/update/install correctness, settings/disclosures,
@@ -845,7 +845,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### Q-601 — Close screen/state/design-system completeness gaps
 
-- **Status/dependencies:** `PENDING`; depends on `R-600`.
+- **Status/dependencies:** `READY`; depends on `R-600`, which is complete.
 - **Ownership:** only gaps explicitly inventoried against specs; shared-component
   fixes precede affected feature fixes; no new product scope.
 - **Scope/non-goals:** map every approved screen/checklist state to implementation,
@@ -1261,12 +1261,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
-  M5 is released; X-501, X-502, and P-503 are complete; and R-600 is the
-  active M6 closure review gate after its second bounded fix wave.
+  M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
+  after closure-3 approval; and Q-601 is the next dependency-ready task.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  the current pushed plan checkpoint, whose X-502 source/ledger predecessor is
-  `3a43b04`, with integrated source commit `df21669` and the intentionally
-  untracked artifacts and preserved recovery directory listed below;
+  `1ffd045` (`Record R-600 second fix wave`); this plan reconciliation is the
+  next checkpoint to push. The root contains only the intentionally untracked
+  artifacts and preserved recovery directory listed below;
   the final pushed R-500 ledger sequence includes `e375cf8` (`Close R-500 and
   reconcile plan ledger`) and `150ba7c` (`Record final pushed R-500
   checkpoint`), with source checkpoint `e6ee2cd` (`Fix higher-generation
@@ -1351,8 +1351,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501, X-502, and P-503 are `COMPLETE`; R-600 is the active M6 closure
-  review gate after its second bounded fix wave; and no task is interrupted.
+  X-501, X-502, P-503, and R-600 are `COMPLETE`; Q-601 is `READY`; no worker
+  or reviewer is active; and no task is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -1514,10 +1514,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** record the approved R-200 closure, then dispatch the next
-  dependency-ready M3 workstreams `L-201`, `L-203`, and `A-301` with disjoint
-  ownership. Keep the deferred AI scan feedback-memory feature out of MVP
-  implementation.
+- **Current task:** dispatch `Q-601`, the next dependency-ready M7 hardening
+  task, from the pushed R-600 closure checkpoint. Keep Q-601 limited to the
+  explicit completeness inventory and approved-scope regression gaps; do not
+  start Q-602 until Q-601 evidence is integrated and verified.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -3217,6 +3217,24 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   paths in production/browser evidence, and confirm the dark manifest colors,
   then rerun the R-600 scope. No review worker may edit source, this plan,
   master, remotes, or another worktree.
+- **R-600 closure-3 result:** A recovered fresh independent read-only review
+  was completed in the preserved `review/r-600-closure-3` worktree at
+  `1ffd045` and handed off at `2026-08-24T23:39:06Z` with status `APPROVE`.
+  It found `S1=0`, `S2=0`, `S3=0`, and `S4=0`, with no unresolved finding.
+  The exact handover is preserved at
+  `~/git/worktrees/did-it-become-what-you-like-r-600-closure-3/R-600-closure-3-progress.md`.
+  Its validation matrix passed `deno task fmt:check` (213 files), lint (197),
+  check, unit (249), integration (72), component (81), domain (37), actor (1),
+  local E2E (4/4), full E2E (10/10), gallery/browser, Pages/CI validators,
+  production build, frozen audit, and diff check. Production-preview review
+  also covered restore/merge, distinct Privacy deletion scopes and checked key
+  removal, offline update messaging/reload, responsive 320/390/1280 layouts,
+  scoped manifest/service-worker behavior, and browser-error absence. Live
+  OAuth/Drive/Gemini, hosted Pages execution, real multi-device deletion, and
+  deterministic native OS install remained unavailable/unclaimed. The review
+  changed no source, tests, plan, `master`, remote, or other worktree; its
+  untracked handover and worktree remain preserved. R-600 is therefore complete
+  and Q-601 is released as the next separately owned dependency-ready task.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

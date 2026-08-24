@@ -540,9 +540,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-300 — Local vertical-slice independent review gate
 
-- **Status/dependencies:** `BLOCKED`; depends on `L-205`; the bounded
-  custom-period/saved-record-Undo follow-up is integrated, but a fresh
-  independent closure review is still required.
+- **Status/dependencies:** `COMPLETE`; depends on `L-205`; the bounded
+  custom-period/saved-record-Undo and accessibility follow-ups are integrated
+  and independently approved.
 - **Ownership:** review read-only first; fixes remain scoped to M3 owners.
 - **Scope/non-goals:** review financial correctness, local durability, XState/UI
   separation, responsive/accessibility fidelity, design-system reuse, and all
@@ -1316,23 +1316,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
-  custom-period/saved-Undo fix wave is `COMPLETE`; a fresh R-300 closure
-  review is the only active gate.
+  custom-period/saved-Undo fix wave is `COMPLETE`; R-300 is `COMPLETE` after
+  fresh closure approval; A-302 is the next dependency-ready milestone.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
   `review/r-300-closure-4`, based at `9cc9f26`. Its untracked
   `R-300-progress.md` handover is preserved. The root handover remains
-  preserved and downstream M4 remains gated while the next bounded fix wave is
-  integrated.
-- **Active R-300 closure review:** Feynman
-  (`01a032a0-58e0-7852-86dc-49b5a1cd9732`) owns the fresh read-only review in
-  `~/git/worktrees/did-it-become-what-you-like-r-300-closure-5`, branch
-  `review/r-300-closure-5`, based at `6c6072e`. Only its untracked
-  `R-300-progress.md` handover may change. It must inspect Curie's BLOCK and
-  the integrated `acd3bff` fix, rerun the complete aggregate/local/native
-  matrix, and return an explicit APPROVE or BLOCK. Preserve the worktree and
-  handover; downstream M4 remains gated until approval.
+  preserved. Feynman's fresh approval is recorded below; downstream M4 is now
+  released in dependency order.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -2107,6 +2099,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `acd3bff` integration, aggregate verification, focused local E2E, and native
   local-screen/a11y checks at 320x568, 390x844, and 1280x800. No source, plan,
   master, remote, commit, or Pages changes are authorized.
+- **R-300 closure approval:** Feynman's final handoff at
+  `2026-08-24T07:29:57Z` explicitly `APPROVE`s the gate from
+  `~/git/worktrees/did-it-become-what-you-like-r-300-closure-5`, based at
+  `6c6072e`, after independently rechecking the Curie findings and integrated
+  source `acd3bff`. It records `S1=0`, `S2=0`, `S3=0`, and `S4=0`; aggregate
+  `deno task verify` passed with 128 repository tests, 18 integration, 28
+  component, 27 domain, 1 actor, local E2E 2/2, gallery/browser/Pages/CI/
+  toolchain checks, builds, frozen audit, and diff check; the separate local
+  E2E passed 2/2; and native local-screen/a11y inspection passed at 320x568,
+  390x844, and 1280x800 with stable axe violations 0, no page errors, one
+  main landmark, expected level-one headings, and no horizontal overflow. The
+  reviewer made no tracked, plan, master, remote, commit, or Pages changes;
+  its untracked handover and worktree remain preserved. R-300 is complete and
+  A-302 is released as the next dependency-ready milestone.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

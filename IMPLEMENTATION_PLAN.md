@@ -455,7 +455,10 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 - **Status/dependencies:** `IN_PROGRESS`; depends on `L-201`, `D-102`.
 - **Ownership:** project/category domain services, actors, selectors; no screens
-  except headless actor fixtures.
+  except headless actor fixtures. A bounded internal-contract follow-up may add
+  the missing project reorder command to `src/actors/contracts/types.ts` and
+  its focused actor-contract coverage; this does not change approved user
+  behavior or expand the task beyond ordering already in scope.
 - **Scope/non-goals:** first/default/last-selected project, stable custom project
   ordering, rename/archive/restore/empty delete, the guard requiring a switch
   away before archiving the current project, default currency, global ordered
@@ -1245,9 +1248,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `fd48dbf` and tracks
-  `origin/master` at the same commit (`0 0`). The root worktree is clean before
-  this intended ledger edit.
+- **Reconciled branch/upstream:** `master` is at `5244b60` and is one commit
+  ahead of `origin/master` until this checkpoint is committed and pushed. The
+  root worktree is clean before this intended ledger edit.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1259,7 +1262,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   repository`), A-301 adapter implementation `3d0b54a` (`Implement image
   preparation and Gemini adapter`), contract follow-up `dc306bb` (`Preserve
   receipt metadata in Gemini drafts`), the pushed A-301 ledger checkpoints,
-  and `fd48dbf` are present on `master`; the deferred-only SPEC note is
+  and `5244b60` are present on `master`; the deferred-only SPEC note is
   `c390656`. This ledger update is the only intended uncommitted change.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-203`, `A-301`, and `R-200`. Their required source, tests, and
@@ -1286,7 +1289,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-203`, and `A-301` are `COMPLETE`;
-  `L-202` is `IN_PROGRESS` in its isolated worktree.
+  `L-202` is `IN_PROGRESS` but paused at a safe handover pending the bounded
+  internal reorder-command contract follow-up.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1830,6 +1834,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   handoff entries, leave this plan and `master` untouched, and not push. The
   integration owner will inspect the scoped commit and rerun the full affected
   matrix before releasing L-204/L-205 dependencies.
+- **L-202 contract backoff:** Fermat reconciled the locked contracts and
+  confirmed at `2026-08-24T03:00:40Z` that `ProjectCommand` has no reorder
+  variant, while L-202 acceptance requires stable custom project ordering.
+  The worker was paused with no source changes and only its untracked
+  `L-202-progress.md` handover. A fresh read-only advisor, Hume
+  (`01a031b6-823d-71e3-949f-9e03832a8e0e`), was dispatched with the exact
+  evidence but did not return after bounded waits and was closed. The
+  integration owner therefore approves the smallest internal-contract path:
+  add `{ type: "reorder"; orderedIds: readonly StableId[] }` to `ProjectCommand`
+  with focused compile/actor coverage, then resume Fermat. No approved user
+  requirement changes; no populated-project deletion, screen, or external
+  integration scope is added.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

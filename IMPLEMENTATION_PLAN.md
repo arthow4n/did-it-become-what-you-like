@@ -514,7 +514,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### L-205 — Deliver the complete local browsing and organization UI slice
 
-- **Status/dependencies:** `PENDING`; depends on `L-202`, `L-204`, `U-104`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `L-202`, `L-204`, `U-104`.
 - **Ownership:** shell plus Screens 1–3, 6–9 and non-destructive project/category
   editor composition; no Gemini/Drive/destructive workflows.
 - **Scope/non-goals:** first-use local path, responsive navigation, Expenses
@@ -1292,7 +1292,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, and `A-301`
-  are `COMPLETE`; `L-205` is `PENDING` and dependency-ready.
+  are `COMPLETE`; `L-205` is `IN_PROGRESS` in its isolated worktree.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1883,6 +1883,19 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   (121), `deno task build`, `deno audit --frozen`, and `git diff --check`.
   L-204 is complete; its worktree remains preserved and the worker is shut
   down. L-205 is now dependency-ready.
+- **L-205 dispatch:** the next implementing worker owns the complete local UI
+  slice in `~/git/worktrees/did-it-become-what-you-like-l-205-local-ui` on
+  branch `task/l-205-local-ui`. Ownership covers shell and Screens 1–3, 6–9,
+  non-destructive project/category editor composition, component/accessibility
+  tests, the single approved local manual-save browser journey, and the
+  required three-viewport agent-browser inspection. Before editing, the worker
+  must read `UI_SPEC.md`, `DESIGN_SYSTEM.md`, the implemented shared
+  components, the L-205 task, and applicable skills. It must not touch Gemini,
+  Drive, external sync, populated-project destructive workflows,
+  `IMPLEMENTATION_PLAN.md`, `master`, or push. Keep a timestamped UTC
+  `L-205-progress.md` untracked for resumable progress and final handoff; the
+  integration owner will inspect its scoped commit and rerun the complete UI
+  matrix before releasing `R-300`.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

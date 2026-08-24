@@ -151,6 +151,11 @@
   }
 
   @media (max-width: 719px) {
+    .conflict-import-ui .ds-page-header__title {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
     .conflict-import-master-detail {
       display: block;
     }

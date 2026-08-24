@@ -58,6 +58,11 @@
   }
 
   @media (max-width: 479px) {
+    .sync-ui-screen .ds-page-header__title {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
     .sync-ui-global-status .ds-inline {
       align-items: flex-start;
       flex-direction: column;

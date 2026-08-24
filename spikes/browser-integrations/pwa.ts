@@ -14,7 +14,11 @@ export const CSP_DIRECTIVES = {
   "img-src": ["'self'", "blob:", "data:"],
   "manifest-src": ["'self'"],
   "object-src": ["'none'"],
-  "script-src": ["'self'", "https://accounts.google.com/gsi/client"],
+  "script-src": [
+    "'self'",
+    "'wasm-unsafe-eval'",
+    "https://accounts.google.com/gsi/client",
+  ],
   "style-src": ["'self'"],
   "worker-src": ["'self'"],
 } as const;

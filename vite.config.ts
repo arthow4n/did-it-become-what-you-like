@@ -1,8 +1,19 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export const REPOSITORY_BASE_PATH = "/did-it-become-what-you-like/";
+
+const developmentCspBypass: Plugin = {
+  name: "development-csp-bypass",
+  transformIndexHtml(html, context) {
+    if (!context.server) return html;
+    return html.replace(
+      /<meta\b(?=[^>]*\bhttp-equiv=["']Content-Security-Policy["'])[^>]*>\s*/i,
+      "",
+    );
+  },
+};
 
 export default defineConfig({
   base: REPOSITORY_BASE_PATH,
@@ -12,6 +23,7 @@ export default defineConfig({
     exclude: ["@automerge/automerge"],
   },
   plugins: [
+    developmentCspBypass,
     react(),
     VitePWA({
       registerType: "prompt",

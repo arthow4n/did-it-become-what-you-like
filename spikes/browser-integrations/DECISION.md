@@ -67,12 +67,13 @@ workflows. No backend is required by this compatibility proof.
   claims that Gemini imposes a 4K or quality limit; A-301 must recheck
   representative synthetic receipt-like legibility fixtures before locking them
   in the production adapter.
-- CSP is self-hosted by default. It permits only the GIS client script and the
-  three required Google origins for connections, plus same-origin assets,
-  blob/data image previews, and a same-origin worker. It has no unsafe inline or
-  eval script source and no unrelated CDN. The GenAI bundle must be bundled into
-  the app; the SDK's direct browser entry is not a permission to load a runtime
-  CDN module.
+- CSP is self-hosted by default. It permits only the GIS client script, the
+  narrowly scoped `wasm-unsafe-eval` source required by the bundled Automerge
+  WebAssembly runtime, and the three required Google origins for connections,
+  plus same-origin assets, blob/data image previews, and a same-origin worker.
+  It has no unsafe inline or general unsafe-eval source and no unrelated CDN.
+  The GenAI bundle must be bundled into the app; the SDK's direct browser entry
+  is not a permission to load a runtime CDN module.
 - The PWA uses `/did-it-become-what-you-like/` as the repository base path, hash
   routes, repository-relative assets, and a worker registered with exactly that
   path as scope. The proof rejects sibling repositories, prefix-collision paths,

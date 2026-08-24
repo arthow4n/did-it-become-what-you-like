@@ -1662,7 +1662,11 @@ export function ManualExpenseScreen({
     setOpenSent(false);
     setMachineKey((value) => value + 1);
   };
-  if (snapshot.matches("draftSaveFailed") && draft === null) {
+  if (
+    (snapshot.matches("hydrateFailed") || snapshot.matches("openFailed") ||
+      snapshot.matches("draftSaveFailed")) &&
+    draft === null
+  ) {
     return (
       <ManualExpenseRecoveryScreen
         message={snapshot.context.error?.message ??

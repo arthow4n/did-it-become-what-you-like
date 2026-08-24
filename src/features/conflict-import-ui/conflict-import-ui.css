@@ -1,0 +1,199 @@
+@layer components {
+  .conflict-import-ui {
+    min-width: 0;
+  }
+
+  .conflict-import-master-detail {
+    display: grid;
+    grid-template-columns: minmax(13rem, 0.8fr) minmax(0, 1.5fr);
+    gap: var(--space-5);
+    align-items: start;
+  }
+
+  .conflict-import-list-pane,
+  .conflict-import-detail-pane,
+  .conflict-import-export-panel,
+  .conflict-import-import-panel,
+  .conflict-import-safety-export {
+    min-width: 0;
+  }
+
+  .conflict-import-list {
+    margin: 0;
+  }
+
+  .conflict-import-list__button {
+    width: 100%;
+    min-height: var(--control-height);
+    justify-content: flex-start;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .conflict-import-list__button[data-selected="true"] {
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+  }
+
+  .conflict-import-candidates {
+    min-width: 0;
+  }
+
+  .conflict-import-candidate {
+    min-width: 0;
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  .conflict-import-candidate[data-selected="true"] {
+    border-color: var(--color-accent);
+    box-shadow: inset 3px 0 0 var(--color-accent);
+  }
+
+  .conflict-import-candidate__value {
+    overflow-wrap: anywhere;
+    font-size: var(--font-size-title);
+    line-height: var(--line-height-tight);
+  }
+
+  .conflict-import-delete-choice {
+    border: 1px solid var(--color-danger);
+    background: var(--color-danger-surface);
+  }
+
+  .conflict-import-discarded-values {
+    margin: 0;
+    padding-inline-start: var(--space-6);
+    color: var(--color-text-secondary);
+  }
+
+  .conflict-import-custom-choice,
+  .conflict-import-preview {
+    min-width: 0;
+  }
+
+  .conflict-import-replace-warning {
+    display: grid;
+    gap: var(--space-4);
+    border: 2px solid var(--color-danger);
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
+    background: var(--color-danger-surface);
+  }
+
+  .conflict-import-mode-choice {
+    min-width: 0;
+  }
+
+  .conflict-import-mode-choice .ds-inline-notice ul,
+  .conflict-import-preview .ds-inline-notice ul,
+  .conflict-import-preview .ds-error-state ul {
+    margin: 0;
+    padding-inline-start: var(--space-6);
+  }
+
+  .conflict-import-technical-details {
+    border-top: 1px solid var(--color-border-subtle);
+    padding-top: var(--space-3);
+  }
+
+  .conflict-import-technical-details__content {
+    overflow-x: auto;
+    padding-top: var(--space-3);
+  }
+
+  .conflict-import-technical-details code {
+    overflow-wrap: anywhere;
+    color: var(--color-text-secondary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--font-size-caption);
+  }
+
+  .conflict-import-mobile-back {
+    display: none;
+  }
+
+  .conflict-import-loading-blocks {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .conflict-import-loading-blocks span {
+    display: block;
+    min-height: var(--control-height);
+    border-radius: var(--radius-card);
+    background: var(--color-surface-2);
+  }
+
+  .conflict-import-export-panel,
+  .conflict-import-import-panel {
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  .conflict-import-safety-export {
+    border: 1px solid var(--color-border-strong);
+    background: var(--color-surface-2);
+  }
+
+  .conflict-import-safety-export .ds-inline-notice {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .conflict-import-ui .ds-button,
+  .conflict-import-ui .ds-field-control,
+  .conflict-import-ui .ds-radio,
+  .conflict-import-ui .ds-checkbox {
+    overflow-wrap: anywhere;
+  }
+
+  .conflict-import-ui .ds-button {
+    transition: none;
+  }
+
+  @media (max-width: 719px) {
+    .conflict-import-master-detail {
+      display: block;
+    }
+
+    .conflict-import-master-detail[data-pane="list"] .conflict-import-detail-pane {
+      display: none;
+    }
+
+    .conflict-import-master-detail[data-pane="detail"] .conflict-import-list-pane {
+      display: none;
+    }
+
+    .conflict-import-mobile-back {
+      display: inline-flex;
+    }
+
+    .conflict-import-delete-choice .ds-inline {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .conflict-import-delete-choice .ds-button {
+      width: 100%;
+    }
+
+    .conflict-import-export-panel .ds-inline,
+    .conflict-import-import-panel > .ds-stack > .ds-inline,
+    .conflict-import-detail > .ds-inline {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .conflict-import-export-panel .ds-button,
+    .conflict-import-import-panel > .ds-stack > .ds-inline .ds-button,
+    .conflict-import-detail > .ds-inline .ds-button {
+      width: 100%;
+    }
+  }
+
+  @media (min-width: 720px) {
+    .conflict-import-export-panel,
+    .conflict-import-import-panel {
+      padding: var(--space-6);
+    }
+  }
+}

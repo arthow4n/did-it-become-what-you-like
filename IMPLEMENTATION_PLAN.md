@@ -1256,7 +1256,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the bounded R-400 compact-layout fix is integrated, and R-400 is the active
   independent closure gate.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `8ffe4fd` after pushing the closure-4 dispatch checkpoint. The root worktree
+  `a47fe10` after pushing the closure-5 native recheck dispatch checkpoint.
+  The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1284,7 +1285,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
   browser build`). The latest integrated implementation is `ba63635`; the
   latest pushed orchestration checkpoint before this ledger update is
-  `8ffe4fd`.
+  `a47fe10`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1313,7 +1314,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `8ffe4fd`; the root worktree contains only the intentionally untracked
+  at `a47fe10`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
@@ -2459,6 +2460,30 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   overflow, then close temporary sessions and end with exact severity counts
   and `APPROVE` or `BLOCK`. It owns no source or plan changes. R-400 remains
   gated until this recheck completes.
+- **R-400 closure-5 result:** Leibniz independently passed the receipt E2E
+  (`1 passed`), native 320x568 full axe `0/0/33` with warning subtree `0/0/6`
+  and no overflow, and native 390x844 warning subtree `0/0/6`, no overflow,
+  model picker/sticky separation after Options expansion, review cleanup, and
+  metadata dialog focus/containment/Escape/restore. Its handover
+  `~/git/worktrees/did-it-become-what-you-like-r-400-closure-5/R-400-closure-5-progress.md`
+  at `2026-08-24T12:25:15Z` ended `BLOCK` because a stale locator stopped the
+  final 1280x800 matrix before disclosure/cleanup, warning axe, geometry,
+  overflow, review, and metadata checks. No in-scope product finding was
+  confirmed (`S1=0, S2=0, S3=0, S4=0`); the missing viewport evidence alone
+  prevents approval. The worktree/handover remain preserved and the agent is
+  closed.
+- **R-400 closure-6 final native completion dispatch:** Volta
+  (`01a033bc-a7e6-7140-b3b8-ce7b68492063`) owns one final read-only native
+  completion in
+  `~/git/worktrees/did-it-become-what-you-like-r-400-closure-6`, branch
+  `review/r-400-closure-6`, based at `a47fe10`. It must create
+  `R-400-closure-6-progress.md` before browser work and complete the missing
+  fresh 1280x800 disclosure/cleanup, warning axe, options/model/sticky
+  geometry, overflow, review, and metadata focus checks, reconciling the
+  preserved 320/390 evidence. It must use fresh snapshots, bounded browser
+  commands, ~ paths, synthetic data, no source/plan/remote mutations, and
+  end with exact severity counts and `APPROVE` or `BLOCK`. R-400 remains
+  gated until this final native completion.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

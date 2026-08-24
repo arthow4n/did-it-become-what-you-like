@@ -759,7 +759,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### X-501 — Implement populated-project deletion
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-500`, `L-202`.
+- **Status/dependencies:** `COMPLETE`; depends on `R-500`, `L-202`.
 - **Ownership:** project-deletion actor/domain and Screen 7A composition; no
   global Delete Everywhere behavior.
 - **Scope/non-goals:** record-count warning, complete safety export, exact-name
@@ -1259,8 +1259,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
-  M5 is released and M6 is the next dependency-ready milestone.
-- **Reconciled branch/upstream:** `master` and `origin/master` are aligned;
+  M5 is released; X-501 is complete; and X-502 is the next dependency-ready
+  M6 task.
+- **Reconciled branch/upstream:** root `master` contains the integrated X-501
+  source commit `58aff60` and is one source commit ahead of `origin/master`
+  until the next ledger push;
   the final pushed R-500 ledger sequence includes `e375cf8` (`Close R-500 and
   reconcile plan ledger`) and `150ba7c` (`Record final pushed R-500
   checkpoint`), with source checkpoint `e6ee2cd` (`Fix higher-generation
@@ -1294,8 +1297,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the deferred-only SPEC note is `c390656`; A-303 UI integration is `a90504d`
   (`Implement A-303 receipt and Gemini UI`) and its isolated A-301 canvas
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
-  browser build`). The latest integrated implementation is `0f20581`
-  (`Implement S-404 import export workflows`), after `1c50cb3`
+  browser build`). The latest integrated implementation is `58aff60`
+  (`Implement populated project deletion workflow`), after `1c50cb3`
   (`Implement S-403 conflict workflow`) and `1d3afce`
   (`Implement S-401 Drive adapter`); S-402 integration is `95ac376`
   (`Implement S-402 synchronization actor and transport`); S-405 worker and
@@ -1318,22 +1321,21 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
-  is recorded below. R-300 and A-302 are complete. The latest root `deno task
-  verify` passed after S-405 integration: 137 repository tests, 20
-  integration, 56 component, 29 domain, 1 actor, local E2E 2/2,
-  gallery/browser/axe, Pages/CI/toolchain validators, both production builds,
-  frozen audit, and `git diff --check`. A-303 and compact-layout focused validation also passed
-  `deno task fmt:check` (142 files), `deno task lint` (130 files),
-  `deno task check`, `deno task test:component --filter receipt-ui` (4),
-  `deno task test:e2e --grep receipt-review` (1), and build. Native receipt
-  inspection passed at 320x568, 390x844, and 1280x800; the compact fix recorded
-  zero axe violations/incomplete results and placed the model trigger above
-  the sticky action at 390px. The implementation plan task-heading count
-  remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  through S-405 integration commit `d877c52`; the root worktree contains
-  only the intentionally untracked A-303, R-300, and R-400 contrast-fix
-  handovers plus the preserved S-404 root-artifact quarantine. Preserved
-  worktrees are listed below.
+  is recorded below. R-300, A-302, A-303, R-400, S-401–S-405, R-500, and
+  X-501 are complete. The latest root `deno task verify` passed after X-501
+  integration: 215 task tests, 67 integration, 65 component, 32 domain,
+  1 actor, local E2E 3/3, gallery/browser/Pages/CI/toolchain validators,
+  both production builds, frozen audit, and `git diff --check`. X-501 focused
+  root validation passed direct deletion 9/9, project-deletion tests 7 passed
+  with 208 filtered, populated-project-delete component 1 passed with 64
+  filtered, and project-delete-sync integration 2 passed with 65 filtered.
+  Screen 7A browser inspection passed at 320x568, 390x844, and 1280x800
+  without overflow and with zero axe violations; the incomplete contrast
+  geometry probes were caused only by modal overlap. The implementation plan
+  task-heading count remains 37 with no duplicate IDs; the root worktree
+  contains only the intentionally untracked A-303, R-300, and R-400
+  contrast-fix handovers plus the preserved S-404 root-artifact quarantine.
+  Preserved worktrees are listed below.
 - **R-400 completion evidence:** closure-6 independently approved the final
   native 1280x800 matrix after closure-5’s partial 320/390 review; the exact
   handover, counts, geometry, focus, cleanup, and unavailable-service boundary
@@ -1344,8 +1346,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
-  R-500 is `COMPLETE` after fresh independent closure review; M5 is released
-  and X-501 is the active M6 implementation task.
+  R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
+  X-501 is `COMPLETE`; and X-502 is the next active dependency-ready M6 task.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2966,7 +2968,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   settings, or plan/master/remote changes are in scope. The root is the sole
   integration owner; merge order is worker commit, focused root checks, then
   the X-501 gate before X-502 is released.
-- **X-501 worker active:** Helmholtz
+- **X-501 worker completed:** Helmholtz
   (`01a034eb-d991-77b2-86ac-7dc039515aa0`) owns the bounded populated-project
   deletion implementation in
   `~/git/worktrees/did-it-become-what-you-like-x-501-project-delete`, branch
@@ -2976,6 +2978,30 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   sync causal merge, import/export adapter internals, plan, master, remotes,
   and unrelated settings are excluded. Preserve its UTC `X-501-progress.md`
   handover and worktree; the orchestrator remains integration owner.
+- **X-501 integration result:** Helmholtz's final handover at
+  `2026-08-24T18:28:03Z` is `READY FOR INTEGRATION`, preserved at
+  `~/git/worktrees/did-it-become-what-you-like-x-501-project-delete/X-501-progress.md`.
+  The worker commit `7503d68` was inspected and cherry-picked into root as
+  `58aff60` (`Implement populated project deletion workflow`). The bounded
+  implementation uses the canonical safety export, typed exact-name
+  confirmation, an atomic project-owned tombstone transaction covering
+  expenses, receipts, purchase lines, adjustments, indexes, selection, and
+  ordering, plus retry/cancel/terminal actor recovery and Screen 7A UI. The
+  locked deletion contract was preserved; the adapter change is an integration
+  regression test only. Root focused checks passed direct deletion `9/9`,
+  `deno task test --filter project-deletion` (`7 passed`, `208 filtered`),
+  `deno task test:component --filter populated-project-delete` (`1 passed`,
+  `64 filtered`), `deno task test:integration --filter project-delete-sync`
+  (`2 passed`, `65 filtered`), and `git diff --check`. The combined root
+  `deno task verify` passed `215` task tests, `67` integration, `65` component,
+  `32` domain, `1` actor, local E2E `3/3`, both builds, gallery/browser/Pages/
+  CI/toolchain checks, frozen audit, and diff check. Native Screen 7A browser
+  inspection at `320x568`, `390x844`, and `1280x800` found no horizontal
+  overflow and zero axe violations; the incomplete contrast geometry probes
+  were caused only by modal overlap. No live OAuth/Drive or hosted Pages
+  workflow was used. The worker agent is complete; preserve its worktree and
+  handover. X-501 is complete and releases X-502 as the next dependency-ready
+  task.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

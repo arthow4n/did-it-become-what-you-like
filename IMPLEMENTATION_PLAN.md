@@ -1255,8 +1255,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, and A-302 are complete. A-303 is integrated
   and R-400 is the active independent review gate.
 - **Reconciled branch/upstream:** `master` and `origin/master` are both at
-  `f7d7b6b` (`0 0`), pushed after recording A-303 completion and releasing
-  R-400. The root worktree
+  `12fd97f` (`0 0`), pushed after integrating the bounded R-400 fix wave. The
+  root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1282,8 +1282,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the deferred-only SPEC note is `c390656`; A-303 UI integration is `a90504d`
   (`Implement A-303 receipt and Gemini UI`) and its isolated A-301 canvas
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
-  browser build`). The latest pushed implementation is `a8b87ca`; the latest
-  pushed orchestration checkpoint is `f7d7b6b`.
+  browser build`). The latest pushed implementation is `12fd97f`; the latest
+  pushed orchestration checkpoint before this ledger update is `b9224fd`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1312,7 +1312,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   one low-severity incomplete compact-navigation contrast diagnostic while
   visual text remained readable. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `f7d7b6b`; the root worktree contains only the intentionally untracked
+  at `12fd97f`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
@@ -2250,6 +2250,23 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   The worker must keep a timestamped `R-400-fix-progress.md`, not edit this
   plan or `master`, and return exact validation plus `READY FOR INTEGRATION` or
   `BLOCK`.
+- **R-400 fix-wave integration:** Bernoulli completed the bounded fix in
+  `~/git/worktrees/did-it-become-what-you-like-r-400-fix` with final
+  `R-400-fix-progress.md` handover at `2026-08-24T10:15:57Z`, explicitly
+  `READY FOR INTEGRATION`. Worker commit `e2f8642` was inspected and
+  cherry-picked as root `12fd97f`. It fixes native input/file/object-URL/byte
+  release and re-selection paths, explicit compatible/Needs-test model
+  selection with versioned device-local evidence, numeric HTTP status
+  preservation for typed redacted Gemini errors, focus-managed quick-setup and
+  metadata dialogs, remembered-key retention, valid adjustment linking,
+  compact navigation stacking, and request-body/429/cleanup regressions.
+  Root `deno task verify` passed with 137 repository, 20 integration, 35
+  component, 29 domain, 1 actor, and local E2E 2/2, plus native gallery,
+  browser, Pages/CI/toolchain, builds, frozen audit, and diff checks. Focused
+  receipt tests passed 7/7, receipt E2E 1/1, and native receipt axe passed at
+  320x568, 390x844, and 1280x800 with the prior 390px incomplete diagnostic
+  cleared. R-400 remains `IN_PROGRESS` pending a fresh independent closure
+  review of this exact root integration.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

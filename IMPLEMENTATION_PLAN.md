@@ -1075,8 +1075,11 @@ and restarts are operational interruptions, not reasons to mark a task
 
 Long reviews and implementation tasks may legitimately take several bounded
 command windows. Silence is not completion, and one missed update is not an
-interruption. Progress is operational telemetry; only the final handoff and
-the orchestrator's ledger update can change a task's completion or gate status.
+interruption. Progress is operational telemetry and a resumable handover: if a
+final response is lost to context compaction, rate limiting, or session loss,
+the latest progress record must let the next orchestrator resume without
+guessing. Only the final handoff and the orchestrator's ledger update can
+change a task's completion or gate status.
 
 ### Preferred progress channel
 
@@ -1102,8 +1105,11 @@ records a dedicated review/worker worktree using the normal `~` path privacy
 rule. The worker may write only the untracked progress file
 `<TASK-ID>-progress.md` in that worktree; source, tests, configuration, the
 implementation plan, and commits remain outside its write scope unless the
-task explicitly authorizes them. The file is operational evidence, not a
-second plan, and must never be committed or pushed.
+task explicitly authorizes them. The file is operational evidence and a
+resumable handover, not a second plan, and must never be committed or pushed.
+The implementation plan remains the authority for sequencing and status; the
+progress file preserves the worker's latest execution state and review
+reasoning between plan checkpoints.
 
 Update the file at least every five minutes between commands, immediately
 before and after a long command, and before yielding or stopping. Use this
@@ -1116,11 +1122,15 @@ shape so the orchestrator can inspect it without guessing:
 - updated_at_utc: `2026-08-24T12:00:00Z`
 - worker: `reviewer-name (agent-id)`
 - phase: `command matrix | source inspection | failure-path check | handoff`
+- base_commit: `663a874`; owned_scope: `read-only source; progress file only`
 - last_completed: `deno task check` — exit `0`
 - current: `deno task a11y:gallery` — started `2026-08-24T11:58:00Z`
 - next: `inspect actor persistence and adapter error boundaries`
 - findings: `S1=0, S2=0, S3=1, S4=0`
 - blocker: `none` or a redacted concrete condition
+- last_safe_checkpoint: `no source changes; progress file is the only worktree mutation`
+- recovery_command: `read this file, run git status, then resume current/next`
+- handoff: `resumable progress; not a final approval`
 - repository_mutation: `none`
 ```
 
@@ -1133,11 +1143,26 @@ an update, or after three expected update intervals; the orchestrator must
 first send a bounded status request when possible, then perform the full
 Interruption and Recovery Protocol before closing or reassigning the worker.
 
+Reviewers are explicitly encouraged to append a progress entry continuously,
+not only when asked: record each completed validation phase, provisional or
+confirmed finding, evidence location, recommendation, and the next safe
+action. The latest entry must be a usable handover if the reviewer loses its
+final response or the orchestrator's context is compacted. Before the final
+response, append one handoff entry containing the complete command/result
+matrix, every unresolved finding with severity and file/line evidence,
+unavailable checks, worktree/Git state, and explicit APPROVE or BLOCK. This
+entry is still not approval by itself; the orchestrator verifies it against the
+repository and updates the plan.
+
 ### Final handoff boundary
 
 The worker's final response must repeat the exact validation commands/results,
 all findings with severity and file/line evidence, unavailable checks, and an
-explicit `APPROVE` or `BLOCK` for reviews. The orchestrator removes the
+explicit `APPROVE` or `BLOCK` for reviews. The latest progress file must carry
+the same handover essentials before that response is sent. After context
+compaction or a resumed session, the orchestrator reads both the plan and the
+latest progress handover before waiting, closing, integrating, or dispatching.
+The orchestrator removes the
 untracked progress artifact only after preserving any needed evidence in this
 ledger and confirming the worktree is clean or safely preserved. Never mark a
 task complete from a progress update, a quiet process, or a stale file.
@@ -1174,7 +1199,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 ## Current Checkpoint
 
 - **Plan state:** implementation authorized; M0/M1 and the M2 contract/design-
-  system wave are complete, and `R-200` is dependency-ready.
+  system wave are complete, and `R-200` closure is `IN_PROGRESS` but blocked
+  by three newly found severity-2 contract issues.
 - **Reconciled branch/upstream:** `master` is at the current checkpoint commit,
   tracking `origin/master` at the same commit. The recovery audit completed
   successfully; the branch is clean and neither ahead nor behind its upstream
@@ -1183,10 +1209,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
   plan`).
-- **Integrated implementation state:** `5ebcd89` (`Wire design-system gallery
-  and M2 test gates`) is pushed. This ledger update will be committed and
-  pushed before the next worker is dispatched; there are no other unpushed
-  implementation changes.
+- **Integrated implementation state:** production source fixes through
+  `4d524ba` (`Harden adapter errors and retirement mapping`) are pushed. This
+  ledger update will be committed and pushed before the next fix worker is
+  dispatched; there are no other unpushed implementation changes.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, and `U-104`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1365,10 +1391,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** Banach completed the fresh independent `R-200` read-only
-  review from the clean root against the integrated M2 contracts and
-  design-system foundation; D-101, D-102, D-103, and U-104 fixes are integrated
-  and Hypatia is performing the fresh closure review.
+- **Current task:** Hypatia completed the fresh independent `R-200` closure
+  review in the dedicated worktree and returned `BLOCK`; D-102 and U-104
+  scoped fixes for three new severity-2 findings are next.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1434,6 +1459,35 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   modal positioning coverage at all three viewports. Both are scoped fixes and
   were resolved by `b3a8ffb` and `de924a5`; the fresh closure review must confirm
   no regression.
+- **R-200 closure handoff:** Hypatia
+  (`01a0314e-8936-7d53-a90f-ddf11e95f757`) reviewed read-only at
+  `~/git/worktrees/did-it-become-what-you-like-r-200-closure` and recorded the
+  resumable handover in `R-200-progress.md`. All 19 bounded matrix commands
+  passed: format, lint, check, 62 unit tests, 2 integration tests, actor (17),
+  adapter (11), component (12), design-system (11), E2E (2), build, gallery,
+  3-viewport gallery a11y, schema/Pages/CI/toolchain verification, frozen audit,
+  and diff check. The invalid fake-Gemini path exited 1 as intended; Pages was
+  not triggered. Hypatia returned `BLOCK` with S1=0, S2=3, S3=0, S4=0.
+- **New R-200 severity-2 findings blocking closure:**
+  1. U-104 still renders nested labels in `src/design-system/components.tsx`
+     lines 439-454; the outer Field label contains another label at 443-446,
+     affecting native date/time/file fields routed through 652-727. Replace it
+     with one explicit label/control association and add a no-nested-label
+     component regression while preserving `getByLabelText` behavior.
+  2. D-102/D-103 shaped-error handling still copies arbitrary `error.message`
+     in `src/actors/contracts/types.ts` lines 87-110, especially 99-104, for
+     any recognized code/retry shape. Canonicalize all untrusted rejection
+     messages before durable actor context; add credential-bearing shaped-error
+     redaction tests. D-102 owns the fix with D-103 coordination.
+  3. D-102's sync machine unconditionally exposes the `retryable` tag and
+     accepts `sync.retry` in `src/actors/contracts/sync.ts` lines 160-164. An
+     unauthorized failure reported `retryable:false` while still exposing
+     retryability. Derive tags/transitions from typed failure and add an
+     unauthorized `can({ type: "sync.retry" }) === false` regression. D-102
+     owns this fix.
+- **R-200 closure worktree recovery:** Hypatia completed and was shut down;
+  its worktree remains preserved at the `~` path above with only the untracked
+  progress handover. No source, plan, commit, push, or Pages action changed.
 - **D-101 recovery worktree:** branch `task/d-101-domain`, worktree
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain`, based at
   `bd6fd68`; worker Pauli (`01a030ed-e9e6-7670-a3ff-16b76f3e0917`) was
@@ -1472,10 +1526,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** no unresolved scoped finding or owner decision remains. The gate
-  is pending a fresh independent closure review after the complete post-fix
-  matrix; no GitHub Pages workflow may be enabled or triggered because the
-  owner has intentionally disabled it until MVP completion.
+- **Blocker:** three concrete severity-2 closure findings remain; no owner
+  decision is required. Dispatch disjoint D-102 and U-104 fixes, coordinate
+  D-103's boundary review, rerun the full matrix, and obtain another fresh
+  closure review. No GitHub Pages workflow may be enabled or triggered because
+  the owner has intentionally disabled it until MVP completion.
 - **R-200 scoped-fix dispatch plan:** the first wave
   owns disjoint preserved worktrees: D-101 owns
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain` and only
@@ -1531,21 +1586,32 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   D-103 worktree is clean except for its untracked progress artifact.
 - **R-200 closure readiness:** all eight original severity-2 and two
   severity-3 findings have scoped regression coverage and are integrated in
-  `b3a8ffb`, `c0bc76a`, `de924a5`, and `4d524ba`. The next action is to commit
-  and push this checkpoint, then dispatch a fresh independent read-only closure
-  reviewer. If approved, mark R-200 complete and proceed to M3; if new issues
-  appear, reopen only the owning scope.
+  `b3a8ffb`, `c0bc76a`, `de924a5`, and `4d524ba`; Hypatia found three new
+  severity-2 regressions. The next action is to commit/push this checkpoint,
+  dispatch D-102/U-104 scoped fixes, rerun the gate, and obtain a fresh closure
+  reviewer. If approved, mark R-200 complete and proceed to M3; otherwise
+  reopen only the owning scope.
 - **R-200 closure review worktree:** prepared branch `review/r-200-closure`
   in `~/git/worktrees/did-it-become-what-you-like-r-200-closure`, based at
   `663a874`. The reviewer may inspect all source but may write only the
   untracked `R-200-progress.md` operational artifact there; no source, tests,
   plan, commits, push, or Pages action is allowed. Preserve this worktree and
   progress file if the reviewer is interrupted.
-- **R-200 closure reviewer active:** Hypatia
+- **R-200 closure reviewer (completed BLOCK):** Hypatia
   (`01a0314e-8936-7d53-a90f-ddf11e95f757`) owns only the read-only inspection
   and untracked `R-200-progress.md` in
-  `~/git/worktrees/did-it-become-what-you-like-r-200-closure`. No source,
-  plan, commit, push, or Pages action is permitted.
+  `~/git/worktrees/did-it-become-what-you-like-r-200-closure`; its final
+  handover is preserved and no source, plan, commit, push, or Pages action was
+  permitted.
+- **R-200 reopened fix dispatch plan:** D-102 will own only
+  `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
+  for shaped-error canonicalization and retryable sync tags/transitions, with
+  actor regression tests. U-104 will own only `src/design-system/**` in
+  `~/git/worktrees/did-it-become-what-you-like-u-104-design-system` for the
+  nested-label fix and regression test. D-103 is a coordination reviewer for
+  the adapter boundary, not a parallel source owner unless the fix exposes a
+  concrete adapter defect. Both workers must maintain untracked timestamped
+  progress handovers, never edit this plan, and never push `master`.
 - **Historical D-103 dispatch record:** Dewey previously owned the active
   adapter fix in
   `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`, limited to

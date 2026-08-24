@@ -1254,7 +1254,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
 - **Reconciled branch/upstream:** `master` and `origin/master` are both at
-  `60f74c2` (`0 0`), pushed after recording the bounded R-300 follow-up.
+  `c6d1abd` (`0 0`), pushed after recording the integrated Curie-finding fix.
   The root worktree is clean except for the intentionally untracked R-300
   review handover.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1276,7 +1276,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the Curie-finding accessibility/typed-dispatch fix is integrated as
   `acd3bff` (`Fix R-300 actor dispatch and landmarks`);
   the deferred-only SPEC note is `c390656`. The latest pushed implementation
-  implementation commit is `acd3bff`.
+  implementation commit is `acd3bff`; the latest pushed root checkpoint is
+  `c6d1abd`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1306,7 +1307,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   contract follow-up passed the root matrix, and the root canonical task
   includes `src/adapters/gemini`; the exact `A-301` filter is the authoritative
   focused command. The implementation plan task-heading count remains 37
-  with no duplicate IDs; `master` and its upstream are aligned at `60f74c2`;
+  with no duplicate IDs; `master` and its upstream are aligned at `c6d1abd`;
   the root worktree contains only the intentionally untracked R-300 handover
   after the pushed follow-up. Preserved
   worktrees are

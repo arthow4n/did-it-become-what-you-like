@@ -135,6 +135,66 @@ Deno.test("settings-final install offer supports later after a useful action", a
   });
 });
 
+Deno.test("settings-final labels service-worker installation as an update", async () => {
+  await withComponentHarness(async ({ window, render, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(
+          PwaRuntime,
+          {
+            usefulActionVersion: 0,
+            dirty: false,
+            port: createFakeUpdateInstallPort("installing"),
+            children: createElement(AboutScreen, {
+              onClose: () => undefined,
+              onPrivacy: () => undefined,
+            }),
+          },
+        ),
+      );
+      await waitFor(() => assert(viewText().includes("Installing update…")));
+    });
+  });
+});
+
+Deno.test("settings-final labels native app installation separately", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const port = createFakeUpdateInstallPort();
+      port.setInstallAvailable(true);
+      let finishInstall: (() => void) | undefined;
+      const pendingPort = {
+        ...port,
+        install: () =>
+          new Promise<void>((resolve) => {
+            finishInstall = resolve;
+          }),
+      };
+      render(
+        createElement(
+          PwaRuntime,
+          {
+            usefulActionVersion: 1,
+            dirty: false,
+            port: pendingPort,
+            children: createElement(AboutScreen, {
+              onClose: () => undefined,
+              onPrivacy: () => undefined,
+            }),
+          },
+        ),
+      );
+      const view = within(document.body);
+      await waitFor(() => assert(view.getByRole("button", { name: "Later" })));
+      fireEvent.click(view.getAllByRole("button", { name: "Install app" })[0]);
+      await waitFor(() => assert(viewText().includes("Installing app…")));
+      assert(!viewText().includes("Installing update…"));
+      finishInstall?.();
+      await waitFor(() => assert(!viewText().includes("Installing app…")));
+    });
+  });
+});
+
 Deno.test("settings-final update protects dirty input and exposes offline status", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {

@@ -1249,7 +1249,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `08c3f88` and tracks
+- **Reconciled branch/upstream:** `master` is at `1b3232d` and tracks
   `origin/master` at the same commit (`0 0`). The root worktree is clean before
   updating this completion ledger.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1286,7 +1286,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   follow-up passed the root matrix, and the root canonical task includes
   `src/adapters/gemini`; the exact `A-301` filter is the authoritative focused
   command. The implementation plan task-heading count remains 37 with no
-  duplicate IDs; `master` and its upstream are aligned at `08c3f88`; the
+  duplicate IDs; `master` and its upstream are aligned at `1b3232d`; the
   root worktree is clean before this completion-ledger edit. Preserved
   worktrees are
   listed below.

@@ -1254,9 +1254,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, and S-401 are complete.
   M4 is released and S-402 is the next dependency-ready implementation.
-- **Reconciled branch/upstream:** the integrated root is at `1d3afce` and
-  `origin/master` remains at `52835d1` until this ledger update is pushed. The
-  root worktree
+- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
+  `b9c3844` after pushing the S-401 integration checkpoint. The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` and `R-400-contrast-fix-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1284,7 +1283,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
   browser build`). The latest integrated implementation is `1d3afce`
   (`Implement S-401 Drive adapter`); the latest pushed orchestration checkpoint
-  before this ledger update is `52835d1`.
+  before this ledger update is `b9c3844`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`; R-400 and S-401 are complete as
@@ -1313,10 +1312,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   inspection passed at 320x568, 390x844, and 1280x800; the compact fix recorded
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
-  remains 37 with no duplicate IDs; the root integration commit is `1d3afce`
-  and `origin/master` is still `52835d1` until this ledger update is pushed;
-  the root worktree contains only the intentionally untracked A-303, R-300,
-  and R-400 contrast-fix handovers. Preserved worktrees are listed below.
+  remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
+  at `b9c3844`; the root worktree contains only the intentionally untracked
+  A-303, R-300, and R-400 contrast-fix handovers. Preserved worktrees are
+  listed below.
 - **R-400 completion evidence:** closure-6 independently approved the final
   native 1280x800 matrix after closure-5’s partial 320/390 review; the exact
   handover, counts, geometry, focus, cleanup, and unavailable-service boundary

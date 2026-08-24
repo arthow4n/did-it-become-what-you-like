@@ -2229,6 +2229,27 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   isolated canvas guard, Drive/sync, Pages, and deferred memory remain out of
   scope. R-400 cannot be marked complete from the passing aggregate verify
   while these findings remain unresolved.
+- **R-400 fix-wave dispatch:** Bernoulli
+  (`01a032da-dcbd-7003-b04b-52afdc4ed8b6`) is reassigned to the fresh bounded
+  worktree `~/git/worktrees/did-it-become-what-you-like-r-400-fix`, branch
+  `task/r-400-fix`, based at the pushed checkpoint `28296b2`. Ownership is
+  limited to `src/features/receipt-ui.tsx`,
+  `src/features/receipt-ui.test.tsx`, `src/features/local-ui.css`,
+  `src/design-system/components.tsx`, `e2e/receipt-review.spec.ts`, and the
+  additive device-local compatibility-evidence fields/tests in
+  `src/domain/schema/records.ts` only if required by the model-test finding.
+  The worker must fix all five S2 findings and the scoped S3 items with
+  regression evidence: release/clear native files on every terminal path,
+  require explicit compatible model selection and reachable durable Needs-test
+  evidence, preserve only numeric HTTP status for typed error mapping, contain
+  and restore focus for both dialogs, preserve remembered keys on transient
+  setup failures, assert the exact fake-E2E request body/cleanup boundary,
+  restrict adjustment links to valid selected purchases, and recheck the
+  compact contrast diagnostic. No portable schema, A-301/A-302 contract,
+  adapter-internal expansion, Drive/sync, Pages, or deferred memory changes.
+  The worker must keep a timestamped `R-400-fix-progress.md`, not edit this
+  plan or `master`, and return exact validation plus `READY FOR INTEGRATION` or
+  `BLOCK`.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

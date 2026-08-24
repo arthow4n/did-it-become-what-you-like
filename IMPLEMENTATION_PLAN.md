@@ -2928,6 +2928,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   contracts, adapters, plan, master, remotes, deployment settings, or earlier
   review/fix worktrees may be changed. Preserve this new review worktree and
   handover through closure.
+- **R-500 fresh closure reviewer active:** Lorentz
+  (`01a034d6-012c-7c90-9be1-0b16f08f028a`) is the independent read-only
+  reviewer in the prepared worktree and branch above. It must not be reused
+  from the blocked review, and its final handover controls whether R-500 can
+  move from `BLOCKED` to complete.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

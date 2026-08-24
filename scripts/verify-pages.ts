@@ -61,6 +61,8 @@ const sourceIndex = await read("index.html");
 const manifest = JSON.parse(await read(`${DIST}/manifest.webmanifest`)) as {
   start_url?: string;
   scope?: string;
+  background_color?: string;
+  theme_color?: string;
   icons?: Array<{ src?: string; sizes?: string; type?: string }>;
 };
 const serviceWorker = await read(`${DIST}/sw.js`);
@@ -92,6 +94,14 @@ assert(
 assert(
   manifest.scope === BASE_PATH,
   "manifest scope must be the repository base path",
+);
+assert(
+  manifest.background_color === "#101315",
+  "manifest background_color must match the approved dark canvas",
+);
+assert(
+  manifest.theme_color === "#101315",
+  "manifest theme_color must match the approved dark canvas",
 );
 assert(
   manifest.icons?.length === 2,

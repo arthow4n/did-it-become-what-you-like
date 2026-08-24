@@ -75,8 +75,8 @@ export default defineConfig({
         start_url: REPOSITORY_BASE_PATH,
         scope: REPOSITORY_BASE_PATH,
         display: "standalone",
-        background_color: "#ffffff",
-        theme_color: "#ffffff",
+        background_color: "#101315",
+        theme_color: "#101315",
         icons: [
           {
             src: `${REPOSITORY_BASE_PATH}icons/icon-192.svg`,

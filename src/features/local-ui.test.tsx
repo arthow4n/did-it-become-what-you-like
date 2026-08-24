@@ -3,6 +3,7 @@ import { createElement, useEffect, useRef, useState } from "react";
 import {
   AddChoiceScreen,
   CategoryManager,
+  DirtyExitGuard,
   ExpensesScreen,
   FirstUseScreen,
   ManualExpenseRecoveryScreen,
@@ -16,6 +17,10 @@ import type {
   ProjectCategoryService,
   ProjectCategoryState,
 } from "../domain/organization.ts";
+import {
+  ImportExportScreen,
+  type ImportViewModel,
+} from "./conflict-import-ui/index.ts";
 import { withComponentHarness } from "../test-support/component-harness.tsx";
 
 declare const Deno: {
@@ -122,6 +127,65 @@ function AddChoiceHarness() {
   );
 }
 
+function FirstUseRestoreHarness() {
+  const [path, setPath] = useState("/first-use");
+  return path === "/settings/import-export"
+    ? createElement(ImportExportScreen, {
+      exportModel: { phase: "idle", shareAvailability: "unavailable" },
+      importModel: {
+        phase: "idle",
+        connectivity: "online",
+        drive: "not-configured",
+        preview: null,
+        mode: null,
+        safetyExport: "not-started",
+        replacementConfirmation: "unconfirmed",
+        conflictCount: 0,
+      } satisfies ImportViewModel,
+      onBack: () => setPath("/first-use"),
+      onExport: () => undefined,
+      onRetryExport: () => undefined,
+      onCancelExport: () => undefined,
+      onFileSelected: () => undefined,
+      onModeChange: () => undefined,
+      onSafetyExport: () => undefined,
+      onSafetyExportRetry: () => undefined,
+      onReplacementConfirmationChange: () => undefined,
+      onCommit: () => undefined,
+      onRetryImport: () => undefined,
+      onReviewConflicts: () => undefined,
+      onCancelImport: () => undefined,
+    })
+    : createElement(FirstUseScreen, {
+      onCreateProject: () => undefined,
+      onRestoreBackup: () => setPath("/settings/import-export"),
+      onConnectDrive: () => undefined,
+    });
+}
+
+function DirtyNavigationHarness({ workflow }: { workflow: string }) {
+  const [route, setRoute] = useState(`${workflow} workflow`);
+  const [guardOpen, setGuardOpen] = useState(false);
+  return createElement(
+    "div",
+    null,
+    createElement(
+      "button",
+      { onClick: () => setGuardOpen(true) },
+      `Leave ${workflow} workflow`,
+    ),
+    createElement("p", null, route),
+    createElement(DirtyExitGuard, {
+      isOpen: guardOpen,
+      onKeepEditing: () => setGuardOpen(false),
+      onDiscard: () => {
+        setRoute("settings");
+        setGuardOpen(false);
+      },
+    }),
+  );
+}
+
 const project = {
   schemaVersion: 1 as const,
   type: "project" as const,
@@ -212,20 +276,69 @@ const categoryState: ProjectCategoryState = {
 };
 
 Deno.test("local UI first-use screen exposes the three approved entry paths", async () => {
-  await withComponentHarness(({ render }) => {
-    render(
-      createElement(FirstUseScreen, {
-        onCreateProject: () => undefined,
-        onRestoreBackup: () => undefined,
-        onConnectDrive: () => undefined,
-      }),
-    );
-    const view = within(document.body);
-    assert(view.getByRole("heading", { name: "Start tracking expenses" }));
-    assert(view.getByRole("button", { name: /Create first project/ }));
-    assert(view.getByRole("button", { name: /Restore JSON backup/ }));
-    assert(view.getByRole("button", { name: /Connect Google Drive/ }));
-    assert(view.getByRole("status"));
+  await withComponentHarness(async ({ window, render, fireEvent }) => {
+    await withAriaDomGlobals(window, () => {
+      render(createElement(FirstUseRestoreHarness));
+      const view = within(document.body);
+      assert(view.getByRole("heading", { name: "Start tracking expenses" }));
+      assert(view.getByRole("button", { name: /Create first project/ }));
+      assert(view.getByRole("button", { name: /Restore JSON backup/ }));
+      assert(view.getByRole("button", { name: /Connect Google Drive/ }));
+      assert(view.getByRole("status"));
+      fireEvent.click(
+        view.getByRole("button", { name: /Restore JSON backup/ }),
+      );
+      assert(view.getByRole("heading", { name: "Import & export" }));
+      assert(view.getByLabelText("Choose JSON backup"));
+    });
+  });
+});
+
+Deno.test("local UI manual dirty navigation offers keep or discard", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const mounted = render(
+        createElement(DirtyNavigationHarness, { workflow: "manual" }),
+      );
+      const view = within(document.body);
+      fireEvent.click(
+        view.getByRole("button", { name: "Leave manual workflow" }),
+      );
+      assert(view.getByRole("dialog", { name: "Unsaved changes" }));
+      fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+      assert(view.getByText("manual workflow"));
+      fireEvent.click(
+        view.getByRole("button", { name: "Leave manual workflow" }),
+      );
+      fireEvent.click(view.getByRole("button", { name: "Discard changes" }));
+      await waitFor(() => assert(view.getByText("settings")));
+      assert(!view.queryByText("manual workflow"));
+      mounted.unmount();
+    });
+  });
+});
+
+Deno.test("local UI receipt dirty navigation offers keep or discard", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const mounted = render(
+        createElement(DirtyNavigationHarness, { workflow: "receipt" }),
+      );
+      const view = within(document.body);
+      fireEvent.click(
+        view.getByRole("button", { name: "Leave receipt workflow" }),
+      );
+      assert(view.getByRole("dialog", { name: "Unsaved changes" }));
+      fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+      assert(view.getByText("receipt workflow"));
+      fireEvent.click(
+        view.getByRole("button", { name: "Leave receipt workflow" }),
+      );
+      fireEvent.click(view.getByRole("button", { name: "Discard changes" }));
+      await waitFor(() => assert(view.getByText("settings")));
+      assert(!view.queryByText("receipt workflow"));
+      mounted.unmount();
+    });
   });
 });
 

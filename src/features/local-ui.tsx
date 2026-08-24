@@ -202,6 +202,73 @@ export function FirstUseScreen({
   );
 }
 
+export function DirtyExitGuard({
+  isOpen,
+  onKeepEditing,
+  onDiscard,
+}: {
+  isOpen: boolean;
+  onKeepEditing: () => void;
+  onDiscard: () => void;
+}) {
+  const discardIntentRef = useRef(false);
+  return (
+    <AdaptiveDialog
+      trigger={
+        <Button
+          className="local-ui-dirty-exit-trigger"
+          aria-hidden="true"
+          isDisabled
+          variant="quiet"
+        >
+          Open unsaved changes guard
+        </Button>
+      }
+      title="Unsaved changes"
+      isOpen={isOpen}
+      isDismissable={false}
+      onOpenChange={(open) => {
+        if (open) return;
+        if (discardIntentRef.current) {
+          discardIntentRef.current = false;
+          return;
+        }
+        onKeepEditing();
+      }}
+    >
+      {(close) => (
+        <Stack gap={5}>
+          <Text>
+            Your changes are saved on this device. Keep editing or discard them
+            before leaving this workflow.
+          </Text>
+          <Inline justify="end" gap={3}>
+            <Button
+              variant="quiet"
+              onPress={() => {
+                onKeepEditing();
+                close();
+              }}
+            >
+              Keep editing
+            </Button>
+            <Button
+              variant="danger"
+              onPress={() => {
+                discardIntentRef.current = true;
+                onDiscard();
+                close();
+              }}
+            >
+              Discard changes
+            </Button>
+          </Inline>
+        </Stack>
+      )}
+    </AdaptiveDialog>
+  );
+}
+
 function LoadingScreen() {
   return (
     <ContentContainer size="readable">
@@ -2063,6 +2130,7 @@ export function ManualExpenseScreen({
   onSaved,
   onUsefulAction,
   onDirtyChange,
+  discardRequest,
   onClosed,
 }: {
   repository: LocalRepository;
@@ -2072,6 +2140,7 @@ export function ManualExpenseScreen({
   onSaved: (expense: Expense, mode: ManualSaveMode) => void;
   onUsefulAction?: () => void;
   onDirtyChange?: (dirty: boolean) => void;
+  discardRequest?: number;
   onClosed: () => void;
 }) {
   const [machineKey, setMachineKey] = useState(0);
@@ -2085,6 +2154,7 @@ export function ManualExpenseScreen({
   const [openSent, setOpenSent] = useState(false);
   const completionHandled = useRef(false);
   const usefulActionHandled = useRef(false);
+  const handledDiscardRequest = useRef(discardRequest ?? 0);
 
   useEffect(() => {
     if (request.expense) {
@@ -2125,6 +2195,16 @@ export function ManualExpenseScreen({
   useEffect(() => {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (
+      discardRequest === undefined ||
+      discardRequest === handledDiscardRequest.current
+    ) return;
+    handledDiscardRequest.current = discardRequest;
+    send({ type: "expense.discard" });
+    send({ type: "expense.confirm-discard" });
+  }, [discardRequest, send]);
 
   useEffect(() => {
     if (
@@ -2448,6 +2528,12 @@ export function LocalUiRuntime(
   const [appNotice, setAppNotice] = useState<string | null>(null);
   const [usefulActionVersion, setUsefulActionVersion] = useState(0);
   const [workflowDirty, setWorkflowDirty] = useState(false);
+  const [dirtyNavigationWorkflow, setDirtyNavigationWorkflow] = useState(
+    false,
+  );
+  const [dirtyExitOpen, setDirtyExitOpen] = useState(false);
+  const [discardRequest, setDiscardRequest] = useState(0);
+  const pendingNavigationRef = useRef<LocalUiPath | null>(null);
   const [deviceSettings, setDeviceSettings] = useState<DeviceLocalSettings>({
     imagePreparationEnabled: true,
   });
@@ -2532,6 +2618,24 @@ export function LocalUiRuntime(
     }
   };
 
+  const requestNavigation = (nextPath: LocalUiPath) => {
+    if (dirtyNavigationWorkflow) {
+      pendingNavigationRef.current = nextPath;
+      setDirtyExitOpen(true);
+      return;
+    }
+    navigate(nextPath);
+  };
+
+  const finishDirtyNavigation = (fallback: LocalUiPath) => {
+    const nextPath = pendingNavigationRef.current ?? fallback;
+    pendingNavigationRef.current = null;
+    setDirtyExitOpen(false);
+    setDirtyNavigationWorkflow(false);
+    setWorkflowDirty(false);
+    navigate(nextPath);
+  };
+
   const updateDeviceSettings = async (next: DeviceLocalSettings) => {
     setDeviceSettings(next);
     try {
@@ -2593,9 +2697,9 @@ export function LocalUiRuntime(
       : null;
 
   const selectNavigation = (id: string) => {
-    if (id === "add") return navigate("/add");
+    if (id === "add") return requestNavigation("/add");
     if (id === "organize" || id === "settings" || id === "expenses") {
-      navigate(`/${id}` as LocalUiPath);
+      requestNavigation(`/${id}` as LocalUiPath);
     }
   };
 
@@ -2632,10 +2736,7 @@ export function LocalUiRuntime(
                   setProjectEditorOpen(true);
                   navigate("/projects");
                 }}
-                onRestoreBackup={() =>
-                  setAppNotice(
-                    "JSON restore will be available in the approved local portability workflow.",
-                  )}
+                onRestoreBackup={() => navigate("/settings/import-export")}
                 onConnectDrive={() => navigate("/settings/sync")}
               />
             )
@@ -2662,7 +2763,12 @@ export function LocalUiRuntime(
                 settings={deviceSettings}
                 offline={shellSnapshot.hasTag("offline")}
                 onSettingsChange={updateDeviceSettings}
-                onDirtyChange={setWorkflowDirty}
+                onDirtyChange={(dirty) => {
+                  setWorkflowDirty(dirty);
+                  setDirtyNavigationWorkflow(dirty);
+                }}
+                discardRequest={discardRequest}
+                onDirtyDiscarded={() => finishDirtyNavigation("/expenses")}
                 onReview={(review) => {
                   setReceiptReview(review);
                   navigate("/receipt/review");
@@ -2670,6 +2776,7 @@ export function LocalUiRuntime(
                 onClose={() => {
                   imageStore.clear();
                   setWorkflowDirty(false);
+                  setDirtyNavigationWorkflow(false);
                   navigate("/expenses");
                 }}
                 onOpenSettings={() => navigate("/settings/gemini")}
@@ -2681,12 +2788,16 @@ export function LocalUiRuntime(
                 local={repository}
                 state={state}
                 initialReview={receiptReview}
-                onDirtyChange={setWorkflowDirty}
+                onDirtyChange={(dirty) => {
+                  setWorkflowDirty(dirty);
+                  setDirtyNavigationWorkflow(dirty);
+                }}
+                discardRequest={discardRequest}
                 onClose={() => {
                   void organization.getState().then(setState);
                   setReceiptReview(undefined);
                   setWorkflowDirty(false);
-                  navigate("/expenses");
+                  finishDirtyNavigation("/expenses");
                 }}
               />
             )
@@ -2707,11 +2818,15 @@ export function LocalUiRuntime(
                 }}
                 onUsefulAction={() =>
                   setUsefulActionVersion((value) => value + 1)}
-                onDirtyChange={setWorkflowDirty}
+                onDirtyChange={(dirty) => {
+                  setWorkflowDirty(dirty);
+                  setDirtyNavigationWorkflow(dirty);
+                }}
+                discardRequest={discardRequest}
                 onClosed={() => {
                   void organization.getState().then(setState);
                   setWorkflowDirty(false);
-                  navigate("/expenses");
+                  finishDirtyNavigation("/expenses");
                 }}
               />
             )
@@ -2827,6 +2942,18 @@ export function LocalUiRuntime(
             </div>
           )
           : null}
+        <DirtyExitGuard
+          isOpen={dirtyExitOpen}
+          onKeepEditing={() => {
+            pendingNavigationRef.current = null;
+            setDirtyExitOpen(false);
+          }}
+          onDiscard={() => {
+            if (pendingNavigationRef.current === null) return;
+            setDirtyExitOpen(false);
+            setDiscardRequest((request) => request + 1);
+          }}
+        />
       </PwaRuntime>
     </AppFrame>
   );

@@ -1534,6 +1534,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and push this checkpoint, then dispatch a fresh independent read-only closure
   reviewer. If approved, mark R-200 complete and proceed to M3; if new issues
   appear, reopen only the owning scope.
+- **R-200 closure review worktree:** prepared branch `review/r-200-closure`
+  in `~/git/worktrees/did-it-become-what-you-like-r-200-closure`, based at
+  `663a874`. The reviewer may inspect all source but may write only the
+  untracked `R-200-progress.md` operational artifact there; no source, tests,
+  plan, commits, push, or Pages action is allowed. Preserve this worktree and
+  progress file if the reviewer is interrupted.
 - **Historical D-103 dispatch record:** Dewey previously owned the active
   adapter fix in
   `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`, limited to

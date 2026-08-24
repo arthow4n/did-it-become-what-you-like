@@ -1756,6 +1756,19 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   (20 passed, 46 filtered), build, and diff-check validations passed; only the
   three owned actor source/test paths were integrated. Both operational
   handovers remain untracked in preserved worktrees and neither worker pushed.
+- **M3 first-wave dispatch:** Hegel
+  (`01a03190-b744-72d1-b379-ade7587ac9f0`) owns `L-201` in
+  `~/git/worktrees/did-it-become-what-you-like-l-201-local` with ownership
+  limited to `src/adapters/local/**` and focused local integration tests;
+  Meitner (`01a03190-b865-7041-9c74-bf2a8d0ad1ac`) owns `L-203` in
+  `~/git/worktrees/did-it-become-what-you-like-l-203-queries` with ownership
+  limited to `src/domain/queries/**`, formatting/selectors, and focused domain
+  tests; Parfit (`01a03190-b987-7431-bf5f-bfb4b246d93b`) owns `A-301` in
+  `~/git/worktrees/did-it-become-what-you-like-a-301-gemini` with ownership
+  limited to `src/adapters/gemini/**`, image utilities, and focused adapter
+  tests. These workstreams are disjoint and may run concurrently; every worker
+  must keep its timestamped untracked handover, avoid deferred AI feedback
+  memory, and leave this plan and `master` untouched.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

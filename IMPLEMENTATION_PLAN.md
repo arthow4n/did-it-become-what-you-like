@@ -806,7 +806,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### P-503 — Complete preferences, privacy/about, install, update, and offline PWA
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `X-502`, `A-303`, `S-405`,
+- **Status/dependencies:** `COMPLETE`; depends on `X-502`, `A-303`, `S-405`,
   `F-004`.
 - **Ownership:** Screens 13–15, remaining Settings composition, install/update/
   connectivity actors and concrete service worker/cache policy.
@@ -828,7 +828,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-600 — Destructive/PWA independent review gate
 
-- **Status/dependencies:** `PENDING`; depends on `P-503`, `R-500`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `P-503`, `R-500`.
 - **Ownership:** read-only review first; scoped fixes by M6 owners.
 - **Scope/non-goals:** review destructive truthfulness and ordering, data leakage,
   reload recovery, offline/update/install correctness, settings/disclosures,
@@ -1259,8 +1259,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
-  M5 is released; X-501 and X-502 are complete; and P-503 is the active M6
-  task.
+  M5 is released; X-501, X-502, and P-503 are complete; and R-600 is the
+  active M6 review gate.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
   the current pushed plan checkpoint, whose X-502 source/ledger predecessor is
   `3a43b04`, with integrated source commit `df21669` and the intentionally
@@ -1349,8 +1349,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501 and X-502 are `COMPLETE`; P-503 is the active dependency-ready M6
-  task; and no task is interrupted.
+  X-501, X-502, and P-503 are `COMPLETE`; R-600 is the active M6 review gate;
+  and no task is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -3072,6 +3072,40 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   focused preference/install/update/offline tests, full verification, then the
   production-build offline/update agent-browser audit. Preserve the worktree,
   branch, handover, and agent after completion.
+- **P-503 completion and integration:** McClintock completed the worker slice in
+  `~/git/worktrees/did-it-become-what-you-like-p-503-settings-pwa`, branch
+  `task/p-503-settings-pwa`, with commit `0a7080d` and a preserved untracked
+  `P-503-progress.md` handover ending `READY FOR INTEGRATION`. Root integrated
+  it as source merge `06c69bf`; the worker branch, worktree, and handover stay
+  preserved. The only contract extension is the demonstrated update-install
+  browser gap: explicit `UpdateInstallPort.check()`, reusable installed-state
+  handling, `install.later`, and actor `reloadApp` wiring. X-502 destruction,
+  synchronization/import, and unrelated locked contracts are unchanged.
+  Focused direct actor/PWA tests passed (`5 passed`), settings-final passed
+  (`6 passed`), offline-update E2E passed (`1 passed`), full unit/integration/
+  component/domain/actor suites passed (`238/71/76/35/1`), local E2E passed
+  (`4 passed`), and aggregate `deno task verify` passed. Formatting, lint,
+  type-check, both production builds, frozen audit, Pages/CI/toolchain proofs,
+  gallery/browser accessibility checks, repository-scoped service-worker
+  registration, offline first/relaunch, update-ready dirty-input protection,
+  375px overflow, and M6 browser audit all passed. Hosted Pages remains
+  intentionally owner-disabled; no live Pages behavior is claimed.
+- **R-600 review dispatch:** R-600 is dependency-ready after P-503 source
+  merge `06c69bf` and the pushed completion checkpoint. One independent,
+  read-only reviewer is assigned to
+  `~/git/worktrees/did-it-become-what-you-like-r-600-closure`, branch
+  `review/r-600-closure`, based at that checkpoint. It must read this plan,
+  `UI_SPEC.md`, `DESIGN_SYSTEM.md`, `README.md`, `AGENTS.md`, and the XState v5
+  skill; audit destructive truthfulness/ordering and data leakage, reload
+  recovery, offline/update/install behavior, settings/disclosures,
+  base-path/service-worker isolation, accessibility warnings, and the exact
+  P-503 handover evidence. The reviewer must not edit source, the plan,
+  `master`, remotes, or other worktrees. Maintain an untracked UTC
+  `R-600-progress.md` with periodic findings/handover updates, exact commands
+  and results, severity and spec references, and a final `APPROVE`, `BLOCK`, or
+  `ADVISORY` status. Preserve the worktree, branch, handover, and agent; the
+  root remains integration owner and any scoped fix is dispatched separately
+  only after the review establishes its exact owner and boundary.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

@@ -828,7 +828,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-600 — Destructive/PWA independent review gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `P-503`, `R-500`.
+- **Status/dependencies:** `BLOCKED`; depends on `P-503`, `R-500`; blocked by
+  three severity-2 findings from the independent review and awaiting a bounded
+  fix wave before closure.
 - **Ownership:** read-only review first; scoped fixes by M6 owners.
 - **Scope/non-goals:** review destructive truthfulness and ordering, data leakage,
   reload recovery, offline/update/install correctness, settings/disclosures,
@@ -1260,7 +1262,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; and R-600 is the
-  active M6 review gate.
+  blocked M6 review gate awaiting its bounded fix wave.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
   the current pushed plan checkpoint, whose X-502 source/ledger predecessor is
   `3a43b04`, with integrated source commit `df21669` and the intentionally
@@ -1349,8 +1351,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501, X-502, and P-503 are `COMPLETE`; R-600 is the active M6 review gate;
-  and no task is interrupted.
+  X-501, X-502, and P-503 are `COMPLETE`; R-600 is `BLOCKED` by three
+  severity-2 findings and its bounded fix wave is next; and no task is
+  interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -3106,6 +3109,39 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `ADVISORY` status. Preserve the worktree, branch, handover, and agent; the
   root remains integration owner and any scoped fix is dispatched separately
   only after the review establishes its exact owner and boundary.
+- **R-600 review result:** Aristotle completed the independent read-only review
+  in `~/git/worktrees/did-it-become-what-you-like-r-600-closure`, branch
+  `review/r-600-closure`, with final `BLOCK` status in its preserved UTC
+  `R-600-progress.md` handover. It found three severity-2 blockers, each with
+  production reproduction and spec references: (1) the first-use **Restore
+  JSON backup** card at `src/features/local-ui.tsx:2630-2639` emits only a
+  placeholder notice instead of entering the existing import validation/
+  preview workflow required by `UI_SPEC.md:130-155`; (2) bottom navigation in
+  `src/features/local-ui.tsx:2595-2599` bypasses the required Keep editing /
+  Discard guard while `workflowDirty`, violating `UI_SPEC.md:1030-1053`; and
+  (3) local-only erasure in
+  `src/features/sync-portability-runtime.tsx:281-313,880-902` deletes the
+  local database before removing the Gemini key without durable phase/restart
+  recovery, contrary to `UI_SPEC.md:960-974` and the X-502 verification gate.
+  The review also recorded one severity-3 observation: install progress is
+  labelled `Installing update…` in `src/features/settings-pwa.tsx:114-115,457-473`
+  and should distinguish native installation from update installation. The
+  review worktree contains no source, plan, master, remote, or other-worktree
+  changes; live Pages/OAuth/Drive/native-install behavior remains unavailable
+  by the already documented boundaries.
+- **R-600 bounded fix preparation:** The three severity-2 findings are
+  implementation-detail fixes and do not change approved user requirements.
+  Fix ownership is intentionally disjoint: local UI integration owns the
+  first-use restore route and dirty-navigation guard in
+  `src/features/local-ui.tsx` plus focused tests; destruction/runtime owns
+  durable local-erase phase recovery in
+  `src/features/sync-portability-runtime.tsx` and its actor/domain/test
+  boundary; and P-503 settings/PWA ownership may separately correct the
+  severity-3 install/update label in `src/features/settings-pwa.tsx`. The
+  root will dispatch these bounded workers from the next pushed checkpoint,
+  integrate in that order, run focused and full validation, then request a
+  fresh independent R-600 closure review. No worker may edit this plan,
+  master, remotes, or another fix scope.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

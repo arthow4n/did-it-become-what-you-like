@@ -1612,6 +1612,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the adapter boundary, not a parallel source owner unless the fix exposes a
   concrete adapter defect. Both workers must maintain untracked timestamped
   progress handovers, never edit this plan, and never push `master`.
+- **R-200 reopened fix workers active:** Boyle
+  (`01a03163-2a56-75e1-9686-cea9f6ebe884`) owns D-102 in
+  `~/git/worktrees/did-it-become-what-you-like-d-102-actors`; Anscombe
+  (`01a03163-2b5a-7af1-ab87-b69cf65a0796`) owns U-104 in
+  `~/git/worktrees/did-it-become-what-you-like-u-104-design-system`. Their
+  ownership is disjoint and each may write only its untracked progress
+  handover plus its scoped source/tests; no plan or `master` changes are
+  allowed. D-103 coordination remains with the integration owner.
 - **Historical D-103 dispatch record:** Dewey previously owned the active
   adapter fix in
   `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`, limited to

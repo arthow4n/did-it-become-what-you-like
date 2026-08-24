@@ -9,6 +9,10 @@
     text-align: start;
   }
 
+  .local-ui-expenses-filter-bar .ds-segmented-control {
+    flex: 0 0 auto;
+  }
+
   .local-ui-overlay {
     position: fixed;
     z-index: 10;
@@ -37,6 +41,29 @@
 
     .local-ui-add-choice {
       border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
+    }
+  }
+
+  @media (max-width: 359px) {
+    .local-ui-expenses-filter-bar {
+      align-items: stretch;
+      flex-direction: column;
+      overflow: visible;
+    }
+
+    .local-ui-expenses-filter-bar > * {
+      width: 100%;
+    }
+
+    .local-ui-expenses-filter-bar .ds-segmented-control {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow: visible;
+    }
+
+    .local-ui-expenses-filter-bar .ds-segmented-control > * {
+      min-width: 0;
+      white-space: normal;
     }
   }
 

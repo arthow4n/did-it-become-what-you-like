@@ -211,16 +211,69 @@ export function AddChoiceScreen({
   onManual: () => void;
   onScan?: () => void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const skipRestoreRef = useRef(false);
+
+  useEffect(() => {
+    const active = document.activeElement;
+    if (active && typeof (active as HTMLElement).focus === "function") {
+      previousFocusRef.current = active as HTMLElement;
+    }
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const firstFocusable = dialog.querySelector<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    (firstFocusable ?? dialog).focus();
+    return () => {
+      if (skipRestoreRef.current) return;
+      const previous = previousFocusRef.current;
+      if (previous?.isConnected) previous.focus();
+    };
+  }, []);
+
+  const leaveForManualEntry = () => {
+    skipRestoreRef.current = true;
+    onManual();
+  };
+
   return (
     <div
+      ref={dialogRef}
       className="local-ui-overlay"
       role="dialog"
       aria-modal="true"
       aria-label="Add an expense"
       tabIndex={-1}
-      autoFocus
       onKeyDown={(event) => {
         if (event.key === "Escape") onClose();
+        if (event.key !== "Tab") return;
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        const focusable = Array.from(
+          dialog.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((element) => element.getAttribute("aria-disabled") !== "true");
+        if (focusable.length === 0) {
+          event.preventDefault();
+          dialog.focus();
+          return;
+        }
+        const activeIndex = focusable.indexOf(
+          document.activeElement as HTMLElement,
+        );
+        const nextIndex = event.shiftKey
+          ? activeIndex <= 0 ? focusable.length - 1 : activeIndex - 1
+          : activeIndex < 0 || activeIndex === focusable.length - 1
+          ? 0
+          : activeIndex + 1;
+        event.preventDefault();
+        focusable[nextIndex].focus();
+      }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
       }}
     >
       <Card
@@ -239,7 +292,7 @@ export function AddChoiceScreen({
             title="Add manually"
             description="Enter the details locally."
             icon={<Plus />}
-            onPress={onManual}
+            onPress={leaveForManualEntry}
           />
           <ActionCard
             title="Scan receipt with AI"
@@ -248,7 +301,10 @@ export function AddChoiceScreen({
               : "Use a camera or image. The receipt is sent to Gemini."}
             icon={<Search />}
             isDisabled={offline}
-            onPress={onScan}
+            onPress={() => {
+              skipRestoreRef.current = true;
+              onScan?.();
+            }}
           />
         </Stack>
       </Card>
@@ -395,7 +451,7 @@ export function ExpensesScreen({
           options={projectOptions}
           onValueChange={onProjectChange}
         />
-        <FilterBar>
+        <FilterBar className="local-ui-expenses-filter-bar">
           <PeriodPicker value={period} onValueChange={setPeriod} />
           <SelectField
             label="Category"
@@ -1499,6 +1555,39 @@ export function CategoryManager({
   );
 }
 
+type ManualSaveMode = "expenses" | "another";
+
+export function ManualExpenseRecoveryScreen({
+  message,
+  onRetry,
+  onClose,
+}: {
+  message: string;
+  onRetry: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <ContentContainer size="readable">
+      <InlineNotice
+        tone="danger"
+        title="The expense form could not be opened"
+        action={
+          <Inline>
+            <Button variant="secondary" onPress={onRetry}>
+              Retry opening expense
+            </Button>
+            <Button variant="quiet" onPress={onClose}>
+              Back to expenses
+            </Button>
+          </Inline>
+        }
+      >
+        {message}
+      </InlineNotice>
+    </ContentContainer>
+  );
+}
+
 export function ManualExpenseScreen({
   repository,
   service,
@@ -1511,13 +1600,14 @@ export function ManualExpenseScreen({
   service: ProjectCategoryService;
   state: ProjectCategoryState;
   request: ManualExpenseOpenRequest;
-  onSaved: (expense: Expense) => void;
+  onSaved: (expense: Expense, mode: ManualSaveMode) => void;
   onClosed: () => void;
 }) {
+  const [machineKey, setMachineKey] = useState(0);
   const machine = useMemo(
     () =>
       createManualExpenseMachine({ local: repository, organization: service }),
-    [repository, service],
+    [repository, service, machineKey],
   );
   const [snapshot, send] = useActor(machine, { input: {} });
   const [hydrationStarted, setHydrationStarted] = useState(false);
@@ -1532,20 +1622,21 @@ export function ManualExpenseScreen({
       send({ type: "expense.hydrate" });
       setHydrationStarted(true);
     }
-  }, [request, send]);
+  }, [machineKey, request, send]);
 
   useEffect(() => {
     if (hydrationStarted && !openSent && snapshot.matches("idle")) {
       send({ type: "expense.open", request });
       setOpenSent(true);
     }
-  }, [hydrationStarted, openSent, request, send, snapshot]);
+  }, [hydrationStarted, machineKey, openSent, request, send, snapshot]);
 
+  const saveMode = useRef<ManualSaveMode>("expenses");
   useEffect(() => {
     if (completionHandled.current) return;
     if (snapshot.matches("saved") && snapshot.context.result?.expense) {
       completionHandled.current = true;
-      onSaved(snapshot.context.result.expense);
+      onSaved(snapshot.context.result.expense, saveMode.current);
     } else if (
       snapshot.matches("discarded") || snapshot.matches("cancelled") ||
       snapshot.matches("deletedOutput")
@@ -1566,6 +1657,21 @@ export function ManualExpenseScreen({
   }, [snapshot]);
 
   const draft = snapshot.context.draft;
+  const retryOpening = () => {
+    setHydrationStarted(false);
+    setOpenSent(false);
+    setMachineKey((value) => value + 1);
+  };
+  if (snapshot.matches("draftSaveFailed") && draft === null) {
+    return (
+      <ManualExpenseRecoveryScreen
+        message={snapshot.context.error?.message ??
+          "Local draft data could not be restored."}
+        onRetry={retryOpening}
+        onClose={onClosed}
+      />
+    );
+  }
   if (
     snapshot.matches("hydrating") || snapshot.matches("opening") ||
     draft === null
@@ -1587,6 +1693,10 @@ export function ManualExpenseScreen({
     id,
     message,
   }));
+  const submit = (mode: ManualSaveMode) => {
+    saveMode.current = mode;
+    send({ type: "expense.submit" });
+  };
 
   return (
     <ContentContainer size="form">
@@ -1634,14 +1744,14 @@ export function ManualExpenseScreen({
               <Button
                 variant="secondary"
                 isDisabled={busy}
-                onPress={() => send({ type: "expense.submit" })}
+                onPress={() => submit("another")}
               >
                 Save and add another
               </Button>
               <Button
                 pending={busy}
                 isDisabled={busy}
-                onPress={() => send({ type: "expense.submit" })}
+                onPress={() => submit("expenses")}
               >
                 Save expense
               </Button>
@@ -1820,6 +1930,7 @@ export function LocalUiRuntime(
   const [path, setPath] = useState(pathFromHash);
   const [projectEditorOpen, setProjectEditorOpen] = useState(false);
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
+  const [manualFormKey, setManualFormKey] = useState(0);
   const [appNotice, setAppNotice] = useState<string | null>(null);
   const shellReady = shellSnapshot.matches("ready");
 
@@ -1969,13 +2080,18 @@ export function LocalUiRuntime(
             contentPath.startsWith("/expense/edit/")
         ? (
           <ManualExpenseScreen
+            key={`${contentPath}-${manualFormKey}`}
             repository={repository}
             service={organization}
             state={state}
             request={manualRequest}
-            onSaved={() => {
+            onSaved={(_, mode) => {
               void organization.getState().then(setState);
-              navigate("/expenses");
+              if (mode === "another") {
+                setManualFormKey((value) => value + 1);
+              } else {
+                navigate("/expenses");
+              }
             }}
             onClosed={() => navigate("/expenses")}
           />

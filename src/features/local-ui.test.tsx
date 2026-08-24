@@ -1,10 +1,11 @@
 import { within } from "@testing-library/dom";
-import { createElement } from "react";
+import { createElement, useEffect, useRef, useState } from "react";
 import {
   AddChoiceScreen,
   CategoryManager,
   ExpensesScreen,
   FirstUseScreen,
+  ManualExpenseRecoveryScreen,
   OrganizeScreen,
   ProjectManager,
   SettingsScreen,
@@ -95,6 +96,28 @@ function createTestService(initialState: ProjectCategoryState): {
     },
     commits: () => commitCount,
   };
+}
+
+function AddChoiceHarness() {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => triggerRef.current?.focus(), []);
+  return createElement(
+    "div",
+    null,
+    createElement(
+      "button",
+      { ref: triggerRef, onClick: () => setOpen(true) },
+      "Open add choice",
+    ),
+    open
+      ? createElement(AddChoiceScreen, {
+        offline: true,
+        onClose: () => setOpen(false),
+        onManual: () => setOpen(false),
+      })
+      : null,
+  );
 }
 
 const project = {
@@ -211,21 +234,83 @@ Deno.test("local UI expenses exposes shared filters, empty state, and add event"
 });
 
 Deno.test("local UI add choice disables AI scanning while offline", async () => {
-  await withComponentHarness(({ render, fireEvent }) => {
-    let manualCount = 0;
-    render(
-      createElement(AddChoiceScreen, {
-        offline: true,
-        onClose: () => undefined,
-        onManual: () => manualCount++,
-      }),
-    );
-    const view = within(document.body);
-    assert(view.getByRole("dialog", { name: "Add an expense" }));
-    const scan = view.getByRole("button", { name: /Scan receipt with AI/ });
-    assert((scan as HTMLButtonElement).disabled);
-    fireEvent.click(view.getByRole("button", { name: /Add manually/ }));
-    assert(manualCount === 1, "Manual entry should remain available offline");
+  await withComponentHarness(async ({ window, render, fireEvent }) => {
+    await withAriaDomGlobals(window, () => {
+      let manualCount = 0;
+      render(
+        createElement(AddChoiceScreen, {
+          offline: true,
+          onClose: () => undefined,
+          onManual: () => manualCount++,
+        }),
+      );
+      const view = within(document.body);
+      assert(view.getByRole("dialog", { name: "Add an expense" }));
+      const scan = view.getByRole("button", { name: /Scan receipt with AI/ });
+      assert((scan as HTMLButtonElement).disabled);
+      fireEvent.click(view.getByRole("button", { name: /Add manually/ }));
+      assert(manualCount === 1, "Manual entry should remain available offline");
+    });
+  });
+});
+
+Deno.test("local UI add choice traps focus and restores it after outside dismissal", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      render(createElement(AddChoiceHarness));
+      const view = within(document.body);
+      const trigger = view.getByRole("button", { name: "Open add choice" });
+      fireEvent.click(trigger);
+      const dialog = await waitFor(() =>
+        view.getByRole("dialog", { name: "Add an expense" })
+      );
+      const close = view.getByRole("button", { name: "Close" });
+      const manual = view.getByRole("button", { name: /Add manually/ });
+      assert(
+        document.activeElement === close,
+        "Dialog should focus its close action",
+      );
+      fireEvent.keyDown(close, { key: "Tab" });
+      assert(
+        document.activeElement === manual,
+        "Tab should stay inside the dialog",
+      );
+      fireEvent.keyDown(manual, { key: "Tab" });
+      assert(
+        document.activeElement === close,
+        "Tab should wrap to the first action",
+      );
+      fireEvent.mouseDown(dialog);
+      await waitFor(() => assert(!document.querySelector('[role="dialog"]')));
+      assert(
+        document.activeElement === trigger,
+        "Dismissal should restore the trigger focus",
+      );
+    });
+  });
+});
+
+Deno.test("local UI null-draft recovery exposes retry and back actions", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent }) => {
+    await withAriaDomGlobals(window, () => {
+      let retries = 0;
+      let closes = 0;
+      render(
+        createElement(ManualExpenseRecoveryScreen, {
+          message: "Unable to restore the expense draft.",
+          onRetry: () => retries++,
+          onClose: () => closes++,
+        }),
+      );
+      const view = within(document.body);
+      assert(view.getByText("The expense form could not be opened"));
+      fireEvent.click(
+        view.getByRole("button", { name: "Retry opening expense" }),
+      );
+      fireEvent.click(view.getByRole("button", { name: "Back to expenses" }));
+      assert(retries === 1, "Recovery should dispatch retry");
+      assert(closes === 1, "Recovery should offer a safe exit");
+    });
   });
 });
 

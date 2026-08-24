@@ -1325,6 +1325,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `R-300-progress.md` handover is preserved. The root handover remains
   preserved and downstream M4 remains gated while the next bounded fix wave is
   integrated.
+- **Active R-300 closure review:** Feynman
+  (`01a032a0-58e0-7852-86dc-49b5a1cd9732`) owns the fresh read-only review in
+  `~/git/worktrees/did-it-become-what-you-like-r-300-closure-5`, branch
+  `review/r-300-closure-5`, based at `6c6072e`. Only its untracked
+  `R-300-progress.md` handover may change. It must inspect Curie's BLOCK and
+  the integrated `acd3bff` fix, rerun the complete aggregate/local/native
+  matrix, and return an explicit APPROVE or BLOCK. Preserve the worktree and
+  handover; downstream M4 remains gated until approval.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -2090,6 +2098,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   validators, builds, audit, and diff), and final diff check. The worker did
   not edit this plan or push; its worktree remains preserved. R-300 is still
   BLOCKED pending a fresh independent review of the integrated root.
+- **R-300 closure re-review dispatch:** Feynman
+  (`01a032a0-58e0-7852-86dc-49b5a1cd9732`) was dispatched from pushed root
+  checkpoint `6c6072e` in preserved
+  `~/git/worktrees/did-it-become-what-you-like-r-300-closure-5`, branch
+  `review/r-300-closure-5`. The prompt requires timestamped progress and a
+  complete final handoff, inspection of all prior review evidence and the
+  `acd3bff` integration, aggregate verification, focused local E2E, and native
+  local-screen/a11y checks at 320x568, 390x844, and 1280x800. No source, plan,
+  master, remote, commit, or Pages changes are authorized.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

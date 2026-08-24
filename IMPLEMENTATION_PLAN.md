@@ -1069,6 +1069,77 @@ review, validate, commit, push, and checkpoint loop then continues. Rate limits
 and restarts are operational interruptions, not reasons to mark a task
 `BLOCKED`, skip review, weaken tests, or request product decisions.
 
+## Long-Running Worker and Review Progress Protocol
+
+Long reviews and implementation tasks may legitimately take several bounded
+command windows. Silence is not completion, and one missed update is not an
+interruption. Progress is operational telemetry; only the final handoff and
+the orchestrator's ledger update can change a task's completion or gate status.
+
+### Preferred progress channel
+
+When the agent environment exposes a child-to-parent message or progress
+operation, a worker or reviewer should send a concise update at least every
+five minutes and after each major phase. Each update must include an ISO-8601
+UTC timestamp, task/review ID, worker identity, phase, last completed command
+and result, current command and start time, next action, finding counts by
+severity so far, and any blocker or unavailable check. It must say
+`PROGRESS — not a final handoff` so it cannot be mistaken for approval.
+
+The current orchestration interface documents orchestrator-to-agent
+`send_input` and agent waiting, but no dependable proactive child-to-parent
+progress call. Agents must not assume that a queued input is a progress
+channel. The fallback below is therefore mandatory for a long-running task
+when no such child-to-parent operation is available.
+
+### Markdown fallback
+
+Before dispatching a review expected to exceed one command window, or when a
+writer reports that it may be long-running, the orchestrator creates and
+records a dedicated review/worker worktree using the normal `~` path privacy
+rule. The worker may write only the untracked progress file
+`<TASK-ID>-progress.md` in that worktree; source, tests, configuration, the
+implementation plan, and commits remain outside its write scope unless the
+task explicitly authorizes them. The file is operational evidence, not a
+second plan, and must never be committed or pushed.
+
+Update the file at least every five minutes between commands, immediately
+before and after a long command, and before yielding or stopping. Use this
+shape so the orchestrator can inspect it without guessing:
+
+```markdown
+# Progress — R-200
+
+- status: `PROGRESS — not a final handoff`
+- updated_at_utc: `2026-08-24T12:00:00Z`
+- worker: `reviewer-name (agent-id)`
+- phase: `command matrix | source inspection | failure-path check | handoff`
+- last_completed: `deno task check` — exit `0`
+- current: `deno task a11y:gallery` — started `2026-08-24T11:58:00Z`
+- next: `inspect actor persistence and adapter error boundaries`
+- findings: `S1=0, S2=0, S3=1, S4=0`
+- blocker: `none` or a redacted concrete condition
+- repository_mutation: `none`
+```
+
+Do not put credentials, tokens, receipt images, personal data, full home
+directory names, or unredacted hostile model output in progress messages or
+files. Use `~` in paths. On interruption, preserve the worktree and progress
+file, inspect its timestamp and Git state, and record the recovery action in
+the Current Checkpoint. A progress file is stale after fifteen minutes without
+an update, or after three expected update intervals; the orchestrator must
+first send a bounded status request when possible, then perform the full
+Interruption and Recovery Protocol before closing or reassigning the worker.
+
+### Final handoff boundary
+
+The worker's final response must repeat the exact validation commands/results,
+all findings with severity and file/line evidence, unavailable checks, and an
+explicit `APPROVE` or `BLOCK` for reviews. The orchestrator removes the
+untracked progress artifact only after preserving any needed evidence in this
+ledger and confirming the worktree is clean or safely preserved. Never mark a
+task complete from a progress update, a quiet process, or a stale file.
+
 ## Review and Fix Loop
 
 For every implementation task:
@@ -1388,6 +1459,11 @@ required:
   first. Convert substantiated findings into scoped fixes with regression tests,
   rerun the complete gate including agent-browser visual/a11y checks where
   applicable, then push before releasing downstream tasks.
+- For a long-running worker or reviewer, apply the Long-Running Worker and
+  Review Progress Protocol. Prefer timestamped parent progress messages when
+  the child toolset truly supports them; otherwise create the recorded
+  untracked progress markdown in its dedicated `~` worktree and inspect it at
+  each bounded wait.
 - Prefer unit/domain, XState actor, adapter integration, and component tests.
   Keep E2E to the five approved browser journeys and use a proper E2E dependency,
   not agent-browser, for pass/fail assertions. Use agent-browser separately for

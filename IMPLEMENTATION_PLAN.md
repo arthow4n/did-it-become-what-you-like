@@ -2966,6 +2966,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   settings, or plan/master/remote changes are in scope. The root is the sole
   integration owner; merge order is worker commit, focused root checks, then
   the X-501 gate before X-502 is released.
+- **X-501 worker active:** Helmholtz
+  (`01a034eb-d991-77b2-86ac-7dc039515aa0`) owns the bounded populated-project
+  deletion implementation in
+  `~/git/worktrees/did-it-become-what-you-like-x-501-project-delete`, branch
+  `task/x-501-project-delete`, based at `6debf7c`. Its write set is the
+  project-deletion domain/actor implementation, Screen 7A local UI/CSS, and
+  focused tests; the locked deletion contract, Delete Everywhere/disconnect,
+  sync causal merge, import/export adapter internals, plan, master, remotes,
+  and unrelated settings are excluded. Preserve its UTC `X-501-progress.md`
+  handover and worktree; the orchestrator remains integration owner.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

@@ -14,6 +14,7 @@ export const ADAPTER_ERROR_CODES = [
   "invalid-request",
   "unsupported",
   "unavailable",
+  "retired",
   "unknown",
 ] as const;
 
@@ -35,15 +36,45 @@ export const RETRY_BY_ERROR_CODE: Readonly<
   "invalid-request": "never",
   "unsupported": "never",
   "unavailable": "backoff",
+  "retired": "never",
   "unknown": "never",
 };
 
 export type AdapterErrorInit = {
   readonly operation: string;
+  /**
+   * Retained for source compatibility only. It is never trusted or retained;
+   * adapter errors always expose the code's safe default message.
+   */
   readonly message?: string;
   readonly retryAfterMs?: number;
-  readonly details?: Readonly<Record<string, string>>;
+  /** Untrusted input is accepted here so the runtime boundary can redact it. */
+  readonly details?: Readonly<Record<string, unknown>>;
 };
+
+export type AdapterErrorJson = {
+  readonly name: "AdapterError";
+  readonly code: AdapterErrorCode;
+  readonly operation: string;
+  readonly retry: RetryDirective;
+  readonly retryAfterMs?: number;
+  readonly details: Readonly<Record<string, string>>;
+};
+
+/** Foreign retirement names are normalized to the actor-facing `retired` code. */
+export const RETIRED_DATASET_ERROR_ALIASES = [
+  "retired-dataset",
+  "retirement",
+] as const;
+
+export type RetiredDatasetErrorAlias =
+  typeof RETIRED_DATASET_ERROR_ALIASES[number];
+
+const SAFE_OPERATION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$/;
+const SAFE_HTTP_STATUS = 100;
+const MAX_HTTP_STATUS = 599;
+const MAX_RETRY_AFTER_MS = 86_400_000;
+const SAFE_DETAIL_KEYS = ["httpStatus", "providerCode"] as const;
 
 const DEFAULT_MESSAGES: Readonly<Record<AdapterErrorCode, string>> = {
   "aborted": "The adapter operation was aborted.",
@@ -59,8 +90,53 @@ const DEFAULT_MESSAGES: Readonly<Record<AdapterErrorCode, string>> = {
   "invalid-request": "The adapter request was invalid.",
   "unsupported": "The requested adapter operation is unsupported.",
   "unavailable": "The adapter service is temporarily unavailable.",
+  "retired": "The adapter dataset has been retired.",
   "unknown": "The adapter operation failed for an unknown reason.",
 };
+
+function safeOperation(operation: unknown): string {
+  return typeof operation === "string" && SAFE_OPERATION.test(operation)
+    ? operation
+    : "adapter.operation";
+}
+
+function safeRetryAfterMs(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) &&
+      value >= 0 && value <= MAX_RETRY_AFTER_MS
+    ? value
+    : undefined;
+}
+
+function safeHttpStatus(value: unknown): string | undefined {
+  const status = typeof value === "number"
+    ? value
+    : typeof value === "string" && /^\d{3}$/.test(value)
+    ? Number(value)
+    : undefined;
+  return status !== undefined && Number.isInteger(status) &&
+      status >= SAFE_HTTP_STATUS && status <= MAX_HTTP_STATUS
+    ? String(status)
+    : undefined;
+}
+
+function safeDetails(
+  details: Readonly<Record<string, unknown>> | undefined,
+): Readonly<Record<string, string>> {
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    return Object.freeze({});
+  }
+
+  const retained: Record<string, string> = {};
+  const httpStatus = safeHttpStatus(details[SAFE_DETAIL_KEYS[0]]);
+  if (httpStatus !== undefined) retained.httpStatus = httpStatus;
+
+  const providerCode = details[SAFE_DETAIL_KEYS[1]];
+  if (isAdapterErrorCode(providerCode)) {
+    retained.providerCode = providerCode;
+  }
+
+  return Object.freeze(retained);
+}
 
 /**
  * Errors crossing an adapter boundary are deliberately structured and do not
@@ -75,12 +151,29 @@ export class AdapterError extends Error {
   readonly details: Readonly<Record<string, string>>;
 
   constructor(code: AdapterErrorCode, init: AdapterErrorInit) {
-    super(init.message ?? DEFAULT_MESSAGES[code]);
+    // Foreign SDK text must never become application error text, even when a
+    // caller constructs AdapterError directly instead of using mapAdapterError.
+    super(DEFAULT_MESSAGES[code]);
     this.code = code;
-    this.operation = init.operation;
+    this.operation = safeOperation(init.operation);
     this.retry = RETRY_BY_ERROR_CODE[code];
-    this.retryAfterMs = init.retryAfterMs;
-    this.details = init.details ?? {};
+    this.retryAfterMs = safeRetryAfterMs(init.retryAfterMs);
+    this.details = safeDetails(init.details);
+    Object.freeze(this);
+  }
+
+  /** Return the allowlisted shape safe for JSON serialization and logging. */
+  toJSON(): AdapterErrorJson {
+    const json: AdapterErrorJson = {
+      name: this.name,
+      code: this.code,
+      operation: this.operation,
+      retry: this.retry,
+      details: this.details,
+    };
+    return this.retryAfterMs === undefined
+      ? json
+      : { ...json, retryAfterMs: this.retryAfterMs };
   }
 }
 
@@ -99,10 +192,17 @@ function errorLike(value: unknown): ErrorLike {
   };
 }
 
+function isRetiredDatasetErrorAlias(
+  value: unknown,
+): value is RetiredDatasetErrorAlias {
+  return typeof value === "string" &&
+    (RETIRED_DATASET_ERROR_ALIASES as readonly string[]).includes(value);
+}
+
 export function adapterError(
   code: AdapterErrorCode,
   operation: string,
-  details: Readonly<Record<string, string>> = {},
+  details: Readonly<Record<string, unknown>> = {},
 ): AdapterError {
   return new AdapterError(code, { operation, details });
 }
@@ -118,6 +218,11 @@ export function mapAdapterError(
   const code = candidate.code;
   if (isAdapterErrorCode(code)) {
     return adapterError(code, operation);
+  }
+  if (
+    isRetiredDatasetErrorAlias(code) || candidate.name === "RetirementError"
+  ) {
+    return adapterError("retired", operation);
   }
   if (candidate.name === "AbortError") {
     return adapterError("aborted", operation);
@@ -135,6 +240,8 @@ export function mapAdapterError(
       return adapterError("rate-limited", operation);
     case 409:
       return adapterError("conflict", operation);
+    case 410:
+      return adapterError("retired", operation);
     case 413:
       return adapterError("quota", operation);
     case 503:

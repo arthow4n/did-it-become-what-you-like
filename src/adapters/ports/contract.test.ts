@@ -12,6 +12,7 @@ import {
   type LocalPort,
   mapAdapterError,
   type OnlineStatusPort,
+  RETIRED_DATASET_ERROR_ALIASES,
   RETRY_BY_ERROR_CODE,
   type SecretStoragePort,
   type UpdateInstallPort,
@@ -93,6 +94,18 @@ Deno.test("adapter-contract error mapping is exhaustive and retry-explicit", () 
     mapAdapterError({ name: "AbortError" }, "gemini.extract").code,
     "aborted",
   );
+  assertEquals(RETRY_BY_ERROR_CODE.retired, "never");
+  for (const alias of RETIRED_DATASET_ERROR_ALIASES) {
+    assertEquals(
+      mapAdapterError({ code: alias }, "sync.upload").code,
+      "retired",
+    );
+  }
+  assertEquals(mapAdapterError({ status: 410 }, "sync.upload").code, "retired");
+  assertEquals(
+    mapAdapterError({ name: "RetirementError" }, "sync.upload").retry,
+    "never",
+  );
   assertEquals(
     mapAdapterError(
       new Error("credential must never cross this boundary"),
@@ -118,4 +131,54 @@ Deno.test("adapter-contract errors do not copy foreign error messages", () => {
       details: {},
     }),
   );
+});
+
+Deno.test("adapter-contract direct errors retain only safe allowlisted data", () => {
+  const credential = "AIza-direct-credential-response-text";
+  const direct = new AdapterError("unknown", {
+    operation: "drive.read",
+    message: `SDK response included ${credential}`,
+    retryAfterMs: Number.POSITIVE_INFINITY,
+    details: {
+      response: `Authorization: Bearer ${credential}`,
+      providerCode: "retired",
+      httpStatus: "503",
+      token: credential,
+    },
+  });
+
+  assertEquals(
+    direct.message,
+    "The adapter operation failed for an unknown reason.",
+  );
+  assertEquals(direct.retryAfterMs, undefined);
+  assertEquals(direct.details, { httpStatus: "503", providerCode: "retired" });
+  assert(!String(direct).includes(credential));
+  assert(!JSON.stringify(direct).includes(credential));
+  assertEquals(direct.toJSON(), {
+    name: "AdapterError",
+    code: "unknown",
+    operation: "drive.read",
+    retry: "never",
+    details: { httpStatus: "503", providerCode: "retired" },
+  });
+});
+
+Deno.test("adapter-contract mapped errors discard foreign messages and details", () => {
+  const credential = "AIza-mapped-credential-response-text";
+  const mapped = mapAdapterError(
+    {
+      code: "retirement",
+      message: `SDK response included ${credential}`,
+      details: { response: credential, token: credential },
+    },
+    "sync.upload",
+  );
+
+  assertEquals(mapped.code, "retired");
+  assertEquals(mapped.retry, "never");
+  assertEquals(mapped.message, "The adapter dataset has been retired.");
+  assertEquals(mapped.details, {});
+  assert(!String(mapped).includes(credential));
+  assert(!JSON.stringify(mapped).includes(credential));
 });

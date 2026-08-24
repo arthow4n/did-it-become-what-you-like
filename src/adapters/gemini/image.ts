@@ -284,7 +284,9 @@ function browserRender(
       canvas.width = dimensions.width;
       canvas.height = dimensions.height;
       const context = canvas.getContext("2d");
-      if (!context) throw adapterError("unsupported", "image.prepare");
+      if (!context || !("drawImage" in context)) {
+        throw adapterError("unsupported", "image.prepare");
+      }
       context.drawImage(bitmap, 0, 0, dimensions.width, dimensions.height);
       const outputBlob = "convertToBlob" in canvas
         ? await canvas.convertToBlob({

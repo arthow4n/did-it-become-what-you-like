@@ -626,7 +626,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-400 — Receipt independent review gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `A-303`, `R-300`.
+- **Status/dependencies:** `COMPLETE`; depends on `A-303`, `R-300`.
 - **Ownership:** read-only review first; scoped fixes by A-task owners.
 - **Scope/non-goals:** review privacy allowlist, secret handling, image lifetime,
   structured validation, actor safety, financial signs/totals, accessibility and
@@ -1252,12 +1252,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 ## Current Checkpoint
 
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
-  system wave, `R-200`, M3/R-300, and A-302 are complete. A-303 is integrated,
-  the bounded R-400 compact-layout fix is integrated, and R-400 is the active
-  independent closure gate.
+  system wave, `R-200`, M3/R-300, A-302, A-303, and R-400 are complete. M4 is
+  released and S-401 is the next dependency-ready implementation.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `a47fe10` after pushing the closure-5 native recheck dispatch checkpoint.
-  The root worktree
+  `86ad551` after pushing the final R-400 native completion dispatch
+  checkpoint. The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1283,12 +1282,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the deferred-only SPEC note is `c390656`; A-303 UI integration is `a90504d`
   (`Implement A-303 receipt and Gemini UI`) and its isolated A-301 canvas
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
-  browser build`). The latest integrated implementation is `ba63635`; the
+  browser build`). The latest integrated implementation is `1f85325`; the
   latest pushed orchestration checkpoint before this ledger update is
-  `a47fe10`.
+  `86ad551`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
-  integration evidence are present on `master`.
+  integration evidence are present on `master`; R-400 is complete as recorded
+  below.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
@@ -1314,14 +1314,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `a47fe10`; the root worktree contains only the intentionally untracked
+  at `86ad551`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
+- **R-400 completion evidence:** closure-6 independently approved the final
+  native 1280x800 matrix after closure-5’s partial 320/390 review; the exact
+  handover, counts, geometry, focus, cleanup, and unavailable-service boundary
+  are recorded in the R-400 ledger below. No R-400 finding remains open.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
-  `COMPLETE`; R-400 is `IN_PROGRESS`.
+  `COMPLETE`; R-400 is `COMPLETE`; S-401 is the next dependency-ready task.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2484,6 +2488,21 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   commands, ~ paths, synthetic data, no source/plan/remote mutations, and
   end with exact severity counts and `APPROVE` or `BLOCK`. R-400 remains
   gated until this final native completion.
+- **R-400 closure-6 result:** Volta completed the final fresh native matrix
+  from `~/git/worktrees/did-it-become-what-you-like-r-400-closure-6` with final
+  `R-400-closure-6-progress.md` handover at `2026-08-24T12:36:26Z`, explicitly
+  `APPROVE`. At 1280x800 it independently verified disclosure, synthetic
+  image removal/file and object-URL cleanup, warning subtree axe `0/0/6`,
+  scan/options axe `0/0/37`, model/sticky separation after fresh
+  `scrollIntoView` (`model/sticky overlap=false`, expanded popover also clear),
+  no horizontal overflow, review axe `0/0/35` with selection toggle behavior,
+  and metadata dialog focus containment/Escape/focus restoration within the
+  viewport. It reconciled the preserved independent 320/390 evidence from
+  Leibniz and Dirac; the only full-page incomplete remained the unrelated
+  API-key description target, while the in-scope warning subtree was clean.
+  All synthetic-only boundaries were honored, temporary browser/server were
+  closed, and no source, plan, remote, or other worktree changed. R-400 is
+  now released and complete.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

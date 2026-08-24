@@ -415,9 +415,10 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   `186ff05`; that reviewer stalled and was shut down without a handoff. Fresh
   reviewer Banach (`01a0312e-b8bb-7582-8ae0-e8fbc7ca9eef`) completed a
   read-only review of pushed checkpoint `b398037` and returned `BLOCK`; all
-  scoped findings are now integrated. Fresh closure reviewer Hypatia
-  (`01a0314e-8936-7d53-a90f-ddf11e95f757`) is reviewing in the dedicated
-  worktree; the orchestrator owns the gate decision.
+  scoped findings are now integrated. Closure reviewer Hypatia
+  (`01a0314e-8936-7d53-a90f-ddf11e95f757`) completed with `BLOCK`; the
+  orchestrator integrated the three scoped fixes and must dispatch one fresh
+  independent closure reviewer from the new clean checkpoint.
 - **Ownership:** read-only first; scoped fixes by original owner/integration
   owner; contract changes documented with affected downstream tasks.
 - **Scope/non-goals:** review schema completeness, actor decomposition/v5
@@ -1237,20 +1238,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 ## Current Checkpoint
 
 - **Plan state:** implementation authorized; M0/M1 and the M2 contract/design-
-  system wave are complete, and `R-200` closure is `IN_PROGRESS` but blocked
-  by three newly found severity-2 contract issues.
-- **Reconciled branch/upstream:** `master` is at the current checkpoint commit,
-  tracking `origin/master` at the same commit. The recovery audit completed
-  successfully; the branch is clean and neither ahead nor behind its upstream
-  (`0 0`).
+  system wave are complete, and `R-200` closure is `IN_PROGRESS` pending the
+  full post-fix matrix and a fresh independent closure review. The three newly
+  found severity-2 issues have scoped fixes integrated; the gate is not yet
+  approved.
+- **Reconciled branch/upstream:** `master` is at `0b2fd4e` and tracks
+  `origin/master` at the same commit. The branch is clean and neither ahead nor
+  behind its upstream (`0 0`).
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
   plan`).
 - **Integrated implementation state:** production source fixes through
-  `4d524ba` (`Harden adapter errors and retirement mapping`) are pushed. This
-  ledger update will be committed and pushed before the next fix worker is
-  dispatched; there are no other unpushed implementation changes.
+  `0b2fd4e` (`Fix nested field label semantics`) are pushed. D-102's actor fix
+  is `ba7b33e`; the preceding U-104 worker/test integration is `d1c87c9` and
+  its structural wrapper correction is `2108438`. This ledger update is the
+  only intended uncommitted change.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, and `U-104`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1429,9 +1432,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** Hypatia completed the fresh independent `R-200` closure
-  review in the dedicated worktree and returned `BLOCK`; D-102 and U-104
-  scoped fixes for three new severity-2 findings are next.
+- **Current task:** record the completed D-102/U-104 closure fixes, run the
+  complete R-200 matrix from clean `0b2fd4e`, and dispatch one fresh independent
+  closure reviewer. Do not release M3 until that reviewer returns APPROVE and
+  the contracts are explicitly locked.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1564,11 +1568,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** three concrete severity-2 closure findings remain; no owner
-  decision is required. Dispatch disjoint D-102 and U-104 fixes, coordinate
-  D-103's boundary review, rerun the full matrix, and obtain another fresh
-  closure review. No GitHub Pages workflow may be enabled or triggered because
-  the owner has intentionally disabled it until MVP completion.
+- **Gate status:** the three concrete severity-2 closure findings are addressed
+  by the scoped fixes below; closure remains pending until the complete matrix
+  and a fresh reviewer confirm the fixes. No owner decision is required unless
+  the fresh review identifies a product/spec contradiction. No GitHub Pages
+  workflow may be enabled or triggered because the owner has intentionally
+  disabled it until MVP completion.
 - **R-200 scoped-fix dispatch plan:** the first wave
   owns disjoint preserved worktrees: D-101 owns
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain` and only
@@ -1603,6 +1608,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `deno task check`, `deno task test --filter actor-contract` (17 passed),
   `deno task build`, and `git diff --check` passed; the root commit is pushed.
   The preserved D-102 branch is clean.
+- **D-102 reopened-fix integration:** Boyle committed `0b95b06`; the
+  orchestrator reviewed and cherry-picked it as `ba7b33e`, intentionally
+  omitting the operational `D-102-closure-progress.md`. It canonicalizes
+  recognized shaped-error messages, derives sync retry state/tags from typed
+  retryability, and adds credential-retention and unauthorized retryability
+  regressions. Root `deno task fmt:check`, `deno task lint`, `deno task check`,
+  direct actor-contract tests (18 passed), `deno task build`, and
+  `git diff --check` passed; the filtered actor alias exited 0 with 0 tests on
+  this configuration. The preserved D-102 branch remains available with its
+  untracked timestamped handover.
 - **U-104 scoped-fix integration:** Herschel committed `18c4b38`, which the
   orchestrator reviewed and cherry-picked as `4d8b846`; the orchestrator then
   resolved the narrow duplicate `PageHeader`/gallery attributes caused by the
@@ -1612,6 +1627,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `deno task gallery`, `deno task a11y:gallery` (3 viewports), and `git diff
   --check` passed; the root commits are pushed. The preserved U-104 worktree is
   clean except for its untracked `U-104-progress.md` artifact.
+- **U-104 reopened-fix integration:** Anscombe first committed `47aa191`,
+  which added the regression but did not change the nested-label implementation;
+  after the integration audit, the worker corrected it in `5525514`. The
+  orchestrator reviewed that correction and reconciled the equivalent scoped
+  source/test changes on root as `d1c87c9`, `2108438`, and `0b2fd4e`, omitting
+  the operational progress files. `Field` now uses a non-label layout wrapper,
+  an explicit label only when `controlId` exists, and a styled span for grouped
+  non-control content. Root `deno task fmt:check`, `deno task lint`,
+  `deno task check`, direct design-system tests (11 passed), component tests
+  (12 passed), `deno task build`, `deno task gallery`, `deno task a11y:gallery`
+  (3 viewports), and `git diff --check` passed; the root commits are pushed.
+  The preserved U-104 worktree and its timestamped handovers remain available.
 - **D-103 scoped-fix integration:** Dewey
   (`01a03144-7f47-7f92-8f85-3d2ea828c266`) committed `1cb7dd3`; the
   orchestrator reviewed and cherry-picked it as `4d524ba`. The root post-fix
@@ -1625,10 +1652,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **R-200 closure readiness:** all eight original severity-2 and two
   severity-3 findings have scoped regression coverage and are integrated in
   `b3a8ffb`, `c0bc76a`, `de924a5`, and `4d524ba`; Hypatia found three new
-  severity-2 regressions. The next action is to commit/push this checkpoint,
-  dispatch D-102/U-104 scoped fixes, rerun the gate, and obtain a fresh closure
-  reviewer. If approved, mark R-200 complete and proceed to M3; otherwise
-  reopen only the owning scope.
+  severity-2 regressions. Their scoped fixes are now integrated in `ba7b33e`,
+  `d1c87c9`, `2108438`, and `0b2fd4e`. The next action is to commit/push this
+  checkpoint, rerun the full gate, and obtain a fresh closure reviewer. If
+  approved, mark R-200 complete and proceed to M3; otherwise reopen only the
+  owning scope.
 - **R-200 closure review worktree:** prepared branch `review/r-200-closure`
   in `~/git/worktrees/did-it-become-what-you-like-r-200-closure`, based at
   `663a874`. The reviewer may inspect all source but may write only the
@@ -1650,14 +1678,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the adapter boundary, not a parallel source owner unless the fix exposes a
   concrete adapter defect. Both workers must maintain untracked timestamped
   progress handovers, never edit this plan, and never push `master`.
-- **R-200 reopened fix workers active:** Boyle
+- **R-200 reopened fix workers completed:** Boyle
   (`01a03163-2a56-75e1-9686-cea9f6ebe884`) owns D-102 in
   `~/git/worktrees/did-it-become-what-you-like-d-102-actors`; Anscombe
   (`01a03163-2b5a-7af1-ab87-b69cf65a0796`) owns U-104 in
   `~/git/worktrees/did-it-become-what-you-like-u-104-design-system`. Their
-  ownership is disjoint and each may write only its untracked progress
-  handover plus its scoped source/tests; no plan or `master` changes are
-  allowed. D-103 coordination remains with the integration owner.
+  ownership was disjoint; both completed with timestamped handovers and no
+  plan or `master` changes. D-103 coordination remains with the integration
+  owner. Preserve both worktrees and handovers for the fresh closure review.
 - **Historical D-103 dispatch record:** Dewey previously owned the active
   adapter fix in
   `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`, limited to

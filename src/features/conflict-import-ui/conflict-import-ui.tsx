@@ -433,6 +433,7 @@ export function ConflictReviewScreen({
       <Stack gap={5}>
         <PageHeader
           title="Conflicts"
+          headingLevel={1}
           description={heading}
           leading={<Button variant="quiet" onPress={onBack}>Back</Button>}
           status={
@@ -1158,6 +1159,7 @@ export function ImportExportScreen({
       <Stack gap={5}>
         <PageHeader
           title="Import & export"
+          headingLevel={1}
           description="Portable JSON data"
           leading={<Button variant="quiet" onPress={onBack}>Back</Button>}
         />

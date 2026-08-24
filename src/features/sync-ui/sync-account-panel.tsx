@@ -315,6 +315,7 @@ export function GoogleDriveSyncScreen(
       <Stack gap={5}>
         <PageHeader
           title="Google Drive and synchronization"
+          headingLevel={1}
           leading={onBack
             ? (
               <Button

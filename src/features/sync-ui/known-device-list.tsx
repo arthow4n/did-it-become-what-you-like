@@ -251,6 +251,7 @@ export function KnownDevicesScreen(
       <Stack gap={5}>
         <PageHeader
           title="Known devices"
+          headingLevel={1}
           eyebrow="Google Drive"
           leading={onBack
             ? (

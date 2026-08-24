@@ -90,6 +90,10 @@ import {
   type ReceiptUiDependencies,
   writeDeviceLocalSettings,
 } from "./receipt-ui.tsx";
+import {
+  SyncPortabilityRuntime,
+  type SyncPortabilityScreen,
+} from "./sync-portability-runtime.tsx";
 import type { ReceiptReviewDraft } from "../domain/receipt.ts";
 import {
   createLocalShellMachine,
@@ -112,6 +116,10 @@ export type LocalUiPath =
   | "/categories"
   | "/settings"
   | "/settings/gemini"
+  | "/settings/sync"
+  | "/settings/devices"
+  | "/settings/conflicts"
+  | "/settings/import-export"
   | "/receipt/scan"
   | "/receipt/review";
 
@@ -1207,16 +1215,19 @@ export function OrganizeScreen({
 }
 
 export function SettingsScreen(
-  { expenseDayBoundary, onGemini }: {
+  { expenseDayBoundary, onGemini, onSync, onConflicts, onImport }: {
     expenseDayBoundary: string;
     onGemini?: () => void;
+    onSync?: () => void;
+    onConflicts?: () => void;
+    onImport?: () => void;
   },
 ) {
   const rows = [
     {
       label: "Google Drive and sync",
       summary: "Not connected",
-      available: false,
+      available: Boolean(onSync),
     },
     {
       label: "Gemini receipt scanning",
@@ -1231,7 +1242,12 @@ export function SettingsScreen(
     {
       label: "Import and export",
       summary: "JSON backup workflows",
-      available: false,
+      available: Boolean(onImport),
+    },
+    {
+      label: "Conflict review",
+      summary: "Resolve synchronized changes",
+      available: Boolean(onConflicts),
     },
     {
       label: "Data and privacy",
@@ -1258,6 +1274,12 @@ export function SettingsScreen(
                   isDisabled={!row.available}
                   onPress={row.label === "Gemini receipt scanning"
                     ? onGemini
+                    : row.label === "Google Drive and sync"
+                    ? onSync
+                    : row.label === "Import and export"
+                    ? onImport
+                    : row.label === "Conflict review"
+                    ? onConflicts
                     : undefined}
                 >
                   Open
@@ -1273,8 +1295,8 @@ export function SettingsScreen(
         </List>
         <InlineNotice tone="info" title="Local settings">
           Your project selection and unfinished manual expense draft stay on
-          this device. External sync and AI settings will be added in their
-          approved workflows.
+          this device. Sync and portability workflows remain available without
+          requiring an account.
         </InlineNotice>
       </Stack>
     </ContentContainer>
@@ -2232,6 +2254,16 @@ export function LocalUiRuntime(
     : activePath.startsWith("/settings")
     ? "settings"
     : "expenses";
+  const portabilityScreen: SyncPortabilityScreen =
+    activePath === "/settings/sync"
+      ? "sync"
+      : activePath === "/settings/devices"
+      ? "devices"
+      : activePath === "/settings/conflicts"
+      ? "conflicts"
+      : activePath === "/settings/import-export"
+      ? "import-export"
+      : null;
 
   const selectNavigation = (id: string) => {
     if (id === "add") return navigate("/add");
@@ -2249,156 +2281,166 @@ export function LocalUiRuntime(
         />
       }
     >
-      {contentPath === "/first-use"
-        ? (
-          <FirstUseScreen
-            onCreateProject={() => {
-              setProjectEditorOpen(true);
-              navigate("/projects");
-            }}
-            onRestoreBackup={() =>
-              setAppNotice(
-                "JSON restore will be available in the approved local portability workflow.",
-              )}
-            onConnectDrive={() =>
-              setAppNotice(
-                "Google Drive is not part of this local-only slice.",
-              )}
-          />
-        )
-        : contentPath === "/expenses"
-        ? (
-          <ExpensesScreen
-            state={state}
-            expenseDayBoundary={expenseDayBoundary}
-            offline={shellSnapshot.hasTag("offline")}
-            onAdd={() => navigate("/add")}
-            onEdit={(expense) =>
-              navigate(`/expense/edit/${expense.id}` as LocalUiPath)}
-            onProjectChange={(projectId) =>
-              sendShell({ type: "shell.project.select", projectId })}
-          />
-        )
-        : contentPath === "/receipt/scan"
-        ? (
-          <ReceiptScanScreen
-            dependencies={receipt}
-            secretStorage={secretStorage}
-            imageStore={imageStore}
-            state={state}
-            settings={deviceSettings}
-            offline={shellSnapshot.hasTag("offline")}
-            onSettingsChange={updateDeviceSettings}
-            onReview={(review) => {
-              setReceiptReview(review);
-              navigate("/receipt/review");
-            }}
-            onClose={() => {
-              imageStore.clear();
-              navigate("/expenses");
-            }}
-            onOpenSettings={() => navigate("/settings/gemini")}
-          />
-        )
-        : contentPath === "/receipt/review"
-        ? (
-          <ReceiptReviewScreen
-            local={repository}
-            state={state}
-            initialReview={receiptReview}
-            onClose={() => {
-              void organization.getState().then(setState);
-              setReceiptReview(undefined);
-              navigate("/expenses");
-            }}
-          />
-        )
-        : contentPath === "/expense/new" ||
-            contentPath.startsWith("/expense/edit/")
-        ? (
-          <ManualExpenseScreen
-            key={`${contentPath}-${manualFormKey}`}
-            repository={repository}
-            service={organization}
-            state={state}
-            request={manualRequest}
-            onSaved={(_, mode) => {
-              void organization.getState().then(setState);
-              if (mode === "another") {
-                setManualFormKey((value) => value + 1);
-              }
-            }}
-            onClosed={() => {
-              void organization.getState().then(setState);
-              navigate("/expenses");
-            }}
-          />
-        )
-        : contentPath === "/organize"
-        ? (
-          <OrganizeScreen
-            state={state}
-            onProjects={() => navigate("/projects")}
-            onCategories={() => navigate("/categories")}
-            onNewProject={() => {
-              setProjectEditorOpen(true);
-              navigate("/projects");
-            }}
-            onNewCategory={() => {
-              setCategoryEditorOpen(true);
-              navigate("/categories");
-            }}
-          />
-        )
-        : contentPath === "/projects"
-        ? (
-          <ProjectManager
-            service={organization}
-            state={state}
-            initialCreate={projectEditorOpen}
-            onStateChange={setState}
-            onNavigate={navigate}
-            onComplete={() => {
-              if (projectEditorOpen) {
-                setProjectEditorOpen(false);
+      <SyncPortabilityRuntime
+        repository={repository}
+        screen={portabilityScreen}
+        onNavigate={(nextPath) => navigate(nextPath as LocalUiPath)}
+        onNotice={setAppNotice}
+      >
+        {contentPath === "/first-use"
+          ? (
+            <FirstUseScreen
+              onCreateProject={() => {
+                setProjectEditorOpen(true);
+                navigate("/projects");
+              }}
+              onRestoreBackup={() =>
+                setAppNotice(
+                  "JSON restore will be available in the approved local portability workflow.",
+                )}
+              onConnectDrive={() =>
+                setAppNotice(
+                  "Google Drive is not part of this local-only slice.",
+                )}
+            />
+          )
+          : contentPath === "/expenses"
+          ? (
+            <ExpensesScreen
+              state={state}
+              expenseDayBoundary={expenseDayBoundary}
+              offline={shellSnapshot.hasTag("offline")}
+              onAdd={() => navigate("/add")}
+              onEdit={(expense) =>
+                navigate(`/expense/edit/${expense.id}` as LocalUiPath)}
+              onProjectChange={(projectId) =>
+                sendShell({ type: "shell.project.select", projectId })}
+            />
+          )
+          : contentPath === "/receipt/scan"
+          ? (
+            <ReceiptScanScreen
+              dependencies={receipt}
+              secretStorage={secretStorage}
+              imageStore={imageStore}
+              state={state}
+              settings={deviceSettings}
+              offline={shellSnapshot.hasTag("offline")}
+              onSettingsChange={updateDeviceSettings}
+              onReview={(review) => {
+                setReceiptReview(review);
+                navigate("/receipt/review");
+              }}
+              onClose={() => {
+                imageStore.clear();
                 navigate("/expenses");
-              }
-            }}
-          />
-        )
-        : contentPath === "/categories"
-        ? (
-          <CategoryManager
-            service={organization}
-            state={state}
-            initialCreate={categoryEditorOpen}
-            onStateChange={setState}
-            onNavigate={navigate}
-            onComplete={() => {
-              if (categoryEditorOpen) {
-                setCategoryEditorOpen(false);
-                navigate("/organize");
-              }
-            }}
-          />
-        )
-        : contentPath === "/settings/gemini"
-        ? (
-          <GeminiSettingsScreen
-            gemini={receipt.gemini}
-            settings={deviceSettings}
-            onSettingsChange={updateDeviceSettings}
-            onClose={() => navigate("/settings")}
-          />
-        )
-        : contentPath === "/settings"
-        ? (
-          <SettingsScreen
-            expenseDayBoundary={expenseDayBoundary}
-            onGemini={() => navigate("/settings/gemini")}
-          />
-        )
-        : <FoundationExpensesPlaceholder />}
+              }}
+              onOpenSettings={() => navigate("/settings/gemini")}
+            />
+          )
+          : contentPath === "/receipt/review"
+          ? (
+            <ReceiptReviewScreen
+              local={repository}
+              state={state}
+              initialReview={receiptReview}
+              onClose={() => {
+                void organization.getState().then(setState);
+                setReceiptReview(undefined);
+                navigate("/expenses");
+              }}
+            />
+          )
+          : contentPath === "/expense/new" ||
+              contentPath.startsWith("/expense/edit/")
+          ? (
+            <ManualExpenseScreen
+              key={`${contentPath}-${manualFormKey}`}
+              repository={repository}
+              service={organization}
+              state={state}
+              request={manualRequest}
+              onSaved={(_, mode) => {
+                void organization.getState().then(setState);
+                if (mode === "another") {
+                  setManualFormKey((value) => value + 1);
+                }
+              }}
+              onClosed={() => {
+                void organization.getState().then(setState);
+                navigate("/expenses");
+              }}
+            />
+          )
+          : contentPath === "/organize"
+          ? (
+            <OrganizeScreen
+              state={state}
+              onProjects={() => navigate("/projects")}
+              onCategories={() => navigate("/categories")}
+              onNewProject={() => {
+                setProjectEditorOpen(true);
+                navigate("/projects");
+              }}
+              onNewCategory={() => {
+                setCategoryEditorOpen(true);
+                navigate("/categories");
+              }}
+            />
+          )
+          : contentPath === "/projects"
+          ? (
+            <ProjectManager
+              service={organization}
+              state={state}
+              initialCreate={projectEditorOpen}
+              onStateChange={setState}
+              onNavigate={navigate}
+              onComplete={() => {
+                if (projectEditorOpen) {
+                  setProjectEditorOpen(false);
+                  navigate("/expenses");
+                }
+              }}
+            />
+          )
+          : contentPath === "/categories"
+          ? (
+            <CategoryManager
+              service={organization}
+              state={state}
+              initialCreate={categoryEditorOpen}
+              onStateChange={setState}
+              onNavigate={navigate}
+              onComplete={() => {
+                if (categoryEditorOpen) {
+                  setCategoryEditorOpen(false);
+                  navigate("/organize");
+                }
+              }}
+            />
+          )
+          : contentPath === "/settings/gemini"
+          ? (
+            <GeminiSettingsScreen
+              gemini={receipt.gemini}
+              settings={deviceSettings}
+              onSettingsChange={updateDeviceSettings}
+              onClose={() => navigate("/settings")}
+            />
+          )
+          : contentPath === "/settings"
+          ? (
+            <SettingsScreen
+              expenseDayBoundary={expenseDayBoundary}
+              onGemini={() => navigate("/settings/gemini")}
+              onSync={() => navigate("/settings/sync")}
+              onConflicts={() => navigate("/settings/conflicts")}
+              onImport={() => navigate("/settings/import-export")}
+            />
+          )
+          : <FoundationExpensesPlaceholder />}
+      </SyncPortabilityRuntime>
       {showAddChoice
         ? (
           <AddChoiceScreen

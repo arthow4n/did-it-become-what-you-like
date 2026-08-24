@@ -6,11 +6,19 @@ export const REPOSITORY_BASE_PATH = "/did-it-become-what-you-like/";
 
 export default defineConfig({
   base: REPOSITORY_BASE_PATH,
+  optimizeDeps: {
+    // Automerge's bundled WASM entrypoint must remain a native Vite module;
+    // the dependency optimizer's generated wrapper throws during browser init.
+    exclude: ["@automerge/automerge"],
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: "prompt",
       injectRegister: null,
+      workbox: {
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+      },
       includeAssets: ["icons/icon-192.svg", "icons/icon-512.svg"],
       manifest: {
         name: "did-it-become-what-you-like foundation",

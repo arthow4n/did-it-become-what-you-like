@@ -1,0 +1,48 @@
+@layer components {
+  .local-ui-first-use {
+    min-height: calc(100dvh - var(--space-7));
+    justify-content: center;
+  }
+
+  .local-ui-first-use .ds-action-card {
+    width: 100%;
+    text-align: start;
+  }
+
+  .local-ui-overlay {
+    position: fixed;
+    z-index: 10;
+    inset: 0;
+    display: grid;
+    align-items: end;
+    padding: var(--space-4);
+    background: rgb(0 0 0 / 58%);
+  }
+
+  .local-ui-add-choice {
+    width: min(100%, var(--form-max));
+    margin-inline: auto;
+    border-radius: var(--radius-overlay);
+  }
+
+  @media (max-width: 719px) {
+    .local-ui-first-use {
+      min-height: calc(100dvh - var(--space-6));
+      padding-block: var(--space-8);
+    }
+
+    .local-ui-overlay {
+      padding: 0;
+    }
+
+    .local-ui-add-choice {
+      border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .local-ui-overlay {
+      place-items: center;
+    }
+  }
+}

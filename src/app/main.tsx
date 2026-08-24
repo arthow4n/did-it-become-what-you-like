@@ -1,9 +1,11 @@
 import { createRoot } from "react-dom/client";
-import { FoundationShell } from "./shell.tsx";
+import { LocalApp } from "../features/local-ui.tsx";
 import { registerRepositoryServiceWorker } from "./pwa.ts";
+import "../design-system/tokens.css";
+import "../features/local-ui.css";
 
 const root = document.querySelector<HTMLDivElement>("#root");
 if (!root) throw new Error("Application root element is missing.");
 
-createRoot(root).render(<FoundationShell />);
+createRoot(root).render(<LocalApp />);
 registerRepositoryServiceWorker();

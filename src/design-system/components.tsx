@@ -1124,7 +1124,7 @@ export function DefinitionList({ items, className }: DefinitionListProps) {
 export type AdaptiveDialogProps = {
   trigger: ReactNode;
   title: ReactNode;
-  children: ReactNode;
+  children: ReactNode | ((close: () => void) => ReactNode);
   closeLabel?: string;
   isDismissable?: boolean;
   className?: string;
@@ -1160,7 +1160,7 @@ export function AdaptiveDialog({
                     onPress={close}
                   />
                 </Inline>
-                {children}
+                {typeof children === "function" ? children(close) : children}
               </Stack>
             )}
           </AriaDialog>
@@ -1186,14 +1186,22 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <AdaptiveDialog {...props}>
-      <Stack gap={5}>
-        <Text>{description}</Text>
-        <Inline justify="end">
-          <Button variant={confirmVariant} onPress={onConfirm}>
-            {confirmLabel}
-          </Button>
-        </Inline>
-      </Stack>
+      {(close) => (
+        <Stack gap={5}>
+          <Text>{description}</Text>
+          <Inline justify="end">
+            <Button
+              variant={confirmVariant}
+              onPress={() => {
+                onConfirm();
+                close();
+              }}
+            >
+              {confirmLabel}
+            </Button>
+          </Inline>
+        </Stack>
+      )}
     </AdaptiveDialog>
   );
 }

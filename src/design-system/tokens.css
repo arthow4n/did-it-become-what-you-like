@@ -859,6 +859,16 @@
     color: var(--color-on-accent);
   }
 
+  @media (max-width: 359px) {
+    .ds-navigation__item {
+      gap: 0;
+      flex-direction: column;
+      font-size: var(--font-size-caption);
+      line-height: var(--line-height-tight);
+      padding-inline: var(--space-1);
+    }
+  }
+
   .ds-filter-bar {
     display: flex;
     gap: var(--space-2);

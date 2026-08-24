@@ -306,6 +306,8 @@ Deno.test("design-system CSS locks semantic tokens, immediate motion, targets, a
   assert(css.includes("--motion-immediate: 0ms"));
   assert(css.includes("transition: none"));
   assert(css.includes("--target-min: 44px"));
+  assert(css.includes("@media (max-width: 359px)"));
+  assert(css.includes("flex-direction: column;"));
   assert(css.includes("@media (prefers-reduced-motion: reduce)"));
   assert(css.includes("@media (forced-colors: active)"));
   assert(css.includes("@keyframes ds-progress"));

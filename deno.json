@@ -44,7 +44,7 @@
     "test:domain": "deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests",
     "test:actor": "deno test --allow-read --allow-write --allow-run --allow-env spikes/toolchain/tests/actor_test.ts",
     "test:integration": "deno test --allow-read --allow-write --allow-run --allow-env src/test-support/fixtures.test.ts src/adapters/local",
-    "test:component": "deno test --allow-read --allow-write --allow-run --allow-env src/design-system src/test-support/component-harness.test.tsx",
+    "test:component": "deno test --allow-read --allow-write --allow-run --allow-env src/design-system src/features src/test-support/component-harness.test.tsx",
     "build": "deno run -A npm:vite@8.2.2 build --config vite.config.ts && deno run -A npm:vite@8.2.2 build --config spikes/toolchain/vite.config.ts",
     "browser:install": "deno run -A scripts/install-browsers.ts",
     "playwright:install": "deno x -p npm:@playwright/test@1.62.1 playwright install chromium",

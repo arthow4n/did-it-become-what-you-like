@@ -1255,8 +1255,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, and S-401 are complete.
   M4 is released and S-402 is the next dependency-ready implementation.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `31de4f7` after pushing the S-402 dispatch reconciliation checkpoint. The
-  root worktree
+  `0d9f647` after pushing the S-402 startup-recovery checkpoint. The root
+  worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` and `R-400-contrast-fix-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1284,7 +1284,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
   browser build`). The latest integrated implementation is `1d3afce`
   (`Implement S-401 Drive adapter`); the latest pushed orchestration checkpoint
-  before this ledger update is `31de4f7`.
+  before this ledger update is `0d9f647`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`; R-400 and S-401 are complete as
@@ -1314,7 +1314,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `31de4f7`; the root worktree contains only the intentionally untracked
+  at `0d9f647`; the root worktree contains only the intentionally untracked
   A-303, R-300, and R-400 contrast-fix handovers. Preserved worktrees are
   listed below.
 - **R-400 completion evidence:** closure-6 independently approved the final
@@ -2561,14 +2561,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   winners. S-402 is active; the worktree and handover are preserved until
   review and integration.
 - **S-402 startup interruption and replacement:** James was shut down after
-  the UTC recovery checkpoint window at `2026-08-24T13:27:08Z` without
-  creating `S-402-progress.md`, source changes, commits, or any worktree
-  mutation. The exact worktree remains clean at `bcedb1b`. Sagan
-  (`01a033f4-76cb-77a2-94c2-eb2399d1bae6`) now owns the same bounded task in
-  `~/git/worktrees/did-it-become-what-you-like-s-402-sync` and must create the
-  required UTC handover before reading further or editing production source.
-  This is an operational reassignment, not evidence of a product blocker;
-  S-402 remains `IN_PROGRESS`.
+  the UTC recovery checkpoint window at `2026-08-24T13:27:08Z`. It had
+  written a startup handover and two partial adapter files in the root
+  worktree instead of the assigned worktree; none were discarded. The
+  orchestrator relocated the exact files into
+  `~/git/worktrees/did-it-become-what-you-like-s-402-sync` as
+  `src/adapters/sync/causal.ts`, `src/adapters/sync/device-registry.ts`, and
+  `S-402-james-progress.md`, preserving the original content, and restored
+  root to its intentional-untracked state. Sagan
+  (`01a033f4-76cb-77a2-94c2-eb2399d1bae6`) owns the same bounded task and
+  recorded its paused handover at `2026-08-24T13:28:41Z`; it is to audit the
+  relocated artifacts before continuing. This is an operational recovery,
+  not evidence of a product blocker; S-402 remains `IN_PROGRESS`.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

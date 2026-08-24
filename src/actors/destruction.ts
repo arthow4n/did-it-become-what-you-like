@@ -6,6 +6,7 @@ import {
 } from "../adapters/drive/index.ts";
 import type {
   ContractFailure,
+  DeleteEverywherePersistenceInput,
   DeleteEverywhereProgress,
 } from "./contracts/index.ts";
 import {
@@ -420,6 +421,10 @@ export function recoverLocalEraseSnapshot(
 export type DeleteEverywhereActorDependencies = {
   readonly createSafetyExport: (generation: number) => Promise<string>;
   readonly saveSafetyExport?: (json: string) => Promise<void>;
+  readonly persistProgress: (
+    progress: Omit<DeleteEverywhereProgressRecord, "version">,
+  ) => void | Promise<void>;
+  readonly now?: () => string;
   readonly publishRetirement: (generation: number) => Promise<void>;
   readonly deleteDriveGeneration: (generation: number) => Promise<void>;
   readonly eraseLocalDataset: (generation: number) => Promise<void>;
@@ -435,6 +440,21 @@ export function createDeleteEverywhereMachine(
 ) {
   return deleteEverywhereMachine.provide({
     actors: {
+      persistProgress: fromPromise(
+        async ({ input }: { input: DeleteEverywherePersistenceInput }) => {
+          await dependencies.persistProgress({
+            generation: input.generation,
+            phase: input.phase,
+            safetyExported: input.safetyExported,
+            safetyDeclined: input.safetyDeclined,
+            declineConfirmed: input.declineConfirmed,
+            knownDeviceCount: input.progress.knownDeviceCount,
+            acknowledgedDeviceCount: input.progress.acknowledgedDeviceCount,
+            forcedDeviceCount: input.progress.forcedDeviceCount,
+            updatedAt: dependencies.now?.() ?? new Date().toISOString(),
+          });
+        },
+      ),
       exportSafety: fromPromise(
         async ({ input }: { input: number }): Promise<string> => {
           const json = await dependencies.createSafetyExport(input);
@@ -619,6 +639,7 @@ export async function finalizeDeleteEverywhere(
   drive: Pick<DriveAdapter, "disconnect">,
   progress: DeleteEverywhereProgress,
   storage?: DestructionStorage,
+  beforeRevoke?: () => void | Promise<void>,
 ): Promise<void> {
   if (
     progress.acknowledgedDeviceCount + progress.forcedDeviceCount <
@@ -631,6 +652,7 @@ export async function finalizeDeleteEverywhere(
   // OAuth revocation is deliberately the final external step. Known devices
   // have already had a chance to read the marker, and the caller has erased
   // this device before entering this finalization boundary.
+  await beforeRevoke?.();
   await drive.disconnect();
   clearDeleteEverywhereProgress(storage);
 }

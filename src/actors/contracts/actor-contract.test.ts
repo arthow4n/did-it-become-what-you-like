@@ -55,9 +55,7 @@ function assertEquals<T>(actual: T, expected: T): void {
 }
 
 async function settle(): Promise<void> {
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let index = 0; index < 32; index += 1) await Promise.resolve();
 }
 
 const draft: DurableDraft = {
@@ -263,6 +261,9 @@ Deno.test("actor-contract: Delete Everywhere requires a second confirmation afte
   const deleteEverywhereWithPendingRetirement = deleteEverywhereMachine.provide(
     {
       actors: {
+        persistProgress: fromPromise(
+          () => new Promise<void>(() => {}),
+        ),
         publishRetirement: fromPromise(
           ({ input }: { input: number }) =>
             new Promise<void>(() => {
@@ -280,7 +281,7 @@ Deno.test("actor-contract: Delete Everywhere requires a second confirmation afte
 
   actor.send({ type: "delete-everywhere.confirm-decline" });
   actor.send({ type: "delete-everywhere.confirm" });
-  assertEquals(actor.getSnapshot().value, "publishingRetirement");
+  assertEquals(actor.getSnapshot().value, "persistingRetirement");
   actor.stop();
 });
 
@@ -605,6 +606,7 @@ Deno.test("actor-contract: import requires a mode and online replace pre-sync", 
 Deno.test("actor-contract: Delete Everywhere reports forced devices truthfully", async () => {
   const deleteWithPorts = deleteEverywhereMachine.provide({
     actors: {
+      persistProgress: fromPromise(() => Promise.resolve()),
       publishRetirement: fromPromise(() => Promise.resolve()),
       deleteDriveGeneration: fromPromise(() => Promise.resolve()),
       eraseLocalDataset: fromPromise(() => Promise.resolve()),
@@ -627,6 +629,7 @@ Deno.test("actor-contract: Delete Everywhere reports forced devices truthfully",
   assertEquals(actor.getSnapshot().value, "awaitingDevices");
 
   actor.send({ type: "delete-everywhere.force-finalize" });
+  await settle();
   assertEquals(actor.getSnapshot().value, "forcedFinalization");
   assertEquals(actor.getSnapshot().context.progress.forcedDeviceCount, 3);
   actor.send({ type: "delete-everywhere.confirm" });

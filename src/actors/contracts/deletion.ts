@@ -215,6 +215,23 @@ export type DeleteEverywhereEvent =
   | { readonly type: "delete-everywhere.retry" }
   | { readonly type: "delete-everywhere.cancel" };
 
+export type DeleteEverywherePersistencePhase =
+  | "publishing-retirement"
+  | "deleting-drive"
+  | "erasing-local"
+  | "awaiting-devices"
+  | "forced-finalization"
+  | "completed";
+
+export type DeleteEverywherePersistenceInput = {
+  readonly phase: DeleteEverywherePersistencePhase;
+  readonly generation: number;
+  readonly progress: DeleteEverywhereProgress;
+  readonly safetyExported: boolean;
+  readonly safetyDeclined: boolean;
+  readonly declineConfirmed: boolean;
+};
+
 type DeleteEverywhereContext = {
   readonly generation: number;
   readonly progress: DeleteEverywhereProgress;
@@ -238,6 +255,9 @@ const deleteEverywhereSetup = setup({
   actors: {
     exportSafety: unwiredPort<number, string>(
       "Delete Everywhere safety export",
+    ),
+    persistProgress: unwiredPort<DeleteEverywherePersistenceInput, void>(
+      "Delete Everywhere progress persistence",
     ),
     publishRetirement: unwiredPort<number, void>(
       "retirement marker publication",
@@ -337,10 +357,37 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
       tags: ["destructive", "confirming"],
       on: {
         "delete-everywhere.confirm": {
-          target: "publishingRetirement",
+          target: "persistingRetirement",
           guard: "safetyAccepted",
         },
         "delete-everywhere.cancel": "cancelled",
+      },
+    },
+    persistingRetirement: {
+      tags: ["destructive", "saving"],
+      invoke: {
+        src: "persistProgress",
+        input: ({ context }) => ({
+          phase: "publishing-retirement",
+          generation: context.generation,
+          progress: context.progress,
+          safetyExported: context.safetyExported,
+          safetyDeclined: context.safetyDeclined,
+          declineConfirmed: context.declineConfirmed,
+        }),
+        onDone: "publishingRetirement",
+        onError: {
+          target: "failed",
+          actions: assign({
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unavailable",
+                message:
+                  "Delete Everywhere progress could not be saved before deletion.",
+                retryable: true,
+              }),
+          }),
+        },
       },
     },
     publishingRetirement: {
@@ -348,7 +395,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
       invoke: {
         src: "publishRetirement",
         input: ({ context }) => context.generation,
-        onDone: "deletingDrive",
+        onDone: "persistingDriveDeletion",
         onError: {
           target: "failed",
           actions: assign({
@@ -362,12 +409,39 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
         },
       },
     },
+    persistingDriveDeletion: {
+      tags: ["destructive", "saving"],
+      invoke: {
+        src: "persistProgress",
+        input: ({ context }) => ({
+          phase: "deleting-drive",
+          generation: context.generation,
+          progress: context.progress,
+          safetyExported: context.safetyExported,
+          safetyDeclined: context.safetyDeclined,
+          declineConfirmed: context.declineConfirmed,
+        }),
+        onDone: "deletingDrive",
+        onError: {
+          target: "failed",
+          actions: assign({
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unavailable",
+                message:
+                  "Delete Everywhere progress could not be saved before Drive deletion.",
+                retryable: true,
+              }),
+          }),
+        },
+      },
+    },
     deletingDrive: {
       tags: ["destructive", "saving"],
       invoke: {
         src: "deleteDriveGeneration",
         input: ({ context }) => context.generation,
-        onDone: "erasingLocal",
+        onDone: "persistingLocalErasure",
         onError: {
           target: "failed",
           actions: assign({
@@ -381,12 +455,39 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
         },
       },
     },
+    persistingLocalErasure: {
+      tags: ["destructive", "saving"],
+      invoke: {
+        src: "persistProgress",
+        input: ({ context }) => ({
+          phase: "erasing-local",
+          generation: context.generation,
+          progress: context.progress,
+          safetyExported: context.safetyExported,
+          safetyDeclined: context.safetyDeclined,
+          declineConfirmed: context.declineConfirmed,
+        }),
+        onDone: "erasingLocal",
+        onError: {
+          target: "failed",
+          actions: assign({
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unavailable",
+                message:
+                  "Delete Everywhere progress could not be saved before local erasure.",
+                retryable: true,
+              }),
+          }),
+        },
+      },
+    },
     erasingLocal: {
       tags: ["destructive", "saving"],
       invoke: {
         src: "eraseLocalDataset",
         input: ({ context }) => context.generation,
-        onDone: "awaitingDevices",
+        onDone: "persistingAwaitingDevices",
         onError: {
           target: "failed",
           actions: assign({
@@ -400,10 +501,38 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
         },
       },
     },
+    persistingAwaitingDevices: {
+      tags: ["destructive", "saving"],
+      invoke: {
+        src: "persistProgress",
+        input: ({ context }) => ({
+          phase: "awaiting-devices",
+          generation: context.generation,
+          progress: context.progress,
+          safetyExported: context.safetyExported,
+          safetyDeclined: context.safetyDeclined,
+          declineConfirmed: context.declineConfirmed,
+        }),
+        onDone: "awaitingDevices",
+        onError: {
+          target: "failed",
+          actions: assign({
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unavailable",
+                message:
+                  "Delete Everywhere progress could not be saved before waiting for devices.",
+                retryable: true,
+              }),
+          }),
+        },
+      },
+    },
     awaitingDevices: {
       tags: ["destructive", "waiting"],
       on: {
         "delete-everywhere.device-ack": {
+          target: "persistingAwaitingDevices",
           actions: assign({
             progress: ({ context, event }) => ({
               ...context.progress,
@@ -412,7 +541,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
           }),
         },
         "delete-everywhere.force-finalize": {
-          target: "forcedFinalization",
+          target: "persistingForcedFinalization",
           actions: assign({
             progress: ({ context }) => ({
               ...context.progress,
@@ -426,12 +555,43 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
         },
         "delete-everywhere.cancel": "cancelled",
       },
-      always: { target: "completed", guard: "allDevicesAcknowledged" },
+      always: {
+        target: "persistingCompletion",
+        guard: "allDevicesAcknowledged",
+      },
+    },
+    persistingForcedFinalization: {
+      tags: ["destructive", "saving", "waiting", "forced"],
+      invoke: {
+        src: "persistProgress",
+        input: ({ context }) => ({
+          phase: "forced-finalization",
+          generation: context.generation,
+          progress: context.progress,
+          safetyExported: context.safetyExported,
+          safetyDeclined: context.safetyDeclined,
+          declineConfirmed: context.declineConfirmed,
+        }),
+        onDone: "forcedFinalization",
+        onError: {
+          target: "failed",
+          actions: assign({
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unavailable",
+                message:
+                  "Delete Everywhere progress could not be saved before forced finalization.",
+                retryable: true,
+              }),
+          }),
+        },
+      },
     },
     forcedFinalization: {
       tags: ["destructive", "waiting", "forced"],
       on: {
         "delete-everywhere.device-ack": {
+          target: "persistingForcedFinalization",
           actions: assign({
             progress: ({ context, event }) => ({
               ...context.progress,
@@ -439,13 +599,40 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
             }),
           }),
         },
-        "delete-everywhere.confirm": "completed",
+        "delete-everywhere.confirm": "persistingCompletion",
+      },
+    },
+    persistingCompletion: {
+      tags: ["destructive", "saving"],
+      invoke: {
+        src: "persistProgress",
+        input: ({ context }) => ({
+          phase: "completed",
+          generation: context.generation,
+          progress: context.progress,
+          safetyExported: context.safetyExported,
+          safetyDeclined: context.safetyDeclined,
+          declineConfirmed: context.declineConfirmed,
+        }),
+        onDone: "completed",
+        onError: {
+          target: "failed",
+          actions: assign({
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unavailable",
+                message:
+                  "Delete Everywhere progress could not be saved before final authorization cleanup.",
+                retryable: true,
+              }),
+          }),
+        },
       },
     },
     failed: {
       tags: ["destructive", "error"],
       on: {
-        "delete-everywhere.retry": "publishingRetirement",
+        "delete-everywhere.retry": "persistingRetirement",
         "delete-everywhere.cancel": "cancelled",
       },
     },

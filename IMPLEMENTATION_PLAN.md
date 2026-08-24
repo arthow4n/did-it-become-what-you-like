@@ -2298,6 +2298,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   changes. The fix must remove the sticky-action overlap and recheck the 390px
   contrast diagnostic at all three required viewports; no unrelated polish or
   workflow changes are authorized.
+- **R-400 compact-layout fix dispatch:** Bernoulli
+  (`01a032da-dcbd-7003-b04b-52afdc4ed8b6`) owns the narrow responsive fix in
+  `~/git/worktrees/did-it-become-what-you-like-r-400-compact-fix`, branch
+  `task/r-400-compact-fix`, based at `9eed68d`. The worker must preserve an
+  untracked timestamped `R-400-compact-fix-progress.md`, leave this plan and
+  `master` untouched, and return exact native/automated validation plus
+  `READY FOR INTEGRATION` or `BLOCK`. R-400 remains blocked until this fix is
+  integrated and receives a fresh closure recheck.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

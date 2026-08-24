@@ -2916,6 +2916,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   was used; the owner-disabled Pages workflow remains committed and untouched.
   The source and ledger commits are ready to push together, after which the
   orchestrator must dispatch a fresh read-only R-500 closure reviewer.
+- **R-500 fresh closure review dispatch preparation:** The recovered source and
+  ledger are pushed at `33ff45e`. A fresh read-only closure reviewer is assigned
+  the preserved worktree `~/git/worktrees/did-it-become-what-you-like-r-500-closure-2`,
+  branch `review/r-500-closure-2`, based at `33ff45e`. It may mutate only an
+  untracked UTC `R-500-closure-2-progress.md` handover; it must independently
+  inspect the complete S-401–S-405 implementation and all R-500 fix evidence,
+  rerun the full gate plus the explicit routed E2E and lower-layer selector
+  commands, audit the relevant specs/contracts and actual browser behavior,
+  and finish with severity-counted `APPROVE` or `BLOCK`. No source, tests,
+  contracts, adapters, plan, master, remotes, deployment settings, or earlier
+  review/fix worktrees may be changed. Preserve this new review worktree and
+  handover through closure.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

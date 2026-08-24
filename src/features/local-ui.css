@@ -28,6 +28,18 @@
     background: var(--surface-2);
   }
 
+  .receipt-ui-quick-setup {
+    isolation: isolate;
+  }
+
+  .receipt-ui-quick-setup .ds-inline-notice[data-tone="warning"] > .ds-stack > .ds-text {
+    background: var(--color-warning-surface);
+  }
+
+  .receipt-ui-scan-options {
+    scroll-margin-block-start: var(--space-4);
+  }
+
   .local-ui-first-use {
     min-height: calc(100dvh - var(--space-7));
     justify-content: center;

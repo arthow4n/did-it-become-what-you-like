@@ -552,6 +552,7 @@ export function ReceiptScanScreen({
   const selectedImageRef = useRef(selectedImage);
   const pendingScanRef = useRef(false);
   const quickSetupReturnFocusRef = useRef<HTMLElement | null>(null);
+  const optionsRef = useRef<HTMLDivElement>(null);
 
   const setPendingScanState = (value: boolean) => {
     pendingScanRef.current = value;
@@ -590,6 +591,15 @@ export function ReceiptScanScreen({
       send({ type: "receipt.network.online" });
     }
   }, [offline, send, snapshot]);
+
+  useEffect(() => {
+    if (
+      !optionsOpen ||
+      typeof globalThis.matchMedia !== "function" ||
+      !globalThis.matchMedia("(max-width: 719px)").matches
+    ) return;
+    optionsRef.current?.scrollIntoView?.({ block: "start", behavior: "auto" });
+  }, [optionsOpen]);
 
   useEffect(() => {
     let active = true;
@@ -977,37 +987,39 @@ export function ReceiptScanScreen({
         />
         {optionsOpen
           ? (
-            <Card as="section">
-              <Stack gap={4}>
-                <ModelPicker
-                  options={availableModelOptions}
-                  value={settings.selectedGeminiModel}
-                  onValueChange={selectModel}
-                  disabled={modelsLoading || models.length === 0}
-                />
-                {selectedOption?.status === "Needs test"
-                  ? (
-                    <GeminiConfigurationTest
-                      state={testState}
-                      onTest={() => void testSelectedModel()}
-                    />
-                  )
-                  : null}
-                <Switch
-                  isSelected={settings.imagePreparationEnabled}
-                  onChange={(imagePreparationEnabled) =>
-                    void onSettingsChange({
-                      ...settings,
-                      imagePreparationEnabled,
-                    })}
-                >
-                  Prepare image before sending (resize and compress)
-                </Switch>
-                <Button variant="quiet" onPress={onOpenSettings}>
-                  Open Gemini settings
-                </Button>
-              </Stack>
-            </Card>
+            <div ref={optionsRef} className="receipt-ui-scan-options">
+              <Card as="section">
+                <Stack gap={4}>
+                  <ModelPicker
+                    options={availableModelOptions}
+                    value={settings.selectedGeminiModel}
+                    onValueChange={selectModel}
+                    disabled={modelsLoading || models.length === 0}
+                  />
+                  {selectedOption?.status === "Needs test"
+                    ? (
+                      <GeminiConfigurationTest
+                        state={testState}
+                        onTest={() => void testSelectedModel()}
+                      />
+                    )
+                    : null}
+                  <Switch
+                    isSelected={settings.imagePreparationEnabled}
+                    onChange={(imagePreparationEnabled) =>
+                      void onSettingsChange({
+                        ...settings,
+                        imagePreparationEnabled,
+                      })}
+                  >
+                    Prepare image before sending (resize and compress)
+                  </Switch>
+                  <Button variant="quiet" onPress={onOpenSettings}>
+                    Open Gemini settings
+                  </Button>
+                </Stack>
+              </Card>
+            </div>
           )
           : null}
         {modelError
@@ -1098,18 +1110,20 @@ export function ReceiptScanScreen({
               }
             }}
           >
-            <GeminiQuickSetup
-              showHeading={false}
-              autoFocus
-              value={apiKey}
-              onChange={(value) => {
-                setApiKey(value);
-                setKeyError(undefined);
-              }}
-              onSave={() => void saveAndContinue()}
-              error={keyError}
-              busy={keyBusy}
-            />
+            <div className="receipt-ui-quick-setup">
+              <GeminiQuickSetup
+                showHeading={false}
+                autoFocus
+                value={apiKey}
+                onChange={(value) => {
+                  setApiKey(value);
+                  setKeyError(undefined);
+                }}
+                onSave={() => void saveAndContinue()}
+                error={keyError}
+                busy={keyBusy}
+              />
+            </div>
           </AdaptiveDialog>
         )
         : null}

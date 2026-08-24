@@ -1256,8 +1256,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the bounded R-400 compact-layout fix is integrated, and R-400 is the active
   independent closure gate.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `17d17a3` after pushing the compact-layout source and this ledger checkpoint.
-  The root worktree
+  `c3885da` after pushing the closure-3 dispatch checkpoint. The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1285,7 +1284,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
   browser build`). The latest integrated implementation is `ba63635`; the
   latest pushed orchestration checkpoint before this ledger update is
-  `9543bbe`.
+  `c3885da`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1314,7 +1313,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `17d17a3`; the root worktree contains only the intentionally untracked
+  at `c3885da`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and

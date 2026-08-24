@@ -1260,7 +1260,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released and M6 is the next dependency-ready milestone.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  pushed checkpoint `1c50546` (`Record active R-500 closure reviewer`), with
+  pushed checkpoint `e375cf8` (`Close R-500 and reconcile plan ledger`), with
   source checkpoint `e6ee2cd` (`Fix higher-generation causal packet adoption`)
   and S-405 source at `b423d9b` integrated beneath it. The latest
   completed-task ledger checkpoint before S-403 was `94f5f5c` after pushing the

@@ -438,7 +438,7 @@ export function Field(
   // Native controls use this single explicit label association. Keep the
   // layout wrapper a div so it can never become a label around this label.
   return (
-    <label
+    <div
       className={cx("ds-field", className)}
       data-invalid={error ? "true" : undefined}
     >
@@ -453,7 +453,7 @@ export function Field(
       {error
         ? <span className="ds-field__error" role="alert">{error}</span>
         : null}
-    </label>
+    </div>
   );
 }
 

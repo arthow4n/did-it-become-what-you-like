@@ -5,9 +5,14 @@ import {
   createLocalEraseMachine,
   finalizeDeleteEverywhere,
   persistDeleteEverywhereSnapshot,
+  persistLocalEraseSnapshot,
   recoverDeleteEverywhereSnapshot,
+  recoverLocalEraseSnapshot,
 } from "../destruction.ts";
-import type { DestructionStorage } from "../../domain/destruction.ts";
+import {
+  type DestructionStorage,
+  readLocalEraseProgress,
+} from "../../domain/destruction.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -355,6 +360,117 @@ Deno.test("local erase actor retries a local failure and supports reload-safe ch
   actor.send({ type: "local-erase.retry" });
   await settle();
   assert(actor.getSnapshot().matches("completed"));
+  actor.stop();
+});
+
+Deno.test(
+  "local erase persists the key-removal phase before a crash and resumes it",
+  async () => {
+    const storage = memoryStorage();
+    const calls: string[] = [];
+    let releaseKey: (() => void) | undefined;
+    const pendingKey = new Promise<void>((resolve) => {
+      releaseKey = resolve;
+    });
+    const firstMachine = createLocalEraseMachine({
+      storage,
+      now: () => "2026-08-24T18:40:00.000Z",
+      eraseLocalDataset: () => {
+        calls.push("erase");
+        return Promise.resolve();
+      },
+      removeGeminiApiKey: () => {
+        calls.push("key");
+        return pendingKey;
+      },
+    });
+    const first = createActor(firstMachine).start();
+    first.send({ type: "local-erase.open", removeGeminiApiKey: true });
+    first.send({ type: "local-erase.confirm" });
+    await settle();
+    const saved = readLocalEraseProgress(storage);
+    assert(saved?.phase === "removing-key");
+    assert(saved.removeGeminiApiKey);
+    assert(JSON.stringify(calls) === JSON.stringify(["erase", "key"]));
+
+    // A stopped actor represents a browser crash while the idempotent key
+    // removal is still in flight. The durable record is the recovery input.
+    first.stop();
+    releaseKey?.();
+
+    const restartCalls: string[] = [];
+    const restartedMachine = createLocalEraseMachine({
+      storage,
+      now: () => "2026-08-24T18:41:00.000Z",
+      eraseLocalDataset: () => {
+        restartCalls.push("erase");
+        return Promise.resolve();
+      },
+      removeGeminiApiKey: () => {
+        restartCalls.push("key");
+        return Promise.resolve();
+      },
+    });
+    const recovered = recoverLocalEraseSnapshot(
+      restartedMachine,
+      saved,
+    );
+    const restarted = createActor(restartedMachine, { snapshot: recovered })
+      .start();
+    await settle();
+    assert(restarted.getSnapshot().matches("failed"));
+    assert(restartCalls.length === 0);
+    restarted.send({ type: "local-erase.retry" });
+    await settle();
+    assert(restarted.getSnapshot().matches("completed"));
+    assert(
+      JSON.stringify(restartCalls) === JSON.stringify(["key"]),
+      "recovery from removing-key must not repeat database erasure",
+    );
+    persistLocalEraseSnapshot(
+      restarted.getSnapshot(),
+      () => "2026-08-24T18:42:00.000Z",
+      storage,
+    );
+    assert(readLocalEraseProgress(storage) === undefined);
+    restarted.stop();
+  },
+);
+
+Deno.test("local erase retries only the failed key removal after reload-safe failure", async () => {
+  const storage = memoryStorage();
+  let fail = true;
+  const calls: string[] = [];
+  const actor = createActor(createLocalEraseMachine({
+    storage,
+    now: () => "2026-08-24T18:45:00.000Z",
+    eraseLocalDataset: () => {
+      calls.push("erase");
+      return Promise.resolve();
+    },
+    removeGeminiApiKey: () => {
+      calls.push("key");
+      return fail
+        ? Promise.reject(adapterError("unavailable", "test.key-remove"))
+        : Promise.resolve();
+    },
+  })).start();
+  actor.send({ type: "local-erase.open", removeGeminiApiKey: true });
+  actor.send({ type: "local-erase.confirm" });
+  await settle();
+  assert(actor.getSnapshot().matches("failed"));
+  assert(readLocalEraseProgress(storage)?.failureOperation === "remove-key");
+  fail = false;
+  actor.send({ type: "local-erase.retry" });
+  await settle();
+  assert(actor.getSnapshot().matches("completed"));
+  assert(JSON.stringify(calls) === JSON.stringify(["erase", "key", "key"]));
+  persistLocalEraseSnapshot(
+    actor.getSnapshot(),
+    () => "2026-08-24T18:46:00.000Z",
+    storage,
+  );
+  assert(readLocalEraseProgress(storage) === undefined);
   actor.stop();
 });
 

@@ -1,10 +1,14 @@
 import {
   clearDeleteEverywhereProgress,
+  clearLocalEraseProgress,
   type DestructionStorage,
+  LOCAL_ERASE_PROGRESS_KEY,
   readDeleteEverywhereProgress,
   readLocalEraseGeminiKeyChoice,
+  readLocalEraseProgress,
   writeDeleteEverywhereProgress,
   writeLocalEraseGeminiKeyChoice,
+  writeLocalEraseProgress,
 } from "../destruction.ts";
 import { isAdapterError } from "../../adapters/ports/index.ts";
 
@@ -103,4 +107,55 @@ Deno.test("delete-everywhere local erase choice defaults checked and persists un
   assert(!readLocalEraseGeminiKeyChoice(storage));
   writeLocalEraseGeminiKeyChoice(true, storage);
   assert(readLocalEraseGeminiKeyChoice(storage));
+});
+
+Deno.test(
+  "local erase progress persists only redacted phase and choice metadata",
+  () => {
+    const storage = memoryStorage();
+    writeLocalEraseProgress({
+      phase: "removing-key",
+      removeGeminiApiKey: true,
+      failureOperation: "remove-key",
+      updatedAt: "2026-08-24T18:30:00.000Z",
+    }, storage);
+    const raw = storage.values.get(LOCAL_ERASE_PROGRESS_KEY) ?? "";
+    assert(raw.includes('"phase":"removing-key"'));
+    assert(raw.includes('"removeGeminiApiKey":true'));
+    assert(!raw.includes("AIza"));
+    assert(!raw.includes("expense-sensitive"));
+    assert(
+      JSON.stringify(readLocalEraseProgress(storage)) ===
+        JSON.stringify({
+          version: 1,
+          phase: "removing-key",
+          removeGeminiApiKey: true,
+          failureOperation: "remove-key",
+          updatedAt: "2026-08-24T18:30:00.000Z",
+        }),
+    );
+    clearLocalEraseProgress(storage);
+    assert(readLocalEraseProgress(storage) === undefined);
+  },
+);
+
+Deno.test("local erase progress rejects a phase with the wrong retry operation", () => {
+  const storage = memoryStorage();
+  storage.setItem(
+    LOCAL_ERASE_PROGRESS_KEY,
+    JSON.stringify({
+      version: 1,
+      phase: "removing-key",
+      removeGeminiApiKey: true,
+      failureOperation: "erase-local",
+      updatedAt: "2026-08-24T18:30:00.000Z",
+    }),
+  );
+  let rejected = false;
+  try {
+    readLocalEraseProgress(storage);
+  } catch (error) {
+    rejected = isAdapterError(error) && error.code === "corrupt-data";
+  }
+  assert(rejected, "inconsistent local erase progress must fail closed");
 });

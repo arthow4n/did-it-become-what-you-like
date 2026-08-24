@@ -14,11 +14,16 @@ import {
 } from "./contracts/index.ts";
 import {
   clearDeleteEverywhereProgress,
+  clearLocalEraseProgress,
   type DeleteEverywhereProgressPhase,
   type DeleteEverywhereProgressRecord,
   type DestructionStorage,
+  type LocalEraseFailureOperation,
+  type LocalEraseProgressPhase,
+  type LocalEraseProgressRecord,
   writeDeleteEverywhereProgress,
   writeLocalEraseGeminiKeyChoice,
+  writeLocalEraseProgress,
 } from "../domain/destruction.ts";
 
 export type LocalEraseEvent =
@@ -31,11 +36,6 @@ export type LocalEraseEvent =
   | { readonly type: "local-erase.retry" }
   | { readonly type: "local-erase.reset" }
   | { readonly type: "local-erase.cancel" };
-
-type LocalEraseFailureOperation =
-  | "persist-choice"
-  | "erase-local"
-  | "remove-key";
 
 export type LocalEraseContext = {
   readonly removeGeminiApiKey: boolean;
@@ -50,6 +50,10 @@ export type LocalEraseOutput = {
 
 export type LocalEraseDependencies = {
   readonly storage?: DestructionStorage;
+  readonly now?: () => string;
+  readonly persistProgress?: (
+    progress: Omit<LocalEraseProgressRecord, "version">,
+  ) => void | Promise<void>;
   readonly persistChoice?: (
     removeGeminiApiKey: boolean,
   ) => void | Promise<void>;
@@ -71,6 +75,28 @@ function defaultPersistChoice(
   writeLocalEraseGeminiKeyChoice(removeGeminiApiKey, storage);
 }
 
+function defaultPersistProgress(
+  progress: Omit<LocalEraseProgressRecord, "version">,
+  storage?: DestructionStorage,
+): void {
+  writeLocalEraseProgress(progress, storage);
+}
+
+async function persistLocalErasePhase(
+  dependencies: LocalEraseDependencies,
+  phase: LocalEraseProgressPhase,
+  removeGeminiApiKey: boolean,
+  failureOperation: LocalEraseFailureOperation,
+): Promise<void> {
+  await (dependencies.persistProgress ??
+    ((progress) => defaultPersistProgress(progress, dependencies.storage)))({
+      phase,
+      removeGeminiApiKey,
+      failureOperation,
+      updatedAt: dependencies.now?.() ?? new Date().toISOString(),
+    });
+}
+
 export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
   const machineSetup = setup({
     types: {
@@ -81,18 +107,40 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
     actors: {
       persistChoice: fromPromise(
         async ({ input }: { input: boolean }) => {
+          await persistLocalErasePhase(
+            dependencies,
+            "persisting-choice",
+            input,
+            "persist-choice",
+          );
           await (dependencies.persistChoice ??
             ((choice) => defaultPersistChoice(choice, dependencies.storage)))(
               input,
             );
         },
       ),
-      eraseLocalDataset: fromPromise(async () => {
-        await dependencies.eraseLocalDataset();
-      }),
-      removeGeminiApiKey: fromPromise(async () => {
-        await dependencies.removeGeminiApiKey();
-      }),
+      eraseLocalDataset: fromPromise(
+        async ({ input }: { input: boolean }) => {
+          await persistLocalErasePhase(
+            dependencies,
+            "erasing-local",
+            input,
+            "erase-local",
+          );
+          await dependencies.eraseLocalDataset();
+        },
+      ),
+      removeGeminiApiKey: fromPromise(
+        async ({ input }: { input: boolean }) => {
+          await persistLocalErasePhase(
+            dependencies,
+            "removing-key",
+            input,
+            "remove-key",
+          );
+          await dependencies.removeGeminiApiKey();
+        },
+      ),
     },
     guards: {
       shouldRemoveGeminiApiKey: ({ context }) => context.removeGeminiApiKey,
@@ -166,6 +214,7 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
         tags: ["destructive", "saving"],
         invoke: {
           src: "eraseLocalDataset",
+          input: ({ context }) => context.removeGeminiApiKey,
           onDone: [
             { target: "removingKey", guard: "shouldRemoveGeminiApiKey" },
             "completed",
@@ -189,6 +238,7 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
         tags: ["destructive", "saving"],
         invoke: {
           src: "removeGeminiApiKey",
+          input: ({ context }) => context.removeGeminiApiKey,
           onDone: "completed",
           onError: {
             target: "failed",
@@ -228,6 +278,143 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
       },
     },
   });
+}
+
+function localErasePhase(value: unknown): LocalEraseProgressPhase | undefined {
+  switch (value) {
+    case "reviewing":
+      return "reviewing";
+    case "persistingChoice":
+      return "persisting-choice";
+    case "erasingLocal":
+      return "erasing-local";
+    case "removingKey":
+      return "removing-key";
+    case "failed":
+      return "failed";
+    default:
+      return undefined;
+  }
+}
+
+function localEraseFailureOperation(
+  value: unknown,
+  context: Pick<LocalEraseContext, "failureOperation">,
+): LocalEraseFailureOperation | null {
+  switch (value) {
+    case "persistingChoice":
+      return "persist-choice";
+    case "erasingLocal":
+      return "erase-local";
+    case "removingKey":
+      return "remove-key";
+    case "failed":
+      return context.failureOperation;
+    default:
+      return null;
+  }
+}
+
+export function persistLocalEraseSnapshot(
+  snapshot: {
+    readonly value: unknown;
+    readonly context: Pick<
+      LocalEraseContext,
+      "removeGeminiApiKey" | "failureOperation"
+    >;
+  },
+  now: () => string,
+  storage?: DestructionStorage,
+): void {
+  const phase = localErasePhase(snapshot.value);
+  if (phase === undefined) {
+    if (snapshot.value === "completed" || snapshot.value === "cancelled") {
+      clearLocalEraseProgress(storage);
+    }
+    return;
+  }
+  const failureOperation = localEraseFailureOperation(
+    snapshot.value,
+    snapshot.context,
+  );
+  if (phase === "failed" && failureOperation === null) return;
+  writeLocalEraseProgress({
+    phase,
+    removeGeminiApiKey: snapshot.context.removeGeminiApiKey,
+    failureOperation,
+    updatedAt: now(),
+  }, storage);
+}
+
+type LocalEraseMachine = ReturnType<typeof createLocalEraseMachine>;
+type LocalEraseStateValue = Parameters<
+  LocalEraseMachine["resolveState"]
+>[0]["value"];
+
+function stateValueForLocalEraseProgress(
+  phase: LocalEraseProgressPhase,
+): LocalEraseStateValue {
+  switch (phase) {
+    case "reviewing":
+      return "reviewing";
+    case "persisting-choice":
+    case "erasing-local":
+    case "removing-key":
+    case "failed":
+      return "failed";
+  }
+}
+
+function recoveryFailure(
+  operation: LocalEraseFailureOperation,
+): ContractFailure {
+  switch (operation) {
+    case "persist-choice":
+      return {
+        code: "unknown",
+        message:
+          "The local erase choice was not confirmed durable. Retry to continue.",
+        retryable: true,
+      };
+    case "erase-local":
+      return {
+        code: "unknown",
+        message:
+          "Local data erasure may have been interrupted. Retry to continue safely.",
+        retryable: true,
+      };
+    case "remove-key":
+      return {
+        code: "unknown",
+        message:
+          "Local data was erased, but the Gemini API key still needs removal. Retry to finish.",
+        retryable: true,
+      };
+  }
+}
+
+/**
+ * Rehydrates only the redacted local-erase phase and key-choice metadata.
+ * Active phases become an explicit retryable state because XState persisted
+ * snapshots do not contain private invoked children. Retrying then resumes
+ * only the recorded idempotent operation; no local financial data is restored.
+ */
+export function recoverLocalEraseSnapshot(
+  machine: LocalEraseMachine,
+  progress: LocalEraseProgressRecord,
+) {
+  const failureOperation = progress.failureOperation;
+  const resolved = machine.resolveState({
+    value: stateValueForLocalEraseProgress(progress.phase),
+    context: {
+      removeGeminiApiKey: progress.removeGeminiApiKey,
+      error: progress.phase === "reviewing" || failureOperation === null
+        ? null
+        : recoveryFailure(failureOperation),
+      failureOperation,
+    },
+  });
+  return machine.getPersistedSnapshot(resolved);
 }
 
 export type DeleteEverywhereActorDependencies = {

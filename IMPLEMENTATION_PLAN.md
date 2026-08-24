@@ -1242,7 +1242,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   full matrix and a fresh closure review after the second fix wave. The prior
   six severity-2 findings now have scoped fixes integrated; the gate is not
   yet approved.
-- **Reconciled branch/upstream:** `master` is at `2bf6471` and tracks
+- **Reconciled branch/upstream:** `master` is at `2ff59f7` and tracks
   `origin/master` at the same commit. The branch is clean and neither ahead nor
   behind its upstream (`0 0`).
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1431,9 +1431,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** run the complete R-200 matrix from clean `2bf6471`, inspect
-  the second-wave regressions in the integrated root, and dispatch another
-  fresh closure reviewer. Do not release M3 until that reviewer returns
+- **Current task:** dispatch the fresh independent `R-200` closure reviewer
+  from clean `2ff59f7` in the newly prepared dedicated worktree. The complete
+  post-fix matrix is green; do not release M3 until the reviewer returns
   APPROVE and the contracts are explicitly locked.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
@@ -1659,8 +1659,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   tests (12), E2E tests (2), `deno task build`, `deno task gallery`,
   3-viewport `deno task a11y:gallery`, schema/Pages/CI/toolchain verification,
   `deno audit --frozen`, and `git diff --check`. Closure-2 then found three
-  additional S2 findings, now fixed in `47b2f26` and `2bf6471`. The next action
-  is another complete matrix and fresh closure review.
+  additional S2 findings, now fixed in `47b2f26` and `2bf6471`. The complete
+  post-fix matrix from `2ff59f7` passed: `deno task fmt:check` (106 files),
+  `deno task lint` (95), `deno task check`, `deno task test` (66),
+  `deno task test:integration` (2), direct actor tests (20), adapter tests (5),
+  component tests (12), E2E tests (2), build, gallery, 3-viewport gallery
+  a11y, schema/Pages/CI/toolchain verification, frozen audit, and diff check.
+  The next action is fresh closure review.
 - **R-200 closure review worktree:** prepared branch `review/r-200-closure`
   in `~/git/worktrees/did-it-become-what-you-like-r-200-closure`, based at
   `663a874`. The reviewer may inspect all source but may write only the
@@ -1701,6 +1706,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the broad receipt-line map instead of purchase lines only
   (`src/domain/schema/dataset.ts:86-92,225-231`). These are internal fixes;
   no product/spec decision is required.
+- **R-200 fresh closure-3 worktree:** prepared branch
+  `review/r-200-closure-3` at
+  `~/git/worktrees/did-it-become-what-you-like-r-200-closure-3`, based on
+  `2ff59f7`. The reviewer may inspect the whole repository but may write only
+  the untracked `R-200-closure-3-progress.md` handover. It must continuously
+  record timestamped, resumable progress, recheck every prior finding and the
+  second-wave fixes, report the exact command matrix and unavailable checks,
+  and end with explicit `APPROVE` or `BLOCK`. No source, plan, commit, push, or
+  Pages action is allowed; preserve this worktree and progress file on
+  interruption.
 - **R-200 fix-2 dispatch:** D-102 owns only
   `src/actors/contracts/deletion.ts`, `types.ts`, `sync.ts`, and focused actor
   tests in `~/git/worktrees/did-it-become-what-you-like-r-200-d102-fix-2`,

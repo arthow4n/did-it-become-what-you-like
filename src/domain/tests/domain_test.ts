@@ -4,6 +4,7 @@ declare const Deno: {
 
 import {
   canonicalDecimal,
+  canonicalizeDataset,
   CategorySchema,
   CURRENT_SCHEMA_VERSION,
   DATASET_FORMAT,
@@ -186,6 +187,169 @@ Deno.test("domain: dataset rejects invalid references and category invariants", 
   );
 });
 
+Deno.test("domain: expense receipt-line references validate both line variants", () => {
+  const receipt = {
+    schemaVersion: 1 as const,
+    type: "receipt" as const,
+    id: "receipt-1",
+    projectId: project.id,
+    date: "2026-08-24",
+    currency: "SEK",
+    printedTotal: "-9",
+  };
+  const purchaseLine = {
+    schemaVersion: 1 as const,
+    type: "receipt-purchase-line" as const,
+    id: "line-purchase",
+    receiptId: receipt.id,
+    projectId: project.id,
+    categoryId: category.id,
+    description: "Item",
+    lineTotal: "-5",
+  };
+  const adjustmentLine = {
+    schemaVersion: 1 as const,
+    type: "receipt-adjustment" as const,
+    id: "line-adjustment",
+    receiptId: receipt.id,
+    projectId: project.id,
+    categoryId: category.id,
+    description: "Refund",
+    amount: "1",
+  };
+  const result = PortableDatasetSchema.safeParse(datasetWith({
+    receipts: [receipt],
+    receiptPurchaseLines: [purchaseLine],
+    receiptAdjustments: [adjustmentLine],
+    expenses: [
+      {
+        schemaVersion: 1,
+        type: "expense",
+        id: "expense-purchase",
+        projectId: project.id,
+        categoryId: category.id,
+        date: receipt.date,
+        amount: purchaseLine.lineTotal,
+        currency: receipt.currency,
+        description: "Item",
+        source: "receipt-line",
+        receiptId: receipt.id,
+        receiptLineId: purchaseLine.id,
+      },
+      {
+        schemaVersion: 1,
+        type: "expense",
+        id: "expense-adjustment",
+        projectId: project.id,
+        categoryId: category.id,
+        date: receipt.date,
+        amount: adjustmentLine.amount,
+        currency: receipt.currency,
+        description: "Refund",
+        source: "adjustment",
+        receiptId: receipt.id,
+        receiptLineId: adjustmentLine.id,
+      },
+    ],
+  }));
+  assert(result.success, "purchase and adjustment line references are valid");
+});
+
+Deno.test("domain: expense receipt-line references reject precise relationship errors", () => {
+  const receipt = {
+    schemaVersion: 1 as const,
+    type: "receipt" as const,
+    id: "receipt-1",
+    projectId: project.id,
+    date: "2026-08-24",
+    currency: "SEK",
+    printedTotal: "-9",
+  };
+  const secondReceipt = { ...receipt, id: "receipt-2" };
+  const line = {
+    schemaVersion: 1 as const,
+    type: "receipt-purchase-line" as const,
+    id: "line-1",
+    receiptId: receipt.id,
+    projectId: project.id,
+    categoryId: category.id,
+    description: "Item",
+    lineTotal: "-5",
+  };
+  const expense = (overrides: Record<string, unknown>) => ({
+    schemaVersion: 1,
+    type: "expense",
+    id: "expense-1",
+    projectId: project.id,
+    categoryId: category.id,
+    date: receipt.date,
+    amount: "-5",
+    currency: receipt.currency,
+    description: "Item",
+    source: "receipt-line",
+    receiptId: receipt.id,
+    receiptLineId: line.id,
+    ...overrides,
+  });
+
+  let result = PortableDatasetSchema.safeParse(datasetWith({
+    receipts: [receipt],
+    receiptPurchaseLines: [line],
+    expenses: [expense({ receiptLineId: "missing-line" })],
+  }));
+  assert(!result.success, "unknown receipt lines must be rejected");
+  if (!result.success) {
+    assert(
+      result.error.issues.some((issue) =>
+        issue.path.join(".") === "expenses.0.receiptLineId" &&
+        issue.message === "references an unknown receipt line"
+      ),
+    );
+  }
+
+  result = PortableDatasetSchema.safeParse(datasetWith({
+    receipts: [receipt, secondReceipt],
+    receiptPurchaseLines: [line],
+    expenses: [expense({ receiptId: secondReceipt.id })],
+  }));
+  assert(!result.success, "receipt IDs must match their referenced lines");
+  if (!result.success) {
+    assert(
+      result.error.issues.some((issue) =>
+        issue.path.join(".") === "expenses.0.receiptId" &&
+        issue.message === "must match the receipt line receipt"
+      ),
+    );
+  }
+
+  const otherProject = {
+    ...project,
+    id: "project-other",
+    name: "Other",
+  };
+  result = PortableDatasetSchema.safeParse(datasetWith({
+    projects: [project, otherProject],
+    receipts: [receipt],
+    receiptPurchaseLines: [line],
+    expenses: [expense({ projectId: otherProject.id })],
+  }));
+  assert(!result.success, "cross-project receipt references must be rejected");
+  if (!result.success) {
+    assert(
+      result.error.issues.some((issue) =>
+        issue.path.join(".") === "expenses.0.projectId" &&
+        issue.message === "must match the receipt project"
+      ),
+    );
+    assert(
+      result.error.issues.some((issue) =>
+        issue.path.join(".") === "expenses.0.projectId" &&
+        issue.message === "must match the receipt line project"
+      ),
+    );
+  }
+});
+
 Deno.test("domain: dataset accepts every portable record variant", () => {
   const receipt = {
     schemaVersion: 1 as const,
@@ -319,4 +483,28 @@ Deno.test("domain: version dispatch, migration policy, and deterministic round t
     rejected = true;
   }
   assert(rejected, "down migrations must be explicit and unsupported");
+});
+
+Deno.test("domain: export ordering is locale-independent for mixed-case punctuation IDs", () => {
+  const ids = ["a_id", "A-id", "a~id", "a.id", "a-id"];
+  const projects = ids.map((id, index) => ({
+    ...project,
+    id,
+    name: `Project ${index}`,
+  }));
+  const first = exportDataset(datasetWith({ projects }));
+  const second = exportDataset(
+    datasetWith({ projects: [...projects].reverse() }),
+  );
+  assertEquals(first, second);
+
+  const exported = JSON.parse(first) as { projects: Array<{ id: string }> };
+  assertEquals(
+    exported.projects.map(({ id }) => id),
+    ["A-id", "a-id", "a.id", "a_id", "a~id"],
+  );
+  assertEquals(
+    canonicalizeDataset(datasetWith({ projects })).projects.map(({ id }) => id),
+    ["A-id", "a-id", "a.id", "a_id", "a~id"],
+  );
 });

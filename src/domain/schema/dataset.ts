@@ -6,6 +6,7 @@ import {
   PortableSettingsSchema,
   ProjectSchema,
   ReceiptAdjustmentSchema,
+  type ReceiptLine,
   ReceiptParentSchema,
   ReceiptPurchaseLineSchema,
   RetirementMarkerSchema,
@@ -82,9 +83,13 @@ function validateDatasetInvariants(
   const receipts = new Map(
     dataset.receipts.map((receipt) => [receipt.id, receipt]),
   );
-  const purchaseLines = new Map(
-    dataset.receiptPurchaseLines.map((line) => [line.id, line]),
-  );
+  const receiptLines = new Map<string, ReceiptLine>();
+  for (const line of dataset.receiptPurchaseLines) {
+    receiptLines.set(line.id, line);
+  }
+  for (const line of dataset.receiptAdjustments) {
+    receiptLines.set(line.id, line);
+  }
 
   const uncategorized = dataset.categories.filter((category) =>
     category.id === UNCATEGORIZED_CATEGORY_ID
@@ -128,12 +133,46 @@ function validateDatasetInvariants(
         "references an unknown category",
       );
     }
-    if (expense.receiptId && !receipts.has(expense.receiptId)) {
-      addIssue(
-        ctx,
-        ["expenses", index, "receiptId"],
-        "references an unknown receipt",
-      );
+    if (expense.receiptId) {
+      const receipt = receipts.get(expense.receiptId);
+      if (!receipt) {
+        addIssue(
+          ctx,
+          ["expenses", index, "receiptId"],
+          "references an unknown receipt",
+        );
+      } else if (receipt.projectId !== expense.projectId) {
+        addIssue(
+          ctx,
+          ["expenses", index, "projectId"],
+          "must match the receipt project",
+        );
+      }
+    }
+    if (expense.receiptLineId) {
+      const line = receiptLines.get(expense.receiptLineId);
+      if (!line) {
+        addIssue(
+          ctx,
+          ["expenses", index, "receiptLineId"],
+          "references an unknown receipt line",
+        );
+      } else {
+        if (expense.receiptId !== line.receiptId) {
+          addIssue(
+            ctx,
+            ["expenses", index, "receiptId"],
+            "must match the receipt line receipt",
+          );
+        }
+        if (expense.projectId !== line.projectId) {
+          addIssue(
+            ctx,
+            ["expenses", index, "projectId"],
+            "must match the receipt line project",
+          );
+        }
+      }
     }
   });
 
@@ -184,7 +223,7 @@ function validateDatasetInvariants(
       );
     }
     if (adjustment.lineId) {
-      const line = purchaseLines.get(adjustment.lineId);
+      const line = receiptLines.get(adjustment.lineId);
       if (!line || line.receiptId !== adjustment.receiptId) {
         addIssue(
           ctx,
@@ -213,8 +252,19 @@ export function parseCurrentDataset(input: unknown): PortableDataset {
   return PortableDatasetSchema.parse(input);
 }
 
+function compareCodeUnits(left: string, right: string): number {
+  const length = Math.min(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    const difference = left.charCodeAt(index) - right.charCodeAt(index);
+    if (difference !== 0) return difference;
+  }
+  return left.length - right.length;
+}
+
 function sortRecords<T extends { id: string }>(records: readonly T[]): T[] {
-  return [...records].sort((left, right) => left.id.localeCompare(right.id));
+  return [...records].sort((left, right) =>
+    compareCodeUnits(left.id, right.id)
+  );
 }
 
 function sortObjectKeys(value: unknown): unknown {
@@ -222,7 +272,7 @@ function sortObjectKeys(value: unknown): unknown {
   if (!value || typeof value !== "object") return value;
   return Object.fromEntries(
     Object.entries(value)
-      .sort(([left], [right]) => left.localeCompare(right))
+      .sort(([left], [right]) => compareCodeUnits(left, right))
       .map(([key, entry]) => [key, sortObjectKeys(entry)]),
   );
 }

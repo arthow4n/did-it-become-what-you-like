@@ -21,10 +21,11 @@ positive. `big.js` performs arithmetic in strict mode, and this schema does not
 perform cross-currency conversion.
 
 References use immutable stable IDs rather than names. Dataset validation
-rejects unknown project/category/receipt references, cross-project receipt
-children, duplicate IDs, duplicate active category names, and invalid category
-tombstone replacements. The `Uncategorized` system category is mandatory and
-cannot be archived or renamed.
+rejects unknown project/category/receipt/receipt-line references, mismatched
+expense receipt links, cross-project expense and receipt children, duplicate
+IDs, duplicate active category names, and invalid category tombstone
+replacements. The `Uncategorized` system category is mandatory and cannot be
+archived or renamed.
 
 Receipt images, Gemini API keys, selected Gemini models, image-preparation
 preferences, last-selected project, workflow drafts, and other device-local
@@ -42,6 +43,7 @@ boundary, and tested from every supported source version.
 **Down migrations are intentionally unsupported.** Exports remain lossless at
 the current version; importing an unknown future version fails clearly.
 
-`exportDataset` sorts records by stable ID and object keys before serializing.
-`importDataset` parses JSON, applies the registry, validates all references, and
-returns the canonical current version.
+`exportDataset` sorts records by stable ID and object keys using deterministic
+UTF-16 code-unit order before serializing. `importDataset` parses JSON, applies
+the registry, validates all references, and returns the canonical current
+version.

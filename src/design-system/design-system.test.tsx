@@ -10,8 +10,14 @@ import {
   AdaptiveDialog,
   Button,
   Checkbox,
+  ColorChoiceField,
+  DefinitionList,
+  FileField,
   formatMoney,
   MoneyText,
+  NativeDateField,
+  NativeTimeField,
+  PageHeader,
   Progress,
   SegmentedControl,
   TextField,
@@ -129,6 +135,80 @@ Deno.test("design-system fields expose names, descriptions, and invalid semantic
   );
 });
 
+Deno.test("design-system native fields and definition lists expose valid semantics", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaDomGlobals(window, () => {
+      const mounted = render(
+        createElement(
+          "div",
+          null,
+          createElement(NativeDateField, { label: "Expense date" }),
+          createElement(NativeTimeField, { label: "Expense time" }),
+          createElement(FileField, { label: "Receipt image" }),
+          createElement(DefinitionList, {
+            items: [{ term: "Project", description: "Sweden" }],
+          }),
+          createElement(ColorChoiceField, {
+            label: "Category color",
+            choices: ["#78DCCA", "#8FC8F8"],
+            value: "#78DCCA",
+          }),
+        ),
+      );
+      const view = within(document.body);
+      assert(
+        view.getByLabelText("Expense date").getAttribute("type") === "date",
+      );
+      assert(
+        view.getByLabelText("Expense time").getAttribute("type") === "time",
+      );
+      assert(
+        view.getByLabelText("Receipt image").getAttribute("type") === "file",
+      );
+      const definitionList = document.querySelector("dl");
+      assert(definitionList);
+      assertEqual(definitionList.querySelectorAll(":scope > div").length, 1);
+      assertEqual(definitionList.querySelectorAll(":scope > span").length, 0);
+      assert(view.getByRole("group", { name: "Category color" }));
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system gallery keeps the required fixture coverage", async () => {
+  const source = await Deno.readTextFile(
+    new URL("./gallery.tsx", import.meta.url),
+  );
+  const renderSource = source.slice(
+    source.indexOf("export function DesignSystemGallery"),
+  );
+  for (
+    const component of [
+      "ColorChoiceField",
+      "FileField",
+      "Chip",
+      "DefinitionList",
+      "ConfirmDialog",
+      "DangerDialog",
+      "Popover",
+      "Menu",
+      "Tooltip",
+      "ErrorSummary",
+      "FilterBar",
+      "FilterSheet",
+      "ActiveFilterChips",
+      "ProjectPicker",
+      "CurrencyPicker",
+      "MerchantPicker",
+    ]
+  ) {
+    assert(
+      renderSource.includes(`<${component}`),
+      `Gallery does not render ${component}`,
+    );
+  }
+});
+
 Deno.test("design-system selection and progress remain keyboard-addressable", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaDomGlobals(window, () => {
@@ -180,10 +260,25 @@ Deno.test("design-system dialog uses a named overlay and returns a useful trigge
       const trigger = view.getByRole("button", { name: "Open details" });
       fireEvent.click(trigger);
       assert(view.getByRole("dialog", { name: "Details" }));
+      assert(document.querySelector('[data-dialog-layout="adaptive"]'));
       assert(view.getByText("Dialog content"));
       mounted.unmount();
     })
   );
+});
+
+Deno.test("design-system adaptive dialog keeps sheet and desktop modal positioning", async () => {
+  const css = await Deno.readTextFile(new URL("./tokens.css", import.meta.url));
+  assert(css.includes("place-items: end center;"));
+  assert(
+    css.includes(
+      "border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;",
+    ),
+  );
+  const wideLayout = css.slice(css.indexOf("@media (min-width: 1024px)"));
+  assert(wideLayout.includes("place-items: center;"));
+  assert(wideLayout.includes("border-radius: var(--radius-overlay);"));
+  assert(css.includes("overflow-y: auto;"));
 });
 
 Deno.test("design-system CSS locks semantic tokens, immediate motion, targets, and forced colors", async () => {
@@ -196,6 +291,27 @@ Deno.test("design-system CSS locks semantic tokens, immediate motion, targets, a
   assert(css.includes("@media (prefers-reduced-motion: reduce)"));
   assert(css.includes("@media (forced-colors: active)"));
   assert(css.includes("@keyframes ds-progress"));
+  assert(css.includes("overflow-wrap: anywhere;"));
+});
+
+Deno.test("design-system page headers can provide the application heading", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaDomGlobals(window, () => {
+      const mounted = render(
+        createElement(PageHeader, {
+          title: "Expenses",
+          headingLevel: 1,
+        }),
+      );
+      assert(
+        within(document.body).getByRole("heading", {
+          level: 1,
+          name: "Expenses",
+        }),
+      );
+      mounted.unmount();
+    })
+  );
 });
 
 Deno.test("design-system money component keeps sign and currency in accessible text", async () => {

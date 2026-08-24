@@ -2,22 +2,36 @@ import { createRoot } from "react-dom/client";
 import { useState } from "react";
 import {
   ActionCard,
+  ActiveFilterChips,
   AdaptiveDialog,
   AppFrame,
   Badge,
   Banner,
   Button,
+  Card,
   CategoryBreakdown,
   Checkbox,
+  Chip,
+  ColorChoiceField,
+  ConfirmDialog,
   ContentContainer,
+  CurrencyPicker,
+  DangerDialog,
   DateText,
+  DecimalField,
   DefaultNavigation,
+  DefinitionList,
   Disclosure,
   Divider,
   DraftStatus,
   EmptyState,
   ErrorState,
+  ErrorSummary,
+  ExpenseForm,
   ExpenseList,
+  FileField,
+  FilterBar,
+  FilterSheet,
   FormActions,
   GlobalStatus,
   Heading,
@@ -25,7 +39,10 @@ import {
   IconButton,
   Inline,
   InlineNotice,
+  LinkButton,
   ListRow,
+  Menu,
+  MerchantPicker,
   MoneyField,
   MoneySummary,
   MoneyText,
@@ -33,9 +50,13 @@ import {
   NativeTimeField,
   PageHeader,
   PeriodPicker,
+  Popover,
   Progress,
+  ProjectPicker,
   RadioGroup,
+  ReceiptGroup,
   ReceiptReconciliation,
+  ReceiptSourcePicker,
   ResponsiveGrid,
   SearchField,
   SecretField,
@@ -43,6 +64,7 @@ import {
   SelectField,
   Skeleton,
   Stack,
+  StatusDot,
   StatusMessage,
   StatusPanel,
   StickyActionBar,
@@ -51,6 +73,7 @@ import {
   TextArea,
   TextField,
   Toast,
+  Tooltip,
   WorkflowProgress,
 } from "./components.tsx";
 import "./tokens.css";
@@ -66,6 +89,11 @@ export function DesignSystemGallery() {
   );
   const [offline, setOffline] = useState(false);
   const [selected, setSelected] = useState("spent");
+  const [color, setColor] = useState("#78DCCA");
+  const [filters, setFilters] = useState([
+    { id: "category", label: "Groceries" },
+    { id: "currency", label: "SEK" },
+  ]);
 
   const saveLabel = saved === "saving"
     ? "Saving expense"
@@ -84,6 +112,7 @@ export function DesignSystemGallery() {
       <ContentContainer>
         <Stack gap={7}>
           <PageHeader
+            headingLevel={1}
             eyebrow="After Midnight · development-only fixture"
             title="Shared design-system gallery"
             headingLevel={1}
@@ -153,6 +182,11 @@ export function DesignSystemGallery() {
                 error="Enter a merchant or description."
               />
               <TextArea label="Description" placeholder="Optional details" />
+              <DecimalField
+                label="Decimal quantity"
+                placeholder="0.00"
+                description="Empty values remain valid until the field is required."
+              />
               <MoneyField
                 label="Amount"
                 currency="SEK"
@@ -160,11 +194,33 @@ export function DesignSystemGallery() {
               />
               <SecretField
                 label="Gemini API key"
-                value="not-a-secret-fixture"
+                value="fixture-only-value"
               />
               <SearchField label="Find" placeholder="Merchant or description" />
               <NativeDateField label="Expense date" defaultValue="2026-08-24" />
               <NativeTimeField label="Time" defaultValue="03:00" />
+              <FileField
+                label="Receipt image"
+                accept="image/*"
+                description="Native camera/file capture stays in the screen contract."
+              />
+              <FileField
+                label="Unavailable receipt input"
+                accept="image/*"
+                disabled
+                description="Disabled while an upload is pending."
+              />
+              <ColorChoiceField
+                label="Category color"
+                value={color}
+                onValueChange={setColor}
+                description="Color supplements the category name."
+              />
+              <ColorChoiceField
+                label="Disabled color choices"
+                isDisabled
+                description="Unavailable while the category is archived."
+              />
             </section>
 
             <section className="ds-gallery__section">
@@ -184,6 +240,10 @@ export function DesignSystemGallery() {
                 options={[{ id: "newest", label: "Newest first" }, {
                   id: "oldest",
                   label: "Oldest first",
+                }, {
+                  id: "disabled",
+                  label: "Unavailable sort",
+                  disabled: true,
                 }]}
               />
               <Checkbox defaultSelected>Include archived categories</Checkbox>
@@ -194,11 +254,99 @@ export function DesignSystemGallery() {
                 options={[{ id: "sweden", label: "Sweden" }, {
                   id: "taiwan",
                   label: "Taiwan",
+                }, {
+                  id: "archived",
+                  label: "Archived project (unavailable)",
+                  disabled: true,
                 }]}
               />
               <PeriodPicker value={period} onValueChange={setPeriod} />
             </section>
           </ResponsiveGrid>
+
+          <section className="ds-gallery__surface">
+            <Heading size="sm">Filter, picker, and form patterns</Heading>
+            <FilterBar>
+              <PeriodPicker value={period} onValueChange={setPeriod} />
+              <ProjectPicker
+                value="sweden"
+                options={[{ id: "sweden", label: "Sweden" }, {
+                  id: "taiwan",
+                  label: "Taiwan",
+                }]}
+              />
+              <CurrencyPicker
+                value="sek"
+                options={[{ id: "sek", label: "SEK" }, {
+                  id: "twd",
+                  label: "TWD",
+                }]}
+              />
+              <FilterSheet
+                trigger={<Button variant="secondary">More filters</Button>}
+              >
+                <Stack gap={4}>
+                  <MerchantPicker
+                    suggestions={["ICA Maxi Solna", "SL"]}
+                    value="ICA"
+                  />
+                  <MoneyField label="Maximum amount" currency="SEK" />
+                  <Button>Apply filters</Button>
+                </Stack>
+              </FilterSheet>
+            </FilterBar>
+            <ActiveFilterChips
+              filters={filters.map((filter) => ({
+                ...filter,
+                onRemove: () =>
+                  setFilters((current) =>
+                    current.filter((candidate) => candidate.id !== filter.id)
+                  ),
+              }))}
+            />
+            <Inline>
+              <Chip>Selected category</Chip>
+              <Chip onRemove={() => undefined}>Removable currency filter</Chip>
+              <LinkButton href="#gallery-help" variant="quiet">
+                Learn about filters
+              </LinkButton>
+            </Inline>
+            <ErrorSummary
+              title="Two fields need attention"
+              errors={[{
+                id: "amount",
+                message: "Amount must be a valid decimal.",
+              }, {
+                id: "category",
+                message: "Choose a category before saving.",
+              }]}
+            />
+            <ExpenseForm
+              status={
+                <DraftStatus
+                  state="dirty"
+                  detail="Fixture draft remains local."
+                />
+              }
+              actions={<Button pending>Save expense</Button>}
+            >
+              <TextField
+                label="Fixture merchant"
+                error="Example validation error."
+              />
+            </ExpenseForm>
+            <Card>
+              <DefinitionList
+                items={[{
+                  term: "Current project",
+                  description: "Sweden",
+                }, {
+                  term: "Long metadata",
+                  description: longLabel,
+                }]}
+              />
+            </Card>
+          </section>
 
           <section className="ds-gallery__surface">
             <Heading size="sm">Loading, saving, saved, and failed</Heading>
@@ -266,6 +414,11 @@ export function DesignSystemGallery() {
                 detail="Stockholm phone · Seen now"
                 action={<Button variant="quiet">Rename</Button>}
               />
+              <Inline>
+                <StatusDot tone="positive">Online</StatusDot>
+                <StatusDot tone="warning">Review needed</StatusDot>
+                <StatusDot tone="danger">Failed</StatusDot>
+              </Inline>
               <Progress label="Preparing receipt" indeterminate />
               <Progress label="Validating review" value={68} />
               <WorkflowProgress
@@ -338,6 +491,24 @@ export function DesignSystemGallery() {
                   date: "2026-08-22",
                 }]}
               />
+              <ReceiptGroup
+                merchant="ICA Maxi Solna"
+                date="2026-08-23"
+                lines={[{
+                  id: "line-one",
+                  merchant: "Milk",
+                  category: "Groceries",
+                  amount: "-18.90",
+                  currency: "SEK",
+                  date: "2026-08-23",
+                }]}
+                total={{ amount: "-18.90", currency: "SEK" }}
+              />
+              <ReceiptSourcePicker
+                preview={
+                  <Text>Fixture receipt preview; no image is stored.</Text>
+                }
+              />
               <ReceiptReconciliation
                 printed="-45.90"
                 selected="-43.90"
@@ -353,7 +524,7 @@ export function DesignSystemGallery() {
             </section>
           </ResponsiveGrid>
 
-          <section className="ds-gallery__section">
+          <section className="ds-gallery__section" id="gallery-help">
             <Heading size="sm">Overlays, focus, and expandable content</Heading>
             <Inline>
               <AdaptiveDialog
@@ -379,6 +550,56 @@ export function DesignSystemGallery() {
                   <Button variant="danger">Discard changes</Button>
                 </Stack>
               </AdaptiveDialog>
+              <ConfirmDialog
+                trigger={<Button variant="secondary">Confirm action</Button>}
+                title="Switch project"
+                description="The selected project will become the active scope."
+                confirmLabel="Use project"
+                onConfirm={() => undefined}
+              />
+              <DangerDialog
+                trigger={<Button variant="danger">Delete fixture data</Button>}
+                title="Delete fixture data"
+                description="This fixture-only destructive state does not touch real data."
+                confirmLabel="Delete fixture data"
+                phrase="DELETE FIXTURE"
+                onConfirm={() => undefined}
+              />
+              <Popover
+                trigger={<Button variant="secondary">Open help popover</Button>}
+                label="Filter help"
+              >
+                <Stack gap={2}>
+                  <Heading size="sm">Filter help</Heading>
+                  <Text>Filters combine within the selected project.</Text>
+                </Stack>
+              </Popover>
+              <Menu
+                trigger={<Button variant="secondary">Open menu</Button>}
+                label="Expense actions"
+                items={[{
+                  id: "edit",
+                  label: "Edit expense",
+                }, {
+                  id: "duplicate",
+                  label: "Duplicate expense",
+                }, {
+                  id: "pending",
+                  label: "Unavailable while saving",
+                  disabled: true,
+                }]}
+              />
+              <Tooltip
+                trigger={
+                  <IconButton
+                    aria-label="Explain amount"
+                    icon={<AlertCircle />}
+                  />
+                }
+                label="Amount help"
+              >
+                Amounts retain their currency and sign.
+              </Tooltip>
               <IconButton aria-label="Help for amount" icon={<AlertCircle />} />
             </Inline>
             <Disclosure title="Long receipt lines">

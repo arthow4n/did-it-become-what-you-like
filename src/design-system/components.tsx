@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import type {
   ComponentProps,
   CSSProperties,
@@ -98,6 +98,7 @@ export type PageHeaderProps = {
   actions?: ReactNode;
   headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
   as?: "header" | "div";
+  headingLevel?: HeadingProps["level"];
 };
 
 export function PageHeader({
@@ -109,6 +110,7 @@ export function PageHeader({
   actions,
   headingLevel = 2,
   as: Tag = "header",
+  headingLevel = 2,
 }: PageHeaderProps) {
   return (
     <Tag className="ds-page-header">
@@ -427,21 +429,23 @@ export type FieldProps = {
   description?: ReactNode;
   error?: ReactNode;
   required?: boolean;
+  controlId?: string;
   className?: string;
 };
 
 export function Field(
-  { label, children, description, error, required, className }: FieldProps,
+  { label, children, description, error, required, controlId, className }:
+    FieldProps,
 ) {
   return (
     <label
       className={cx("ds-field", className)}
       data-invalid={error ? "true" : undefined}
     >
-      <span className="ds-field__label">
+      <label className="ds-field__label" htmlFor={controlId}>
         {label}{" "}
         {required ? <span className="ds-field__required">*</span> : null}
-      </span>
+      </label>
       {children}
       {description
         ? <span className="ds-field__description">{description}</span>
@@ -644,14 +648,22 @@ export type NativeDateFieldProps =
 export function NativeDateField(
   { label, description, error, className, ...props }: NativeDateFieldProps,
 ) {
+  const generatedId = useId();
+  const controlId = props.id ?? generatedId;
   return (
     <Field
       label={label}
       description={description}
       error={error}
+      controlId={controlId}
       className={className}
     >
-      <input {...props} type="date" className="ds-field-control" />
+      <input
+        {...props}
+        id={controlId}
+        type="date"
+        className="ds-field-control"
+      />
     </Field>
   );
 }
@@ -668,14 +680,22 @@ export type NativeTimeFieldProps =
 export function NativeTimeField(
   { label, description, error, className, ...props }: NativeTimeFieldProps,
 ) {
+  const generatedId = useId();
+  const controlId = props.id ?? generatedId;
   return (
     <Field
       label={label}
       description={description}
       error={error}
+      controlId={controlId}
       className={className}
     >
-      <input {...props} type="time" className="ds-field-control" />
+      <input
+        {...props}
+        id={controlId}
+        type="time"
+        className="ds-field-control"
+      />
     </Field>
   );
 }
@@ -691,9 +711,21 @@ export type FileFieldProps =
 export function FileField(
   { label, description, className, ...props }: FileFieldProps,
 ) {
+  const generatedId = useId();
+  const controlId = props.id ?? generatedId;
   return (
-    <Field label={label} description={description} className={className}>
-      <input {...props} type="file" className="ds-field-control" />
+    <Field
+      label={label}
+      description={description}
+      controlId={controlId}
+      className={className}
+    >
+      <input
+        {...props}
+        id={controlId}
+        type="file"
+        className="ds-field-control"
+      />
     </Field>
   );
 }
@@ -779,6 +811,7 @@ export type ColorChoiceFieldProps = {
   onValueChange?: (value: string) => void;
   choices?: string[];
   description?: ReactNode;
+  isDisabled?: boolean;
 };
 
 export function ColorChoiceField({
@@ -787,6 +820,7 @@ export function ColorChoiceField({
   onValueChange,
   choices = ["#78DCCA", "#8FC8F8", "#F0C674", "#FF9E9E"],
   description,
+  isDisabled = false,
 }: ColorChoiceFieldProps) {
   return (
     <Field label={label} description={description}>
@@ -802,6 +836,7 @@ export function ColorChoiceField({
             type="button"
             aria-label={`Choose ${choice}`}
             aria-pressed={value === choice}
+            disabled={isDisabled}
             onClick={() => onValueChange?.(choice)}
             style={{
               width: "var(--control-height)",
@@ -1111,7 +1146,10 @@ export function AdaptiveDialog({
         isDismissable={isDismissable}
       >
         <AriaModal className={cx("ds-dialog", className)}>
-          <AriaDialog aria-label={String(title)}>
+          <AriaDialog
+            aria-label={String(title)}
+            data-dialog-layout="adaptive"
+          >
             {({ close }) => (
               <Stack gap={4}>
                 <Inline justify="space-between">

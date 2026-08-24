@@ -1,0 +1,162 @@
+import { assign, setup } from "xstate";
+import { unwiredPort } from "./ports.ts";
+import type {
+  ContractFailure,
+  ExpenseCommitInput,
+  ExpenseCommitOutput,
+  ExpenseDraft,
+} from "./types.ts";
+
+export type ExpenseFormEvent =
+  | {
+    readonly type: "expense.open";
+    readonly draft: ExpenseDraft;
+    readonly originalExpenseId?: string;
+  }
+  | { readonly type: "expense.change"; readonly draft: ExpenseDraft }
+  | { readonly type: "expense.submit" }
+  | { readonly type: "expense.retry" }
+  | { readonly type: "expense.discard" }
+  | { readonly type: "expense.cancel" }
+  | { readonly type: "expense.confirm-discard" };
+
+export type ExpenseFormOutput =
+  | { readonly status: "saved"; readonly result: ExpenseCommitOutput }
+  | { readonly status: "discarded" }
+  | { readonly status: "cancelled" };
+
+type ExpenseFormContext = {
+  readonly draft: ExpenseDraft | null;
+  readonly originalExpenseId?: string;
+  readonly result: ExpenseCommitOutput | null;
+  readonly error: ContractFailure | null;
+};
+
+const expenseFormSetup = setup({
+  types: {
+    context: {} as ExpenseFormContext,
+    events: {} as ExpenseFormEvent,
+    output: {} as ExpenseFormOutput,
+  },
+  actors: {
+    commitExpense: unwiredPort<ExpenseCommitInput, ExpenseCommitOutput>(
+      "local expense commit",
+    ),
+  },
+  guards: {
+    draftIsValid: ({ context }) => {
+      const draft = context.draft;
+      return Boolean(
+        draft && draft.amount.trim() !== "" && draft.projectId.trim() !== "" &&
+          draft.categoryId.trim() !== "" && draft.date.trim() !== "" &&
+          draft.currency.trim() !== "",
+      );
+    },
+  },
+});
+
+export const expenseFormMachine = expenseFormSetup.createMachine({
+  id: "expense-form",
+  initial: "closed",
+  context: {
+    draft: null,
+    originalExpenseId: undefined,
+    result: null,
+    error: null,
+  },
+  states: {
+    closed: {
+      on: {
+        "expense.open": {
+          target: "editing",
+          actions: assign({
+            draft: ({ event }) => event.draft,
+            originalExpenseId: ({ event }) => event.originalExpenseId,
+            result: () => null,
+            error: () => null,
+          }),
+        },
+      },
+    },
+    editing: {
+      tags: ["dirty"],
+      on: {
+        "expense.change": {
+          actions: assign({
+            draft: ({ event }) => event.draft,
+            error: () => null,
+          }),
+        },
+        "expense.submit": [
+          { target: "saving", guard: "draftIsValid" },
+          {
+            actions: assign({
+              error: () => ({
+                code: "invalid",
+                message: "Complete the required fields.",
+              }),
+            }),
+          },
+        ],
+        "expense.discard": "discarded",
+        "expense.cancel": "cancelled",
+      },
+    },
+    saving: {
+      tags: ["saving"],
+      invoke: {
+        src: "commitExpense",
+        input: ({ context }) => ({
+          originalExpenseId: context.originalExpenseId,
+          draft: context.draft!,
+        }),
+        onDone: {
+          target: "saved",
+          actions: assign({
+            result: ({ event }) => event.output,
+            error: () => null,
+          }),
+        },
+        onError: {
+          target: "saveFailed",
+          actions: assign({
+            error: () => ({
+              code: "save-failed",
+              message: "The expense was not saved. Retry to try again.",
+            }),
+          }),
+        },
+      },
+      on: {
+        "expense.cancel": "cancelled",
+      },
+    },
+    saveFailed: {
+      tags: ["error"],
+      on: {
+        "expense.retry": "saving",
+        "expense.change": {
+          target: "editing",
+          actions: assign({
+            draft: ({ event }) => event.draft,
+            error: () => null,
+          }),
+        },
+        "expense.discard": "discarded",
+        "expense.cancel": "cancelled",
+      },
+    },
+    saved: {
+      type: "final",
+      output: ({ context }) => ({ status: "saved", result: context.result! }),
+    },
+    discarded: {
+      type: "final",
+      output: () => ({ status: "discarded" }),
+    },
+    cancelled: {
+      type: "final",
+      output: () => ({ status: "cancelled" }),
+    },
+  },
+});

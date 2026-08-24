@@ -2062,6 +2062,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   headings while retaining nested level-two headings, and use valid summary
   semantics. It must not broaden scope, weaken the review, change approved
   requirements, enable Pages, or edit this plan from the worker worktree.
+- **R-300 follow-up worker dispatch:** Beauvoir
+  (`01a03293-f740-7c53-986c-35ce0eaa164f`) owns the four-finding fix in
+  `~/git/worktrees/did-it-become-what-you-like-r-300-followup-fix-4`, branch
+  `task/r-300-followup-fix-4`, based at `1bd17ee`. Ownership is limited to the
+  four source/config paths and their focused tests named above. The worker must
+  keep an untracked timestamped `R-300-followup-fix-4-progress.md`, leave this
+  plan and `master` untouched, not push or enable Pages, and return an exact
+  validation handoff before integration. R-300 remains BLOCKED.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

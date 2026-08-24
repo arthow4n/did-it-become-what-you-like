@@ -1238,11 +1238,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 ## Current Checkpoint
 
 - **Plan state:** implementation authorized; M0/M1 and the M2 contract/design-
-  system wave are complete, and `R-200` closure is `IN_PROGRESS` after a fresh
-  closure review returned `BLOCK` with three new severity-2 implementation
-  findings. The prior three findings are fixed and the full matrix is green;
-  the new findings now require bounded D-101/D-102 fixes.
-- **Reconciled branch/upstream:** `master` is at `0b2fd4e` and tracks
+  system wave are complete, and `R-200` closure is `IN_PROGRESS` pending the
+  full matrix and a fresh closure review after the second fix wave. The prior
+  six severity-2 findings now have scoped fixes integrated; the gate is not
+  yet approved.
+- **Reconciled branch/upstream:** `master` is at `2bf6471` and tracks
   `origin/master` at the same commit. The branch is clean and neither ahead nor
   behind its upstream (`0 0`).
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1250,10 +1250,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
   plan`).
 - **Integrated implementation state:** production source fixes through
-  `0b2fd4e` (`Fix nested field label semantics`) are pushed. D-102's actor fix
-  is `ba7b33e`; the preceding U-104 worker/test integration is `d1c87c9` and
-  its structural wrapper correction is `2108438`. This ledger update is the
-  only intended uncommitted change.
+  `2bf6471` (`Fix D-102 deletion safety and retry contracts`) are pushed. The
+  second-wave D-101 and D-102 fixes are `47b2f26` and `2bf6471`; this ledger
+  update is the only intended uncommitted change.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, and `U-104`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1432,11 +1431,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** dispatch the disjoint D-101 and D-102 fix-2 workers from
-  clean `9020ae9`, preserve their timestamped handovers, integrate their
-  regression-tested commits, rerun the complete matrix, and obtain another
-  fresh closure review. Do not release M3 until that reviewer returns APPROVE
-  and the contracts are explicitly locked.
+- **Current task:** run the complete R-200 matrix from clean `2bf6471`, inspect
+  the second-wave regressions in the integrated root, and dispatch another
+  fresh closure reviewer. Do not release M3 until that reviewer returns
+  APPROVE and the contracts are explicitly locked.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1569,10 +1567,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Gate status:** the prior three concrete severity-2 closure findings are
-  addressed by the scoped fixes below, but the fresh closure review found three
-  additional internal severity-2 findings. No owner decision is required: fix
-  only the owning scopes, rerun the complete matrix, and obtain a fresh review.
+- **Gate status:** all six concrete severity-2 closure findings recorded so far
+  are addressed by the scoped fixes below; closure remains pending until the
+  complete matrix and a fresh reviewer confirm them. No owner decision is
+  required unless a future review identifies a product/spec contradiction.
   No GitHub Pages workflow may be enabled or triggered because the owner has
   intentionally disabled it until MVP completion.
 - **R-200 scoped-fix dispatch plan:** the first wave
@@ -1661,8 +1659,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   tests (12), E2E tests (2), `deno task build`, `deno task gallery`,
   3-viewport `deno task a11y:gallery`, schema/Pages/CI/toolchain verification,
   `deno audit --frozen`, and `git diff --check`. Closure-2 then found three
-  additional S2 findings recorded below; the next action is the D-101/D-102
-  fix-2 wave, followed by another complete matrix and fresh closure review.
+  additional S2 findings, now fixed in `47b2f26` and `2bf6471`. The next action
+  is another complete matrix and fresh closure review.
 - **R-200 closure review worktree:** prepared branch `review/r-200-closure`
   in `~/git/worktrees/did-it-become-what-you-like-r-200-closure`, based at
   `663a874`. The reviewer may inspect all source but may write only the
@@ -1713,7 +1711,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   handovers, not plan substitutes; workers must not edit this plan or push
   `master`. The integration owner will merge D-101/D-102 in disjoint scope,
   rerun the complete gate, and preserve all worktrees.
-- **R-200 fix-2 workers active:** Wegener
+- **R-200 fix-2 workers completed:** Wegener
   (`01a0317d-29e2-74b2-95f2-49aa45804c59`) owns D-102 in
   `~/git/worktrees/did-it-become-what-you-like-r-200-d102-fix-2`; Sartre
   (`01a0317d-2af7-7511-a5c1-9d9f029ae61a`) owns D-101 in
@@ -1721,6 +1719,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   ownership is disjoint; both must keep only their untracked timestamped
   handover plus scoped source/tests, and neither may edit this plan or push
   `master`. The integration owner will inspect every diff and validation result.
+- **R-200 fix-2 integration:** Sartre committed `c84bf53` for D-101; the
+  orchestrator reviewed and cherry-picked it as `47b2f26`. Root format, lint,
+  check, direct domain tests (9), `deno task test:domain` (9), schema-docs,
+  build, and diff-check validations passed; only the two owned source/test
+  paths were integrated. Wegener committed `5a03fa8` for D-102; the
+  orchestrator reviewed and cherry-picked it as `2bf6471`. Root format, lint,
+  check, direct actor tests (20), `deno task test --filter actor-contract`
+  (20 passed, 46 filtered), build, and diff-check validations passed; only the
+  three owned actor source/test paths were integrated. Both operational
+  handovers remain untracked in preserved worktrees and neither worker pushed.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

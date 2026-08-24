@@ -1256,7 +1256,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the bounded R-400 compact-layout fix is integrated, and R-400 is the active
   independent closure gate.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `4f577f9` after pushing the contrast-advisor dispatch checkpoint. The root
+  `28ee355` after pushing the contrast-fix dispatch checkpoint. The root
   worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
@@ -1285,7 +1285,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
   browser build`). The latest integrated implementation is `ba63635`; the
   latest pushed orchestration checkpoint before this ledger update is
-  `4f577f9`.
+  `28ee355`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1314,7 +1314,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `4f577f9`; the root worktree contains only the intentionally untracked
+  at `28ee355`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
@@ -2393,6 +2393,21 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   remotes, or unrelated source, and must not commit or push. R-400 remains
   blocked until this fix is integrated and a complete fresh closure review
   passes.
+- **R-400 contrast-fix worker interruption:** Locke started a temporary native
+  session in `~/git/worktrees/did-it-become-what-you-like-r-400-contrast-fix`
+  but never created its required handover or any tracked diff. After the
+  session remained unresponsive, its exact worktree-scoped Vite and
+  agent-browser processes were stopped gracefully and the worker was shut
+  down. The worktree remains clean at `4f577f9`; no source, plan, commit, or
+  remote mutation occurred.
+- **R-400 contrast-fix replacement dispatch:** Dirac
+  (`01a0338f-9bac-74e1-9099-cea2860b8e9d`) takes over the same clean worktree
+  `~/git/worktrees/did-it-become-what-you-like-r-400-contrast-fix`, branch
+  `task/r-400-contrast-fix`, based at `4f577f9`. It must create the
+  timestamped `R-400-contrast-fix-progress.md` before browser work, diagnose
+  source-first, preserve the exact bounded ownership and validation gates,
+  and return `READY FOR INTEGRATION` or `BLOCK`. R-400 remains blocked until
+  the replacement fix and a complete fresh closure review pass.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

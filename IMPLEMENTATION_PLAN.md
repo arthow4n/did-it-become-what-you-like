@@ -1243,18 +1243,19 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `97e7689` and is one commit
-  ahead of `origin/master` until this checkpoint is committed and pushed. The
-  root worktree is clean before this intended ledger edit.
+- **Reconciled branch/upstream:** `master` is at `92d1f96` and tracks
+  `origin/master` at the same commit (`0 0`). The root worktree is clean before
+  this intended ledger edit.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
   plan`).
 - **Integrated implementation state:** production source fixes through
   `2bf6471` (`Fix D-102 deletion safety and retry contracts`) and L-203 query
-  implementation `97e7689` (`Implement L-203 expense queries and totals`) are
-  present on `master`; the deferred-only SPEC note is `c390656`. This ledger
-  update is the only intended uncommitted change.
+  implementation `97e7689` (`Implement L-203 expense queries and totals`) and
+  its pushed ledger checkpoint `92d1f96` are present on `master`; the
+  deferred-only SPEC note is `c390656`. This ledger update is the only intended
+  uncommitted change.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-203`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1274,8 +1275,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   passed `deno task fmt:check` (112 files), `deno task lint` (101 files),
   `deno task check`, direct query tests (10 passed), `deno task test:domain`
   (19 passed), `deno task build`, and `git diff --check`. The implementation
-  plan task-heading count remains 37 with no duplicate IDs; the root worktree
-  has no code changes apart from this intended ledger edit. Active and
+  plan task-heading count remains 37 with no duplicate IDs; `master` and its
+  upstream are aligned at `92d1f96`; the root worktree has no code changes
+  apart from this intended ledger edit. Active and
   preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, and `L-203` are `COMPLETE`; `L-201` and `A-301`

@@ -255,6 +255,76 @@ Deno.test("domain: expense receipt-line references validate both line variants",
   assert(result.success, "purchase and adjustment line references are valid");
 });
 
+Deno.test(
+  "domain: adjustment links accept purchase lines and reject adjustment lines",
+  () => {
+    const receipt = {
+      schemaVersion: 1 as const,
+      type: "receipt" as const,
+      id: "receipt-1",
+      projectId: project.id,
+      date: "2026-08-24",
+      currency: "SEK",
+      printedTotal: "-9",
+    };
+    const purchaseLine = {
+      schemaVersion: 1 as const,
+      type: "receipt-purchase-line" as const,
+      id: "line-purchase",
+      receiptId: receipt.id,
+      projectId: project.id,
+      categoryId: category.id,
+      description: "Item",
+      lineTotal: "-10",
+    };
+    const adjustmentA = {
+      schemaVersion: 1 as const,
+      type: "receipt-adjustment" as const,
+      id: "adjustment-a",
+      receiptId: receipt.id,
+      projectId: project.id,
+      categoryId: category.id,
+      description: "Refund A",
+      amount: "1",
+    };
+    const adjustmentB = {
+      ...adjustmentA,
+      id: "adjustment-b",
+      description: "Refund B",
+    };
+    const base = {
+      receipts: [receipt],
+      receiptPurchaseLines: [purchaseLine],
+    };
+
+    const valid = PortableDatasetSchema.safeParse(datasetWith({
+      ...base,
+      receiptAdjustments: [{ ...adjustmentA, lineId: purchaseLine.id }],
+    }));
+    assert(valid.success, "adjustments may reference a purchase line");
+
+    const invalid = PortableDatasetSchema.safeParse(datasetWith({
+      ...base,
+      receiptAdjustments: [
+        { ...adjustmentA, lineId: adjustmentB.id },
+        adjustmentB,
+      ],
+    }));
+    assert(
+      !invalid.success,
+      "adjustments must not reference another adjustment line",
+    );
+    if (!invalid.success) {
+      assert(
+        invalid.error.issues.some((issue) =>
+          issue.path.join(".") === "receiptAdjustments.0.lineId" &&
+          issue.message === "must reference a purchase line on the same receipt"
+        ),
+      );
+    }
+  },
+);
+
 Deno.test("domain: expense receipt-line references reject precise relationship errors", () => {
   const receipt = {
     schemaVersion: 1 as const,

@@ -83,6 +83,9 @@ function validateDatasetInvariants(
   const receipts = new Map(
     dataset.receipts.map((receipt) => [receipt.id, receipt]),
   );
+  const purchaseLines = new Map(
+    dataset.receiptPurchaseLines.map((line) => [line.id, line] as const),
+  );
   const receiptLines = new Map<string, ReceiptLine>();
   for (const line of dataset.receiptPurchaseLines) {
     receiptLines.set(line.id, line);
@@ -223,7 +226,7 @@ function validateDatasetInvariants(
       );
     }
     if (adjustment.lineId) {
-      const line = receiptLines.get(adjustment.lineId);
+      const line = purchaseLines.get(adjustment.lineId);
       if (!line || line.receiptId !== adjustment.receiptId) {
         addIssue(
           ctx,

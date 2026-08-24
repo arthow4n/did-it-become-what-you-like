@@ -49,6 +49,9 @@ test("local-first-manual saves a first local expense and restores it after reloa
   await page.getByRole("searchbox", { name: "Merchant" }).fill("Second market");
   await page.getByRole("button", { name: "Save expense" }).click();
 
+  await expect(page.getByRole("heading", { name: "Expense saved" }))
+    .toBeVisible();
+  await page.getByRole("button", { name: "Continue to expenses" }).click();
   await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
     .toBeVisible();
   await expect(page.getByText("Local market")).toBeVisible();

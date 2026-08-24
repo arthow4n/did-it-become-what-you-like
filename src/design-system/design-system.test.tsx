@@ -21,6 +21,7 @@ import {
   NativeDateField,
   NativeTimeField,
   PageHeader,
+  PeriodPicker,
   Progress,
   SegmentedControl,
   TextField,
@@ -420,6 +421,36 @@ Deno.test("design-system currency search and merchant clearing remain functional
       fireEvent.keyDown(currencyInput, { key: "Escape" });
       fireEvent.click(view.getByRole("button", { name: "Clear search" }));
       assertEqual(merchant, "");
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system period picker exposes a controlled custom calendar period", async () => {
+  await withComponentHarness(({ window, render, fireEvent }) =>
+    withAriaDomGlobals(window, () => {
+      let kind = "day";
+      let date = "2026-08-24";
+      const mounted = render(
+        createElement(PeriodPicker, {
+          value: "custom",
+          customKind: kind as "day" | "month" | "year",
+          customDate: date,
+          onCustomKindChange: (value) => kind = value,
+          onCustomDateChange: (value) => date = value,
+        }),
+      );
+      const view = within(document.body);
+      const kindPicker = view.getByRole("button", {
+        name: /Day Custom period type/,
+      });
+      const datePicker = view.getByLabelText("Custom calendar date");
+      assertEqual((datePicker as HTMLInputElement).value, "2026-08-24");
+      fireEvent.click(kindPicker);
+      fireEvent.click(view.getByRole("option", { name: "Month" }));
+      fireEvent.change(datePicker, { target: { value: "2026-09-03" } });
+      assertEqual(kind, "month");
+      assertEqual(date, "2026-09-03");
       mounted.unmount();
     })
   );

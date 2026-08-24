@@ -8,6 +8,7 @@ import {
   ManualExpenseRecoveryScreen,
   OrganizeScreen,
   ProjectManager,
+  SavedExpenseCompletionScreen,
   SettingsScreen,
 } from "./local-ui.tsx";
 import type {
@@ -310,6 +311,45 @@ Deno.test("local UI null-draft recovery exposes retry and back actions", async (
       fireEvent.click(view.getByRole("button", { name: "Back to expenses" }));
       assert(retries === 1, "Recovery should dispatch retry");
       assert(closes === 1, "Recovery should offer a safe exit");
+    });
+  });
+});
+
+Deno.test("local UI saved completion exposes undo and continue actions", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent }) => {
+    await withAriaDomGlobals(window, () => {
+      let undoCount = 0;
+      let continueCount = 0;
+      render(
+        createElement(SavedExpenseCompletionScreen, {
+          expense: {
+            schemaVersion: 1,
+            type: "expense",
+            id: "expense-saved",
+            projectId: "project-main",
+            categoryId: "category-uncategorized",
+            amount: "12.50",
+            currency: "SEK",
+            date: "2026-08-24",
+            description: "Saved expense",
+            source: "manual",
+          },
+          isUndoing: false,
+          onUndo: () => undoCount++,
+          onRetry: () => undefined,
+          onContinue: () => continueCount++,
+        }),
+      );
+      const view = within(document.body);
+      assert(view.getByRole("heading", { name: "Expense saved" }));
+      fireEvent.click(
+        view.getByRole("button", { name: "Undo saved expense" }),
+      );
+      fireEvent.click(
+        view.getByRole("button", { name: "Continue to expenses" }),
+      );
+      assert(undoCount === 1, "Undo should dispatch the saved-expense action");
+      assert(continueCount === 1, "Continue should close the completion view");
     });
   });
 });

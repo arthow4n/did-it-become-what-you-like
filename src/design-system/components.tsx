@@ -1729,24 +1729,58 @@ export function WorkflowProgress(
   );
 }
 
-export function PeriodPicker(
-  { value, onValueChange }: {
-    value?: string;
-    onValueChange?: (value: string) => void;
-  },
-) {
+export function PeriodPicker({
+  value,
+  onValueChange,
+  customKind = "day",
+  customDate = "",
+  onCustomKindChange,
+  onCustomDateChange,
+}: {
+  value?: string;
+  onValueChange?: (value: string) => void;
+  customKind?: "day" | "month" | "year";
+  customDate?: string;
+  onCustomKindChange?: (value: "day" | "month" | "year") => void;
+  onCustomDateChange?: (value: string) => void;
+}) {
   return (
-    <SegmentedControl
-      label="Period"
-      value={value}
-      onChange={(next) => onValueChange?.(next)}
-      options={[
-        { id: "today", label: "Today" },
-        { id: "month", label: "This month" },
-        { id: "year", label: "This year" },
-        { id: "custom", label: "Custom" },
-      ]}
-    />
+    <Stack gap={2}>
+      <SegmentedControl
+        label="Period"
+        value={value}
+        onChange={(next) => onValueChange?.(next)}
+        options={[
+          { id: "today", label: "Today" },
+          { id: "month", label: "This month" },
+          { id: "year", label: "This year" },
+          { id: "custom", label: "Custom" },
+        ]}
+      />
+      {value === "custom"
+        ? (
+          <Inline gap={2}>
+            <SelectField
+              label="Custom period type"
+              options={[
+                { id: "day", label: "Day" },
+                { id: "month", label: "Month" },
+                { id: "year", label: "Year" },
+              ]}
+              value={customKind}
+              onValueChange={(next) =>
+                onCustomKindChange?.(next as "day" | "month" | "year")}
+            />
+            <NativeDateField
+              label="Custom calendar date"
+              value={customDate}
+              onChange={(event) => onCustomDateChange?.(event.target.value)}
+              description="Day uses the date; month and year use its calendar period."
+            />
+          </Inline>
+        )
+        : null}
+    </Stack>
   );
 }
 

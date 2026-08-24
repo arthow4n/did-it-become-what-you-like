@@ -12,6 +12,7 @@ import {
   queryExpenses,
 } from "../domain/queries/index.ts";
 import {
+  CalendarDateSchema,
   type Category,
   CurrencyCodeSchema,
   type Expense,
@@ -175,14 +176,39 @@ function LoadingScreen() {
 
 const CURRENCY_OPTIONS = ["SEK", "EUR", "USD", "GBP", "JPY", "TWD"];
 
-function periodForValue(value: string): ExpensePeriod {
+type CustomPeriodKind = "day" | "month" | "year";
+
+function localCalendarDate(now = new Date()): string {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function periodForValue(
+  value: string,
+  customKind: CustomPeriodKind,
+  customDate: string,
+): ExpensePeriod {
   if (value === "today") {
     return { kind: "current", unit: "day", now: new Date() };
   }
   if (value === "year") {
     return { kind: "current", unit: "year", now: new Date() };
   }
-  return { kind: "current", unit: "month", now: new Date() };
+  if (value === "month") {
+    return { kind: "current", unit: "month", now: new Date() };
+  }
+  if (value !== "custom") {
+    return { kind: "current", unit: "month", now: new Date() };
+  }
+  const parsedDate = CalendarDateSchema.safeParse(customDate);
+  const date = parsedDate.success ? parsedDate.data : localCalendarDate();
+  if (customKind === "day") return { kind: "day", date };
+  const [year, month] = date.split("-").map(Number);
+  return customKind === "month"
+    ? { kind: "month", year, month }
+    : { kind: "year", year };
 }
 
 function expenseViewModel(
@@ -331,6 +357,10 @@ export function ExpensesScreen({
     state.projects.find((project) => project.id === state.selectedProjectId) ??
       state.projects.find((project) => !project.archived);
   const [period, setPeriod] = useState("month");
+  const [customPeriodKind, setCustomPeriodKind] = useState<CustomPeriodKind>(
+    "day",
+  );
+  const [customPeriodDate, setCustomPeriodDate] = useState(localCalendarDate);
   const [categoryId, setCategoryId] = useState<string>("");
   const [currency, setCurrency] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -350,7 +380,11 @@ export function ExpensesScreen({
       },
       {
         selectedProjectId: currentProject.id,
-        period: period === "custom" ? undefined : periodForValue(period),
+        period: periodForValue(
+          period,
+          customPeriodKind,
+          customPeriodDate,
+        ),
         ...(categoryId ? { categoryId } : {}),
         ...(currency ? { currency } : {}),
         ...(search ? { search } : {}),
@@ -452,7 +486,14 @@ export function ExpensesScreen({
           onValueChange={onProjectChange}
         />
         <FilterBar className="local-ui-expenses-filter-bar">
-          <PeriodPicker value={period} onValueChange={setPeriod} />
+          <PeriodPicker
+            value={period}
+            onValueChange={setPeriod}
+            customKind={customPeriodKind}
+            customDate={customPeriodDate}
+            onCustomKindChange={setCustomPeriodKind}
+            onCustomDateChange={setCustomPeriodDate}
+          />
           <SelectField
             label="Category"
             options={[
@@ -1588,6 +1629,71 @@ export function ManualExpenseRecoveryScreen({
   );
 }
 
+export function SavedExpenseCompletionScreen({
+  expense,
+  isUndoing,
+  error,
+  onUndo,
+  onRetry,
+  onContinue,
+}: {
+  expense: Expense;
+  isUndoing: boolean;
+  error?: string;
+  onUndo: () => void;
+  onRetry: () => void;
+  onContinue: () => void;
+}) {
+  return (
+    <ContentContainer size="readable">
+      <Stack gap={4}>
+        <PageHeader headingLevel={1} title="Expense saved" />
+        <InlineNotice
+          tone="positive"
+          title="Saved on this device"
+          action={
+            <Inline justify="end">
+              <Button
+                variant="secondary"
+                isDisabled={isUndoing}
+                onPress={onUndo}
+              >
+                Undo saved expense
+              </Button>
+              <Button
+                variant="quiet"
+                isDisabled={isUndoing}
+                onPress={onContinue}
+              >
+                Continue to expenses
+              </Button>
+            </Inline>
+          }
+        >
+          {expense.merchant ?? "The expense"}{" "}
+          is saved locally. You can undo it before returning to the expense
+          list.
+        </InlineNotice>
+        {error
+          ? (
+            <InlineNotice
+              tone="danger"
+              title="Undo failed"
+              action={
+                <Button variant="secondary" onPress={onRetry}>
+                  Retry undo
+                </Button>
+              }
+            >
+              {error}
+            </InlineNotice>
+          )
+          : null}
+      </Stack>
+    </ContentContainer>
+  );
+}
+
 export function ManualExpenseScreen({
   repository,
   service,
@@ -1634,12 +1740,15 @@ export function ManualExpenseScreen({
   const saveMode = useRef<ManualSaveMode>("expenses");
   useEffect(() => {
     if (completionHandled.current) return;
-    if (snapshot.matches("saved") && snapshot.context.result?.expense) {
+    if (
+      snapshot.matches("saved") && snapshot.context.result?.expense &&
+      saveMode.current === "another"
+    ) {
       completionHandled.current = true;
       onSaved(snapshot.context.result.expense, saveMode.current);
     } else if (
       snapshot.matches("discarded") || snapshot.matches("cancelled") ||
-      snapshot.matches("deletedOutput")
+      snapshot.matches("deletedOutput") || snapshot.matches("savedUndone")
     ) {
       completionHandled.current = true;
       onClosed();
@@ -1657,6 +1766,23 @@ export function ManualExpenseScreen({
   }, [snapshot]);
 
   const draft = snapshot.context.draft;
+  const savedExpense = snapshot.context.result?.expense;
+  if (
+    (snapshot.matches("saved") || snapshot.matches("undoingSaved") ||
+      snapshot.matches("savedUndoFailed")) &&
+    savedExpense
+  ) {
+    return (
+      <SavedExpenseCompletionScreen
+        expense={savedExpense}
+        isUndoing={snapshot.matches("undoingSaved")}
+        error={snapshot.context.error?.message}
+        onUndo={() => send({ type: "expense.undo-saved" })}
+        onRetry={() => send({ type: "expense.retry-undo" })}
+        onContinue={onClosed}
+      />
+    );
+  }
   const retryOpening = () => {
     setHydrationStarted(false);
     setOpenSent(false);
@@ -2093,11 +2219,12 @@ export function LocalUiRuntime(
               void organization.getState().then(setState);
               if (mode === "another") {
                 setManualFormKey((value) => value + 1);
-              } else {
-                navigate("/expenses");
               }
             }}
-            onClosed={() => navigate("/expenses")}
+            onClosed={() => {
+              void organization.getState().then(setState);
+              navigate("/expenses");
+            }}
           />
         )
         : contentPath === "/organize"

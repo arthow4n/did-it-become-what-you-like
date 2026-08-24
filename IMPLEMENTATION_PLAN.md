@@ -1255,10 +1255,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, and A-302 are complete. A-303 is integrated,
   the bounded R-400 compact-layout fix is integrated, and R-400 is the active
   independent closure gate.
-- **Reconciled branch/upstream:** `master` is at `ba63635` and
-  `origin/master` is at `9543bbe` (`0 1`) immediately before this checkpoint
-  push; `ba63635` is the integrated compact-layout source commit being pushed
-  with this ledger update. The root worktree
+- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
+  `17d17a3` after pushing the compact-layout source and this ledger checkpoint.
+  The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1314,7 +1313,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   inspection passed at 320x568, 390x844, and 1280x800; the compact fix recorded
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
-  remains 37 with no duplicate IDs; the root worktree contains only the intentionally untracked
+  remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
+  at `17d17a3`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
@@ -2324,6 +2324,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   worker and worktree are preserved, the agent is closed, and the source
   commit is being pushed with this checkpoint. R-400 remains `IN_PROGRESS`
   pending a fresh independent closure recheck.
+- **R-400 closure-3 dispatch:** Ohm
+  (`01a03371-cd9e-72b0-9a0f-af5408f23ea8`) is the fresh independent read-only
+  Luna xhigh reviewer in
+  `~/git/worktrees/did-it-become-what-you-like-r-400-closure-3`, branch
+  `review/r-400-closure-3`, based at `17d17a3`. It must reconcile the prior
+  blocked review, the bounded fix handovers, and the exact integrated source;
+  rerun the complete automated gate, receipt E2E, and native
+  320x568/390x844/1280x800 visual, interaction, and axe review, with special
+  attention to the two former compact-layout findings. The reviewer owns no
+  source or plan changes and must maintain only the timestamped untracked
+  `R-400-closure-3-progress.md` handover, ending with explicit `APPROVE` or
+  `BLOCK`. R-400 remains gated until this review result is recorded.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

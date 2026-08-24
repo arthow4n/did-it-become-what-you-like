@@ -1259,10 +1259,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released and M6 is the next dependency-ready milestone.
-- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  pushed checkpoint `e375cf8` (`Close R-500 and reconcile plan ledger`), with
-  source checkpoint `e6ee2cd` (`Fix higher-generation causal packet adoption`)
-  and S-405 source at `b423d9b` integrated beneath it. The latest
+- **Reconciled branch/upstream:** `master` and `origin/master` are aligned;
+  the final pushed R-500 ledger sequence includes `e375cf8` (`Close R-500 and
+  reconcile plan ledger`) and `150ba7c` (`Record final pushed R-500
+  checkpoint`), with source checkpoint `e6ee2cd` (`Fix higher-generation
+  causal packet adoption`) and S-405 source at `b423d9b` integrated beneath
+  it. The latest
   completed-task ledger checkpoint before S-403 was `94f5f5c` after pushing the
   S-402 completion ledger. The root worktree
   contains only the intentionally untracked `A-303-progress.md`,

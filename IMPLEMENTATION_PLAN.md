@@ -695,7 +695,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### S-404 — Implement canonical JSON import/export workflows
 
-- **Status/dependencies:** `PENDING`; depends on `D-101`, `L-201`, `S-402`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `D-101`, `L-201`, `S-402`.
 - **Ownership:** import/export domain, actors and file/share adapter composition;
   no Screen 12 markup.
 - **Scope/non-goals:** complete documented JSON download/share, validate/preview,
@@ -1253,11 +1253,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
-  complete. M4 is released and S-403 is the active implementation; S-404 is
-  the next dependency-ready task after it.
-- **Reconciled branch/upstream:** `master` and `origin/master` are aligned;
-  the latest completed-task integration checkpoint is `94f5f5c` after pushing
-  the S-402 completion ledger. The root worktree
+  complete. M4 is released; S-403 and S-404 are the active parallel
+  implementations, and S-405 is next after both complete.
+- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
+  the pushed S-403 dispatch checkpoint `a306564`; the latest completed-task
+  integration checkpoint is `94f5f5c` after pushing the S-402 completion ledger.
+  The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` and `R-400-contrast-fix-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1328,8 +1329,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
-  `COMPLETE`; R-400, S-401, and S-402 are `COMPLETE`; S-403 is `IN_PROGRESS`;
-  S-404 is the next dependency-ready task.
+  `COMPLETE`; R-400, S-401, and S-402 are `COMPLETE`; S-403 and S-404 are
+  `IN_PROGRESS`; S-405 is the next dependency-ready task after both.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2617,6 +2618,21 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   concurrent convergence without timestamp winners or Screen 10A markup.
   S-403 is active; its worktree and handover are preserved until review and
   integration.
+- **S-404 implementation dispatch:** Schrodinger
+  (`01a03432-f93b-7ed3-be0c-ff5b9fbe520e`) owns the import/export domain, actor,
+  and file/share adapter composition in
+  `~/git/worktrees/did-it-become-what-you-like-s-404-import`, branch
+  `task/s-404-import`, based at `a306564`. Ownership is limited to new
+  import/export paths and focused tests; existing contracts, ports, schemas,
+  local/sync code, UI, plan, master, remotes, and unrelated source are
+  excluded. The worker must maintain UTC `S-404-progress.md` with an XState v5
+  sketch, phase checkpoints, exact commands/results, and final `READY FOR
+  INTEGRATION` or `BLOCKED`. It must implement atomic canonical JSON
+  import/export, causal merge and stable-history deduplication, generation-safe
+  replace with safety backup/recovery, configured-Drive pre-sync gating,
+  unconfigured offline replacement, share fallback, and device-local/secret
+  exclusions without Screen 12 markup. S-404 is active in parallel with S-403;
+  its worktree and handover are preserved until review and integration.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

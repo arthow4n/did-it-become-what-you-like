@@ -41,8 +41,10 @@ import {
   deleteDriveGeneration,
   finalizeDeleteEverywhere,
   persistDeleteEverywhereSnapshot,
+  persistLocalEraseSnapshot,
   publishDriveRetirement,
   recoverDeleteEverywhereSnapshot,
+  recoverLocalEraseSnapshot,
 } from "../actors/destruction.ts";
 import type { ImportEvent } from "../actors/contracts/index.ts";
 import { createImportExportAdapter } from "../adapters/import-export/index.ts";
@@ -72,6 +74,7 @@ import {
   isDestructionStorage,
   readDeleteEverywhereProgress,
   readLocalEraseGeminiKeyChoice,
+  readLocalEraseProgress,
 } from "../domain/destruction.ts";
 import { observationsFromSyncConflicts as expandSyncConflicts } from "../domain/conflict/merge.ts";
 import {
@@ -877,10 +880,21 @@ export function SyncPortabilityRuntime({
   const [exportSnapshot, sendExport] = useActor(exportMachine);
   const [safetySnapshot, sendSafetyExport] = useActor(safetyExportMachine);
   const storage = useMemo(destructionStorage, []);
+  const [localEraseRecovery] = useState(() => {
+    if (storage === undefined) return undefined;
+    try {
+      return readLocalEraseProgress(storage);
+    } catch {
+      // The local erase dialog will remain available for a fresh, explicit
+      // attempt if its redacted recovery record is corrupt or unavailable.
+      return undefined;
+    }
+  });
   const localEraseMachine = useMemo(
     () =>
       createLocalEraseMachine({
         storage,
+        now: clock.now,
         eraseLocalDataset: async () => {
           if (driveAdapter?.status() === "authorized") {
             await driveAdapter.disconnect();
@@ -896,9 +910,17 @@ export function SyncPortabilityRuntime({
       }),
     [driveAdapter, repository, secretStorage, sendSync, storage],
   );
+  const localEraseInitialSnapshot = useMemo(
+    () =>
+      localEraseRecovery === undefined
+        ? undefined
+        : recoverLocalEraseSnapshot(localEraseMachine, localEraseRecovery),
+    [localEraseMachine, localEraseRecovery],
+  );
   const [localEraseSnapshot, sendLocalErase] = useRestartableActor(
     localEraseMachine,
     0,
+    localEraseInitialSnapshot,
   );
   const [deleteEverywhereGeneration, setDeleteEverywhereGeneration] = useState(
     0,
@@ -1200,6 +1222,14 @@ export function SyncPortabilityRuntime({
       sendDeleteEverywhere({ type: "delete-everywhere.confirm" });
     }
   }, [deleteEverywhereSnapshot, sendDeleteEverywhere]);
+
+  useEffect(() => {
+    try {
+      persistLocalEraseSnapshot(localEraseSnapshot, clock.now, storage);
+    } catch {
+      onNotice("Local erase recovery could not be saved safely.");
+    }
+  }, [clock, localEraseSnapshot, onNotice, storage]);
 
   useEffect(() => {
     if (!localEraseSnapshot.matches("completed") || localEraseHandled.current) {

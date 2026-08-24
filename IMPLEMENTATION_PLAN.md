@@ -1238,10 +1238,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 ## Current Checkpoint
 
 - **Plan state:** implementation authorized; M0/M1 and the M2 contract/design-
-  system wave are complete, and `R-200` closure is `IN_PROGRESS` pending the
-  full post-fix matrix and a fresh independent closure review. The three newly
-  found severity-2 issues have scoped fixes integrated; the gate is not yet
-  approved.
+  system wave are complete, and `R-200` closure is `IN_PROGRESS` after a fresh
+  closure review returned `BLOCK` with three new severity-2 implementation
+  findings. The prior three findings are fixed and the full matrix is green;
+  the new findings now require bounded D-101/D-102 fixes.
 - **Reconciled branch/upstream:** `master` is at `0b2fd4e` and tracks
   `origin/master` at the same commit. The branch is clean and neither ahead nor
   behind its upstream (`0 0`).
@@ -1432,10 +1432,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** dispatch the fresh independent `R-200` closure reviewer
-  from clean `38fe984` in the newly prepared dedicated worktree. The complete
-  post-fix matrix is green; do not release M3 until the reviewer returns
-  APPROVE and the contracts are explicitly locked.
+- **Current task:** dispatch the disjoint D-101 and D-102 fix-2 workers from
+  clean `9020ae9`, preserve their timestamped handovers, integrate their
+  regression-tested commits, rerun the complete matrix, and obtain another
+  fresh closure review. Do not release M3 until that reviewer returns APPROVE
+  and the contracts are explicitly locked.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1568,12 +1569,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Gate status:** the three concrete severity-2 closure findings are addressed
-  by the scoped fixes below; closure remains pending until the complete matrix
-  and a fresh reviewer confirm the fixes. No owner decision is required unless
-  the fresh review identifies a product/spec contradiction. No GitHub Pages
-  workflow may be enabled or triggered because the owner has intentionally
-  disabled it until MVP completion.
+- **Gate status:** the prior three concrete severity-2 closure findings are
+  addressed by the scoped fixes below, but the fresh closure review found three
+  additional internal severity-2 findings. No owner decision is required: fix
+  only the owning scopes, rerun the complete matrix, and obtain a fresh review.
+  No GitHub Pages workflow may be enabled or triggered because the owner has
+  intentionally disabled it until MVP completion.
 - **R-200 scoped-fix dispatch plan:** the first wave
   owns disjoint preserved worktrees: D-101 owns
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain` and only
@@ -1659,9 +1660,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   direct actor-contract tests (18), adapter-contract tests (5), component
   tests (12), E2E tests (2), `deno task build`, `deno task gallery`,
   3-viewport `deno task a11y:gallery`, schema/Pages/CI/toolchain verification,
-  `deno audit --frozen`, and `git diff --check`. The next action is the fresh
-  closure review. If approved, mark R-200 complete and proceed to M3; otherwise
-  reopen only the owning scope.
+  `deno audit --frozen`, and `git diff --check`. Closure-2 then found three
+  additional S2 findings recorded below; the next action is the D-101/D-102
+  fix-2 wave, followed by another complete matrix and fresh closure review.
 - **R-200 closure review worktree:** prepared branch `review/r-200-closure`
   in `~/git/worktrees/did-it-become-what-you-like-r-200-closure`, based at
   `663a874`. The reviewer may inspect all source but may write only the
@@ -1683,6 +1684,35 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   findings, report the exact command matrix and unavailable checks, and end
   with explicit `APPROVE` or `BLOCK`. No source, plan, commit, push, or Pages
   action is allowed; preserve this worktree and progress file on interruption.
+- **R-200 closure-2 handoff:** Mendel
+  (`01a03171-c744-7c80-927a-ae03f28ebb45`) completed the independent review at
+  `~/git/worktrees/did-it-become-what-you-like-r-200-closure-2`, preserving
+  `R-200-closure-2-progress.md`. All 19 required matrix commands passed from
+  `9020ae9` (63 full tests, 2 integration, 18 actor, 5 adapter, 12 component,
+  2 E2E, builds, gallery/3-viewport a11y, validators, frozen audit, diff
+  check), Pages stayed disabled/untriggered, and Git had only the untracked
+  handover. Mendel returned `BLOCK`, S1=0/S2=3/S3=0/S4=0.
+- **R-200 closure-2 findings:** (1) D-102 project deletion defines
+  `needsSafetyExport` but allows `project-delete.type-name` and exact-name
+  confirmation without a successful required export (`src/actors/contracts/
+  deletion.ts:57-59,89-97,123-140`); (2) D-102 shaped recognized
+  `unauthorized`/`retired` errors can let conflicting untrusted `retry:
+  backoff` metadata expose retryability despite their typed non-retryable code
+  (`src/actors/contracts/types.ts:99-105`, `sync.ts:161-179`); (3) D-101
+  adjustment `lineId` validation accepts another adjustment because it checks
+  the broad receipt-line map instead of purchase lines only
+  (`src/domain/schema/dataset.ts:86-92,225-231`). These are internal fixes;
+  no product/spec decision is required.
+- **R-200 fix-2 dispatch:** D-102 owns only
+  `src/actors/contracts/deletion.ts`, `types.ts`, `sync.ts`, and focused actor
+  tests in `~/git/worktrees/did-it-become-what-you-like-r-200-d102-fix-2`,
+  branch `task/r-200-d102-fix-2`; D-101 owns only
+  `src/domain/schema/dataset.ts` and focused domain tests in
+  `~/git/worktrees/did-it-become-what-you-like-r-200-d101-fix-2`, branch
+  `task/r-200-d101-fix-2`. Their progress files are untracked operational
+  handovers, not plan substitutes; workers must not edit this plan or push
+  `master`. The integration owner will merge D-101/D-102 in disjoint scope,
+  rerun the complete gate, and preserve all worktrees.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

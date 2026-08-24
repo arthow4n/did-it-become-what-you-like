@@ -75,6 +75,7 @@ import {
   readDeleteEverywhereProgress,
   readLocalEraseGeminiKeyChoice,
   readLocalEraseProgress,
+  writeDeleteEverywhereProgress,
 } from "../domain/destruction.ts";
 import { observationsFromSyncConflicts as expandSyncConflicts } from "../domain/conflict/merge.ts";
 import {
@@ -693,18 +694,24 @@ function deleteEverywherePhaseFromValue(
       return "confirming-decline";
     case "confirming":
       return "confirming";
+    case "persistingRetirement":
     case "publishingRetirement":
       return "publishing-retirement";
+    case "persistingDriveDeletion":
     case "deletingDrive":
       return "deleting-drive";
+    case "persistingLocalErasure":
     case "erasingLocal":
       return "erasing-local";
+    case "persistingAwaitingDevices":
     case "awaitingDevices":
       return "awaiting-devices";
+    case "persistingForcedFinalization":
     case "forcedFinalization":
       return "forced-finalization";
     case "failed":
       return "failed";
+    case "persistingCompletion":
     case "completed":
       return "completed";
     default:
@@ -943,6 +950,9 @@ export function SyncPortabilityRuntime({
       createDeleteEverywhereMachine({
         createSafetyExport: async () => await repository.exportDataset(),
         saveSafetyExport: saveDestructionSafetyExport,
+        persistProgress: (progress) =>
+          writeDeleteEverywhereProgress(progress, storage),
+        now: clock.now,
         publishRetirement: async (generation) => {
           if (driveAdapter === null || driveAdapter.status() !== "authorized") {
             throw adapterError("unauthorized", "destruction.retirement");
@@ -1279,6 +1289,16 @@ export function SyncPortabilityRuntime({
       driveAdapter,
       deleteEverywhereSnapshot.context.progress,
       storage,
+      () => {
+        // The actor has already gated entry to completed, but keep this
+        // finalization boundary explicit: revocation must never follow a
+        // failed or unavailable durable-progress write.
+        persistDeleteEverywhereSnapshot(
+          deleteEverywhereSnapshot,
+          clock.now,
+          storage,
+        );
+      },
     ).then(() => {
       setDeleteEverywhereRevoking(false);
       onLocalErased?.("everywhere");

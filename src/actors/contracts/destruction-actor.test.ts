@@ -11,7 +11,9 @@ import {
 } from "../destruction.ts";
 import {
   type DestructionStorage,
+  readDeleteEverywhereProgress,
   readLocalEraseProgress,
+  writeDeleteEverywhereProgress,
 } from "../../domain/destruction.ts";
 
 declare const Deno: {
@@ -38,14 +40,19 @@ function memoryStorage(): DestructionStorage & {
 }
 
 async function settle(): Promise<void> {
-  for (let index = 0; index < 12; index += 1) await Promise.resolve();
+  for (let index = 0; index < 32; index += 1) await Promise.resolve();
 }
 
 function deleteDependencies(options: {
   readonly calls: string[];
   readonly failDelete?: () => boolean;
+  readonly persistProgress?: (
+    phase: string,
+  ) => void | Promise<void>;
 }) {
   return {
+    persistProgress: (progress: { readonly phase: string }) =>
+      options.persistProgress?.(progress.phase),
     createSafetyExport: () => {
       options.calls.push("export");
       return Promise.resolve('{"safe":true}');
@@ -149,6 +156,234 @@ Deno.test("delete-everywhere reports a failed safety export before any retiremen
   actor.stop();
 });
 
+Deno.test(
+  "delete-everywhere fails closed when progress cannot be written before each destructive phase",
+  async () => {
+    const cases = [
+      {
+        phase: "publishing-retirement",
+        callsBeforeFailure: [],
+      },
+      {
+        phase: "deleting-drive",
+        callsBeforeFailure: ["publish-retirement"],
+      },
+      {
+        phase: "erasing-local",
+        callsBeforeFailure: ["publish-retirement", "delete-drive"],
+      },
+    ] as const;
+
+    for (const current of cases) {
+      const calls: string[] = [];
+      const writes: string[] = [];
+      const actor = createActor(
+        createDeleteEverywhereMachine({
+          ...deleteDependencies({ calls }),
+          persistProgress: (progress) => {
+            writes.push(progress.phase);
+            if (progress.phase === current.phase) {
+              throw adapterError("unavailable", "destruction.storage");
+            }
+          },
+        }),
+      ).start();
+      actor.send({
+        type: "delete-everywhere.open",
+        generation: 60,
+        progress: {
+          knownDeviceCount: 1,
+          acknowledgedDeviceCount: 1,
+          forcedDeviceCount: 0,
+        },
+      });
+      actor.send({ type: "delete-everywhere.decline-safety-export" });
+      actor.send({ type: "delete-everywhere.confirm-decline" });
+      actor.send({ type: "delete-everywhere.confirm" });
+      await settle();
+
+      assert(actor.getSnapshot().matches("failed"));
+      assert(writes.includes(current.phase));
+      assert(
+        JSON.stringify(calls) === JSON.stringify(current.callsBeforeFailure),
+        `phase ${current.phase} must not run before its progress write`,
+      );
+      actor.stop();
+    }
+  },
+);
+
+Deno.test(
+  "delete-everywhere retries after a durable progress write failure without skipping the gate",
+  async () => {
+    const calls: string[] = [];
+    const writes: string[] = [];
+    let failPhase: string | undefined = "deleting-drive";
+    const actor = createActor(
+      createDeleteEverywhereMachine({
+        ...deleteDependencies({ calls }),
+        persistProgress: (progress) => {
+          writes.push(progress.phase);
+          if (progress.phase === failPhase) {
+            return Promise.reject(new Error("simulated write failure"));
+          }
+        },
+      }),
+    ).start();
+    actor.send({
+      type: "delete-everywhere.open",
+      generation: 61,
+      progress: {
+        knownDeviceCount: 1,
+        acknowledgedDeviceCount: 1,
+        forcedDeviceCount: 0,
+      },
+    });
+    actor.send({ type: "delete-everywhere.decline-safety-export" });
+    actor.send({ type: "delete-everywhere.confirm-decline" });
+    actor.send({ type: "delete-everywhere.confirm" });
+    await settle();
+    assert(actor.getSnapshot().matches("failed"));
+    assert(JSON.stringify(calls) === JSON.stringify(["publish-retirement"]));
+    assert(writes.filter((phase) => phase === "deleting-drive").length === 1);
+
+    failPhase = undefined;
+    actor.send({ type: "delete-everywhere.retry" });
+    await settle();
+    assert(actor.getSnapshot().matches("completed"));
+    assert(calls.includes("delete-drive"));
+    assert(calls.includes("erase-local"));
+    assert(writes.filter((phase) => phase === "deleting-drive").length === 2);
+    actor.stop();
+  },
+);
+
+Deno.test(
+  "delete-everywhere persists the interrupted phase and requires explicit reinitialize after restart",
+  async () => {
+    const storage = memoryStorage();
+    const firstCalls: string[] = [];
+    const pendingDelete = new Promise<void>(() => {});
+    const firstMachine = createDeleteEverywhereMachine({
+      ...deleteDependencies({ calls: firstCalls }),
+      now: () => "2026-08-24T22:30:00.000Z",
+      persistProgress: (progress) =>
+        writeDeleteEverywhereProgress(progress, storage),
+      deleteDriveGeneration: () => {
+        firstCalls.push("delete-drive");
+        return pendingDelete;
+      },
+    });
+    const first = createActor(firstMachine).start();
+    first.send({
+      type: "delete-everywhere.open",
+      generation: 62,
+      progress: {
+        knownDeviceCount: 1,
+        acknowledgedDeviceCount: 1,
+        forcedDeviceCount: 0,
+      },
+    });
+    first.send({ type: "delete-everywhere.decline-safety-export" });
+    first.send({ type: "delete-everywhere.confirm-decline" });
+    first.send({ type: "delete-everywhere.confirm" });
+    await settle();
+    const saved = readDeleteEverywhereProgress(storage);
+    assert(saved?.phase === "deleting-drive");
+    assert(firstCalls.includes("publish-retirement"));
+    assert(firstCalls.includes("delete-drive"));
+    first.stop();
+
+    const restartCalls: string[] = [];
+    const restartedMachine = createDeleteEverywhereMachine({
+      ...deleteDependencies({ calls: restartCalls }),
+      now: () => "2026-08-24T22:31:00.000Z",
+      persistProgress: (progress) =>
+        writeDeleteEverywhereProgress(progress, storage),
+    });
+    const recovered = recoverDeleteEverywhereSnapshot(restartedMachine, saved!);
+    const restarted = createActor(restartedMachine, { snapshot: recovered })
+      .start();
+    await settle();
+    assert(restarted.getSnapshot().matches("idle"));
+    assert(restartCalls.length === 0);
+
+    restarted.send({
+      type: "delete-everywhere.open",
+      generation: saved!.generation,
+      progress: {
+        knownDeviceCount: saved!.knownDeviceCount,
+        acknowledgedDeviceCount: saved!.acknowledgedDeviceCount,
+        forcedDeviceCount: saved!.forcedDeviceCount,
+      },
+    });
+    restarted.send({ type: "delete-everywhere.decline-safety-export" });
+    restarted.send({ type: "delete-everywhere.confirm-decline" });
+    restarted.send({ type: "delete-everywhere.confirm" });
+    await settle();
+    assert(restarted.getSnapshot().matches("completed"));
+    assert(
+      JSON.stringify(restartCalls) ===
+        JSON.stringify(["publish-retirement", "delete-drive", "erase-local"]),
+    );
+    restarted.stop();
+  },
+);
+
+Deno.test(
+  "delete-everywhere fails closed before forced finalization when its progress write fails",
+  async () => {
+    const calls: string[] = [];
+    let failForcedFinalization = true;
+    const writes: string[] = [];
+    const actor = createActor(
+      createDeleteEverywhereMachine({
+        ...deleteDependencies({ calls }),
+        persistProgress: (progress) => {
+          writes.push(progress.phase);
+          if (
+            progress.phase === "forced-finalization" && failForcedFinalization
+          ) {
+            throw adapterError("unavailable", "destruction.storage");
+          }
+        },
+      }),
+    ).start();
+    actor.send({
+      type: "delete-everywhere.open",
+      generation: 63,
+      progress: {
+        knownDeviceCount: 2,
+        acknowledgedDeviceCount: 1,
+        forcedDeviceCount: 0,
+      },
+    });
+    actor.send({ type: "delete-everywhere.decline-safety-export" });
+    actor.send({ type: "delete-everywhere.confirm-decline" });
+    actor.send({ type: "delete-everywhere.confirm" });
+    await settle();
+    assert(actor.getSnapshot().matches("awaitingDevices"));
+
+    actor.send({ type: "delete-everywhere.force-finalize" });
+    await settle();
+    assert(actor.getSnapshot().matches("failed"));
+    assert(writes.includes("forced-finalization"));
+    assert(!actor.getSnapshot().matches("forcedFinalization"));
+
+    failForcedFinalization = false;
+    actor.send({ type: "delete-everywhere.retry" });
+    await settle();
+    assert(actor.getSnapshot().matches("awaitingDevices"));
+    actor.send({ type: "delete-everywhere.force-finalize" });
+    await settle();
+    assert(actor.getSnapshot().matches("forcedFinalization"));
+    actor.send({ type: "delete-everywhere.confirm" });
+    await settle();
+    assert(actor.getSnapshot().matches("completed"));
+    actor.stop();
+  },
+);
+
 Deno.test("delete-everywhere actor keeps failed Drive deletion retryable without erasing local data", async () => {
   const calls: string[] = [];
   let fail = true;
@@ -208,7 +443,9 @@ Deno.test("delete-everywhere actor tracks multiple acknowledgements and forced f
   assert(saved.includes('"phase":"awaiting-devices"'));
   assert(!saved.includes("expense"));
   actor.send({ type: "delete-everywhere.device-ack", count: 2 });
+  await settle();
   actor.send({ type: "delete-everywhere.force-finalize" });
+  await settle();
   assert(actor.getSnapshot().matches("forcedFinalization"));
   actor.send({ type: "delete-everywhere.confirm" });
   await settle();
@@ -494,3 +731,36 @@ Deno.test("delete-everywhere revokes authorization only after acknowledgements o
     ),
   );
 });
+
+Deno.test(
+  "delete-everywhere finalization does not revoke when its final progress write fails",
+  async () => {
+    const storage = memoryStorage();
+    let revoked = false;
+    let failed = false;
+    try {
+      await finalizeDeleteEverywhere(
+        {
+          disconnect: () => {
+            revoked = true;
+            return Promise.resolve();
+          },
+        },
+        {
+          knownDeviceCount: 1,
+          acknowledgedDeviceCount: 1,
+          forcedDeviceCount: 0,
+        },
+        storage,
+        () => {
+          throw adapterError("unavailable", "destruction.storage");
+        },
+      );
+    } catch {
+      failed = true;
+    }
+    assert(failed);
+    assert(!revoked, "revocation must follow a durable progress write");
+    assert(storage.values.size === 0);
+  },
+);

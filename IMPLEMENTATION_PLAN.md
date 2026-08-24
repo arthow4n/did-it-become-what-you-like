@@ -602,8 +602,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 #### A-303 — Deliver Scan, Receipt Review, and Gemini Settings UI
 
 - **Status/dependencies:** `IN_PROGRESS`; depends on `A-302`, `L-205`, `U-104`.
-- **Ownership:** Screens 4, 5, and 11 plus their feature composition; no adapter
-  internals or schema changes.
+- **Ownership:** Screens 4, 5, and 11 plus their feature composition and the
+  small approved receipt/Gemini domain composites required by the existing
+  design-system map; no adapter internals or schema changes.
 - **Scope/non-goals:** native Take photo/Choose image, preview/use/retake/remove,
   visible disclosure, options, inline key setup, scanning/failure states,
   editable review with uncertainty/mismatch, model type-ahead/compatibility,
@@ -2153,6 +2154,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   timestamped `A-303-progress.md`, leave this plan and `master` untouched, not
   push or enable Pages, and return exact validation plus READY FOR INTEGRATION
   or BLOCK. R-400 remains gated.
+- **A-303 startup recovery:** Hilbert remained silent after repeated bounded
+  waits and one status request, created no progress handover, and made no
+  source changes. The exact worktree
+  `~/git/worktrees/did-it-become-what-you-like-a-303-receipt-ui` stayed clean
+  at `c558dfc`; Hilbert was shut down and the worktree is preserved for
+  reassignment. A fresh read-only advisor, Euler
+  (`01a032d5-96c5-7311-a842-97bb07d64c6a`), assessed the stall and returned
+  `ADVISE`: the approved scope is clear, no human product decision is needed,
+  and the exact clean worktree should be reassigned after clarifying the
+  runtime composition/settings seam. The advisor handover is preserved in
+  `~/git/worktrees/did-it-become-what-you-like-a-303-advisor/A-303-advisor-progress.md`.
+  The reassigned worker must compose the existing A-302 scan/review machines
+  through `LocalUiRuntime`, inject the published A-301 ports, use the Gemini
+  localStorage secret boundary for keys, and give non-secret model/preparation
+  preferences one explicit device-local settings owner. A new public schema or
+  port contract requires orchestrator escalation; no worker may invent one.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

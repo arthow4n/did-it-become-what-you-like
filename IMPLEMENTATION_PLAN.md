@@ -2335,6 +2335,29 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   source or plan changes and must maintain only the timestamped untracked
   `R-400-closure-3-progress.md` handover, ending with explicit `APPROVE` or
   `BLOCK`. R-400 remains gated until this review result is recorded.
+- **R-400 closure-3 result:** Ohm’s fresh review was interrupted while its
+  native browser command became unresponsive after the
+  `2026-08-24T11:15:21Z` progress checkpoint; the exact temporary Vite and
+  agent-browser processes were gracefully stopped and the reviewer was shut
+  down, with its untracked handover preserved. The handover records the full
+  `deno task verify` and receipt E2E as passing, 320px disclosure/scan and
+  390px scan axe checks passing, native file-input removal cleanup passing,
+  and the compact scroll fix clearing the model-trigger/sticky-action overlap
+  (`y=543.5..591.5` versus `y=771..844`). It independently reproduces one
+  incomplete serious-impact 390px quick-setup color-contrast diagnostic,
+  with provisional severity counts `S1=0, S2=0, S3=1, S4=0`. Because the
+  native run did not reach its final footer or complete 1280px/dialog checks,
+  the orchestrator disposition is `BLOCK`, not approval; R-400 remains
+  blocked on a narrow contrast diagnosis/fix and a complete fresh recheck.
+- **R-400 contrast diagnosis boundary:** because the same S3 survived the
+  first compact fix and was independently reproduced, the orchestrator will
+  first obtain one read-only advisor diagnosis of the warning-surface
+  composition. The follow-up implementation, if required, is limited to the
+  quick-setup warning surface and its focused component/native evidence in
+  `src/features/local-ui.css`, `src/features/receipt-ui.tsx`, and the
+  corresponding focused tests; it must not alter data, adapter, actor,
+  portable schema, model-selection, sticky-layout, Pages, or deferred-memory
+  behavior.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

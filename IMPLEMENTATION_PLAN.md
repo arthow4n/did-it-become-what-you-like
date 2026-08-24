@@ -658,7 +658,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### S-402 — Implement synchronization actor, causal transport, and device registry
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `S-401`, `L-201`, `D-102`.
+- **Status/dependencies:** `COMPLETE`; depends on `S-401`, `L-201`, `D-102`.
 - **Ownership:** sync/device actors and causal transport coordinator; no conflict
   or settings screen markup.
 - **Scope/non-goals:** local-first dirty state, explicit/connect/reconnect sync,
@@ -1252,11 +1252,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 ## Current Checkpoint
 
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
-  system wave, `R-200`, M3/R-300, A-302, A-303, R-400, and S-401 are complete.
-  M4 is released and S-402 is the next dependency-ready implementation.
-- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `0d9f647` after pushing the S-402 startup-recovery checkpoint. The root
-  worktree
+  system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
+  complete. M4 is released and S-403 is the next dependency-ready
+  implementation.
+- **Reconciled branch/upstream:** the integrated root is at `95ac376` and
+  `origin/master` remains at `abb5be0` until this ledger update is pushed. The
+  root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` and `R-400-contrast-fix-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1283,12 +1284,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   (`Implement A-303 receipt and Gemini UI`) and its isolated A-301 canvas
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
   browser build`). The latest integrated implementation is `1d3afce`
-  (`Implement S-401 Drive adapter`); the latest pushed orchestration checkpoint
-  before this ledger update is `0d9f647`.
+  (`Implement S-401 Drive adapter`); S-402 integration is `95ac376`
+  (`Implement S-402 synchronization actor and transport`); the latest pushed
+  orchestration checkpoint before this ledger update is `abb5be0`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
-  integration evidence are present on `master`; R-400 and S-401 are complete as
-  recorded below.
+  integration evidence are present on `master`; R-400, S-401, and S-402 are
+  complete as recorded below.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
@@ -1313,10 +1315,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   inspection passed at 320x568, 390x844, and 1280x800; the compact fix recorded
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
-  remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `0d9f647`; the root worktree contains only the intentionally untracked
-  A-303, R-300, and R-400 contrast-fix handovers. Preserved worktrees are
-  listed below.
+  remains 37 with no duplicate IDs; the integrated root is `95ac376` and
+  `origin/master` is still `abb5be0` until this ledger update is pushed; the
+  root worktree contains only the intentionally untracked A-303, R-300, and
+  R-400 contrast-fix handovers. Preserved worktrees are listed below.
 - **R-400 completion evidence:** closure-6 independently approved the final
   native 1280x800 matrix after closure-5’s partial 320/390 review; the exact
   handover, counts, geometry, focus, cleanup, and unavailable-service boundary
@@ -1326,8 +1328,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
-  `COMPLETE`; R-400 and S-401 are `COMPLETE`; S-402 is `IN_PROGRESS` as the
-  active dependency-ready task.
+  `COMPLETE`; R-400, S-401, and S-402 are `COMPLETE`; S-403 is the next
+  dependency-ready task.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2558,8 +2560,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   deterministic clocks/IDs, pull-before-push causal exchange, safe retry and
   cancellation, opaque-ID-free ordinary projections, and retirement/account
   boundaries without changing conflict resolution or choosing wall-clock
-  winners. S-402 is active; the worktree and handover are preserved until
-  review and integration.
+  winners. S-402 was active under this dispatch; its worktree and handovers
+  remain preserved after integration.
 - **S-402 startup interruption and replacement:** James was shut down after
   the UTC recovery checkpoint window at `2026-08-24T13:27:08Z`. It had
   written a startup handover and two partial adapter files in the root
@@ -2570,9 +2572,35 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `S-402-james-progress.md`, preserving the original content, and restored
   root to its intentional-untracked state. Sagan
   (`01a033f4-76cb-77a2-94c2-eb2399d1bae6`) owns the same bounded task and
-  recorded its paused handover at `2026-08-24T13:28:41Z`; it is to audit the
-  relocated artifacts before continuing. This is an operational recovery,
-  not evidence of a product blocker; S-402 remains `IN_PROGRESS`.
+  recorded its paused handover at `2026-08-24T13:28:41Z`; it audited the
+  relocated artifacts before continuing. This was an operational recovery,
+  not evidence of a product blocker; S-402 later completed through the
+  replacement worker below.
+- **S-402 integration result:** Sagan completed the recovered bounded task in
+  `~/git/worktrees/did-it-become-what-you-like-s-402-sync` with final
+  `S-402-progress.md` handover at `2026-08-24T14:01:45Z`, explicitly `READY FOR
+  INTEGRATION`. The orchestrator preserved the interrupted James handover as
+  `S-402-james-progress.md`, inspected the replacement diff, and committed
+  source/test files as worker commit `f713f78`, cherry-picked into root as
+  `95ac376` (`Implement S-402 synchronization actor and transport`). The
+  integrated files are limited to `src/actors/sync/**` and
+  `src/adapters/sync/**`: a modern XState v5 sync actor with hydration,
+  configure/connect/reconnect/retry/offline/account-switch/retirement modes,
+  coalesced triggers, causal pull-before-push coordination, deterministic
+  causal merge and in-memory/Drive boundaries, persisted known-device registry
+  with opaque-ID-free ordinary projections, and focused actor/device/schedule
+  tests. No public contracts, domain schemas, local adapter, UI, or conflict
+  workflow were changed. Worker validation passed `deno task fmt:check` (155
+  files), `deno task lint` (143 files), `deno task check`, direct actor 5/5,
+  schedule 5/5, registry 2/2, `deno task build`, `deno task verify` (137
+  repository, 20 integration, 35 component, 29 domain, 1 actor, local E2E
+  2/2, gallery/browser/Pages/CI/toolchain, builds, audit, and diff check), and
+  the locked aliases with 0 S-402 selections because their paths exclude the
+  new directories. Root rerun after cherry-pick passed the same fmt/lint/check,
+  direct 5/5/2 focused suites, aliases 0 selected/137 and 20 filtered, build,
+  full verify, and diff checks. Only the existing Vite chunk-size warning
+  remains; no live Drive or credentials were used. S-402 is complete, its
+  worktree and both timestamped handovers remain preserved, and S-403 is next.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

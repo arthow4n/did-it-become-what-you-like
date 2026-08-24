@@ -1254,7 +1254,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
 - **Reconciled branch/upstream:** `master` and `origin/master` are both at
-  `b504f5f` (`0 0`), pushed after the bounded R-300 fix wave. The root worktree
+  `8acd9f2` (`0 0`), pushed after the bounded R-300 fix-wave ledger update. The root worktree
   is clean except for the intentionally untracked R-300 review handover.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).

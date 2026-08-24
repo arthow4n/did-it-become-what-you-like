@@ -1248,9 +1248,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `4cfb4cc` and is one commit
-  ahead of `origin/master` until this checkpoint is committed and pushed. The
-  root worktree is clean before this intended ledger edit.
+- **Reconciled branch/upstream:** `master` is at `c8926f0` and tracks
+  `origin/master` at the same commit (`0 0`). The root worktree is clean before
+  this intended ledger edit.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1262,7 +1262,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   repository`), A-301 adapter implementation `3d0b54a` (`Implement image
   preparation and Gemini adapter`), contract follow-up `dc306bb` (`Preserve
   receipt metadata in Gemini drafts`), the pushed A-301 ledger checkpoints,
-  and `4cfb4cc` are present on `master`; the deferred-only SPEC note is
+  and `c8926f0` are present on `master`; the deferred-only SPEC note is
   `c390656`. This ledger update is the only intended uncommitted change.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `A-301`, and `R-200`. Their required source, tests, and
@@ -1284,7 +1284,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   follow-up passed the root matrix, and the root canonical task includes
   `src/adapters/gemini`; the exact `A-301` filter is the authoritative focused
   command. The implementation plan task-heading count remains 37 with no
-  duplicate IDs; `master` and its upstream are aligned at `38c054f`; the
+  duplicate IDs; `master` and its upstream are aligned at `c8926f0`; the
   root worktree has only this intended ledger edit. Preserved worktrees are
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,

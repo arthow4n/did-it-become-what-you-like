@@ -453,7 +453,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### L-202 — Implement project and category actors/domain operations
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `L-201`, `D-102`.
+- **Status/dependencies:** `COMPLETE`; depends on `L-201`, `D-102`.
 - **Ownership:** project/category domain services, actors, selectors; no screens
   except headless actor fixtures. A bounded internal-contract follow-up may add
   the missing project reorder command to `src/actors/contracts/types.ts` and
@@ -1248,9 +1248,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `50fa50d` and tracks
-  `origin/master` at the same commit (`0 0`). The root worktree is clean before
-  this intended ledger edit.
+- **Reconciled branch/upstream:** `master` is at `afb7cc4` and is one commit
+  ahead of `origin/master` until this checkpoint is committed and pushed. The
+  root worktree is clean before this intended ledger edit.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1262,10 +1262,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   repository`), A-301 adapter implementation `3d0b54a` (`Implement image
   preparation and Gemini adapter`), contract follow-up `dc306bb` (`Preserve
   receipt metadata in Gemini drafts`), the pushed A-301 ledger checkpoints,
-  and `50fa50d` are present on `master`; the deferred-only SPEC note is
+  and `afb7cc4` are present on `master`; the deferred-only SPEC note is
   `c390656`. This ledger update is the only intended uncommitted change.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
-  `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-203`, `A-301`, and `R-200`. Their required source, tests, and
+  `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `A-301`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
@@ -1284,13 +1284,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   follow-up passed the root matrix, and the root canonical task includes
   `src/adapters/gemini`; the exact `A-301` filter is the authoritative focused
   command. The implementation plan task-heading count remains 37 with no
-  duplicate IDs; `master` and its upstream are aligned at `50fa50d`; the
+  duplicate IDs; `master` and its upstream were last aligned at `50fa50d`; the
   root worktree has only this intended ledger edit. Preserved worktrees are
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
-  `D-103`, `U-104`, `R-200`, `L-201`, `L-203`, and `A-301` are `COMPLETE`;
-  `L-202` is `IN_PROGRESS` and ready to resume after the bounded reorder
-  command contract was added.
+  `D-103`, `U-104`, `R-200`, `L-201`, `L-203`, `A-301`, and `L-202` are
+  `COMPLETE`; the next dependency-ready implementation task is `L-204`.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1848,6 +1847,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   strict check, and `actor-contract` tests (20 passed) all passed before push.
   No approved user requirement changes; no populated-project deletion, screen,
   or external integration scope is added.
+- **L-202 completion/integration:** Fermat completed the scoped project/category
+  implementation in `~/git/worktrees/did-it-become-what-you-like-l-202-project-category`
+  with untracked `L-202-progress.md` preserved as the operational handover.
+  The worker commit `b7dcecf` was inspected and cherry-picked as `afb7cc4`; the
+  worker did not edit the plan or push. Root validation passed `deno task
+  fmt:check` (125 files), `deno task lint` (114 files), `deno task check`,
+  direct organization tests (8), direct actor tests (5),
+  `deno task test:integration --filter organize` (3), `deno task test` (110),
+  `deno task test:integration` (16), `deno task build`, `deno audit --frozen`,
+  and `git diff --check`. The prior reorder-contract mismatch was resolved by
+  `fca4ab7` and covered by the actor tests. L-202 is complete; its worktree
+  remains preserved and the worker is shut down.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

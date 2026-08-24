@@ -540,9 +540,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-300 — Local vertical-slice independent review gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `L-205`; the prior
-  substantiated findings were fixed and integrated, and a fresh independent
-  closure review is required before this gate can become `COMPLETE`.
+- **Status/dependencies:** `BLOCKED`; depends on `L-205`; the prior fix wave
+  was re-reviewed from `c97b222`, but the fresh closure audit confirmed
+  remaining severity-2 gaps in custom periods and saved-record Undo.
 - **Ownership:** review read-only first; fixes remain scoped to M3 owners.
 - **Scope/non-goals:** review financial correctness, local durability, XState/UI
   separation, responsive/accessibility fidelity, design-system reuse, and all
@@ -1302,9 +1302,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
-  `A-301` are `COMPLETE`; the bounded L-204/L-205/U-104 R-300 fix wave and
-  aggregate verification correction are `COMPLETE`; `R-300` is `IN_PROGRESS`
-  pending fresh independent closure review.
+  `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
+  and aggregate verification correction are `COMPLETE`; the follow-up
+  custom-period/saved-Undo fix wave is `IN_PROGRESS` under blocked `R-300`.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1972,10 +1972,29 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   production build, frozen audit, and diff checks. The new aggregate task was
   added in `179260b` and its checkpoint reconciled in `ab63b36`.
 - **R-300 closure state after fix wave:** the prior Turing handoff remains
-  preserved as historical evidence; it is not approval. R-300 is reopened as
-  `IN_PROGRESS` and requires one fresh read-only independent reviewer from
-  pushed `b504f5f`, with a new timestamped handover and explicit APPROVE/BLOCK
-  result, before any downstream M4 task is dispatched.
+  preserved as historical evidence; it is not approval. The gate was reopened
+  for a fresh read-only review from pushed `c97b222`, which confirmed remaining
+  S2 gaps and was interrupted before a final result. R-300 therefore remains
+  `BLOCKED` until the follow-up wave and a subsequent fresh APPROVE/BLOCK
+  handoff complete; no downstream M4 task may be dispatched yet.
+- **R-300 fresh-review recovery:** Mencius
+  (`01a03269-d56d-7b02-83af-b7d8ebb5bd94`) began a fresh read-only closure
+  review from pushed `c97b222` and appended timestamped progress to
+  `~/git/did-it-become-what-you-like/R-300-progress.md`. Its aggregate
+  `deno task verify` passed, and its source audit confirmed that custom period
+  still maps to an undefined date filter and that the UI does not expose the
+  actor's existing saved-record Undo path. After repeated bounded waits and an
+  interrupt request, the reviewer was shut down before a final handoff; this
+  is preserved as partial evidence, not approval. The gate remains blocked.
+- **R-300 follow-up fix wave:** the integration owner will dispatch two
+  dependency-ordered bounded slices before another fresh review. U-104 owns
+  only the shared PeriodPicker API/semantics and component tests; after that
+  handoff, L-205 owns the local query/UI wiring, custom-period interaction
+  coverage, saved-record Undo presentation/wiring through the existing typed
+  manual-expense actor states, and the final local-screen evidence. No worker
+  may edit this plan, push `master`, broaden into external sync/Gemini/Drive,
+  or change user-facing requirements. The next closure reviewer must inspect
+  both the completed wave and the preserved partial Mencius handover.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

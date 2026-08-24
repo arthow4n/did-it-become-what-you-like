@@ -679,7 +679,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### S-403 — Implement conflict detection and resolution workflow
 
-- **Status/dependencies:** `PENDING`; depends on `S-402`, `D-102`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `S-402`, `D-102`.
 - **Ownership:** conflict domain/actor and projections; no Screen 10A markup.
 - **Scope/non-goals:** group conflicts by record/receipt, field candidate values
   with device/timestamp context, neutral choice/custom value, delete-versus-edit,
@@ -1253,8 +1253,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
-  complete. M4 is released and S-403 is the next dependency-ready
-  implementation.
+  complete. M4 is released and S-403 is the active implementation; S-404 is
+  the next dependency-ready task after it.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned;
   the latest completed-task integration checkpoint is `94f5f5c` after pushing
   the S-402 completion ledger. The root worktree
@@ -1328,8 +1328,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
-  `COMPLETE`; R-400, S-401, and S-402 are `COMPLETE`; S-403 is the next
-  dependency-ready task.
+  `COMPLETE`; R-400, S-401, and S-402 are `COMPLETE`; S-403 is `IN_PROGRESS`;
+  S-404 is the next dependency-ready task.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2601,6 +2601,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   full verify, and diff checks. Only the existing Vite chunk-size warning
   remains; no live Drive or credentials were used. S-402 is complete, its
   worktree and both timestamped handovers remain preserved, and S-403 is next.
+- **S-403 implementation dispatch:** Maxwell
+  (`01a03419-ba5c-7b63-bd02-736a2c7aca8c`) owns the conflict-domain/actor and
+  projection implementation in
+  `~/git/worktrees/did-it-become-what-you-like-s-403-conflict`, branch
+  `task/s-403-conflict`, based at `d99057d`. Ownership is limited to new
+  `src/domain/conflict/**`, `src/actors/conflict/**`, and focused tests/support
+  in those directories; existing actor contracts, public ports, domain
+  schemas, local/sync adapters, UI, plan, master, remotes, and unrelated
+  source are excluded. The worker must maintain UTC `S-403-progress.md` with
+  an XState v5 sketch, phase checkpoints, exact commands/results, and a final
+  `READY FOR INTEGRATION` or `BLOCKED`. It must preserve neutral candidates,
+  delete-versus-edit choices, offline local resolution, durable unresolved
+  progress, parent-referencing resolution revisions, and deterministic
+  concurrent convergence without timestamp winners or Screen 10A markup.
+  S-403 is active; its worktree and handover are preserved until review and
+  integration.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

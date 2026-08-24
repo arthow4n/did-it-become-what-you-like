@@ -828,9 +828,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-600 — Destructive/PWA independent review gate
 
-- **Status/dependencies:** `BLOCKED`; depends on `P-503`, `R-500`; blocked by
-  three severity-2 findings from the independent review and awaiting a bounded
-  fix wave before closure.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `P-503`, `R-500`; the
+  bounded fix wave is integrated and a fresh independent closure review is
+  required before completion.
 - **Ownership:** read-only review first; scoped fixes by M6 owners.
 - **Scope/non-goals:** review destructive truthfulness and ordering, data leakage,
   reload recovery, offline/update/install correctness, settings/disclosures,
@@ -1262,7 +1262,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; and R-600 is the
-  blocked M6 review gate awaiting its bounded fix wave.
+  active M6 closure review gate after its bounded fix wave.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
   the current pushed plan checkpoint, whose X-502 source/ledger predecessor is
   `3a43b04`, with integrated source commit `df21669` and the intentionally
@@ -1351,9 +1351,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501, X-502, and P-503 are `COMPLETE`; R-600 is `BLOCKED` by three
-  severity-2 findings and its bounded fix wave is next; and no task is
-  interrupted.
+  X-501, X-502, and P-503 are `COMPLETE`; R-600 is the active M6 closure
+  review gate after its bounded fix wave; and no task is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -3142,6 +3141,29 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   integrate in that order, run focused and full validation, then request a
   fresh independent R-600 closure review. No worker may edit this plan,
   master, remotes, or another fix scope.
+- **R-600 bounded fix wave completed:** The three bounded fix workers completed
+  locally and root integrated them without changing the approved spec:
+  `3725a81` (Plato, P-503 native-install/update label distinction, integrated
+  by `7f67100`), `20e3d67` (Confucius, first-use restore routing and manual/
+  receipt dirty-navigation guard, integrated by `20fa5d4`), and `f4e4e95`
+  (Aquinas, redacted durable local-erase phase recovery and crash-window
+  integration coverage, integrated by `c68f0a1`). Preserved UTC handovers are
+  at `~/git/worktrees/did-it-become-what-you-like-r-600-fix-pwa-label`,
+  `~/git/worktrees/did-it-become-what-you-like-r-600-fix-local-ui`, and
+  `~/git/worktrees/did-it-become-what-you-like-r-600-fix-local-erase`.
+  Focused restore/dirty-navigation, local-erase recovery, destructive,
+  settings-final, and offline-update tests passed. Fresh aggregate validation
+  passed: 243 unit, 72 integration, 80 component, 37 domain, 1 actor, local
+  E2E 4/4, dedicated offline-update E2E 1/1, all formatting/lint/check/build,
+  gallery/browser/Pages/CI/toolchain checks, frozen audit, and diff check.
+- **R-600 closure-2 dispatch preparation:** Because the first reviewer found
+  and blocked on the three findings, the next gate must be a fresh independent
+  read-only review from the pushed checkpoint containing `c68f0a1` and this
+  fix-wave ledger. It must specifically reproduce the former first-use
+  restore, dirty-navigation, and local-erase crash-window paths before
+  approving. The root will preserve the original BLOCK handover and review
+  worktree and dispatch a new review worktree/branch; no closure approval is
+  inferred from the fix workers' own tests.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

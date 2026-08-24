@@ -1252,11 +1252,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 ## Current Checkpoint
 
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
-  system wave, `R-200`, M3/R-300, and A-302 are complete. A-303 is integrated
-  and R-400 is the active independent review gate.
-- **Reconciled branch/upstream:** `master` and `origin/master` are both at
-  `12fd97f` (`0 0`), pushed after integrating the bounded R-400 fix wave. The
-  root worktree
+  system wave, `R-200`, M3/R-300, and A-302 are complete. A-303 is integrated,
+  the bounded R-400 compact-layout fix is integrated, and R-400 is the active
+  independent closure gate.
+- **Reconciled branch/upstream:** `master` is at `ba63635` and
+  `origin/master` is at `9543bbe` (`0 1`) immediately before this checkpoint
+  push; `ba63635` is the integrated compact-layout source commit being pushed
+  with this ledger update. The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1282,8 +1284,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the deferred-only SPEC note is `c390656`; A-303 UI integration is `a90504d`
   (`Implement A-303 receipt and Gemini UI`) and its isolated A-301 canvas
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
-  browser build`). The latest pushed implementation is `12fd97f`; the latest
-  pushed orchestration checkpoint before this ledger update is `b9224fd`.
+  browser build`). The latest integrated implementation is `ba63635`; the
+  latest pushed orchestration checkpoint before this ledger update is
+  `9543bbe`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1301,18 +1304,17 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
   is recorded below. R-300 and A-302 are complete. Root `deno task verify`
-  passed on the integrated A-303 source: 137 repository tests, 20 integration,
-  32 component, 29 domain, 1 actor, local E2E 2/2, gallery/browser/axe,
+  passed on the integrated compact-layout source: 137 repository tests, 20 integration,
+  35 component, 29 domain, 1 actor, local E2E 2/2, gallery/browser/axe,
   Pages/CI/toolchain validators, both production builds, frozen audit, and
-  `git diff --check`. A-303 focused validation also passed
+  `git diff --check`. A-303 and compact-layout focused validation also passed
   `deno task fmt:check` (142 files), `deno task lint` (130 files),
   `deno task check`, `deno task test:component --filter receipt-ui` (4),
   `deno task test:e2e --grep receipt-review` (1), and build. Native receipt
-  inspection passed at 320x568, 390x844, and 1280x800; the 390px run recorded
-  one low-severity incomplete compact-navigation contrast diagnostic while
-  visual text remained readable. The implementation plan task-heading count
-  remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `12fd97f`; the root worktree contains only the intentionally untracked
+  inspection passed at 320x568, 390x844, and 1280x800; the compact fix recorded
+  zero axe violations/incomplete results and placed the model trigger above
+  the sticky action at 390px. The implementation plan task-heading count
+  remains 37 with no duplicate IDs; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
@@ -2306,6 +2308,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `master` untouched, and return exact native/automated validation plus
   `READY FOR INTEGRATION` or `BLOCK`. R-400 remains blocked until this fix is
   integrated and receives a fresh closure recheck.
+- **R-400 compact-layout fix integration:** Bernoulli completed the bounded
+  responsive fix in `~/git/worktrees/did-it-become-what-you-like-r-400-compact-fix`
+  with final `R-400-compact-fix-progress.md` handover at
+  `2026-08-24T10:58:22Z`, explicitly `READY FOR INTEGRATION`. The worker
+  commit `268131f` was inspected and cherry-picked as root `ba63635`
+  (`Fix compact receipt scan layout`), changing only
+  `src/features/receipt-ui.tsx` and `src/features/local-ui.css`. It wraps the
+  compact options surface for immediate mobile scroll positioning and
+  isolates the quick-setup warning background so the 390px model control is
+  above the sticky action and the warning receives a deterministic contrast
+  surface. The handover records `deno task verify`, focused component 7/7,
+  receipt E2E 1/1, build, and native 320x568/390x844/1280x800 checks with
+  zero axe violations/incomplete results and no horizontal overflow. The
+  worker and worktree are preserved, the agent is closed, and the source
+  commit is being pushed with this checkpoint. R-400 remains `IN_PROGRESS`
+  pending a fresh independent closure recheck.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

@@ -828,9 +828,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-600 — Destructive/PWA independent review gate
 
-- **Status/dependencies:** `BLOCKED`; depends on `P-503`, `R-500`; fresh
-  closure-2 review found three severity-2 blockers and one unresolved
-  severity-3 observation awaiting a second bounded fix wave.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `P-503`, `R-500`; the
+  second bounded fix wave is integrated and a fresh independent closure review
+  is required before completion.
 - **Ownership:** read-only review first; scoped fixes by M6 owners.
 - **Scope/non-goals:** review destructive truthfulness and ordering, data leakage,
   reload recovery, offline/update/install correctness, settings/disclosures,
@@ -1262,7 +1262,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; and R-600 is the
-  blocked M6 closure review gate awaiting its second bounded fix wave.
+  active M6 closure review gate after its second bounded fix wave.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
   the current pushed plan checkpoint, whose X-502 source/ledger predecessor is
   `3a43b04`, with integrated source commit `df21669` and the intentionally
@@ -1351,9 +1351,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501, X-502, and P-503 are `COMPLETE`; R-600 is `BLOCKED` by three new
-  severity-2 findings and one severity-3 observation; and no task is
-  interrupted.
+  X-501, X-502, and P-503 are `COMPLETE`; R-600 is the active M6 closure
+  review gate after its second bounded fix wave; and no task is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -3196,6 +3195,28 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   them, rerun aggregate and dedicated browser validation, and request another
   fresh independent R-600 closure review. No worker may edit this plan,
   master, remotes, or another fix scope.
+- **R-600 second bounded fix wave completed:** The three closure-2 findings
+  were implemented and integrated without changing approved requirements:
+  `2a59d41` (Nietzsche, dark manifest metadata, integrated by `3b0dc9c`),
+  `32a87da` (Mill, actor-owned fail-closed Delete Everywhere persistence,
+  integrated by `060fcc3`), and `1d6924a` (Carson, Back/Forward and Preferences
+  dirty-navigation reconciliation, integrated by `d2f5a0f`). Preserved UTC
+  handovers remain in their respective fix worktrees. Focused destructive
+  persistence, Preferences, local UI, settings-final, and dedicated journeys
+  passed; aggregate verification passed with `249` unit, `72` integration,
+  `81` component, `37` domain, `1` actor, and local E2E `4/4`. Dedicated
+  `offline-update` E2E passed `1/1`; dedicated dirty-history/Preferences E2E
+  passed `2/2`; formatting, lint, check, both builds, Pages/CI/toolchain,
+  browser/gallery, frozen audit, and diff checks passed.
+- **R-600 closure-3 dispatch preparation:** The second fix wave is complete,
+  but no closure approval is inferred from its worker tests. The root will
+  dispatch a fresh independent read-only review from the next pushed
+  checkpoint, preserving both prior BLOCK handovers and all fix worktrees.
+  Closure-3 must reproduce the three closure-2 findings as fixed, verify the
+  fail-closed Delete Everywhere storage boundary and Preferences/history dirty
+  paths in production/browser evidence, and confirm the dark manifest colors,
+  then rerun the R-600 scope. No review worker may edit source, this plan,
+  master, remotes, or another worktree.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

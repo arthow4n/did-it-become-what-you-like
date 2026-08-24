@@ -47,6 +47,8 @@ export type KnownDeviceViewModel = {
 export type DiagnosticDeviceViewModel = KnownDeviceViewModel & {
   /** Rendered only inside the explicitly opened technical-details projection. */
   readonly id: string;
+  /** The exact source timestamp is diagnostic-only, never ordinary copy. */
+  readonly exactLastSeenAt?: string;
 };
 
 export type SyncAccountPanelCallbacks = {

@@ -2298,10 +2298,7 @@ export function LocalUiRuntime(
                 setAppNotice(
                   "JSON restore will be available in the approved local portability workflow.",
                 )}
-              onConnectDrive={() =>
-                setAppNotice(
-                  "Google Drive is not part of this local-only slice.",
-                )}
+              onConnectDrive={() => navigate("/settings/sync")}
             />
           )
           : contentPath === "/expenses"

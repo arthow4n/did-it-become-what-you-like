@@ -163,6 +163,13 @@ function TechnicalDetails({
                   <Text tone="secondary" size="caption">
                     Technical device identifier: {device.id}
                   </Text>
+                  {device.exactLastSeenAt
+                    ? (
+                      <Text tone="secondary" size="caption">
+                        Exact last-seen timestamp: {device.exactLastSeenAt}
+                      </Text>
+                    )
+                    : null}
                 </Stack>
               </ListRow>
             ))}

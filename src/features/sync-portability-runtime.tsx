@@ -1,5 +1,5 @@
 import { useActor } from "@xstate/react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   type ConflictActorEvent,
   createConflictActor,
@@ -19,9 +19,21 @@ import {
 } from "../actors/sync/index.ts";
 import type { ImportEvent } from "../actors/contracts/index.ts";
 import { createImportExportAdapter } from "../adapters/import-export/index.ts";
-import { createInMemoryCausalSyncPort } from "../adapters/sync/causal.ts";
+import {
+  createDriveCausalSyncPort,
+  createInMemoryCausalSyncPort,
+} from "../adapters/sync/causal.ts";
+import {
+  createDriveAdapter,
+  createGoogleIdentityProvider,
+  type DriveAdapter,
+  type DriveIdentityProvider,
+} from "../adapters/drive/index.ts";
+import { runCausalExchange } from "../adapters/sync/coordinator.ts";
 import type { FileSharePort } from "../adapters/ports/index.ts";
+import type { CausalSyncPort } from "../adapters/ports/index.ts";
 import { type StableId, StableIdSchema } from "../domain/index.ts";
+import { observationsFromSyncConflicts as expandSyncConflicts } from "../domain/conflict/merge.ts";
 import {
   type ConflictChoice,
   type ConflictGroupViewModel,
@@ -57,6 +69,75 @@ export type SyncPortabilityScreen =
 type RuntimeIds = {
   readonly next: (kind: string) => StableId;
 };
+
+/**
+ * Browser composition stays deliberately small: production can provide a
+ * client ID alongside Google Identity Services, while deterministic browser
+ * tests can inject the already-typed Drive and causal boundaries before the
+ * app boots. No credential or live-service fallback is invented here.
+ */
+export type SyncRuntimeBoundary = {
+  readonly drive?: DriveAdapter;
+  readonly causal?: CausalSyncPort;
+  readonly clientId?: string;
+  readonly identity?: DriveIdentityProvider;
+};
+
+const SYNC_RUNTIME_BOUNDARY_KEY =
+  "__DID_IT_BECAME_WHAT_YOU_LIKE_SYNC_BOUNDARY__";
+
+function configuredRuntimeBoundary(): SyncRuntimeBoundary {
+  const value = (globalThis as unknown as Record<string, unknown>)[
+    SYNC_RUNTIME_BOUNDARY_KEY
+  ];
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  const candidate = value as Record<string, unknown>;
+  return {
+    ...(candidate.drive === undefined
+      ? {}
+      : { drive: candidate.drive as DriveAdapter }),
+    ...(candidate.causal === undefined
+      ? {}
+      : { causal: candidate.causal as CausalSyncPort }),
+    ...(typeof candidate.clientId === "string"
+      ? { clientId: candidate.clientId }
+      : {}),
+    ...(candidate.identity === undefined
+      ? {}
+      : { identity: candidate.identity as DriveIdentityProvider }),
+  };
+}
+
+function browserConfiguredClientId(): string | undefined {
+  const env = (import.meta as unknown as {
+    readonly env?: { readonly VITE_GOOGLE_CLIENT_ID?: unknown };
+  }).env;
+  return typeof env?.VITE_GOOGLE_CLIENT_ID === "string"
+    ? env.VITE_GOOGLE_CLIENT_ID
+    : undefined;
+}
+
+export function createConfiguredDriveAdapter(
+  boundary: SyncRuntimeBoundary = configuredRuntimeBoundary(),
+): DriveAdapter | null {
+  if (boundary.drive !== undefined) return boundary.drive;
+  const clientId = boundary.clientId ?? browserConfiguredClientId();
+  if (clientId === undefined || clientId.trim().length === 0) return null;
+  try {
+    const identity = boundary.identity ?? createGoogleIdentityProvider();
+    return createDriveAdapter({
+      clientId,
+      identity,
+      isOnline: () => globalThis.navigator?.onLine !== false,
+    });
+  } catch {
+    // Missing GIS or an invalid runtime-only configuration is an honest
+    // unavailable boundary, not a reason to make local sync look connected.
+    return null;
+  }
+}
 
 function createRuntimeIds(): RuntimeIds {
   let sequence = 0;
@@ -147,6 +228,16 @@ function syncViewFromSnapshot(
   if (snapshot.matches("hydrating") || snapshot.matches("configuring")) {
     return { mode: "connecting" };
   }
+  if (
+    snapshot.matches("accountSwitchConfirmation") &&
+    context.accountEmail !== null && context.pendingAccountEmail !== null
+  ) {
+    return {
+      mode: "account-switch-confirmation",
+      currentAccountEmail: context.accountEmail,
+      requestedAccountEmail: context.pendingAccountEmail,
+    };
+  }
   if (context.accountEmail === null) return { mode: "disconnected" };
 
   let sync:
@@ -162,6 +253,10 @@ function syncViewFromSnapshot(
   else if (snapshot.matches("retryableError")) sync = "retryable-error";
   else if (snapshot.matches("error")) sync = "error";
   else if (snapshot.matches("retired")) sync = "retired";
+  if (
+    context.error?.code === "unauthorized" ||
+    context.error?.code === "forbidden"
+  ) sync = "authorization-error";
 
   return {
     mode: "configured",
@@ -175,8 +270,33 @@ function syncViewFromSnapshot(
   };
 }
 
-function deviceViewModels(
+export function formatApproximateLastSeen(
+  value: string,
+  now = Date.now(),
+): string {
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return "recently";
+  const elapsed = Math.max(0, now - timestamp);
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (elapsed < minute) return "just now";
+  if (elapsed < hour) {
+    const count = Math.floor(elapsed / minute);
+    return `${count} minute${count === 1 ? "" : "s"} ago`;
+  }
+  if (elapsed < day) {
+    const count = Math.floor(elapsed / hour);
+    return `${count} hour${count === 1 ? "" : "s"} ago`;
+  }
+  if (elapsed < 2 * day) return "yesterday";
+  const count = Math.floor(elapsed / day);
+  return `${count} days ago`;
+}
+
+export function deviceViewModels(
   ordinary: readonly {
+    readonly stableKey?: string;
     readonly label: string;
     readonly lastSeenAt: string;
     readonly acknowledged: boolean;
@@ -188,15 +308,25 @@ function deviceViewModels(
   readonly technical: readonly DiagnosticDeviceViewModel[];
 } {
   const devices = ordinary.map((device, index) => ({
-    stableKey: `device-${index}`,
+    // The registry exposes the same order in both projections today, but the
+    // diagnostic ID is carried through as the identity so callbacks never
+    // reverse-map a reordered row by position.
+    stableKey: device.stableKey ?? diagnostic[index]?.id ?? `device-${index}`,
     label: device.label,
-    lastSeenAt: device.lastSeenAt,
+    lastSeenAt: formatApproximateLastSeen(device.lastSeenAt),
     current: device.current,
     retirementAcknowledgement: device.acknowledged
       ? "acknowledged" as const
       : "pending" as const,
   }));
-  return { devices, technical: diagnostic };
+  return {
+    devices,
+    technical: diagnostic.map((device) => ({
+      ...device,
+      lastSeenAt: device.lastSeenAt,
+      exactLastSeenAt: device.lastSeenAt,
+    })),
+  };
 }
 
 function connectivityFor(
@@ -293,20 +423,31 @@ function importPreviewFromContext(
     readonly expenseCount: number;
     readonly receiptCount: number;
     readonly migrationRequired: boolean;
+    readonly changeCount?: number;
+    readonly migrations?: readonly string[];
+    readonly warnings?: readonly string[];
+    readonly errors?: readonly string[];
   } | null,
   error: { readonly message: string } | null,
 ): ImportPreviewViewModel | null {
   if (preview === null) return null;
   return {
     schemaVersion: preview.schemaVersion,
-    migration: preview.migrationRequired ? "required" : "not-required",
+    migration:
+      preview.migrationRequired || (preview.migrations?.length ?? 0) > 0
+        ? "required"
+        : "not-required",
     projectCount: preview.projectCount,
     categoryCount: preview.categoryCount,
     expenseCount: preview.expenseCount,
     receiptCount: preview.receiptCount,
-    changeCount: 0,
-    warnings: [],
-    errors: error === null ? [] : [error.message],
+    changeCount: preview.changeCount ?? 0,
+    migrations: preview.migrations ?? [],
+    warnings: preview.warnings ?? [],
+    errors: [
+      ...(preview.errors ?? []),
+      ...(error === null ? [] : [error.message]),
+    ],
   };
 }
 
@@ -394,7 +535,7 @@ function exportViewFromSnapshot(
   };
 }
 
-function observationsFromSyncConflicts(
+export function observationsFromSyncConflicts(
   conflicts: readonly {
     readonly id: string;
     readonly recordType: string;
@@ -404,15 +545,7 @@ function observationsFromSyncConflicts(
     readonly relatedChangeIds: readonly string[];
   }[],
 ) {
-  return conflicts.map((conflict) => ({
-    conflictId: conflict.id,
-    recordType: conflict.recordType,
-    recordId: conflict.recordId,
-    field: "value",
-    local: conflict.local as never,
-    remote: conflict.remote as never,
-    relatedChangeIds: conflict.relatedChangeIds,
-  }));
+  return expandSyncConflicts(conflicts);
 }
 
 export function SyncPortabilityRuntime({
@@ -433,7 +566,19 @@ export function SyncPortabilityRuntime({
   readonly children: ReactNode;
 }) {
   const ids = useMemo(createRuntimeIds, []);
-  const causal = useMemo(() => createInMemoryCausalSyncPort(), []);
+  const runtimeBoundary = useMemo(configuredRuntimeBoundary, []);
+  const driveAdapter = useMemo(
+    () => createConfiguredDriveAdapter(runtimeBoundary),
+    [runtimeBoundary],
+  );
+  const causal = useMemo(
+    () =>
+      runtimeBoundary.causal ??
+        (driveAdapter === null
+          ? createInMemoryCausalSyncPort()
+          : createDriveCausalSyncPort({ drive: driveAdapter })),
+    [driveAdapter, runtimeBoundary.causal],
+  );
   const clock = runtimeClock;
   const syncDependencies = useMemo(
     () =>
@@ -458,8 +603,32 @@ export function SyncPortabilityRuntime({
         ids,
         clock,
         fileShare: createBrowserFileShare(),
+        // Replace import is explicitly gated by a completed pull-before-push
+        // exchange. Keep this composition at the runtime boundary so the
+        // import actor cannot commit a configured replacement while Drive is
+        // stale or unreachable.
+        synchronizeBeforeReplace: async (options) => {
+          if (driveAdapter === null) {
+            throw { code: "invalid-request" };
+          }
+          const result = await runCausalExchange(
+            {
+              local: syncDependencies.local,
+              remote: syncDependencies.causal,
+              deviceId: syncDependencies.deviceId,
+              ids: syncDependencies.ids,
+              now: syncDependencies.clock.now,
+              deviceRecords: syncDependencies.registry.portableDevices,
+            },
+            options,
+          );
+          await syncDependencies.registry.merge(
+            result.snapshot.dataset.devices,
+          );
+          await syncDependencies.registry.touch();
+        },
       }),
-    [causal, ids, repository],
+    [causal, driveAdapter, ids, repository, syncDependencies],
   );
   const syncMachine = useMemo(() => createSyncMachine(syncDependencies), [
     syncDependencies,
@@ -474,17 +643,20 @@ export function SyncPortabilityRuntime({
       }),
     [ids, repository],
   );
+  const [importWorkflowGeneration, setImportWorkflowGeneration] = useState(0);
+  const [exportWorkflowGeneration, setExportWorkflowGeneration] = useState(0);
+  const [safetyWorkflowGeneration, setSafetyWorkflowGeneration] = useState(0);
   const importMachine = useMemo(
     () => createImportMachine({ adapter: importAdapter }),
-    [importAdapter],
+    [importAdapter, importWorkflowGeneration],
   );
   const exportMachine = useMemo(
     () => createExportMachine({ adapter: importAdapter }),
-    [importAdapter],
+    [exportWorkflowGeneration, importAdapter],
   );
   const safetyExportMachine = useMemo(
     () => createExportMachine({ adapter: importAdapter }),
-    [importAdapter],
+    [importAdapter, safetyWorkflowGeneration],
   );
   const [syncSnapshot, sendSync] = useActor(syncMachine, {
     input: syncDependencies,
@@ -503,6 +675,14 @@ export function SyncPortabilityRuntime({
   >(
     "unconfirmed",
   );
+  const [pendingImportContents, setPendingImportContents] = useState<
+    string | null
+  >(null);
+  const [pendingExportRequest, setPendingExportRequest] = useState<
+    ExportEvent | null
+  >(null);
+  const previousScreen = useRef<SyncPortabilityScreen>(null);
+  const lastResolvedConflict = useRef<string | null>(null);
   const [deviceProjectionVersion, setDeviceProjectionVersion] = useState(0);
   const syncView = syncViewFromSnapshot(syncSnapshot);
 
@@ -518,6 +698,30 @@ export function SyncPortabilityRuntime({
   }, [sendSync]);
 
   useEffect(() => {
+    const previous = previousScreen.current;
+    if (previous === "import-export" && screen !== "import-export") {
+      sendImport({ type: "import.cancel" });
+      sendExport({ type: "export.cancel" });
+      sendSafetyExport({ type: "export.cancel" });
+      setPendingImportContents(null);
+      setPendingExportRequest(null);
+    }
+    if (screen === "import-export" && previous !== "import-export") {
+      // Terminal XState actors are intentionally replaced at the workflow
+      // boundary. This makes route re-entry deterministic and also clears the
+      // safety-export confirmation tied to the previous selected file.
+      setImportWorkflowGeneration((generation) => generation + 1);
+      setExportWorkflowGeneration((generation) => generation + 1);
+      setSafetyWorkflowGeneration((generation) => generation + 1);
+      setFileName(undefined);
+      setPendingImportContents(null);
+      setPendingExportRequest(null);
+      setReplacementConfirmation("unconfirmed");
+    }
+    previousScreen.current = screen;
+  }, [screen, sendExport, sendImport, sendSafetyExport]);
+
+  useEffect(() => {
     if (screen === "import-export" && importSnapshot.matches("idle")) {
       sendImport({
         type: "import.open",
@@ -526,6 +730,26 @@ export function SyncPortabilityRuntime({
       });
     }
   }, [importSnapshot, screen, sendImport, syncView.mode]);
+
+  useEffect(() => {
+    if (
+      pendingImportContents !== null &&
+      importSnapshot.matches("choosing")
+    ) {
+      sendImport({
+        type: "import.file-selected",
+        contents: pendingImportContents,
+      });
+      setPendingImportContents(null);
+    }
+  }, [importSnapshot, pendingImportContents, sendImport]);
+
+  useEffect(() => {
+    if (pendingExportRequest !== null && exportSnapshot.matches("idle")) {
+      sendExport(pendingExportRequest);
+      setPendingExportRequest(null);
+    }
+  }, [exportSnapshot, pendingExportRequest, sendExport]);
 
   useEffect(() => {
     if (
@@ -541,10 +765,26 @@ export function SyncPortabilityRuntime({
     }
   }, [conflictSnapshot, sendConflict, syncSnapshot]);
 
+  useEffect(() => {
+    const result = conflictSnapshot.context.result;
+    if (!conflictSnapshot.matches("resolved") || result === null) return;
+    const resolutionId = result.resolutionRevision.id;
+    if (lastResolvedConflict.current === resolutionId) return;
+    lastResolvedConflict.current = resolutionId;
+    // The conflict actor has reached its resolved state only after its local
+    // commit succeeded. A failed commit therefore leaves the sync banner and
+    // conflict count untouched.
+    sendSync({ type: "sync.resolve-conflicts" });
+  }, [conflictSnapshot, sendSync]);
+
   const deviceProjection = useMemo(
-    () =>
-      deviceViewModels(
-        syncDependencies.registry.ordinaryProjection(),
+    () => {
+      const portableDevices = syncDependencies.registry.portableDevices();
+      return deviceViewModels(
+        syncDependencies.registry.ordinaryProjection().map((device, index) => ({
+          ...device,
+          stableKey: portableDevices[index]?.id ?? `device-${index}`,
+        })),
         syncDependencies.registry.diagnosticProjection().map((device) => ({
           stableKey: device.id,
           label: device.label,
@@ -554,8 +794,10 @@ export function SyncPortabilityRuntime({
             ? "acknowledged" as const
             : "pending" as const,
           id: device.id,
+          exactLastSeenAt: device.lastSeenAt,
         })),
-      ),
+      );
+    },
     [deviceProjectionVersion, syncDependencies],
   );
   const safetyStatus: SafetyExportStatus =
@@ -587,27 +829,102 @@ export function SyncPortabilityRuntime({
   const sendImportEvent = (event: ImportEvent) => sendImport(event);
   const sendExportEvent = (event: ExportEvent) => sendExport(event);
 
+  const syncAfterAuthorization = useRef(false);
+  useEffect(() => {
+    if (syncAfterAuthorization.current && syncSnapshot.matches("idle")) {
+      syncAfterAuthorization.current = false;
+      sendSync({ type: "sync.request", request: { reason: "reconnect" } });
+    }
+  }, [sendSync, syncSnapshot]);
+
+  const authorizeDrive = () => {
+    if (driveAdapter === null) {
+      onNotice(
+        "Google Drive is unavailable until OAuth client configuration is provided.",
+      );
+      return;
+    }
+    syncAfterAuthorization.current = true;
+    void driveAdapter.authorize().then((session) => {
+      sendSync({
+        type: "sync.configure",
+        accountEmail: session.accountId,
+        online: globalThis.navigator?.onLine !== false,
+      });
+    }).catch(() => {
+      syncAfterAuthorization.current = false;
+      onNotice(
+        "Google Drive authorization was cancelled or unavailable. Local data remains available.",
+      );
+    });
+  };
+
+  const requestExport = (delivery: "download" | "share") => {
+    const event: ExportEvent = {
+      type: "export.request",
+      share: delivery === "share",
+    };
+    if (
+      exportSnapshot.matches("completed") ||
+      exportSnapshot.matches("cancelled") ||
+      exportSnapshot.matches("failed")
+    ) {
+      setExportWorkflowGeneration((generation) => generation + 1);
+      setPendingExportRequest(event);
+      return;
+    }
+    sendExportEvent(event);
+  };
+
+  const selectImportFile = (file: File) => {
+    setFileName(file.name);
+    void file.text().then((contents) => {
+      const terminal = importSnapshot.matches("completed") ||
+        importSnapshot.matches("cancelled") ||
+        importSnapshot.matches("failed");
+      if (terminal) {
+        setImportWorkflowGeneration((generation) => generation + 1);
+        setSafetyWorkflowGeneration((generation) => generation + 1);
+        setReplacementConfirmation("unconfirmed");
+        setPendingImportContents(contents);
+        return;
+      }
+      sendImportEvent({ type: "import.file-selected", contents });
+    }).catch(() => onNotice("The selected backup could not be read."));
+  };
+
+  const closeImportExport = () => {
+    sendImport({ type: "import.cancel" });
+    sendExport({ type: "export.cancel" });
+    sendSafetyExport({ type: "export.cancel" });
+    onNavigate("/settings");
+  };
+
   const content = screen === "sync"
     ? (
       <GoogleDriveSyncScreen
         view={syncView}
         knownDeviceCount={deviceProjection.devices.length}
-        onConnect={() =>
-          onNotice(
-            "Google Drive connection will be enabled when account authorization is configured.",
-          )}
+        onConnect={authorizeDrive}
         onRetry={() => sendSync({ type: "sync.retry" })}
         onSyncNow={() =>
           sendSync({ type: "sync.request", request: { reason: "manual" } })}
         onOpenConflicts={() => onNavigate("/settings/conflicts")}
         onManageDevices={() => onNavigate("/settings/devices")}
-        onSwitchAccount={() =>
-          onNotice(
-            "Account switching will be available after Drive authorization.",
-          )}
-        onDisconnect={() => sendSync({ type: "sync.disconnect" })}
-        onReconnect={() =>
-          onNotice("Reconnect will be available after Drive authorization.")}
+        onSwitchAccount={authorizeDrive}
+        onConfirmAccountSwitch={() =>
+          sendSync({ type: "sync.account.confirm" })}
+        onCancelAccountSwitch={() => sendSync({ type: "sync.account.cancel" })}
+        onDisconnect={() => {
+          if (driveAdapter === null) {
+            sendSync({ type: "sync.disconnect" });
+            return;
+          }
+          void driveAdapter.disconnect().then(() => {
+            sendSync({ type: "sync.disconnect" });
+          }).catch(() => onNotice("Google Drive could not be disconnected."));
+        }}
+        onReconnect={authorizeDrive}
         onBack={() => onNavigate("/settings")}
       />
     )
@@ -617,9 +934,9 @@ export function SyncPortabilityRuntime({
         devices={deviceProjection.devices}
         technicalDetails={deviceProjection.technical}
         onRename={async (device) => {
-          const index = deviceProjection.devices.indexOf(device);
-          const diagnostic =
-            syncDependencies.registry.diagnosticProjection()[index];
+          const diagnostic = deviceProjection.technical.find((candidate) =>
+            candidate.id === device.stableKey
+          );
           if (diagnostic === undefined) return;
           try {
             await syncDependencies.registry.rename(diagnostic.id, device.label);
@@ -629,9 +946,9 @@ export function SyncPortabilityRuntime({
           }
         }}
         onAcknowledgeRetirement={async (device) => {
-          const index = deviceProjection.devices.indexOf(device);
-          const diagnostic =
-            syncDependencies.registry.diagnosticProjection()[index];
+          const diagnostic = deviceProjection.technical.find((candidate) =>
+            candidate.id === device.stableKey
+          );
           if (diagnostic === undefined) return;
           try {
             await syncDependencies.registry.acknowledge(diagnostic.id);
@@ -675,20 +992,11 @@ export function SyncPortabilityRuntime({
       <ImportExportScreen
         exportModel={exportView}
         importModel={importView}
-        onBack={() => onNavigate("/settings")}
-        onExport={(delivery) =>
-          sendExportEvent({
-            type: "export.request",
-            share: delivery === "share",
-          })}
+        onBack={closeImportExport}
+        onExport={requestExport}
         onRetryExport={() => sendExportEvent({ type: "export.retry" })}
         onCancelExport={() => sendExportEvent({ type: "export.cancel" })}
-        onFileSelected={(file) => {
-          setFileName(file.name);
-          void file.text().then((contents) => {
-            sendImportEvent({ type: "import.file-selected", contents });
-          }).catch(() => onNotice("The selected backup could not be read."));
-        }}
+        onFileSelected={selectImportFile}
         onModeChange={(mode: ImportMode) =>
           sendImportEvent({
             type: mode === "merge"
@@ -702,7 +1010,7 @@ export function SyncPortabilityRuntime({
         onCommit={() => sendImportEvent({ type: "import.commit" })}
         onRetryImport={() => sendImportEvent({ type: "import.retry" })}
         onReviewConflicts={() => onNavigate("/settings/conflicts")}
-        onCancelImport={() => onNavigate("/settings")}
+        onCancelImport={closeImportExport}
       />
     )
     : children;

@@ -145,6 +145,7 @@ const preview: ImportPreviewViewModel = {
   expenseCount: 1240,
   receiptCount: 42,
   changeCount: 1380,
+  migrations: [],
   warnings: ["One archived category is retained."],
   errors: [],
 };
@@ -436,6 +437,7 @@ Deno.test("import preview exposes schema, migration, counts, warnings, and block
           preview={{
             ...preview,
             migration: "required",
+            migrations: ["v1-to-v2"],
             errors: ["This backup contains an unsupported future field."],
           }}
         />,

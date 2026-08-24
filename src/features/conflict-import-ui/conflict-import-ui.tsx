@@ -684,6 +684,7 @@ export type ImportPreviewViewModel = {
   readonly expenseCount: number;
   readonly receiptCount: number;
   readonly changeCount: number;
+  readonly migrations: readonly string[];
   readonly warnings: readonly string[];
   readonly errors: readonly string[];
 };
@@ -699,6 +700,12 @@ export function ImportPreview({ preview }: ImportPreviewProps) {
     { term: "Expenses", description: String(preview.expenseCount) },
     { term: "Receipts", description: String(preview.receiptCount) },
     { term: "Causal changes", description: String(preview.changeCount) },
+    {
+      term: "Migrations",
+      description: preview.migrations.length
+        ? preview.migrations.join(", ")
+        : "None",
+    },
   ];
   return (
     <Card as="section" className="conflict-import-preview">

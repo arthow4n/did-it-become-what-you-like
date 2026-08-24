@@ -32,8 +32,12 @@
     isolation: isolate;
   }
 
-  .receipt-ui-quick-setup .ds-inline-notice[data-tone="warning"] > .ds-stack > .ds-text {
+  .receipt-ui-quick-setup .ds-inline-notice[data-tone="warning"] > .ds-stack {
     background: var(--color-warning-surface);
+  }
+
+  .receipt-ui-quick-setup .ds-inline-notice[data-tone="warning"] > .ds-stack > .ds-text {
+    display: contents;
   }
 
   .receipt-ui-scan-options {

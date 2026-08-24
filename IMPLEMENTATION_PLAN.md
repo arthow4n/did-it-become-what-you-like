@@ -717,7 +717,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### S-405 — Deliver Drive, Conflict, Known Devices, and Import/Export UI
 
-- **Status/dependencies:** `PENDING`; depends on `S-402`, `S-403`, `S-404`,
+- **Status/dependencies:** `IN_PROGRESS`; depends on `S-402`, `S-403`, `S-404`,
   `U-104`, `L-205`.
 - **Ownership:** Screens 10, 10A, 10B, 12, global sync/conflict indicators;
   no adapter/domain contract changes.
@@ -1253,8 +1253,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
-  complete. M4 is released; S-403 and S-404 are complete. S-405 is the next
-  dependency-ready implementation.
+  complete. M4 is released; S-403 and S-404 are complete and S-405 is the
+  active parallel UI implementation. R-500 is next after S-405.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
   the pushed S-403/S-404 ledger checkpoint after this update. The latest
   completed-task ledger checkpoint before S-403 was `94f5f5c` after pushing the
@@ -1308,11 +1308,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
-  is recorded below. R-300 and A-302 are complete. Root `deno task verify`
-  passed on the integrated compact-layout source: 137 repository tests, 20 integration,
-  35 component, 29 domain, 1 actor, local E2E 2/2, gallery/browser/axe,
-  Pages/CI/toolchain validators, both production builds, frozen audit, and
-  `git diff --check`. A-303 and compact-layout focused validation also passed
+  is recorded below. R-300 and A-302 are complete. The latest root `deno task
+  verify` passed after S-403/S-404 integration: 137 repository tests, 20
+  integration, 35 component, 29 domain, 1 actor, local E2E 2/2,
+  gallery/browser/axe, Pages/CI/toolchain validators, both production builds,
+  frozen audit, and `git diff --check`. A-303 and compact-layout focused validation also passed
   `deno task fmt:check` (142 files), `deno task lint` (130 files),
   `deno task check`, `deno task test:component --filter receipt-ui` (4),
   `deno task test:e2e --grep receipt-review` (1), and build. Native receipt
@@ -1320,9 +1320,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  through the S-402 ledger checkpoint `94f5f5c`; the root worktree contains
+  through the S-404 ledger checkpoint `2d24c1e`; the root worktree contains
   only the intentionally untracked A-303, R-300, and R-400 contrast-fix
-  handovers. Preserved worktrees are listed below.
+  handovers plus the preserved S-404 root-artifact quarantine. Preserved
+  worktrees are listed below.
 - **R-400 completion evidence:** closure-6 independently approved the final
   native 1280x800 matrix after closure-5’s partial 320/390 review; the exact
   handover, counts, geometry, focus, cleanup, and unavailable-service boundary
@@ -1333,7 +1334,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, and S-404 are `COMPLETE`; S-405 is
-  the next dependency-ready task.
+  `IN_PROGRESS`; R-500 is next after the S-405 UI integration gate.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2690,6 +2691,29 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   ports, schemas, local/sync adapters, UI, or configuration were changed.
   S-404 is complete; its worktree, handover, and the separately preserved root
   artifact quarantine remain intact.
+- **S-405 parallel UI dispatch:** S-405 is split into disjoint feature slices
+  with the orchestrator as integration owner. Ptolemy
+  (`01a03454-bbe3-7f02-9a58-6b6ce20ecc2c`) owns only synchronization and
+  Known Devices feature components/tests in
+  `~/git/worktrees/did-it-become-what-you-like-s-405-sync-ui`, branch
+  `task/s-405-sync-ui`, based at `2d24c1e`; Pasteur
+  (`01a03454-bc35-7721-b6ef-c2bc9cbf7c72`) owns only Conflict Review and
+  Import/Export feature components/tests in
+  `~/git/worktrees/did-it-become-what-you-like-s-405-conflict-import-ui`,
+  branch `task/s-405-conflict-import-ui`, based at `2d24c1e`. Both workers are
+  limited to their new `src/features/**` slice and its timestamped handover;
+  they must not edit app shell/routing/local UI composition, design-system,
+  adapters, domain, contracts, plan, master, remotes, or the other slice.
+  Each must read `UI_SPEC.md` and `DESIGN_SYSTEM.md`, use actor-driven props
+  and existing primitives, record a concise XState/UI state boundary where
+  applicable, and finish with exact component/static validation plus
+  `READY FOR INTEGRATION` or `BLOCKED`. Direct agent-browser inspection is
+  deferred to the orchestrator's post-integration audit because the shared
+  app composition is intentionally owned centrally. Merge order is either
+  slice first, then the other slice, followed by orchestrator wiring in
+  `src/features/local-ui.tsx`, routing, and app entry; the orchestrator must
+  rerun combined component/E2E/agent-browser and full gates before S-405 is
+  complete.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

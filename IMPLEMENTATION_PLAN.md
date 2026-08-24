@@ -1262,7 +1262,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   M5 is released; X-501 and X-502 are complete; and P-503 is the next
   dependency-ready M6 task.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  the pushed plan checkpoint `74fc312` (`Reconcile pushed X-502 checkpoint`),
+  the pushed plan checkpoint `027b3e0` (`Record final X-502 plan checkpoint`),
   whose X-502 source/ledger predecessor is `3a43b04`, with integrated source
   commit `df21669` and the intentionally untracked artifacts and preserved
   recovery directory listed below;
@@ -1305,7 +1305,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   (`Implement S-401 Drive adapter`); S-402 integration is `95ac376`
   (`Implement S-402 synchronization actor and transport`); S-405 worker and
   integration commits are recorded in the S-405 ledger entry above; the latest
-  pushed orchestration checkpoint is `74fc312`.
+  pushed orchestration checkpoint is `027b3e0`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`; R-400, S-401, S-402, S-403,

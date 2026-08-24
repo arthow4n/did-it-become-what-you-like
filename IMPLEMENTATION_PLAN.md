@@ -1154,6 +1154,44 @@ unavailable checks, worktree/Git state, and explicit APPROVE or BLOCK. This
 entry is still not approval by itself; the orchestrator verifies it against the
 repository and updates the plan.
 
+### Stall escalation and advisor backoff
+
+If a worker or reviewer has stale progress for three expected intervals, the
+same command/failure has resisted two bounded attempts, or the local scope
+reveals a cross-cutting contradiction, the orchestrator must stop repeating
+the same prompt. First preserve the progress handover, inspect the worktree
+and Git state, and send one bounded status request. If the issue remains
+unclear, dispatch one fresh read-only advisor agent for that specific task or
+finding. Give the advisor the task ID, progress handover, exact evidence,
+authoritative specs, locked contracts, and explicit non-goals.
+
+The advisor's job is to step back and recommend the smallest reasonable
+unblocking path. It may challenge internal architecture, type structure,
+testing strategy, or infrastructure choices when approved user behavior and
+specification remain unchanged. It may identify a missing contract, a better
+ownership split, or a safe recovery sequence. It must not edit source, alter
+the product requirements, weaken a test, enable deployment, or invent scope;
+it returns evidence, options, tradeoffs, and a recommendation. The advisor
+also follows the progress/handover protocol if its assessment is long-running.
+
+After the advisor returns, the orchestrator chooses one of three bounded paths:
+
+1. If the issue is an implementation detail within the approved specs, record
+   the recommendation and dispatch or resume the owning worker with the
+   narrowest fix and regression test.
+2. If the issue requires an internal contract/ownership adjustment but does
+   not change user behavior, update this plan with the impact list and obtain
+   integration-owner review before changing the locked contract.
+3. If the issue is a contradiction, ambiguity, or proposed change to an
+   approved user requirement, preserve all work, mark the exact task
+   `BLOCKED`, and yield one concise decision request to the human owner.
+
+Do not spawn multiple advisors for the same stall, keep retrying a dead end
+after the advisor has recommended a path, or treat advisor uncertainty as
+permission to broaden scope. Advisor backoff is a recovery aid, not a reason
+to bypass dependency order, safety checks, the review gate, or the human
+decision boundary.
+
 ### Final handoff boundary
 
 The worker's final response must repeat the exact validation commands/results,

@@ -1,0 +1,74 @@
+@layer components {
+  .sync-ui-screen {
+    min-width: 0;
+  }
+
+  .sync-ui-account-panel,
+  .sync-ui-device-list {
+    min-width: 0;
+  }
+
+  .sync-ui-account-panel__primary-action {
+    max-width: var(--form-max);
+  }
+
+  .sync-ui-conflict-summary {
+    background: var(--color-warning-surface);
+  }
+
+  .sync-ui-global-status {
+    min-width: 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-card);
+    background: var(--color-surface-1);
+  }
+
+  .sync-ui-global-status .ds-inline {
+    min-width: 0;
+  }
+
+  .sync-ui-global-status .ds-inline > .ds-inline:first-child {
+    min-width: 0;
+  }
+
+  .sync-ui-global-status .ds-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .sync-ui-device-row {
+    align-items: flex-start;
+  }
+
+  .sync-ui-device-row__content {
+    width: 100%;
+  }
+
+  .sync-ui-device-row__retirement {
+    align-items: flex-start;
+  }
+
+  .sync-ui-device-row__retirement .ds-status-message {
+    flex: 1 1 18rem;
+  }
+
+  .sync-ui-device-rename {
+    width: min(100%, var(--form-max));
+  }
+
+  @media (max-width: 479px) {
+    .sync-ui-global-status .ds-inline {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .sync-ui-device-row {
+      flex-direction: column;
+    }
+
+    .sync-ui-device-row > .ds-list-row__main {
+      width: 100%;
+    }
+  }
+}

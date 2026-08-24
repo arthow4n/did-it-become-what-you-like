@@ -6,6 +6,7 @@ import {
   ExpensesScreen,
   FirstUseScreen,
   ManualExpenseRecoveryScreen,
+  manualExpenseSubmitEvent,
   OrganizeScreen,
   ProjectManager,
   SavedExpenseCompletionScreen,
@@ -212,6 +213,18 @@ Deno.test("local UI first-use screen exposes the three approved entry paths", as
   });
 });
 
+Deno.test("local UI save modes dispatch the typed manual-expense events", () => {
+  assert(
+    manualExpenseSubmitEvent("another").type ===
+      "expense.submit-and-add-another",
+    "Save and add another should use the typed actor event",
+  );
+  assert(
+    manualExpenseSubmitEvent("expenses").type === "expense.submit",
+    "Ordinary save should preserve the ordinary submit event",
+  );
+});
+
 Deno.test("local UI expenses exposes shared filters, empty state, and add event", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let addCount = 0;
@@ -396,7 +409,12 @@ Deno.test("local UI project editor and manager expose safe ordering and confirma
       await waitFor(() =>
         assert(view.getAllByRole("button", { name: "Use" }).length === 2)
       );
-      assert(view.getByRole("heading", { name: "Manage projects" }));
+      assert(
+        view.getByRole("heading", {
+          name: "Manage projects",
+          level: 1,
+        }),
+      );
       assert(
         view.getByText(
           "Switch to another project before archiving Sweden project.",
@@ -470,6 +488,31 @@ Deno.test("local UI category editor keeps built-in Uncategorized protected", asy
       );
       assert(view.getByRole("textbox", { name: "Category name" }));
       assert(view.getByRole("group", { name: "Category color (optional)" }));
+    });
+  });
+});
+
+Deno.test("local UI category manager exposes a level-one page heading", async () => {
+  await withComponentHarness(async ({ window, render, waitFor }) => {
+    const { service } = createTestService(categoryState);
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(CategoryManager, {
+          service,
+          state: categoryState,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(
+          view.getByRole("heading", {
+            name: "Manage categories",
+            level: 1,
+          }),
+        )
+      );
     });
   });
 });

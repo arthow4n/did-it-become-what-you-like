@@ -35,13 +35,13 @@ test("local-first-manual saves a first local expense and restores it after reloa
 
   await page.getByRole("button", { name: "Add expense" }).click();
   await page.getByRole("button", { name: /Add manually/ }).click();
-  await expect(page.getByRole("heading", { name: "New expense" }))
+  await expect(page.getByRole("heading", { name: "New expense", level: 1 }))
     .toBeVisible();
 
   await page.getByRole("textbox", { name: "Amount" }).fill("12.50");
   await page.getByRole("searchbox", { name: "Merchant" }).fill("Local market");
   await page.getByRole("button", { name: "Save and add another" }).click();
-  await expect(page.getByRole("heading", { name: "New expense" }))
+  await expect(page.getByRole("heading", { name: "New expense", level: 1 }))
     .toBeVisible();
   await expect(page.getByRole("textbox", { name: "Amount" })).toHaveValue("");
 

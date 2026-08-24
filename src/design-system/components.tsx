@@ -1923,6 +1923,7 @@ export function MoneySummary(
   return (
     <div
       className={cx("ds-money-summary", className)}
+      role="group"
       aria-label="Money summary"
     >
       {items.map((item) => (

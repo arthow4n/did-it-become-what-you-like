@@ -17,6 +17,7 @@ import {
   FileField,
   formatMoney,
   MerchantPicker,
+  MoneySummary,
   MoneyText,
   NativeDateField,
   NativeTimeField,
@@ -344,6 +345,29 @@ Deno.test("design-system page headers can provide the application heading", asyn
       mounted.unmount();
     })
   );
+});
+
+Deno.test("design-system money summary exposes a valid labeled group", async () => {
+  await withComponentHarness(({ render }) => {
+    const mounted = render(
+      createElement(MoneySummary, {
+        items: [{ label: "Net spent", amount: "12.50", currency: "SEK" }],
+      }),
+    );
+    const summary = within(document.body).getByRole("group", {
+      name: "Money summary",
+    });
+    assertEqual(summary.getAttribute("aria-label"), "Money summary");
+    mounted.unmount();
+  });
+});
+
+Deno.test("application root leaves the main landmark to AppFrame", async () => {
+  const html = await Deno.readTextFile(
+    new URL("../../index.html", import.meta.url),
+  );
+  assert(html.includes('<div id="root"></div>'));
+  assert(!html.includes('<main id="root">'));
 });
 
 Deno.test("design-system money component keeps sign and currency in accessible text", async () => {

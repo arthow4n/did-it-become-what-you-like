@@ -22,6 +22,7 @@ import {
 import {
   createManualExpenseMachine,
   type ManualExpenseDraft,
+  type ManualExpenseEvent,
   type ManualExpenseOpenRequest,
 } from "../actors/manual-expense.ts";
 import {
@@ -897,6 +898,7 @@ export function ProjectManager({
     <ContentContainer>
       <Stack gap={5}>
         <PageHeader
+          headingLevel={1}
           title="Manage projects"
           leading={
             <Button
@@ -1442,6 +1444,7 @@ export function CategoryManager({
     <ContentContainer>
       <Stack gap={5}>
         <PageHeader
+          headingLevel={1}
           title="Manage categories"
           leading={
             <Button
@@ -1596,7 +1599,15 @@ export function CategoryManager({
   );
 }
 
-type ManualSaveMode = "expenses" | "another";
+export type ManualSaveMode = "expenses" | "another";
+
+export function manualExpenseSubmitEvent(
+  mode: ManualSaveMode,
+): ManualExpenseEvent {
+  return mode === "another"
+    ? { type: "expense.submit-and-add-another" }
+    : { type: "expense.submit" };
+}
 
 export function ManualExpenseRecoveryScreen({
   message,
@@ -1825,13 +1836,14 @@ export function ManualExpenseScreen({
   }));
   const submit = (mode: ManualSaveMode) => {
     saveMode.current = mode;
-    send({ type: "expense.submit" });
+    send(manualExpenseSubmitEvent(mode));
   };
 
   return (
     <ContentContainer size="form">
       <Stack gap={5}>
         <PageHeader
+          headingLevel={1}
           title={snapshot.context.originalExpense
             ? "Edit expense"
             : "New expense"}

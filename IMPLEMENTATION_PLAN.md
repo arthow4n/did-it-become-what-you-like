@@ -582,7 +582,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### A-302 — Implement receipt scan/review actors and atomic receipt domain flow
 
-- **Status/dependencies:** `PENDING`; depends on `A-301`, `L-201`, `L-202`,
+- **Status/dependencies:** `IN_PROGRESS`; depends on `A-301`, `L-201`, `L-202`,
   `D-102`.
 - **Ownership:** receipt actors/domain orchestration; no screen composition.
 - **Scope/non-goals:** camera/file selection lifecycle, disclosure, inline key
@@ -1317,7 +1317,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300 is `COMPLETE` after
-  fresh closure approval; A-302 is the next dependency-ready milestone.
+  fresh closure approval; A-302 is `IN_PROGRESS` as the next dependency-ready
+  milestone.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2113,6 +2114,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   reviewer made no tracked, plan, master, remote, commit, or Pages changes;
   its untracked handover and worktree remain preserved. R-300 is complete and
   A-302 is released as the next dependency-ready milestone.
+- **A-302 dispatch:** Godel (`01a032af-7fd1-7342-a1a9-aeb9872f70d4`) owns the
+  receipt actor/domain implementation in
+  `~/git/worktrees/did-it-become-what-you-like-a-302-receipt-actor`, branch
+  `task/a-302-receipt-actor`, based at `0de9969`. Ownership is limited to
+  receipt actor/domain orchestration and focused tests; no receipt UI,
+  Gemini/Drive adapter internals, external sync, or populated-project
+  destructive workflow. The worker must keep an untracked timestamped
+  `R-302-progress.md`, leave this plan and `master` untouched, not push or
+  enable Pages, and return exact validation plus an explicit READY FOR
+  INTEGRATION or BLOCK. A-303 and R-400 remain gated.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

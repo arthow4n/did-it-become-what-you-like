@@ -1494,7 +1494,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `~/git/worktrees/did-it-become-what-you-like-u-104-design-system`. Their
   source ownership is disjoint; each must commit only its scoped fixes and
   tests, keep its progress file untracked if needed, and leave this plan and
-  `master` untouched. D-103 remains queued for the next free worker slot.
+  `master` untouched.
 - **D-101 scoped-fix integration:** Nash committed `068c537`, which the
   orchestrator reviewed and cherry-picked as `b3a8ffb`. Root
   `deno task fmt:check`, `deno task lint`, `deno task check`,
@@ -1510,6 +1510,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `deno task gallery`, `deno task a11y:gallery` (3 viewports), and `git diff
   --check` passed; the root commits are pushed. The preserved U-104 worktree is
   clean except for its untracked `U-104-progress.md` artifact.
+- **D-103 scoped-fix active:** Dewey
+  (`01a03144-7f47-7f92-8f85-3d2ea828c266`) owns the queued adapter fix in
+  `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`, limited to
+  `src/adapters/ports/**` and focused tests. The worktree was clean before
+  dispatch; the worker must keep `D-103-progress.md` untracked if needed,
+  commit only its scoped fix, and leave this plan and `master` untouched.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

@@ -1254,7 +1254,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
 - **Reconciled branch/upstream:** `master` and `origin/master` are both at
-  `3424ed6` (`0 0`), pushed after integrating the bounded R-300 follow-up.
+  `60f74c2` (`0 0`), pushed after recording the bounded R-300 follow-up.
   The root worktree is clean except for the intentionally untracked R-300
   review handover.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1303,7 +1303,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   contract follow-up passed the root matrix, and the root canonical task
   includes `src/adapters/gemini`; the exact `A-301` filter is the authoritative
   focused command. The implementation plan task-heading count remains 37
-  with no duplicate IDs; `master` and its upstream are aligned at `3424ed6`;
+  with no duplicate IDs; `master` and its upstream are aligned at `60f74c2`;
   the root worktree contains only the intentionally untracked R-300 handover
   after the pushed follow-up. Preserved
   worktrees are

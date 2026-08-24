@@ -640,7 +640,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### S-401 — Implement Google authorization and Drive app-data transport
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-200`, `F-003`; may begin
+- **Status/dependencies:** `COMPLETE`; depends on `R-200`, `F-003`; may begin
   after `R-200` in parallel with M3/M4 under adapter-only ownership.
 - **Ownership:** `src/adapters/drive/**`; no merge policy or sync UI.
 - **Scope/non-goals:** least-scope browser OAuth, one-account identity, app-data
@@ -1252,10 +1252,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 ## Current Checkpoint
 
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
-  system wave, `R-200`, M3/R-300, A-302, A-303, and R-400 are complete. M4 is
-  released and S-401 is the next dependency-ready implementation.
-- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `bdad4c8` after pushing the S-401 dispatch checkpoint. The root worktree
+  system wave, `R-200`, M3/R-300, A-302, A-303, R-400, and S-401 are complete.
+  M4 is released and S-402 is the next dependency-ready implementation.
+- **Reconciled branch/upstream:** the integrated root is at `1d3afce` and
+  `origin/master` remains at `52835d1` until this ledger update is pushed. The
+  root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` and `R-400-contrast-fix-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1281,13 +1282,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the deferred-only SPEC note is `c390656`; A-303 UI integration is `a90504d`
   (`Implement A-303 receipt and Gemini UI`) and its isolated A-301 canvas
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
-  browser build`). The latest integrated implementation is `1f85325`; the
-  latest pushed orchestration checkpoint before this ledger update is
-  `bdad4c8`.
+  browser build`). The latest integrated implementation is `1d3afce`
+  (`Implement S-401 Drive adapter`); the latest pushed orchestration checkpoint
+  before this ledger update is `52835d1`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
-  integration evidence are present on `master`; R-400 is complete as recorded
-  below.
+  integration evidence are present on `master`; R-400 and S-401 are complete as
+  recorded below.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
@@ -1312,10 +1313,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   inspection passed at 320x568, 390x844, and 1280x800; the compact fix recorded
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
-  remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `bdad4c8`; the root worktree contains only the intentionally untracked
-  A-303, R-300, and R-400 contrast-fix handovers. Preserved worktrees are
-  listed below.
+  remains 37 with no duplicate IDs; the root integration commit is `1d3afce`
+  and `origin/master` is still `52835d1` until this ledger update is pushed;
+  the root worktree contains only the intentionally untracked A-303, R-300,
+  and R-400 contrast-fix handovers. Preserved worktrees are listed below.
 - **R-400 completion evidence:** closure-6 independently approved the final
   native 1280x800 matrix after closure-5’s partial 320/390 review; the exact
   handover, counts, geometry, focus, cleanup, and unavailable-service boundary
@@ -1325,7 +1326,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
-  `COMPLETE`; R-400 is `COMPLETE`; S-401 is `IN_PROGRESS` as the next
+  `COMPLETE`; R-400 and S-401 are `COMPLETE`; S-402 is the next
   dependency-ready task.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
@@ -2517,8 +2518,32 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   operations, abort/idempotence, and retirement-marker read-before-upload
   protection using synthetic boundaries only. It must return exact validation
   commands/results and `READY FOR INTEGRATION` or `BLOCKED`; live Drive smoke
-  is forbidden without explicit environment configuration. S-401 is active;
-  its worktree and handover are preserved until inspection and integration.
+  is forbidden without explicit environment configuration. S-401 was active
+  under this dispatch and its worktree/handover remain preserved.
+- **S-401 integration result:** Lovelace completed the bounded implementation
+  in `~/git/worktrees/did-it-become-what-you-like-s-401-drive-adapter` with
+  final `S-401-progress.md` handover at `2026-08-24T13:04:40Z`, explicitly
+  `READY FOR INTEGRATION`. The worker source commit `ffc651e` was inspected
+  and cherry-picked as root `1d3afce` (`Implement S-401 Drive adapter`),
+  changing only `src/adapters/drive/adapter.ts`, `browser.ts`, `index.ts`, and
+  `adapter.integration.test.ts`. It implements appDataFolder-only GIS token
+  authorization, one-account identity and revocation, paginated and isolated
+  Drive transport, conditional ETag operations, typed/redacted failures,
+  injectable retry/backoff, abort handling, idempotent lost-response recovery,
+  and retirement-marker read-before-upload protection. Worker evidence passed
+  `deno task fmt:check` (146 files), `deno task lint` (134 files),
+  `deno task check`, the exact direct S-401 equivalent
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  src/adapters/drive --filter drive-adapter` (11/11), `deno task build`,
+  `deno task verify` (137 repository, 20 integration, 35 component, 29
+  domain, 1 actor, local E2E 2/2, gallery/browser/Pages/CI/toolchain,
+  production builds, frozen audit, and diff check), and the worker secret
+  scan. The repository alias `deno task test:integration --filter
+  drive-adapter` passed with 0 selected/20 filtered because it hard-codes
+  `src/adapters/local`; changing that alias is outside S-401 ownership. The
+  same full validation was rerun after root integration and passed. No live
+  Drive smoke or credentials were used. The worker worktree and timestamped
+  handover remain preserved; S-401 is complete and S-402 is next.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

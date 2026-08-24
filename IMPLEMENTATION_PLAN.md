@@ -1255,10 +1255,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, and A-302 are complete. A-303 is integrated,
   the bounded R-400 compact-layout fix is integrated, and R-400 is the active
   independent closure gate.
-- **Reconciled branch/upstream:** `master` is at `1f85325` and
-  `origin/master` is at `a844c6f` (`0 1`) immediately before this integration
-  checkpoint push. `1f85325` is the integrated contrast-fix source commit
-  being pushed with this ledger update. The root worktree
+- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
+  `0ae8120` after pushing the contrast-fix integration checkpoint. The root
+  worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1286,7 +1285,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
   browser build`). The latest integrated implementation is `ba63635`; the
   latest pushed orchestration checkpoint before this ledger update is
-  `a844c6f`.
+  `0ae8120`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1315,7 +1314,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `1f85325`; the root worktree contains only the intentionally untracked
+  at `0ae8120`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
@@ -2428,6 +2427,19 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   7/7, receipt E2E 1/1, build, and `git diff --check` passed; worker and
   handover remain preserved and R-400 is still blocked pending a fresh
   independent closure review.
+- **R-400 closure-4 dispatch:** Planck
+  (`01a033a6-8785-7021-bbc8-6100642e53cb`) is the fresh independent read-only
+  Luna xhigh reviewer in
+  `~/git/worktrees/did-it-become-what-you-like-r-400-closure-4`, branch
+  `review/r-400-closure-4`, based at `0ae8120`. It must create the
+  timestamped `R-400-closure-4-progress.md` before browser work, reconcile
+  all prior review/fix handovers against the exact integrated source, rerun
+  the full automated gate and receipt E2E, and recheck the warning subtree,
+  compact model/sticky geometry, focus, cleanup, privacy, and all required
+  320x568/390x844/1280x800 native evidence. Browser commands are bounded and
+  temporary sessions must be closed; the reviewer owns no source or plan
+  changes and must end with exact results, severity counts, and `APPROVE` or
+  `BLOCK`. R-400 remains gated until this result is recorded.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

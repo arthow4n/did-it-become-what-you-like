@@ -510,6 +510,8 @@ export function ReceiptScanScreen({
   offline,
   onSettingsChange,
   onDirtyChange,
+  discardRequest,
+  onDirtyDiscarded,
   onReview,
   onClose,
   onOpenSettings,
@@ -522,6 +524,8 @@ export function ReceiptScanScreen({
   offline: boolean;
   onSettingsChange: (settings: DeviceLocalSettings) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  discardRequest?: number;
+  onDirtyDiscarded?: () => void;
   onReview: (review: ReceiptReviewDraft) => void;
   onClose: () => void;
   onOpenSettings: () => void;
@@ -555,6 +559,7 @@ export function ReceiptScanScreen({
   const pendingScanRef = useRef(false);
   const quickSetupReturnFocusRef = useRef<HTMLElement | null>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
+  const handledDiscardRequest = useRef(discardRequest ?? 0);
 
   const setPendingScanState = (value: boolean) => {
     pendingScanRef.current = value;
@@ -875,6 +880,31 @@ export function ReceiptScanScreen({
   const scanBusy = snapshot.matches("preparing") ||
     snapshot.matches("requesting") ||
     snapshot.matches("validating");
+
+  useEffect(() => {
+    if (
+      discardRequest === undefined ||
+      discardRequest === handledDiscardRequest.current
+    ) return;
+    handledDiscardRequest.current = discardRequest;
+    if (scanBusy) send({ type: "receipt.cancel" });
+    clearSelectedImage();
+    imageStore.clear();
+    setPendingScanState(false);
+    setQuickSetupOpen(false);
+    setOptionsOpen(false);
+    setModelError(undefined);
+    onDirtyChange?.(false);
+    onDirtyDiscarded?.();
+  }, [
+    discardRequest,
+    imageStore,
+    onDirtyChange,
+    onDirtyDiscarded,
+    scanBusy,
+    send,
+  ]);
+
   useEffect(() => {
     onDirtyChange?.(
       selectedImage !== null || scanBusy || quickSetupOpen || pendingScan,
@@ -1275,12 +1305,14 @@ export function ReceiptReviewScreen({
   state,
   initialReview,
   onDirtyChange,
+  discardRequest,
   onClose,
 }: {
   local: LocalPort;
   state: ProjectCategoryState;
   initialReview?: ReceiptReviewDraft;
   onDirtyChange?: (dirty: boolean) => void;
+  discardRequest?: number;
   onClose: () => void;
 }) {
   const machine = useMemo(
@@ -1294,6 +1326,7 @@ export function ReceiptReviewScreen({
   const [metadataError, setMetadataError] = useState<string>();
   const doneRef = useRef(false);
   const metadataReturnFocusRef = useRef<HTMLElement | null>(null);
+  const handledDiscardRequest = useRef(discardRequest ?? 0);
 
   const openMetadata = () => {
     const activeElement = document.activeElement;
@@ -1321,6 +1354,15 @@ export function ReceiptReviewScreen({
   useEffect(() => {
     onDirtyChange?.(changed && !snapshot.matches("saved"));
   }, [changed, onDirtyChange, snapshot]);
+
+  useEffect(() => {
+    if (
+      discardRequest === undefined ||
+      discardRequest === handledDiscardRequest.current
+    ) return;
+    handledDiscardRequest.current = discardRequest;
+    send({ type: "receipt.review.discard" });
+  }, [discardRequest, send]);
 
   useEffect(() => {
     if (doneRef.current) return;

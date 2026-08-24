@@ -1,11 +1,18 @@
 import { within } from "@testing-library/dom";
 import { createElement } from "react";
-import { ReceiptDisclosure } from "./receipt-ui.tsx";
+import {
+  GeminiSettingsScreen,
+  modelOptions,
+  ReceiptDisclosure,
+  ReceiptImageStore,
+} from "./receipt-ui.tsx";
 import {
   GeminiQuickSetup,
+  ModelPicker,
   ReceiptLineCard,
   ReceiptSourcePicker,
 } from "../design-system/index.ts";
+import { DeviceLocalSettingsSchema } from "../domain/index.ts";
 import { withComponentHarness } from "../test-support/component-harness.tsx";
 
 declare const Deno: {
@@ -27,6 +34,7 @@ async function withAriaGlobals<T>(
   if (!testWindow) return await callback();
   const names = [
     "HTMLButtonElement",
+    "FocusEvent",
     "HTMLInputElement",
     "MutationObserver",
     "NodeFilter",
@@ -37,16 +45,23 @@ async function withAriaGlobals<T>(
     "HTMLTextAreaElement",
   ] as const;
   const previous = new Map<string, unknown>();
+  const previousCss = globalThis.CSS;
   for (const name of names) {
     previous.set(name, globalThis[name as keyof typeof globalThis]);
     Object.assign(globalThis, { [name]: testWindow[name] });
   }
+  Object.assign(globalThis, {
+    CSS: previousCss ?? {
+      escape: (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, "\\$&"),
+    },
+  });
   try {
     return await callback();
   } finally {
     for (const [name, value] of previous) {
       Object.assign(globalThis, { [name]: value });
     }
+    Object.assign(globalThis, { CSS: previousCss });
   }
 }
 
@@ -146,6 +161,148 @@ Deno.test("receipt-ui Gemini quick setup masks the key and keeps validation visi
       assert(input.getAttribute("type") === "text");
       fireEvent.click(view.getByRole("button", { name: "Save and continue" }));
       assert(saved);
+    });
+  });
+});
+
+Deno.test("receipt-ui releases file, byte, and object URL state on terminal cleanup", async () => {
+  const store = new ReceiptImageStore();
+  const file = new File([new Uint8Array([1, 2, 3])], "receipt.png", {
+    type: "image/png",
+  });
+  const image = store.add(file);
+  await store.resolve(image);
+  store.release(image);
+  let rejected = false;
+  try {
+    await store.resolve(image);
+  } catch {
+    rejected = true;
+  }
+  assert(rejected, "Released image bytes must not remain resolvable");
+});
+
+Deno.test("receipt-ui keeps Needs test models selectable and evidence device-local", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    await withAriaGlobals(() => {
+      let selected: string | undefined;
+      render(
+        createElement(ModelPicker, {
+          options: [{
+            id: "synthetic-needs-test",
+            label: "Synthetic model · Needs test",
+            status: "Needs test",
+          }],
+          value: undefined,
+          onValueChange: (value) => selected = value,
+        }),
+      );
+      const view = within(document.body);
+      const modelInput = view.getByRole("combobox", { name: "Model" });
+      fireEvent.click(
+        view.getByRole("button", { name: /Show model options/ }),
+      );
+      fireEvent.change(modelInput, { target: { value: "Synthetic" } });
+      const option = view.getByRole("option", {
+        name: /Synthetic model · Needs test/,
+      });
+      assert(option.getAttribute("aria-disabled") !== "true");
+      fireEvent.click(option);
+      return waitFor(() => assert(selected === "synthetic-needs-test"));
+    });
+  });
+  const settings = DeviceLocalSettingsSchema.parse({
+    imagePreparationEnabled: true,
+    geminiKeyRevision: "key-revision-test",
+    geminiCompatibilityEvidence: [{
+      modelId: "synthetic-needs-test",
+      modelFingerprint: "synthetic-needs-test|active|0|0|0",
+      keyRevision: "key-revision-test",
+      evidenceVersion: "receipt-compatibility.v1",
+      status: "compatible",
+    }],
+  });
+  assert(settings.geminiCompatibilityEvidence?.[0].status === "compatible");
+  const model = {
+    id: "synthetic-needs-test",
+    displayName: "Synthetic model",
+    lifecycle: "active" as const,
+    capabilities: {
+      "image-input": false,
+      "content-generation": false,
+      "structured-output": false,
+    },
+  };
+  const compatible = modelOptions([model], settings)[0];
+  assert(compatible.status === "Compatible");
+  assert(compatible.disabled !== true);
+  const stale = modelOptions([model], {
+    ...settings,
+    geminiCompatibilityEvidence: [{
+      ...settings.geminiCompatibilityEvidence![0],
+      modelFingerprint: "synthetic-needs-test|active|1|0|0",
+    }],
+  })[0];
+  assert(stale.status === "Needs test");
+});
+
+Deno.test("receipt-ui retains a remembered key when refreshing models fails", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    await withAriaGlobals(() => {
+      let stored = false;
+      let removed = 0;
+      const changes: unknown[] = [];
+      const gemini = {
+        getApiKey: () =>
+          Promise.resolve(
+            stored ? { reveal: () => "AIza.synthetic" } : undefined,
+          ),
+        setApiKey: () => {
+          stored = true;
+          return Promise.resolve();
+        },
+        removeApiKey: () => {
+          removed++;
+          stored = false;
+          return Promise.resolve();
+        },
+        listModels: () => Promise.reject(new Error("model refresh failed")),
+        testConfiguration: () =>
+          Promise.resolve({
+            status: "incompatible" as const,
+            missingCapabilities: [],
+          }),
+        extractReceipt: () => Promise.reject(new Error("not used")),
+      };
+      render(
+        createElement(GeminiSettingsScreen, {
+          gemini,
+          settings: { imagePreparationEnabled: true },
+          onSettingsChange: (next) => changes.push(next),
+          onClose: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      const input = view.getByLabelText("API key");
+      fireEvent.input(input, { target: { value: "AIza.synthetic" } });
+      const save = view.getByRole("button", { name: "Save and continue" });
+      return waitFor(() => {
+        assert(!save.hasAttribute("disabled"));
+      }).then(() => {
+        fireEvent.click(save);
+        return waitFor(() => {
+          assert(view.getByText("model refresh failed"));
+          assert(
+            removed === 0,
+            "Transient refresh failure must not remove key",
+          );
+          assert(stored, "The remembered key must remain stored");
+          assert(
+            changes.length === 1,
+            "Only device-local settings should change",
+          );
+        });
+      });
     });
   });
 });

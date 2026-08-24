@@ -9,6 +9,7 @@ const ONE_PIXEL_PNG = Buffer.from(
 test("receipt-review captures, scans with fake Gemini, and saves atomically", async ({ isolatedContext }) => {
   const page = await isolatedContext.newPage();
   const requests: Array<{ method: string; url: string; body?: string }> = [];
+  let extractionAttempts = 0;
   await page.route(
     "https://generativelanguage.googleapis.com/**",
     async (route) => {
@@ -39,6 +40,20 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
         request.method() === "POST" &&
         request.url().includes(":generateContent?")
       ) {
+        extractionAttempts++;
+        if (extractionAttempts === 1) {
+          await route.fulfill({
+            status: 429,
+            contentType: "application/json",
+            body: JSON.stringify({
+              error: {
+                message: "provider-only-secret",
+                status: "RESOURCE_EXHAUSTED",
+              },
+            }),
+          });
+          return;
+        }
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -91,6 +106,20 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
     buffer: ONE_PIXEL_PNG,
   });
   await expect(page.getByAltText("Selected receipt preview")).toBeVisible();
+  await page.getByRole("button", { name: "Remove" }).click();
+  await expect(page.getByAltText("Selected receipt preview")).toHaveCount(0);
+  await expect.poll(() =>
+    page.getByLabel("Receipt image file").evaluate((input) => ({
+      value: input.value,
+      fileCount: input.files?.length ?? 0,
+    }))
+  ).toEqual({ value: "", fileCount: 0 });
+  await page.getByLabel("Receipt image file").setInputFiles({
+    name: "receipt.png",
+    mimeType: "image/png",
+    buffer: ONE_PIXEL_PNG,
+  });
+  await expect(page.getByAltText("Selected receipt preview")).toBeVisible();
   await page.getByRole("button", { name: "Scan with AI" }).click();
   await expect(page.getByRole("dialog", { name: "Set up Gemini" }))
     .toBeVisible();
@@ -98,6 +127,29 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
     "AIza.fake-e2e-key",
   );
   await page.getByRole("button", { name: "Save and continue" }).click();
+  const modelPicker = page.getByRole("combobox", { name: "Model" });
+  await expect(modelPicker).toBeVisible();
+  await page.getByRole("button", { name: /Show model options/ }).click();
+  await modelPicker.fill("Fake Gemini Compatible");
+  await expect(
+    page.getByRole("option", { name: /Fake Gemini Compatible/ }),
+  ).toBeVisible();
+  await page.getByRole("option", { name: /Fake Gemini Compatible/ }).click();
+  await expect(page.getByText(/quota was exceeded/)).toBeVisible();
+  await expect(page.getByText("provider-only-secret")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Retry" })).toBeDisabled();
+  await expect.poll(() =>
+    page.getByLabel("Receipt image file").evaluate((input) => ({
+      value: input.value,
+      fileCount: input.files?.length ?? 0,
+    }))
+  ).toEqual({ value: "", fileCount: 0 });
+  await page.getByLabel("Receipt image file").setInputFiles({
+    name: "receipt-retry.png",
+    mimeType: "image/png",
+    buffer: ONE_PIXEL_PNG,
+  });
+  await page.getByRole("button", { name: "Scan with AI" }).click();
   await expect(page.getByRole("heading", { name: "Review receipt" }))
     .toBeVisible();
   await expect(page.getByRole("heading", { name: "Fake Receipt Market" }))
@@ -129,6 +181,36 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
       !request.url.includes("expense") && !request.url.includes("project")
     ),
   ).toBe(true);
+  const postRequests = requests.filter((request) => request.method === "POST");
+  expect(postRequests).toHaveLength(2);
+  const requestBody = JSON.parse(
+    postRequests[postRequests.length - 1].body ?? "null",
+  ) as {
+    contents: Array<Record<string, unknown>>;
+    generationConfig: Record<string, unknown>;
+    systemInstruction: { parts: Array<{ text: string }> };
+  };
+  expect(Object.keys(requestBody).sort()).toEqual([
+    "contents",
+    "generationConfig",
+    "systemInstruction",
+  ]);
+  expect(requestBody.contents).toHaveLength(2);
+  expect(Object.keys(requestBody.contents[0])).toEqual(["text"]);
+  expect(typeof requestBody.contents[0].text).toBe("string");
+  expect(Object.keys(requestBody.contents[1])).toEqual(["inlineData"]);
+  expect(requestBody.contents[1].inlineData).toEqual({
+    data: expect.any(String),
+    mimeType: "image/jpeg",
+  });
+  expect(requestBody.systemInstruction.parts).toHaveLength(1);
+  expect(requestBody.systemInstruction.parts[0].text).toContain(
+    "category-uncategorized",
+  );
+  expect(requestBody.systemInstruction.parts[0].text).toContain("SEK");
+  expect(JSON.stringify(requestBody)).not.toContain("AIza.fake-e2e-key");
+  expect(JSON.stringify(requestBody)).not.toContain("Receipt project");
+  expect(await page.locator('input[type="file"]').count()).toBe(0);
   const localStorageKeys = await page.evaluate(() => Object.keys(localStorage));
   expect(
     localStorageKeys.some((key) =>

@@ -206,10 +206,26 @@ export const PortableSettingsSchema = z.object({
 }).strict();
 export type PortableSettings = z.infer<typeof PortableSettingsSchema>;
 
+const DeviceLocalGeminiCompatibilitySchema = z.object({
+  modelId: NonEmptyTextSchema,
+  modelFingerprint: NonEmptyTextSchema,
+  keyRevision: NonEmptyTextSchema,
+  evidenceVersion: NonEmptyTextSchema,
+  status: z.enum(["compatible", "incompatible"]),
+}).strict();
+
+export type DeviceLocalGeminiCompatibility = z.infer<
+  typeof DeviceLocalGeminiCompatibilitySchema
+>;
+
 export const DeviceLocalSettingsSchema = z.object({
   lastSelectedProjectId: StableIdSchema.optional(),
   geminiApiKey: z.string().min(1).optional(),
   selectedGeminiModel: NonEmptyTextSchema.optional(),
   imagePreparationEnabled: z.boolean(),
+  geminiKeyRevision: NonEmptyTextSchema.optional(),
+  geminiCompatibilityEvidence: z.array(DeviceLocalGeminiCompatibilitySchema)
+    .max(32)
+    .optional(),
 }).strict();
 export type DeviceLocalSettings = z.infer<typeof DeviceLocalSettingsSchema>;

@@ -1,6 +1,5 @@
 import { useActor } from "@xstate/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
 import {
   createGeminiAdapter,
   createImagePreparationPort,
@@ -27,6 +26,7 @@ import {
   CanonicalDecimalSchema,
   type Category,
   CurrencyCodeSchema,
+  type DeviceLocalGeminiCompatibility,
   type DeviceLocalSettings,
   DeviceLocalSettingsSchema,
   StableIdSchema,
@@ -78,6 +78,8 @@ const DEVICE_SETTINGS_KEY = "settings-device-local";
 const DEFAULT_MODEL_QUERY: GeminiModelQuery = {
   requiredCapabilities: REQUIRED_GEMINI_CAPABILITIES,
 };
+const GEMINI_COMPATIBILITY_EVIDENCE_VERSION = "receipt-compatibility.v1";
+const LEGACY_GEMINI_KEY_REVISION = "legacy-key";
 
 type ReceiptGeminiPort = GeminiModelAndExtractionPort & {
   getApiKey(options?: { signal?: AbortSignal }): Promise<
@@ -98,6 +100,60 @@ type ReceiptImageEntry = {
   readonly previewUrl: string;
   bytes?: Uint8Array;
 };
+
+function modelFingerprint(model: GeminiModel): string {
+  return [
+    model.id,
+    model.lifecycle,
+    ...REQUIRED_GEMINI_CAPABILITIES.map((capability) =>
+      model.capabilities[capability] ? "1" : "0"
+    ),
+  ].join("|");
+}
+
+function geminiKeyRevision(settings: DeviceLocalSettings): string {
+  return settings.geminiKeyRevision ?? LEGACY_GEMINI_KEY_REVISION;
+}
+
+function compatibilityEvidenceFor(
+  settings: DeviceLocalSettings,
+  model: GeminiModel,
+): DeviceLocalGeminiCompatibility | undefined {
+  return settings.geminiCompatibilityEvidence?.find((evidence) =>
+    evidence.modelId === model.id &&
+    evidence.modelFingerprint === modelFingerprint(model) &&
+    evidence.keyRevision === geminiKeyRevision(settings) &&
+    evidence.evidenceVersion === GEMINI_COMPATIBILITY_EVIDENCE_VERSION
+  );
+}
+
+function recordCompatibilityEvidence(
+  settings: DeviceLocalSettings,
+  model: GeminiModel,
+  status: DeviceLocalGeminiCompatibility["status"],
+  keyRevision = geminiKeyRevision(settings),
+): DeviceLocalSettings {
+  const nextEvidence: DeviceLocalGeminiCompatibility = {
+    modelId: model.id,
+    modelFingerprint: modelFingerprint(model),
+    keyRevision,
+    evidenceVersion: GEMINI_COMPATIBILITY_EVIDENCE_VERSION,
+    status,
+  };
+  const prior =
+    settings.geminiCompatibilityEvidence?.filter((evidence) =>
+      evidence.modelId !== model.id || evidence.keyRevision !== keyRevision
+    ) ?? [];
+  return {
+    ...settings,
+    geminiKeyRevision: keyRevision,
+    geminiCompatibilityEvidence: [...prior, nextEvidence].slice(-32),
+  };
+}
+
+function newGeminiKeyRevision(): string {
+  return `key-revision-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
+}
 
 export class ReceiptImageStore {
   readonly #entries = new Map<string, ReceiptImageEntry>();
@@ -134,8 +190,7 @@ export class ReceiptImageStore {
   }
 
   release(ref: ReceiptImageRef): void {
-    const entry = this.#entries.get(ref.ephemeralId);
-    if (entry) entry.bytes = undefined;
+    this.remove(ref);
   }
 
   remove(ref: ReceiptImageRef): void {
@@ -208,6 +263,12 @@ export async function writeDeviceLocalSettings(
     ...(settings.selectedGeminiModel === undefined
       ? {}
       : { selectedGeminiModel: settings.selectedGeminiModel }),
+    ...(settings.geminiKeyRevision === undefined
+      ? {}
+      : { geminiKeyRevision: settings.geminiKeyRevision }),
+    ...(settings.geminiCompatibilityEvidence === undefined
+      ? {}
+      : { geminiCompatibilityEvidence: settings.geminiCompatibilityEvidence }),
   });
   await local.transaction(
     "readwrite",
@@ -223,18 +284,28 @@ export async function writeDeviceLocalSettings(
 async function responseJson(
   response: Response,
 ): Promise<Record<string, unknown>> {
+  if (!response.ok) {
+    throw new GeminiHttpError(response.status);
+  }
   let value: unknown;
   try {
     value = await response.json();
   } catch {
     value = {};
   }
-  if (!response.ok) {
-    throw new Error(`Gemini request failed (${response.status}).`);
-  }
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, unknown>
     : {};
+}
+
+class GeminiHttpError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`Gemini request failed (${status}).`);
+    this.name = "GeminiHttpError";
+    this.status = status;
+  }
 }
 
 function createBrowserGeminiClient(apiKey: string): GeminiBrowserClient {
@@ -331,9 +402,9 @@ export function createDefaultReceiptUiDependencies(
   };
 }
 
-function modelOptions(
+export function modelOptions(
   models: readonly GeminiModel[],
-  tested: ReadonlySet<string>,
+  settings: DeviceLocalSettings,
 ): Array<{
   id: string;
   label: string;
@@ -342,14 +413,19 @@ function modelOptions(
   reason?: string;
 }> {
   return models.map((model) => {
-    const label = tested.has(model.id)
+    const evidence = compatibilityEvidenceFor(settings, model);
+    const label = model.lifecycle !== "active"
+      ? "Incompatible"
+      : evidence?.status === "compatible"
       ? "Compatible"
+      : evidence?.status === "incompatible"
+      ? "Incompatible"
       : geminiModelCapabilityLabel(model, DEFAULT_MODEL_QUERY);
     return {
       id: model.id,
       label: `${model.displayName} · ${label}`,
       status: label,
-      disabled: label !== "Compatible",
+      disabled: label === "Incompatible",
       ...(label === "Incompatible"
         ? {
           reason: model.lifecycle === "active"
@@ -462,15 +538,32 @@ export function ReceiptScanScreen({
   const [keyError, setKeyError] = useState<string>();
   const [keyBusy, setKeyBusy] = useState(false);
   const [models, setModels] = useState<readonly GeminiModel[]>([]);
-  const [testedModels] = useState<ReadonlySet<string>>(new Set());
   const [modelError, setModelError] = useState<string>();
   const [modelsLoading, setModelsLoading] = useState(false);
   const [hasKey, setHasKey] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [pendingScan, setPendingScan] = useState(false);
+  const [testState, setTestState] = useState<
+    "idle" | "testing" | "passed" | "failed"
+  >("idle");
   const sourceInputRef = useRef<HTMLInputElement>(null);
   const openSent = useRef(false);
   const reviewSent = useRef(false);
   const selectedImageRef = useRef(selectedImage);
+  const pendingScanRef = useRef(false);
+  const quickSetupReturnFocusRef = useRef<HTMLElement | null>(null);
+
+  const setPendingScanState = (value: boolean) => {
+    pendingScanRef.current = value;
+    setPendingScan(value);
+  };
+
+  const clearSelectedImage = () => {
+    if (selectedImageRef.current) imageStore.remove(selectedImageRef.current);
+    selectedImageRef.current = null;
+    setSelectedImage(null);
+    if (sourceInputRef.current) sourceInputRef.current.value = "";
+  };
 
   useEffect(() => {
     selectedImageRef.current = selectedImage;
@@ -540,13 +633,18 @@ export function ReceiptScanScreen({
       !reviewSent.current
     ) {
       reviewSent.current = true;
-      if (selectedImageRef.current) imageStore.remove(selectedImageRef.current);
+      clearSelectedImage();
       onReview(snapshot.context.review);
     }
   }, [imageStore, onReview, snapshot]);
 
   useEffect(() => {
+    if (snapshot.matches("failed")) clearSelectedImage();
+  }, [snapshot]);
+
+  useEffect(() => {
     if (snapshot.matches("cancelled") || snapshot.matches("manualEntry")) {
+      clearSelectedImage();
       onClose();
     }
   }, [onClose, snapshot]);
@@ -564,8 +662,12 @@ export function ReceiptScanScreen({
     if (selectedImage) imageStore.remove(selectedImage);
     const next = imageStore.add(file);
     setSelectedImage(next);
+    selectedImageRef.current = next;
     reviewSent.current = false;
-    if (snapshot.matches("selecting") || snapshot.matches("failed")) {
+    if (snapshot.matches("selecting")) {
+      send({ type: "receipt.image-selected" });
+    } else if (snapshot.matches("failed")) {
+      send({ type: "receipt.replace-image" });
       send({ type: "receipt.image-selected" });
     } else if (snapshot.matches("offline")) {
       setModelError(
@@ -592,34 +694,40 @@ export function ReceiptScanScreen({
     setKeyError(undefined);
     try {
       await dependencies.gemini.setApiKey(apiKey.trim());
+      const nextSettings = {
+        ...settings,
+        geminiKeyRevision: newGeminiKeyRevision(),
+        geminiCompatibilityEvidence: [],
+      };
+      onSettingsChange(nextSettings);
       const nextModels = await refreshModels();
       if (nextModels.length === 0) {
         throw new Error("The key did not return any Gemini models.");
       }
-      const nextModelOptions = modelOptions(nextModels, testedModels);
+      const nextModelOptions = modelOptions(nextModels, nextSettings);
       const nextSelectedModel = settings.selectedGeminiModel &&
-          nextModelOptions.some((option) =>
-            option.id === settings.selectedGeminiModel &&
-            option.status === "Compatible"
-          )
+          nextModelOptions.find((option) =>
+              option.id === settings.selectedGeminiModel
+            )?.status === "Compatible"
         ? settings.selectedGeminiModel
-        : nextModelOptions.find((option) => option.status === "Compatible")
-          ?.id;
-      const pendingScanInput = nextSelectedModel
-        ? makeScanInput(nextSelectedModel)
-        : null;
-      if (!pendingScanInput) {
-        throw new Error(
-          "The key returned no compatible Gemini model for receipt scanning.",
-        );
-      }
+        : undefined;
       setHasKey(true);
       setApiKey("");
       setQuickSetupOpen(false);
-      setModelError(undefined);
-      send({ type: "receipt.scan", input: pendingScanInput });
+      setOptionsOpen(true);
+      if (nextSelectedModel) {
+        const pendingScanInput = makeScanInput(nextSelectedModel);
+        if (!pendingScanInput) throw new Error("The receipt image is missing.");
+        setPendingScanState(false);
+        setModelError(undefined);
+        send({ type: "receipt.scan", input: pendingScanInput });
+      } else {
+        setPendingScanState(true);
+        setModelError(
+          "Select a compatible Gemini model to continue this scan.",
+        );
+      }
     } catch (error) {
-      await dependencies.gemini.removeApiKey().catch(() => undefined);
       setKeyError(
         messageForError(error, "The API key could not be validated."),
       );
@@ -628,13 +736,15 @@ export function ReceiptScanScreen({
     }
   };
 
-  const compatible = modelOptions(models, testedModels).filter((option) =>
-    option.status === "Compatible"
-  );
-  const selectedModel = settings.selectedGeminiModel &&
-      compatible.some((option) => option.id === settings.selectedGeminiModel)
-    ? settings.selectedGeminiModel
-    : compatible[0]?.id;
+  const availableModelOptions = modelOptions(models, settings);
+  const selectedOption = settings.selectedGeminiModel
+    ? availableModelOptions.find((option) =>
+      option.id === settings.selectedGeminiModel
+    )
+    : undefined;
+  const selectedModel = selectedOption?.status === "Compatible"
+    ? selectedOption.id
+    : undefined;
   const project =
     state.projects.find((candidate) =>
       candidate.id === state.selectedProjectId
@@ -660,18 +770,92 @@ export function ReceiptScanScreen({
       }
       : null;
   const scanInput = selectedModel ? makeScanInput(selectedModel) : null;
+  const selectModel = (modelId: string) => {
+    const option = availableModelOptions.find((candidate) =>
+      candidate.id === modelId
+    );
+    const nextSettings = { ...settings, selectedGeminiModel: modelId };
+    setTestState("idle");
+    void onSettingsChange(nextSettings);
+    if (pendingScanRef.current && option?.status === "Compatible") {
+      const pendingInput = makeScanInput(modelId);
+      if (!pendingInput) return;
+      setPendingScanState(false);
+      setOptionsOpen(false);
+      setModelError(undefined);
+      send({ type: "receipt.scan", input: pendingInput });
+    }
+  };
+  const testSelectedModel = async () => {
+    const selectedId = settings.selectedGeminiModel;
+    const model = selectedId
+      ? models.find((candidate) => candidate.id === selectedId)
+      : undefined;
+    if (!selectedId || !model) return;
+    setTestState("testing");
+    setModelError(undefined);
+    try {
+      const result = await dependencies.gemini.testConfiguration(
+        selectedId,
+        DEFAULT_MODEL_QUERY,
+      );
+      const nextSettings = recordCompatibilityEvidence(
+        settings,
+        model,
+        result.status === "compatible" ? "compatible" : "incompatible",
+      );
+      onSettingsChange(nextSettings);
+      if (result.status === "compatible") {
+        setTestState("passed");
+        if (pendingScanRef.current) {
+          const pendingInput = makeScanInput(selectedId);
+          if (pendingInput) {
+            setPendingScanState(false);
+            setOptionsOpen(false);
+            send({ type: "receipt.scan", input: pendingInput });
+          }
+        }
+      } else {
+        setTestState("failed");
+        setModelError("This model is incompatible with receipt scanning.");
+      }
+    } catch (error) {
+      setTestState("failed");
+      setModelError(
+        messageForError(error, "The model compatibility test failed."),
+      );
+    }
+  };
   const scan = () => {
     if (!selectedImage) return;
     if (!hasKey) {
+      const activeElement = document.activeElement;
+      quickSetupReturnFocusRef.current = activeElement instanceof HTMLElement
+        ? activeElement
+        : null;
+      setPendingScanState(true);
       setQuickSetupOpen(true);
+      return;
+    }
+    if (!settings.selectedGeminiModel) {
+      setPendingScanState(true);
+      setOptionsOpen(true);
+      setModelError("Select a compatible Gemini model before scanning.");
+      return;
+    }
+    if (selectedOption?.status === "Needs test") {
+      setPendingScanState(true);
+      setOptionsOpen(true);
+      setModelError("Test this Gemini model before scanning.");
       return;
     }
     if (!scanInput) {
       setModelError(
-        "Choose a receipt-compatible Gemini model before scanning.",
+        "The selected Gemini model is not compatible with receipt scanning.",
       );
       return;
     }
+    setPendingScanState(false);
     send({ type: "receipt.scan", input: scanInput });
   };
 
@@ -760,8 +944,8 @@ export function ReceiptScanScreen({
           onTakePhoto={() => startFilePicker(true)}
           onChooseImage={() => startFilePicker(false)}
           onRemove={() => {
-            if (selectedImage) imageStore.remove(selectedImage);
-            setSelectedImage(null);
+            clearSelectedImage();
+            setPendingScanState(false);
             setModelError(undefined);
           }}
         />
@@ -774,10 +958,12 @@ export function ReceiptScanScreen({
           )
           : null}
         <StatusPanel
-          title={selectedModel
-            ? `Gemini: ${selectedModel}`
+          title={selectedOption
+            ? `Gemini: ${selectedOption.id} · ${selectedOption.status}`
             : "Gemini model not selected"}
-          detail={settings.imagePreparationEnabled
+          detail={pendingScan
+            ? "Select a compatible model to continue this scan"
+            : settings.imagePreparationEnabled
             ? "Image preparation: On"
             : "Image preparation: Off · privacy sanitization remains on"}
           action={
@@ -794,12 +980,19 @@ export function ReceiptScanScreen({
             <Card as="section">
               <Stack gap={4}>
                 <ModelPicker
-                  options={modelOptions(models, testedModels)}
-                  value={selectedModel}
-                  onValueChange={(selectedGeminiModel) =>
-                    void onSettingsChange({ ...settings, selectedGeminiModel })}
+                  options={availableModelOptions}
+                  value={settings.selectedGeminiModel}
+                  onValueChange={selectModel}
                   disabled={modelsLoading || models.length === 0}
                 />
+                {selectedOption?.status === "Needs test"
+                  ? (
+                    <GeminiConfigurationTest
+                      state={testState}
+                      onTest={() => void testSelectedModel()}
+                    />
+                  )
+                  : null}
                 <Switch
                   isSelected={settings.imagePreparationEnabled}
                   onChange={(imagePreparationEnabled) =>
@@ -829,7 +1022,11 @@ export function ReceiptScanScreen({
             <InlineNotice tone="danger" title="Receipt scan failed">
               {actorError}
               <Inline>
-                <Button variant="secondary" onPress={() => scan()}>
+                <Button
+                  variant="secondary"
+                  isDisabled={!selectedImage}
+                  onPress={() => scan()}
+                >
                   Retry
                 </Button>
                 <Button variant="quiet" onPress={() => startFilePicker(false)}>
@@ -878,35 +1075,42 @@ export function ReceiptScanScreen({
       </Stack>
       {quickSetupOpen
         ? (
-          <div
-            className="receipt-ui-quick-setup"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Set up Gemini"
+          <AdaptiveDialog
+            trigger={
+              <Button
+                className="receipt-ui-dialog-trigger"
+                aria-hidden="true"
+                isDisabled
+                variant="quiet"
+              >
+                Open setup dialog
+              </Button>
+            }
+            title="Set up Gemini"
+            isOpen={quickSetupOpen}
+            onOpenChange={(open) => {
+              setQuickSetupOpen(open);
+              if (!open) {
+                const returnFocus = quickSetupReturnFocusRef.current;
+                queueMicrotask(() => {
+                  if (returnFocus?.isConnected) returnFocus.focus();
+                });
+              }
+            }}
           >
-            <Card as="section">
-              <Inline justify="space-between">
-                <Heading level={2}>Set up Gemini</Heading>
-                <Button
-                  variant="quiet"
-                  aria-label="Close"
-                  onPress={() => setQuickSetupOpen(false)}
-                >
-                  <X />
-                </Button>
-              </Inline>
-              <GeminiQuickSetup
-                value={apiKey}
-                onChange={(value) => {
-                  setApiKey(value);
-                  setKeyError(undefined);
-                }}
-                onSave={() => void saveAndContinue()}
-                error={keyError}
-                busy={keyBusy}
-              />
-            </Card>
-          </div>
+            <GeminiQuickSetup
+              showHeading={false}
+              autoFocus
+              value={apiKey}
+              onChange={(value) => {
+                setApiKey(value);
+                setKeyError(undefined);
+              }}
+              onSave={() => void saveAndContinue()}
+              error={keyError}
+              busy={keyBusy}
+            />
+          </AdaptiveDialog>
         )
         : null}
     </ContentContainer>
@@ -1060,6 +1264,22 @@ export function ReceiptReviewScreen({
   const [metadataOpen, setMetadataOpen] = useState(false);
   const [metadataError, setMetadataError] = useState<string>();
   const doneRef = useRef(false);
+  const metadataReturnFocusRef = useRef<HTMLElement | null>(null);
+
+  const openMetadata = () => {
+    const activeElement = document.activeElement;
+    metadataReturnFocusRef.current = activeElement instanceof HTMLElement
+      ? activeElement
+      : null;
+    setMetadataOpen(true);
+  };
+  const closeMetadata = () => {
+    setMetadataOpen(false);
+    const returnFocus = metadataReturnFocusRef.current;
+    queueMicrotask(() => {
+      if (returnFocus?.isConnected) returnFocus.focus();
+    });
+  };
 
   useEffect(() => {
     if (openSent) return;
@@ -1115,9 +1335,9 @@ export function ReceiptReviewScreen({
   const difference = receiptMismatchDifference(review);
   const selectedCount = review.lines.filter((line) => line.selected).length;
   const categories = state.categories;
-  const links = review.lines.filter((line) => line.type === "purchase").map((
-    line,
-  ) => ({
+  const links = review.lines.filter((line) =>
+    line.type === "purchase" && line.selected
+  ).map((line) => ({
     id: line.id,
     label: line.description || "Unclear purchase",
   }));
@@ -1186,7 +1406,7 @@ export function ReceiptReviewScreen({
         />
         <ReceiptMetadata
           metadata={review.parent}
-          onEdit={() => setMetadataOpen(true)}
+          onEdit={openMetadata}
         />
         <ReceiptReconciliation
           printed={review.parent.printedTotal}
@@ -1302,7 +1522,7 @@ export function ReceiptReviewScreen({
             parent={review.parent}
             onSave={updateParent}
             error={metadataError}
-            onClose={() => setMetadataOpen(false)}
+            onClose={closeMetadata}
           />
         )
         : null}
@@ -1326,53 +1546,62 @@ function ReceiptMetadataEditor({
   const [currency, setCurrency] = useState(parent.currency);
   const [printedTotal, setPrintedTotal] = useState(parent.printedTotal);
   return (
-    <div
-      className="receipt-ui-quick-setup"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Edit receipt metadata"
+    <AdaptiveDialog
+      trigger={
+        <Button
+          className="receipt-ui-dialog-trigger"
+          aria-hidden="true"
+          isDisabled
+          variant="quiet"
+        >
+          Open metadata dialog
+        </Button>
+      }
+      title="Edit receipt details"
+      isOpen
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <Card as="section">
-        <PageHeader
-          title="Edit receipt details"
-          headingLevel={2}
-          actions={<Button variant="quiet" onPress={onClose}>Close</Button>}
+      <Stack gap={4}>
+        <TextField
+          autoFocus
+          label="Merchant"
+          value={merchant}
+          onChange={setMerchant}
         />
-        <Stack gap={4}>
-          <TextField label="Merchant" value={merchant} onChange={setMerchant} />
-          <NativeDateField
-            label="Date"
-            value={date}
-            onChange={(event) => setDate(event.currentTarget.value)}
-          />
-          <TextField label="Currency" value={currency} onChange={setCurrency} />
-          <TextField
-            label="Printed receipt total"
-            value={printedTotal}
-            onChange={setPrintedTotal}
-          />
-          {error
-            ? (
-              <InlineNotice tone="danger" title="Check receipt details">
-                {error}
-              </InlineNotice>
-            )
-            : null}
-          <Button
-            onPress={() =>
-              onSave({
-                ...parent,
-                merchant: merchant.trim() || undefined,
-                date,
-                currency,
-                printedTotal,
-              })}
-          >
-            Save details
-          </Button>
-        </Stack>
-      </Card>
-    </div>
+        <NativeDateField
+          label="Date"
+          value={date}
+          onChange={(event) => setDate(event.currentTarget.value)}
+        />
+        <TextField label="Currency" value={currency} onChange={setCurrency} />
+        <TextField
+          label="Printed receipt total"
+          value={printedTotal}
+          onChange={setPrintedTotal}
+        />
+        {error
+          ? (
+            <InlineNotice tone="danger" title="Check receipt details">
+              {error}
+            </InlineNotice>
+          )
+          : null}
+        <Button
+          onPress={() =>
+            onSave({
+              ...parent,
+              merchant: merchant.trim() || undefined,
+              date,
+              currency,
+              printedTotal,
+            })}
+        >
+          Save details
+        </Button>
+      </Stack>
+    </AdaptiveDialog>
   );
 }
 
@@ -1391,7 +1620,6 @@ export function GeminiSettingsScreen({
   const [maskedKey, setMaskedKey] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [models, setModels] = useState<readonly GeminiModel[]>([]);
-  const [tested, setTested] = useState<ReadonlySet<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [testState, setTestState] = useState<
@@ -1429,6 +1657,11 @@ export function GeminiSettingsScreen({
     setError(undefined);
     try {
       await gemini.setApiKey(apiKey.trim());
+      onSettingsChange({
+        ...settings,
+        geminiKeyRevision: newGeminiKeyRevision(),
+        geminiCompatibilityEvidence: [],
+      });
       setApiKey("");
       await refresh();
     } catch (failure) {
@@ -1443,32 +1676,40 @@ export function GeminiSettingsScreen({
     setHasKey(false);
     setMaskedKey("");
     setModels([]);
-    setTested(new Set());
     setTestState("idle");
-    onSettingsChange({ ...settings, selectedGeminiModel: undefined });
+    onSettingsChange({
+      ...settings,
+      selectedGeminiModel: undefined,
+      geminiKeyRevision: undefined,
+      geminiCompatibilityEvidence: undefined,
+    });
   };
 
-  const options = modelOptions(models, tested);
+  const options = modelOptions(models, settings);
   const test = async () => {
-    if (!settings.selectedGeminiModel) return;
+    const selectedModelId = settings.selectedGeminiModel;
+    if (!selectedModelId) return;
+    const selectedModel = models.find((model) => model.id === selectedModelId);
+    if (!selectedModel) return;
     setTestState("testing");
     setError(undefined);
     try {
       const result = await gemini.testConfiguration(
-        settings.selectedGeminiModel,
+        selectedModelId,
         DEFAULT_MODEL_QUERY,
       );
+      const nextSettings = recordCompatibilityEvidence(
+        settings,
+        selectedModel,
+        result.status === "compatible" ? "compatible" : "incompatible",
+      );
+      onSettingsChange(nextSettings);
       if (result.status === "compatible") {
-        setTested((current) =>
-          new Set([...current, settings.selectedGeminiModel!])
-        );
         setTestState("passed");
       } else {
         setTestState("failed");
         setError(
-          result.status === "needs-test"
-            ? "This model needs a successful synthetic test before use."
-            : "This model is incompatible with receipt scanning.",
+          "This model is incompatible with receipt scanning.",
         );
       }
     } catch (failure) {

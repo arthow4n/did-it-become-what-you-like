@@ -1136,6 +1136,8 @@ export type AdaptiveDialogProps = {
   children: ReactNode | ((close: () => void) => ReactNode);
   closeLabel?: string;
   isDismissable?: boolean;
+  isOpen?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
   className?: string;
 };
 
@@ -1145,10 +1147,15 @@ export function AdaptiveDialog({
   children,
   closeLabel = "Close",
   isDismissable = true,
+  isOpen,
+  onOpenChange,
   className,
 }: AdaptiveDialogProps) {
   return (
-    <AriaDialogTrigger>
+    <AriaDialogTrigger
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+    >
       {trigger}
       <AriaModalOverlay
         className="ds-overlay-backdrop"
@@ -1331,6 +1338,12 @@ export type BannerProps = {
   className?: string;
 };
 
+function NoticeContent({ children }: { children: ReactNode }) {
+  return typeof children === "string" || typeof children === "number"
+    ? <Text>{children}</Text>
+    : <Text as="div">{children}</Text>;
+}
+
 export function Banner(
   { children, tone = "info", title, action, className }: BannerProps,
 ) {
@@ -1338,7 +1351,7 @@ export function Banner(
     <div className={cx("ds-banner", className)} data-tone={tone} role="status">
       <Stack gap={2}>
         {title ? <strong>{title}</strong> : null}
-        <Text>{children}</Text>
+        <NoticeContent>{children}</NoticeContent>
         {action}
       </Stack>
     </div>
@@ -1356,7 +1369,7 @@ export function InlineNotice(
     >
       <Stack gap={2}>
         {title ? <strong>{title}</strong> : null}
-        <Text>{children}</Text>
+        <NoticeContent>{children}</NoticeContent>
         {action}
       </Stack>
     </div>
@@ -2365,7 +2378,7 @@ export function ModelPicker(
               key={option.id}
               id={option.id}
               textValue={option.label}
-              isDisabled={option.disabled || option.status !== "Compatible"}
+              isDisabled={option.disabled || option.status === "Incompatible"}
               className="ds-menu-item"
             >
               <Stack gap={1}>
@@ -2384,20 +2397,31 @@ export function ModelPicker(
 }
 
 export function GeminiQuickSetup(
-  { value, onChange, onSave, error, busy }: {
+  {
+    value,
+    onChange,
+    onSave,
+    error,
+    busy,
+    showHeading = true,
+    autoFocus = false,
+  }: {
     value: string;
     onChange: (value: string) => void;
     onSave: () => void;
     error?: string;
     busy?: boolean;
+    showHeading?: boolean;
+    autoFocus?: boolean;
   },
 ) {
   return (
     <Card as="section">
       <Stack gap={4}>
-        <Heading size="sm">Set up Gemini</Heading>
+        {showHeading ? <Heading size="sm">Set up Gemini</Heading> : null}
         <SecretField
           label="API key"
+          autoFocus={autoFocus}
           value={value}
           onChange={onChange}
           description="Stored on this device. It is not a browser secret and can be read by code running on this origin."

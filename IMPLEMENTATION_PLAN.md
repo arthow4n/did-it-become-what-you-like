@@ -1255,9 +1255,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, and A-302 are complete. A-303 is integrated,
   the bounded R-400 compact-layout fix is integrated, and R-400 is the active
   independent closure gate.
-- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `28ee355` after pushing the contrast-fix dispatch checkpoint. The root
-  worktree
+- **Reconciled branch/upstream:** `master` is at `1f85325` and
+  `origin/master` is at `a844c6f` (`0 1`) immediately before this integration
+  checkpoint push. `1f85325` is the integrated contrast-fix source commit
+  being pushed with this ledger update. The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1285,7 +1286,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
   browser build`). The latest integrated implementation is `ba63635`; the
   latest pushed orchestration checkpoint before this ledger update is
-  `28ee355`.
+  `a844c6f`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1314,7 +1315,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `28ee355`; the root worktree contains only the intentionally untracked
+  at `1f85325`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
@@ -2408,6 +2409,25 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   source-first, preserve the exact bounded ownership and validation gates,
   and return `READY FOR INTEGRATION` or `BLOCK`. R-400 remains blocked until
   the replacement fix and a complete fresh closure review pass.
+- **R-400 contrast-fix integration:** Dirac completed the bounded fix in
+  `~/git/worktrees/did-it-become-what-you-like-r-400-contrast-fix` with final
+  `R-400-contrast-fix-progress.md` handover at `2026-08-24T11:57:37Z`,
+  explicitly `READY FOR INTEGRATION`. Worker commit `9d8d8fa` was inspected
+  and cherry-picked as root `1f85325` (`Clear quick setup contrast
+  diagnostic`), changing only `src/features/local-ui.css`: the quick-setup
+  warning stack receives the opaque warning surface and the multi-line body
+  text is flattened so axe can determine the shared background while the
+  title/body warning colors remain unchanged. The worker’s native matrix
+  records 320x568 quick setup `0/0/33`, fresh 390x844 quick setup `0/0/32`
+  with the warning target absent, scoped 1280x800 warning `0/0/6`, and
+  1280x800 scan/options `0/0/36`; after expansion the 390px model picker was
+  `[41,505,308,77]` and sticky action `[24,747,342,73]`, with no overlap or
+  horizontal overflow. A separate resized-session `incomplete=1` result was
+  an unrelated API-key description target and was not attributed to this
+  warning-only fix. The worker’s full `deno task verify`, focused component
+  7/7, receipt E2E 1/1, build, and `git diff --check` passed; worker and
+  handover remain preserved and R-400 is still blocked pending a fresh
+  independent closure review.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

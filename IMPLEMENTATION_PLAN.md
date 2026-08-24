@@ -739,14 +739,17 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-500 — Synchronization and portability independent review gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `S-405`, `R-400`.
+- **Status/dependencies:** `BLOCKED`; depends on `S-405`, `R-400`; release is
+  blocked by the independent review findings recorded below.
 - **Ownership:** review read-only first; fixes scoped to S-task owners.
 - **Scope/non-goals:** adversarially review causal convergence, Drive security,
   retirement checks, device semantics, conflict resolution, import/replace
   safety, offline honesty, and UI/actor separation. E2E is not used to substitute
   for schedule-level integration evidence.
 - **Outputs/acceptance:** no high/medium finding; seeded multi-device suites pass
-  repeatedly; no credential/log leakage; fake Drive E2E remains narrow.
+  repeatedly; no credential/log leakage; fake Drive E2E remains narrow. A
+  review BLOCK requires a bounded fix wave and a fresh independent closure
+  review before downstream M6 work is released.
 - **Tests:** all M5 tests, reordered/failing transport schedules, corrupt imports,
   account switching, restart at every durable workflow stage.
 - **Verification:** `deno task verify`; approved E2Es; agent-browser M5 audit.
@@ -1254,9 +1257,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
-  next.
+  `BLOCKED` after its independent review; the bounded R-500 fix wave is the
+  active dependency-ready work.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  the pushed S-405 integration checkpoint `d877c52`. The latest
+  the pushed orchestration checkpoint `b1305ea` (`Record S-405 completion and
+  dispatch R-500 review`), whose implementation parent is the S-405 checkpoint
+  `d877c52`. The latest
   completed-task ledger checkpoint before S-403 was `94f5f5c` after pushing the
   S-402 completion ledger. The root worktree
   contains only the intentionally untracked `A-303-progress.md`,
@@ -1335,7 +1341,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
-  R-500 is `IN_PROGRESS` under the independent read-only review wave.
+  R-500 is `BLOCKED` after the independent read-only review; its bounded
+  three-owner fix wave is pending dispatch from the reconciled root.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2756,6 +2763,50 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   evidence, maintain the progress/handover protocol, and return explicit
   `APPROVE` or `BLOCK` with severity-counted findings and exact validation
   evidence. Preserve this worktree and handover through closure.
+- **R-500 independent review result:** Ramanujan's final handover at
+  `2026-08-24T16:28:27Z` is `BLOCK`, preserved at
+  `~/git/worktrees/did-it-become-what-you-like-r-500-review/R-500-progress.md`.
+  The review found two severity-1 defects: a higher-generation replacement
+  can merge and resurrect removed local records, and a real same-field causal
+  conflict can crash while creating a conflict because record identity is
+  lost. It found eight severity-2 defects: routed Drive authorization/transport
+  is not wired; runtime conflict projection collapses field and deletion
+  metadata; successful conflict resolution does not clear the global sync
+  banner; import/export actors are one-shot across repeated workflows and
+  navigation; import preview change counts/warnings are discarded; production
+  causal merge bypasses the approved Automerge boundary; the required routed
+  M5 E2E cases are absent; and configured lower-layer filters silently select
+  zero tests. It also found two severity-3 defects: device callbacks use array
+  positions instead of stable identities, and ordinary Known Devices renders
+  raw ISO timestamps instead of the approved approximate last-seen format.
+  The full verification command passed but is insufficient evidence for the
+  missing selections; the handover contains the exact command matrix and
+  file/line evidence. No source, test, plan, master, remote, deployment, or
+  specification files were changed by the reviewer. Preserve the review
+  worktree, branch, and handover; do not close or delete them as part of the
+  fix wave.
+- **R-500 bounded fix-wave dispatch:** The orchestrator must resolve the BLOCK
+  in three disjoint worktrees, then rerun the full gate and dispatch a fresh
+  read-only closure reviewer. S-402 causal owns `src/adapters/sync/**` and
+  focused sync tests for generation adoption without resurrection,
+  identity-safe same-field conflicts, and the approved Automerge production
+  boundary. S-404 import/contract owns `src/adapters/import-export/**`,
+  `src/actors/import-export/**`, `src/domain/import-export/**`, focused tests,
+  and—only if required by the preview contract—`src/actors/contracts/types.ts`;
+  it owns import generation gating and preservation of preview change counts,
+  warnings, migrations, and errors. S-405 integration/UI owns
+  `src/features/sync-portability-runtime.tsx`, the synchronization and
+  conflict/import UI slices, local UI composition, app entry, and `e2e/**`;
+  it owns the runtime Drive/auth boundary composition, conflict metadata and
+  banner bridge, terminal actor lifecycle, stable device identity, last-seen
+  formatting, and explicit routed E2E tasks. No worker may edit this plan,
+  `master`, remotes, or another owner's files. Contract changes require the
+  worker to document impact in its handover and the orchestrator to inspect
+  all consumers before integration. If Drive auth wiring requires a new
+  adapter/domain contract outside these ownership boundaries, pause that slice
+  and record the exact boundary rather than making an uncontrolled cross-task
+  change. The Automerge decision is an internal implementation correction and
+  does not change user requirements or the deferred feature scope.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

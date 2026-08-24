@@ -717,7 +717,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### S-405 — Deliver Drive, Conflict, Known Devices, and Import/Export UI
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `S-402`, `S-403`, `S-404`,
+- **Status/dependencies:** `COMPLETE`; depends on `S-402`, `S-403`, `S-404`,
   `U-104`, `L-205`.
 - **Ownership:** Screens 10, 10A, 10B, 12, global sync/conflict indicators;
   no adapter/domain contract changes.
@@ -739,7 +739,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-500 — Synchronization and portability independent review gate
 
-- **Status/dependencies:** `PENDING`; depends on `S-405`, `R-400`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `S-405`, `R-400`.
 - **Ownership:** review read-only first; fixes scoped to S-task owners.
 - **Scope/non-goals:** adversarially review causal convergence, Drive security,
   retirement checks, device semantics, conflict resolution, import/replace
@@ -1253,10 +1253,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
-  complete. M4 is released; S-403 and S-404 are complete and S-405 is the
-  active parallel UI implementation. R-500 is next after S-405.
+  complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
+  next.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  the pushed S-403/S-404 ledger checkpoint after this update. The latest
+  the pushed S-405 integration checkpoint `d877c52`. The latest
   completed-task ledger checkpoint before S-403 was `94f5f5c` after pushing the
   S-402 completion ledger. The root worktree
   contains only the intentionally untracked `A-303-progress.md`,
@@ -1289,12 +1289,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   (`Implement S-404 import export workflows`), after `1c50cb3`
   (`Implement S-403 conflict workflow`) and `1d3afce`
   (`Implement S-401 Drive adapter`); S-402 integration is `95ac376`
-  (`Implement S-402 synchronization actor and transport`); the latest pushed
-  orchestration checkpoint before this ledger update is `88e1b12`.
+  (`Implement S-402 synchronization actor and transport`); S-405 worker and
+  integration commits are recorded in the S-405 ledger entry above; the latest
+  pushed orchestration checkpoint before this ledger update is `73d2a53`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
-  integration evidence are present on `master`; R-400, S-401, S-402, and S-403
-  are complete as recorded below, including S-404.
+  integration evidence are present on `master`; R-400, S-401, S-402, S-403,
+  S-404, and S-405 are complete as recorded below.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
@@ -1309,8 +1310,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
   is recorded below. R-300 and A-302 are complete. The latest root `deno task
-  verify` passed after S-403/S-404 integration: 137 repository tests, 20
-  integration, 35 component, 29 domain, 1 actor, local E2E 2/2,
+  verify` passed after S-405 integration: 137 repository tests, 20
+  integration, 56 component, 29 domain, 1 actor, local E2E 2/2,
   gallery/browser/axe, Pages/CI/toolchain validators, both production builds,
   frozen audit, and `git diff --check`. A-303 and compact-layout focused validation also passed
   `deno task fmt:check` (142 files), `deno task lint` (130 files),
@@ -1320,7 +1321,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  through the S-404 ledger checkpoint `2d24c1e`; the root worktree contains
+  through S-405 integration commit `d877c52`; the root worktree contains
   only the intentionally untracked A-303, R-300, and R-400 contrast-fix
   handovers plus the preserved S-404 root-artifact quarantine. Preserved
   worktrees are listed below.
@@ -1333,8 +1334,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
-  `COMPLETE`; R-400, S-401, S-402, S-403, and S-404 are `COMPLETE`; S-405 is
-  `IN_PROGRESS`; R-500 is next after the S-405 UI integration gate.
+  `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
+  R-500 is `IN_PROGRESS` under the independent read-only review wave.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2714,6 +2715,47 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `src/features/local-ui.tsx`, routing, and app entry; the orchestrator must
   rerun combined component/E2E/agent-browser and full gates before S-405 is
   complete.
+- **S-405 integration result:** Ptolemy's final handover at
+  `2026-08-24T15:41:24Z` and Pasteur's final handover at
+  `2026-08-24T15:43:58Z` were both `READY FOR INTEGRATION`. The orchestrator
+  inspected both bounded feature slices, committed the worker branches as
+  `815ee85` (`Implement S-405 synchronization UI`) and `492f0bd`
+  (`Implement S-405 conflict and import UI`), and integrated them as
+  `5448606` and `eec295c`. The orchestrator then added the actor-backed
+  `src/features/sync-portability-runtime.tsx`, app routes for synchronization,
+  known devices, conflict review, and import/export, Settings entry points,
+  feature CSS imports, and the narrow header correction. The integration
+  commits are `be528f9` (`Integrate S-405 synchronization and portability UI`)
+  and `d877c52` (`Fix narrow synchronization header layout`). The runtime
+  keeps XState machines mounted across navigation, derives sync, conflict,
+  import, and export view models from actor snapshots, uses the local
+  repository and browser file-share boundary, keeps Drive explicitly
+  unconfigured until OAuth setup is available, and exposes opaque identifiers
+  only through the existing labeled technical-details disclosures. Worker
+  worktrees and timestamped handovers remain preserved; no adapters, domain
+  contracts, or deployment settings were changed.
+  Direct owned tests passed `21/21` across the two S-405 feature directories;
+  `deno task fmt:check`, `deno task lint`, `deno task check`, `deno task build`,
+  and the final `deno task verify` all passed. The final aggregate verify
+  counts were 137 repository tests, 20 integration, 56 component, 29 domain,
+  1 actor, local E2E `2/2`, gallery/browser/Pages/CI/toolchain checks, both
+  production builds, frozen audit, and diff check. The integrated agent-browser
+  audit covered all four new routes at `320x568`, `390x844`, and `1280x800`
+  with zero axe violations after fixing the narrow long-title overlap; it also
+  exercised the disconnected Drive screen, local export/download completion,
+  malformed JSON validation failure, empty conflict review, and responsive
+  screenshots. No live Drive credentials or external service calls were used.
+- **R-500 independent review dispatch:** Ramanujan
+  (`01a03487-4c6b-7b80-9d8f-595044c93349`) is reviewing the integrated
+  synchronization/portability milestone read-only in
+  `~/git/worktrees/did-it-become-what-you-like-r-500-review`, branch
+  `review/r-500-synchronization`, based at `d877c52`. The only allowed
+  worktree mutation is its untracked timestamped `R-500-progress.md` handover;
+  source, tests, contracts, adapters, specs, this plan, `master`, remotes, and
+  deployment settings are excluded. The reviewer must inspect the S-401–S-405
+  evidence, maintain the progress/handover protocol, and return explicit
+  `APPROVE` or `BLOCK` with severity-counted findings and exact validation
+  evidence. Preserve this worktree and handover through closure.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

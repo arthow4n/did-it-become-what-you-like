@@ -100,6 +100,12 @@ import {
   SyncPortabilityRuntime,
   type SyncPortabilityScreen,
 } from "./sync-portability-runtime.tsx";
+import {
+  AboutScreen,
+  PreferencesScreen,
+  PwaRuntime,
+  UnsupportedBrowserScreen,
+} from "./settings-pwa.tsx";
 import type { ReceiptReviewDraft } from "../domain/receipt.ts";
 import {
   createLocalShellMachine,
@@ -111,6 +117,7 @@ import {
   openLocalRepository,
 } from "../adapters/local/index.ts";
 import { hashForRoute, routeFromHash } from "../app/routing.ts";
+import { isSupportedBrowser } from "../app/pwa.ts";
 
 export type LocalUiPath =
   | "/first-use"
@@ -127,6 +134,8 @@ export type LocalUiPath =
   | "/settings/conflicts"
   | "/settings/import-export"
   | "/settings/privacy"
+  | "/settings/preferences"
+  | "/settings/about"
   | "/receipt/scan"
   | "/receipt/review";
 
@@ -1492,13 +1501,24 @@ export function OrganizeScreen({
 }
 
 export function SettingsScreen(
-  { expenseDayBoundary, onGemini, onSync, onConflicts, onImport, onPrivacy }: {
+  {
+    expenseDayBoundary,
+    onGemini,
+    onSync,
+    onConflicts,
+    onImport,
+    onPrivacy,
+    onPreferences,
+    onAbout,
+  }: {
     expenseDayBoundary: string;
     onGemini?: () => void;
     onSync?: () => void;
     onConflicts?: () => void;
     onImport?: () => void;
     onPrivacy?: () => void;
+    onPreferences?: () => void;
+    onAbout?: () => void;
   },
 ) {
   const rows = [
@@ -1515,7 +1535,7 @@ export function SettingsScreen(
     {
       label: "Preferences",
       summary: `Expense day ${expenseDayBoundary}`,
-      available: false,
+      available: Boolean(onPreferences),
     },
     {
       label: "Import and export",
@@ -1535,7 +1555,7 @@ export function SettingsScreen(
     {
       label: "About and disclosure",
       summary: "After Midnight",
-      available: false,
+      available: Boolean(onAbout),
     },
   ];
   return (
@@ -1560,6 +1580,10 @@ export function SettingsScreen(
                     ? onConflicts
                     : row.label === "Data and privacy"
                     ? onPrivacy
+                    : row.label === "Preferences"
+                    ? onPreferences
+                    : row.label === "About and disclosure"
+                    ? onAbout
                     : undefined}
                 >
                   Open
@@ -2037,6 +2061,8 @@ export function ManualExpenseScreen({
   state,
   request,
   onSaved,
+  onUsefulAction,
+  onDirtyChange,
   onClosed,
 }: {
   repository: LocalRepository;
@@ -2044,6 +2070,8 @@ export function ManualExpenseScreen({
   state: ProjectCategoryState;
   request: ManualExpenseOpenRequest;
   onSaved: (expense: Expense, mode: ManualSaveMode) => void;
+  onUsefulAction?: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
   onClosed: () => void;
 }) {
   const [machineKey, setMachineKey] = useState(0);
@@ -2056,6 +2084,7 @@ export function ManualExpenseScreen({
   const [hydrationStarted, setHydrationStarted] = useState(false);
   const [openSent, setOpenSent] = useState(false);
   const completionHandled = useRef(false);
+  const usefulActionHandled = useRef(false);
 
   useEffect(() => {
     if (request.expense) {
@@ -2092,15 +2121,29 @@ export function ManualExpenseScreen({
     }
   }, [onClosed, onSaved, snapshot]);
 
+  const dirty = snapshot.hasTag("dirty");
   useEffect(() => {
-    if (!snapshot.hasTag("dirty")) return;
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (
+      usefulActionHandled.current || !snapshot.matches("saved") ||
+      !snapshot.context.result?.expense
+    ) return;
+    usefulActionHandled.current = true;
+    onUsefulAction?.();
+  }, [onUsefulAction, snapshot]);
+
+  useEffect(() => {
+    if (!dirty) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     globalThis.addEventListener("beforeunload", onBeforeUnload);
     return () => globalThis.removeEventListener("beforeunload", onBeforeUnload);
-  }, [snapshot]);
+  }, [dirty]);
 
   const draft = snapshot.context.draft;
   const savedExpense = snapshot.context.result?.expense;
@@ -2403,6 +2446,8 @@ export function LocalUiRuntime(
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
   const [manualFormKey, setManualFormKey] = useState(0);
   const [appNotice, setAppNotice] = useState<string | null>(null);
+  const [usefulActionVersion, setUsefulActionVersion] = useState(0);
+  const [workflowDirty, setWorkflowDirty] = useState(false);
   const [deviceSettings, setDeviceSettings] = useState<DeviceLocalSettings>({
     imagePreparationEnabled: true,
   });
@@ -2563,192 +2608,226 @@ export function LocalUiRuntime(
         />
       }
     >
-      <SyncPortabilityRuntime
-        repository={repository}
-        screen={portabilityScreen}
-        onNavigate={(nextPath) => navigate(nextPath as LocalUiPath)}
-        onNotice={setAppNotice}
-        secretStorage={secretStorage}
-        onLocalErased={(scope) => {
-          void scope;
-          if (typeof globalThis.location?.reload === "function") {
-            globalThis.location.reload();
-          }
-        }}
+      <PwaRuntime
+        usefulActionVersion={usefulActionVersion}
+        dirty={workflowDirty}
       >
-        {contentPath === "/first-use"
-          ? (
-            <FirstUseScreen
-              onCreateProject={() => {
-                setProjectEditorOpen(true);
-                navigate("/projects");
-              }}
-              onRestoreBackup={() =>
-                setAppNotice(
-                  "JSON restore will be available in the approved local portability workflow.",
-                )}
-              onConnectDrive={() => navigate("/settings/sync")}
-            />
-          )
-          : contentPath === "/expenses"
-          ? (
-            <ExpensesScreen
-              state={state}
-              expenseDayBoundary={expenseDayBoundary}
-              offline={shellSnapshot.hasTag("offline")}
-              onAdd={() => navigate("/add")}
-              onEdit={(expense) =>
-                navigate(`/expense/edit/${expense.id}` as LocalUiPath)}
-              onProjectChange={(projectId) =>
-                sendShell({ type: "shell.project.select", projectId })}
-            />
-          )
-          : contentPath === "/receipt/scan"
-          ? (
-            <ReceiptScanScreen
-              dependencies={receipt}
-              secretStorage={secretStorage}
-              imageStore={imageStore}
-              state={state}
-              settings={deviceSettings}
-              offline={shellSnapshot.hasTag("offline")}
-              onSettingsChange={updateDeviceSettings}
-              onReview={(review) => {
-                setReceiptReview(review);
-                navigate("/receipt/review");
-              }}
-              onClose={() => {
-                imageStore.clear();
-                navigate("/expenses");
-              }}
-              onOpenSettings={() => navigate("/settings/gemini")}
-            />
-          )
-          : contentPath === "/receipt/review"
-          ? (
-            <ReceiptReviewScreen
-              local={repository}
-              state={state}
-              initialReview={receiptReview}
-              onClose={() => {
-                void organization.getState().then(setState);
-                setReceiptReview(undefined);
-                navigate("/expenses");
-              }}
-            />
-          )
-          : contentPath === "/expense/new" ||
-              contentPath.startsWith("/expense/edit/")
-          ? (
-            <ManualExpenseScreen
-              key={`${contentPath}-${manualFormKey}`}
-              repository={repository}
-              service={organization}
-              state={state}
-              request={manualRequest}
-              onSaved={(_, mode) => {
-                void organization.getState().then(setState);
-                if (mode === "another") {
-                  setManualFormKey((value) => value + 1);
-                }
-              }}
-              onClosed={() => {
-                void organization.getState().then(setState);
-                navigate("/expenses");
-              }}
-            />
-          )
-          : contentPath === "/organize"
-          ? (
-            <OrganizeScreen
-              state={state}
-              onProjects={() => navigate("/projects")}
-              onCategories={() => navigate("/categories")}
-              onNewProject={() => {
-                setProjectEditorOpen(true);
-                navigate("/projects");
-              }}
-              onNewCategory={() => {
-                setCategoryEditorOpen(true);
-                navigate("/categories");
-              }}
-            />
-          )
-          : contentPath === "/projects"
-          ? (
-            <ProjectManager
-              repository={repository}
-              service={organization}
-              state={state}
-              initialCreate={projectEditorOpen}
-              onStateChange={setState}
-              onNavigate={navigate}
-              onComplete={() => {
-                if (projectEditorOpen) {
-                  setProjectEditorOpen(false);
+        <SyncPortabilityRuntime
+          repository={repository}
+          screen={portabilityScreen}
+          onNavigate={(nextPath) => navigate(nextPath as LocalUiPath)}
+          onNotice={setAppNotice}
+          secretStorage={secretStorage}
+          onLocalErased={(scope) => {
+            void scope;
+            if (typeof globalThis.location?.reload === "function") {
+              globalThis.location.reload();
+            }
+          }}
+        >
+          {contentPath === "/first-use"
+            ? (
+              <FirstUseScreen
+                onCreateProject={() => {
+                  setProjectEditorOpen(true);
+                  navigate("/projects");
+                }}
+                onRestoreBackup={() =>
+                  setAppNotice(
+                    "JSON restore will be available in the approved local portability workflow.",
+                  )}
+                onConnectDrive={() => navigate("/settings/sync")}
+              />
+            )
+            : contentPath === "/expenses"
+            ? (
+              <ExpensesScreen
+                state={state}
+                expenseDayBoundary={expenseDayBoundary}
+                offline={shellSnapshot.hasTag("offline")}
+                onAdd={() => navigate("/add")}
+                onEdit={(expense) =>
+                  navigate(`/expense/edit/${expense.id}` as LocalUiPath)}
+                onProjectChange={(projectId) =>
+                  sendShell({ type: "shell.project.select", projectId })}
+              />
+            )
+            : contentPath === "/receipt/scan"
+            ? (
+              <ReceiptScanScreen
+                dependencies={receipt}
+                secretStorage={secretStorage}
+                imageStore={imageStore}
+                state={state}
+                settings={deviceSettings}
+                offline={shellSnapshot.hasTag("offline")}
+                onSettingsChange={updateDeviceSettings}
+                onDirtyChange={setWorkflowDirty}
+                onReview={(review) => {
+                  setReceiptReview(review);
+                  navigate("/receipt/review");
+                }}
+                onClose={() => {
+                  imageStore.clear();
+                  setWorkflowDirty(false);
                   navigate("/expenses");
-                }
-              }}
-            />
-          )
-          : contentPath === "/categories"
+                }}
+                onOpenSettings={() => navigate("/settings/gemini")}
+              />
+            )
+            : contentPath === "/receipt/review"
+            ? (
+              <ReceiptReviewScreen
+                local={repository}
+                state={state}
+                initialReview={receiptReview}
+                onDirtyChange={setWorkflowDirty}
+                onClose={() => {
+                  void organization.getState().then(setState);
+                  setReceiptReview(undefined);
+                  setWorkflowDirty(false);
+                  navigate("/expenses");
+                }}
+              />
+            )
+            : contentPath === "/expense/new" ||
+                contentPath.startsWith("/expense/edit/")
+            ? (
+              <ManualExpenseScreen
+                key={`${contentPath}-${manualFormKey}`}
+                repository={repository}
+                service={organization}
+                state={state}
+                request={manualRequest}
+                onSaved={(_, mode) => {
+                  void organization.getState().then(setState);
+                  if (mode === "another") {
+                    setManualFormKey((value) => value + 1);
+                  }
+                }}
+                onUsefulAction={() =>
+                  setUsefulActionVersion((value) => value + 1)}
+                onDirtyChange={setWorkflowDirty}
+                onClosed={() => {
+                  void organization.getState().then(setState);
+                  setWorkflowDirty(false);
+                  navigate("/expenses");
+                }}
+              />
+            )
+            : contentPath === "/organize"
+            ? (
+              <OrganizeScreen
+                state={state}
+                onProjects={() => navigate("/projects")}
+                onCategories={() => navigate("/categories")}
+                onNewProject={() => {
+                  setProjectEditorOpen(true);
+                  navigate("/projects");
+                }}
+                onNewCategory={() => {
+                  setCategoryEditorOpen(true);
+                  navigate("/categories");
+                }}
+              />
+            )
+            : contentPath === "/projects"
+            ? (
+              <ProjectManager
+                repository={repository}
+                service={organization}
+                state={state}
+                initialCreate={projectEditorOpen}
+                onStateChange={setState}
+                onNavigate={navigate}
+                onComplete={() => {
+                  if (projectEditorOpen) {
+                    setProjectEditorOpen(false);
+                    navigate("/expenses");
+                  }
+                }}
+              />
+            )
+            : contentPath === "/categories"
+            ? (
+              <CategoryManager
+                service={organization}
+                state={state}
+                initialCreate={categoryEditorOpen}
+                onStateChange={setState}
+                onNavigate={navigate}
+                onComplete={() => {
+                  if (categoryEditorOpen) {
+                    setCategoryEditorOpen(false);
+                    navigate("/organize");
+                  }
+                }}
+              />
+            )
+            : contentPath === "/settings/gemini"
+            ? (
+              <GeminiSettingsScreen
+                gemini={receipt.gemini}
+                settings={deviceSettings}
+                onSettingsChange={updateDeviceSettings}
+                onClose={() => navigate("/settings")}
+              />
+            )
+            : contentPath === "/settings/preferences"
+            ? (
+              <PreferencesScreen
+                local={repository}
+                onClose={() => {
+                  setWorkflowDirty(false);
+                  navigate("/settings");
+                }}
+                onSaved={setExpenseDayBoundary}
+                onDirtyChange={setWorkflowDirty}
+              />
+            )
+            : contentPath === "/settings/about"
+            ? (
+              <AboutScreen
+                onClose={() => navigate("/settings")}
+                onPrivacy={() => navigate("/settings/privacy")}
+              />
+            )
+            : contentPath === "/settings"
+            ? (
+              <SettingsScreen
+                expenseDayBoundary={expenseDayBoundary}
+                onGemini={() => navigate("/settings/gemini")}
+                onSync={() => navigate("/settings/sync")}
+                onConflicts={() => navigate("/settings/conflicts")}
+                onImport={() => navigate("/settings/import-export")}
+                onPrivacy={() => navigate("/settings/privacy")}
+                onPreferences={() => navigate("/settings/preferences")}
+                onAbout={() => navigate("/settings/about")}
+              />
+            )
+            : <FoundationExpensesPlaceholder />}
+        </SyncPortabilityRuntime>
+        {showAddChoice
           ? (
-            <CategoryManager
-              service={organization}
-              state={state}
-              initialCreate={categoryEditorOpen}
-              onStateChange={setState}
-              onNavigate={navigate}
-              onComplete={() => {
-                if (categoryEditorOpen) {
-                  setCategoryEditorOpen(false);
-                  navigate("/organize");
-                }
-              }}
+            <AddChoiceScreen
+              offline={shellSnapshot.hasTag("offline")}
+              onClose={() => navigate("/expenses")}
+              onManual={() => navigate("/expense/new")}
+              onScan={() => navigate("/receipt/scan")}
             />
           )
-          : contentPath === "/settings/gemini"
+          : null}
+        {appNotice
           ? (
-            <GeminiSettingsScreen
-              gemini={receipt.gemini}
-              settings={deviceSettings}
-              onSettingsChange={updateDeviceSettings}
-              onClose={() => navigate("/settings")}
-            />
+            <div className="local-ui-toast-wrap">
+              <Toast>{appNotice}</Toast>
+              <Button variant="quiet" onPress={() => setAppNotice(null)}>
+                Dismiss
+              </Button>
+            </div>
           )
-          : contentPath === "/settings"
-          ? (
-            <SettingsScreen
-              expenseDayBoundary={expenseDayBoundary}
-              onGemini={() => navigate("/settings/gemini")}
-              onSync={() => navigate("/settings/sync")}
-              onConflicts={() => navigate("/settings/conflicts")}
-              onImport={() => navigate("/settings/import-export")}
-              onPrivacy={() => navigate("/settings/privacy")}
-            />
-          )
-          : <FoundationExpensesPlaceholder />}
-      </SyncPortabilityRuntime>
-      {showAddChoice
-        ? (
-          <AddChoiceScreen
-            offline={shellSnapshot.hasTag("offline")}
-            onClose={() => navigate("/expenses")}
-            onManual={() => navigate("/expense/new")}
-            onScan={() => navigate("/receipt/scan")}
-          />
-        )
-        : null}
-      {appNotice
-        ? (
-          <div className="local-ui-toast-wrap">
-            <Toast>{appNotice}</Toast>
-            <Button variant="quiet" onPress={() => setAppNotice(null)}>
-              Dismiss
-            </Button>
-          </div>
-        )
-        : null}
+          : null}
+      </PwaRuntime>
     </AppFrame>
   );
 }
@@ -2756,8 +2835,10 @@ export function LocalUiRuntime(
 export function LocalApp() {
   const [repository, setRepository] = useState<LocalRepository | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const supported = isSupportedBrowser();
 
   useEffect(() => {
+    if (!supported) return;
     let active = true;
     void openLocalRepository().then((opened) => {
       if (active) setRepository(opened);
@@ -2768,7 +2849,9 @@ export function LocalApp() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [supported]);
+
+  if (!supported) return <UnsupportedBrowserScreen />;
 
   if (error) {
     return (

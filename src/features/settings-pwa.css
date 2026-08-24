@@ -1,0 +1,27 @@
+@layer components {
+  .settings-pwa-install-offer,
+  .settings-pwa-update-offer {
+    margin: var(--space-4) auto 0;
+    width: min(
+      calc(100% - (var(--space-4) * 2)),
+      var(--form-max)
+    );
+  }
+
+  .settings-pwa-install-offer .ds-inline,
+  .settings-pwa-update-offer .ds-inline {
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .settings-pwa-install-offer .ds-inline .ds-text,
+  .settings-pwa-update-offer .ds-inline .ds-text {
+    flex: 1 1 15rem;
+  }
+
+  .settings-pwa-about-links .ds-link-button {
+    min-height: var(--control-height);
+    display: inline-flex;
+    align-items: center;
+  }
+}

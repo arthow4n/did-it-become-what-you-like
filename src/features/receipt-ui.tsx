@@ -509,6 +509,7 @@ export function ReceiptScanScreen({
   settings,
   offline,
   onSettingsChange,
+  onDirtyChange,
   onReview,
   onClose,
   onOpenSettings,
@@ -520,6 +521,7 @@ export function ReceiptScanScreen({
   settings: DeviceLocalSettings;
   offline: boolean;
   onSettingsChange: (settings: DeviceLocalSettings) => void;
+  onDirtyChange?: (dirty: boolean) => void;
   onReview: (review: ReceiptReviewDraft) => void;
   onClose: () => void;
   onOpenSettings: () => void;
@@ -873,6 +875,17 @@ export function ReceiptScanScreen({
   const scanBusy = snapshot.matches("preparing") ||
     snapshot.matches("requesting") ||
     snapshot.matches("validating");
+  useEffect(() => {
+    onDirtyChange?.(
+      selectedImage !== null || scanBusy || quickSetupOpen || pendingScan,
+    );
+  }, [
+    onDirtyChange,
+    pendingScan,
+    quickSetupOpen,
+    scanBusy,
+    selectedImage,
+  ]);
   const status = snapshot.matches("preparing")
     ? "Preparing image and removing embedded metadata"
     : snapshot.matches("requesting")
@@ -1261,11 +1274,13 @@ export function ReceiptReviewScreen({
   local,
   state,
   initialReview,
+  onDirtyChange,
   onClose,
 }: {
   local: LocalPort;
   state: ProjectCategoryState;
   initialReview?: ReceiptReviewDraft;
+  onDirtyChange?: (dirty: boolean) => void;
   onClose: () => void;
 }) {
   const machine = useMemo(
@@ -1302,6 +1317,10 @@ export function ReceiptReviewScreen({
       send({ type: "receipt.review.open", review: initialReview });
     } else send({ type: "receipt.review.hydrate" });
   }, [initialReview, openSent, send]);
+
+  useEffect(() => {
+    onDirtyChange?.(changed && !snapshot.matches("saved"));
+  }, [changed, onDirtyChange, snapshot]);
 
   useEffect(() => {
     if (doneRef.current) return;

@@ -10,6 +10,7 @@ export type UpdateInstallEvent =
   | { readonly type: "install.available" }
   | { readonly type: "install.request" }
   | { readonly type: "install.dismiss" }
+  | { readonly type: "install.later" }
   | { readonly type: "update.check" }
   | { readonly type: "update.reload" }
   | { readonly type: "update.blocked-by-dirty" }
@@ -35,6 +36,7 @@ const updateInstallSetup = setup({
   actors: {
     installApp: unwiredPort<void, void>("PWA installation prompt"),
     checkForUpdate: unwiredPort<void, UpdateCheckOutput>("PWA update check"),
+    reloadApp: unwiredPort<void, void>("PWA update reload"),
   },
 });
 
@@ -56,6 +58,7 @@ export const updateInstallMachine = updateInstallSetup.createMachine({
       on: {
         "install.request": "installing",
         "install.dismiss": "dismissed",
+        "install.later": "dismissed",
         "update.check": "checking",
         "network.offline": "offline",
       },
@@ -79,7 +82,16 @@ export const updateInstallMachine = updateInstallSetup.createMachine({
         },
       },
     },
-    installed: { type: "final", output: () => ({ status: "installed" }) },
+    // Installation is optional and does not reload the running document. Keep
+    // this actor reusable so later offline/update events remain observable.
+    installed: {
+      tags: ["installed"],
+      on: {
+        "install.available": "installAvailable",
+        "update.check": "checking",
+        "network.offline": "offline",
+      },
+    },
     dismissed: {
       tags: ["dismissed"],
       on: {
@@ -140,7 +152,25 @@ export const updateInstallMachine = updateInstallSetup.createMachine({
       tags: ["blocked"],
       on: { "update.reload": "reloading", "update.check": "checking" },
     },
-    reloading: { type: "final", output: () => ({ status: "reloaded" }) },
+    reloading: {
+      invoke: {
+        src: "reloadApp",
+        input: () => undefined,
+        onDone: { target: "reloaded" },
+        onError: {
+          target: "failed",
+          actions: assign({
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unavailable",
+                message: "The update could not be loaded.",
+                retryable: true,
+              }),
+          }),
+        },
+      },
+    },
+    reloaded: { type: "final", output: () => ({ status: "reloaded" }) },
     offline: {
       tags: ["offline"],
       on: { "network.online": "idle", "update.retry": "checking" },

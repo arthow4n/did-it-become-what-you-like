@@ -108,6 +108,10 @@ assert(
   serviceWorker.includes("precacheAndRoute"),
   "production build must contain a generated service-worker skeleton",
 );
+assert(
+  serviceWorker.includes(`${BASE_PATH}index.html`),
+  "service-worker navigation fallback must remain inside the repository base path",
+);
 
 const target = serviceWorkerRegistrationTarget();
 assert(

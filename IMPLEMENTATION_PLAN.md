@@ -601,7 +601,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### A-303 — Deliver Scan, Receipt Review, and Gemini Settings UI
 
-- **Status/dependencies:** `PENDING`; depends on `A-302`, `L-205`, `U-104`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `A-302`, `L-205`, `U-104`.
 - **Ownership:** Screens 4, 5, and 11 plus their feature composition; no adapter
   internals or schema changes.
 - **Scope/non-goals:** native Take photo/Choose image, preview/use/retake/remove,
@@ -1319,7 +1319,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300 and A-302 are
-  `COMPLETE`; A-303 is the next dependency-ready milestone.
+  `COMPLETE`; A-303 is `IN_PROGRESS`.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2143,6 +2143,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   toolchain validators, production builds, frozen audit, and diff check. Only
   the existing chunk-size warnings remain. A-302 is COMPLETE; its worker and
   handover are preserved; A-303 is now dependency-ready.
+- **A-303 dispatch:** Hilbert (`01a032d0-2474-7c30-be76-91397da10fd7`) owns
+  the receipt Scan/Review/Gemini Settings UI in
+  `~/git/worktrees/did-it-become-what-you-like-a-303-receipt-ui`, branch
+  `task/a-303-receipt-ui`, based at `c558dfc`. Ownership is limited to the
+  feature composition and its focused component/E2E/native evidence; no
+  adapter internals, schema changes, Drive/external sync, unrelated local UI,
+  or deferred feedback-memory feature. The worker must keep an untracked
+  timestamped `A-303-progress.md`, leave this plan and `master` untouched, not
+  push or enable Pages, and return exact validation plus READY FOR INTEGRATION
+  or BLOCK. R-400 remains gated.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

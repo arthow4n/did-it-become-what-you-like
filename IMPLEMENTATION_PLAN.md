@@ -413,8 +413,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   `U-104`, all complete. Fresh read-only reviewer Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) is reviewing integrated `master` at
   `186ff05`; that reviewer stalled and was shut down without a handoff. A
-  fresh reviewer will be assigned after the required recovery audit; the
-  orchestrator owns the gate decision and any scoped fixes.
+  fresh reviewer Banach (`01a0312e-b8bb-7582-8ae0-e8fbc7ca9eef`) is now
+  reviewing the pushed recovery checkpoint `8941dd6`; the orchestrator owns the
+  gate decision and any scoped fixes.
 - **Ownership:** read-only first; scoped fixes by original owner/integration
   owner; contract changes documented with affected downstream tasks.
 - **Scope/non-goals:** review schema completeness, actor decomposition/v5
@@ -1291,9 +1292,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** dispatch a fresh independent `R-200` read-only reviewer
-  from the clean root against the integrated M2 contracts and design-system
-  foundation; no implementation work is active.
+- **Current task:** Banach is performing the fresh independent `R-200`
+  read-only review from the clean root against the integrated M2 contracts and
+  design-system foundation; no implementation work is active.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1341,8 +1342,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none. Commit/push this recovery checkpoint, then dispatch one
-  fresh read-only R-200 reviewer. After that handoff, record exact findings and
+- **Blocker:** none. After Banach's handoff, record exact findings and
   validation results here. If approved, mark `R-200` complete and dispatch the
   next dependency-ready M3 work; if findings exist, assign only scoped fixes to
   the owning task. No GitHub Pages workflow may be enabled or triggered because

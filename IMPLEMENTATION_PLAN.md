@@ -1255,9 +1255,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
 - **Reconciled branch/upstream:** `master` and `origin/master` are both at
-  `c6d1abd` (`0 0`), pushed after recording the integrated Curie-finding fix.
-  The root worktree is clean except for the intentionally untracked R-300
-  review handover.
+  `4250491` (`0 0`), pushed after recording the A-303 startup recovery and
+  advisor clarification. The root worktree contains only the intentionally
+  untracked `A-303-progress.md` and `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1279,8 +1279,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   actor/domain implementation `a1f84d6` (`Implement A-302 receipt review
   workflow`);
   the deferred-only SPEC note is `c390656`. The latest pushed implementation
-  implementation commit is `a1f84d6`; the latest pushed root checkpoint is
-  `dc43dd1`.
+  commit is `a1f84d6`; the latest pushed orchestration checkpoint is
+  `4250491`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1310,11 +1310,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   contract follow-up passed the root matrix, and the root canonical task
   includes `src/adapters/gemini`; the exact `A-301` filter is the authoritative
   focused command. The implementation plan task-heading count remains 37
-  with no duplicate IDs; `master` is one unpushed source commit ahead of
-  `origin/master` at `dc43dd1`; the root worktree contains only the
-  intentionally untracked R-300 handover after A-302 integration. Preserved
-  worktrees are
-  listed below.
+  with no duplicate IDs; `master` and `origin/master` are aligned at
+  `4250491`; the root worktree contains only the intentionally untracked
+  A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
@@ -2170,6 +2168,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   localStorage secret boundary for keys, and give non-secret model/preparation
   preferences one explicit device-local settings owner. A new public schema or
   port contract requires orchestrator escalation; no worker may invent one.
+- **A-303 replacement dispatch:** A fresh bounded implementation worker was
+  started in the exact preserved worktree
+  `~/git/worktrees/did-it-become-what-you-like-a-303-receipt-ui`, branch
+  `task/a-303-receipt-ui`, after the worktree was fast-forwarded to
+  `4250491`. Its timestamped `A-303-progress.md` handover records startup at
+  `2026-08-24T08:20:35Z`, the clarified LocalUiRuntime/A-301/A-302/settings
+  boundaries, and the first implementation-mapping checkpoint. The spawn
+  response was truncated before an agent identifier was captured, so the
+  worktree handover and actual Git state are authoritative for recovery. The
+  replacement worker owns only the A-303 surface and must return exact
+  validation plus `READY FOR INTEGRATION` or `BLOCK`; the orchestrator must
+  not duplicate its source work or mark A-303 complete from progress alone.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

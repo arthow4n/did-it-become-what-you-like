@@ -96,7 +96,6 @@ export type PageHeaderProps = {
   leading?: ReactNode;
   status?: ReactNode;
   actions?: ReactNode;
-  headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
   as?: "header" | "div";
   headingLevel?: HeadingProps["level"];
 };
@@ -110,7 +109,6 @@ export function PageHeader({
   actions,
   headingLevel = 2,
   as: Tag = "header",
-  headingLevel = 2,
 }: PageHeaderProps) {
   return (
     <Tag className="ds-page-header">

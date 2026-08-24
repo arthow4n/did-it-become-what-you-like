@@ -806,7 +806,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### P-503 — Complete preferences, privacy/about, install, update, and offline PWA
 
-- **Status/dependencies:** `PENDING`; depends on `X-502`, `A-303`, `S-405`,
+- **Status/dependencies:** `IN_PROGRESS`; depends on `X-502`, `A-303`, `S-405`,
   `F-004`.
 - **Ownership:** Screens 13–15, remaining Settings composition, install/update/
   connectivity actors and concrete service worker/cache policy.
@@ -1259,8 +1259,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
-  M5 is released; X-501 and X-502 are complete; and P-503 is the next
-  dependency-ready M6 task.
+  M5 is released; X-501 and X-502 are complete; and P-503 is the active M6
+  task.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
   the current pushed plan checkpoint, whose X-502 source/ledger predecessor is
   `3a43b04`, with integrated source commit `df21669` and the intentionally
@@ -1349,7 +1349,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501 and X-502 are `COMPLETE`; P-503 is the next active dependency-ready M6
+  X-501 and X-502 are `COMPLETE`; P-503 is the active dependency-ready M6
   task; and no task is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
@@ -3052,6 +3052,26 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   Google Drive, and hosted Pages behavior were not exercised. The worker agent
   is complete; preserve its worktree, branch, and handover. X-502 is complete
   and releases P-503 as the next dependency-ready task.
+- **P-503 implementation dispatch:** P-503 is dependency-ready after the
+  pushed X-502 checkpoint and is assigned as one bounded Settings/PWA slice in
+  `~/git/worktrees/did-it-become-what-you-like-p-503-settings-pwa`, branch
+  `task/p-503-settings-pwa`, based at the current pushed root checkpoint. The
+  worker owns Screens 13–15 and remaining Settings composition, the existing
+  update/install actor and browser-port wiring, connectivity/offline launch
+  behavior, service-worker/cache policy, version/build/source/license
+  disclosures, and focused tests. It must read `UI_SPEC.md`,
+  `DESIGN_SYSTEM.md`, `README.md`, and the XState v5 skill; preserve existing
+  X-502 destructive composition and synchronization/import boundaries. It may
+  extend the locked update/install contract only when a demonstrated existing
+  protocol gap makes the approved P-503 states impossible, and must record the
+  exact boundary before doing so. It must not edit the implementation plan,
+  master, remotes, unrelated settings/data workflows, or other worktrees.
+  Maintain an untracked UTC `P-503-progress.md` with periodic handover updates,
+  exact validation results, and final `READY FOR INTEGRATION` or `BLOCKED`
+  status. The root remains integration owner; merge order is worker commit,
+  focused preference/install/update/offline tests, full verification, then the
+  production-build offline/update agent-browser audit. Preserve the worktree,
+  branch, handover, and agent after completion.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

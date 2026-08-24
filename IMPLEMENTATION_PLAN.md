@@ -514,7 +514,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### L-205 — Deliver the complete local browsing and organization UI slice
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `L-202`, `L-204`, `U-104`.
+- **Status/dependencies:** `COMPLETE`; depends on `L-202`, `L-204`, `U-104`.
 - **Ownership:** shell plus Screens 1–3, 6–9 and non-destructive project/category
   editor composition; no Gemini/Drive/destructive workflows.
 - **Scope/non-goals:** first-use local path, responsive navigation, Expenses
@@ -532,13 +532,15 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   archive/restore and empty-delete confirmation; accessibility names/focus; one
   local manual-save browser integration journey; narrow/long-content responsive
   assertions.
-- **Verification:** `deno task test:component --filter local-ui`;
-  `deno task test:e2e --grep local-first-manual`; agent-browser screen matrix at
-  three viewports; `deno task a11y`.
+- **Verification:** `deno task test:component`; `deno task test:integration`;
+  `deno task test:domain`; `deno task test:actor`;
+  `deno task test:e2e --grep local-first-manual`; `deno task a11y:gallery`;
+  `deno task browser:verify`; native agent-browser screen matrix at 320x568,
+  390x844, and 1280x800; `deno task test`; `deno task build`.
 
 #### R-300 — Local vertical-slice independent review gate
 
-- **Status/dependencies:** `PENDING`; depends on `L-205`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `L-205`.
 - **Ownership:** review read-only first; fixes remain scoped to M3 owners.
 - **Scope/non-goals:** review financial correctness, local durability, XState/UI
   separation, responsive/accessibility fidelity, design-system reuse, and all
@@ -1249,7 +1251,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `9b9754d` and tracks
+- **Reconciled branch/upstream:** `master` is at `054a82f` and tracks
   `origin/master` at the same commit (`0 0`). The root worktree is clean before
   updating this completion ledger.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1263,11 +1265,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   repository`), A-301 adapter implementation `3d0b54a` (`Implement image
   preparation and Gemini adapter`), contract follow-up `dc306bb` (`Preserve
   receipt metadata in Gemini drafts`), the pushed A-301 ledger checkpoints,
-  `afb7cc4`, and L-204 `08c3f88` are present on `master`; the deferred-only
-  SPEC note is `c390656`. The latest pushed implementation commit is
-  `08c3f88`.
+  `afb7cc4`, L-204 `08c3f88`, and L-205 `054a82f` are present on `master`;
+  the deferred-only SPEC note is `c390656`. The latest pushed implementation
+  commit is `054a82f`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
-  `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `A-301`, and `R-200`. Their required source, tests, and
+  `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
@@ -1281,18 +1283,19 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   scope/non-goals, outputs/acceptance, tests, and verification; Markdown fences
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
-- **Current reconciliation evidence:** L-204, L-202, L-203, and L-201 integration validation
+- **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
   is recorded below. A-301 source integration and its bounded contract
   follow-up passed the root matrix, and the root canonical task includes
   `src/adapters/gemini`; the exact `A-301` filter is the authoritative focused
   command. The implementation plan task-heading count remains 37 with no
-  duplicate IDs; `master` and its upstream are aligned at `9b9754d`; the
+  duplicate IDs; `master` and its upstream are aligned at `054a82f`; the
   root worktree is clean before this completion-ledger edit. Preserved
   worktrees are
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
-  `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, and `A-301`
-  are `COMPLETE`; `L-205` is `IN_PROGRESS` in its isolated worktree.
+  `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
+  `A-301` are `COMPLETE`; `R-300` is `IN_PROGRESS` as the independent review
+  gate.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1896,6 +1899,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `L-205-progress.md` untracked for resumable progress and final handoff; the
   integration owner will inspect its scoped commit and rerun the complete UI
   matrix before releasing `R-300`.
+- **L-205 completion/integration:** Singer completed the local UI slice in
+  `~/git/worktrees/did-it-become-what-you-like-l-205-local-ui` with untracked
+  `L-205-progress.md` preserved as the timestamped handover. The worker commit
+  `5ccbdbe` was inspected and cherry-picked as `054a82f`; the worker did not
+  edit the plan or push. Root validation passed `deno task fmt:check` (134
+  files), `deno task lint` (122 files), `deno task check`, component tests (18),
+  integration tests (18), domain tests (27), actor tests (1),
+  `deno task test:e2e --grep local-first-manual` (1), `deno task a11y:gallery`
+  (3 native viewports, axe 0), `deno task browser:verify`, `deno task test`
+  (121), `deno task build`, `deno audit --frozen`, and `git diff --check`.
+  Native agent-browser inspection passed at 320x568, 390x844, and 1280x800
+  with no horizontal overflow or browser errors. L-205 is complete; its
+  worktree remains preserved and the worker is shut down. R-300 is now
+  dependency-ready.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

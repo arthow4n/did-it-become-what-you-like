@@ -2851,6 +2851,29 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   Automerge proof passed `12/12`. The source integration commit is not yet
   pushed; S-402 and S-404 fixes are complete/preserved and Hubble's S-405
   fix remains active.
+- **R-500 post-integration regression and recovery:** After Hubble's worker
+  commit `13bc651` was cherry-picked as root `b423d9b`, the orchestrator ran
+  the complete `deno task verify`. It exited `1` after `204` passed and `1`
+  failed: `src/adapters/import-export/import-export.integration.test.ts`,
+  higher-generation replacement adoption, observed the stale `expense-main`
+  record in the exported replacement packet instead of an empty dataset. The
+  source was not pushed from this failed integration checkpoint. The failure
+  is an S-402 causal-port seam: the in-memory and Drive apply paths construct a
+  higher-generation incoming snapshot with the current/remote dataset even
+  though the replacement change payload carries the new dataset; the adoption
+  branch therefore preserves stale data. Hubble's S-405 commit and handover
+  remain preserved and are not marked released until this combined gate is
+  green.
+- **R-500 S-402 compatibility recovery dispatch:** Socrates
+  (`01a034a0-7c93-78c3-8cb8-b644f443010b`) was resumed in the preserved
+  `~/git/worktrees/did-it-become-what-you-like-r500-s402-causal` worktree to
+  own only `src/adapters/sync/**` and focused sync tests. The worker must fix
+  higher-generation dataset derivation for in-memory and Drive-backed causal
+  ports, add a replacement-payload regression, rerun the S-402 and affected
+  S-404 tests, and return a new UTC final handoff. No foreign source, plan,
+  master, remote, or other worktree changes are allowed; the prior S-402
+  commit remains integrated and the new commit must contain only the bounded
+  compatibility fix.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

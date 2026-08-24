@@ -86,6 +86,7 @@ export function DesignSystemGallery() {
           <PageHeader
             eyebrow="After Midnight · development-only fixture"
             title="Shared design-system gallery"
+            headingLevel={1}
             description="A verification surface for semantics, states, tokens, focus, responsive layout, and the immediate-motion policy."
             status={
               <GlobalStatus

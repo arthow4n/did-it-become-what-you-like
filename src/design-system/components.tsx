@@ -96,6 +96,7 @@ export type PageHeaderProps = {
   leading?: ReactNode;
   status?: ReactNode;
   actions?: ReactNode;
+  headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
   as?: "header" | "div";
 };
 
@@ -106,6 +107,7 @@ export function PageHeader({
   leading,
   status,
   actions,
+  headingLevel = 2,
   as: Tag = "header",
 }: PageHeaderProps) {
   return (
@@ -114,7 +116,7 @@ export function PageHeader({
         {leading}
         <div className="ds-stack" style={gapStyle(1)}>
           {eyebrow ? <Text size="label" tone="muted">{eyebrow}</Text> : null}
-          <Heading>{title}</Heading>
+          <Heading level={headingLevel}>{title}</Heading>
           {description ? <Text tone="secondary">{description}</Text> : null}
         </div>
       </div>
@@ -432,7 +434,7 @@ export function Field(
   { label, children, description, error, required, className }: FieldProps,
 ) {
   return (
-    <div
+    <label
       className={cx("ds-field", className)}
       data-invalid={error ? "true" : undefined}
     >
@@ -447,7 +449,7 @@ export function Field(
       {error
         ? <span className="ds-field__error" role="alert">{error}</span>
         : null}
-    </div>
+    </label>
   );
 }
 
@@ -1075,10 +1077,10 @@ export function DefinitionList({ items, className }: DefinitionListProps) {
   return (
     <dl className={cx("ds-definition-list", className)}>
       {items.map((item, index) => (
-        <span key={index} style={{ display: "contents" }}>
+        <div key={index} style={{ display: "contents" }}>
           <dt>{item.term}</dt>
           <dd>{item.description}</dd>
-        </span>
+        </div>
       ))}
     </dl>
   );

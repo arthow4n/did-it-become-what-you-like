@@ -1342,7 +1342,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `BLOCKED` after the independent read-only review; its bounded
-  three-owner fix wave is pending dispatch from the reconciled root.
+  three-owner fix wave is active from the reconciled root.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2807,6 +2807,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and record the exact boundary rather than making an uncontrolled cross-task
   change. The Automerge decision is an internal implementation correction and
   does not change user requirements or the deferred feature scope.
+- **R-500 fix workers dispatched:** Socrates
+  (`01a034a0-7c93-78c3-8cb8-b644f443010b`) owns S-402 causal/Automerge fixes
+  in `~/git/worktrees/did-it-become-what-you-like-r500-s402-causal`, branch
+  `fix/r500-s402-causal`, based at `bc3d827`; Tesla
+  (`01a034a0-7f2e-70f2-8ad8-37256cad45c4`) owns S-404 import/preview-contract
+  fixes in `~/git/worktrees/did-it-become-what-you-like-r500-s404-import`,
+  branch `fix/r500-s404-import`, based at `bc3d827`; and Hubble
+  (`01a034a0-81ca-7852-a1f0-f7fed8eb13d1`) owns S-405 runtime/UI/E2E fixes in
+  `~/git/worktrees/did-it-become-what-you-like-r500-s405-ui`, branch
+  `fix/r500-s405-ui`, based at `bc3d827`. All three are active, have disjoint
+  write ownership, must preserve UTC progress handovers, and must return exact
+  validation evidence with a scoped commit or an explicit BLOCK. Ramanujan's
+  review agent is closed after its final BLOCK; its review worktree and
+  handover remain preserved.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

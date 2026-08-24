@@ -759,7 +759,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### X-501 — Implement populated-project deletion
 
-- **Status/dependencies:** `PENDING`; depends on `R-500`, `L-202`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-500`, `L-202`.
 - **Ownership:** project-deletion actor/domain and Screen 7A composition; no
   global Delete Everywhere behavior.
 - **Scope/non-goals:** record-count warning, complete safety export, exact-name
@@ -1345,7 +1345,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released
-  and M6 is the next active dependency-ready milestone.
+  and X-501 is the active M6 implementation task.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2954,6 +2954,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   Live OAuth/Drive, hosted Pages execution, and non-Chromium coverage remain
   unavailable and unclaimed. Preserve this reviewer worktree, branch, and
   handover; the reviewer is complete and must not edit the plan.
+- **X-501 implementation dispatch preparation:** X-501 is dependency-ready
+  after R-500 closure. The orchestrator will assign one worker in
+  `~/git/worktrees/did-it-become-what-you-like-x-501-project-delete`, branch
+  `task/x-501-project-delete`, based at the pushed root `6debf7c`. Ownership is
+  limited to the populated-project deletion domain/service, concrete
+  project-deletion actor wiring, Screen 7A composition in `src/features/local-ui.tsx`
+  and its CSS/tests, plus focused tests. The worker must reuse the locked
+  `src/actors/contracts/deletion.ts` protocol and existing local/import/sync
+  ports; no Delete Everywhere, disconnect, global generation erase, unrelated
+  settings, or plan/master/remote changes are in scope. The root is the sole
+  integration owner; merge order is worker commit, focused root checks, then
+  the X-501 gate before X-502 is released.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

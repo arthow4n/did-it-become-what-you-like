@@ -15,6 +15,7 @@ import {
   CalendarDateSchema,
   type Category,
   CurrencyCodeSchema,
+  type DeviceLocalSettings,
   type Expense,
   PortableSettingsSchema,
   type Project,
@@ -80,6 +81,17 @@ import {
   Toast,
 } from "../design-system/index.ts";
 import {
+  createDefaultReceiptUiDependencies,
+  GeminiSettingsScreen,
+  readDeviceLocalSettings,
+  ReceiptImageStore,
+  ReceiptReviewScreen,
+  ReceiptScanScreen,
+  type ReceiptUiDependencies,
+  writeDeviceLocalSettings,
+} from "./receipt-ui.tsx";
+import type { ReceiptReviewDraft } from "../domain/receipt.ts";
+import {
   createLocalShellMachine,
   type LocalShellEvent,
 } from "../actors/local-shell.ts";
@@ -98,7 +110,10 @@ export type LocalUiPath =
   | "/organize"
   | "/projects"
   | "/categories"
-  | "/settings";
+  | "/settings"
+  | "/settings/gemini"
+  | "/receipt/scan"
+  | "/receipt/review";
 
 function shellRouteForPath(path: string): ShellRoute {
   if (path === "/first-use") return "first-use";
@@ -107,7 +122,7 @@ function shellRouteForPath(path: string): ShellRoute {
   if (path === "/organize") return "organize";
   if (path === "/projects") return "projects";
   if (path === "/categories") return "categories";
-  if (path === "/settings") return "settings";
+  if (path.startsWith("/settings")) return "settings";
   return "expenses";
 }
 
@@ -1192,7 +1207,10 @@ export function OrganizeScreen({
 }
 
 export function SettingsScreen(
-  { expenseDayBoundary }: { expenseDayBoundary: string },
+  { expenseDayBoundary, onGemini }: {
+    expenseDayBoundary: string;
+    onGemini?: () => void;
+  },
 ) {
   const rows = [
     {
@@ -1202,8 +1220,8 @@ export function SettingsScreen(
     },
     {
       label: "Gemini receipt scanning",
-      summary: "Available from Add",
-      available: false,
+      summary: "Device-local key and model",
+      available: Boolean(onGemini),
     },
     {
       label: "Preferences",
@@ -1235,7 +1253,13 @@ export function SettingsScreen(
             <ListRow
               key={row.label}
               trailing={
-                <Button variant="quiet" isDisabled={!row.available}>
+                <Button
+                  variant="quiet"
+                  isDisabled={!row.available}
+                  onPress={row.label === "Gemini receipt scanning"
+                    ? onGemini
+                    : undefined}
+                >
                   Open
                 </Button>
               }
@@ -2050,7 +2074,10 @@ function FoundationExpensesPlaceholder() {
 }
 
 export function LocalUiRuntime(
-  { repository }: { repository: LocalRepository },
+  { repository, receiptDependencies }: {
+    repository: LocalRepository;
+    receiptDependencies?: ReceiptUiDependencies;
+  },
 ) {
   const organization = useMemo(
     () => createProjectCategoryService(repository),
@@ -2074,6 +2101,17 @@ export function LocalUiRuntime(
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
   const [manualFormKey, setManualFormKey] = useState(0);
   const [appNotice, setAppNotice] = useState<string | null>(null);
+  const [deviceSettings, setDeviceSettings] = useState<DeviceLocalSettings>({
+    imagePreparationEnabled: true,
+  });
+  const [receiptReview, setReceiptReview] = useState<ReceiptReviewDraft>();
+  const imageStore = useMemo(() => new ReceiptImageStore(), []);
+  const defaultReceipt = useMemo(
+    () => createDefaultReceiptUiDependencies(imageStore),
+    [imageStore],
+  );
+  const receipt = receiptDependencies ?? defaultReceipt.dependencies;
+  const secretStorage = defaultReceipt.secretStorage;
   const shellReady = shellSnapshot.matches("ready");
 
   useEffect(() => {
@@ -2084,6 +2122,20 @@ export function LocalUiRuntime(
       const parsed = PortableSettingsSchema.safeParse(value);
       if (parsed.success) setExpenseDayBoundary(parsed.data.expenseDayBoundary);
     });
+  }, [repository]);
+
+  useEffect(() => {
+    let active = true;
+    void readDeviceLocalSettings(repository).then((settings) => {
+      if (active) setDeviceSettings(settings);
+    }).catch(() => {
+      if (active) {
+        setAppNotice("Device-local Gemini settings could not be opened.");
+      }
+    });
+    return () => {
+      active = false;
+    };
   }, [repository]);
 
   useEffect(() => {
@@ -2130,6 +2182,15 @@ export function LocalUiRuntime(
       globalThis.location.hash = hashForRoute(nextPath);
     } else {
       setPath(nextPath);
+    }
+  };
+
+  const updateDeviceSettings = async (next: DeviceLocalSettings) => {
+    setDeviceSettings(next);
+    try {
+      await writeDeviceLocalSettings(repository, next);
+    } catch {
+      setAppNotice("Device-local Gemini settings could not be saved.");
     }
   };
 
@@ -2218,6 +2279,40 @@ export function LocalUiRuntime(
               sendShell({ type: "shell.project.select", projectId })}
           />
         )
+        : contentPath === "/receipt/scan"
+        ? (
+          <ReceiptScanScreen
+            dependencies={receipt}
+            secretStorage={secretStorage}
+            imageStore={imageStore}
+            state={state}
+            settings={deviceSettings}
+            offline={shellSnapshot.hasTag("offline")}
+            onSettingsChange={updateDeviceSettings}
+            onReview={(review) => {
+              setReceiptReview(review);
+              navigate("/receipt/review");
+            }}
+            onClose={() => {
+              imageStore.clear();
+              navigate("/expenses");
+            }}
+            onOpenSettings={() => navigate("/settings/gemini")}
+          />
+        )
+        : contentPath === "/receipt/review"
+        ? (
+          <ReceiptReviewScreen
+            local={repository}
+            state={state}
+            initialReview={receiptReview}
+            onClose={() => {
+              void organization.getState().then(setState);
+              setReceiptReview(undefined);
+              navigate("/expenses");
+            }}
+          />
+        )
         : contentPath === "/expense/new" ||
             contentPath.startsWith("/expense/edit/")
         ? (
@@ -2287,8 +2382,22 @@ export function LocalUiRuntime(
             }}
           />
         )
+        : contentPath === "/settings/gemini"
+        ? (
+          <GeminiSettingsScreen
+            gemini={receipt.gemini}
+            settings={deviceSettings}
+            onSettingsChange={updateDeviceSettings}
+            onClose={() => navigate("/settings")}
+          />
+        )
         : contentPath === "/settings"
-        ? <SettingsScreen expenseDayBoundary={expenseDayBoundary} />
+        ? (
+          <SettingsScreen
+            expenseDayBoundary={expenseDayBoundary}
+            onGemini={() => navigate("/settings/gemini")}
+          />
+        )
         : <FoundationExpensesPlaceholder />}
       {showAddChoice
         ? (
@@ -2296,6 +2405,7 @@ export function LocalUiRuntime(
             offline={shellSnapshot.hasTag("offline")}
             onClose={() => navigate("/expenses")}
             onManual={() => navigate("/expense/new")}
+            onScan={() => navigate("/receipt/scan")}
           />
         )
         : null}

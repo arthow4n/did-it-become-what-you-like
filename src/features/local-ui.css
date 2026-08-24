@@ -1,4 +1,40 @@
 @layer components {
+  .receipt-ui-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+
+  .receipt-ui-preview {
+    display: block;
+    width: 100%;
+    max-height: 36rem;
+    object-fit: contain;
+    border-radius: var(--radius-control);
+    background: var(--surface-2);
+  }
+
+  .receipt-ui-quick-setup {
+    position: fixed;
+    z-index: 20;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: var(--space-4);
+    background: rgb(0 0 0 / 58%);
+  }
+
+  .receipt-ui-quick-setup > .ds-card {
+    width: min(100%, var(--form-max));
+    max-height: calc(100dvh - var(--space-8));
+    overflow: auto;
+    border-radius: var(--radius-overlay);
+  }
+
   .local-ui-first-use {
     min-height: calc(100dvh - var(--space-7));
     justify-content: center;
@@ -30,6 +66,15 @@
   }
 
   @media (max-width: 719px) {
+    .receipt-ui-quick-setup {
+      align-items: end;
+      padding: 0;
+    }
+
+    .receipt-ui-quick-setup > .ds-card {
+      border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
+    }
+
     .local-ui-first-use {
       min-height: calc(100dvh - var(--space-6));
       padding-block: var(--space-8);

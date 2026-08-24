@@ -2134,6 +2134,329 @@ export function ReceiptSourcePicker(
   );
 }
 
+export type ReceiptMetadataViewModel = {
+  merchant?: string;
+  date: string;
+  currency: string;
+  printedTotal: string;
+};
+
+export function ReceiptMetadata(
+  { metadata, onEdit }: {
+    metadata: ReceiptMetadataViewModel;
+    onEdit?: () => void;
+  },
+) {
+  return (
+    <Card as="section">
+      <Inline justify="space-between">
+        <Stack gap={1}>
+          <Heading size="sm">{metadata.merchant || "Receipt"}</Heading>
+          <Text tone="secondary">
+            {metadata.date} · {metadata.currency}
+          </Text>
+        </Stack>
+        {onEdit ? <Button variant="quiet" onPress={onEdit}>Edit</Button> : null}
+      </Inline>
+      <Inline justify="space-between">
+        <Text tone="secondary">Receipt total</Text>
+        <MoneyText
+          amount={metadata.printedTotal}
+          currency={metadata.currency}
+        />
+      </Inline>
+    </Card>
+  );
+}
+
+export type ReceiptLineViewModel = {
+  id: string;
+  type: "purchase" | "adjustment";
+  description: string;
+  category: string;
+  amount: string;
+  selected: boolean;
+  uncertain: boolean;
+  selectionReason?: string;
+  quantity?: string;
+  unitPrice?: string;
+  linkedLineDescription?: string;
+};
+
+export function ReceiptLineCard(
+  { line, currency, onSelectedChange, onEdit, editControl, onRemove }: {
+    line: ReceiptLineViewModel;
+    currency: string;
+    onSelectedChange?: (selected: boolean) => void;
+    onEdit?: () => void;
+    editControl?: ReactNode;
+    onRemove?: () => void;
+  },
+) {
+  return (
+    <Card as="section">
+      <Inline justify="space-between">
+        <Checkbox
+          isSelected={line.selected}
+          onChange={onSelectedChange}
+        >
+          <strong>{line.description || "Unclear item"}</strong>
+        </Checkbox>
+        <MoneyText
+          amount={line.amount}
+          currency={currency}
+          tone={line.amount.startsWith("-") ? "negative" : "positive"}
+        />
+      </Inline>
+      <Inline justify="space-between">
+        <Stack gap={1}>
+          <Text tone="secondary">{line.category}</Text>
+          {line.quantity || line.unitPrice
+            ? (
+              <Text size="label" tone="muted">
+                {line.quantity ?? "?"} × {line.unitPrice ?? "?"}
+              </Text>
+            )
+            : null}
+          {line.linkedLineDescription
+            ? (
+              <Text size="label" tone="secondary">
+                Linked to {line.linkedLineDescription}
+              </Text>
+            )
+            : null}
+        </Stack>
+        <Inline>
+          {editControl}
+          {editControl === undefined && onEdit
+            ? <Button variant="quiet" onPress={onEdit}>Edit</Button>
+            : null}
+          {onRemove
+            ? <Button variant="quiet" onPress={onRemove}>Remove</Button>
+            : null}
+        </Inline>
+      </Inline>
+      {line.uncertain
+        ? (
+          <InlineNotice tone="warning" title="Review this line">
+            {line.selectionReason ??
+              "The extraction was uncertain. Check the details before selecting it."}
+          </InlineNotice>
+        )
+        : null}
+    </Card>
+  );
+}
+
+export type ReceiptLineEditorValue = {
+  type: "purchase" | "adjustment";
+  description: string;
+  categoryId: string;
+  amount: string;
+  quantity?: string;
+  unitPrice?: string;
+  lineId?: string;
+};
+
+export function ReceiptLineEditor(
+  { value, categories, linkOptions = [], onChange }: {
+    value: ReceiptLineEditorValue;
+    categories: SelectOption[];
+    linkOptions?: SelectOption[];
+    onChange: (value: ReceiptLineEditorValue) => void;
+  },
+) {
+  return (
+    <Stack gap={4}>
+      <TextField
+        label="Description"
+        isRequired
+        value={value.description}
+        onChange={(description) => onChange({ ...value, description })}
+      />
+      <SelectField
+        label="Category"
+        options={categories}
+        value={value.categoryId}
+        onValueChange={(categoryId) => onChange({ ...value, categoryId })}
+      />
+      <TextField
+        label={value.type === "adjustment" ? "Signed adjustment" : "Line total"}
+        value={value.amount}
+        onChange={(amount) => onChange({ ...value, amount })}
+        inputMode="decimal"
+        type="text"
+        description="Enter the signed amount exactly as printed."
+      />
+      {value.type === "purchase"
+        ? (
+          <Inline>
+            <DecimalField
+              label="Quantity (optional)"
+              value={value.quantity ?? ""}
+              onChange={(quantity) => onChange({ ...value, quantity })}
+            />
+            <TextField
+              label="Unit price (optional)"
+              value={value.unitPrice ?? ""}
+              onChange={(unitPrice) => onChange({ ...value, unitPrice })}
+              inputMode="decimal"
+              type="text"
+              description="Preserve the printed unit price when known."
+            />
+          </Inline>
+        )
+        : (
+          <SelectField
+            label="Link to purchase (optional)"
+            options={[
+              { id: "", label: "Receipt-wide adjustment" },
+              ...linkOptions,
+            ]}
+            value={value.lineId ?? ""}
+            onValueChange={(lineId) =>
+              onChange({ ...value, lineId: lineId || undefined })}
+          />
+        )}
+    </Stack>
+  );
+}
+
+export type GeminiModelViewModel = SelectOption & {
+  status: "Compatible" | "Incompatible" | "Needs test";
+  reason?: string;
+};
+
+export function ModelPicker(
+  { options, value, onValueChange, disabled = false }: {
+    options: GeminiModelViewModel[];
+    value?: string;
+    onValueChange?: (value: string) => void;
+    disabled?: boolean;
+  },
+) {
+  return (
+    <AriaComboBox
+      selectedKey={value}
+      onSelectionChange={(next) => {
+        if (next !== null) onValueChange?.(String(next));
+      }}
+      isDisabled={disabled}
+      className="ds-field ds-search-field ds-model-picker"
+      allowsEmptyCollection
+    >
+      <AriaLabel className="ds-field__label">Model</AriaLabel>
+      <AriaInput
+        className="ds-field-control"
+        placeholder="Search models"
+      />
+      <AriaButton
+        className="ds-icon-button ds-search-field__clear"
+        aria-label="Show model options"
+      >
+        <Icon>
+          <ChevronDown />
+        </Icon>
+      </AriaButton>
+      <AriaPopover className="ds-popover">
+        <AriaListBox>
+          {options.map((option) => (
+            <AriaListBoxItem
+              key={option.id}
+              id={option.id}
+              textValue={option.label}
+              isDisabled={option.disabled || option.status !== "Compatible"}
+              className="ds-menu-item"
+            >
+              <Stack gap={1}>
+                <span>{option.label}</span>
+                <Text size="label" tone="secondary">
+                  {option.status}
+                  {option.reason ? ` · ${option.reason}` : ""}
+                </Text>
+              </Stack>
+            </AriaListBoxItem>
+          ))}
+        </AriaListBox>
+      </AriaPopover>
+    </AriaComboBox>
+  );
+}
+
+export function GeminiQuickSetup(
+  { value, onChange, onSave, error, busy }: {
+    value: string;
+    onChange: (value: string) => void;
+    onSave: () => void;
+    error?: string;
+    busy?: boolean;
+  },
+) {
+  return (
+    <Card as="section">
+      <Stack gap={4}>
+        <Heading size="sm">Set up Gemini</Heading>
+        <SecretField
+          label="API key"
+          value={value}
+          onChange={onChange}
+          description="Stored on this device. It is not a browser secret and can be read by code running on this origin."
+          error={error}
+        />
+        <InlineNotice tone="warning" title="Before you continue">
+          The selected receipt image, extraction schema and instructions, active
+          category IDs and names, device locale, and project currency code are
+          sent to Google Gemini. Expense history, project names, Drive data,
+          other device details, and sync metadata are excluded.
+        </InlineNotice>
+        <Button
+          pending={busy}
+          isDisabled={busy || value.trim().length === 0}
+          onPress={onSave}
+        >
+          Save and continue
+        </Button>
+      </Stack>
+    </Card>
+  );
+}
+
+export function GeminiConfigurationTest(
+  { state, onTest }: {
+    state: "idle" | "testing" | "passed" | "failed";
+    onTest: () => void;
+  },
+) {
+  const copy = state === "passed"
+    ? "Configuration passed on this device."
+    : state === "failed"
+    ? "Configuration needs attention. Check the key and compatible model."
+    : state === "testing"
+    ? "Testing the key and selected model…"
+    : "Test the key and selected model without sending a real receipt.";
+  return (
+    <StatusPanel
+      title="Test configuration"
+      detail={copy}
+      tone={state === "passed"
+        ? "positive"
+        : state === "failed"
+        ? "danger"
+        : "info"}
+      action={
+        <Button
+          variant="secondary"
+          pending={state === "testing"}
+          isDisabled={state === "testing"}
+          onPress={onTest}
+        >
+          Test configuration
+        </Button>
+      }
+    />
+  );
+}
+
 export function ExpenseForm(
   { children, status, actions }: {
     children?: ReactNode;

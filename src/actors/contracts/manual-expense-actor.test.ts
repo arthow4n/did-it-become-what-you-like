@@ -233,6 +233,112 @@ Deno.test("manual-expense: required and invalid decimals stay editable at the 03
   atActor.stop();
 });
 
+Deno.test("manual-expense: typed save completion supports add-another and saved undo", async () => {
+  const harness = await createHarness();
+  const addAnother = createExpenseActor(harness, "workflow:add-another");
+  addAnother.send({ type: "expense.open" });
+  await settle();
+  const draft = addAnother.getSnapshot().context.draft;
+  assert(draft !== null);
+  addAnother.send({
+    type: "expense.change",
+    draft: draftWith(draft, { amount: "8.25", merchant: "Cafe" }),
+  });
+  await settle();
+  addAnother.send({ type: "expense.submit-and-add-another" });
+  await settle();
+  assertEquals(addAnother.getSnapshot().value, "editing");
+  assertEquals(
+    addAnother.getSnapshot().context.result?.expense.amount,
+    "-8.25",
+  );
+  assertEquals(
+    addAnother.getSnapshot().context.result?.expense.merchant,
+    "Cafe",
+  );
+  assertEquals(addAnother.getSnapshot().context.originalExpense, null);
+  assertEquals(addAnother.getSnapshot().context.draft?.amount, "");
+  assertEquals(addAnother.getSnapshot().context.draft?.projectId, project.id);
+  addAnother.stop();
+
+  const saved = createExpenseActor(harness, "workflow:saved-undo");
+  saved.send({ type: "expense.open" });
+  await settle();
+  const savedDraft = saved.getSnapshot().context.draft;
+  assert(savedDraft !== null);
+  saved.send({
+    type: "expense.change",
+    draft: draftWith(savedDraft, { amount: "2.50" }),
+  });
+  await settle();
+  saved.send({ type: "expense.submit" });
+  await settle();
+  assertEquals(saved.getSnapshot().value, "saved");
+  const savedExpense = saved.getSnapshot().context.result?.expense;
+  assert(savedExpense !== undefined);
+  saved.send({ type: "expense.undo-saved" });
+  await settle();
+  assertEquals(saved.getSnapshot().value, "savedUndone");
+  assertEquals(
+    await harness.local.query("records", {
+      index: "id",
+      equals: savedExpense.id,
+    }),
+    [],
+  );
+  saved.stop();
+
+  const finish = createExpenseActor(harness, "workflow:finish-save");
+  finish.send({ type: "expense.open" });
+  await settle();
+  const finishDraft = finish.getSnapshot().context.draft;
+  assert(finishDraft !== null);
+  finish.send({
+    type: "expense.change",
+    draft: draftWith(finishDraft, { amount: "1.00" }),
+  });
+  await settle();
+  finish.send({ type: "expense.submit" });
+  await settle();
+  finish.send({ type: "expense.finish-save" });
+  await settle();
+  assertEquals(finish.getSnapshot().value, "savedOutput");
+  assertEquals(finish.getSnapshot().status, "done");
+  assertEquals(finish.getSnapshot().context.result?.expense.amount, "-1");
+  finish.stop();
+});
+
+Deno.test("manual-expense: null-draft hydration and open failures retry safely", async () => {
+  const harness = await createHarness();
+  harness.local.setScenario({ offline: true });
+
+  const hydrate = createExpenseActor(harness, "workflow:hydrate-failure");
+  hydrate.send({ type: "expense.hydrate" });
+  await settle();
+  assertEquals(hydrate.getSnapshot().value, "hydrateFailed");
+  assertEquals(hydrate.getSnapshot().context.draft, null);
+  assertEquals(hydrate.getSnapshot().context.error?.code, "offline");
+  harness.local.setScenario({ offline: false });
+  hydrate.send({ type: "expense.retry-draft" });
+  await settle();
+  assertEquals(hydrate.getSnapshot().value, "idle");
+  hydrate.stop();
+
+  harness.local.setScenario({ offline: true });
+  const open = createExpenseActor(harness, "workflow:open-failure");
+  open.send({ type: "expense.open" });
+  await settle();
+  assertEquals(open.getSnapshot().value, "openFailed");
+  assertEquals(open.getSnapshot().context.draft, null);
+  assertEquals(open.getSnapshot().context.error?.code, "offline");
+  harness.local.setScenario({ offline: false });
+  open.send({ type: "expense.retry-draft" });
+  await settle();
+  assertEquals(open.getSnapshot().value, "editing");
+  assert(open.getSnapshot().context.draft !== null);
+  open.stop();
+});
+
 Deno.test("manual-expense: merchant suggestions can be chosen and cleared", async () => {
   const harness = await createHarness();
   await harness.local.transaction("readwrite", async (transaction) => {

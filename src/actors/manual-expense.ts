@@ -82,6 +82,8 @@ export type ManualExpenseEvent =
   | { readonly type: "expense.merchant.choose"; readonly merchant: string }
   | { readonly type: "expense.merchant.clear" }
   | { readonly type: "expense.submit" }
+  | { readonly type: "expense.submit-and-add-another" }
+  | { readonly type: "expense.finish-save" }
   | { readonly type: "expense.retry" }
   | { readonly type: "expense.retry-draft" }
   | { readonly type: "expense.back" }
@@ -96,6 +98,7 @@ export type ManualExpenseEvent =
   | { readonly type: "expense.retry-delete" }
   | { readonly type: "expense.undo" }
   | { readonly type: "expense.retry-undo" }
+  | { readonly type: "expense.undo-saved" }
   | { readonly type: "expense.finish-delete" };
 
 export type ManualExpenseOutput =
@@ -103,7 +106,8 @@ export type ManualExpenseOutput =
   | { readonly status: "discarded" }
   | { readonly status: "cancelled" }
   | { readonly status: "deleted"; readonly expense: Expense }
-  | { readonly status: "undone"; readonly expense: Expense };
+  | { readonly status: "undone"; readonly expense: Expense }
+  | { readonly status: "saved-undone"; readonly expense: Expense };
 
 export type ManualExpenseContext = {
   readonly persistenceKey: string;
@@ -645,7 +649,9 @@ const manualExpenseSetup = setup({
   guards: {
     hasValidDraft: ({ context }) =>
       context.draft !== null && validateManualExpenseDraft(context.draft).valid,
+    hasDraft: ({ context }) => context.draft !== null,
     canDelete: ({ context }) => context.originalExpense !== null,
+    hasSavedResult: ({ context }) => context.result !== null,
     hasHydratedDraft: ({ event }) => "output" in event && event.output !== null,
   },
 });
@@ -708,7 +714,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           { target: "idle", actions: assign({ error: () => null }) },
         ],
         onError: {
-          target: "draftSaveFailed",
+          target: "hydrateFailed",
           actions: assign({
             error: ({ event }) =>
               contractFailureFromError(event.error, {
@@ -718,6 +724,14 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
               }),
           }),
         },
+      },
+    },
+    hydrateFailed: {
+      tags: ["error"],
+      on: {
+        "expense.retry": "hydrating",
+        "expense.retry-draft": "hydrating",
+        "expense.cancel": "cancelled",
       },
     },
     opening: {
@@ -737,7 +751,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           }),
         },
         onError: {
-          target: "draftSaveFailed",
+          target: "openFailed",
           actions: assign({
             error: ({ event }) =>
               contractFailureFromError(event.error, {
@@ -749,6 +763,14 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         },
       },
       on: { "expense.cancel": "cancelled" },
+    },
+    openFailed: {
+      tags: ["error"],
+      on: {
+        "expense.retry": "opening",
+        "expense.retry-draft": "opening",
+        "expense.cancel": "cancelled",
+      },
     },
     editing: {
       tags: ["dirty"],
@@ -785,6 +807,21 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         },
         "expense.submit": [
           { target: "saving", guard: "hasValidDraft" },
+          {
+            actions: assign({
+              draft: ({ context }) =>
+                context.draft === null
+                  ? null
+                  : normalizeManualExpenseDraft(context.draft),
+              validation: ({ context }) =>
+                context.draft === null
+                  ? { amount: "Amount is required." }
+                  : validateManualExpenseDraft(context.draft).errors,
+            }),
+          },
+        ],
+        "expense.submit-and-add-another": [
+          { target: "savingForAnother", guard: "hasValidDraft" },
           {
             actions: assign({
               draft: ({ context }) =>
@@ -873,6 +910,17 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
             }),
           },
         ],
+        "expense.submit-and-add-another": [
+          { target: "savingForAnother", guard: "hasValidDraft" },
+          {
+            actions: assign({
+              validation: ({ context }) =>
+                context.draft === null
+                  ? { amount: "Amount is required." }
+                  : validateManualExpenseDraft(context.draft).errors,
+            }),
+          },
+        ],
         "expense.back": "discardConfirming",
         "expense.cancel": "discardConfirming",
         "expense.discard": "discardConfirming",
@@ -881,7 +929,10 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
     draftSaveFailed: {
       tags: ["dirty", "error"],
       on: {
-        "expense.retry-draft": "persistingDraft",
+        "expense.retry-draft": [
+          { target: "persistingDraft", guard: "hasDraft" },
+          { target: "hydrating" },
+        ],
         "expense.change": {
           target: "persistingDraft",
           actions: "persistDraftChange",
@@ -921,9 +972,121 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
             }),
           },
         ],
+        "expense.submit-and-add-another": [
+          { target: "savingForAnother", guard: "hasValidDraft" },
+          {
+            actions: assign({
+              validation: ({ context }) =>
+                context.draft === null
+                  ? { amount: "Amount is required." }
+                  : validateManualExpenseDraft(context.draft).errors,
+            }),
+          },
+        ],
         "expense.back": "discardConfirming",
         "expense.cancel": "discardConfirming",
         "expense.discard": "discardConfirming",
+      },
+    },
+    savingForAnother: {
+      tags: ["saving"],
+      invoke: {
+        src: "commitExpense",
+        input: ({ context }) => ({
+          key: context.persistenceKey,
+          draft: context.draft!,
+          ...(context.originalExpense === null
+            ? {}
+            : { originalExpenseId: context.originalExpense.id }),
+        }),
+        onDone: {
+          target: "openingAnother",
+          actions: assign({
+            result: ({ event }) => event.output,
+            draft: () => null,
+            originalExpense: () => null,
+            openRequest: ({ event }) => ({
+              projectId: event.output.expense.projectId,
+            }),
+            persistenceRevision: () => 0,
+            deletedExpense: () => null,
+            error: () => null,
+          }),
+        },
+        onError: {
+          target: "saveAnotherFailed",
+          actions: assign({
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "The expense was not saved. Retry to try again.",
+                retryable: true,
+              }),
+          }),
+        },
+      },
+    },
+    openingAnother: {
+      tags: ["loading"],
+      invoke: {
+        src: "openExpense",
+        input: ({ context }) => context.openRequest ?? {},
+        onDone: {
+          target: "persistingDraft",
+          actions: assign({
+            draft: ({ event }) => event.output.draft,
+            originalExpense: () => null,
+            suggestions: ({ event }) => event.output.suggestions,
+            persistenceRevision: () => 1,
+            validation: () => ({}),
+            error: () => null,
+          }),
+        },
+        onError: {
+          target: "saveAnotherFailed",
+          actions: assign({
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "The next expense form could not be opened.",
+                retryable: true,
+              }),
+          }),
+        },
+      },
+    },
+    saveAnotherFailed: {
+      tags: ["error"],
+      on: {
+        "expense.retry": [
+          { target: "savingForAnother", guard: "hasDraft" },
+          { target: "openingAnother", guard: "hasSavedResult" },
+        ],
+        "expense.retry-draft": [
+          { target: "savingForAnother", guard: "hasDraft" },
+          { target: "openingAnother", guard: "hasSavedResult" },
+        ],
+        "expense.change": {
+          target: "persistingDraft",
+          guard: "hasDraft",
+          actions: "persistDraftChange",
+        },
+        "expense.back": [
+          { target: "discardConfirming", guard: "hasDraft" },
+          { target: "savedOutput", guard: "hasSavedResult" },
+        ],
+        "expense.cancel": [
+          { target: "discardConfirming", guard: "hasDraft" },
+          { target: "savedOutput", guard: "hasSavedResult" },
+        ],
+        "expense.discard": [
+          { target: "discardConfirming", guard: "hasDraft" },
+          { target: "savedOutput", guard: "hasSavedResult" },
+        ],
+        "expense.finish-save": [
+          { target: "discardConfirming", guard: "hasDraft" },
+          { target: "savedOutput", guard: "hasSavedResult" },
+        ],
       },
     },
     saving: {
@@ -1097,8 +1260,61 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
       },
     },
     saved: {
+      tags: ["saved"],
+      on: {
+        "expense.undo": { target: "undoingSaved", guard: "hasSavedResult" },
+        "expense.undo-saved": {
+          target: "undoingSaved",
+          guard: "hasSavedResult",
+        },
+        "expense.finish-save": "savedOutput",
+        "expense.cancel": "savedOutput",
+        "expense.back": "savedOutput",
+      },
+    },
+    undoingSaved: {
+      tags: ["saving", "undoing"],
+      invoke: {
+        src: "deleteExpense",
+        input: ({ context }) => ({
+          key: context.persistenceKey,
+          expense: context.result!.expense,
+        }),
+        onDone: "savedUndone",
+        onError: {
+          target: "savedUndoFailed",
+          actions: assign({
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "The saved expense could not be undone.",
+                retryable: true,
+              }),
+          }),
+        },
+      },
+    },
+    savedUndoFailed: {
+      tags: ["error"],
+      on: {
+        "expense.retry-undo": "undoingSaved",
+        "expense.undo-saved": "undoingSaved",
+        "expense.undo": "undoingSaved",
+        "expense.finish-save": "savedOutput",
+        "expense.cancel": "savedOutput",
+        "expense.back": "savedOutput",
+      },
+    },
+    savedOutput: {
       type: "final",
       output: ({ context }) => ({ status: "saved", result: context.result! }),
+    },
+    savedUndone: {
+      type: "final",
+      output: ({ context }) => ({
+        status: "saved-undone",
+        expense: context.result!.expense,
+      }),
     },
     discarded: {
       type: "final",

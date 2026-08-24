@@ -310,7 +310,8 @@ Deno.test("actor-contract: sync exposes conflict as a mode after its port comple
   actor.stop();
 });
 
-Deno.test("actor-contract: sync preserves typed retryable failures", async () => {
+Deno.test("actor-contract: sync exposes retryability from typed failures", async () => {
+  const secret = "test-gemini-api-key-D102-credential-shaped-error";
   const syncWithFailure = syncMachine.provide({
     actors: {
       syncTransport: fromPromise(({ input }: { input: SyncRequest }) => {
@@ -318,8 +319,46 @@ Deno.test("actor-contract: sync preserves typed retryable failures", async () =>
         return Promise.reject({
           name: "AdapterError",
           code: "offline",
-          message: "The requested operation is unavailable offline.",
+          message: `Temporary failure with credential ${secret}`,
           retry: "when-online",
+        });
+      }),
+    },
+  });
+  const actor = createActor(syncWithFailure).start();
+  actor.send({
+    type: "sync.configure",
+    accountEmail: "owner@example.test",
+    online: true,
+  });
+  actor.send({ type: "sync.request", request: { reason: "manual" } });
+  await settle();
+
+  assertEquals(actor.getSnapshot().value, "retryableError");
+  assertEquals(actor.getSnapshot().context.error, {
+    code: "offline",
+    message: "This operation is unavailable offline.",
+    retryable: true,
+  });
+  assert(actor.getSnapshot().hasTag("retryable"));
+  assert(actor.getSnapshot().can({ type: "sync.retry" }));
+
+  actor.send({ type: "sync.retry" });
+  assertEquals(actor.getSnapshot().value, "synchronizing");
+  actor.stop();
+});
+
+Deno.test("actor-contract: sync rejects non-retryable shaped failures without secret retention", async () => {
+  const secret = "test-gemini-api-key-D102-unauthorized-secret";
+  const syncWithFailure = syncMachine.provide({
+    actors: {
+      syncTransport: fromPromise(({ input }: { input: SyncRequest }) => {
+        void input;
+        return Promise.reject({
+          code: "unauthorized",
+          message: `Authorization failed with ${secret}`,
+          retryable: false,
+          retry: "never",
         });
       }),
     },
@@ -335,10 +374,15 @@ Deno.test("actor-contract: sync preserves typed retryable failures", async () =>
 
   assertEquals(actor.getSnapshot().value, "error");
   assertEquals(actor.getSnapshot().context.error, {
-    code: "offline",
-    message: "The requested operation is unavailable offline.",
-    retryable: true,
+    code: "unauthorized",
+    message: "Authorization is required for this operation.",
+    retryable: false,
   });
+  assert(!actor.getSnapshot().hasTag("retryable"));
+  assert(!actor.getSnapshot().can({ type: "sync.retry" }));
+  const failure = actor.getSnapshot().context.error;
+  assert(failure !== null);
+  assert(!failure.message.includes(secret));
   actor.stop();
 });
 
@@ -378,7 +422,7 @@ Deno.test("actor-contract: receipt scan preserves typed quota failures", async (
   assertEquals(actor.getSnapshot().value, "failed");
   assertEquals(actor.getSnapshot().context.error, {
     code: "quota",
-    message: "The adapter storage or service quota was exceeded.",
+    message: "Storage or service quota was exceeded.",
     retryable: true,
   });
   actor.stop();

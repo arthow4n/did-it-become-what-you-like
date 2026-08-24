@@ -46,6 +46,7 @@ const syncSetup = setup({
   guards: {
     hasConflicts: ({ context }) => context.unresolvedConflictCount > 0,
     isOnline: ({ event }) => event.type === "sync.configure" && event.online,
+    isRetryableFailure: ({ context }) => context.error?.retryable === true,
   },
 });
 
@@ -158,9 +159,24 @@ export const syncMachine = syncSetup.createMachine({
       },
     },
     error: {
+      tags: ["error"],
+      always: {
+        target: "retryableError",
+        guard: "isRetryableFailure",
+      },
+      on: {
+        "sync.network.offline": "offline",
+        "sync.disconnect": "unconfigured",
+        "sync.retire": "retired",
+      },
+    },
+    retryableError: {
       tags: ["error", "retryable"],
       on: {
-        "sync.retry": "synchronizing",
+        "sync.retry": {
+          target: "synchronizing",
+          actions: assign({ error: () => null }),
+        },
         "sync.network.offline": "offline",
         "sync.disconnect": "unconfigured",
         "sync.retire": "retired",

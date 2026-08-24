@@ -85,10 +85,10 @@ function isPortErrorCode(value: unknown): value is PortErrorCode {
 }
 
 /**
- * Preserve structured adapter failures without copying arbitrary SDK text into
- * durable actor context. AdapterError messages are safe because they are
- * generated from the reviewed adapter taxonomy; untyped errors use the
- * operation-specific fallback supplied by the owning actor.
+ * Preserve the typed failure code and retryability without copying arbitrary
+ * SDK or service text into durable actor context. Messages are always selected
+ * from the local allowlist; untyped errors use the operation-specific fallback
+ * supplied by the owning actor.
  */
 export function contractFailureFromError(
   error: unknown,
@@ -96,12 +96,7 @@ export function contractFailureFromError(
 ): ContractFailure {
   if (!isRecord(error) || !isPortErrorCode(error.code)) return fallback;
 
-  const isStructured = error.name === "AdapterError" ||
-    typeof error.retryable === "boolean" ||
-    typeof error.retry === "string";
-  const message = isStructured && typeof error.message === "string"
-    ? error.message
-    : PORT_ERROR_MESSAGES[error.code];
+  const message = PORT_ERROR_MESSAGES[error.code];
   const retryable = typeof error.retryable === "boolean"
     ? error.retryable
     : error.retry === "backoff" || error.retry === "when-online" ||

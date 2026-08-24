@@ -1264,8 +1264,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
   after closure-3 approval; and Q-601 is the next dependency-ready task.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `1ffd045` (`Record R-600 second fix wave`); this plan reconciliation is the
-  next checkpoint to push. The root contains only the intentionally untracked
+  `a791d74` (`Close R-600 and release Q-601`), pushed after the integrated
+  source checkpoint `1ffd045` (`Record R-600 second fix wave`). The root
+  contains only the intentionally untracked
   artifacts and preserved recovery directory listed below;
   the final pushed R-500 ledger sequence includes `e375cf8` (`Close R-500 and
   reconcile plan ledger`) and `150ba7c` (`Record final pushed R-500
@@ -1340,6 +1341,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   duplicate IDs; the root worktree contains only the intentionally untracked
   A-303, R-300, and R-400 contrast-fix handovers plus the preserved S-404
   root-artifact quarantine. Preserved worktrees are listed below.
+- **R-600 closure-3 reconciliation evidence:** The preserved independent
+  review approved the integrated checkpoint with `S1=0`, `S2=0`, `S3=0`, and
+  `S4=0`. Its exact matrix passed 249 unit, 72 integration, 81 component, 37
+  domain, 1 actor, local E2E 4/4, full E2E 10/10, formatting, lint, check,
+  build, gallery/browser, Pages/CI validators, frozen audit, and diff check;
+  production-preview evidence covered the destructive, Privacy, import,
+  offline, responsive, and scoped PWA paths. The review handover and worktree
+  remain preserved and no task is interrupted.
 - **R-400 completion evidence:** closure-6 independently approved the final
   native 1280x800 matrix after closure-5’s partial 320/390 review; the exact
   handover, counts, geometry, focus, cleanup, and unavailable-service boundary

@@ -495,7 +495,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### L-204 — Implement manual expense and local shell actors
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `L-202`, `L-203`, `D-102`.
+- **Status/dependencies:** `COMPLETE`; depends on `L-202`, `L-203`, `D-102`.
 - **Ownership:** manual-expense and shell actor implementations; no full screen
   CSS or external sync.
 - **Scope/non-goals:** create/edit shared form, spent/money-back signs, decimal
@@ -508,8 +508,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 - **Tests:** happy/edit/delete/undo, invalid decimals/required fields, 03:00 day
   boundary, suggestion clearing, reload hydration, duplicate-submit prevention,
   discard confirmation, repository failure/retry, and event path coverage.
-- **Verification:** `deno task test --filter 'manual-expense|shell-actor'`;
-  `deno task test:integration --filter manual-save`; `deno task check`.
+- **Verification:** `deno task test --filter manual-expense`; `deno task test
+  --filter shell-actor`; `deno task test:integration --filter manual-save`;
+  `deno task check`.
 
 #### L-205 — Deliver the complete local browsing and organization UI slice
 
@@ -1248,9 +1249,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `563b01a` and tracks
+- **Reconciled branch/upstream:** `master` is at `08c3f88` and tracks
   `origin/master` at the same commit (`0 0`). The root worktree is clean before
-  resuming the dispatched L-204 worker.
+  updating this completion ledger.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1262,10 +1263,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   repository`), A-301 adapter implementation `3d0b54a` (`Implement image
   preparation and Gemini adapter`), contract follow-up `dc306bb` (`Preserve
   receipt metadata in Gemini drafts`), the pushed A-301 ledger checkpoints,
-  and `afb7cc4` are present on `master`; the deferred-only SPEC note is
-  `c390656`. The latest pushed ledger reconciliation is `4b20dde`.
+  `afb7cc4`, and L-204 `08c3f88` are present on `master`; the deferred-only
+  SPEC note is `c390656`. The latest pushed implementation commit is
+  `08c3f88`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
-  `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `A-301`, and `R-200`. Their required source, tests, and
+  `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `A-301`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
@@ -1279,17 +1281,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   scope/non-goals, outputs/acceptance, tests, and verification; Markdown fences
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
-- **Current reconciliation evidence:** L-202, L-203, and L-201 integration validation
+- **Current reconciliation evidence:** L-204, L-202, L-203, and L-201 integration validation
   is recorded below. A-301 source integration and its bounded contract
   follow-up passed the root matrix, and the root canonical task includes
   `src/adapters/gemini`; the exact `A-301` filter is the authoritative focused
   command. The implementation plan task-heading count remains 37 with no
-  duplicate IDs; `master` and its upstream are aligned at `563b01a`; the
-  root worktree is clean before resuming L-204. Preserved worktrees are
+  duplicate IDs; `master` and its upstream are aligned at `08c3f88`; the
+  root worktree is clean before this completion-ledger edit. Preserved
+  worktrees are
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
-  `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, and `A-301` are
-  `COMPLETE`; `L-204` is `IN_PROGRESS` in its isolated worktree.
+  `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, and `A-301`
+  are `COMPLETE`; `L-205` is `PENDING` and dependency-ready.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1868,6 +1871,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   UTC progress/final-handoff entries, leave this plan and `master` untouched,
   and not push. The integration owner will review its scoped commit and rerun
   the affected matrix before releasing L-205.
+- **L-204 completion/integration:** Huygens completed the bounded implementation
+  in `~/git/worktrees/did-it-become-what-you-like-l-204-manual-shell` with
+  untracked `L-204-progress.md` preserved as the timestamped handover. The
+  worker commit `a019188` was inspected and cherry-picked as `08c3f88`; the
+  worker did not edit the plan or push. Root validation passed
+  `deno task fmt:check` (130 files), `deno task lint` (119 files),
+  `deno task check`, `deno task test --filter manual-expense` (6),
+  `deno task test --filter shell-actor` (3),
+  `deno task test:integration --filter manual-save` (2), `deno task test`
+  (121), `deno task build`, `deno audit --frozen`, and `git diff --check`.
+  L-204 is complete; its worktree remains preserved and the worker is shut
+  down. L-205 is now dependency-ready.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

@@ -1273,8 +1273,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `d9a21b0`, L-205 fix `bdd8b41`, integration correction `b504f5f`, and
   custom-period/saved-Undo follow-up `3424ed6` (`Fix remaining R-300 period
   and undo paths`);
+  the Curie-finding accessibility/typed-dispatch fix is integrated as
+  `acd3bff` (`Fix R-300 actor dispatch and landmarks`);
   the deferred-only SPEC note is `c390656`. The latest pushed implementation
-  implementation commit is `3424ed6`.
+  implementation commit is `acd3bff`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1293,8 +1295,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
   is recorded below. R-300 remains BLOCKED by the preserved historical and
   partial-review handovers, not by an unverified source change. The integrated
-  custom-period/saved-Undo follow-up passes the aggregate `deno task verify`
-  from `3424ed6`: 126 repository tests, 18 integration, 24 component/harness,
+  custom-period/saved-Undo follow-up and Curie-finding fix pass the aggregate
+  `deno task verify` from `acd3bff`: 128 repository tests, 18 integration,
+  28 component/harness,
   27 domain, 1 actor, local E2E 2/2, native gallery/browser checks,
   Pages/CI/toolchain validators, production build, frozen audit, and diff
   checks. Focused follow-up validation also passed `deno task fmt:check`
@@ -2070,6 +2073,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   keep an untracked timestamped `R-300-followup-fix-4-progress.md`, leave this
   plan and `master` untouched, not push or enable Pages, and return an exact
   validation handoff before integration. R-300 remains BLOCKED.
+- **R-300 follow-up worker integration:** Beauvoir completed the scoped fix in
+  `~/git/worktrees/did-it-become-what-you-like-r-300-followup-fix-4` with the
+  untracked `R-300-followup-fix-4-progress.md` handover preserved. Worker
+  commit `cf672d3` was inspected and cherry-picked as root commit `acd3bff`.
+  The six-file diff is limited to the authorized UI/design-system/index/test
+  paths: typed Save-and-add-another dispatch, single AppFrame main ownership,
+  level-one Manual/Projects/Categories page headings, valid MoneySummary group
+  semantics, and focused regressions. Worker validation passed
+  `deno task fmt:check` (134 files), `deno task lint` (122 files),
+  `deno task check`, `deno task test:component` (28),
+  `deno task test:e2e --grep local` (2/2), `deno task build`,
+  `deno task verify` (128 repository tests, 18 integration, 28 component,
+  27 domain, 1 actor, local E2E 2/2, native gallery/browser, Pages/CI/toolchain
+  validators, builds, audit, and diff), and final diff check. The worker did
+  not edit this plan or push; its worktree remains preserved. R-300 is still
+  BLOCKED pending a fresh independent review of the integrated root.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

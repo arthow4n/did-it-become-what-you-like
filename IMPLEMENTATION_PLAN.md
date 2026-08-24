@@ -640,7 +640,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### S-401 — Implement Google authorization and Drive app-data transport
 
-- **Status/dependencies:** `PENDING`; depends on `R-200`, `F-003`; may begin
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-200`, `F-003`; may begin
   after `R-200` in parallel with M3/M4 under adapter-only ownership.
 - **Ownership:** `src/adapters/drive/**`; no merge policy or sync UI.
 - **Scope/non-goals:** least-scope browser OAuth, one-account identity, app-data
@@ -1255,10 +1255,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, A-302, A-303, and R-400 are complete. M4 is
   released and S-401 is the next dependency-ready implementation.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `86ad551` after pushing the final R-400 native completion dispatch
-  checkpoint. The root worktree
+  `03f05b9` after pushing the R-400 completion gate checkpoint. The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
-  `R-300-progress.md` handovers.
+  `R-300-progress.md` and `R-400-contrast-fix-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1284,7 +1283,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
   browser build`). The latest integrated implementation is `1f85325`; the
   latest pushed orchestration checkpoint before this ledger update is
-  `86ad551`.
+  `03f05b9`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`; R-400 is complete as recorded
@@ -1314,8 +1313,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   zero axe violations/incomplete results and placed the model trigger above
   the sticky action at 390px. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `86ad551`; the root worktree contains only the intentionally untracked
-  A-303 and R-300 handovers. Preserved worktrees are listed below.
+  at `03f05b9`; the root worktree contains only the intentionally untracked
+  A-303, R-300, and R-400 contrast-fix handovers. Preserved worktrees are
+  listed below.
 - **R-400 completion evidence:** closure-6 independently approved the final
   native 1280x800 matrix after closure-5’s partial 320/390 review; the exact
   handover, counts, geometry, focus, cleanup, and unavailable-service boundary
@@ -1325,7 +1325,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
-  `COMPLETE`; R-400 is `COMPLETE`; S-401 is the next dependency-ready task.
+  `COMPLETE`; R-400 is `COMPLETE`; S-401 is `IN_PROGRESS` as the next
+  dependency-ready task.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2503,6 +2504,21 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   All synthetic-only boundaries were honored, temporary browser/server were
   closed, and no source, plan, remote, or other worktree changed. R-400 is
   now released and complete.
+- **S-401 implementation dispatch:** Lovelace
+  (`01a033cb-8bef-7cc1-af6a-9f8eff28ea0d`) owns the adapter-only
+  implementation in
+  `~/git/worktrees/did-it-become-what-you-like-s-401-drive-adapter`, branch
+  `task/s-401-drive-adapter`, based at `03f05b9`. Ownership is limited to
+  `src/adapters/drive/**` and focused tests/support within that directory; no
+  port, domain, sync, UI, plan, master, remote, or unrelated source changes
+  are permitted. The worker must create and continuously append the UTC
+  `S-401-progress.md` handover, implement least-scope appDataFolder OAuth and
+  Drive transport with redacted typed errors, retries/pagination, conditional
+  operations, abort/idempotence, and retirement-marker read-before-upload
+  protection using synthetic boundaries only. It must return exact validation
+  commands/results and `READY FOR INTEGRATION` or `BLOCKED`; live Drive smoke
+  is forbidden without explicit environment configuration. S-401 is active;
+  its worktree and handover are preserved until inspection and integration.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

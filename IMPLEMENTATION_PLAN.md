@@ -409,7 +409,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-200 — Contract and design-system independent review gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `D-101`, `D-102`, `D-103`,
+- **Status/dependencies:** `COMPLETE`; depends on `D-101`, `D-102`, `D-103`,
   `U-104`, all complete. Fresh read-only reviewer Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) is reviewing integrated `master` at
   `186ff05`; that reviewer stalled and was shut down without a handoff. Fresh
@@ -418,7 +418,10 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   scoped findings are now integrated. Closure reviewer Hypatia
   (`01a0314e-8936-7d53-a90f-ddf11e95f757`) completed with `BLOCK`; the
   orchestrator integrated the three scoped fixes and must dispatch one fresh
-  independent closure reviewer from the new clean checkpoint.
+  independent closure reviewer from the new clean checkpoint. Closure-3
+  reviewer Linnaeus (`01a03187-24aa-7521-b137-52ad5912d31f`) approved the
+  complete gate at `c390656` with no new findings; the contracts are now locked
+  for downstream M3 work.
 - **Ownership:** read-only first; scoped fixes by original owner/integration
   owner; contract changes documented with affected downstream tasks.
 - **Scope/non-goals:** review schema completeness, actor decomposition/v5
@@ -1237,12 +1240,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 
 ## Current Checkpoint
 
-- **Plan state:** implementation authorized; M0/M1 and the M2 contract/design-
-  system wave are complete, and `R-200` closure is `IN_PROGRESS` pending the
-  full matrix and a fresh closure review after the second fix wave. The prior
-  six severity-2 findings now have scoped fixes integrated; the gate is not
-  yet approved.
-- **Reconciled branch/upstream:** `master` is at `2ff59f7` and tracks
+- **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
+  system wave, and `R-200` are complete. Closure-3 approved the locked
+  contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
+- **Reconciled branch/upstream:** `master` is at `c390656` and tracks
   `origin/master` at the same commit. The branch is clean and neither ahead nor
   behind its upstream (`0 0`).
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1250,11 +1251,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
   plan`).
 - **Integrated implementation state:** production source fixes through
-  `2bf6471` (`Fix D-102 deletion safety and retry contracts`) are pushed. The
-  second-wave D-101 and D-102 fixes are `47b2f26` and `2bf6471`; this ledger
-  update is the only intended uncommitted change.
+  `2bf6471` (`Fix D-102 deletion safety and retry contracts`) are pushed; the
+  deferred-only SPEC note is `c390656`. This ledger update is the only intended
+  uncommitted change.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
-  `D-101`, `D-102`, `D-103`, and `U-104`. Their required source, tests, and
+  `D-101`, `D-102`, `D-103`, `U-104`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
@@ -1431,10 +1432,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** dispatch the fresh independent `R-200` closure reviewer
-  from clean `2ff59f7` in the newly prepared dedicated worktree. The complete
-  post-fix matrix is green; do not release M3 until the reviewer returns
-  APPROVE and the contracts are explicitly locked.
+- **Current task:** record the approved R-200 closure, then dispatch the next
+  dependency-ready M3 workstreams `L-201`, `L-203`, and `A-301` with disjoint
+  ownership. Keep the deferred AI scan feedback-memory feature out of MVP
+  implementation.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1567,10 +1568,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Gate status:** all six concrete severity-2 closure findings recorded so far
-  are addressed by the scoped fixes below; closure remains pending until the
-  complete matrix and a fresh reviewer confirm them. No owner decision is
-  required unless a future review identifies a product/spec contradiction.
+- **Gate status:** R-200 is APPROVED and its contracts are locked. Closure-3's
+  complete matrix passed from `c390656`; no owner decision is required. No
+  GitHub Pages workflow may be enabled or triggered because the owner has
+  intentionally disabled it until MVP completion.
   No GitHub Pages workflow may be enabled or triggered because the owner has
   intentionally disabled it until MVP completion.
 - **R-200 scoped-fix dispatch plan:** the first wave
@@ -1665,7 +1666,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `deno task test:integration` (2), direct actor tests (20), adapter tests (5),
   component tests (12), E2E tests (2), build, gallery, 3-viewport gallery
   a11y, schema/Pages/CI/toolchain verification, frozen audit, and diff check.
-  The next action is fresh closure review.
+  Closure-3 approved this result with no new findings; R-200 is complete and
+  the next action is the dependency-ready M3 workstream dispatch.
 - **R-200 closure review worktree:** prepared branch `review/r-200-closure`
   in `~/git/worktrees/did-it-become-what-you-like-r-200-closure`, based at
   `663a874`. The reviewer may inspect all source but may write only the
@@ -1716,6 +1718,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and end with explicit `APPROVE` or `BLOCK`. No source, plan, commit, push, or
   Pages action is allowed; preserve this worktree and progress file on
   interruption.
+- **R-200 closure-3 handoff and approval:** Linnaeus
+  (`01a03187-24aa-7521-b137-52ad5912d31f`) completed the independent review at
+  `~/git/worktrees/did-it-become-what-you-like-r-200-closure-3`, preserving
+  `R-200-closure-3-progress.md`. The reviewer rechecked all prior six S2
+  findings and the deferred SPEC addition, found S1=0/S2=0/S3=0/S4=0, and
+  returned `APPROVE`. Its exact 19-command matrix passed from `c390656`: 66
+  full tests, 2 integration, 20 actor, 5 adapter, 12 component, 2 E2E,
+  production/toolchain builds, gallery and 3-viewport screenshot/tree/axe,
+  schema/Pages/CI/toolchain verification, frozen audit, and diff check. Pages
+  remained disabled/untriggered; the worktree has only its untracked handover.
 - **R-200 fix-2 dispatch:** D-102 owns only
   `src/actors/contracts/deletion.ts`, `types.ts`, `sync.ts`, and focused actor
   tests in `~/git/worktrees/did-it-become-what-you-like-r-200-d102-fix-2`,

@@ -731,6 +731,28 @@ and multi-device synchronization according to the agreed sync design.
   or navigation state directly or gain a privileged bypass around the normal
   workflows.
 
+### Deferred AI Scan Feedback Memory
+
+- Post-MVP, after reviewing or editing an AI-generated receipt or expense draft,
+  the owner may be offered an explicit **Send feedback to AI** action. This is a
+  future feedback mechanism, not an automatic interpretation of every edit.
+- The feedback action may ask a constrained tool to append a concise,
+  human-readable characterization or correction to an application-managed
+  plain-text Markdown memory file. The memory is intended to help future scan
+  prompts apply the owner's recurring preferences and corrections; it is not a
+  second source of truth for expense records.
+- Any future memory write must be explicit, inspectable, editable, and
+  deletable by the owner. It must exclude receipt images, API keys, credentials,
+  raw prompts, and unrelated personal data, and must not silently upload or
+  synchronize content.
+- Future scan flows may attach the owner-approved memory content as bounded
+  context, but the memory must never override the current receipt, the owner's
+  present edits, domain validation, or the normal review and confirmation steps.
+- The memory file format, storage location, synchronization policy, prompt
+  assembly, retention limits, and tool permissions require a later design
+  decision. This feature has no MVP UI, actor, adapter, persistence, or test
+  contract and must not be implemented as part of the initial release.
+
 ### Local Browser Storage
 
 - Expense-day boundary is a synchronized personal domain preference and belongs

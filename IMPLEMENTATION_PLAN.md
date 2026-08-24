@@ -1248,9 +1248,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `c8926f0` and tracks
+- **Reconciled branch/upstream:** `master` is at `4b20dde` and tracks
   `origin/master` at the same commit (`0 0`). The root worktree is clean before
-  this intended ledger edit.
+  resuming the dispatched L-204 worker.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1262,8 +1262,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   repository`), A-301 adapter implementation `3d0b54a` (`Implement image
   preparation and Gemini adapter`), contract follow-up `dc306bb` (`Preserve
   receipt metadata in Gemini drafts`), the pushed A-301 ledger checkpoints,
-  and `c8926f0` are present on `master`; the deferred-only SPEC note is
-  `c390656`. This ledger update is the only intended uncommitted change.
+  and `afb7cc4` are present on `master`; the deferred-only SPEC note is
+  `c390656`. The latest pushed ledger reconciliation is `4b20dde`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `A-301`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1279,13 +1279,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   scope/non-goals, outputs/acceptance, tests, and verification; Markdown fences
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
-- **Current reconciliation evidence:** L-203 and L-201 integration validation
+- **Current reconciliation evidence:** L-202, L-203, and L-201 integration validation
   is recorded below. A-301 source integration and its bounded contract
   follow-up passed the root matrix, and the root canonical task includes
   `src/adapters/gemini`; the exact `A-301` filter is the authoritative focused
   command. The implementation plan task-heading count remains 37 with no
-  duplicate IDs; `master` and its upstream are aligned at `c8926f0`; the
-  root worktree has only this intended ledger edit. Preserved worktrees are
+  duplicate IDs; `master` and its upstream are aligned at `4b20dde`; the
+  root worktree is clean before resuming L-204. Preserved worktrees are
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, and `A-301` are

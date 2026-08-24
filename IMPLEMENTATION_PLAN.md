@@ -1255,7 +1255,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, and A-302 are complete. A-303 is integrated
   and R-400 is the active independent review gate.
 - **Reconciled branch/upstream:** `master` and `origin/master` are both at
-  `a8b87ca` (`0 0`), pushed after integrating A-303. The root worktree
+  `f7d7b6b` (`0 0`), pushed after recording A-303 completion and releasing
+  R-400. The root worktree
   contains only the intentionally untracked `A-303-progress.md` and
   `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1281,7 +1282,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the deferred-only SPEC note is `c390656`; A-303 UI integration is `a90504d`
   (`Implement A-303 receipt and Gemini UI`) and its isolated A-301 canvas
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
-  browser build`). The latest pushed implementation/checkpoint is `a8b87ca`.
+  browser build`). The latest pushed implementation is `a8b87ca`; the latest
+  pushed orchestration checkpoint is `f7d7b6b`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1310,7 +1312,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   one low-severity incomplete compact-navigation contrast diagnostic while
   visual text remained readable. The implementation plan task-heading count
   remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
-  at `a8b87ca`; the root worktree contains only the intentionally untracked
+  at `f7d7b6b`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
@@ -2195,6 +2197,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   build, changes no public contract/schema, and remains explicitly identified
   for R-400 review. Root `deno task verify` passed after both commits. The
   worker and timestamped handover remain preserved; R-400 is now released.
+- **R-400 dispatch:** Archimedes (`01a03302-91be-7852-9ecf-84e07a540dbe`) is
+  the fresh independent read-only Luna xhigh reviewer in
+  `~/git/worktrees/did-it-become-what-you-like-r-400-closure`, branch
+  `review/r-400-closure`, based at `f7d7b6b`. The reviewer owns no source or
+  plan changes and must preserve a timestamped `R-400-progress.md` handover,
+  run/reconcile the receipt privacy, actor, financial, accessibility, visual,
+  and fake-Gemini evidence, and end with explicit `APPROVE` or `BLOCK`.
+  A-303 remains integrated but R-400 is not complete until this fresh review
+  and any scoped fix/reverification loop are finished.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

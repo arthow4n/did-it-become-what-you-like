@@ -2277,6 +2277,27 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   again. It owns no source changes, maintains only a timestamped untracked
   `R-400-closure-2-progress.md`, and must end with explicit `APPROVE` or
   `BLOCK`; R-400 remains gated until that result.
+- **R-400 closure-2 result:** Gauss completed the fresh independent review from
+  `~/git/worktrees/did-it-become-what-you-like-r-400-closure-2`, branch
+  `review/r-400-closure-2`, with final handover
+  `~/git/worktrees/did-it-become-what-you-like-r-400-closure-2/R-400-closure-2-progress.md`
+  at `2026-08-24T10:36:04Z`: `BLOCK`, S1=0, S2=0, S3=1, S4=0. The fix wave
+  cleared all prior blockers: native/file cleanup, explicit model/Needs-test
+  evidence and invalidation, typed redacted HTTP status mapping, key
+  retention, dialog focus, request-body/429 assertions, and adjustment-link
+  validity all passed. The sole remaining S3 is a compact 390px diagnostic:
+  quick-setup warning text still receives an incomplete contrast result, and
+  expanded scan options place the model trigger beneath the sticky Scan action
+  at the initial scroll position. The reviewer found the screen readable and
+  all other native viewports/dialogs clean, but did not accept the repeated
+  diagnostic. R-400 remains blocked pending a narrow responsive fix/recheck.
+- **R-400 compact-layout fix boundary:** the orchestrator must preserve both
+  review worktrees and handovers and dispatch one bounded owner for only
+  `src/features/local-ui.css`, receipt scan/options composition if necessary,
+  focused native/component regression support, and no data/adapter/actor/schema
+  changes. The fix must remove the sticky-action overlap and recheck the 390px
+  contrast diagnostic at all three required viewports; no unrelated polish or
+  workflow changes are authorized.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

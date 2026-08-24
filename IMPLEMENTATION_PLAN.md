@@ -1365,7 +1365,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   decisions are sufficient to proceed.
 - **Current task:** Banach completed the fresh independent `R-200` read-only
   review from the clean root against the integrated M2 contracts and
-  design-system foundation; the first scoped-fix wave is active.
+  design-system foundation; D-101 is integrated and D-102/U-104 remain active
+  in the first scoped-fix wave.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1485,7 +1486,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   next available slot in `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`
   with ownership limited to `src/adapters/ports/**` and its focused tests.
 - **R-200 scoped-fix wave active:** Nash
-  (`01a03139-c1c3-7351-a670-dde731525fed`) owns D-101 in
+  (`01a03139-c1c3-7351-a670-dde731525fed`) completed D-101 in
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain`; Newton
   (`01a03139-c2ab-7f41-ab1a-250b3af097b0`) owns D-102 in
   `~/git/worktrees/did-it-become-what-you-like-d-102-actors`; and Herschel
@@ -1494,6 +1495,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   source ownership is disjoint; each must commit only its scoped fixes and
   tests, keep its progress file untracked if needed, and leave this plan and
   `master` untouched. D-103 remains queued for the next free worker slot.
+- **D-101 scoped-fix integration:** Nash committed `068c537`, which the
+  orchestrator reviewed and cherry-picked as `b3a8ffb`. Root
+  `deno task fmt:check`, `deno task lint`, `deno task check`,
+  `deno task test --filter domain` (8 passed), `deno task verify:schema-docs`,
+  and `git diff --check` passed; the root commit is pushed. The preserved D-101
+  worktree is clean except for its untracked `D-101-progress.md` artifact.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

@@ -435,17 +435,17 @@ export function Field(
   { label, children, description, error, required, controlId, className }:
     FieldProps,
 ) {
-  // Native controls use this single explicit label association. Keep the
-  // layout wrapper a div so it can never become a label around this label.
+  const fieldLabel = (
+    <span className="ds-field__label">
+      {label} {required ? <span className="ds-field__required">*</span> : null}
+    </span>
+  );
   return (
     <div
       className={cx("ds-field", className)}
       data-invalid={error ? "true" : undefined}
     >
-      <label className="ds-field__label" htmlFor={controlId}>
-        {label}{" "}
-        {required ? <span className="ds-field__required">*</span> : null}
-      </label>
+      {controlId ? <label htmlFor={controlId}>{fieldLabel}</label> : fieldLabel}
       {children}
       {description
         ? <span className="ds-field__description">{description}</span>

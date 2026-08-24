@@ -171,6 +171,11 @@ Deno.test("design-system native fields and definition lists expose valid semanti
         view.getByLabelText("Receipt image"),
       ];
       assertEqual(document.querySelectorAll("label label").length, 0);
+      assertEqual(document.querySelectorAll(".ds-field > label").length, 3);
+      assertEqual(
+        document.querySelectorAll(".ds-field > span.ds-field__label").length,
+        1,
+      );
       for (const control of nativeControls) {
         const fieldLabel = Array.from(document.querySelectorAll("label"))
           .find((candidate) => candidate.htmlFor === control.id);

@@ -156,6 +156,84 @@ function pathFromHash(): string {
     : routeFromHash(globalThis.location.hash);
 }
 
+const LOCAL_UI_HISTORY_STATE = "__afterMidnightLocalUiHistory";
+
+type LocalUiHistoryEntry = {
+  readonly path: string;
+  readonly hash: string;
+  readonly index: number;
+};
+
+type LocalUiHistoryState = {
+  readonly index: number;
+  readonly path: string;
+};
+
+type LocalUiPendingNavigation =
+  | { readonly kind: "route"; readonly path: LocalUiPath }
+  | {
+    readonly kind: "history";
+    readonly source: LocalUiHistoryEntry;
+    readonly target: LocalUiHistoryEntry;
+  };
+
+type LocalUiHistoryTransition =
+  | {
+    readonly phase: "restoring";
+    readonly source: LocalUiHistoryEntry;
+    readonly target: LocalUiHistoryEntry;
+  }
+  | {
+    readonly phase: "waiting";
+    readonly source: LocalUiHistoryEntry;
+    readonly target: LocalUiHistoryEntry;
+  }
+  | { readonly phase: "committing"; readonly target: LocalUiHistoryEntry };
+
+function readLocalUiHistoryState(value: unknown): LocalUiHistoryState | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = (value as Record<string, unknown>)[LOCAL_UI_HISTORY_STATE];
+  if (!candidate || typeof candidate !== "object") return null;
+  const state = candidate as Record<string, unknown>;
+  return typeof state.index === "number" && Number.isInteger(state.index) &&
+      typeof state.path === "string"
+    ? { index: state.index, path: state.path }
+    : null;
+}
+
+function historyStateFor(entry: LocalUiHistoryEntry): Record<string, unknown> {
+  const current = globalThis.history.state;
+  const base = current && typeof current === "object" &&
+      !Array.isArray(current)
+    ? current as Record<string, unknown>
+    : {};
+  return {
+    ...base,
+    [LOCAL_UI_HISTORY_STATE]: {
+      index: entry.index,
+      path: entry.path,
+    },
+  };
+}
+
+function historyEntryForLocation(index = 0): LocalUiHistoryEntry {
+  const path = pathFromHash();
+  const state = readLocalUiHistoryState(globalThis.history.state);
+  return {
+    path,
+    hash: globalThis.location.hash,
+    index: state?.path === path ? state.index : index,
+  };
+}
+
+function sameHistoryEntry(
+  left: LocalUiHistoryEntry,
+  right: LocalUiHistoryEntry,
+): boolean {
+  return left.index === right.index && left.path === right.path &&
+    left.hash === right.hash;
+}
+
 export function FirstUseScreen({
   onCreateProject,
   onRestoreBackup,
@@ -362,7 +440,9 @@ export function AddChoiceScreen({
     return () => {
       if (skipRestoreRef.current) return;
       const previous = previousFocusRef.current;
-      if (previous?.isConnected) previous.focus();
+      globalThis.setTimeout(() => {
+        if (previous?.isConnected) previous.focus();
+      }, 0);
     };
   }, []);
 
@@ -2533,7 +2613,14 @@ export function LocalUiRuntime(
   );
   const [dirtyExitOpen, setDirtyExitOpen] = useState(false);
   const [discardRequest, setDiscardRequest] = useState(0);
-  const pendingNavigationRef = useRef<LocalUiPath | null>(null);
+  const pendingNavigationRef = useRef<LocalUiPendingNavigation | null>(null);
+  const currentHistoryRef = useRef<LocalUiHistoryEntry | null>(null);
+  const historyTransitionRef = useRef<LocalUiHistoryTransition | null>(null);
+  const dirtyNavigationRef = useRef(false);
+  dirtyNavigationRef.current = dirtyNavigationWorkflow;
+  if (currentHistoryRef.current === null) {
+    currentHistoryRef.current = historyEntryForLocation();
+  }
   const [deviceSettings, setDeviceSettings] = useState<DeviceLocalSettings>({
     imagePreparationEnabled: true,
   });
@@ -2583,12 +2670,6 @@ export function LocalUiRuntime(
   }, [sendShell]);
 
   useEffect(() => {
-    const onHashChange = () => setPath(pathFromHash());
-    globalThis.addEventListener("hashchange", onHashChange);
-    return () => globalThis.removeEventListener("hashchange", onHashChange);
-  }, []);
-
-  useEffect(() => {
     const nextState = shellSnapshot.context.projectState;
     if (nextState) setState(nextState);
   }, [shellSnapshot.context.projectState]);
@@ -2611,30 +2692,170 @@ export function LocalUiRuntime(
   }, [path, sendShell, shellReady]);
 
   const navigate = (nextPath: LocalUiPath) => {
-    if (globalThis.location.hash !== hashForRoute(nextPath)) {
-      globalThis.location.hash = hashForRoute(nextPath);
+    const current = currentHistoryRef.current;
+    if (!current) return;
+    const hash = hashForRoute(nextPath);
+    if (globalThis.location.hash !== hash) {
+      const nextEntry: LocalUiHistoryEntry = {
+        path: nextPath,
+        hash,
+        index: current.index + 1,
+      };
+      globalThis.history.pushState(historyStateFor(nextEntry), "", hash);
+      currentHistoryRef.current = nextEntry;
     } else {
+      const nextEntry = { ...current, path: nextPath };
+      globalThis.history.replaceState(
+        historyStateFor(nextEntry),
+        "",
+        hash,
+      );
+      currentHistoryRef.current = nextEntry;
       setPath(nextPath);
     }
+    setPath(nextPath);
   };
 
   const requestNavigation = (nextPath: LocalUiPath) => {
     if (dirtyNavigationWorkflow) {
-      pendingNavigationRef.current = nextPath;
+      pendingNavigationRef.current = { kind: "route", path: nextPath };
       setDirtyExitOpen(true);
       return;
     }
     navigate(nextPath);
   };
 
+  const commitHistoryNavigation = (target: LocalUiHistoryEntry) => {
+    const current = currentHistoryRef.current;
+    if (!current) return;
+    const delta = target.index - current.index;
+    if (delta === 0) {
+      globalThis.history.replaceState(historyStateFor(target), "", target.hash);
+      currentHistoryRef.current = target;
+      historyTransitionRef.current = null;
+      setPath(target.path);
+      return;
+    }
+    historyTransitionRef.current = { phase: "committing", target };
+    globalThis.history.go(delta);
+  };
+
   const finishDirtyNavigation = (fallback: LocalUiPath) => {
-    const nextPath = pendingNavigationRef.current ?? fallback;
+    const pending = pendingNavigationRef.current;
     pendingNavigationRef.current = null;
     setDirtyExitOpen(false);
     setDirtyNavigationWorkflow(false);
     setWorkflowDirty(false);
-    navigate(nextPath);
+    if (pending?.kind === "history") {
+      commitHistoryNavigation(pending.target);
+      return;
+    }
+    navigate(pending?.path ?? fallback);
   };
+
+  useEffect(() => {
+    const current = currentHistoryRef.current;
+    if (!current) return;
+    const state = readLocalUiHistoryState(globalThis.history.state);
+    if (
+      !state || state.index !== current.index || state.path !== current.path
+    ) {
+      globalThis.history.replaceState(
+        historyStateFor(current),
+        "",
+        current.hash,
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    const onHistoryChange = () => {
+      const current = currentHistoryRef.current;
+      if (!current) return;
+
+      const targetPath = pathFromHash();
+      const state = readLocalUiHistoryState(globalThis.history.state);
+      const target: LocalUiHistoryEntry = state?.path === targetPath
+        ? {
+          path: targetPath,
+          hash: globalThis.location.hash,
+          index: state.index,
+        }
+        : {
+          path: targetPath,
+          hash: globalThis.location.hash,
+          index: current.index + 1,
+        };
+
+      if (!state || state.path !== targetPath) {
+        globalThis.history.replaceState(
+          historyStateFor(target),
+          "",
+          target.hash,
+        );
+      }
+
+      const transition = historyTransitionRef.current;
+      if (transition?.phase === "committing") {
+        if (sameHistoryEntry(target, transition.target)) {
+          historyTransitionRef.current = null;
+          currentHistoryRef.current = target;
+          setPath(target.path);
+        }
+        return;
+      }
+
+      if (transition?.phase === "restoring") {
+        if (!sameHistoryEntry(target, transition.source)) return;
+        if (!dirtyNavigationRef.current) {
+          commitHistoryNavigation(transition.target);
+          return;
+        }
+        historyTransitionRef.current = {
+          phase: "waiting",
+          source: transition.source,
+          target: transition.target,
+        };
+        pendingNavigationRef.current = {
+          kind: "history",
+          source: transition.source,
+          target: transition.target,
+        };
+        setDirtyExitOpen(true);
+        return;
+      }
+
+      if (transition?.phase === "waiting") return;
+      if (sameHistoryEntry(target, current)) return;
+
+      if (dirtyNavigationRef.current) {
+        const delta = target.index - current.index;
+        if (delta === 0) return;
+        historyTransitionRef.current = {
+          phase: "restoring",
+          source: current,
+          target,
+        };
+        pendingNavigationRef.current = {
+          kind: "history",
+          source: current,
+          target,
+        };
+        globalThis.history.go(-delta);
+        return;
+      }
+
+      currentHistoryRef.current = target;
+      setPath(target.path);
+    };
+
+    globalThis.addEventListener("hashchange", onHistoryChange);
+    globalThis.addEventListener("popstate", onHistoryChange);
+    return () => {
+      globalThis.removeEventListener("hashchange", onHistoryChange);
+      globalThis.removeEventListener("popstate", onHistoryChange);
+    };
+  }, []);
 
   const updateDeviceSettings = async (next: DeviceLocalSettings) => {
     setDeviceSettings(next);
@@ -2892,12 +3113,14 @@ export function LocalUiRuntime(
             ? (
               <PreferencesScreen
                 local={repository}
-                onClose={() => {
-                  setWorkflowDirty(false);
-                  navigate("/settings");
-                }}
+                onClose={() => requestNavigation("/settings")}
                 onSaved={setExpenseDayBoundary}
-                onDirtyChange={setWorkflowDirty}
+                onDirtyChange={(dirty) => {
+                  setWorkflowDirty(dirty);
+                  setDirtyNavigationWorkflow(dirty);
+                }}
+                discardRequest={discardRequest}
+                onDiscarded={() => finishDirtyNavigation("/settings")}
               />
             )
             : contentPath === "/settings/about"
@@ -2946,6 +3169,7 @@ export function LocalUiRuntime(
           isOpen={dirtyExitOpen}
           onKeepEditing={() => {
             pendingNavigationRef.current = null;
+            historyTransitionRef.current = null;
             setDirtyExitOpen(false);
           }}
           onDiscard={() => {

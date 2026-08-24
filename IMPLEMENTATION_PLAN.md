@@ -540,9 +540,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-300 — Local vertical-slice independent review gate
 
-- **Status/dependencies:** `BLOCKED`; depends on `L-205`; the prior fix wave
-  was re-reviewed from `c97b222`, but the fresh closure audit confirmed
-  remaining severity-2 gaps in custom periods and saved-record Undo.
+- **Status/dependencies:** `BLOCKED`; depends on `L-205`; the bounded
+  custom-period/saved-record-Undo follow-up is integrated, but a fresh
+  independent closure review is still required.
 - **Ownership:** review read-only first; fixes remain scoped to M3 owners.
 - **Scope/non-goals:** review financial correctness, local durability, XState/UI
   separation, responsive/accessibility fidelity, design-system reuse, and all
@@ -1254,8 +1254,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
 - **Reconciled branch/upstream:** `master` and `origin/master` are both at
-  `05bbdd7` (`0 0`), pushed after recording the partial fresh-review recovery. The root worktree
-  is clean except for the intentionally untracked R-300 review handover.
+  `3424ed6` (`0 0`), pushed after integrating the bounded R-300 follow-up.
+  The root worktree is clean except for the intentionally untracked R-300
+  review handover.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1269,9 +1270,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   receipt metadata in Gemini drafts`), the pushed A-301 ledger checkpoints,
   `afb7cc4`, L-204 `08c3f88`, and L-205 `054a82f` are present on `master`;
   the R-300 fix wave is integrated through L-204 fix `721a33e`, U-104 fix
-  `d9a21b0`, L-205 fix `bdd8b41`, and integration correction `b504f5f`;
+  `d9a21b0`, L-205 fix `bdd8b41`, integration correction `b504f5f`, and
+  custom-period/saved-Undo follow-up `3424ed6` (`Fix remaining R-300 period
+  and undo paths`);
   the deferred-only SPEC note is `c390656`. The latest pushed implementation
-  commit is `b504f5f`.
+  implementation commit is `3424ed6`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1288,23 +1291,29 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
-  is recorded below. R-300 is BLOCKED by the preserved 7-S2/3-S3 review
-  handoff; the bounded R-300 fix wave now passes the aggregate `deno task
-  verify`, including the corrected local null-draft E2E and production CSP/WASM
-  preview smoke; A-301 source integration and its bounded contract
-  follow-up passed the root matrix, and the root canonical task includes
-  `src/adapters/gemini`; the exact `A-301` filter is the authoritative focused
-  command. The implementation plan task-heading count remains 37 with no
-  duplicate IDs; `master` and its upstream are aligned at `179260b`; the
-  root worktree contains only the intentionally untracked R-300 handover
-  after the pushed fix wave. Preserved
+  is recorded below. R-300 remains BLOCKED by the preserved historical and
+  partial-review handovers, not by an unverified source change. The integrated
+  custom-period/saved-Undo follow-up passes the aggregate `deno task verify`
+  from `3424ed6`: 126 repository tests, 18 integration, 24 component/harness,
+  27 domain, 1 actor, local E2E 2/2, native gallery/browser checks,
+  Pages/CI/toolchain validators, production build, frozen audit, and diff
+  checks. Focused follow-up validation also passed `deno task fmt:check`
+  (134 files), `deno task lint` (122 files), `deno task check`, component
+  tests (24), and local E2E (2/2). A-301 source integration and its bounded
+  contract follow-up passed the root matrix, and the root canonical task
+  includes `src/adapters/gemini`; the exact `A-301` filter is the authoritative
+  focused command. The implementation plan task-heading count remains 37
+  with no duplicate IDs; `master` and its upstream are aligned at `3424ed6`;
+  the root worktree contains only the intentionally untracked R-300 handover
+  after the pushed follow-up. Preserved
   worktrees are
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
-  custom-period/saved-Undo fix wave is `IN_PROGRESS` under blocked `R-300`.
+  custom-period/saved-Undo fix wave is `COMPLETE`; a fresh R-300 closure
+  review is the only active gate.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1986,15 +1995,33 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   actor's existing saved-record Undo path. After repeated bounded waits and an
   interrupt request, the reviewer was shut down before a final handoff; this
   is preserved as partial evidence, not approval. The gate remains blocked.
-- **R-300 follow-up fix wave:** the integration owner will dispatch two
-  dependency-ordered bounded slices before another fresh review. U-104 owns
-  only the shared PeriodPicker API/semantics and component tests; after that
-  handoff, L-205 owns the local query/UI wiring, custom-period interaction
-  coverage, saved-record Undo presentation/wiring through the existing typed
-  manual-expense actor states, and the final local-screen evidence. No worker
-  may edit this plan, push `master`, broaden into external sync/Gemini/Drive,
-  or change user-facing requirements. The next closure reviewer must inspect
-  both the completed wave and the preserved partial Mencius handover.
+- **R-300 follow-up fix wave:** the integration owner attempted to dispatch
+  the dependency-ordered U-104 slice to Anscombe
+  (`01a03163-2b5a-7af1-ab87-b69cf65a0796`) and then a fresh U-104 worker,
+  Einstein (`01a03275-8dec-7ef1-8f0b-f4fe757369a0`), in the preserved
+  `~/git/worktrees/did-it-become-what-you-like-u-104-design-system`
+  worktree. Both remained pending after bounded waits and interruption
+  requests, made no source changes, and were shut down. Because the issue was
+  an implementation-detail worker startup stall rather than a product or
+  contract ambiguity, the integration owner completed the already-scoped
+  recovery directly while preserving the U-104/L-205 ownership boundary.
+  No worker edited this plan or pushed `master`.
+- **R-300 follow-up integration:** commit `3424ed6` (`Fix remaining R-300
+  period and undo paths`) adds controlled shared custom-period type/date
+  inputs, maps day/month/year selections into the existing query period
+  contract, keeps transient invalid date input safe, and exposes the existing
+  typed saved-record Undo/retry/continue states in the local UI. It adds the
+  PeriodPicker, saved-completion, and local browser regression coverage. The
+  integration owner inspected the five-file diff and ran
+  `deno task fmt:check` (134 files), `deno task lint` (122 files),
+  `deno task check`, `deno task test:component` (24 passed),
+  `deno task test:e2e --grep local` (2 passed), and the aggregate
+  `deno task verify` (126 repository tests, 18 integration, 24 component,
+  27 domain, 1 actor, local E2E 2/2, native gallery/browser, Pages/CI/toolchain
+  validators, build, audit, and diff checks); all exited 0. The source commit
+  is pushed, the root worktree has only the intentionally untracked
+  `R-300-progress.md`, and R-300 remains BLOCKED pending a fresh independent
+  closure reviewer.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

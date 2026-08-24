@@ -51,8 +51,11 @@ export type PwaStatus =
   | "unsupported"
   | "error";
 
+type PwaInstallKind = "app" | "update" | null;
+
 export type PwaController = {
   readonly status: PwaStatus;
+  readonly installKind: PwaInstallKind;
   readonly version: string | null;
   readonly error: string | null;
   readonly canInstall: boolean;
@@ -66,6 +69,7 @@ export type PwaController = {
 
 const defaultPwaController: PwaController = {
   status: "unsupported",
+  installKind: null,
   version: null,
   error: null,
   canInstall: false,
@@ -123,6 +127,21 @@ function statusFromSnapshot(
   if (portState === "installing") return "installing";
   if (portState === "unsupported") return "unsupported";
   return "current";
+}
+
+function installKindFromSnapshot(
+  snapshot: {
+    matches: (
+      value: "installing" | "reloading",
+    ) => boolean;
+  },
+  portState: string,
+): PwaInstallKind {
+  if (snapshot.matches("installing")) return "app";
+  if (snapshot.matches("reloading") || portState === "installing") {
+    return "update";
+  }
+  return null;
 }
 
 export function PwaRuntime({
@@ -212,6 +231,7 @@ export function PwaRuntime({
   }, [port, send, snapshot]);
 
   const status = statusFromSnapshot(snapshot, port.state());
+  const installKind = installKindFromSnapshot(snapshot, port.state());
   const requestInstall = () => {
     if (!port.canInstall()) return;
     if (snapshot.matches("installAvailable")) {
@@ -243,6 +263,7 @@ export function PwaRuntime({
   };
   const controller: PwaController = {
     status,
+    installKind,
     version: snapshot.context.version,
     error: snapshot.context.error?.message ?? null,
     canInstall,
@@ -463,7 +484,9 @@ function updateStatusLabel(controller: PwaController): string {
     case "update-ready":
       return controller.version ? "Update ready" : "Update ready to install";
     case "installing":
-      return "Installing update…";
+      return controller.installKind === "app"
+        ? "Installing app…"
+        : "Installing update…";
     case "offline":
       return "Update check unavailable offline";
     case "unsupported":

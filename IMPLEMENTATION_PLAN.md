@@ -415,8 +415,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   `186ff05`; that reviewer stalled and was shut down without a handoff. Fresh
   reviewer Banach (`01a0312e-b8bb-7582-8ae0-e8fbc7ca9eef`) completed a
   read-only review of pushed checkpoint `b398037` and returned `BLOCK`; all
-  scoped findings are now integrated, and a fresh closure reviewer is next.
-  The orchestrator owns the gate decision.
+  scoped findings are now integrated. Fresh closure reviewer Hypatia
+  (`01a0314e-8936-7d53-a90f-ddf11e95f757`) is reviewing in the dedicated
+  worktree; the orchestrator owns the gate decision.
 - **Ownership:** read-only first; scoped fixes by original owner/integration
   owner; contract changes documented with affected downstream tasks.
 - **Scope/non-goals:** review schema completeness, actor decomposition/v5
@@ -1367,7 +1368,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Current task:** Banach completed the fresh independent `R-200` read-only
   review from the clean root against the integrated M2 contracts and
   design-system foundation; D-101, D-102, D-103, and U-104 fixes are integrated
-  and the fresh closure review is next.
+  and Hypatia is performing the fresh closure review.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1540,6 +1541,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   untracked `R-200-progress.md` operational artifact there; no source, tests,
   plan, commits, push, or Pages action is allowed. Preserve this worktree and
   progress file if the reviewer is interrupted.
+- **R-200 closure reviewer active:** Hypatia
+  (`01a0314e-8936-7d53-a90f-ddf11e95f757`) owns only the read-only inspection
+  and untracked `R-200-progress.md` in
+  `~/git/worktrees/did-it-become-what-you-like-r-200-closure`. No source,
+  plan, commit, push, or Pages action is permitted.
 - **Historical D-103 dispatch record:** Dewey previously owned the active
   adapter fix in
   `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`, limited to

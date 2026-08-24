@@ -18,6 +18,7 @@ import {
 import {
   Button as AriaButton,
   Checkbox as AriaCheckbox,
+  ComboBox as AriaComboBox,
   Dialog as AriaDialog,
   DialogTrigger as AriaDialogTrigger,
   Disclosure as AriaDisclosure,
@@ -278,16 +279,23 @@ export function MoneyText(
   { amount, currency, tone, className }: MoneyTextProps,
 ) {
   const stringAmount = String(amount);
+  const normalizedAmount = stringAmount.trim();
   const resolvedTone = tone ??
-    (stringAmount.startsWith("+") ||
-        (!stringAmount.startsWith("-") && stringAmount !== "0")
+    (normalizedAmount.startsWith("+") ||
+        (!normalizedAmount.startsWith("-") && normalizedAmount !== "0")
       ? "positive"
-      : stringAmount.startsWith("-")
+      : normalizedAmount.startsWith("-")
       ? "negative"
       : "neutral");
+  const displayAmount = resolvedTone === "positive" &&
+      !normalizedAmount.startsWith("+") &&
+      !normalizedAmount.startsWith("-") &&
+      /[1-9]/.test(normalizedAmount)
+    ? `+${normalizedAmount}`
+    : normalizedAmount;
   return (
     <span className={cx("ds-money", className)} data-tone={resolvedTone}>
-      {formatMoney(amount, currency)}
+      {formatMoney(displayAmount, currency)}
     </span>
   );
 }
@@ -572,6 +580,7 @@ export function SearchField(
       <AriaButton
         className="ds-icon-button ds-search-field__clear"
         aria-label="Clear search"
+        onPress={() => onValueChange?.("")}
       >
         <Icon>
           <X />
@@ -1741,6 +1750,47 @@ export function PeriodPicker(
   );
 }
 
+const FALLBACK_ISO_CURRENCY_CODES = [
+  "AUD",
+  "CAD",
+  "CHF",
+  "CNY",
+  "DKK",
+  "EUR",
+  "GBP",
+  "HKD",
+  "INR",
+  "JPY",
+  "NOK",
+  "NZD",
+  "SEK",
+  "SGD",
+  "USD",
+  "TWD",
+];
+
+function isoCurrencyOptions(): SelectOption[] {
+  const intlWithCurrencyValues = Intl as typeof Intl & {
+    supportedValuesOf?: (key: string) => string[];
+  };
+  const codes = intlWithCurrencyValues.supportedValuesOf?.("currency") ??
+    FALLBACK_ISO_CURRENCY_CODES;
+  return codes.map((code) => ({ id: code, label: code }));
+}
+
+function currencyOptionsWithIso(
+  options: SelectOption[],
+  value?: string,
+): SelectOption[] {
+  const byId = new Map<string, SelectOption>();
+  for (const option of options) byId.set(option.id, option);
+  if (value && !byId.has(value)) byId.set(value, { id: value, label: value });
+  for (const option of isoCurrencyOptions()) {
+    if (!byId.has(option.id)) byId.set(option.id, option);
+  }
+  return [...byId.values()];
+}
+
 export function ProjectPicker(
   { options, value, onValueChange }: {
     options: SelectOption[];
@@ -1765,13 +1815,45 @@ export function CurrencyPicker(
     onValueChange?: (value: string) => void;
   },
 ) {
+  const currencyOptions = currencyOptionsWithIso(options, value);
   return (
-    <SelectField
-      label="Currency"
-      options={options}
-      value={value}
-      onValueChange={onValueChange}
-    />
+    <AriaComboBox
+      selectedKey={value}
+      onSelectionChange={(next) => {
+        if (next !== null) onValueChange?.(String(next));
+      }}
+      className="ds-field ds-search-field ds-currency-picker"
+      allowsEmptyCollection
+    >
+      <AriaLabel className="ds-field__label">Currency</AriaLabel>
+      <AriaInput
+        className="ds-field-control"
+        placeholder="Search ISO currency"
+      />
+      <AriaButton
+        className="ds-icon-button ds-search-field__clear"
+        aria-label="Show currency options"
+      >
+        <Icon>
+          <ChevronDown />
+        </Icon>
+      </AriaButton>
+      <AriaPopover className="ds-popover">
+        <AriaListBox>
+          {currencyOptions.map((option) => (
+            <AriaListBoxItem
+              key={option.id}
+              id={option.id}
+              textValue={option.label}
+              isDisabled={option.disabled}
+              className="ds-menu-item"
+            >
+              {option.label}
+            </AriaListBoxItem>
+          ))}
+        </AriaListBox>
+      </AriaPopover>
+    </AriaComboBox>
   );
 }
 

@@ -11,9 +11,12 @@ import {
   Button,
   Checkbox,
   ColorChoiceField,
+  CurrencyPicker,
   DefinitionList,
+  ExpenseRow,
   FileField,
   formatMoney,
+  MerchantPicker,
   MoneyText,
   NativeDateField,
   NativeTimeField,
@@ -43,6 +46,7 @@ function assertEqual<T>(
 function withAriaDomGlobals<T>(
   testWindow: {
     HTMLButtonElement: unknown;
+    FocusEvent: unknown;
     HTMLInputElement: unknown;
     MutationObserver: unknown;
     NodeFilter: unknown;
@@ -56,6 +60,7 @@ function withAriaDomGlobals<T>(
 ): T {
   const previous = {
     HTMLButtonElement: globalThis.HTMLButtonElement,
+    FocusEvent: globalThis.FocusEvent,
     HTMLInputElement: globalThis.HTMLInputElement,
     MutationObserver: globalThis.MutationObserver,
     NodeFilter: globalThis.NodeFilter,
@@ -65,8 +70,10 @@ function withAriaDomGlobals<T>(
     SVGElement: globalThis.SVGElement,
     HTMLTextAreaElement: globalThis.HTMLTextAreaElement,
   };
+  const previousCSS = globalThis.CSS;
   Object.assign(globalThis, {
     HTMLButtonElement: testWindow.HTMLButtonElement,
+    FocusEvent: testWindow.FocusEvent,
     HTMLInputElement: testWindow.HTMLInputElement,
     MutationObserver: testWindow.MutationObserver,
     NodeFilter: testWindow.NodeFilter,
@@ -75,11 +82,15 @@ function withAriaDomGlobals<T>(
     HTMLSelectElement: testWindow.HTMLSelectElement,
     SVGElement: testWindow.SVGElement,
     HTMLTextAreaElement: testWindow.HTMLTextAreaElement,
+    CSS: previousCSS ?? {
+      escape: (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, "\\$&"),
+    },
   });
   try {
     return callback();
   } finally {
     Object.assign(globalThis, previous);
+    Object.assign(globalThis, { CSS: previousCSS });
   }
 }
 
@@ -342,4 +353,74 @@ Deno.test("design-system money component keeps sign and currency in accessible t
     assert(within(document.body).getByText("SEK +24.00"));
     mounted.unmount();
   });
+});
+
+Deno.test("design-system positive money rows always expose an explicit plus", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaDomGlobals(window, () => {
+      const mounted = render(
+        createElement(
+          "div",
+          null,
+          createElement(MoneyText, { amount: "24.00", currency: "SEK" }),
+          createElement(ExpenseRow, {
+            expense: {
+              id: "money-back",
+              merchant: "Bottle return",
+              category: "Other",
+              amount: "24.00",
+              currency: "SEK",
+              date: "2026-08-24",
+            },
+          }),
+        ),
+      );
+      assertEqual(
+        within(document.body).getAllByText("SEK +24.00").length,
+        2,
+      );
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system currency search and merchant clearing remain functional", async () => {
+  await withComponentHarness(({ window, render, fireEvent }) =>
+    withAriaDomGlobals(window, () => {
+      let selectedCurrency = "SEK";
+      let merchant = "ICA Maxi";
+      const mounted = render(
+        createElement(
+          "div",
+          null,
+          createElement(CurrencyPicker, {
+            options: [
+              { id: "all", label: "All currencies" },
+              { id: "SEK", label: "SEK — Swedish krona" },
+            ],
+            value: selectedCurrency,
+            onValueChange: (value) => selectedCurrency = value,
+          }),
+          createElement(MerchantPicker, {
+            value: merchant,
+            onValueChange: (value) => merchant = value,
+            suggestions: ["ICA Maxi"],
+          }),
+        ),
+      );
+      const view = within(document.body);
+      const currencyInput = view.getByRole("combobox", { name: "Currency" });
+      fireEvent.click(
+        view.getByRole("button", { name: /Show currency options/ }),
+      );
+      fireEvent.change(currencyInput, { target: { value: "CHF" } });
+      const swissOption = view.getByRole("option", { name: "CHF" });
+      fireEvent.click(swissOption);
+      assertEqual(selectedCurrency, "CHF");
+      fireEvent.keyDown(currencyInput, { key: "Escape" });
+      fireEvent.click(view.getByRole("button", { name: "Clear search" }));
+      assertEqual(merchant, "");
+      mounted.unmount();
+    })
+  );
 });

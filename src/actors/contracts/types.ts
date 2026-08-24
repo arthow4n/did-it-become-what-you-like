@@ -11,6 +11,9 @@ import type {
   ReceiptReviewDraft,
   StableId,
 } from "../../domain/index.ts";
+import type {
+  UpdateCheckOutput as PortUpdateCheckOutput,
+} from "../../adapters/ports/update-install.ts";
 import type { PortErrorCode } from "./ports.ts";
 
 export type {
@@ -298,6 +301,4 @@ export type DeleteEverywhereOutput = {
   readonly forcedDeviceCount: number;
 };
 
-export type UpdateCheckOutput =
-  | { readonly status: "up-to-date" }
-  | { readonly status: "update-ready"; readonly version: string };
+export type UpdateCheckOutput = PortUpdateCheckOutput;

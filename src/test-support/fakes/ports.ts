@@ -45,6 +45,7 @@ import {
   SecretValue,
   type SharePayload,
   type SyncConflict,
+  type UpdateCheckOutput,
   type UpdateInstallPort,
   type UpdateState,
 } from "../../adapters/ports/index.ts";
@@ -706,15 +707,34 @@ export function createFakeFileSharePort(): FakeFileSharePort {
 
 export function createFakeUpdateInstallPort(
   initial: UpdateState = "current",
-): UpdateInstallPort & FakeControls & { setState(state: UpdateState): void } {
+): UpdateInstallPort & FakeControls & {
+  canInstall(): boolean;
+  subscribeInstall(listener: (available: boolean) => void): () => void;
+  setInstallAvailable(available: boolean): void;
+  readonly reloadCount: number;
+  setState(state: UpdateState): void;
+  setUpdate(version?: string): void;
+} {
   const controls = createControls("update-install");
   let state = initial;
+  let installAvailable = false;
+  let reloadCount = 0;
   const listeners = new Set<(value: UpdateState) => void>();
+  const installListeners = new Set<(available: boolean) => void>();
   return {
     state: () => state,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
+    },
+    check: async (options): Promise<UpdateCheckOutput> => {
+      controls.check(options);
+      if (state === "update-available") {
+        return { status: "update-ready", version: "fake-update" };
+      }
+      state = "current";
+      for (const listener of listeners) listener(state);
+      return { status: "up-to-date" };
     },
     install: async (options) => {
       controls.check(options);
@@ -722,10 +742,28 @@ export function createFakeUpdateInstallPort(
     },
     reload: async (options) => {
       controls.check(options);
+      reloadCount++;
     },
     setState: (next) => {
       state = next;
       for (const listener of listeners) listener(state);
+    },
+    setUpdate: (version = "fake-update") => {
+      void version;
+      state = "update-available";
+      for (const listener of listeners) listener(state);
+    },
+    canInstall: () => installAvailable,
+    subscribeInstall: (listener) => {
+      installListeners.add(listener);
+      return () => installListeners.delete(listener);
+    },
+    setInstallAvailable: (available) => {
+      installAvailable = available;
+      for (const listener of installListeners) listener(available);
+    },
+    get reloadCount() {
+      return reloadCount;
     },
     setScenario: controls.setScenario,
     failNext: controls.failNext,

@@ -474,7 +474,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### L-203 — Implement expense queries, totals, filtering, and formatting
 
-- **Status/dependencies:** `PENDING`; depends on `D-101`, `L-201`; may overlap
+- **Status/dependencies:** `COMPLETE`; depends on `D-101`, `L-201`; may overlap
   `L-202` with disjoint query ownership.
 - **Ownership:** `src/domain/queries/**`, formatting/selectors and query adapter
   implementation; no actors/screens.
@@ -1243,19 +1243,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `c390656` and tracks
-  `origin/master` at the same commit. The branch is clean and neither ahead nor
-  behind its upstream (`0 0`).
+- **Reconciled branch/upstream:** `master` is at `97e7689` and is one commit
+  ahead of `origin/master` until this checkpoint is committed and pushed. The
+  root worktree is clean before this intended ledger edit.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
   plan`).
 - **Integrated implementation state:** production source fixes through
-  `2bf6471` (`Fix D-102 deletion safety and retry contracts`) are pushed; the
-  deferred-only SPEC note is `c390656`. This ledger update is the only intended
-  uncommitted change.
+  `2bf6471` (`Fix D-102 deletion safety and retry contracts`) and L-203 query
+  implementation `97e7689` (`Implement L-203 expense queries and totals`) are
+  present on `master`; the deferred-only SPEC note is `c390656`. This ledger
+  update is the only intended uncommitted change.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
-  `D-101`, `D-102`, `D-103`, `U-104`, and `R-200`. Their required source, tests, and
+  `D-101`, `D-102`, `D-103`, `U-104`, `L-203`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
@@ -1269,15 +1270,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   scope/non-goals, outputs/acceptance, tests, and verification; Markdown fences
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
-- **Current reconciliation evidence:** `git diff --check` is clean apart from
-  this intended ledger edit; the implementation-plan task-heading count is 37
-  with no duplicate IDs; the eight Markdown fence lines are balanced;
-  `git fetch --prune origin` and the upstream comparison report `0 0`; and the
-  root worktree has no code changes. All surviving task worktrees are listed
-  below and have been inspected as clean integrated branches.
-- **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`, `D-103`,
-  and `U-104` are `COMPLETE`; `R-200` is `IN_PROGRESS` as the independent
-  M2 review gate.
+- **Current reconciliation evidence:** L-203 integration validation from root
+  passed `deno task fmt:check` (112 files), `deno task lint` (101 files),
+  `deno task check`, direct query tests (10 passed), `deno task test:domain`
+  (19 passed), `deno task build`, and `git diff --check`. The implementation
+  plan task-heading count remains 37 with no duplicate IDs; the root worktree
+  has no code changes apart from this intended ledger edit. Active and
+  preserved worktrees are listed below.
+- **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
+  `D-103`, `U-104`, `R-200`, and `L-203` are `COMPLETE`; `L-201` and `A-301`
+  remain `IN_PROGRESS` in the first M3/M4 implementation wave.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1769,6 +1771,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   tests. These workstreams are disjoint and may run concurrently; every worker
   must keep its timestamped untracked handover, avoid deferred AI feedback
   memory, and leave this plan and `master` untouched.
+- **L-203 completion/integration:** Meitner completed the scoped query work in
+  `~/git/worktrees/did-it-become-what-you-like-l-203-queries` with untracked
+  `L-203-progress.md` preserved as the operational handover. The worker commit
+  `b95bf14` was inspected and cherry-picked as `97e7689`; the worker did not
+  edit the plan or push. Root validation passed `deno task fmt:check`,
+  `deno task lint`, `deno task check`, direct query tests (10),
+  `deno task test:domain` (19), `deno task build`, and `git diff --check`.
+  The worktree remains preserved and the worker is shut down. L-203 is now
+  complete; the next dependency-ready implementation work remains L-201 and
+  A-301, followed by their integration checks.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

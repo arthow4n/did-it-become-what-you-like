@@ -114,15 +114,19 @@ export function mapReceiptOutputToDraft(
   return {
     merchant: output.merchant,
     currency: output.currency,
+    date: output.date,
     printedTotal: output.printedTotal,
     lines: output.lines.map((line) => ({
       description: line.description,
       amount: line.amount,
       categoryId: line.categoryId,
+      kind: line.kind,
+      selected: line.selected,
       ...(line.uncertainty === undefined
         ? {}
         : { uncertainty: line.uncertainty }),
     })),
+    uncertainty: output.uncertainty,
     mismatches: mismatchText(output),
   };
 }

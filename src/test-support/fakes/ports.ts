@@ -481,12 +481,16 @@ const FAKE_MODELS: readonly GeminiModel[] = [
 const defaultDraft: ReceiptExtractionDraft = {
   merchant: "Fake Merchant",
   currency: "SEK",
+  date: "2026-08-24",
   printedTotal: "-10",
   lines: [{
     description: "Fake item",
     amount: "-10",
     categoryId: stableId("category-uncategorized"),
+    kind: "purchase",
+    selected: true,
   }],
+  uncertainty: [],
   mismatches: [],
 };
 

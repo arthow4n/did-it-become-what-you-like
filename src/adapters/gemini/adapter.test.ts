@@ -445,8 +445,12 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
   await adapter.setApiKey("AIza.synthetic-request-test");
   const bytes = JPEG_WITH_EXIF.slice();
   const draft = await adapter.extractReceipt(extractionRequest(bytes));
+  assertEquals(draft.date, "2026-08-24");
   assertEquals(draft.lines[0].categoryId, "category-groceries");
   assertEquals(draft.lines[0].amount, "-10");
+  assertEquals(draft.lines[0].kind, "purchase");
+  assertEquals(draft.lines[0].selected, true);
+  assertEquals(draft.uncertainty, []);
   assertEquals(bytes.every((byte) => byte === 0), true);
   assertEquals(requests.length, 1);
   const requestText = JSON.stringify(requests[0]);

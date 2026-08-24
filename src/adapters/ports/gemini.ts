@@ -1,4 +1,8 @@
-import type { CurrencyCode, StableId } from "../../domain/index.ts";
+import type {
+  CalendarDate,
+  CurrencyCode,
+  StableId,
+} from "../../domain/index.ts";
 import type { OperationOptions } from "./common.ts";
 import type { PreparedImage } from "./image.ts";
 
@@ -41,13 +45,17 @@ export type ReceiptExtractionRequest = {
 export type ReceiptExtractionDraft = {
   readonly merchant?: string;
   readonly currency: CurrencyCode;
+  readonly date: CalendarDate;
   readonly printedTotal?: string;
   readonly lines: readonly {
     readonly description: string;
     readonly amount: string;
     readonly categoryId: StableId;
+    readonly kind: "purchase" | "adjustment";
+    readonly selected: boolean;
     readonly uncertainty?: string;
   }[];
+  readonly uncertainty: readonly string[];
   readonly mismatches: readonly string[];
 };
 

@@ -2267,6 +2267,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   320x568, 390x844, and 1280x800 with the prior 390px incomplete diagnostic
   cleared. R-400 remains `IN_PROGRESS` pending a fresh independent closure
   review of this exact root integration.
+- **R-400 fresh closure dispatch:** Gauss
+  (`01a03349-80e0-7b90-8a9e-1438cddb75c5`) is the fresh independent read-only
+  Luna xhigh reviewer in
+  `~/git/worktrees/did-it-become-what-you-like-r-400-closure-2`, branch
+  `review/r-400-closure-2`, based at `d6afa45`. It must reconcile the prior
+  blocked handover and the fix handover against actual source and run the
+  complete automated, receipt E2E, and native 320x568/390x844/1280x800 review
+  again. It owns no source changes, maintains only a timestamped untracked
+  `R-400-closure-2-progress.md`, and must end with explicit `APPROVE` or
+  `BLOCK`; R-400 remains gated until that result.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

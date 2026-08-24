@@ -1314,14 +1314,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; a fresh R-300 closure
   review is the only active gate.
-- **Active review:** Curie (`01a03285-474b-7c61-ace3-485265e56041`) owns the
-  read-only R-300 closure review in
+- **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
+  completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
-  `review/r-300-closure-4`, based at `9cc9f26`. Only its untracked
-  `R-300-progress.md` handover may change in that worktree; the reviewer must
-  inspect the historical root handover and the `3424ed6` follow-up, run the
-  complete aggregate/local/browser matrix, and return an explicit APPROVE or
-  BLOCK. The root handover remains preserved and downstream M4 remains gated.
+  `review/r-300-closure-4`, based at `9cc9f26`. Its untracked
+  `R-300-progress.md` handover is preserved. The root handover remains
+  preserved and downstream M4 remains gated while the next bounded fix wave is
+  integrated.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -2039,6 +2038,30 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   inspection at 320x568, 390x844, and 1280x800. No source, plan, master,
   remote, commit, or Pages changes are authorized; preserve the worktree and
   handover for orchestration recovery.
+- **R-300 closure result:** Curie's final handoff at
+  `2026-08-24T07:00:37Z` is an explicit `BLOCK` with `S1=0`, `S2=1`,
+  `S3=3`, and `S4=0`. The S2 is the local UI dispatch at
+  `src/features/local-ui.tsx:1826-1829`, which sets Save-and-add-another mode
+  but always sends `expense.submit` instead of the typed
+  `expense.submit-and-add-another` actor event. The S3 findings are the outer
+  `main` in `index.html:13` duplicated by AppFrame's main landmark, missing
+  level-one page headings where the Manual, Projects, and Categories page
+  headers omit `headingLevel={1}`, and the invalid `aria-label` on the generic
+  MoneySummary div. The reviewer ran the full `deno task verify` matrix
+  (126 repository tests, 18 integration, 24 component, 27 domain, 1 actor,
+  local E2E 2/2, gallery/browser/Pages/CI/toolchain checks, build, audit, and
+  diff), the separate local E2E, and native local-screen/a11y inspection at
+  320x568, 390x844, and 1280x800. All validation passed except the listed
+  source/accessibility findings; no source, plan, master, remote, commit, or
+  Pages changes were made by Curie.
+- **R-300 next bounded fix wave:** the integration owner will correct only the
+  four Curie findings in `src/features/local-ui.tsx`,
+  `src/design-system/components.tsx`, `index.html`, and their focused tests.
+  The fix must dispatch the typed add-another event, leave exactly one valid
+  top-level main landmark, give the approved local page headers level-one
+  headings while retaining nested level-two headings, and use valid summary
+  semantics. It must not broaden scope, weaken the review, change approved
+  requirements, enable Pages, or edit this plan from the worker worktree.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

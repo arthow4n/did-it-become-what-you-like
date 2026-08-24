@@ -1365,8 +1365,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   decisions are sufficient to proceed.
 - **Current task:** Banach completed the fresh independent `R-200` read-only
   review from the clean root against the integrated M2 contracts and
-  design-system foundation; D-101 is integrated and D-102/U-104 remain active
-  in the first scoped-fix wave.
+  design-system foundation; D-101, D-102, and U-104 are integrated and D-103 is
+  the remaining active scoped fix.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1468,13 +1468,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** the R-200 gate is blocked by the eight severity-2 findings above;
-  no owner decision is required. Dispatch disjoint D-101, D-102, and U-104
-  fixes first, then D-103 when a worker slot is available; integrate, rerun the
-  full matrix, and obtain a fresh independent closure review. No GitHub Pages
-  workflow may be enabled or triggered because the owner has intentionally
-  disabled it until MVP completion.
-- **R-200 scoped-fix dispatch plan:** before the next dispatch, the first wave
+- **Blocker:** the R-200 gate remains blocked by the eight severity-2 findings
+  above; no owner decision is required. D-101, D-102, and U-104 fixes are
+  integrated; D-103 is active. Integrate it, rerun the full matrix, and obtain
+  a fresh independent closure review. No GitHub Pages workflow may be enabled
+  or triggered because the owner has intentionally disabled it until MVP
+  completion.
+- **R-200 scoped-fix dispatch plan:** the first wave
   owns disjoint preserved worktrees: D-101 owns
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain` and only
   `src/domain/**`; D-102 owns
@@ -1485,10 +1485,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   fix, and does not edit this plan or push `master`. D-103 is queued for the
   next available slot in `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`
   with ownership limited to `src/adapters/ports/**` and its focused tests.
-- **R-200 scoped-fix wave active:** Nash
+- **R-200 scoped-fix wave:** Nash
   (`01a03139-c1c3-7351-a670-dde731525fed`) completed D-101 in
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain`; Newton
-  (`01a03139-c2ab-7f41-ab1a-250b3af097b0`) owns active D-102 in
+  (`01a03139-c2ab-7f41-ab1a-250b3af097b0`) completed D-102 in
   `~/git/worktrees/did-it-become-what-you-like-d-102-actors`; and Herschel
   (`01a03139-c38c-7843-92a9-7c68099ffc09`) completed U-104 in
   `~/git/worktrees/did-it-become-what-you-like-u-104-design-system`. Their
@@ -1501,6 +1501,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `deno task test --filter domain` (8 passed), `deno task verify:schema-docs`,
   and `git diff --check` passed; the root commit is pushed. The preserved D-101
   worktree is clean except for its untracked `D-101-progress.md` artifact.
+- **D-102 scoped-fix integration:** Newton committed `3d08354`; the
+  orchestrator reviewed the scoped actor diff and integrated the source/tests
+  as `c0bc76a`, intentionally omitting the operational progress markdown from
+  the production tree. Root `deno task fmt:check`, `deno task lint`,
+  `deno task check`, `deno task test --filter actor-contract` (17 passed),
+  `deno task build`, and `git diff --check` passed; the root commit is pushed.
+  The preserved D-102 branch is clean.
 - **U-104 scoped-fix integration:** Herschel committed `18c4b38`, which the
   orchestrator reviewed and cherry-picked as `4d8b846`; the orchestrator then
   resolved the narrow duplicate `PageHeader`/gallery attributes caused by the
@@ -1511,7 +1518,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   --check` passed; the root commits are pushed. The preserved U-104 worktree is
   clean except for its untracked `U-104-progress.md` artifact.
 - **D-103 scoped-fix active:** Dewey
-  (`01a03144-7f47-7f92-8f85-3d2ea828c266`) owns the queued adapter fix in
+  (`01a03144-7f47-7f92-8f85-3d2ea828c266`) owns the active adapter fix in
   `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`, limited to
   `src/adapters/ports/**` and focused tests. The worktree was clean before
   dispatch; the worker must keep `D-103-progress.md` untracked if needed,

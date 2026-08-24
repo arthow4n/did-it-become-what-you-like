@@ -601,7 +601,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### A-303 — Deliver Scan, Receipt Review, and Gemini Settings UI
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `A-302`, `L-205`, `U-104`.
+- **Status/dependencies:** `COMPLETE`; depends on `A-302`, `L-205`, `U-104`.
 - **Ownership:** Screens 4, 5, and 11 plus their feature composition and the
   small approved receipt/Gemini domain composites required by the existing
   design-system map; no adapter internals or schema changes.
@@ -626,7 +626,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-400 — Receipt independent review gate
 
-- **Status/dependencies:** `PENDING`; depends on `A-303`, `R-300`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `A-303`, `R-300`.
 - **Ownership:** read-only review first; scoped fixes by A-task owners.
 - **Scope/non-goals:** review privacy allowlist, secret handling, image lifetime,
   structured validation, actor safety, financial signs/totals, accessibility and
@@ -1252,12 +1252,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 ## Current Checkpoint
 
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
-  system wave, and `R-200` are complete. Closure-3 approved the locked
-  contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
+  system wave, `R-200`, M3/R-300, and A-302 are complete. A-303 is integrated
+  and R-400 is the active independent review gate.
 - **Reconciled branch/upstream:** `master` and `origin/master` are both at
-  `4250491` (`0 0`), pushed after recording the A-303 startup recovery and
-  advisor clarification. The root worktree contains only the intentionally
-  untracked `A-303-progress.md` and `R-300-progress.md` handovers.
+  `a8b87ca` (`0 0`), pushed after integrating A-303. The root worktree
+  contains only the intentionally untracked `A-303-progress.md` and
+  `R-300-progress.md` handovers.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1278,11 +1278,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `acd3bff` (`Fix R-300 actor dispatch and landmarks`), and A-302 receipt
   actor/domain implementation `a1f84d6` (`Implement A-302 receipt review
   workflow`);
-  the deferred-only SPEC note is `c390656`. The latest pushed implementation
-  commit is `a1f84d6`; the latest pushed orchestration checkpoint is
-  `4250491`.
+  the deferred-only SPEC note is `c390656`; A-303 UI integration is `a90504d`
+  (`Implement A-303 receipt and Gemini UI`) and its isolated A-301 canvas
+  compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
+  browser build`). The latest pushed implementation/checkpoint is `a8b87ca`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
-  `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, and `R-200`. Their required source, tests, and
+  `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
@@ -1297,28 +1298,26 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
-  is recorded below. R-300 remains BLOCKED by the preserved historical and
-  partial-review handovers, not by an unverified source change. R-300 is now
-  complete; the integrated R-300 fixes and A-302 pass the aggregate
-  `deno task verify` from `a1f84d6`: 137 repository tests, 20 integration,
-  28 component/harness, 29 domain, 1 actor, local E2E 2/2,
-  native gallery/browser checks,
-  Pages/CI/toolchain validators, production build, frozen audit, and diff
-  checks. Focused follow-up validation also passed `deno task fmt:check`
-  (134 files), `deno task lint` (122 files), `deno task check`, component
-  tests (24), and local E2E (2/2). A-301 source integration and its bounded
-  contract follow-up passed the root matrix, and the root canonical task
-  includes `src/adapters/gemini`; the exact `A-301` filter is the authoritative
-  focused command. The implementation plan task-heading count remains 37
-  with no duplicate IDs; `master` and `origin/master` are aligned at
-  `4250491`; the root worktree contains only the intentionally untracked
+  is recorded below. R-300 and A-302 are complete. Root `deno task verify`
+  passed on the integrated A-303 source: 137 repository tests, 20 integration,
+  32 component, 29 domain, 1 actor, local E2E 2/2, gallery/browser/axe,
+  Pages/CI/toolchain validators, both production builds, frozen audit, and
+  `git diff --check`. A-303 focused validation also passed
+  `deno task fmt:check` (142 files), `deno task lint` (130 files),
+  `deno task check`, `deno task test:component --filter receipt-ui` (4),
+  `deno task test:e2e --grep receipt-review` (1), and build. Native receipt
+  inspection passed at 320x568, 390x844, and 1280x800; the 390px run recorded
+  one low-severity incomplete compact-navigation contrast diagnostic while
+  visual text remained readable. The implementation plan task-heading count
+  remains 37 with no duplicate IDs; `master` and `origin/master` are aligned
+  at `a8b87ca`; the root worktree contains only the intentionally untracked
   A-303 and R-300 handovers. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
-  custom-period/saved-Undo fix wave is `COMPLETE`; R-300 and A-302 are
-  `COMPLETE`; A-303 is `IN_PROGRESS`.
+  custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
+  `COMPLETE`; R-400 is `IN_PROGRESS`.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2180,6 +2179,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   replacement worker owns only the A-303 surface and must return exact
   validation plus `READY FOR INTEGRATION` or `BLOCK`; the orchestrator must
   not duplicate its source work or mark A-303 complete from progress alone.
+- **A-303 completion/integration:** Bernoulli
+  (`01a032da-dcbd-7003-b04b-52afdc4ed8b6`) completed the bounded receipt Scan,
+  Receipt Review, and Gemini Settings UI in the preserved worktree
+  `~/git/worktrees/did-it-become-what-you-like-a-303-receipt-ui` with final
+  `A-303-progress.md` handover at `2026-08-24T08:58:24Z`, explicitly
+  `READY FOR INTEGRATION`. Worker commit `00d1e59` was cherry-picked as root
+  `a90504d`; it adds the actor-backed scan/review/settings composition, native
+  image lifecycle, exact disclosure, device-local settings and secret UI,
+  review editing/selection/mismatch/add/remove flows, focused component tests,
+  and the fake-Gemini atomic-save E2E with the pending-scan continuation
+  regression. The separately reviewed one-line A-301 canvas compatibility
+  follow-up was committed as worker `db774b5` and root `a8b87ca`; it adds only
+  the existing `drawImage` capability guard needed by the checked browser
+  build, changes no public contract/schema, and remains explicitly identified
+  for R-400 review. Root `deno task verify` passed after both commits. The
+  worker and timestamped handover remain preserved; R-400 is now released.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

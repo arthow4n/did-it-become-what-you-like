@@ -582,7 +582,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### A-302 — Implement receipt scan/review actors and atomic receipt domain flow
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `A-301`, `L-201`, `L-202`,
+- **Status/dependencies:** `COMPLETE`; depends on `A-301`, `L-201`, `L-202`,
   `D-102`.
 - **Ownership:** receipt actors/domain orchestration; no screen composition.
 - **Scope/non-goals:** camera/file selection lifecycle, disclosure, inline key
@@ -1274,10 +1274,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo follow-up `3424ed6` (`Fix remaining R-300 period
   and undo paths`);
   the Curie-finding accessibility/typed-dispatch fix is integrated as
-  `acd3bff` (`Fix R-300 actor dispatch and landmarks`);
+  `acd3bff` (`Fix R-300 actor dispatch and landmarks`), and A-302 receipt
+  actor/domain implementation `a1f84d6` (`Implement A-302 receipt review
+  workflow`);
   the deferred-only SPEC note is `c390656`. The latest pushed implementation
-  implementation commit is `acd3bff`; the latest pushed root checkpoint is
-  `c6d1abd`.
+  implementation commit is `a1f84d6`; the latest pushed root checkpoint is
+  `dc43dd1`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1295,11 +1297,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
   is recorded below. R-300 remains BLOCKED by the preserved historical and
-  partial-review handovers, not by an unverified source change. The integrated
-  custom-period/saved-Undo follow-up and Curie-finding fix pass the aggregate
-  `deno task verify` from `acd3bff`: 128 repository tests, 18 integration,
-  28 component/harness,
-  27 domain, 1 actor, local E2E 2/2, native gallery/browser checks,
+  partial-review handovers, not by an unverified source change. R-300 is now
+  complete; the integrated R-300 fixes and A-302 pass the aggregate
+  `deno task verify` from `a1f84d6`: 137 repository tests, 20 integration,
+  28 component/harness, 29 domain, 1 actor, local E2E 2/2,
+  native gallery/browser checks,
   Pages/CI/toolchain validators, production build, frozen audit, and diff
   checks. Focused follow-up validation also passed `deno task fmt:check`
   (134 files), `deno task lint` (122 files), `deno task check`, component
@@ -1307,18 +1309,17 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   contract follow-up passed the root matrix, and the root canonical task
   includes `src/adapters/gemini`; the exact `A-301` filter is the authoritative
   focused command. The implementation plan task-heading count remains 37
-  with no duplicate IDs; `master` and its upstream are aligned at `c6d1abd`;
-  the root worktree contains only the intentionally untracked R-300 handover
-  after the pushed follow-up. Preserved
+  with no duplicate IDs; `master` is one unpushed source commit ahead of
+  `origin/master` at `dc43dd1`; the root worktree contains only the
+  intentionally untracked R-300 handover after A-302 integration. Preserved
   worktrees are
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
-  custom-period/saved-Undo fix wave is `COMPLETE`; R-300 is `COMPLETE` after
-  fresh closure approval; A-302 is `IN_PROGRESS` as the next dependency-ready
-  milestone.
+  custom-period/saved-Undo fix wave is `COMPLETE`; R-300 and A-302 are
+  `COMPLETE`; A-303 is the next dependency-ready milestone.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2124,6 +2125,24 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `R-302-progress.md`, leave this plan and `master` untouched, not push or
   enable Pages, and return exact validation plus an explicit READY FOR
   INTEGRATION or BLOCK. A-303 and R-400 remain gated.
+- **A-302 completion/integration:** Godel completed the bounded receipt
+  actor/domain workflow in
+  `~/git/worktrees/did-it-become-what-you-like-a-302-receipt-actor` with
+  timestamped `R-302-progress.md` preserved. Worker commit `285bbee` was
+  inspected and cherry-picked as root `a1f84d6`. The eight-file scope adds the
+  receipt scan lifecycle and disclosure gate, ephemeral image resolution and
+  release, hostile-output normalization, invalid-line unselection, signed
+  purchase/adjustment lines and optional links, selectable/editable/removable
+  review lines, mismatch confirmation, image-free durable review hydration,
+  atomic save/discard/rollback, and focused actor/domain/integration tests.
+  Worker validation passed `deno task test --filter receipt-actor` (7),
+  `deno task test:integration --filter receipt-atomic` (2), format, lint,
+  check, build, and aggregate verification. Root integration independently
+  passed `deno task verify`: 137 repository tests, 20 integration, 28
+  component, 29 domain, 1 actor, local E2E 2/2, gallery/browser/Pages/CI/
+  toolchain validators, production builds, frozen audit, and diff check. Only
+  the existing chunk-size warnings remain. A-302 is COMPLETE; its worker and
+  handover are preserved; A-303 is now dependency-ready.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

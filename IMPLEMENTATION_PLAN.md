@@ -777,7 +777,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### X-502 — Implement disconnect and Delete Everywhere
 
-- **Status/dependencies:** `PENDING`; depends on `X-501`, `S-402`, `S-404`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `X-501`, `S-402`, `S-404`.
 - **Ownership:** disconnect/global-deletion actor, retirement/generation erase
   coordination, Screens 10/14 destructive paths; no unrelated settings.
 - **Scope/non-goals:** disconnect with keep-local semantics; local-only erase;
@@ -1261,9 +1261,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501 is complete; and X-502 is the next dependency-ready
   M6 task.
-- **Reconciled branch/upstream:** root `master` contains the integrated X-501
-  source commit `58aff60` and is one source commit ahead of `origin/master`
-  until the next ledger push;
+- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
+  the pushed X-501 source/ledger checkpoint `511c0e6` (`Record X-501
+  completion`), with the intentionally untracked artifacts and preserved
+  recovery directory listed below;
   the final pushed R-500 ledger sequence includes `e375cf8` (`Close R-500 and
   reconcile plan ledger`) and `150ba7c` (`Record final pushed R-500
   checkpoint`), with source checkpoint `e6ee2cd` (`Fix higher-generation
@@ -1303,7 +1304,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   (`Implement S-401 Drive adapter`); S-402 integration is `95ac376`
   (`Implement S-402 synchronization actor and transport`); S-405 worker and
   integration commits are recorded in the S-405 ledger entry above; the latest
-  pushed orchestration checkpoint before this ledger update is `73d2a53`.
+  pushed orchestration checkpoint is `511c0e6`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`; R-400, S-401, S-402, S-403,
@@ -1347,7 +1348,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501 is `COMPLETE`; and X-502 is the next active dependency-ready M6 task.
+  X-501 is `COMPLETE`; X-502 is the active dependency-ready M6 task; and no
+  task is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -3002,6 +3004,26 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   workflow was used. The worker agent is complete; preserve its worktree and
   handover. X-501 is complete and releases X-502 as the next dependency-ready
   task.
+- **X-502 implementation dispatch:** X-502 is dependency-ready after the
+  pushed X-501 checkpoint `511c0e6`. One worker is assigned the disjoint
+  disconnect/Delete Everywhere slice in
+  `~/git/worktrees/did-it-become-what-you-like-x-502-delete-everywhere`,
+  branch `task/x-502-delete-everywhere`, based at `511c0e6`. Ownership is
+  limited to concrete disconnect/local-erase/Delete Everywhere actor wiring,
+  retirement and generation-erasure coordination through existing ports,
+  Screens 10 and 14 destructive composition, and focused domain/actor,
+  adapter-integration, component, and critical-journey tests. The worker must
+  read `UI_SPEC.md`, `DESIGN_SYSTEM.md`, and the XState v5 skill; preserve the
+  locked `src/actors/contracts/deletion.ts` protocol unless a compatibility
+  defect is demonstrated, in which case it must stop and report the exact
+  contract boundary before changing it. It must not edit unrelated settings,
+  project deletion, sync merge/import internals, this plan, `master`, remotes,
+  or other worktrees. It must maintain an untracked UTC `X-502-progress.md`
+  handover with periodic append/edit updates, exact validation commands/results,
+  and a final `READY FOR INTEGRATION` or `BLOCKED` status. The root remains the
+  sole integration owner; merge order is worker commit, focused root checks,
+  full verification, then the M6 destructive-flow agent-browser audit. Preserve
+  the worktree, branch, handover, and agent after completion.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

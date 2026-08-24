@@ -1488,9 +1488,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **R-200 scoped-fix wave active:** Nash
   (`01a03139-c1c3-7351-a670-dde731525fed`) completed D-101 in
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain`; Newton
-  (`01a03139-c2ab-7f41-ab1a-250b3af097b0`) owns D-102 in
+  (`01a03139-c2ab-7f41-ab1a-250b3af097b0`) owns active D-102 in
   `~/git/worktrees/did-it-become-what-you-like-d-102-actors`; and Herschel
-  (`01a03139-c38c-7843-92a9-7c68099ffc09`) owns U-104 in
+  (`01a03139-c38c-7843-92a9-7c68099ffc09`) completed U-104 in
   `~/git/worktrees/did-it-become-what-you-like-u-104-design-system`. Their
   source ownership is disjoint; each must commit only its scoped fixes and
   tests, keep its progress file untracked if needed, and leave this plan and
@@ -1501,6 +1501,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `deno task test --filter domain` (8 passed), `deno task verify:schema-docs`,
   and `git diff --check` passed; the root commit is pushed. The preserved D-101
   worktree is clean except for its untracked `D-101-progress.md` artifact.
+- **U-104 scoped-fix integration:** Herschel committed `18c4b38`, which the
+  orchestrator reviewed and cherry-picked as `4d8b846`; the orchestrator then
+  resolved the narrow duplicate `PageHeader`/gallery attributes caused by the
+  preserved branch overlap in `de924a5`. Root `deno task fmt:check`, `deno task
+  lint`, `deno task check`, `deno task test:component --filter design-system`
+  (11 passed), `deno task test:component` (12 passed), `deno task build`,
+  `deno task gallery`, `deno task a11y:gallery` (3 viewports), and `git diff
+  --check` passed; the root commits are pushed. The preserved U-104 worktree is
+  clean except for its untracked `U-104-progress.md` artifact.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

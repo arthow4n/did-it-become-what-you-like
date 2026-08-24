@@ -1713,6 +1713,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   handovers, not plan substitutes; workers must not edit this plan or push
   `master`. The integration owner will merge D-101/D-102 in disjoint scope,
   rerun the complete gate, and preserve all worktrees.
+- **R-200 fix-2 workers active:** Wegener
+  (`01a0317d-29e2-74b2-95f2-49aa45804c59`) owns D-102 in
+  `~/git/worktrees/did-it-become-what-you-like-r-200-d102-fix-2`; Sartre
+  (`01a0317d-2af7-7511-a5c1-9d9f029ae61a`) owns D-101 in
+  `~/git/worktrees/did-it-become-what-you-like-r-200-d101-fix-2`. Their
+  ownership is disjoint; both must keep only their untracked timestamped
+  handover plus scoped source/tests, and neither may edit this plan or push
+  `master`. The integration owner will inspect every diff and validation result.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

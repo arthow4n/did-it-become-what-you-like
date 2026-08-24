@@ -845,7 +845,13 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### Q-601 — Close screen/state/design-system completeness gaps
 
-- **Status/dependencies:** `READY`; depends on `R-600`, which is complete.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-600`, which is complete.
+- **Dispatch:** the integration owner has created the isolated worktree
+  `~/git/worktrees/did-it-become-what-you-like-q-601-completeness` on branch
+  `task/q-601-completeness` at root `64ce6ec`. One bounded worker is assigned
+  to perform the approved traceability audit and implement only inventoried
+  Q-601 fixes; the worker must preserve a timestamped untracked handover and
+  must not edit this plan, `master`, remotes, or another task's ownership.
 - **Ownership:** only gaps explicitly inventoried against specs; shared-component
   fixes precede affected feature fixes; no new product scope.
 - **Scope/non-goals:** map every approved screen/checklist state to implementation,
@@ -1262,7 +1268,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
-  after closure-3 approval; and Q-601 is the next dependency-ready task.
+  after closure-3 approval; and Q-601 is `IN_PROGRESS` as the current
+  dependency-ready task.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
   `a791d74` (`Close R-600 and release Q-601`), pushed after the integrated
   source checkpoint `1ffd045` (`Record R-600 second fix wave`). The root

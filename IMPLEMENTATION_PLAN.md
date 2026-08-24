@@ -739,8 +739,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-500 — Synchronization and portability independent review gate
 
-- **Status/dependencies:** `BLOCKED`; depends on `S-405`, `R-400`; release is
-  blocked by the independent review findings recorded below.
+- **Status/dependencies:** `COMPLETE`; depends on `S-405`, `R-400`; the
+  independent review BLOCK was resolved by the bounded fix wave and fresh
+  closure review recorded below.
 - **Ownership:** review read-only first; fixes scoped to S-task owners.
 - **Scope/non-goals:** adversarially review causal convergence, Drive security,
   retirement checks, device semantics, conflict resolution, import/replace

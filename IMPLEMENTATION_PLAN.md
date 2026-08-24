@@ -1473,6 +1473,17 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   full matrix, and obtain a fresh independent closure review. No GitHub Pages
   workflow may be enabled or triggered because the owner has intentionally
   disabled it until MVP completion.
+- **R-200 scoped-fix dispatch plan:** before the next dispatch, the first wave
+  owns disjoint preserved worktrees: D-101 owns
+  `~/git/worktrees/did-it-become-what-you-like-d-101-domain` and only
+  `src/domain/**`; D-102 owns
+  `~/git/worktrees/did-it-become-what-you-like-d-102-actors` and only
+  `src/actors/contracts/**`; U-104 owns
+  `~/git/worktrees/did-it-become-what-you-like-u-104-design-system` and only
+  `src/design-system/**`. Each worker adds regression tests, commits its scoped
+  fix, and does not edit this plan or push `master`. D-103 is queued for the
+  next available slot in `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`
+  with ownership limited to `src/adapters/ports/**` and its focused tests.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

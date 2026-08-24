@@ -1257,12 +1257,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
-  `BLOCKED` after its independent review; the bounded R-500 fix wave is the
-  active dependency-ready work.
-- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  the pushed orchestration checkpoint `b1305ea` (`Record S-405 completion and
-  dispatch R-500 review`), whose implementation parent is the S-405 checkpoint
-  `d877c52`. The latest
+  `BLOCKED` after its independent review; its bounded fix wave is complete
+  and a fresh closure review is the next dependency-ready action.
+- **Reconciled branch/upstream:** the root implementation is integrated through
+  source checkpoint `e6ee2cd` (`Fix higher-generation causal packet adoption`)
+  with the S-405 source at `b423d9b`; `origin/master` remains at the previous
+  pushed plan checkpoint `fe74189` until the recovered implementation and
+  ledger are pushed together. The latest
   completed-task ledger checkpoint before S-403 was `94f5f5c` after pushing the
   S-402 completion ledger. The root worktree
   contains only the intentionally untracked `A-303-progress.md`,
@@ -1342,7 +1343,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `BLOCKED` after the independent read-only review; its bounded
-  three-owner fix wave is active from the reconciled root.
+  three-owner fix wave is complete, and fresh closure review is pending.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2874,6 +2875,47 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   master, remote, or other worktree changes are allowed; the prior S-402
   commit remains integrated and the new commit must contain only the bounded
   compatibility fix.
+- **R-500 S-402 compatibility recovery integration:** Socrates's final
+  handover at `2026-08-24T17:26:07Z` is `READY FOR INTEGRATION` and remains
+  preserved at `~/git/worktrees/did-it-become-what-you-like-r500-s402-causal/S-402-R500-progress.md`.
+  The follow-up commit `65a1391` was inspected and cherry-picked as root
+  `e6ee2cd` (`Fix higher-generation causal packet adoption`). A shared packet
+  boundary now derives strictly higher-generation replacement datasets from
+  validated head payloads for both in-memory and Drive-backed ports, rejecting
+  missing or inconsistent replacement payloads as corrupt data while retaining
+  the existing same-generation Automerge/delete-vs-edit path. Root focused
+  validation passed import/export domain/adapter/actor `20/20`, sync `10/10`,
+  and `git diff --check`; the previously failing higher-generation import
+  regression now passes. The new source commit remains unpushed pending the
+  full combined gate.
+- **R-500 S-405 fix integration evidence:** Hubble's final handover at
+  `2026-08-24T17:14:41Z` is `READY FOR INTEGRATION` and remains preserved at
+  `~/git/worktrees/did-it-become-what-you-like-r500-s405-ui/S-405-R500-progress.md`.
+  Its worker commit `13bc651` was inspected and cherry-picked as root
+  `b423d9b` (`Fix S-405 sync runtime and routed journeys`). The nine-file
+  slice adds runtime actor lifecycle/boundary wiring, complete conflict and
+  preview projections, stable device callbacks and approximate last-seen
+  formatting, repeatable workflows, routed deterministic fake-Drive and
+  conflict E2E, and explicit nonzero selector coverage. Worker evidence
+  passed the routed E2E `2/2`, full verify with `202/202` task tests,
+  `61/61` integration, `64/64` component, `29/29` domain, `1/1` actor,
+  local E2E `3/3`, both builds, frozen audit, and browser/a11y zero violations
+  and incomplete checks across all four routes at 320, 390, and 1280 widths.
+  Root release remains gated on the combined post-recovery verify; no live
+  OAuth/Drive or Pages workflow was used.
+- **R-500 recovered combined gate:** After integrating the S-402 packet-boundary
+  follow-up as `e6ee2cd`, root `deno task verify` passed with `206` task tests,
+  `65` integration tests, `64` component tests, `29` domain tests, `1` actor
+  test, local E2E `3/3`, gallery/browser/Pages/CI/toolchain proofs, both
+  production builds, frozen audit, and `git diff --check`. The explicit routed
+  command `deno task test:e2e --grep 'drive-reconnect|conflict-resolution'`
+  passed `2/2`; the exact lower-layer/component selector commands each passed
+  their nonzero sentinel (`1 passed`, with `205`, `64`, and `63` filtered out
+  respectively). The earlier 204-pass/one-failure integration regression is
+  resolved by the S-402 follow-up. No live OAuth/Drive or hosted Pages action
+  was used; the owner-disabled Pages workflow remains committed and untouched.
+  The source and ledger commits are ready to push together, after which the
+  orchestrator must dispatch a fresh read-only R-500 closure reviewer.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

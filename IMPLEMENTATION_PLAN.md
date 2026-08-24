@@ -549,10 +549,12 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### A-301 — Implement image preparation and Gemini adapter
 
-- **Status/dependencies:** `PENDING`; depends on `R-200`, `F-003`; may
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-200`, `F-003`; may
   begin after `R-200` in parallel with M3 where ownership is disjoint.
 - **Ownership:** `src/adapters/gemini/**`, image utilities and structured Gemini
-  schema mapping; no receipt actor/UI.
+  schema mapping; no receipt actor/UI. A bounded integration follow-up may
+  extend the internal Gemini draft port only; it does not change user behavior
+  or receipt requirements.
 - **Scope/non-goals:** API-key/model listing/test, capability labels including
   Needs test, schema-constrained request, browser revalidation, permitted prompt
   context only, the repository-namespaced `localStorage` secret port with
@@ -567,8 +569,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   model compatibility/cache invalidation; invalid/quota/offline errors; schema
   equivalence; hostile model text; metadata removal prep on/off; abort/retry;
   object URL/buffer cleanup; request allowlist snapshot and log redaction.
-- **Verification:** `deno task test --filter 'gemini|image-preparation'`;
-  `deno task test:integration --filter gemini-fake`; CSP/network inspection.
+- **Verification:** `deno task test --filter 'A-301'`;
+  `deno task test:integration --filter 'fake Gemini'`; CSP/network inspection.
 
 #### A-302 — Implement receipt scan/review actors and atomic receipt domain flow
 
@@ -1243,9 +1245,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `842abc3` and tracks
-  `origin/master` at the same commit (`0 0`). The root worktree is clean before
-  this intended ledger edit.
+- **Reconciled branch/upstream:** `master` is at `3d0b54a` and is one commit
+  ahead of `origin/master` until this checkpoint is committed and pushed. The
+  root worktree has the intended A-301 test-task wiring edit before this ledger
+  edit.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1254,9 +1257,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `2bf6471` (`Fix D-102 deletion safety and retry contracts`) and L-203 query
   implementation `97e7689` (`Implement L-203 expense queries and totals`),
   local repository implementation `e5cd6db` (`Implement L-201 local
-  repository`) and its pushed ledger checkpoint `842abc3` are present on
-  `master`; the deferred-only SPEC note is `c390656`. This ledger update is the
-  only intended uncommitted change.
+  repository`), A-301 adapter implementation `3d0b54a` (`Implement image
+  preparation and Gemini adapter`), and their prior pushed ledger checkpoints
+  are present on `master`; the deferred-only SPEC note is `c390656`. The
+  intended A-301 test-task wiring and this ledger update are the only
+  uncommitted changes.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-203`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1272,17 +1277,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   scope/non-goals, outputs/acceptance, tests, and verification; Markdown fences
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
-- **Current reconciliation evidence:** L-203 integration validation from root
-  passed `deno task fmt:check` (112 files), `deno task lint` (101 files),
-  `deno task check`, direct query tests (10 passed), `deno task test:domain`
-  (19 passed), `deno task build`, and `git diff --check`. The implementation
+- **Current reconciliation evidence:** L-203 and L-201 integration validation
+  is recorded below. A-301 source integration passed its worker matrix, and
+  the root canonical task now includes `src/adapters/gemini`; the exact
+  `A-301` filter is the authoritative focused command. The implementation
   plan task-heading count remains 37 with no duplicate IDs; `master` and its
-  upstream are aligned at `842abc3`; the root worktree has no code changes
-  apart from this intended ledger edit. Active and
-  preserved worktrees are listed below.
+  upstream were last aligned at `86637f8`; the root worktree has only the
+  intended A-301 task/ledger edits. Preserved worktrees are listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, and `L-203` are `COMPLETE`; `A-301`
-  remains `IN_PROGRESS` in the first M3/M4 implementation wave.
+  remains `IN_PROGRESS` pending its bounded internal-draft-port follow-up.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1795,6 +1799,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   passed), `deno task build`, `deno audit --frozen`, and `git diff --check`.
   The worktree remains preserved and the worker is shut down. L-201 is now
   complete; A-301 remains the active first-wave implementation.
+- **A-301 integration checkpoint:** Parfit completed the scoped adapter in
+  `~/git/worktrees/did-it-become-what-you-like-a-301-gemini`; commit `202e83e`
+  was inspected and cherry-picked as `3d0b54a`. The handover records a clean
+  six-file source commit and passing worker checks: direct A-301 tests (10),
+  full worker tests (66), integration (2), format, lint, strict check, build,
+  and diff check. Two S3 findings remain open for this task: the locked
+  `ReceiptExtractionDraft` port drops validated receipt date, line kind,
+  selected, and top-level uncertainty fields needed by A-302; and the
+  canonical test task did not include `src/adapters/gemini`. The integration
+  owner approved a bounded internal-contract follow-up (no user/spec change)
+  to preserve those validated fields, and has wired the adapter directory into
+  the canonical test task. The exact `A-301` and `fake Gemini` filters are now
+  the focused commands. A-301 remains `IN_PROGRESS` until the port follow-up
+  and root validation are complete; the worker and worktree are preserved.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

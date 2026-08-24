@@ -4,6 +4,7 @@ import {
   type CausalApplyResult,
   type CausalChange,
   type CausalSnapshot,
+  type CausalSyncPacket,
   type CausalSyncPort,
   cloneJson,
   type DriveFile,
@@ -361,6 +362,49 @@ function datasetPayload(
   } catch {
     throw adapterError("corrupt-data", operation);
   }
+}
+
+function replacementDatasetFromPacket(
+  packet: CausalSyncPacket,
+): PortableDataset {
+  const changes = new Map(packet.changes.map((change) => [change.id, change]));
+  const parentIds = new Set(packet.changes.flatMap((change) => change.parents));
+  const headIds = packet.heads.length > 0 ? packet.heads : packet.changes
+    .map((change) => change.id)
+    .filter((id) => !parentIds.has(id));
+  const headChanges = headIds.map((id) => changes.get(id));
+  if (
+    headChanges.length === 0 ||
+    headChanges.some((change) => change === undefined)
+  ) {
+    throw adapterError("corrupt-data", "sync.replacement-payload");
+  }
+  const payloads = headChanges.map((change) =>
+    datasetPayload(change!, "sync.replacement-payload")
+  );
+  const fingerprint = datasetFingerprint(payloads[0].dataset);
+  if (
+    payloads.some((payload) =>
+      datasetFingerprint(payload.dataset) !== fingerprint
+    )
+  ) {
+    throw adapterError("corrupt-data", "sync.replacement-payload");
+  }
+  return cloneJson(payloads[0].dataset);
+}
+
+function snapshotFromPacket(
+  current: CausalSnapshot,
+  packet: CausalSyncPacket,
+): CausalSnapshot {
+  return {
+    generation: packet.generation,
+    heads: packet.heads,
+    changes: packet.changes,
+    dataset: packet.generation > current.generation
+      ? replacementDatasetFromPacket(packet)
+      : current.dataset,
+  };
 }
 
 function recordMap(dataset: PortableDataset): Map<string, JsonValue> {
@@ -926,12 +970,7 @@ export function createDriveCausalSyncPort(
       operationOptions,
     ): Promise<CausalApplyResult> => {
       const remote = await readRemote(operationOptions);
-      const incoming: CausalSnapshot = {
-        generation: packet.generation,
-        heads: packet.heads,
-        changes: packet.changes,
-        dataset: remote.dataset,
-      };
+      const incoming = snapshotFromPacket(remote, packet);
       const merged = mergeCausalSnapshots(remote, incoming);
       const written = await options.drive.writeAppData({
         name: fileName,
@@ -987,12 +1026,10 @@ export function createInMemoryCausalSyncPort(
     applyPacket: async (packet, operationOptions) => {
       await before("apply", operationOptions);
       if (retired) throw adapterError("retired", "sync.in-memory.apply");
-      const merged = mergeCausalSnapshots(snapshot, {
-        generation: packet.generation,
-        heads: packet.heads,
-        changes: packet.changes,
-        dataset: snapshot.dataset,
-      });
+      const merged = mergeCausalSnapshots(
+        snapshot,
+        snapshotFromPacket(snapshot, packet),
+      );
       snapshot = merged.snapshot;
       return {
         snapshot: cloneSnapshot(snapshot),

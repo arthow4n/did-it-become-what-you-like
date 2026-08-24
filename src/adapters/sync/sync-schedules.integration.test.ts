@@ -2,11 +2,13 @@ import { adapterError, type CausalSyncPort } from "../ports/index.ts";
 import type { PortableDataset } from "../../domain/index.ts";
 import { createTestClock } from "../../test-support/clock.ts";
 import {
+  createFakeDrivePorts,
   createFakeIdPort,
   createFakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
 import {
   createDatasetChange,
+  createDriveCausalSyncPort,
   createInMemoryCausalSyncPort,
   emptyPortableDataset,
   initialCausalSnapshot,
@@ -193,6 +195,67 @@ Deno.test(
     ]);
     assertEquals(result.snapshot.generation, 2);
     assertEquals(result.pushedChangeIds, []);
+  },
+);
+
+Deno.test(
+  "sync-schedules: higher-generation packets adopt their replacement payload in memory and Drive",
+  async () => {
+    const oldDataset = datasetWithExpense(
+      datasetWithProject("project-old"),
+      "expense-main",
+      "project-old",
+      "-10",
+    );
+    const oldChange = createDatasetChange({
+      id: "change-old",
+      actorId: "device-old",
+      sequence: 1,
+      parents: [],
+      dataset: oldDataset,
+    });
+    const replacement = createDatasetChange({
+      id: "change-replacement",
+      actorId: "device-replacement",
+      sequence: 1,
+      parents: [],
+      dataset: emptyPortableDataset(),
+    });
+    const packet = {
+      generation: 2,
+      heads: [replacement.id],
+      changes: [replacement],
+    };
+    const initialSnapshot = {
+      generation: 1,
+      heads: [oldChange.id],
+      changes: [oldChange],
+      dataset: oldDataset,
+    };
+
+    const inMemory = createInMemoryCausalSyncPort({ initialSnapshot });
+    const inMemoryResult = await inMemory.applyPacket(packet);
+    assertEquals(inMemoryResult.snapshot.dataset.expenses, []);
+    assertEquals(
+      (await inMemory.exportPacket()).changes.map((change) => change.id),
+      [replacement.id],
+    );
+
+    const fakeDrive = createFakeDrivePorts();
+    await fakeDrive.authorize();
+    const drive = createDriveCausalSyncPort({
+      drive: {
+        ...fakeDrive,
+        readRetirementMarker: () => Promise.resolve(undefined),
+      },
+      initialSnapshot,
+    });
+    const driveResult = await drive.applyPacket(packet);
+    assertEquals(driveResult.snapshot.dataset.expenses, []);
+    assertEquals(
+      (await drive.exportPacket()).changes.map((change) => change.id),
+      [replacement.id],
+    );
   },
 );
 

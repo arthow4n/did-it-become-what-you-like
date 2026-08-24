@@ -335,16 +335,22 @@ export function PreferencesScreen({
   onClose,
   onSaved,
   onDirtyChange,
+  discardRequest,
+  onDiscarded,
 }: {
   readonly local: LocalPort;
   readonly onClose: () => void;
   readonly onSaved?: (expenseDayBoundary: string) => void;
   readonly onDirtyChange?: (dirty: boolean) => void;
+  readonly discardRequest?: number;
+  readonly onDiscarded?: () => void;
 }) {
   const machine = useMemo(() => createPreferencesMachine({ local }), [local]);
   const [snapshot, send] = useActor(machine);
   const loaded = useRef(false);
   const lastSaved = useRef<string | undefined>(undefined);
+  const handledDiscardRequest = useRef(discardRequest ?? 0);
+  const pendingDiscardRef = useRef(false);
 
   useEffect(() => {
     if (!loaded.current) {
@@ -354,6 +360,22 @@ export function PreferencesScreen({
   }, [send]);
 
   const dirty = snapshot.hasTag("dirty");
+  useEffect(() => {
+    if (
+      discardRequest === undefined ||
+      discardRequest === handledDiscardRequest.current
+    ) return;
+    handledDiscardRequest.current = discardRequest;
+    pendingDiscardRef.current = true;
+    send({ type: "preferences.discard" });
+  }, [discardRequest, send]);
+
+  useEffect(() => {
+    if (!pendingDiscardRef.current || !snapshot.matches("ready")) return;
+    pendingDiscardRef.current = false;
+    onDiscarded?.();
+  }, [onDiscarded, snapshot]);
+
   useEffect(() => {
     onDirtyChange?.(dirty);
     if (

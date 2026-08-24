@@ -82,6 +82,55 @@ Deno.test("settings-final preference screen shows a live day-boundary example", 
   });
 });
 
+Deno.test("settings-final preferences discard restores the saved boundary", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      let discardCount = 0;
+      let dirty = false;
+      const renderPreferences = (discardRequest: number) =>
+        createElement(PreferencesScreen, {
+          local,
+          onClose: () => undefined,
+          onDirtyChange: (value) => dirty = value,
+          discardRequest,
+          onDiscarded: () => discardCount++,
+        });
+      const mounted = render(renderPreferences(0));
+      const view = within(document.body);
+      await waitFor(() => {
+        if (
+          (view.getByLabelText("Expense-day boundary") as HTMLInputElement)
+            .value !== "03:00"
+        ) {
+          throw new Error("default boundary has not loaded");
+        }
+      });
+      const input = view.getByLabelText("Expense-day boundary");
+      fireEvent.change(input, { target: { value: "04:30" } });
+      await waitFor(() =>
+        assert(dirty, "changing the boundary should be dirty")
+      );
+
+      mounted.rerender(renderPreferences(1));
+      await waitFor(() => {
+        assert(discardCount === 1, "discard should notify the host once");
+        assert(!dirty, "discard should clear the shared dirty state");
+        assert(
+          (view.getByLabelText("Expense-day boundary") as HTMLInputElement)
+            .value === "03:00",
+          "discard should restore the saved boundary",
+        );
+      });
+      assert(
+        !local.operations.some((operation) => operation.startsWith("put:")),
+        "discard should not persist the unsaved boundary",
+      );
+      mounted.unmount();
+    });
+  });
+});
+
 Deno.test("settings-final About exposes exact disclosure and build metadata", async () => {
   await withComponentHarness(({ render }) => {
     render(

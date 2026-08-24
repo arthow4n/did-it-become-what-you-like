@@ -13,6 +13,7 @@ export type PreferencesEvent =
   | { readonly type: "preferences.load" }
   | { readonly type: "preferences.change"; readonly expenseDayBoundary: string }
   | { readonly type: "preferences.save" }
+  | { readonly type: "preferences.discard" }
   | { readonly type: "preferences.retry" };
 
 export type PreferencesContext = {
@@ -122,6 +123,15 @@ export function createPreferencesMachine(
             }),
           },
           "preferences.save": "saving",
+          "preferences.discard": {
+            target: "ready",
+            actions: assign({
+              expenseDayBoundary: ({ context }) =>
+                context.settings?.expenseDayBoundary ??
+                  DEFAULT_SETTINGS.expenseDayBoundary,
+              error: () => null,
+            }),
+          },
         },
       },
       saving: {

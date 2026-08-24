@@ -180,6 +180,22 @@ const organizedState: ProjectCategoryState = {
   projectOrder: [project.id, otherProject.id, thirdProject.id],
 };
 
+const populatedOrganizedState: ProjectCategoryState = {
+  ...organizedState,
+  expenses: [{
+    schemaVersion: 1,
+    type: "expense",
+    id: "expense-project-delete",
+    projectId: otherProject.id,
+    categoryId: category.id,
+    date: "2026-08-24",
+    amount: "-12",
+    currency: "SEK",
+    description: "Trip expense",
+    source: "manual",
+  }],
+};
+
 const customCategory = {
   schemaVersion: 1 as const,
   type: "category" as const,
@@ -516,3 +532,43 @@ Deno.test("local UI category manager exposes a level-one page heading", async ()
     });
   });
 });
+
+Deno.test(
+  "local UI populated-project-delete opens the actor-driven Screen 7A review",
+  async () => {
+    await withComponentHarness(
+      async ({ window, render, fireEvent, waitFor }) => {
+        const { service } = createTestService(populatedOrganizedState);
+        const repository = {
+          deviceId: "0123456789abcdef0123456789abcdef",
+        } as never;
+        await withAriaDomGlobals(window, async () => {
+          render(
+            createElement(ProjectManager, {
+              repository,
+              service,
+              state: populatedOrganizedState,
+              onStateChange: () => undefined,
+              onNavigate: () => undefined,
+            }),
+          );
+          const view = within(document.body);
+          const deleteButton = view.getByRole("button", {
+            name: "Delete project",
+          });
+          fireEvent.click(deleteButton);
+          const dialog = await waitFor(() =>
+            view.getByRole("dialog", { name: "Delete Other project?" })
+          );
+          assert(dialog.textContent?.includes("Expenses"));
+          assert(dialog.textContent?.includes("Receipt parents"));
+          assert(dialog.textContent?.includes("Automerge history"));
+          assert(
+            view.getByRole("button", { name: "Export safety copy" }),
+            "the safety export must precede typed confirmation",
+          );
+        });
+      },
+    );
+  },
+);

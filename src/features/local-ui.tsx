@@ -31,8 +31,13 @@ import {
   createProjectOrganizationMachine,
 } from "../actors/project-category.ts";
 import {
+  createProjectDeletionDependencies,
+  createProjectDeletionMachine,
+} from "../actors/project-deletion.ts";
+import {
   ActionCard,
   ActiveFilterChips,
+  AdaptiveDialog,
   AppFrame,
   Badge,
   Banner,
@@ -44,6 +49,7 @@ import {
   ContentContainer,
   CurrencyPicker,
   DefaultNavigation,
+  DefinitionList,
   Disclosure,
   DraftStatus,
   EmptyState,
@@ -686,7 +692,265 @@ function isProjectEmpty(
     !state.receiptAdjustments.some((line) => line.projectId === projectId);
 }
 
+async function saveProjectSafetyExport(json: string): Promise<void> {
+  if (
+    globalThis.document === undefined ||
+    globalThis.URL?.createObjectURL === undefined
+  ) {
+    throw { code: "unavailable" };
+  }
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "did-it-become-what-you-like-project-safety.json";
+  anchor.click();
+  URL.revokeObjectURL(url);
+  await Promise.resolve();
+}
+
+function ProjectDeletionReview({
+  repository,
+  state,
+  project,
+  onDeleted,
+}: {
+  repository: LocalRepository;
+  state: ProjectCategoryState;
+  project: Project;
+  onDeleted: () => void;
+}) {
+  const dependencies = useMemo(
+    () =>
+      createProjectDeletionDependencies(repository, {
+        deviceId: repository.deviceId,
+        saveSafetyExport: saveProjectSafetyExport,
+      }),
+    [repository],
+  );
+  const [generation, setGeneration] = useState(0);
+  const machine = useMemo(
+    () => createProjectDeletionMachine(dependencies),
+    [dependencies, generation],
+  );
+  const [snapshot, send] = useActor(machine);
+  const [isOpen, setIsOpen] = useState(false);
+  const [openRequested, setOpenRequested] = useState(false);
+  const handledResult = useRef(false);
+  const expenses = state.expenses.filter((expense) =>
+    expense.projectId === project.id
+  );
+  const receipts = state.receipts.filter((receipt) =>
+    receipt.projectId === project.id
+  );
+  const purchaseLines = state.receiptPurchaseLines.filter((line) =>
+    line.projectId === project.id
+  );
+  const adjustments = state.receiptAdjustments.filter((adjustment) =>
+    adjustment.projectId === project.id
+  );
+  const dates = [
+    ...expenses.map((expense) => expense.date),
+    ...receipts.map((receipt) => receipt.date),
+  ].sort();
+  const currencies = [
+    ...new Set([
+      ...expenses.map((expense) => expense.currency),
+      ...receipts.map((receipt) => receipt.currency),
+    ]),
+  ].sort();
+  const target = {
+    projectId: project.id,
+    projectName: project.name,
+    expenseCount: expenses.length,
+    receiptCount: receipts.length,
+  };
+
+  useEffect(() => {
+    if (!openRequested || !snapshot.matches("idle")) return;
+    setOpenRequested(false);
+    send({
+      type: "project-delete.open",
+      target,
+      safetyExportRequired: true,
+    });
+  }, [openRequested, send, snapshot, target]);
+
+  useEffect(() => {
+    if (
+      !snapshot.matches("completed") || snapshot.context.result === null ||
+      handledResult.current
+    ) return;
+    handledResult.current = true;
+    setIsOpen(false);
+    onDeleted();
+  }, [onDeleted, snapshot]);
+
+  const cancel = (close: () => void) => {
+    send({ type: "project-delete.cancel" });
+    setOpenRequested(false);
+    setIsOpen(false);
+    close();
+  };
+
+  const terminal = snapshot.matches("completed") ||
+    snapshot.matches("cancelled");
+  const saving = snapshot.hasTag("saving");
+  const failure = snapshot.context.error?.message;
+
+  return (
+    <AdaptiveDialog
+      trigger={<Button variant="danger">Delete project</Button>}
+      title={`Delete ${project.name}?`}
+      isOpen={isOpen}
+      onOpenChange={(next) => {
+        if (next) {
+          handledResult.current = false;
+          if (terminal) setGeneration((value) => value + 1);
+          setIsOpen(true);
+          setOpenRequested(true);
+        } else {
+          send({ type: "project-delete.cancel" });
+          setOpenRequested(false);
+          setIsOpen(false);
+        }
+      }}
+      isDismissable={!saving}
+      className="local-ui-project-delete-dialog"
+    >
+      {(close) => (
+        <Stack gap={5}>
+          <InlineNotice tone="danger" title="Destructive action">
+            This removes the project and all of its related records from this
+            device using synchronized tombstones. It does not erase Automerge
+            history; recovery is through the safety JSON export.
+          </InlineNotice>
+          <DefinitionList
+            items={[
+              { term: "Project", description: project.name },
+              { term: "Expenses", description: expenses.length },
+              { term: "Receipt parents", description: receipts.length },
+              { term: "Purchase lines", description: purchaseLines.length },
+              { term: "Adjustments", description: adjustments.length },
+              {
+                term: "Currencies",
+                description: currencies.length ? currencies.join(", ") : "None",
+              },
+              {
+                term: "Date range",
+                description: dates.length
+                  ? `${dates[0]} – ${dates[dates.length - 1]}`
+                  : "None",
+              },
+            ]}
+          />
+          {snapshot.matches("reviewing")
+            ? (
+              <Stack gap={3}>
+                <Text>
+                  Create a complete canonical JSON safety export before the
+                  destructive confirmation.
+                </Text>
+                <FormActions>
+                  <Button variant="quiet" onPress={() => cancel(close)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onPress={() =>
+                      send({ type: "project-delete.export-safety" })}
+                  >
+                    Export safety copy
+                  </Button>
+                </FormActions>
+              </Stack>
+            )
+            : null}
+          {snapshot.matches("exporting")
+            ? (
+              <InlineNotice tone="info" title="Creating safety export">
+                Keep this window open while the complete JSON file is created.
+              </InlineNotice>
+            )
+            : null}
+          {snapshot.matches("exportFailed")
+            ? (
+              <InlineNotice tone="danger" title="Safety export failed">
+                {failure ?? "The safety export was not created."}
+                <FormActions>
+                  <Button variant="quiet" onPress={() => cancel(close)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onPress={() => send({ type: "project-delete.retry" })}
+                  >
+                    Retry export
+                  </Button>
+                </FormActions>
+              </InlineNotice>
+            )
+            : null}
+          {snapshot.matches("confirming")
+            ? (
+              <Stack gap={4}>
+                <TextField
+                  label={`Type ${project.name} to confirm`}
+                  value={snapshot.context.typedName}
+                  onChange={(value) =>
+                    send({ type: "project-delete.type-name", value })}
+                  description="The name must match exactly."
+                  error={failure}
+                  autoFocus
+                />
+                <FormActions>
+                  <Button variant="quiet" onPress={() => cancel(close)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    isDisabled={snapshot.context.typedName !== project.name}
+                    onPress={() => send({ type: "project-delete.confirm" })}
+                  >
+                    Delete project
+                  </Button>
+                </FormActions>
+              </Stack>
+            )
+            : null}
+          {snapshot.matches("deleting")
+            ? (
+              <InlineNotice tone="info" title="Deleting project">
+                Creating the complete synchronized tombstone set atomically.
+              </InlineNotice>
+            )
+            : null}
+          {snapshot.matches("failed")
+            ? (
+              <InlineNotice tone="danger" title="Project deletion failed">
+                {failure ?? "The deletion was not committed."}
+                <FormActions>
+                  <Button variant="quiet" onPress={() => cancel(close)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onPress={() => send({ type: "project-delete.retry" })}
+                  >
+                    Retry deletion
+                  </Button>
+                </FormActions>
+              </InlineNotice>
+            )
+            : null}
+        </Stack>
+      )}
+    </AdaptiveDialog>
+  );
+}
+
 export function ProjectManager({
+  repository,
   service,
   state,
   initialCreate = false,
@@ -694,6 +958,7 @@ export function ProjectManager({
   onNavigate,
   onComplete,
 }: {
+  repository?: LocalRepository;
   service: ProjectCategoryService;
   state: ProjectCategoryState;
   initialCreate?: boolean;
@@ -1063,9 +1328,20 @@ export function ProjectManager({
                             })}
                         />
                       )
+                      : repository
+                      ? (
+                        <ProjectDeletionReview
+                          repository={repository}
+                          state={state}
+                          project={project}
+                          onDeleted={() => {
+                            void service.getState().then(onStateChange);
+                          }}
+                        />
+                      )
                       : (
                         <Text size="caption" tone="muted">
-                          Populated project deletion is unavailable here.
+                          Deletion unavailable.
                         </Text>
                       )}
                   </Inline>
@@ -2388,6 +2664,7 @@ export function LocalUiRuntime(
           : contentPath === "/projects"
           ? (
             <ProjectManager
+              repository={repository}
               service={organization}
               state={state}
               initialCreate={projectEditorOpen}

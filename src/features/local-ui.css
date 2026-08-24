@@ -74,6 +74,14 @@
     border-radius: var(--radius-overlay);
   }
 
+  .local-ui-project-delete-dialog {
+    width: min(100%, var(--form-max));
+  }
+
+  .local-ui-project-delete-dialog .ds-definition-list {
+    min-width: 0;
+  }
+
   @media (max-width: 719px) {
     .ds-navigation__item {
       gap: 0;

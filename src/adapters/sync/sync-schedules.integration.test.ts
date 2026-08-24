@@ -158,6 +158,92 @@ Deno.test("sync-schedules: two and three devices converge across local-first sch
   assert(expected.expenses.some((expense) => expense.id === "expense-beta"));
 });
 
+Deno.test(
+  "sync-schedules: higher-generation replacement adopts without re-uploading stale local records",
+  async () => {
+    const replacement = createDatasetChange({
+      id: "change-replacement",
+      actorId: "device-owner",
+      sequence: 1,
+      parents: [],
+      dataset: datasetWithProject("project-replacement"),
+    });
+    const remote = createInMemoryCausalSyncPort({
+      initialSnapshot: {
+        generation: 2,
+        heads: [replacement.id],
+        changes: [replacement],
+        dataset: datasetWithProject("project-replacement"),
+      },
+    });
+    const stale = await client(
+      "device-stale",
+      datasetWithProject("project-sensitive"),
+    );
+
+    const result = await exchange(stale, remote);
+    const local = await readLocalDataset(stale.local);
+    const remoteSnapshot = await remote.read();
+
+    assertEquals(local.projects.map((project) => project.id), [
+      "project-replacement",
+    ]);
+    assertEquals(remoteSnapshot.dataset.projects.map((project) => project.id), [
+      "project-replacement",
+    ]);
+    assertEquals(result.snapshot.generation, 2);
+    assertEquals(result.pushedChangeIds, []);
+  },
+);
+
+Deno.test(
+  "sync-schedules: coordinator reports same-record same-field conflicts with record identity",
+  async () => {
+    const baseline = datasetWithExpense(
+      datasetWithProject("project-shared"),
+      "expense-shared",
+      "project-shared",
+      "-5",
+    );
+    const remote = createInMemoryCausalSyncPort({
+      initialSnapshot: initialCausalSnapshot(),
+    });
+    const alpha = await client("device-alpha", baseline);
+    const beta = await client("device-beta", emptyPortableDataset());
+    await exchange(alpha, remote);
+    await exchange(beta, remote);
+
+    const alphaDataset = await readLocalDataset(alpha.local);
+    await writeLocalDataset(alpha.local, {
+      ...alphaDataset,
+      expenses: alphaDataset.expenses.map((expense) => ({
+        ...expense,
+        description: "alpha description",
+      })),
+    });
+    await exchange(alpha, remote);
+
+    const betaDataset = await readLocalDataset(beta.local);
+    await writeLocalDataset(beta.local, {
+      ...betaDataset,
+      expenses: betaDataset.expenses.map((expense) => ({
+        ...expense,
+        description: "beta description",
+      })),
+    });
+    const result = await exchange(beta, remote);
+    const conflict = result.conflicts.find((entry) =>
+      entry.recordId === "expense-shared"
+    );
+
+    assert(conflict !== undefined, "same-field conflict is reported");
+    assertEquals(conflict.recordType, "expense");
+    assert(conflict.id.includes("expense-shared-description"));
+    assert(conflict.relatedChangeIds.includes("device-alpha-change-0002"));
+    assert(conflict.relatedChangeIds.includes("device-beta-change-0001"));
+  },
+);
+
 Deno.test("sync-schedules: duplicate and out-of-order causal changes are deterministic", () => {
   const base = initialCausalSnapshot();
   const first = createDatasetChange({

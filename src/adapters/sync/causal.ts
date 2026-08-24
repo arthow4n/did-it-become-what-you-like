@@ -1,3 +1,4 @@
+import * as Automerge from "@automerge/automerge";
 import {
   adapterError,
   type CausalApplyResult,
@@ -100,6 +101,14 @@ export type InMemoryCausalSyncOptions = {
 };
 
 type JsonRecord = { readonly [key: string]: JsonValue };
+
+type AutomergeDatasetDocument = {
+  readonly records: Record<string, JsonValue>;
+};
+
+type MutableAutomergeDatasetDocument = {
+  records: Record<string, JsonValue>;
+};
 
 type CausalEnvelope = {
   readonly schemaVersion: typeof CAUSAL_SYNC_SCHEMA_VERSION;
@@ -438,15 +447,100 @@ function conflictId(
   return StableIdSchema.parse(`conflict-${changeId}-${recordId}-${field}`);
 }
 
+function automergeActorId(seed: string): string {
+  const encoded = [...seed].map((character) =>
+    character.codePointAt(0)!.toString(16).padStart(2, "0")
+  ).join("");
+  return (encoded + "0".repeat(32)).slice(0, 32);
+}
+
+function applyAutomergeDataset(
+  base: Automerge.Doc<AutomergeDatasetDocument>,
+  dataset: PortableDataset,
+  actor: string,
+): Automerge.Doc<AutomergeDatasetDocument> {
+  const nextRecords = Object.fromEntries(
+    [...recordMap(dataset).entries()].map(([key, value]) => [
+      key,
+      cloneJson(value),
+    ]),
+  );
+  const document = Automerge.clone(base, { actor: automergeActorId(actor) });
+  return Automerge.change(document, {
+    message: "apply causal dataset projection",
+  }, (draft: unknown) => {
+    const mutable = draft as MutableAutomergeDatasetDocument;
+    for (const key of Object.keys(mutable.records)) {
+      if (!(key in nextRecords)) delete mutable.records[key];
+    }
+    for (const [key, value] of Object.entries(nextRecords)) {
+      const existing = asJsonRecord(mutable.records[key]);
+      if (existing === undefined) {
+        mutable.records[key] = value;
+        continue;
+      }
+      const mutableRecord = existing as Record<string, JsonValue>;
+      for (const field of Object.keys(mutableRecord)) {
+        delete mutableRecord[field];
+      }
+      for (const [field, fieldValue] of Object.entries(value as JsonRecord)) {
+        mutableRecord[field] = cloneJson(fieldValue);
+      }
+    }
+  });
+}
+
+function automergeDatasetMerge(
+  current: PortableDataset,
+  incoming: PortableDataset,
+  base: PortableDataset,
+): Automerge.Doc<AutomergeDatasetDocument> {
+  const baseDocument = Automerge.from<AutomergeDatasetDocument>({
+    records: Object.fromEntries(
+      [...recordMap(base).entries()].map(([key, value]) => [
+        key,
+        cloneJson(value),
+      ]),
+    ),
+  }, { actor: automergeActorId("causal-base") });
+  const currentDocument = applyAutomergeDataset(
+    baseDocument,
+    current,
+    "causal-current",
+  );
+  const incomingDocument = applyAutomergeDataset(
+    baseDocument,
+    incoming,
+    "causal-incoming",
+  );
+  return Automerge.merge(currentDocument, incomingDocument);
+}
+
+function hasAutomergeFieldConflict(
+  record: unknown,
+  field: string,
+): boolean {
+  if (record === null || typeof record !== "object" || Array.isArray(record)) {
+    return false;
+  }
+  const conflicts = Automerge.getConflicts(
+    record as Record<string, JsonValue>,
+    field,
+  );
+  return conflicts !== undefined && Object.keys(conflicts).length > 1;
+}
+
 function recordConflict(
   change: CausalChange,
   current: JsonValue | undefined,
   incoming: JsonValue | undefined,
   field: string,
   relatedChangeIds: readonly StableId[],
+  currentRecord: JsonValue | undefined = current,
+  incomingRecord: JsonValue | undefined = incoming,
 ): CausalConflict["conflict"] {
-  const currentObject = asJsonRecord(current);
-  const incomingObject = asJsonRecord(incoming);
+  const currentObject = asJsonRecord(currentRecord);
+  const incomingObject = asJsonRecord(incomingRecord);
   const recordId = safeId(
     currentObject?.id ?? incomingObject?.id,
     "sync.conflict.id",
@@ -469,6 +563,7 @@ function mergeRecords(
   current: JsonRecord,
   incoming: JsonRecord,
   base: JsonRecord | undefined,
+  automerged: JsonRecord,
   change: CausalChange,
   relatedChangeIds: readonly StableId[],
 ): {
@@ -498,16 +593,24 @@ function mergeRecords(
       if (currentValue !== undefined) merged[key] = currentValue;
       continue;
     }
-    if (currentValue !== undefined) merged[key] = currentValue;
-    conflicts.push(
-      recordConflict(
-        change,
-        currentValue,
-        incomingValue,
-        key,
-        relatedChangeIds,
-      ),
-    );
+    if (hasAutomergeFieldConflict(automerged, key)) {
+      if (currentValue !== undefined) merged[key] = currentValue;
+      conflicts.push(
+        recordConflict(
+          change,
+          currentValue,
+          incomingValue,
+          key,
+          relatedChangeIds,
+          current,
+          incoming,
+        ),
+      );
+      continue;
+    }
+    const mergedValue = automerged[key];
+    if (mergedValue !== undefined) merged[key] = mergedValue;
+    else if (currentValue !== undefined) merged[key] = currentValue;
   }
   return { value: merged, conflicts };
 }
@@ -522,6 +625,7 @@ function mergeDatasets(
   readonly dataset: PortableDataset;
   readonly conflicts: readonly CausalConflict["conflict"][];
 } {
+  const automerged = automergeDatasetMerge(current, incoming, base).records;
   const currentMap = recordMap(current);
   const incomingMap = recordMap(incoming);
   const baseMap = recordMap(base);
@@ -564,6 +668,7 @@ function mergeDatasets(
         currentObject,
         incomingObject,
         baseObject,
+        asJsonRecord(automerged[key]) ?? {},
         change,
         relatedChangeIds,
       );
@@ -635,6 +740,24 @@ export function mergeCausalSnapshots(
   current: CausalSnapshot,
   incoming: CausalSnapshot,
 ): CausalMergeResult {
+  if (incoming.generation > current.generation) {
+    return {
+      snapshot: cloneSnapshot(incoming),
+      appliedChangeIds: incoming.changes
+        .filter((change) =>
+          !current.changes.some((known) => known.id === change.id)
+        )
+        .map((change) => change.id),
+      conflicts: [],
+    };
+  }
+  if (incoming.generation < current.generation) {
+    return {
+      snapshot: cloneSnapshot(current),
+      appliedChangeIds: [],
+      conflicts: [],
+    };
+  }
   const allChanges = new Map<StableId, CausalChange>();
   for (const change of [...current.changes, ...incoming.changes]) {
     if (!allChanges.has(change.id)) {

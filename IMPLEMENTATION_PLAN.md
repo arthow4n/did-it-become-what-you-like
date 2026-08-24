@@ -828,9 +828,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-600 — Destructive/PWA independent review gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `P-503`, `R-500`; the
-  bounded fix wave is integrated and a fresh independent closure review is
-  required before completion.
+- **Status/dependencies:** `BLOCKED`; depends on `P-503`, `R-500`; fresh
+  closure-2 review found three severity-2 blockers and one unresolved
+  severity-3 observation awaiting a second bounded fix wave.
 - **Ownership:** read-only review first; scoped fixes by M6 owners.
 - **Scope/non-goals:** review destructive truthfulness and ordering, data leakage,
   reload recovery, offline/update/install correctness, settings/disclosures,
@@ -1262,7 +1262,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; and R-600 is the
-  active M6 closure review gate after its bounded fix wave.
+  blocked M6 closure review gate awaiting its second bounded fix wave.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
   the current pushed plan checkpoint, whose X-502 source/ledger predecessor is
   `3a43b04`, with integrated source commit `df21669` and the intentionally
@@ -1351,8 +1351,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501, X-502, and P-503 are `COMPLETE`; R-600 is the active M6 closure
-  review gate after its bounded fix wave; and no task is interrupted.
+  X-501, X-502, and P-503 are `COMPLETE`; R-600 is `BLOCKED` by three new
+  severity-2 findings and one severity-3 observation; and no task is
+  interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -3164,6 +3165,37 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   approving. The root will preserve the original BLOCK handover and review
   worktree and dispatch a new review worktree/branch; no closure approval is
   inferred from the fix workers' own tests.
+- **R-600 closure-2 result:** Avicenna completed the fresh independent review
+  in `~/git/worktrees/did-it-become-what-you-like-r-600-closure-2`, branch
+  `review/r-600-closure-2`, with final `BLOCK` status in the preserved UTC
+  `R-600-closure-2-progress.md` handover. The former restore, manual/receipt
+  dirty-navigation, local-erase crash recovery, and install/update label
+  findings were reproduced as fixed. Three new severity-2 blockers remain:
+  (5) Delete Everywhere persistence can fail open when the runtime write at
+  `src/features/sync-portability-runtime.tsx:1146-1166` or
+  `destructionStorage():274-281` fails before irreversible phases in
+  `src/actors/contracts/deletion.ts:346-401`, violating
+  `UI_SPEC.md:968-974` and the X-502 gate; (6) browser Back/Forward hash
+  handling at `src/features/local-ui.tsx:2585-2589` bypasses the dirty guard
+  at `:2621-2628`, violating `UI_SPEC.md:1040-1042`; and (7) Preferences
+  dirty state at `src/features/local-ui.tsx:2891-2901` bypasses that guard and
+  loses unsaved values on navigation. The review also recorded severity-3
+  finding (8): white manifest `theme_color`/`background_color` at
+  `vite.config.ts:78-79` conflicts with the approved dark canvas in
+  `DESIGN_SYSTEM.md:75-101` and `UI_SPEC.md:17-18,1098-1125`. All required
+  gates passed; no review source, plan, master, remote, or other-worktree
+  changes were made, and hosted Pages/live services/native install remain
+  documented unavailable boundaries.
+- **R-600 second bounded fix preparation:** Ownership is disjoint: the
+  Delete Everywhere durability worker owns the runtime persistence gate and
+  injected storage-failure/restart tests; the local UI worker owns hash
+  Back/Forward reconciliation and Preferences dirty save/discard protection
+  plus focused browser/component tests; and the PWA configuration worker owns
+  only manifest theme/background metadata and its build/scope regression.
+  The root will dispatch these fixes from the next pushed checkpoint, merge
+  them, rerun aggregate and dedicated browser validation, and request another
+  fresh independent R-600 closure review. No worker may edit this plan,
+  master, remotes, or another fix scope.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

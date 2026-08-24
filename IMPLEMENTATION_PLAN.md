@@ -852,6 +852,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   to perform the approved traceability audit and implement only inventoried
   Q-601 fixes; the worker must preserve a timestamped untracked handover and
   must not edit this plan, `master`, remotes, or another task's ownership.
+  Einstein (`01a0362b-9f14-7eb1-8f32-3393099c337d`) owns the worktree and
+  started from the pushed plan checkpoint `b440222`.
 - **Ownership:** only gaps explicitly inventoried against specs; shared-component
   fixes precede affected feature fixes; no new product scope.
 - **Scope/non-goals:** map every approved screen/checklist state to implementation,
@@ -1367,8 +1369,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501, X-502, P-503, and R-600 are `COMPLETE`; Q-601 is `READY`; no worker
-  or reviewer is active; and no task is interrupted.
+  X-501, X-502, P-503, and R-600 are `COMPLETE`; Q-601 is `IN_PROGRESS` with
+  Einstein active in the dedicated worktree; no other worker or reviewer is
+  active; and no task is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch

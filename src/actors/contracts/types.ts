@@ -198,6 +198,7 @@ export type ProjectCommand =
   | { readonly type: "select"; readonly projectId: StableId }
   | { readonly type: "archive"; readonly projectId: StableId }
   | { readonly type: "restore"; readonly projectId: StableId }
+  | { readonly type: "reorder"; readonly orderedIds: readonly StableId[] }
   | { readonly type: "delete-empty"; readonly projectId: StableId };
 
 export type CategoryCommand =

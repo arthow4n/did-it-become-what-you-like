@@ -2821,6 +2821,36 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   validation evidence with a scoped commit or an explicit BLOCK. Ramanujan's
   review agent is closed after its final BLOCK; its review worktree and
   handover remain preserved.
+- **R-500 S-404 fix integration:** Tesla's final handover/reassertion at
+  `2026-08-24T16:51:10Z` is `READY FOR INTEGRATION` and remains preserved at
+  `~/git/worktrees/did-it-become-what-you-like-r500-s404-import/S-404-R500-progress.md`.
+  The worker commit `58ca762` was inspected and cherry-picked into root as
+  `909dfff` (`Fix S-404 generation adoption and preview fidelity`). The fix
+  re-anchors higher-generation import roots, hides retired history from the
+  wrapper's public read/export view, keeps replacement snapshots limited to
+  the new generation, and carries `changeCount`, migrations, warnings, and
+  blocking errors through the additive `ImportPreview` contract and actor
+  projection. Its direct domain/adapter/actor suite passed `20/20`, actor
+  contract tests passed `20/20`, and root `git diff --check` passed after the
+  cherry-pick. The worker's full `deno task verify` evidence passed before
+  integration; no UI, runtime, routed E2E, or live Drive check was claimed.
+  The source integration commit is not yet pushed; the worker remains
+  complete/preserved and S-402/S-405 remain active.
+- **R-500 S-402 fix integration:** Socrates's final handover at
+  `2026-08-24T16:51:40Z` is `READY FOR INTEGRATION` and remains preserved at
+  `~/git/worktrees/did-it-become-what-you-like-r500-s402-causal/S-402-R500-progress.md`.
+  The worker commit `db53832` was inspected and cherry-picked into root as
+  `f536365` (`Fix S-402 causal generation and Automerge merge`). The fix makes
+  higher-generation snapshots explicit replacement/adoption boundaries,
+  carries record identity through same-field conflict creation, and uses one
+  approved Automerge dataset boundary for same-generation field merging while
+  retaining explicit application-level delete-vs-edit handling. Focused sync
+  tests passed `9/9` after integration. The worker's full verification passed
+  with repository/integration/component/domain/actor counts `137/20/56/29/1`,
+  local E2E `2/2`, both builds, frozen audit, and diff check; the preserved
+  Automerge proof passed `12/12`. The source integration commit is not yet
+  pushed; S-402 and S-404 fixes are complete/preserved and Hubble's S-405
+  fix remains active.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

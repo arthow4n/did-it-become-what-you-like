@@ -2206,6 +2206,29 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and fake-Gemini evidence, and end with explicit `APPROVE` or `BLOCK`.
   A-303 remains integrated but R-400 is not complete until this fresh review
   and any scoped fix/reverification loop are finished.
+- **R-400 first review result:** Archimedes completed the fresh read-only review
+  from `~/git/worktrees/did-it-become-what-you-like-r-400-closure`, branch
+  `review/r-400-closure`, based at `f7d7b6b`, with final handover
+  `~/git/worktrees/did-it-become-what-you-like-r-400-closure/R-400-progress.md`
+  at `2026-08-24T09:27:01Z`: `BLOCK`, five S2 and three S3 findings. The S2
+  blockers are source-file/native-input cleanup after removal/failure, silent
+  incompatible-model substitution and unreachable/non-durable Needs-test
+  evidence, discarded browser HTTP status before typed Gemini error mapping,
+  focus escaping from quick-setup and metadata dialogs, and removal of a
+  remembered API key after any quick-setup failure. S3 findings are missing
+  exact request-body allowlist assertions in the fake E2E, adjustment links to
+  unselected purchases, and the unresolved compact 390px contrast diagnostic.
+  `deno task verify` and the receipt E2E passed, but the gate remains blocked;
+  no source or plan changes were made by the reviewer.
+- **R-400 fix-wave boundary:** before resuming implementation, the
+  orchestrator must preserve the blocked review worktree/handover, update this
+  plan with the exact fix owner and base, and keep the fix bounded to receipt
+  UI/Gemini composition, approved design-system behavior, focused tests/E2E,
+  and additive device-local compatibility evidence. Portable expense/receipt
+  schema, A-301/A-302 public contracts, adapter internals beyond the already
+  isolated canvas guard, Drive/sync, Pages, and deferred memory remain out of
+  scope. R-400 cannot be marked complete from the passing aggregate verify
+  while these findings remain unresolved.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

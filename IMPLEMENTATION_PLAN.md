@@ -1253,14 +1253,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
-  complete. M4 is released; S-403 and S-404 are the active parallel
-  implementations, and S-405 is next after both complete.
+  complete. M4 is released; S-403 is complete and S-404 is the active
+  implementation. S-405 is next after S-404 completes.
 - **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  the pushed S-403 dispatch checkpoint `a306564`; the latest completed-task
-  integration checkpoint is `94f5f5c` after pushing the S-402 completion ledger.
-  The root worktree
-  contains only the intentionally untracked `A-303-progress.md` and
-  `R-300-progress.md` and `R-400-contrast-fix-progress.md` handovers.
+  the pushed S-403 dispatch checkpoint `a306564`; root additionally contains
+  the unpushed S-403 integration commit `1c50cb3` and the plan update for this
+  reconciliation. The latest completed-task ledger checkpoint before S-403 is
+  `94f5f5c` after pushing the S-402 completion ledger. The root worktree
+  contains only the intentionally untracked `A-303-progress.md`,
+  `R-300-progress.md`, `R-400-contrast-fix-progress.md`, and preserved
+  `recovered-s404-root-artifacts-2026-08-24/` recovery directory.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1284,14 +1286,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the deferred-only SPEC note is `c390656`; A-303 UI integration is `a90504d`
   (`Implement A-303 receipt and Gemini UI`) and its isolated A-301 canvas
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
-  browser build`). The latest integrated implementation is `1d3afce`
+  browser build`). The latest integrated implementation is `1c50cb3`
+  (`Implement S-403 conflict workflow`), after `1d3afce`
   (`Implement S-401 Drive adapter`); S-402 integration is `95ac376`
   (`Implement S-402 synchronization actor and transport`); the latest pushed
   orchestration checkpoint before this ledger update is `94f5f5c`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
-  integration evidence are present on `master`; R-400, S-401, and S-402 are
-  complete as recorded below.
+  integration evidence are present on `master`; R-400, S-401, S-402, and S-403
+  are complete as recorded below.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
@@ -1329,8 +1332,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
-  `COMPLETE`; R-400, S-401, and S-402 are `COMPLETE`; S-403 and S-404 are
-  `IN_PROGRESS`; S-405 is the next dependency-ready task after both.
+  `COMPLETE`; R-400, S-401, S-402, and S-403 are `COMPLETE`; S-404 is
+  `IN_PROGRESS`; S-405 is the next dependency-ready task after S-404.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2616,8 +2619,30 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   delete-versus-edit choices, offline local resolution, durable unresolved
   progress, parent-referencing resolution revisions, and deterministic
   concurrent convergence without timestamp winners or Screen 10A markup.
-  S-403 is active; its worktree and handover are preserved until review and
-  integration.
+  S-403 was active under this dispatch; its worktree and handover remain
+  preserved after integration.
+- **S-403 integration result:** Maxwell completed the bounded task with final
+  `S-403-progress.md` handover at `2026-08-24T14:46:36Z`, explicitly `READY FOR
+  INTEGRATION`. The orchestrator inspected the nine owned source/test files,
+  committed them as worker-branch commit `2dd86f5`, and cherry-picked root
+  integration commit `1c50cb3` (`Implement S-403 conflict workflow`). The
+  implementation provides neutral field-level grouping with device/time
+  context, independent-field auto-merge, same-field and delete-versus-edit
+  choices including absent-field candidates, validated custom/candidate
+  values, atomic offline local resolution revisions and tombstones referencing
+  every parent, durable unresolved count/reload/failure state, and
+  deterministic concurrent resolution convergence without timestamp winners.
+  Root validation passed `deno task fmt:check` (164 files), `deno task lint`
+  (152 files), `deno task check`, direct owned tests (15/15),
+  `deno task test --filter conflict` (2 passed/135 filtered), the locked
+  integration alias (0 selected/20 filtered because its paths exclude the
+  owned directories), the direct equivalent, `deno task build`, and
+  `deno task verify` (137 unit, 20 integration, 35 component, 29 domain, 1
+  actor, local E2E 2/2, gallery/browser/Pages/CI/toolchain, builds, audit, and
+  diff check). The existing Vite chunk warning remains the only build warning;
+  no live Drive or credentials were used. No contracts, schemas, local/sync
+  adapters, UI, or configuration were changed. S-403 is complete; its
+  worktree and timestamped handover remain preserved.
 - **S-404 implementation dispatch:** Schrodinger
   (`01a03432-f93b-7ed3-be0c-ff5b9fbe520e`) owns the import/export domain, actor,
   and file/share adapter composition in
@@ -2631,8 +2656,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   import/export, causal merge and stable-history deduplication, generation-safe
   replace with safety backup/recovery, configured-Drive pre-sync gating,
   unconfigured offline replacement, share fallback, and device-local/secret
-  exclusions without Screen 12 markup. S-404 is active in parallel with S-403;
-  its worktree and handover are preserved until review and integration.
+  exclusions without Screen 12 markup. S-403 is complete and S-404 remains
+  active; its worktree and handover are preserved until review and integration.
+- **S-404 startup artifact recovery:** during the S-404 worker's early phase,
+  six untracked domain files were also written to the root worktree before the
+  assigned worktree copy was updated. The orchestrator preserved those exact
+  artifacts by moving them to the explicit quarantine directory
+  `recovered-s404-root-artifacts-2026-08-24/` in the root worktree, leaving no
+  S-404 source under `master`. The S-404 assigned worktree remains the only
+  implementation source; the worker was instructed to append this recovery
+  event to its timestamped handover and continue without touching root.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

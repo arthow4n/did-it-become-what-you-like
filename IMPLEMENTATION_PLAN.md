@@ -348,9 +348,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### D-102 — Define the XState actor system and event contracts
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `D-101`, `F-005`, both
-  complete. Worker Harvey (`01a03104-b17d-70c0-ad0d-8d62875f6c7e`) owns the
-  bounded XState v5 contract work; the orchestrator owns integration.
+- **Status/dependencies:** `COMPLETE`; depends on `D-101`, `F-005`, both
+  complete. Worker commit `0245859` was integrated as `1efd97b`; the focused
+  actor-contract suite and root gates pass.
 - **Ownership:** `src/actors/contracts/**`, actor topology documentation and
   compile-only machine shells; no concrete service adapters or screen markup.
 - **Scope/non-goals:** define root/shell, expense form, receipt scan/review,
@@ -371,9 +371,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### D-103 — Define adapter ports and deterministic fakes
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `D-101`, `F-005`, both
-  complete. Worker Heisenberg (`01a03104-b25c-73a1-87eb-4cb012f47eb9`) owns the
-  bounded adapter-port/fake work; the orchestrator owns integration.
+- **Status/dependencies:** `COMPLETE`; depends on `D-101`, `F-005`, both
+  complete. Worker commit `5f46f04` was integrated as `6bd54c2`; the focused
+  adapter-contract suite and root gates pass.
 - **Ownership:** `src/adapters/ports/**`, `src/test-support/fakes/**`; no real
   Google/IndexedDB implementation.
 - **Scope/non-goals:** typed ports for local transactions/query, causal sync,
@@ -388,9 +388,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### U-104 — Implement and verify the shared design-system foundation
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-100`, `D-101`, both
-  complete. Worker Erdos (`01a03104-b332-72a3-970b-166787ec0638`) owns the
-  bounded design-system/gallery work; the orchestrator owns integration.
+- **Status/dependencies:** `COMPLETE`; depends on `R-100`, `D-101`, both
+  complete. Worker commit `42d57fb` was integrated as `b06042b`; gallery wiring
+  and scoped accessibility fixes were integrated as `5ebcd89`.
 - **Ownership:** `src/design-system/**` and component gallery only; no feature
   business logic.
 - **Scope/non-goals:** implement semantic dark tokens, immediate-motion policy,
@@ -918,12 +918,12 @@ parallel waves are:
 
 Create a worktree only for a dependency-ready task expected to produce a
 meaningful independent commit. Name branches `task/<task-id>-<slug>` and place
-worktrees outside the repository directory. Record absolute worktree path,
-branch, base commit, assigned files/contracts, agent, and expected merge order
-in the Current Checkpoint before dispatch. For privacy in new checkpoints,
-worker prompts, and status reports, write the home-directory prefix as `~` (for
-example, `~/git/worktrees/...`) rather than exposing the owner's account name;
-existing historical records need not be rewritten.
+worktrees outside the repository directory. Record the worktree path using `~`
+for the home-directory prefix (for example, `~/git/worktrees/...`), branch, base
+commit, assigned files/contracts, agent, and expected merge order in the Current
+Checkpoint before dispatch. This avoids exposing the owner's account name in
+new checkpoints, worker prompts, and status reports; existing historical
+records need not be rewritten.
 
 The root/orchestrator is the sole integration owner and the only agent allowed
 to update `master` or this ledger while parallel work is active. Workers commit
@@ -1095,22 +1095,23 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 
 ## Current Checkpoint
 
-- **Plan state:** implementation authorized; foundation compatibility wave is
-  being dispatched under the recorded worktree policy.
-- **Reconciled branch/upstream:** `master` at `efd6440` (`Define interruption
-  recovery protocol`), tracking `origin/master` at the same commit. `git fetch
-  --prune origin` completed successfully; the branch is clean and neither ahead
-  nor behind its upstream (`0 0`).
+- **Plan state:** implementation authorized; M0/M1 and the M2 contract/design-
+  system wave are complete, and `R-200` is dependency-ready.
+- **Reconciled branch/upstream:** `master` is at the current checkpoint commit,
+  tracking `origin/master` at the same commit. The recovery audit completed
+  successfully; the branch is clean and neither ahead nor behind its upstream
+  (`0 0`).
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
   plan`).
-- **Integrated plan commits:** `5165d60` (`Fix final coherence review
-  findings`), `1d43eca` (`Complete implementation planning checkpoint`), and
-  `efd6440` (`Define interruption recovery protocol`) are present on both
-  `master` and `origin/master`; there are no unpushed plan commits.
-- **Completed implementation tasks:** none. No implementation worktree, spike,
-  dependency setup, or application source has been started.
+- **Integrated implementation state:** `5ebcd89` (`Wire design-system gallery
+  and M2 test gates`) is pushed. This ledger update will be committed and
+  pushed before the next worker is dispatched; there are no other unpushed
+  implementation changes.
+- **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
+  `D-101`, `D-102`, `D-103`, and `U-104`. Their required source, tests, and
+  integration evidence are present on `master`.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
@@ -1123,30 +1124,31 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   scope/non-goals, outputs/acceptance, tests, and verification; Markdown fences
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
-- **Reconciliation evidence at `efd6440`:** `git diff --check` passed; the
-  implementation-plan task-heading count is 37 with no duplicate IDs; the
-  eight Markdown fence lines are balanced; `git status --short --branch` is
-  clean; `git worktree list --porcelain` shows only the root worktree; no task
-  branches, worker worktrees, active tasks, or interrupted tasks were found.
-- **Active wave:** `F-001` through `F-005`, `R-100`, and `D-101` are `COMPLETE`;
-  `D-102`, `D-103`, and `U-104` are the active parallel M2 tasks.
-- **Active worktrees and dispatch order:**
+- **Current reconciliation evidence:** `git diff --check` is clean apart from
+  this intended ledger edit; the implementation-plan task-heading count is 37
+  with no duplicate IDs; the eight Markdown fence lines are balanced;
+  `git fetch --prune origin` and the upstream comparison report `0 0`; and the
+  root worktree has no code changes. All surviving task worktrees are listed
+  below and have been inspected as clean integrated branches.
+- **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`, `D-103`,
+  and `U-104` are `COMPLETE`; `R-200` is the next independent review gate.
+- **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
-    `/home/hevar/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
+    `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
     base `43998c4`; ownership `spikes/toolchain/**`, `deno.json`,
     `deno.lock`, and toolchain-only decision/proof files; agent `Cicero`
     (`01a03092-5f84-7a83-992a-ff40b904dfc1`); worker commit `96240de` is
     integrated by `db1d9b4`; worktree is clean and preserved pending later
     cleanup.
   - `F-002`: branch `task/f-002-automerge`, worktree
-    `/home/hevar/git/worktrees/did-it-become-what-you-like-f-002-automerge`,
+    `~/git/worktrees/did-it-become-what-you-like-f-002-automerge`,
     base `43998c4`; ownership `spikes/automerge/**` and its decision record;
     agent `Kuhn` (`01a03092-6002-7bd1-85dc-f33d89f800ac`); local commit
     `bec8d08` (`Prove Automerge IndexedDB semantics`) is integrated by
     `59efed5`; the worktree remains preserved and clean pending final wave
     cleanup.
   - `F-003`: branch `task/f-003-browser-integrations`, worktree
-    `/home/hevar/git/worktrees/did-it-become-what-you-like-f-003-browser-integrations`,
+    `~/git/worktrees/did-it-become-what-you-like-f-003-browser-integrations`,
     base `43998c4`; ownership `spikes/browser-integrations/**` and its decision
     record; agent `Popper` (`01a03092-6086-7b42-ade7-dc16d28f1aef`); worker
     commits `c6b2f8f` and `200a9a5` are integrated by `dd20e31` and `0ccfea6`;
@@ -1185,8 +1187,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   canonical because a transitive `@types/node` declaration fails; the required
   TypeScript 7 checker passes. Generated `node_modules` and Playwright browser
   binaries are ignored/external and were not committed.
-- **F-001 integration evidence:** merge commit `db1d9b4` is currently one local
-  commit ahead of `origin/master`; from `master`, `deno task verify:toolchain`
+- **F-001 integration evidence:** merge commit `db1d9b4` is pushed; from
+  `master`, `deno task verify:toolchain`
   passed TypeScript 7 version and strict-failure proofs, formatting, lint,
   strict check, 3 unit/component tests, Vite/PWA build, Playwright Chromium
   installation, and the Playwright smoke page.
@@ -1271,7 +1273,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   All scoped-fix workers completed and were shut down; their worktrees remain
   clean and preserved.
 - **R-100 closure evidence:** fresh independent reviewer Russell
-  (`01a030e8-5ae2-7633-a97a-75eb8fd4dddc`) is auditing the post-fix master
+  (`01a030e8-5ae2-7633-a97a-75eb8fd4dddc`) audited the post-fix master
   read-only and reran the complete foundation matrix. Russell approved closure:
   no unresolved severity-1/2/3/4 findings; `master` was clean and synced with
   `origin/master`; all preserved worktrees were clean; no Pages workflow was
@@ -1284,9 +1286,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** `D-102`, `D-103`, and `U-104` are in progress after the
-  completed D-101 domain contract; they are running in parallel with disjoint
-  ownership.
+- **Current task:** dispatch the fresh independent `R-200` read-only review
+  against the integrated M2 contracts and design-system foundation.
 - **D-101 recovery worktree:** branch `task/d-101-domain`, worktree
   `~/git/worktrees/did-it-become-what-you-like-d-101-domain`, based at
   `bd6fd68`; worker Pauli (`01a030ed-e9e6-7670-a3ff-16b76f3e0917`) was
@@ -1301,25 +1302,34 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   record schemas/invariants, strict big.js decimal arithmetic, explicit v0-to-v1
   migration and unsupported down policy, deterministic export/import, portable
   versus device-local settings, schema documentation, and secret-free fixtures.
-- **D-102 active worktree:** branch `task/d-102-actors`, worktree
+- **D-102 integrated worktree:** branch `task/d-102-actors`, worktree
   `~/git/worktrees/did-it-become-what-you-like-d-102-actors`, based at
-  `7307f58`; Harvey owns `src/actors/contracts/**` and its topology/tests.
-- **D-103 active worktree:** branch `task/d-103-adapters`, worktree
+  `7307f58`; Harvey's commit `0245859` is integrated as `1efd97b`; the
+  worktree is clean and preserved.
+- **D-103 integrated worktree:** branch `task/d-103-adapters`, worktree
   `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`, based at
-  `7307f58`; Heisenberg owns `src/adapters/ports/**` and
-  `src/test-support/fakes/**` plus their focused tests.
-- **U-104 active worktree:** branch `task/u-104-design-system`, worktree
+  `7307f58`; Heisenberg's commit `5f46f04` is integrated as `6bd54c2`; the
+  worktree is clean and preserved.
+- **U-104 integrated worktree:** branch `task/u-104-design-system`, worktree
   `~/git/worktrees/did-it-become-what-you-like-u-104-design-system`, based at
-  `7307f58`; Erdos owns `src/design-system/**` and the gallery fixture/tests.
-  These three ownership sets are disjoint; no worker may edit the plan, shared
-  task configuration, or push `master`.
+  `7307f58`; Erdos's commit `42d57fb` is integrated as `b06042b`; the worktree
+  is clean and preserved. These three ownership sets were disjoint; all workers
+  are shut down and no worker edited the plan or pushed `master`.
+- **M2 integration evidence:** actor-contract tests (9), adapter-contract tests
+  (9), design-system component tests (7), root `deno task test` (45 passed),
+  integration tests (2), component tests (8), E2E tests (2), strict format/
+  lint/check, build, schema/Pages/CI/toolchain validators, frozen audit, and
+  `git diff --check` passed after integration. `deno task gallery` and
+  `deno task a11y:gallery` passed; native agent-browser inspection covered
+  `320x568`, `390x844`, and `1280x800` with screenshot/tree/axe checks.
 - **Deployment state:** the GitHub Pages workflow is intentionally committed
   but manually disabled by the owner until the MVP is complete. Agents must not
   enable or trigger deployment as part of implementation; hosted deployment
   remains a later release-gate check.
-- **Blocker:** none. The next action is to receive the three worker handoffs,
-  integrate them in dependency order, wire shared test/gallery task aliases at
-  the root, then dispatch R-200.
+- **Blocker:** none. The next action is to commit/push this reconciled
+  checkpoint, then dispatch `R-200`; no GitHub Pages workflow may be enabled or
+  triggered because the owner has intentionally disabled it until MVP
+  completion.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

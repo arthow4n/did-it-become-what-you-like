@@ -777,7 +777,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### X-502 — Implement disconnect and Delete Everywhere
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `X-501`, `S-402`, `S-404`.
+- **Status/dependencies:** `COMPLETE`; depends on `X-501`, `S-402`, `S-404`.
 - **Ownership:** disconnect/global-deletion actor, retirement/generation erase
   coordination, Screens 10/14 destructive paths; no unrelated settings.
 - **Scope/non-goals:** disconnect with keep-local semantics; local-only erase;
@@ -1259,12 +1259,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
-  M5 is released; X-501 is complete; and X-502 is the next dependency-ready
-  M6 task.
-- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  the pushed X-501 source/ledger checkpoint `511c0e6` (`Record X-501
-  completion`), with the intentionally untracked artifacts and preserved
-  recovery directory listed below;
+  M5 is released; X-501 and X-502 are complete; and P-503 is the next
+  dependency-ready M6 task.
+- **Reconciled branch/upstream:** root `master` contains the integrated X-502
+  source commit `df21669` and is one source commit ahead of `origin/master`
+  until the next ledger push; the last pushed checkpoint is `4e64184`
+  (`Dispatch X-502 destructive workflow`), with the intentionally untracked
+  artifacts and preserved recovery directory listed below;
   the final pushed R-500 ledger sequence includes `e375cf8` (`Close R-500 and
   reconcile plan ledger`) and `150ba7c` (`Record final pushed R-500
   checkpoint`), with source checkpoint `e6ee2cd` (`Fix higher-generation
@@ -1298,8 +1299,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   the deferred-only SPEC note is `c390656`; A-303 UI integration is `a90504d`
   (`Implement A-303 receipt and Gemini UI`) and its isolated A-301 canvas
   compatibility follow-up is `a8b87ca` (`Narrow Gemini canvas context for
-  browser build`). The latest integrated implementation is `58aff60`
-  (`Implement populated project deletion workflow`), after `1c50cb3`
+  browser build`). The latest integrated implementation is `df21669`
+  (`Implement X-502 data destruction workflows`), after `58aff60`
   (`Implement S-403 conflict workflow`) and `1d3afce`
   (`Implement S-401 Drive adapter`); S-402 integration is `95ac376`
   (`Implement S-402 synchronization actor and transport`); S-405 worker and
@@ -1322,21 +1323,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   are balanced; dependency graph/ledger and E2E/agent-browser ownership were
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
-  is recorded below. R-300, A-302, A-303, R-400, S-401–S-405, R-500, and
-  X-501 are complete. The latest root `deno task verify` passed after X-501
-  integration: 215 task tests, 67 integration, 65 component, 32 domain,
+  is recorded below. R-300, A-302, A-303, R-400, S-401–S-405, R-500, X-501,
+  and X-502 are complete. The latest root `deno task verify` passed after
+  X-502 integration: 233 task tests, 71 integration, 70 component, 35 domain,
   1 actor, local E2E 3/3, gallery/browser/Pages/CI/toolchain validators,
-  both production builds, frozen audit, and `git diff --check`. X-501 focused
-  root validation passed direct deletion 9/9, project-deletion tests 7 passed
-  with 208 filtered, populated-project-delete component 1 passed with 64
-  filtered, and project-delete-sync integration 2 passed with 65 filtered.
-  Screen 7A browser inspection passed at 320x568, 390x844, and 1280x800
-  without overflow and with zero axe violations; the incomplete contrast
-  geometry probes were caused only by modal overlap. The implementation plan
-  task-heading count remains 37 with no duplicate IDs; the root worktree
-  contains only the intentionally untracked A-303, R-300, and R-400
-  contrast-fix handovers plus the preserved S-404 root-artifact quarantine.
-  Preserved worktrees are listed below.
+  both production builds, frozen audit, and `git diff --check`. X-502 focused
+  root validation passed `deno task test --filter delete-everywhere` (12),
+  `deno task test:integration --filter retirement` (7), and
+  `deno task test:component --filter destructive-flow` (5). Screen 10/14
+  browser inspection passed with no horizontal overflow, correct disconnected
+  scope warnings/copy, checked default key-removal choice, keyboard-reachable
+  dialog focus, and honest revocation-failure retry presentation; the local
+  page did not expose axe, while generic agent-browser axe smoke passed in the
+  full gate. The implementation plan task-heading count remains 37 with no
+  duplicate IDs; the root worktree contains only the intentionally untracked
+  A-303, R-300, and R-400 contrast-fix handovers plus the preserved S-404
+  root-artifact quarantine. Preserved worktrees are listed below.
 - **R-400 completion evidence:** closure-6 independently approved the final
   native 1280x800 matrix after closure-5’s partial 320/390 review; the exact
   handover, counts, geometry, focus, cleanup, and unavailable-service boundary
@@ -1348,8 +1350,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501 is `COMPLETE`; X-502 is the active dependency-ready M6 task; and no
-  task is interrupted.
+  X-501 and X-502 are `COMPLETE`; P-503 is the next active dependency-ready M6
+  task; and no task is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -3024,6 +3026,33 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   sole integration owner; merge order is worker commit, focused root checks,
   full verification, then the M6 destructive-flow agent-browser audit. Preserve
   the worktree, branch, handover, and agent after completion.
+- **X-502 integration result:** Goodall's final handover at
+  `2026-08-24T19:37:02Z` is `READY FOR INTEGRATION`, preserved at
+  `~/git/worktrees/did-it-become-what-you-like-x-502-delete-everywhere/X-502-progress.md`.
+  The worker commit `3358f9e` was inspected and cherry-picked into root as
+  `df21669` (`Implement X-502 data destruction workflows`). The nine-file
+  slice adds redacted durable destruction progress and persisted local-erase
+  key choice, a concrete XState v5 local-erase actor plus wiring around the
+  locked Delete Everywhere protocol, retirement/Drive/local-erasure recovery
+  integration, and Screens 10/14 destructive composition. It preserves
+  keep-local disconnect semantics, separate accepted-export versus
+  decline-plus-second-confirmation gates, retirement-before-upload rejection,
+  per-device acknowledgements, lost-device forced finalization, revocation
+  retry honesty, and keyboard-reachable destructive dialogs. The locked
+  `src/actors/contracts/deletion.ts` contract was unchanged; the worker did not
+  edit the plan, master, remotes, or unrelated settings. Root focused checks
+  passed `deno task test --filter delete-everywhere` (12 passed, 221 filtered),
+  `deno task test:integration --filter retirement` (7 passed, 64 filtered),
+  and `deno task test:component --filter destructive-flow` (5 passed, 65
+  filtered). Root `deno task verify` passed 233 task tests, 71 integration,
+  70 component, 35 domain, 1 actor, local E2E 3/3, gallery/browser/Pages/
+  CI/toolchain checks, both production builds, frozen audit, and diff check.
+  The worker's browser audit covered Screen 10 and Screen 14 locally with no
+  horizontal overflow, correct warnings/copy, default checked Gemini-key
+  removal, keyboard focus, and revocation retry presentation; live OAuth,
+  Google Drive, and hosted Pages behavior were not exercised. The worker agent
+  is complete; preserve its worktree, branch, and handover. X-502 is complete
+  and releases P-503 as the next dependency-ready task.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

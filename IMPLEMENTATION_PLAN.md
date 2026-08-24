@@ -679,7 +679,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### S-403 — Implement conflict detection and resolution workflow
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `S-402`, `D-102`.
+- **Status/dependencies:** `COMPLETE`; depends on `S-402`, `D-102`.
 - **Ownership:** conflict domain/actor and projections; no Screen 10A markup.
 - **Scope/non-goals:** group conflicts by record/receipt, field candidate values
   with device/timestamp context, neutral choice/custom value, delete-versus-edit,
@@ -1257,13 +1257,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, `R-200`, M3/R-300, A-302, A-303, R-400, S-401, and S-402 are
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
-  `BLOCKED` after its independent review; its bounded fix wave is complete
-  and a fresh closure review is the next dependency-ready action.
-- **Reconciled branch/upstream:** the root implementation is integrated through
+  `COMPLETE` after the bounded fix wave and fresh independent closure review;
+  M5 is released and M6 is the next dependency-ready milestone.
+- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
+  pushed checkpoint `1c50546` (`Record active R-500 closure reviewer`), with
   source checkpoint `e6ee2cd` (`Fix higher-generation causal packet adoption`)
-  with the S-405 source at `b423d9b`; `origin/master` remains at the previous
-  pushed plan checkpoint `fe74189` until the recovered implementation and
-  ledger are pushed together. The latest
+  and S-405 source at `b423d9b` integrated beneath it. The latest
   completed-task ledger checkpoint before S-403 was `94f5f5c` after pushing the
   S-402 completion ledger. The root worktree
   contains only the intentionally untracked `A-303-progress.md`,
@@ -1342,8 +1341,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and aggregate verification correction are `COMPLETE`; the follow-up
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
-  R-500 is `BLOCKED` after the independent read-only review; its bounded
-  three-owner fix wave is complete, and fresh closure review is pending.
+  R-500 is `COMPLETE` after fresh independent closure review; M5 is released
+  and M6 is the next active dependency-ready milestone.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -2928,11 +2927,30 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   contracts, adapters, plan, master, remotes, deployment settings, or earlier
   review/fix worktrees may be changed. Preserve this new review worktree and
   handover through closure.
-- **R-500 fresh closure reviewer active:** Lorentz
+- **R-500 fresh closure reviewer completed:** Lorentz
   (`01a034d6-012c-7c90-9be1-0b16f08f028a`) is the independent read-only
-  reviewer in the prepared worktree and branch above. It must not be reused
-  from the blocked review, and its final handover controls whether R-500 can
-  move from `BLOCKED` to complete.
+  reviewer in the prepared worktree and branch above. It was not reused from
+  the blocked review; its final handover approves R-500 closure.
+- **R-500 fresh closure review result:** Lorentz's final handover at
+  `2026-08-24T17:52:29Z` is `APPROVE`, preserved at
+  `~/git/worktrees/did-it-become-what-you-like-r-500-closure-2/R-500-closure-2-progress.md`.
+  The independent review target was the pushed implementation at `c6787b9`
+  (the later `1c50546` change was plan-only dispatch metadata); the review
+  worktree remained read-only except for its handover. Severity totals are
+  S1=0, S2=0, S3=1, S4=0. The sole S3 was the stale S-403 task status now
+  corrected above; no implementation, security, architecture, UI/a11y, E2E,
+  or evidence-blocking finding remains. The reviewer independently passed
+  `deno task fmt:check` (190 files), `deno task lint` (175 files), `deno task
+  check`, `deno task verify` (206 task, 65 integration, 64 component, 29
+  domain, 1 actor, local E2E 3/3, builds, audit, Pages/CI/toolchain), routed
+  fake-Drive/conflict E2E `2/2`, and the three exact selector commands with
+  `1 selected` and `205`, `64`, and `63` filtered. Useful direct selectors
+  routed real tests: Drive 11, schedules 8, convergence 1, import/export 10,
+  conflict 23, and component sync 16. All four routes at 320x568, 390x844,
+  and 1280x800 had no horizontal overflow and axe 0/0 violations/incomplete.
+  Live OAuth/Drive, hosted Pages execution, and non-Chromium coverage remain
+  unavailable and unclaimed. Preserve this reviewer worktree, branch, and
+  handover; the reviewer is complete and must not edit the plan.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

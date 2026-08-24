@@ -1363,9 +1363,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** Banach is performing the fresh independent `R-200`
-  read-only review from the clean root against the integrated M2 contracts and
-  design-system foundation; the review is complete and scoped fixes are next.
+- **Current task:** Banach completed the fresh independent `R-200` read-only
+  review from the clean root against the integrated M2 contracts and
+  design-system foundation; the first scoped-fix wave is active.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It
@@ -1484,6 +1484,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   fix, and does not edit this plan or push `master`. D-103 is queued for the
   next available slot in `~/git/worktrees/did-it-become-what-you-like-d-103-adapters`
   with ownership limited to `src/adapters/ports/**` and its focused tests.
+- **R-200 scoped-fix wave active:** Nash
+  (`01a03139-c1c3-7351-a670-dde731525fed`) owns D-101 in
+  `~/git/worktrees/did-it-become-what-you-like-d-101-domain`; Newton
+  (`01a03139-c2ab-7f41-ab1a-250b3af097b0`) owns D-102 in
+  `~/git/worktrees/did-it-become-what-you-like-d-102-actors`; and Herschel
+  (`01a03139-c38c-7843-92a9-7c68099ffc09`) owns U-104 in
+  `~/git/worktrees/did-it-become-what-you-like-u-104-design-system`. Their
+  source ownership is disjoint; each must commit only its scoped fixes and
+  tests, keep its progress file untracked if needed, and leave this plan and
+  `master` untouched. D-103 remains queued for the next free worker slot.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or

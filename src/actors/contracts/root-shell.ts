@@ -1,6 +1,11 @@
 import { assign, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
-import type { ContractFailure, ShellRoute, WorkflowKind } from "./types.ts";
+import {
+  type ContractFailure,
+  contractFailureFromError,
+  type ShellRoute,
+  type WorkflowKind,
+} from "./types.ts";
 
 export type RootShellEvent =
   | { readonly type: "shell.boot" }
@@ -60,10 +65,12 @@ export const rootShellMachine = shellSetup.createMachine({
         onError: {
           target: "error",
           actions: assign({
-            error: () => ({
-              code: "restore-failed",
-              message: "Shell restoration failed.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Shell restoration failed.",
+                retryable: true,
+              }),
           }),
         },
       },

@@ -1,5 +1,6 @@
 import { assign, sendTo, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
+import { type ContractFailure, contractFailureFromError } from "./types.ts";
 
 export type DurableDraft = {
   readonly workflowId: string;
@@ -10,7 +11,7 @@ export type DurableDraft = {
 export type DurableWorkflowContext = {
   readonly persistenceKey: string;
   readonly draft: DurableDraft | null;
-  readonly lastError: string | null;
+  readonly lastError: ContractFailure | null;
   readonly outcome: DurableWorkflowOutput | null;
 };
 
@@ -40,6 +41,7 @@ type PersistInput = {
 
 type PersistOutput = { readonly revision: number };
 type HydrateInput = { readonly key: string };
+export type ClearSnapshotInput = { readonly key: string };
 
 const workflowSetup = setup({
   types: {
@@ -55,11 +57,16 @@ const workflowSetup = setup({
     hydrateSnapshot: unwiredPort<HydrateInput, DurableDraft | null>(
       "workflow snapshot hydration",
     ),
+    clearSnapshot: unwiredPort<ClearSnapshotInput, void>(
+      "workflow snapshot deletion",
+    ),
   },
   guards: {
     hasDraft: ({ event }) =>
       event.type === "workflow.start" || event.type === "workflow.change",
     hasInitialDraft: ({ context }) => context.draft !== null,
+    completedOutcome: ({ context }) => context.outcome?.status === "completed",
+    discardedOutcome: ({ context }) => context.outcome?.status === "discarded",
   },
 });
 
@@ -101,7 +108,12 @@ export const durableWorkflowMachine = workflowSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            lastError: () => "Unable to restore workflow draft.",
+            lastError: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Unable to restore workflow draft.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -117,12 +129,14 @@ export const durableWorkflowMachine = workflowSetup.createMachine({
           }),
         },
         "workflow.complete": {
-          target: "completed",
+          target: "clearing",
           actions: assign({
             outcome: ({ context }) => ({
               status: "completed",
               revision: context.draft?.revision ?? 0,
             }),
+            draft: () => null,
+            lastError: () => null,
           }),
         },
         "workflow.cancel": {
@@ -135,12 +149,14 @@ export const durableWorkflowMachine = workflowSetup.createMachine({
           }),
         },
         "workflow.discard": {
-          target: "discarded",
+          target: "clearing",
           actions: assign({
             outcome: ({ context }) => ({
               status: "discarded",
               revision: context.draft?.revision ?? 0,
             }),
+            draft: () => null,
+            lastError: () => null,
           }),
         },
       },
@@ -156,12 +172,14 @@ export const durableWorkflowMachine = workflowSetup.createMachine({
           }),
         },
         "workflow.complete": {
-          target: "completed",
+          target: "clearing",
           actions: assign({
             outcome: ({ context }) => ({
               status: "completed",
               revision: context.draft?.revision ?? 0,
             }),
+            draft: () => null,
+            lastError: () => null,
           }),
         },
         "workflow.cancel": {
@@ -174,12 +192,14 @@ export const durableWorkflowMachine = workflowSetup.createMachine({
           }),
         },
         "workflow.discard": {
-          target: "discarded",
+          target: "clearing",
           actions: assign({
             outcome: ({ context }) => ({
               status: "discarded",
               revision: context.draft?.revision ?? 0,
             }),
+            draft: () => null,
+            lastError: () => null,
           }),
         },
       },
@@ -205,7 +225,12 @@ export const durableWorkflowMachine = workflowSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            lastError: () => "Unable to persist workflow draft.",
+            lastError: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Unable to persist workflow draft.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -224,7 +249,11 @@ export const durableWorkflowMachine = workflowSetup.createMachine({
     failed: {
       tags: ["error"],
       on: {
-        "workflow.retry": "persisting",
+        "workflow.retry": [
+          { target: "clearing", guard: "completedOutcome" },
+          { target: "clearing", guard: "discardedOutcome" },
+          "persisting",
+        ],
         "workflow.change": {
           target: "persisting",
           actions: assign({
@@ -242,15 +271,42 @@ export const durableWorkflowMachine = workflowSetup.createMachine({
           }),
         },
         "workflow.discard": {
-          target: "discarded",
+          target: "clearing",
           actions: assign({
             outcome: ({ context }) => ({
               status: "discarded",
               revision: context.draft?.revision ?? 0,
             }),
+            draft: () => null,
+            lastError: () => null,
           }),
         },
       },
+    },
+    clearing: {
+      tags: ["clearing", "saving"],
+      invoke: {
+        src: "clearSnapshot",
+        input: ({ context }) => ({ key: context.persistenceKey }),
+        onDone: "cleared",
+        onError: {
+          target: "failed",
+          actions: assign({
+            lastError: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Unable to clear workflow draft.",
+                retryable: true,
+              }),
+          }),
+        },
+      },
+    },
+    cleared: {
+      always: [
+        { target: "completed", guard: "completedOutcome" },
+        { target: "discarded", guard: "discardedOutcome" },
+      ],
     },
     completed: { type: "final" },
     cancelled: { type: "final" },

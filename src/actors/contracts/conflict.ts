@@ -1,11 +1,12 @@
 import { assign, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
-import type {
-  ConflictCandidate,
-  ConflictCommitOutput,
-  ConflictGroup,
-  ConflictResolution,
-  ContractFailure,
+import {
+  type ConflictCandidate,
+  type ConflictCommitOutput,
+  type ConflictGroup,
+  type ConflictResolution,
+  type ContractFailure,
+  contractFailureFromError,
 } from "./types.ts";
 
 export type ConflictEvent =
@@ -108,8 +109,9 @@ export const conflictMachine = conflictSetup.createMachine({
           {
             actions: assign({
               error: () => ({
-                code: "missing-choice",
+                code: "invalid",
                 message: "Choose a conflict resolution first.",
+                retryable: false,
               }),
             }),
           },
@@ -132,10 +134,12 @@ export const conflictMachine = conflictSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "resolution-failed",
-              message: "Resolution was not committed.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Resolution was not committed.",
+                retryable: true,
+              }),
           }),
         },
       },

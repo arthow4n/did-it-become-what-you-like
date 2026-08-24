@@ -1,12 +1,16 @@
 import { createActor, fromPromise } from "xstate";
 import {
   categoryMachine,
+  type ClearSnapshotInput,
   conflictMachine,
   deleteEverywhereMachine,
   durableWorkflowMachine,
+  type ExpenseCommitInput,
+  type ExpenseCommitOutput,
   type ExpenseFormEvent,
   expenseFormMachine,
   importMachine,
+  type ImportPreview,
   projectDeletionMachine,
   projectMachine,
   receiptReviewMachine,
@@ -21,11 +25,13 @@ import type {
   DeleteEverywhereProgress,
   DurableDraft,
   ExpenseDraft,
+  ImportCommitOutput,
   ProjectDeletionOutput,
   ProjectDeletionTarget,
   ReceiptCommitInput,
   ReceiptCommitOutput,
   ReceiptReviewDraft,
+  ReceiptScanInput,
   SyncRequest,
 } from "./index.ts";
 
@@ -46,6 +52,12 @@ function assertEquals<T>(actual: T, expected: T): void {
       `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
     );
   }
+}
+
+async function settle(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
 }
 
 const draft: DurableDraft = {
@@ -76,6 +88,16 @@ const review: ReceiptReviewDraft = {
   printedTotalMismatch: true,
 };
 
+const importPreview: ImportPreview = {
+  dataset: {} as ImportPreview["dataset"],
+  schemaVersion: 1,
+  projectCount: 1,
+  categoryCount: 1,
+  expenseCount: 0,
+  receiptCount: 0,
+  migrationRequired: false,
+};
+
 const deletionTarget: ProjectDeletionTarget = {
   projectId: "project-sweden",
   projectName: "Sweden",
@@ -88,6 +110,17 @@ const progress: DeleteEverywhereProgress = {
   acknowledgedDeviceCount: 0,
   forcedDeviceCount: 0,
 };
+
+const clearSnapshot = fromPromise(
+  ({ input }: { input: ClearSnapshotInput }) => {
+    void input;
+    return Promise.resolve();
+  },
+);
+
+const durableWorkflowWithClear = durableWorkflowMachine.provide({
+  actors: { clearSnapshot },
+});
 
 // Compile-time event payload contract checks.
 const typedEvents = [
@@ -202,15 +235,15 @@ Deno.test("actor-contract: Delete Everywhere requires a second confirmation afte
   actor.stop();
 });
 
-Deno.test("actor-contract: persisted snapshots hydrate and resume the durable mode", () => {
-  const original = createActor(durableWorkflowMachine, {
+Deno.test("actor-contract: persisted snapshots hydrate and resume the durable mode", async () => {
+  const original = createActor(durableWorkflowWithClear, {
     input: { persistenceKey: "draft:expense-1", initialDraft: draft },
   }).start();
   assertEquals(original.getSnapshot().value, "editing");
   assert(original.getSnapshot().hasTag("dirty"));
 
   const persisted = original.getPersistedSnapshot();
-  const restored = createActor(durableWorkflowMachine, {
+  const restored = createActor(durableWorkflowWithClear, {
     input: { persistenceKey: "draft:expense-1" },
     snapshot: persisted,
   }).start();
@@ -218,6 +251,7 @@ Deno.test("actor-contract: persisted snapshots hydrate and resume the durable mo
   assertEquals(restored.getSnapshot().context.draft, draft);
 
   restored.send({ type: "workflow.complete" });
+  await settle();
   assertEquals(restored.getSnapshot().value, "completed");
   assertEquals(restored.getSnapshot().output, {
     status: "completed",
@@ -227,11 +261,15 @@ Deno.test("actor-contract: persisted snapshots hydrate and resume the durable mo
   restored.stop();
 });
 
-Deno.test("actor-contract: parent owns child completion", () => {
-  const actor = createActor(workflowHostMachine).start();
+Deno.test("actor-contract: parent owns child completion", async () => {
+  const workflowHostWithClear = workflowHostMachine.provide({
+    actors: { durableChild: durableWorkflowWithClear },
+  });
+  const actor = createActor(workflowHostWithClear).start();
   actor.send({ type: "host.open", draft });
   assertEquals(actor.getSnapshot().value, "active");
   actor.send({ type: "host.complete" });
+  await settle();
   assertEquals(actor.getSnapshot().value, "completed");
   assertEquals(actor.getSnapshot().output?.status, "completed");
   actor.stop();
@@ -269,6 +307,321 @@ Deno.test("actor-contract: sync exposes conflict as a mode after its port comple
   await Promise.resolve();
   assertEquals(actor.getSnapshot().value, "conflict");
   assert(actor.getSnapshot().hasTag("conflict"));
+  actor.stop();
+});
+
+Deno.test("actor-contract: sync preserves typed retryable failures", async () => {
+  const syncWithFailure = syncMachine.provide({
+    actors: {
+      syncTransport: fromPromise(({ input }: { input: SyncRequest }) => {
+        void input;
+        return Promise.reject({
+          name: "AdapterError",
+          code: "offline",
+          message: "The requested operation is unavailable offline.",
+          retry: "when-online",
+        });
+      }),
+    },
+  });
+  const actor = createActor(syncWithFailure).start();
+  actor.send({
+    type: "sync.configure",
+    accountEmail: "owner@example.test",
+    online: true,
+  });
+  actor.send({ type: "sync.request", request: { reason: "manual" } });
+  await settle();
+
+  assertEquals(actor.getSnapshot().value, "error");
+  assertEquals(actor.getSnapshot().context.error, {
+    code: "offline",
+    message: "The requested operation is unavailable offline.",
+    retryable: true,
+  });
+  actor.stop();
+});
+
+Deno.test("actor-contract: receipt scan preserves typed quota failures", async () => {
+  const scanInput: ReceiptScanInput = {
+    image: {
+      ephemeralId: "image-quota",
+      mediaType: "image/jpeg",
+      byteLength: 12,
+    },
+    projectId: "project-sweden",
+    currency: "SEK",
+    locale: "en-SE",
+    categoryCatalogue: [],
+    model: "gemini-test",
+    prepareImage: false,
+  };
+  const receiptWithFailure = receiptScanMachine.provide({
+    actors: {
+      scanReceipt: fromPromise(({ input }: { input: ReceiptScanInput }) => {
+        void input;
+        return Promise.reject({
+          name: "AdapterError",
+          code: "quota",
+          message: "The adapter storage or service quota was exceeded.",
+          retry: "backoff",
+        });
+      }),
+    },
+  });
+  const actor = createActor(receiptWithFailure).start();
+  actor.send({ type: "receipt.open" });
+  actor.send({ type: "receipt.image-selected" });
+  actor.send({ type: "receipt.scan", input: scanInput });
+  await settle();
+
+  assertEquals(actor.getSnapshot().value, "failed");
+  assertEquals(actor.getSnapshot().context.error, {
+    code: "quota",
+    message: "The adapter storage or service quota was exceeded.",
+    retryable: true,
+  });
+  actor.stop();
+});
+
+Deno.test("actor-contract: expense commit preserves unauthorized failures", async () => {
+  const expenseWithFailure = expenseFormMachine.provide({
+    actors: {
+      commitExpense: fromPromise(
+        ({ input }: { input: ExpenseCommitInput }) => {
+          void input;
+          return Promise.reject({
+            name: "AdapterError",
+            code: "unauthorized",
+            message: "Authorization is required for this operation.",
+            retry: "never",
+          });
+        },
+      ),
+    },
+  });
+  const actor = createActor(expenseWithFailure).start();
+  actor.send({ type: "expense.open", draft: expenseDraft });
+  actor.send({ type: "expense.submit" });
+  await settle();
+
+  assertEquals(actor.getSnapshot().value, "saveFailed");
+  assertEquals(actor.getSnapshot().context.error, {
+    code: "unauthorized",
+    message: "Authorization is required for this operation.",
+    retryable: false,
+  });
+  actor.stop();
+});
+
+Deno.test("actor-contract: import requires a mode and online replace pre-sync", async () => {
+  const importWithPorts = importMachine.provide({
+    actors: {
+      validateImport: fromPromise(({ input }: { input: string }) => {
+        void input;
+        return Promise.resolve(importPreview);
+      }),
+      synchronizeBeforeReplace: fromPromise(() => new Promise<void>(() => {})),
+      commitImport: fromPromise(
+        () => new Promise<ImportCommitOutput>(() => {}),
+      ),
+    },
+  });
+
+  const missingMode = createActor(importWithPorts).start();
+  missingMode.send({
+    type: "import.open",
+    driveConfigured: true,
+    online: true,
+  });
+  missingMode.send({ type: "import.file-selected", contents: "{}" });
+  await settle();
+  assertEquals(missingMode.getSnapshot().value, "previewing");
+  missingMode.send({ type: "import.commit" });
+  assertEquals(missingMode.getSnapshot().value, "previewing");
+  missingMode.stop();
+
+  const offlineReplace = createActor(importWithPorts).start();
+  offlineReplace.send({
+    type: "import.open",
+    driveConfigured: true,
+    online: false,
+  });
+  offlineReplace.send({ type: "import.file-selected", contents: "{}" });
+  await settle();
+  offlineReplace.send({ type: "import.choose-replace" });
+  offlineReplace.send({ type: "import.commit" });
+  assertEquals(offlineReplace.getSnapshot().value, "failed");
+  assertEquals(offlineReplace.getSnapshot().context.error?.code, "offline");
+  offlineReplace.stop();
+
+  const onlineReplace = createActor(importWithPorts).start();
+  onlineReplace.send({
+    type: "import.open",
+    driveConfigured: true,
+    online: true,
+  });
+  onlineReplace.send({ type: "import.file-selected", contents: "{}" });
+  await settle();
+  onlineReplace.send({ type: "import.choose-replace" });
+  onlineReplace.send({ type: "import.commit" });
+  assertEquals(onlineReplace.getSnapshot().value, "preSyncing");
+  onlineReplace.stop();
+});
+
+Deno.test("actor-contract: Delete Everywhere reports forced devices truthfully", async () => {
+  const deleteWithPorts = deleteEverywhereMachine.provide({
+    actors: {
+      publishRetirement: fromPromise(() => Promise.resolve()),
+      deleteDriveGeneration: fromPromise(() => Promise.resolve()),
+      eraseLocalDataset: fromPromise(() => Promise.resolve()),
+    },
+  });
+  const actor = createActor(deleteWithPorts).start();
+  actor.send({
+    type: "delete-everywhere.open",
+    generation: 4,
+    progress: {
+      knownDeviceCount: 4,
+      acknowledgedDeviceCount: 1,
+      forcedDeviceCount: 0,
+    },
+  });
+  actor.send({ type: "delete-everywhere.decline-safety-export" });
+  actor.send({ type: "delete-everywhere.confirm-decline" });
+  actor.send({ type: "delete-everywhere.confirm" });
+  await settle();
+  assertEquals(actor.getSnapshot().value, "awaitingDevices");
+
+  actor.send({ type: "delete-everywhere.force-finalize" });
+  assertEquals(actor.getSnapshot().value, "forcedFinalization");
+  assertEquals(actor.getSnapshot().context.progress.forcedDeviceCount, 3);
+  actor.send({ type: "delete-everywhere.confirm" });
+  await settle();
+  assertEquals(actor.getSnapshot().output, {
+    status: "completed",
+    result: { generation: 4, forcedDeviceCount: 3 },
+  });
+  actor.stop();
+});
+
+Deno.test("actor-contract: saved and discarded expense/receipt contexts clear drafts", async () => {
+  const expenseWithCommit = expenseFormMachine.provide({
+    actors: {
+      commitExpense: fromPromise(
+        ({ input }: { input: ExpenseCommitInput }) => {
+          void input;
+          return Promise.resolve({
+            expense: {} as ExpenseCommitOutput["expense"],
+            operation: "created" as "created" | "updated",
+          });
+        },
+      ),
+    },
+  });
+  const savedExpense = createActor(expenseWithCommit).start();
+  savedExpense.send({ type: "expense.open", draft: expenseDraft });
+  savedExpense.send({ type: "expense.submit" });
+  await settle();
+  assertEquals(savedExpense.getSnapshot().value, "saved");
+  assertEquals(savedExpense.getSnapshot().context.draft, null);
+  savedExpense.stop();
+
+  const discardedExpense = createActor(expenseFormMachine).start();
+  discardedExpense.send({ type: "expense.open", draft: expenseDraft });
+  discardedExpense.send({ type: "expense.discard" });
+  assertEquals(discardedExpense.getSnapshot().context.draft, null);
+  discardedExpense.stop();
+
+  const receiptWithCommit = receiptReviewMachine.provide({
+    actors: {
+      commitReceipt: fromPromise(
+        ({ input }: { input: ReceiptCommitInput }) => {
+          void input;
+          return Promise.resolve({
+            receipt: {} as ReceiptCommitOutput["receipt"],
+            purchaseLines: [] as ReceiptCommitOutput["purchaseLines"],
+            adjustments: [] as ReceiptCommitOutput["adjustments"],
+          });
+        },
+      ),
+    },
+  });
+  const savedReceipt = createActor(receiptWithCommit).start();
+  savedReceipt.send({ type: "receipt.review.open", review });
+  savedReceipt.send({
+    type: "receipt.review.submit",
+    confirmMismatch: true,
+  });
+  await settle();
+  assertEquals(savedReceipt.getSnapshot().value, "saved");
+  assertEquals(savedReceipt.getSnapshot().context.review, null);
+  savedReceipt.stop();
+
+  const discardedReceipt = createActor(receiptReviewMachine).start();
+  discardedReceipt.send({ type: "receipt.review.open", review });
+  discardedReceipt.send({ type: "receipt.review.discard" });
+  assertEquals(discardedReceipt.getSnapshot().context.review, null);
+  discardedReceipt.stop();
+});
+
+Deno.test("actor-contract: durable Save/Discard clears persisted draft before terminal output", async () => {
+  const actor = createActor(durableWorkflowWithClear, {
+    input: { persistenceKey: "draft:expense-2", initialDraft: draft },
+  }).start();
+  actor.send({ type: "workflow.complete" });
+  assertEquals(actor.getSnapshot().value, "clearing");
+  assertEquals(actor.getSnapshot().context.draft, null);
+  const completedSnapshot = actor.getPersistedSnapshot() as unknown as {
+    context: { draft: DurableDraft | null };
+  };
+  assertEquals(completedSnapshot.context.draft, null);
+  await settle();
+  assertEquals(actor.getSnapshot().value, "completed");
+  actor.stop();
+
+  const discarded = createActor(durableWorkflowWithClear, {
+    input: { persistenceKey: "draft:receipt-2", initialDraft: draft },
+  }).start();
+  discarded.send({ type: "workflow.discard" });
+  await settle();
+  assertEquals(discarded.getSnapshot().value, "discarded");
+  const discardedSnapshot = discarded.getPersistedSnapshot() as unknown as {
+    context: { draft: DurableDraft | null };
+  };
+  assertEquals(discardedSnapshot.context.draft, null);
+  discarded.stop();
+});
+
+Deno.test("actor-contract: durable clear preserves retired failure without draft leakage", async () => {
+  const durableWithRetiredClear = durableWorkflowMachine.provide({
+    actors: {
+      clearSnapshot: fromPromise(
+        ({ input }: { input: ClearSnapshotInput }) => {
+          void input;
+          return Promise.reject({
+            name: "AdapterError",
+            code: "retired",
+            message: "This dataset has been retired.",
+            retry: "never",
+          });
+        },
+      ),
+    },
+  });
+  const actor = createActor(durableWithRetiredClear, {
+    input: { persistenceKey: "draft:retired", initialDraft: draft },
+  }).start();
+  actor.send({ type: "workflow.complete" });
+  await settle();
+
+  assertEquals(actor.getSnapshot().value, "failed");
+  assertEquals(actor.getSnapshot().context.draft, null);
+  assertEquals(actor.getSnapshot().context.lastError, {
+    code: "retired",
+    message: "This dataset has been retired.",
+    retryable: false,
+  });
   actor.stop();
 });
 

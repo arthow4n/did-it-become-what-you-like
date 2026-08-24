@@ -11,6 +11,7 @@ import type {
   ReceiptPurchaseLine,
   StableId,
 } from "../../domain/index.ts";
+import type { PortErrorCode } from "./ports.ts";
 
 export type ShellRoute =
   | "first-use"
@@ -42,9 +43,72 @@ export type WorkflowKind =
   | "update-install";
 
 export type ContractFailure = {
-  readonly code: string;
+  readonly code: PortErrorCode;
   readonly message: string;
+  readonly retryable: boolean;
 };
+
+const PORT_ERROR_MESSAGES: Readonly<Record<PortErrorCode, string>> = {
+  aborted: "The operation was cancelled.",
+  offline: "This operation is unavailable offline.",
+  unauthorized: "Authorization is required for this operation.",
+  forbidden: "The authorized account cannot perform this operation.",
+  "not-found": "The requested resource was not found.",
+  conflict: "The resource changed concurrently.",
+  quota: "Storage or service quota was exceeded.",
+  "corrupt-data": "Stored data is invalid or corrupt.",
+  "partial-transport": "The transport completed only part of the operation.",
+  "rate-limited": "The service requested that the operation be retried later.",
+  "invalid-request": "The request was invalid.",
+  invalid: "The supplied data is invalid.",
+  unsupported: "The requested operation is unsupported.",
+  unavailable: "The service is temporarily unavailable.",
+  retired: "This dataset has been retired.",
+  unknown: "The operation failed for an unknown reason.",
+};
+
+const RETRYABLE_PORT_ERRORS = new Set<PortErrorCode>([
+  "offline",
+  "quota",
+  "partial-transport",
+  "rate-limited",
+  "unavailable",
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isPortErrorCode(value: unknown): value is PortErrorCode {
+  return typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(PORT_ERROR_MESSAGES, value);
+}
+
+/**
+ * Preserve structured adapter failures without copying arbitrary SDK text into
+ * durable actor context. AdapterError messages are safe because they are
+ * generated from the reviewed adapter taxonomy; untyped errors use the
+ * operation-specific fallback supplied by the owning actor.
+ */
+export function contractFailureFromError(
+  error: unknown,
+  fallback: ContractFailure,
+): ContractFailure {
+  if (!isRecord(error) || !isPortErrorCode(error.code)) return fallback;
+
+  const isStructured = error.name === "AdapterError" ||
+    typeof error.retryable === "boolean" ||
+    typeof error.retry === "string";
+  const message = isStructured && typeof error.message === "string"
+    ? error.message
+    : PORT_ERROR_MESSAGES[error.code];
+  const retryable = typeof error.retryable === "boolean"
+    ? error.retryable
+    : error.retry === "backoff" || error.retry === "when-online" ||
+      error.retry === "immediate" || RETRYABLE_PORT_ERRORS.has(error.code);
+
+  return { code: error.code, message, retryable };
+}
 
 export type ExpenseDraft = {
   readonly projectId: StableId;

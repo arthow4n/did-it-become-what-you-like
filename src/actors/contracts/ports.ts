@@ -8,11 +8,20 @@ export type ActorPortBoundary<Input, Output> = {
 };
 
 export type PortErrorCode =
+  | "aborted"
   | "offline"
   | "unauthorized"
+  | "forbidden"
+  | "not-found"
   | "conflict"
-  | "invalid"
   | "quota"
+  | "corrupt-data"
+  | "partial-transport"
+  | "rate-limited"
+  | "invalid-request"
+  | "invalid"
+  | "unsupported"
+  | "unavailable"
   | "retired"
   | "unknown";
 
@@ -20,6 +29,7 @@ export type PortError = {
   readonly code: PortErrorCode;
   readonly message: string;
   readonly retryable: boolean;
+  readonly retry?: "never" | "when-online" | "backoff" | "immediate";
 };
 
 /**

@@ -1,10 +1,11 @@
 import { assign, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
-import type {
-  CategoryCommand,
-  ContractFailure,
-  ProjectCategoryCommitOutput,
-  ProjectCommand,
+import {
+  type CategoryCommand,
+  type ContractFailure,
+  contractFailureFromError,
+  type ProjectCategoryCommitOutput,
+  type ProjectCommand,
 } from "./types.ts";
 import type { Category, Project } from "../../domain/index.ts";
 
@@ -105,10 +106,12 @@ export const projectMachine = projectSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "project-failed",
-              message: "Project change failed.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Project change failed.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -195,10 +198,12 @@ export const categoryMachine = categorySetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "category-failed",
-              message: "Category change failed.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Category change failed.",
+                retryable: true,
+              }),
           }),
         },
       },

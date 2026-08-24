@@ -1,6 +1,10 @@
 import { assign, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
-import type { ContractFailure, UpdateCheckOutput } from "./types.ts";
+import {
+  type ContractFailure,
+  contractFailureFromError,
+  type UpdateCheckOutput,
+} from "./types.ts";
 
 export type UpdateInstallEvent =
   | { readonly type: "install.available" }
@@ -65,10 +69,12 @@ export const updateInstallMachine = updateInstallSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "install-failed",
-              message: "Installation is unavailable.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unavailable",
+                message: "Installation is unavailable.",
+                retryable: false,
+              }),
           }),
         },
       },
@@ -106,10 +112,12 @@ export const updateInstallMachine = updateInstallSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "update-check-failed",
-              message: "Update status could not be checked.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Update status could not be checked.",
+                retryable: true,
+              }),
           }),
         },
       },

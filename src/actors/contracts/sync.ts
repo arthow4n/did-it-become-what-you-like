@@ -1,6 +1,11 @@
 import { assign, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
-import type { ContractFailure, SyncPortOutput, SyncRequest } from "./types.ts";
+import {
+  type ContractFailure,
+  contractFailureFromError,
+  type SyncPortOutput,
+  type SyncRequest,
+} from "./types.ts";
 
 export type SyncEvent =
   | {
@@ -121,10 +126,12 @@ export const syncMachine = syncSetup.createMachine({
         onError: {
           target: "error",
           actions: assign({
-            error: () => ({
-              code: "sync-failed",
-              message: "Synchronization failed.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Synchronization failed.",
+                retryable: true,
+              }),
           }),
         },
       },

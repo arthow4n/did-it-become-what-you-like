@@ -32,10 +32,13 @@ root-shell
   terminal output. Exiting an invoked child state cancels its in-flight port;
   the parent decides whether that means cancellation, retry, or navigation.
 - `durableWorkflowMachine` owns draft lifecycle (`dirty`, `saving`, `persisted`,
-  `error`) and exposes XState persisted snapshots. Consumers save
+  `clearing`, `error`) and exposes XState persisted snapshots. Save and discard
+  clear the in-memory draft before invoking the typed `clearSnapshot` deletion
+  port, so terminal snapshots cannot retain completed data. Consumers save
   `actor.getPersistedSnapshot()` and hydrate with
   `createActor(machine, { snapshot })`; they never reconstruct a state from
-  context flags.
+  context flags. L-201 supplies the actual IndexedDB implementation of both
+  persistence and deletion boundaries.
 - Receipt image handles are event/port inputs only. They are deliberately not
   fields in `receiptScanMachine` context, so they cannot leak into a persisted
   snapshot. Only validated structured review data may be durable.

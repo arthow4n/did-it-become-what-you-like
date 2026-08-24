@@ -1,12 +1,13 @@
 import { assign, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
-import type {
-  ContractFailure,
-  ReceiptCommitInput,
-  ReceiptCommitOutput,
-  ReceiptReviewDraft,
-  ReceiptScanInput,
-  ReceiptScanOutput,
+import {
+  type ContractFailure,
+  contractFailureFromError,
+  type ReceiptCommitInput,
+  type ReceiptCommitOutput,
+  type ReceiptReviewDraft,
+  type ReceiptScanInput,
+  type ReceiptScanOutput,
 } from "./types.ts";
 
 export type ReceiptScanEvent =
@@ -111,10 +112,12 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "scan-failed",
-              message: "Receipt extraction failed.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Receipt extraction failed.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -135,10 +138,12 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "scan-failed",
-              message: "Receipt extraction failed.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Receipt extraction failed.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -159,10 +164,12 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "invalid-output",
-              message: "Receipt output needs review or retry.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "invalid",
+                message: "Receipt output needs review or retry.",
+                retryable: false,
+              }),
           }),
         },
       },
@@ -276,7 +283,10 @@ export const receiptReviewMachine = receiptReviewSetup.createMachine({
           { target: "mismatch", guard: "hasMismatch" },
           "saving",
         ],
-        "receipt.review.discard": "discarded",
+        "receipt.review.discard": {
+          target: "discarded",
+          actions: assign({ review: () => null }),
+        },
         "receipt.review.cancel": "cancelled",
       },
     },
@@ -294,7 +304,10 @@ export const receiptReviewMachine = receiptReviewSetup.createMachine({
           { target: "mismatch", guard: "hasMismatch" },
           "saving",
         ],
-        "receipt.review.discard": "discarded",
+        "receipt.review.discard": {
+          target: "discarded",
+          actions: assign({ review: () => null }),
+        },
         "receipt.review.cancel": "cancelled",
       },
     },
@@ -306,7 +319,10 @@ export const receiptReviewMachine = receiptReviewSetup.createMachine({
           target: "editing",
           actions: assign({ review: ({ event }) => event.review }),
         },
-        "receipt.review.discard": "discarded",
+        "receipt.review.discard": {
+          target: "discarded",
+          actions: assign({ review: () => null }),
+        },
         "receipt.review.cancel": "cancelled",
       },
     },
@@ -323,15 +339,18 @@ export const receiptReviewMachine = receiptReviewSetup.createMachine({
           actions: assign({
             result: ({ event }) => event.output,
             error: () => null,
+            review: () => null,
           }),
         },
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "save-failed",
-              message: "Receipt was not saved.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Receipt was not saved.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -345,7 +364,10 @@ export const receiptReviewMachine = receiptReviewSetup.createMachine({
           target: "editing",
           actions: assign({ review: ({ event }) => event.review }),
         },
-        "receipt.review.discard": "discarded",
+        "receipt.review.discard": {
+          target: "discarded",
+          actions: assign({ review: () => null }),
+        },
         "receipt.review.cancel": "cancelled",
       },
     },

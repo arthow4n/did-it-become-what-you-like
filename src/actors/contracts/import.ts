@@ -1,10 +1,11 @@
 import { assign, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
-import type {
-  ContractFailure,
-  ImportCommitInput,
-  ImportCommitOutput,
-  ImportPreview,
+import {
+  type ContractFailure,
+  contractFailureFromError,
+  type ImportCommitInput,
+  type ImportCommitOutput,
+  type ImportPreview,
 } from "./types.ts";
 
 export type ImportEvent =
@@ -54,8 +55,10 @@ const importSetup = setup({
   },
   guards: {
     hasReplacePreSync: ({ context }) =>
-      context.mode === "replace" && context.driveConfigured,
-    canPreSync: ({ context }) => context.online,
+      context.mode === "replace" && context.driveConfigured && context.online,
+    replacePreSyncOffline: ({ context }) =>
+      context.mode === "replace" && context.driveConfigured && !context.online,
+    hasMode: ({ context }) => context.mode !== null,
     hasConflicts: ({ context }) => (context.result?.conflictCount ?? 0) > 0,
   },
 });
@@ -113,10 +116,12 @@ export const importMachine = importSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "invalid-import",
-              message: "The backup could not be validated.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "invalid",
+                message: "The backup could not be validated.",
+                retryable: false,
+              }),
           }),
         },
       },
@@ -129,7 +134,18 @@ export const importMachine = importSetup.createMachine({
         "import.choose-replace": { actions: assign({ mode: () => "replace" }) },
         "import.commit": [
           { target: "preSyncing", guard: "hasReplacePreSync" },
-          "committing",
+          {
+            target: "failed",
+            guard: "replacePreSyncOffline",
+            actions: assign({
+              error: () => ({
+                code: "offline",
+                message: "Replacement requires an online pre-sync.",
+                retryable: true,
+              }),
+            }),
+          },
+          { target: "committing", guard: "hasMode" },
         ],
         "import.cancel": "cancelled",
       },
@@ -143,10 +159,12 @@ export const importMachine = importSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "pre-sync-failed",
-              message: "Replacement requires a successful online sync.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Replacement pre-sync failed.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -170,10 +188,12 @@ export const importMachine = importSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "import-failed",
-              message: "Import was not committed.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Import was not committed.",
+                retryable: true,
+              }),
           }),
         },
       },

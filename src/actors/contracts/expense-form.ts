@@ -1,10 +1,11 @@
 import { assign, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
-import type {
-  ContractFailure,
-  ExpenseCommitInput,
-  ExpenseCommitOutput,
-  ExpenseDraft,
+import {
+  type ContractFailure,
+  contractFailureFromError,
+  type ExpenseCommitInput,
+  type ExpenseCommitOutput,
+  type ExpenseDraft,
 } from "./types.ts";
 
 export type ExpenseFormEvent =
@@ -94,11 +95,18 @@ export const expenseFormMachine = expenseFormSetup.createMachine({
               error: () => ({
                 code: "invalid",
                 message: "Complete the required fields.",
+                retryable: false,
               }),
             }),
           },
         ],
-        "expense.discard": "discarded",
+        "expense.discard": {
+          target: "discarded",
+          actions: assign({
+            draft: () => null,
+            originalExpenseId: () => undefined,
+          }),
+        },
         "expense.cancel": "cancelled",
       },
     },
@@ -115,15 +123,19 @@ export const expenseFormMachine = expenseFormSetup.createMachine({
           actions: assign({
             result: ({ event }) => event.output,
             error: () => null,
+            draft: () => null,
+            originalExpenseId: () => undefined,
           }),
         },
         onError: {
           target: "saveFailed",
           actions: assign({
-            error: () => ({
-              code: "save-failed",
-              message: "The expense was not saved. Retry to try again.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "The expense was not saved. Retry to try again.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -142,7 +154,13 @@ export const expenseFormMachine = expenseFormSetup.createMachine({
             error: () => null,
           }),
         },
-        "expense.discard": "discarded",
+        "expense.discard": {
+          target: "discarded",
+          actions: assign({
+            draft: () => null,
+            originalExpenseId: () => undefined,
+          }),
+        },
         "expense.cancel": "cancelled",
       },
     },

@@ -1,11 +1,12 @@
 import { assign, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
-import type {
-  ContractFailure,
-  DeleteEverywhereOutput,
-  DeleteEverywhereProgress,
-  ProjectDeletionOutput,
-  ProjectDeletionTarget,
+import {
+  type ContractFailure,
+  contractFailureFromError,
+  type DeleteEverywhereOutput,
+  type DeleteEverywhereProgress,
+  type ProjectDeletionOutput,
+  type ProjectDeletionTarget,
 } from "./types.ts";
 
 export type ProjectDeletionEvent =
@@ -108,10 +109,12 @@ export const projectDeletionMachine = projectDeletionSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "export-failed",
-              message: "Safety export was not created.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Safety export was not created.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -128,8 +131,9 @@ export const projectDeletionMachine = projectDeletionSetup.createMachine({
           {
             actions: assign({
               error: () => ({
-                code: "confirmation-mismatch",
+                code: "invalid",
                 message: "Type the project name exactly.",
+                retryable: false,
               }),
             }),
           },
@@ -152,10 +156,12 @@ export const projectDeletionMachine = projectDeletionSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "delete-failed",
-              message: "Project deletion was not committed.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Project deletion was not committed.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -286,10 +292,12 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "export-failed",
-              message: "Safety export was not created.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Safety export was not created.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -327,10 +335,12 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "retirement-failed",
-              message: "Retirement could not be published.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Retirement could not be published.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -344,10 +354,12 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "drive-delete-failed",
-              message: "Drive data could not be deleted.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Drive data could not be deleted.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -361,10 +373,12 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
         onError: {
           target: "failed",
           actions: assign({
-            error: () => ({
-              code: "local-erase-failed",
-              message: "Local data could not be erased.",
-            }),
+            error: ({ event }) =>
+              contractFailureFromError(event.error, {
+                code: "unknown",
+                message: "Local data could not be erased.",
+                retryable: true,
+              }),
           }),
         },
       },
@@ -380,7 +394,19 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
             }),
           }),
         },
-        "delete-everywhere.force-finalize": "forcedFinalization",
+        "delete-everywhere.force-finalize": {
+          target: "forcedFinalization",
+          actions: assign({
+            progress: ({ context }) => ({
+              ...context.progress,
+              forcedDeviceCount: Math.max(
+                context.progress.forcedDeviceCount,
+                context.progress.knownDeviceCount -
+                  context.progress.acknowledgedDeviceCount,
+              ),
+            }),
+          }),
+        },
         "delete-everywhere.cancel": "cancelled",
       },
       always: { target: "completed", guard: "allDevicesAcknowledged" },
@@ -408,6 +434,12 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
     },
     completed: {
       type: "final",
+      entry: assign({
+        result: ({ context }) => ({
+          generation: context.generation,
+          forcedDeviceCount: context.progress.forcedDeviceCount,
+        }),
+      }),
       output: ({ context }) => ({
         status: "completed",
         result: {
@@ -418,4 +450,8 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
     },
     cancelled: { type: "final", output: () => ({ status: "cancelled" }) },
   },
+  output: ({ context }) =>
+    context.result === null
+      ? { status: "cancelled" }
+      : { status: "completed", result: context.result },
 });

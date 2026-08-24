@@ -126,6 +126,7 @@ export type LocalUiPath =
   | "/settings/devices"
   | "/settings/conflicts"
   | "/settings/import-export"
+  | "/settings/privacy"
   | "/receipt/scan"
   | "/receipt/review";
 
@@ -1491,12 +1492,13 @@ export function OrganizeScreen({
 }
 
 export function SettingsScreen(
-  { expenseDayBoundary, onGemini, onSync, onConflicts, onImport }: {
+  { expenseDayBoundary, onGemini, onSync, onConflicts, onImport, onPrivacy }: {
     expenseDayBoundary: string;
     onGemini?: () => void;
     onSync?: () => void;
     onConflicts?: () => void;
     onImport?: () => void;
+    onPrivacy?: () => void;
   },
 ) {
   const rows = [
@@ -1528,7 +1530,7 @@ export function SettingsScreen(
     {
       label: "Data and privacy",
       summary: "Local data controls",
-      available: false,
+      available: Boolean(onPrivacy),
     },
     {
       label: "About and disclosure",
@@ -1556,6 +1558,8 @@ export function SettingsScreen(
                     ? onImport
                     : row.label === "Conflict review"
                     ? onConflicts
+                    : row.label === "Data and privacy"
+                    ? onPrivacy
                     : undefined}
                 >
                   Open
@@ -2539,6 +2543,8 @@ export function LocalUiRuntime(
       ? "conflicts"
       : activePath === "/settings/import-export"
       ? "import-export"
+      : activePath === "/settings/privacy"
+      ? "privacy"
       : null;
 
   const selectNavigation = (id: string) => {
@@ -2562,6 +2568,13 @@ export function LocalUiRuntime(
         screen={portabilityScreen}
         onNavigate={(nextPath) => navigate(nextPath as LocalUiPath)}
         onNotice={setAppNotice}
+        secretStorage={secretStorage}
+        onLocalErased={(scope) => {
+          void scope;
+          if (typeof globalThis.location?.reload === "function") {
+            globalThis.location.reload();
+          }
+        }}
       >
         {contentPath === "/first-use"
           ? (
@@ -2711,6 +2724,7 @@ export function LocalUiRuntime(
               onSync={() => navigate("/settings/sync")}
               onConflicts={() => navigate("/settings/conflicts")}
               onImport={() => navigate("/settings/import-export")}
+              onPrivacy={() => navigate("/settings/privacy")}
             />
           )
           : <FoundationExpensesPlaceholder />}

@@ -1,5 +1,23 @@
 import { useActor } from "@xstate/react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type AnyActorLogic,
+  createActor,
+  type Snapshot,
+  type SnapshotFrom,
+} from "xstate";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import {
+  adapterError,
+  type SecretStoragePort,
+} from "../adapters/ports/index.ts";
 import {
   type ConflictActorEvent,
   createConflictActor,
@@ -17,6 +35,15 @@ import {
   createSyncActor,
   createSyncMachine,
 } from "../actors/sync/index.ts";
+import {
+  createDeleteEverywhereMachine,
+  createLocalEraseMachine,
+  deleteDriveGeneration,
+  finalizeDeleteEverywhere,
+  persistDeleteEverywhereSnapshot,
+  publishDriveRetirement,
+  recoverDeleteEverywhereSnapshot,
+} from "../actors/destruction.ts";
 import type { ImportEvent } from "../actors/contracts/index.ts";
 import { createImportExportAdapter } from "../adapters/import-export/index.ts";
 import {
@@ -29,10 +56,23 @@ import {
   type DriveAdapter,
   type DriveIdentityProvider,
 } from "../adapters/drive/index.ts";
+import {
+  deleteLocalRepositoryDatabase,
+  type LocalRepository,
+} from "../adapters/local/index.ts";
 import { runCausalExchange } from "../adapters/sync/coordinator.ts";
 import type { FileSharePort } from "../adapters/ports/index.ts";
 import type { CausalSyncPort } from "../adapters/ports/index.ts";
 import { type StableId, StableIdSchema } from "../domain/index.ts";
+import {
+  clearDeleteEverywhereProgress,
+  type DeleteEverywhereProgressPhase,
+  type DeleteEverywhereProgressRecord,
+  type DestructionStorage,
+  isDestructionStorage,
+  readDeleteEverywhereProgress,
+  readLocalEraseGeminiKeyChoice,
+} from "../domain/destruction.ts";
 import { observationsFromSyncConflicts as expandSyncConflicts } from "../domain/conflict/merge.ts";
 import {
   type ConflictChoice,
@@ -58,12 +98,19 @@ import {
   type DiagnosticDeviceViewModel,
   type SyncNetworkMode,
 } from "./sync-ui/types.ts";
+import {
+  DataPrivacyScreen,
+  type DeleteEverywhereView,
+  type DestructionDeviceView,
+  type LocalEraseView,
+} from "./destruction-ui.tsx";
 
 export type SyncPortabilityScreen =
   | "sync"
   | "devices"
   | "conflicts"
   | "import-export"
+  | "privacy"
   | null;
 
 type RuntimeIds = {
@@ -210,6 +257,60 @@ function createBrowserFileShare(): FileSharePort {
       return "shared";
     },
   };
+}
+
+async function saveDestructionSafetyExport(json: string): Promise<void> {
+  const bytes = new TextEncoder().encode(json);
+  await createBrowserFileShare().save({
+    name: "did-it-become-what-you-like-delete-everywhere-safety.json",
+    mimeType: "application/json",
+    bytes,
+  });
+}
+
+function destructionStorage(): DestructionStorage | undefined {
+  try {
+    return isDestructionStorage(globalThis.localStorage)
+      ? globalThis.localStorage
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function useRestartableActor<TLogic extends AnyActorLogic>(
+  logic: TLogic,
+  restartKey: number,
+  initialSnapshot?: Snapshot<unknown>,
+): [SnapshotFrom<TLogic>, ReturnType<typeof createActor<TLogic>>["send"]] {
+  const actor = useMemo(
+    () =>
+      createActor(
+        logic,
+        initialSnapshot === undefined
+          ? undefined
+          : ({ snapshot: initialSnapshot } as never),
+      ),
+    [initialSnapshot, logic, restartKey],
+  );
+  useEffect(() => {
+    actor.start();
+    return () => {
+      actor.stop();
+    };
+  }, [actor]);
+  const subscribe = useCallback(
+    (listener: () => void) => {
+      const subscription = actor.subscribe(listener);
+      return () => subscription.unsubscribe();
+    },
+    [actor],
+  );
+  const getSnapshot = useCallback(() => actor.getSnapshot(), [actor]);
+  return [
+    useSyncExternalStore(subscribe, getSnapshot, getSnapshot),
+    actor.send,
+  ];
 }
 
 function humanize(value: string): string {
@@ -548,21 +649,129 @@ export function observationsFromSyncConflicts(
   return expandSyncConflicts(conflicts);
 }
 
+function localEraseViewFromSnapshot(snapshot: {
+  readonly value: unknown;
+  readonly context: {
+    readonly removeGeminiApiKey: boolean;
+    readonly error: { readonly message: string } | null;
+  };
+}): LocalEraseView {
+  const phase = snapshot.value;
+  return {
+    phase: phase === "reviewing"
+      ? "reviewing"
+      : phase === "persistingChoice"
+      ? "saving"
+      : phase === "erasingLocal"
+      ? "erasing"
+      : phase === "removingKey"
+      ? "removing-key"
+      : phase === "failed"
+      ? "failed"
+      : phase === "completed"
+      ? "completed"
+      : "idle",
+    removeGeminiApiKey: snapshot.context.removeGeminiApiKey,
+    ...(snapshot.context.error === null
+      ? {}
+      : { error: snapshot.context.error.message }),
+  };
+}
+
+function deleteEverywherePhaseFromValue(
+  value: unknown,
+): DeleteEverywhereView["phase"] {
+  switch (value) {
+    case "reviewing":
+      return "reviewing";
+    case "exporting":
+      return "exporting";
+    case "confirmingDecline":
+      return "confirming-decline";
+    case "confirming":
+      return "confirming";
+    case "publishingRetirement":
+      return "publishing-retirement";
+    case "deletingDrive":
+      return "deleting-drive";
+    case "erasingLocal":
+      return "erasing-local";
+    case "awaitingDevices":
+      return "awaiting-devices";
+    case "forcedFinalization":
+      return "forced-finalization";
+    case "failed":
+      return "failed";
+    case "completed":
+      return "completed";
+    default:
+      return "idle";
+  }
+}
+
+function deleteEverywhereViewFromSnapshot(snapshot: {
+  readonly value: unknown;
+  readonly context: {
+    readonly generation: number;
+    readonly progress: {
+      readonly knownDeviceCount: number;
+      readonly acknowledgedDeviceCount: number;
+      readonly forcedDeviceCount: number;
+    };
+    readonly safetyExported: boolean;
+    readonly safetyDeclined: boolean;
+    readonly declineConfirmed: boolean;
+    readonly error: { readonly message: string } | null;
+  };
+}): DeleteEverywhereView {
+  const phase = deleteEverywherePhaseFromValue(snapshot.value);
+  return {
+    phase,
+    safetyExported: snapshot.context.safetyExported,
+    safetyDeclined: snapshot.context.safetyDeclined,
+    declineConfirmed: snapshot.context.declineConfirmed,
+    generation: snapshot.context.generation,
+    knownDeviceCount: snapshot.context.progress.knownDeviceCount,
+    acknowledgedDeviceCount: snapshot.context.progress.acknowledgedDeviceCount,
+    forcedDeviceCount: snapshot.context.progress.forcedDeviceCount,
+    ...(snapshot.context.error === null
+      ? {}
+      : { error: snapshot.context.error.message }),
+    revoking: false,
+  };
+}
+
+function deleteEverywhereViewFromProgress(
+  progress: DeleteEverywhereProgressRecord,
+): DeleteEverywhereView {
+  return {
+    phase: progress.phase,
+    safetyExported: progress.safetyExported,
+    safetyDeclined: progress.safetyDeclined,
+    declineConfirmed: progress.declineConfirmed,
+    generation: progress.generation,
+    knownDeviceCount: progress.knownDeviceCount,
+    acknowledgedDeviceCount: progress.acknowledgedDeviceCount,
+    forcedDeviceCount: progress.forcedDeviceCount,
+    revoking: false,
+  };
+}
+
 export function SyncPortabilityRuntime({
   repository,
   screen,
   onNavigate,
   onNotice,
+  secretStorage,
+  onLocalErased,
   children,
 }: {
-  readonly repository:
-    & Parameters<typeof createDefaultSyncDependencies>[0]["local"]
-    & {
-      readonly deviceId: string;
-    };
+  readonly repository: LocalRepository;
   readonly screen: SyncPortabilityScreen;
   readonly onNavigate: (path: string) => void;
   readonly onNotice: (message: string) => void;
+  readonly secretStorage: SecretStoragePort;
+  readonly onLocalErased?: (scope: "local" | "everywhere") => void;
   readonly children: ReactNode;
 }) {
   const ids = useMemo(createRuntimeIds, []);
@@ -667,6 +876,102 @@ export function SyncPortabilityRuntime({
   const [importSnapshot, sendImport] = useActor(importMachine);
   const [exportSnapshot, sendExport] = useActor(exportMachine);
   const [safetySnapshot, sendSafetyExport] = useActor(safetyExportMachine);
+  const storage = useMemo(destructionStorage, []);
+  const localEraseMachine = useMemo(
+    () =>
+      createLocalEraseMachine({
+        storage,
+        eraseLocalDataset: async () => {
+          if (driveAdapter?.status() === "authorized") {
+            await driveAdapter.disconnect();
+          }
+          sendSync({ type: "sync.disconnect" });
+          const databaseName = repository.databaseName;
+          repository.close();
+          await deleteLocalRepositoryDatabase(databaseName);
+        },
+        removeGeminiApiKey: async () => {
+          await secretStorage.remove("gemini-api-key");
+        },
+      }),
+    [driveAdapter, repository, secretStorage, sendSync, storage],
+  );
+  const [localEraseSnapshot, sendLocalErase] = useRestartableActor(
+    localEraseMachine,
+    0,
+  );
+  const [deleteEverywhereGeneration, setDeleteEverywhereGeneration] = useState(
+    0,
+  );
+  const [deleteEverywhereRecovery] = useState<
+    DeleteEverywhereProgressRecord | undefined
+  >(
+    () => {
+      try {
+        return storage === undefined
+          ? undefined
+          : readDeleteEverywhereProgress(storage);
+      } catch {
+        return undefined;
+      }
+    },
+  );
+  const deleteEverywhereMachine = useMemo(
+    () =>
+      createDeleteEverywhereMachine({
+        createSafetyExport: async () => await repository.exportDataset(),
+        saveSafetyExport: saveDestructionSafetyExport,
+        publishRetirement: async (generation) => {
+          if (driveAdapter === null || driveAdapter.status() !== "authorized") {
+            throw adapterError("unauthorized", "destruction.retirement");
+          }
+          await publishDriveRetirement(driveAdapter, generation);
+          sendSync({ type: "sync.retire" });
+        },
+        deleteDriveGeneration: async (generation) => {
+          if (driveAdapter === null) {
+            throw adapterError("unauthorized", "destruction.drive-delete");
+          }
+          await deleteDriveGeneration(driveAdapter, generation);
+        },
+        eraseLocalDataset: async () => {
+          const databaseName = repository.databaseName;
+          repository.close();
+          await deleteLocalRepositoryDatabase(databaseName);
+        },
+      }),
+    [deleteEverywhereGeneration, driveAdapter, repository, sendSync, storage],
+  );
+  const deleteEverywhereInitialSnapshot = useMemo(
+    () =>
+      deleteEverywhereRecovery === undefined
+        ? undefined
+        : recoverDeleteEverywhereSnapshot(
+          deleteEverywhereMachine,
+          deleteEverywhereRecovery,
+        ),
+    [deleteEverywhereMachine, deleteEverywhereRecovery],
+  );
+  const [deleteEverywhereSnapshot, sendDeleteEverywhere] = useRestartableActor(
+    deleteEverywhereMachine,
+    deleteEverywhereGeneration,
+    deleteEverywhereGeneration === 0
+      ? deleteEverywhereInitialSnapshot
+      : undefined,
+  );
+  const [deleteEverywhereRevoking, setDeleteEverywhereRevoking] = useState(
+    false,
+  );
+  const [deleteEverywhereRevocationError, setDeleteEverywhereRevocationError] =
+    useState<string>();
+  const [deleteFinalizationRetry, setDeleteFinalizationRetry] = useState(0);
+  const [deleteOpenRequested, setDeleteOpenRequested] = useState(false);
+  const [localGeneration, setLocalGeneration] = useState(1);
+  const localEraseHandled = useRef(false);
+  const deleteFinalizationHandled = useRef(false);
+  const recoveryReinitializeTarget = useRef<
+    DeleteEverywhereProgressPhase | null
+  >(null);
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
   const [conflictPane, setConflictPane] = useState<"list" | "detail">("list");
   const [fileName, setFileName] = useState<string>();
@@ -800,6 +1105,182 @@ export function SyncPortabilityRuntime({
     },
     [deviceProjectionVersion, syncDependencies],
   );
+
+  useEffect(() => {
+    let active = true;
+    void repository.loadDocument().then((document) => {
+      if (
+        active && Number.isSafeInteger(document.generation) &&
+        document.generation > 0
+      ) {
+        setLocalGeneration(document.generation);
+      }
+    }).catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [repository]);
+
+  useEffect(() => {
+    if (deleteEverywhereSnapshot.matches("cancelled")) {
+      try {
+        clearDeleteEverywhereProgress(storage);
+      } catch {
+        onNotice(
+          "Delete Everywhere cancellation could not clear saved progress safely.",
+        );
+      }
+      return;
+    }
+    try {
+      persistDeleteEverywhereSnapshot(
+        deleteEverywhereSnapshot,
+        clock.now,
+        storage,
+      );
+    } catch {
+      onNotice("Delete Everywhere progress could not be persisted safely.");
+    }
+  }, [clock, deleteEverywhereSnapshot, onNotice, storage]);
+
+  useEffect(() => {
+    const recovery = deleteEverywhereRecovery;
+    if (
+      recovery === undefined || deleteEverywhereGeneration !== 0 ||
+      !deleteEverywhereSnapshot.matches("idle") ||
+      recoveryReinitializeTarget.current !== null
+    ) return;
+    const interrupted = recovery.phase === "exporting" ||
+      recovery.phase === "publishing-retirement" ||
+      recovery.phase === "deleting-drive" ||
+      recovery.phase === "erasing-local";
+    if (!interrupted) return;
+    recoveryReinitializeTarget.current = recovery.phase;
+    sendDeleteEverywhere({
+      type: "delete-everywhere.open",
+      generation: recovery.generation,
+      progress: {
+        knownDeviceCount: recovery.knownDeviceCount,
+        acknowledgedDeviceCount: recovery.acknowledgedDeviceCount,
+        forcedDeviceCount: recovery.forcedDeviceCount,
+      },
+    });
+    if (recovery.safetyDeclined && recovery.declineConfirmed) {
+      sendDeleteEverywhere({
+        type: "delete-everywhere.decline-safety-export",
+      });
+      sendDeleteEverywhere({ type: "delete-everywhere.confirm-decline" });
+    } else {
+      // Re-exporting on recovery is safe and keeps the export boundary
+      // complete even if the original browser stopped during delivery.
+      sendDeleteEverywhere({ type: "delete-everywhere.export-safety" });
+    }
+  }, [
+    deleteEverywhereGeneration,
+    deleteEverywhereRecovery,
+    deleteEverywhereSnapshot,
+    sendDeleteEverywhere,
+  ]);
+
+  useEffect(() => {
+    const target = recoveryReinitializeTarget.current;
+    if (target === null) return;
+    if (
+      target === "exporting" && deleteEverywhereSnapshot.matches("exporting")
+    ) {
+      recoveryReinitializeTarget.current = null;
+      return;
+    }
+    if (!deleteEverywhereSnapshot.matches("confirming")) return;
+    if (
+      target === "publishing-retirement" || target === "deleting-drive" ||
+      target === "erasing-local"
+    ) {
+      recoveryReinitializeTarget.current = null;
+      sendDeleteEverywhere({ type: "delete-everywhere.confirm" });
+    }
+  }, [deleteEverywhereSnapshot, sendDeleteEverywhere]);
+
+  useEffect(() => {
+    if (!localEraseSnapshot.matches("completed") || localEraseHandled.current) {
+      return;
+    }
+    localEraseHandled.current = true;
+    onLocalErased?.("local");
+  }, [localEraseSnapshot, onLocalErased]);
+
+  useEffect(() => {
+    if (
+      !deleteEverywhereSnapshot.matches("awaitingDevices") &&
+      !deleteEverywhereSnapshot.matches("forcedFinalization")
+    ) return;
+    const acknowledged = deviceProjection.devices.filter((device) =>
+      device.retirementAcknowledgement === "acknowledged"
+    ).length;
+    if (
+      acknowledged !==
+        deleteEverywhereSnapshot.context.progress.acknowledgedDeviceCount
+    ) {
+      sendDeleteEverywhere({
+        type: "delete-everywhere.device-ack",
+        count: acknowledged,
+      });
+    }
+  }, [
+    deleteEverywhereSnapshot,
+    deviceProjection.devices,
+    sendDeleteEverywhere,
+  ]);
+
+  useEffect(() => {
+    if (
+      !deleteEverywhereSnapshot.matches("completed") ||
+      deleteFinalizationHandled.current
+    ) return;
+    deleteFinalizationHandled.current = true;
+    if (driveAdapter === null || storage === undefined) {
+      setDeleteEverywhereRevocationError(
+        "Cloud retirement completed, but final authorization cleanup is unavailable.",
+      );
+      return;
+    }
+    setDeleteEverywhereRevoking(true);
+    void finalizeDeleteEverywhere(
+      driveAdapter,
+      deleteEverywhereSnapshot.context.progress,
+      storage,
+    ).then(() => {
+      setDeleteEverywhereRevoking(false);
+      onLocalErased?.("everywhere");
+    }).catch(() => {
+      setDeleteEverywhereRevoking(false);
+      setDeleteEverywhereRevocationError(
+        "Cloud retirement completed, but Google authorization could not be revoked. Do not reconnect this account until it is revoked.",
+      );
+    });
+  }, [
+    deleteEverywhereSnapshot,
+    deleteFinalizationRetry,
+    driveAdapter,
+    onLocalErased,
+    storage,
+  ]);
+
+  const localEraseView = localEraseViewFromSnapshot(localEraseSnapshot);
+  const deleteEverywhereView = deleteEverywhereSnapshot.matches("idle") &&
+      deleteEverywhereRecovery !== undefined
+    ? deleteEverywhereViewFromProgress(deleteEverywhereRecovery)
+    : deleteEverywhereViewFromSnapshot(deleteEverywhereSnapshot);
+  const destructionDevices: DestructionDeviceView[] = deviceProjection.devices
+    .map(
+      (device) => ({
+        stableKey: device.stableKey,
+        label: device.label,
+        lastSeenAt: device.lastSeenAt,
+        current: device.current,
+        acknowledged: device.retirementAcknowledgement === "acknowledged",
+      }),
+    );
   const safetyStatus: SafetyExportStatus =
     safetySnapshot.matches("exporting") ||
       safetySnapshot.matches("delivering")
@@ -898,6 +1379,89 @@ export function SyncPortabilityRuntime({
     sendExport({ type: "export.cancel" });
     sendSafetyExport({ type: "export.cancel" });
     onNavigate("/settings");
+  };
+
+  const openLocalErase = () => {
+    localEraseHandled.current = false;
+    const removeGeminiApiKey = storage === undefined
+      ? true
+      : readLocalEraseGeminiKeyChoice(storage);
+    if (
+      localEraseSnapshot.matches("completed") ||
+      localEraseSnapshot.matches("cancelled")
+    ) {
+      sendLocalErase({ type: "local-erase.reset" });
+      sendLocalErase({ type: "local-erase.open", removeGeminiApiKey });
+      return;
+    }
+    sendLocalErase({ type: "local-erase.open", removeGeminiApiKey });
+  };
+
+  const openDeleteEverywhere = () => {
+    deleteFinalizationHandled.current = false;
+    const knownDeviceCount = Math.max(1, destructionDevices.length);
+    const acknowledgedDeviceCount = Math.min(
+      knownDeviceCount,
+      destructionDevices.filter((device) => device.acknowledged).length,
+    );
+    if (
+      deleteEverywhereSnapshot.matches("completed") ||
+      deleteEverywhereSnapshot.matches("cancelled") ||
+      deleteEverywhereSnapshot.matches("failed")
+    ) {
+      setDeleteEverywhereGeneration((generation) => generation + 1);
+      setDeleteOpenRequested(true);
+      return;
+    }
+    sendDeleteEverywhere({
+      type: "delete-everywhere.open",
+      generation: localGeneration,
+      progress: {
+        knownDeviceCount,
+        acknowledgedDeviceCount,
+        forcedDeviceCount: 0,
+      },
+    });
+  };
+
+  useEffect(() => {
+    if (!deleteOpenRequested || !deleteEverywhereSnapshot.matches("idle")) {
+      return;
+    }
+    setDeleteOpenRequested(false);
+    const knownDeviceCount = Math.max(1, destructionDevices.length);
+    sendDeleteEverywhere({
+      type: "delete-everywhere.open",
+      generation: localGeneration,
+      progress: {
+        knownDeviceCount,
+        acknowledgedDeviceCount: Math.min(
+          knownDeviceCount,
+          destructionDevices.filter((device) => device.acknowledged).length,
+        ),
+        forcedDeviceCount: 0,
+      },
+    });
+  }, [
+    deleteEverywhereSnapshot,
+    deleteOpenRequested,
+    destructionDevices,
+    localGeneration,
+    sendDeleteEverywhere,
+  ]);
+
+  const cancelLocalErase = () => {
+    sendLocalErase({ type: "local-erase.cancel" });
+  };
+
+  const cancelDeleteEverywhere = () => {
+    sendDeleteEverywhere({ type: "delete-everywhere.cancel" });
+  };
+
+  const retryDeleteEverywhereFinalization = () => {
+    deleteFinalizationHandled.current = false;
+    setDeleteEverywhereRevocationError(undefined);
+    setDeleteFinalizationRetry((retry) => retry + 1);
   };
 
   const content = screen === "sync"
@@ -1011,6 +1575,55 @@ export function SyncPortabilityRuntime({
         onRetryImport={() => sendImportEvent({ type: "import.retry" })}
         onReviewConflicts={() => onNavigate("/settings/conflicts")}
         onCancelImport={closeImportExport}
+      />
+    )
+    : screen === "privacy"
+    ? (
+      <DataPrivacyScreen
+        connected={syncView.mode === "configured"}
+        localErase={localEraseView}
+        deleteEverywhere={{
+          ...deleteEverywhereView,
+          revoking: deleteEverywhereRevoking,
+          ...(deleteEverywhereRevocationError === undefined
+            ? {}
+            : { error: deleteEverywhereRevocationError }),
+        }}
+        devices={destructionDevices}
+        onBack={() => onNavigate("/settings")}
+        onDisconnect={() => {
+          if (driveAdapter === null) {
+            sendSync({ type: "sync.disconnect" });
+            return;
+          }
+          void driveAdapter.disconnect().then(() => {
+            sendSync({ type: "sync.disconnect" });
+          }).catch(() => onNotice("Google Drive could not be disconnected."));
+        }}
+        onOpenLocalErase={openLocalErase}
+        onLocalEraseChoice={(removeGeminiApiKey) =>
+          sendLocalErase({ type: "local-erase.choice", removeGeminiApiKey })}
+        onConfirmLocalErase={() =>
+          sendLocalErase({ type: "local-erase.confirm" })}
+        onRetryLocalErase={() => sendLocalErase({ type: "local-erase.retry" })}
+        onCancelLocalErase={cancelLocalErase}
+        onOpenDeleteEverywhere={openDeleteEverywhere}
+        onSafetyExport={() =>
+          sendDeleteEverywhere({ type: "delete-everywhere.export-safety" })}
+        onDeclineSafetyExport={() =>
+          sendDeleteEverywhere({
+            type: "delete-everywhere.decline-safety-export",
+          })}
+        onConfirmDecline={() =>
+          sendDeleteEverywhere({ type: "delete-everywhere.confirm-decline" })}
+        onConfirmDeleteEverywhere={() =>
+          sendDeleteEverywhere({ type: "delete-everywhere.confirm" })}
+        onForceFinalize={() =>
+          sendDeleteEverywhere({ type: "delete-everywhere.force-finalize" })}
+        onRetryDeleteEverywhere={() =>
+          sendDeleteEverywhere({ type: "delete-everywhere.retry" })}
+        onRetryFinalization={retryDeleteEverywhereFinalization}
+        onCancelDeleteEverywhere={cancelDeleteEverywhere}
       />
     )
     : children;

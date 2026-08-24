@@ -165,6 +165,19 @@ Deno.test("design-system native fields and definition lists expose valid semanti
       assert(
         view.getByLabelText("Receipt image").getAttribute("type") === "file",
       );
+      const nativeControls = [
+        view.getByLabelText("Expense date"),
+        view.getByLabelText("Expense time"),
+        view.getByLabelText("Receipt image"),
+      ];
+      assertEqual(document.querySelectorAll("label label").length, 0);
+      for (const control of nativeControls) {
+        const fieldLabel = Array.from(document.querySelectorAll("label"))
+          .find((candidate) => candidate.htmlFor === control.id);
+        assert(fieldLabel, `Missing explicit label for ${control.id}`);
+        assertEqual(fieldLabel.parentElement?.tagName, "DIV");
+        assertEqual(fieldLabel.htmlFor, control.id);
+      }
       const definitionList = document.querySelector("dl");
       assert(definitionList);
       assertEqual(definitionList.querySelectorAll(":scope > div").length, 1);

@@ -435,6 +435,8 @@ export function Field(
   { label, children, description, error, required, controlId, className }:
     FieldProps,
 ) {
+  // Native controls use this single explicit label association. Keep the
+  // layout wrapper a div so it can never become a label around this label.
   return (
     <label
       className={cx("ds-field", className)}

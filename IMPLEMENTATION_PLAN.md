@@ -540,8 +540,9 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-300 — Local vertical-slice independent review gate
 
-- **Status/dependencies:** `BLOCKED`; depends on `L-205`; blocked by the
-  substantiated R-300 findings recorded below.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `L-205`; the prior
+  substantiated findings were fixed and integrated, and a fresh independent
+  closure review is required before this gate can become `COMPLETE`.
 - **Ownership:** review read-only first; fixes remain scoped to M3 owners.
 - **Scope/non-goals:** review financial correctness, local durability, XState/UI
   separation, responsive/accessibility fidelity, design-system reuse, and all
@@ -1252,9 +1253,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Plan state:** implementation authorized; M0/M1, the M2 contract/design-
   system wave, and `R-200` are complete. Closure-3 approved the locked
   contracts with no unresolved S1/S2/S3/S4 findings; M3 is dependency-ready.
-- **Reconciled branch/upstream:** `master` is at `179260b` and tracks
-  `origin/master` at the same commit (`0 0`). The root worktree is clean before
-  preserving the untracked R-300 review handover.
+- **Reconciled branch/upstream:** `master` and `origin/master` are both at
+  `b504f5f` (`0 0`), pushed after the bounded R-300 fix wave. The root worktree
+  is clean except for the intentionally untracked R-300 review handover.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1267,8 +1268,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   preparation and Gemini adapter`), contract follow-up `dc306bb` (`Preserve
   receipt metadata in Gemini drafts`), the pushed A-301 ledger checkpoints,
   `afb7cc4`, L-204 `08c3f88`, and L-205 `054a82f` are present on `master`;
+  the R-300 fix wave is integrated through L-204 fix `721a33e`, U-104 fix
+  `d9a21b0`, L-205 fix `bdd8b41`, and integration correction `b504f5f`;
   the deferred-only SPEC note is `c390656`. The latest pushed implementation
-  commit is `054a82f`.
+  commit is `b504f5f`.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, and `R-200`. Their required source, tests, and
   integration evidence are present on `master`.
@@ -1286,19 +1289,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
   is recorded below. R-300 is BLOCKED by the preserved 7-S2/3-S3 review
-  handoff; A-301 source integration and its bounded contract
+  handoff; the bounded R-300 fix wave now passes the aggregate `deno task
+  verify`, including the corrected local null-draft E2E and production CSP/WASM
+  preview smoke; A-301 source integration and its bounded contract
   follow-up passed the root matrix, and the root canonical task includes
   `src/adapters/gemini`; the exact `A-301` filter is the authoritative focused
   command. The implementation plan task-heading count remains 37 with no
   duplicate IDs; `master` and its upstream are aligned at `179260b`; the
   root worktree contains only the intentionally untracked R-300 handover
-  before this fix-wave ledger edit. Preserved
+  after the pushed fix wave. Preserved
   worktrees are
   listed below.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
-  `A-301` are `COMPLETE`; `R-300` is `BLOCKED`; its bounded L-204/L-205/U-104
-  fix wave and aggregate verification correction are `IN_PROGRESS`.
+  `A-301` are `COMPLETE`; the bounded L-204/L-205/U-104 R-300 fix wave and
+  aggregate verification correction are `COMPLETE`; `R-300` is `IN_PROGRESS`
+  pending fresh independent closure review.
 - **Preserved integrated worktrees (no active workers):**
   - `F-001`: branch `task/f-001-toolchain`, worktree
     `~/git/worktrees/did-it-become-what-you-like-f-001-toolchain`,
@@ -1934,6 +1940,42 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   aggregate `deno task verify`, reconciles this checkpoint, and reruns R-300;
   no owner may weaken approved requirements or broaden into Gemini/Drive,
   external sync, or populated-project destructive workflows.
+- **R-300 bounded fix wave completion/integration:** the three owners completed
+  their review fixes with preserved timestamped handovers and no plan/master
+  edits. Huygens committed `47a87d0` in
+  `~/git/worktrees/did-it-become-what-you-like-l-204-manual-shell`; it was
+  cherry-picked as `721a33e` and added typed Save-and-add-another, saved-record
+  Undo, and safe null-draft hydration/open retry behavior. Its focused actor
+  and shell tests (8 manual, 3 shell), manual-save integration (2), full test
+  suite (123), format, lint, check, build, audit, and diff checks passed.
+  Anscombe committed `7974c31` in
+  `~/git/worktrees/did-it-become-what-you-like-u-104-design-system`; it was
+  cherry-picked as `d9a21b0` and added searchable currency choices, explicit
+  positive signs, and functional SearchField/Merchant clearing. Its 13 focused
+  component regressions plus format, lint, check, build, and diff checks
+  passed. Singer committed `30a5dc1` in
+  `~/git/worktrees/did-it-become-what-you-like-l-205-local-ui`; it was
+  cherry-picked as `bdd8b41` and added Save-and-add-another UI reset, actionable
+  null-draft recovery, Add Choice focus/dismissal semantics, and the final
+  local E2E/screen evidence. The worker matrix passed component (20),
+  integration (18), domain (27), actor (1), full (121), local E2E (2), gallery,
+  browser smoke, build, format, lint, check, and diff gates. The integration
+  owner then fixed the substantiated `hydrateFailed` Loading regression and
+  reconciled the CSP/runtime boundary in `b504f5f`: development-only Vite CSP
+  meta removal keeps injected styles usable, while source/production CSP keeps
+  `style-src 'self'` and narrowly permits only `wasm-unsafe-eval` for the
+  bundled Automerge runtime. `deno task verify:pages` and production preview
+  browser inspection passed; no general `unsafe-eval` or `unsafe-inline` was
+  added. The aggregate `deno task verify` passed from pushed `b504f5f`:
+  125 repository tests, 18 integration, 22 component, 27 domain, 1 actor,
+  local E2E 2/2, native gallery/browser checks, Pages/CI/toolchain validators,
+  production build, frozen audit, and diff checks. The new aggregate task was
+  added in `179260b` and its checkpoint reconciled in `ab63b36`.
+- **R-300 closure state after fix wave:** the prior Turing handoff remains
+  preserved as historical evidence; it is not approval. R-300 is reopened as
+  `IN_PROGRESS` and requires one fresh read-only independent reviewer from
+  pushed `b504f5f`, with a new timestamped handover and explicit APPROVE/BLOCK
+  result, before any downstream M4 task is dispatched.
 - **R-200 reopened fix dispatch plan:** D-102 will own only
   `src/actors/contracts/**` in `~/git/worktrees/did-it-become-what-you-like-d-102-actors`
   for shaped-error canonicalization and retryable sync tags/transitions, with

@@ -1382,7 +1382,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   authorization check after the current production follow-up fixes.
 - **Reconciled branch/upstream:** the prior R-700 follow-up fixes remain
   integrated and the latest owner-reported sync adapter correction is pushed
-  in `842b05d` (`Accept valid Drive app-data metadata`). The Q-604 hosted
+  in `e3dc229` (`Use Drive v3 versions in browser sync`). The Q-604 hosted
   release and Plato's review targeted the earlier `71737ab`; the two findings
   and the bounded correction evidence are recorded above. The root worktree
   contains only the intentionally untracked `A-303-progress.md`,
@@ -1557,6 +1557,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   type-check, all 264 core tests, and both production builds. CI run
   `32897509092` and Pages run `32897509082` succeeded; the live bundle is
   `assets/index-B1BMlRjT.js` and contains `842b05d`. R-700 remains pending one
+  live reset/retry smoke by the owner.
+- **Browser ETag correction:** The owner reproduced `drive.metadata` after
+  `842b05d`. Read-only inspection of the live Drive endpoint showed that its
+  CORS `Access-Control-Expose-Headers` does not expose `ETag` to the GitHub
+  Pages origin, so every existing file still failed the adapter's ETag
+  requirement before recovery could execute. Commit `e3dc229` therefore uses
+  Drive v3's documented monotonic `version` field as the port's opaque revision
+  token, derives body-read tokens from metadata, and performs stale-token
+  checks before update/delete without incorrectly sending `version` as
+  `If-Match`. Regression fixtures now omit ETag headers entirely. Focused
+  Drive/sync/actor validation passed 37/37, followed by formatting, lint,
+  type-check, all 264 core tests, and both production builds. CI run
+  `32898143940` and Pages run `32898143896` succeeded; the live bundle is
+  `assets/index-B2rJZpPZ.js` and contains `e3dc229`. R-700 remains pending one
   live reset/retry smoke by the owner.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings

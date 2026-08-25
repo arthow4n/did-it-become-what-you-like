@@ -178,8 +178,6 @@ export function PwaRuntime({
   const [installRequested, setInstallRequested] = useState(false);
   const latestUsefulAction = useRef(0);
   const latestSnapshot = useRef(snapshot);
-  const automaticCheckStarted = useRef(false);
-  const initialUsefulActionVersion = useRef(usefulActionVersion);
   latestSnapshot.current = snapshot;
 
   useEffect(() => {
@@ -202,16 +200,15 @@ export function PwaRuntime({
       typeof document === "undefined" || document.visibilityState !== "hidden";
     const checkAutomatically = () => {
       if (globalThis.navigator?.onLine === false || !isVisible()) return;
-      const initialCheck = !automaticCheckStarted.current;
-      automaticCheckStarted.current = true;
       if (
         port.state() === "unsupported" ||
         port.state() === "installing" ||
+        (port.canInstall() &&
+          (latestSnapshot.current.matches("idle") ||
+            latestSnapshot.current.matches("installAvailable"))) ||
         latestSnapshot.current.matches("installAvailable") ||
         latestSnapshot.current.matches("installing") ||
-        latestSnapshot.current.matches("reloading") ||
-        (initialCheck && initialUsefulActionVersion.current > 0 &&
-          port.canInstall())
+        latestSnapshot.current.matches("reloading")
       ) return;
       send({ type: "update.check" });
     };

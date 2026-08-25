@@ -167,11 +167,20 @@ Deno.test("settings-final About exposes exact disclosure and build metadata", as
   });
 });
 
-Deno.test("settings-final install offer supports later after a useful action", async () => {
+Deno.test("settings-final install offer defers startup checks and supports later", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
-      const port = createFakeUpdateInstallPort();
-      port.setInstallAvailable(true);
+      const basePort = createFakeUpdateInstallPort();
+      basePort.setInstallAvailable(true);
+      basePort.setUpdate();
+      let checks = 0;
+      const port = {
+        ...basePort,
+        check: async (options?: Parameters<typeof basePort.check>[0]) => {
+          checks++;
+          return await basePort.check(options);
+        },
+      };
       render(
         createElement(
           PwaRuntime,
@@ -191,6 +200,9 @@ Deno.test("settings-final install offer supports later after a useful action", a
           throw new Error("later should hide the install offer");
         }
       });
+      assert(checks === 0, "the install offer should defer automatic checks");
+      window.dispatchEvent(new window.Event("focus"));
+      await waitFor(() => assert(checks === 1));
     });
   });
 });

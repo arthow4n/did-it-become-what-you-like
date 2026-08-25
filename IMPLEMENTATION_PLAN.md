@@ -973,7 +973,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-700 — Final independent release review and definition-of-done gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `Q-604`, which is complete.
+- **Status/dependencies:** `BLOCKED`; depends on `Q-604`, which is complete.
 - **Dispatch:** the integration owner has created the isolated review worktree
   `~/git/worktrees/did-it-become-what-you-like-r-700-final` on branch
   `review/r-700-final` at pushed `master` `5a65ffd`, and dispatched one fresh
@@ -988,6 +988,23 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 - **Scope/non-goals:** independently compare code, tests, deployment, and this
   ledger against every normative spec and Definition of Done. Do not approve
   based only on prior reviewers or green E2E.
+- **Evidence/blockers:** Plato's independent review completed the canonical
+  matrix and live Pages audit at `71737ab`, with `deno task verify`, full E2E
+  (`11 passed`), `deno task release:verify`, `deno task verify:ci`, and
+  `deno task verify:pages` all passing. Approval is blocked by two severity-2
+  findings. `S2-1` routes to `S-405` runtime Drive/auth composition with Q-604
+  production integration: `src/features/sync-portability-runtime.tsx` only
+  creates a real Drive adapter from `VITE_GOOGLE_CLIENT_ID` or a test global,
+  while the Pages build supplies neither and does not load Google Identity
+  Services; live Connect therefore reports OAuth configuration unavailable.
+  The minimum correction is a documented non-secret production OAuth client ID
+  and GIS browser boundary, plus a production-composition regression/smoke;
+  owner direction is required before supplying that external configuration.
+  `S2-2` routes to `P-503`: About defines `LICENSE_URL` in
+  `src/app/build-info.ts` but renders only the third-party-notices and source
+  links; add the explicit application-license link and exact href assertion.
+  No source or plan changes were made by the reviewer; its untracked handover
+  is preserved in the dedicated review worktree.
 - **Outputs/acceptance:** traceability and security/privacy review complete; no
   severity-1/2 finding; severity-3 findings fixed or explicitly accepted by the
   owner; final checkpoint and evidence match Git and deployed commit.
@@ -1337,14 +1354,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
   after closure-3 approval; Q-601, Q-602, Q-603, and Q-604 are `COMPLETE`; and
-  R-700 is the next dependency-ready task.
-- **Reconciled branch/upstream:** Q-604 source integration is at `b1d33a7`
-  (`Add verified GitHub Pages release checks`); its integrated `deno task
-  verify`, `deno task release:verify`, CI, Pages deployment, and live smoke
-  evidence passed, and the R-700 dispatch ledger update is the next pushed
-  checkpoint. Before this update, `master` and `origin/master` were aligned at
-  `564a18b` (`Record Q-604 release worker`), after the Q-603 ledger checkpoint
-  and the
+  R-700 is `BLOCKED` on two severity-2 findings.
+- **Reconciled branch/upstream:** the independent R-700 review targeted
+  `71737ab` (`Record R-700 reviewer`) and found the blockers recorded below;
+  the blocker ledger update is the next pushed checkpoint. Before this update,
+  `master` and `origin/master` were aligned at `71737ab`, after the Q-604
+  hosted release and R-700 dispatch checkpoints and the
   integrated source checkpoints `de8d40e` and `1ffd045`. The root contains
   only the intentionally untracked
   only the intentionally untracked
@@ -1469,7 +1484,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
   X-501, X-502, P-503, R-600, Q-601, Q-602, Q-603, and Q-604 are `COMPLETE`;
-  R-700 is `READY`; no worker or reviewer is active; and no task is
+  R-700 is `BLOCKED`; no worker or reviewer is active; and no task is
   interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
@@ -1632,10 +1647,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** dispatch R-700, the final independent release review and
-  definition-of-done gate, from the pushed Q-604 integration checkpoint. Keep
-  the review read-only first; any finding must return through its responsible
-  task area before closure.
+- **Current task:** resolve the two R-700 severity-2 blockers through their
+  responsible task areas. The production OAuth client/configuration requires
+  owner direction and must not be invented; the About license-link correction
+  is separately scoped to P-503. Do not mark R-700 approved or start a new
+  release review until both findings have fresh regression and live evidence.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It

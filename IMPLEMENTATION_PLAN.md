@@ -1611,6 +1611,26 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   and contains the update-check path. An already-open tab still needs one
   refresh to receive this new behavior; future deployments are detected and
   offered safely. R-700 review remains `IN_PROGRESS`.
+- **Post-sync view refresh correction:** The owner clarified that the remaining
+  confusion was not only stale deployment delivery: after a successful new
+  device pull, the repository contained the remote records but the visible
+  local shell still held its boot-time project/expense projection until a
+  browser reload. The fresh R-700 reviewer recorded this as a severity-2
+  blocker. Commit `4691249` adds a typed `shell.repository.refresh` event and
+  a project-state reload actor; the sync runtime emits it once per new
+  completed exchange timestamp. Only the projection is reloaded, preserving
+  the current route and unsaved workflow actors. Shell, runtime, and component
+  regressions pass; integrated validation passed `deno task fmt:check`,
+  `deno task lint`, `deno task check`, `deno task test` (266/266),
+  `deno task test:integration` (83/83), `deno task test:component` (92/92 on
+  two consecutive runs), `deno task test:domain` (37/37), `deno task test:actor`
+  (1/1), and `deno task build`. CI run `32902472065` and Pages run
+  `32902472063` succeeded; the live bundle is `assets/index-Ceyvjwt8.js` and
+  contains `4691249` and the refresh path. The first final `deno task verify`
+  attempt reached E2E after all preceding gates passed but could not start
+  because the independent review's temporary Vite server already occupied
+  port 5173; no E2E failure was recorded. R-700 remains `IN_PROGRESS` pending
+  the fresh reviewer’s final matrix and explicit approval.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

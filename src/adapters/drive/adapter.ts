@@ -24,6 +24,7 @@ import {
   defaultDriveFetch,
   DRIVE_API_ROOT,
   DRIVE_APP_DATA_SCOPE,
+  DRIVE_UPLOAD_ROOT,
   DRIVE_USER_FIELDS,
 } from "./browser.ts";
 
@@ -464,8 +465,9 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
   function url(
     path: string,
     parameters: Readonly<Record<string, string>>,
+    root = DRIVE_API_ROOT,
   ): string {
-    const result = new URL(`${DRIVE_API_ROOT}/${path}`);
+    const result = new URL(`${root}/${path}`);
     for (const [key, value] of Object.entries(parameters)) {
       result.searchParams.set(key, value);
     }
@@ -480,6 +482,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
       readonly method?: string;
       readonly body?: string;
       readonly headers?: Readonly<Record<string, string>>;
+      readonly root?: string;
     },
     operation: string,
     optionsForOperation: OperationOptions | undefined,
@@ -489,7 +492,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
         throw adapterError("offline", operation);
       }
       const response = await fetcher(
-        url(request.path, request.parameters ?? {}),
+        url(request.path, request.parameters ?? {}, request.root),
         {
           method: request.method ?? "GET",
           headers: {
@@ -742,6 +745,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
           path: metadata === undefined
             ? "files"
             : `files/${encodeURIComponent(metadata.id)}`,
+          root: DRIVE_UPLOAD_ROOT,
           parameters: {
             uploadType: "multipart",
             fields: DRIVE_MUTATION_FIELDS,

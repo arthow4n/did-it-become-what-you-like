@@ -167,6 +167,16 @@ class SyntheticDriveEndpoint {
     };
     this.calls.push(call);
 
+    if (
+      (method === "POST" || method === "PATCH") &&
+      requestUrl.searchParams.get("uploadType") === "multipart" &&
+      !path.startsWith("/upload/drive/v3/")
+    ) {
+      return new Response("multipart upload endpoint required", {
+        status: 400,
+      });
+    }
+
     const failure = this.failures.shift();
     if (failure !== undefined) {
       return new Response("provider response omitted", {
@@ -548,9 +558,10 @@ Deno.test(
     assert(
       endpoint.calls.some((call) =>
         call.method === "PATCH" &&
+        call.path.startsWith("/upload/drive/v3/files/") &&
         call.ifMatch === created.etag
       ),
-      "conditional update must send the response ETag in If-Match",
+      "conditional update must use the upload URI and response ETag in If-Match",
     );
     assert(
       endpoint.calls.some((call) =>
@@ -558,6 +569,40 @@ Deno.test(
         call.ifMatch === updated.etag
       ),
       "conditional delete must send the response ETag in If-Match",
+    );
+  },
+);
+
+Deno.test(
+  "drive-adapter: first local sync uploads through the v3 upload endpoint and retries transient failures",
+  async () => {
+    const { adapter, endpoint } = fixture();
+    await authorized(adapter);
+    assertEquals(await adapter.listAppData(), []);
+
+    endpoint.failNext(503);
+    const created = await adapter.writeAppData({
+      name: "local-expense-sync.json",
+      body: '{"expenses":[{"id":"expense-1"}]}',
+    });
+
+    assertEquals(
+      (await adapter.readAppData("local-expense-sync.json"))?.body,
+      created.body,
+    );
+    assert(
+      endpoint.calls.some((call) =>
+        call.method === "POST" &&
+        call.path === "/upload/drive/v3/files" &&
+        call.fields === "id,name,mimeType,modifiedTime,parents"
+      ),
+      "multipart create must use the Drive v3 upload URI",
+    );
+    assert(
+      endpoint.calls.every((call) =>
+        call.method !== "POST" || call.path !== "/drive/v3/files"
+      ),
+      "multipart create must not use the metadata-only URI",
     );
   },
 );

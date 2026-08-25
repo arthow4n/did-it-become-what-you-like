@@ -3,6 +3,7 @@ import type { OperationOptions } from "../ports/common.ts";
 export const DRIVE_APP_DATA_SCOPE =
   "https://www.googleapis.com/auth/drive.appdata";
 export const DRIVE_API_ROOT = "https://www.googleapis.com/drive/v3";
+export const DRIVE_UPLOAD_ROOT = "https://www.googleapis.com/upload/drive/v3";
 export const DRIVE_USER_FIELDS = "user(displayName,emailAddress,permissionId)";
 
 export type DriveTokenSuccess = {

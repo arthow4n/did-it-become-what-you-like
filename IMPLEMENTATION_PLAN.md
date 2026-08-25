@@ -1382,11 +1382,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   authorization check after the current production follow-up fixes.
 - **Reconciled branch/upstream:** the prior R-700 follow-up fixes remain
   integrated and the latest owner-reported sync recovery correction is pushed
-  in `9d04692` (`Rebuild local sync metadata during recovery`). The Q-604 hosted release and
-  Plato's review targeted the earlier `71737ab`; the two findings and the
-  bounded correction evidence are recorded above. The root worktree contains
-  only the intentionally untracked `A-303-progress.md`, `R-300-progress.md`,
-  `R-400-contrast-fix-progress.md`, and preserved
+  in `0de0939` (`Recover duplicate hidden Drive sync files`). The Q-604 hosted
+  release and Plato's review targeted the earlier `71737ab`; the two findings
+  and the bounded correction evidence are recorded above. The root worktree
+  contains only the intentionally untracked `A-303-progress.md`,
+  `R-300-progress.md`, `R-400-contrast-fix-progress.md`, and preserved
   `recovered-s404-root-artifacts-2026-08-24/` recovery directory. Preserved
   worktrees are listed below.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
@@ -1509,6 +1509,24 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   that file failed identically when rerun alone, while the affected local UI
   file passed alone. R-700 remains blocked pending the owner's fresh live
   configured-Drive smoke and reload authorization check on the new deployment.
+- **Duplicate hidden-file recovery correction:** The owner's screenshot after
+  `9d04692` proved the recovery action itself still returned to corrupt-data.
+  Inspection found that the Drive adapter rejected duplicate app-data names
+  globally during listing, so two same-named hidden sync files prevented both
+  ordinary reads and the explicit reset from reaching either copy. The direct
+  correction is pushed as `0de0939`: raw app-data listing now preserves Drive's
+  legal duplicate-name results, ordinary reads and writes still reject an
+  ambiguous target, ETag-qualified deletion selects one exact copy, and the
+  explicit recovery deletes every matching sync file while preserving all
+  unrelated app data and retirement markers. Regression tests reproduce two
+  malformed same-named files, prove both are removed, retain an unrelated file,
+  preserve stale-ETag fail-closed behavior, and complete the actor's existing
+  local-metadata rebuild/resync flow. Validation passed 264 aggregate tests,
+  82 integration tests, 89 component tests, 9 focused sync-actor tests, focused
+  configured-Drive E2E (1/1), formatting, lint, type-check, both builds, frozen
+  audit, and diff check. R-700 remains blocked pending the owner's fresh live
+  configured-Drive smoke and reload authorization check after Pages deploys
+  this commit.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

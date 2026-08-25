@@ -70,6 +70,14 @@ function configuredCopy(
       detail: "Pulling remote changes before uploading local changes.",
     };
   }
+  if (view.sync === "recovering") {
+    return {
+      label: "Repairing sync",
+      tone: "warning",
+      detail:
+        "Removing the malformed hidden Drive sync file before syncing local data again.",
+    };
+  }
   return {
     label: "Synced",
     tone: "positive",
@@ -109,6 +117,8 @@ export function configuredModeLabel(mode: ConfiguredSyncMode): string {
       return "Synced";
     case "syncing":
       return "Syncing";
+    case "recovering":
+      return "Repairing sync";
     case "conflict":
       return "Conflicts need review";
     case "authorization-error":
@@ -127,6 +137,7 @@ export function canSyncNow(
 ): boolean {
   return view.network === "online" &&
     view.sync !== "syncing" &&
+    view.sync !== "recovering" &&
     view.sync !== "authorization-error" &&
     view.sync !== "retryable-error" &&
     view.sync !== "error" &&
@@ -142,7 +153,9 @@ export function syncNowDisabledReason(
   if (view.network === "reconnecting") {
     return "Manual sync becomes available after reconnecting.";
   }
-  if (view.sync === "syncing") return "Synchronization is already in progress.";
+  if (view.sync === "syncing" || view.sync === "recovering") {
+    return "Synchronization recovery is already in progress.";
+  }
   if (view.sync === "authorization-error") {
     return "Reconnect Google Drive before synchronizing.";
   }

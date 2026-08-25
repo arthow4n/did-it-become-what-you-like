@@ -225,6 +225,51 @@ Deno.test(
 );
 
 Deno.test(
+  "sync-actor: explicit corrupt-data recovery resets the remote file before syncing",
+  async () => {
+    const causal = createFakeCausalSyncPort(initialCausalSnapshot());
+    causal.failNext("corrupt-data");
+    const actor = await configuredActor(causal);
+
+    actor.send({ type: "sync.request", request: { reason: "manual" } });
+    await waitFor(
+      () => actor.getSnapshot().value === "error",
+      "corrupt data did not enter the error state",
+    );
+    assertEquals(actor.getSnapshot().context.error?.code, "corrupt-data");
+    assert(actor.getSnapshot().can({ type: "sync.recover-corrupt-data" }));
+
+    actor.send({ type: "sync.recover-corrupt-data" });
+    await waitFor(
+      () => actor.getSnapshot().value === "idle",
+      "explicit recovery did not reset and resynchronize",
+    );
+    assertEquals(causal.resetCount, 1);
+    assertEquals(actor.getSnapshot().context.error, null);
+    actor.stop();
+  },
+);
+
+Deno.test(
+  "sync-actor: ordinary failures never invoke corrupt-data recovery",
+  async () => {
+    const causal = createFakeCausalSyncPort(initialCausalSnapshot());
+    causal.failNext("quota");
+    const actor = await configuredActor(causal);
+
+    actor.send({ type: "sync.request", request: { reason: "manual" } });
+    await waitFor(
+      () => actor.getSnapshot().value === "retryableError",
+      "quota failure did not enter retryable state",
+    );
+    actor.send({ type: "sync.recover-corrupt-data" });
+    assertEquals(actor.getSnapshot().value, "retryableError");
+    assertEquals(causal.resetCount, 0);
+    actor.stop();
+  },
+);
+
+Deno.test(
   "sync-actor: generic error retry stays offline when the actor is offline",
   async () => {
     const actor = createSyncActor({

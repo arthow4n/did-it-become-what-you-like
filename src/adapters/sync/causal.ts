@@ -6,6 +6,7 @@ import {
   type CausalSnapshot,
   type CausalSyncPacket,
   type CausalSyncPort,
+  type CausalSyncRecoveryPort,
   cloneJson,
   type DriveFile,
   type DriveTransportPort,
@@ -92,6 +93,8 @@ export type DriveCausalSyncOptions = {
   readonly fileName?: string;
   readonly initialSnapshot?: CausalSnapshot;
 };
+
+export type DriveCausalSyncPort = CausalSyncPort & CausalSyncRecoveryPort;
 
 export type InMemoryCausalSyncOptions = {
   readonly initialSnapshot?: CausalSnapshot;
@@ -940,7 +943,7 @@ function parseEnvelope(body: string): CausalSnapshot {
 
 export function createDriveCausalSyncPort(
   options: DriveCausalSyncOptions,
-): CausalSyncPort {
+): DriveCausalSyncPort {
   const fileName = options.fileName ?? CAUSAL_SYNC_FILE_NAME;
   let knownFile: DriveFile | undefined;
   const readRemote = async (
@@ -984,10 +987,32 @@ export function createDriveCausalSyncPort(
         conflicts: merged.conflicts,
       };
     },
+    resetRemoteSyncFile: async (operationOptions) => {
+      const marker = await options.drive.readRetirementMarker(operationOptions);
+      if (marker !== undefined) {
+        throw adapterError("retired", "sync.remote-reset");
+      }
+      // This is deliberately a fresh raw read. Parsing is not attempted, and
+      // the ETag returned here is the compare-and-delete guard for recovery.
+      const file = await options.drive.readAppData(
+        fileName,
+        operationOptions,
+      );
+      if (file === undefined) {
+        knownFile = undefined;
+        throw adapterError("not-found", "sync.remote-reset");
+      }
+      await options.drive.deleteAppData(
+        fileName,
+        file.etag,
+        operationOptions,
+      );
+      knownFile = undefined;
+    },
   };
 }
 
-export type InMemoryCausalSyncPort = CausalSyncPort & {
+export type InMemoryCausalSyncPort = CausalSyncPort & CausalSyncRecoveryPort & {
   readonly setSnapshot: (snapshot: CausalSnapshot) => void;
   readonly retire: () => void;
 };
@@ -1036,6 +1061,11 @@ export function createInMemoryCausalSyncPort(
         appliedChangeIds: merged.appliedChangeIds,
         conflicts: merged.conflicts,
       };
+    },
+    resetRemoteSyncFile: async (operationOptions) => {
+      await before("read", operationOptions);
+      if (retired) throw adapterError("retired", "sync.in-memory.reset");
+      snapshot = initialSnapshot(undefined);
     },
     setSnapshot: (next) => snapshot = cloneSnapshot(next),
     retire: () => retired = true,

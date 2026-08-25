@@ -37,6 +37,15 @@ export type CausalApplyResult = {
   readonly conflicts: readonly SyncConflict[];
 };
 
+/**
+ * Explicit recovery for the named causal sync file. Implementations must
+ * re-read the raw file and delete it conditionally; recovery is never part of
+ * ordinary reads, retries, or parse-error handling.
+ */
+export interface CausalSyncRecoveryPort {
+  resetRemoteSyncFile(options?: OperationOptions): Promise<void>;
+}
+
 export interface CausalSyncPort {
   read(options?: OperationOptions): Promise<CausalSnapshot>;
   exportPacket(options?: OperationOptions): Promise<CausalSyncPacket>;

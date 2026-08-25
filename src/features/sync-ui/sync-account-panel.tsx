@@ -2,6 +2,7 @@ import { AlertTriangle, ArrowLeft, Cloud } from "lucide-react";
 import {
   Button,
   Card,
+  ConfirmDialog,
   ContentContainer,
   DefinitionList,
   ErrorState,
@@ -156,6 +157,20 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
         {view.sync === "syncing"
           ? <Progress label="Synchronization in progress" indeterminate />
           : null}
+        {view.sync === "recovering"
+          ? (
+            <Stack gap={2}>
+              <Progress
+                label="Repairing malformed Google Drive sync data"
+                indeterminate
+              />
+              <Text tone="secondary">
+                Removing only the hidden causal sync file. Local data stays on
+                this device.
+              </Text>
+            </Stack>
+          )
+          : null}
 
         {view.network === "offline"
           ? (
@@ -198,12 +213,39 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
                 ? "Synchronization needs a retry"
                 : "Synchronization failed"}
               action={
-                <Button
-                  onPress={() => props.onRetry?.()}
-                  isDisabled={!props.onRetry}
-                >
-                  Retry synchronization
-                </Button>
+                <Stack gap={2}>
+                  <Button
+                    onPress={() => props.onRetry?.()}
+                    isDisabled={!props.onRetry}
+                  >
+                    Retry synchronization
+                  </Button>
+                  {view.sync === "error" &&
+                      view.errorCode === "corrupt-data" &&
+                      view.recoveryAvailable
+                    ? (
+                      <ConfirmDialog
+                        trigger={
+                          <Button variant="danger">
+                            Reset hidden Drive sync file
+                          </Button>
+                        }
+                        title="Reset hidden Google Drive sync file?"
+                        description={
+                          <>
+                            This deletes the malformed hidden cloud sync file
+                            only. It does not delete or replace this device's
+                            local IndexedDB data, and it never deletes the
+                            dataset retirement marker.
+                          </>
+                        }
+                        confirmLabel="Delete remote sync file"
+                        confirmVariant="danger"
+                        onConfirm={() => props.onRecoverCorruptData?.()}
+                      />
+                    )
+                    : null}
+                </Stack>
               }
             >
               {view.message ??

@@ -415,6 +415,82 @@ Deno.test("sync-schedules: local commit during pending pull is retained", async 
   );
 });
 
+Deno.test(
+  "sync-schedules: malformed remote envelope can be explicitly reset and resynced",
+  async () => {
+    const baseDrive = createFakeDrivePorts();
+    await baseDrive.authorize();
+    const drive = {
+      ...baseDrive,
+      readRetirementMarker: () => Promise.resolve(undefined),
+    };
+    await drive.writeAppData({
+      name: "__did-it-become-what-you-like.sync.json",
+      body: "not a causal envelope",
+    });
+    const causal = createDriveCausalSyncPort({ drive });
+    const current = await client(
+      "device-recovery",
+      datasetWithProject("project-recovery"),
+    );
+    const before = await readLocalDataset(current.local);
+
+    await assertRejects(() => causal.read(), "corrupt-data");
+    await causal.resetRemoteSyncFile();
+    await exchange(current, causal);
+
+    assertEquals(await readLocalDataset(current.local), before);
+    const repaired = await baseDrive.readAppData(
+      "__did-it-become-what-you-like.sync.json",
+    );
+    assert(repaired !== undefined);
+    assert(repaired.body.includes('"type":"causal-sync-envelope"'));
+  },
+);
+
+Deno.test(
+  "sync-schedules: remote reset rejects a stale ETag without deleting the newer file",
+  async () => {
+    const baseDrive = createFakeDrivePorts();
+    await baseDrive.authorize();
+    let mutateOnRead = false;
+    const drive = {
+      ...baseDrive,
+      readRetirementMarker: () => Promise.resolve(undefined),
+      readAppData: async (
+        name: string,
+        options?: Parameters<
+          typeof baseDrive.readAppData
+        >[1],
+      ) => {
+        const file = await baseDrive.readAppData(name, options);
+        if (mutateOnRead && file !== undefined) {
+          mutateOnRead = false;
+          await baseDrive.writeAppData({
+            name,
+            body: "newer remote contents",
+          });
+        }
+        return file;
+      },
+    };
+    await baseDrive.writeAppData({
+      name: "__did-it-become-what-you-like.sync.json",
+      body: "stale envelope",
+    });
+    const causal = createDriveCausalSyncPort({ drive });
+    mutateOnRead = true;
+
+    await assertRejects(() => causal.resetRemoteSyncFile(), "conflict");
+    assertEquals(
+      (await baseDrive.readAppData(
+        "__did-it-become-what-you-like.sync.json",
+      ))?.body,
+      "newer remote contents",
+    );
+  },
+);
+
 Deno.test("sync-schedules: offline, authorization, retirement, and registry restart are explicit", async () => {
   const offline: CausalSyncPort = {
     read: () => Promise.reject(adapterError("offline", "sync.offline")),

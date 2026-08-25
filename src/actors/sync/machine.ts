@@ -1,12 +1,14 @@
 import { assign, createActor, fromPromise, setup, type Snapshot } from "xstate";
 import type {
   CausalSyncPort,
+  CausalSyncRecoveryPort,
   ClockPort,
   IdPort,
   LocalPort,
   OnlineState,
   SyncConflict,
 } from "../../adapters/ports/index.ts";
+import { adapterError } from "../../adapters/ports/index.ts";
 import type { StableId } from "../../domain/index.ts";
 import {
   type ContractFailure,
@@ -26,6 +28,7 @@ import {
 export type SyncActorDependencies = {
   readonly local: LocalPort;
   readonly causal: CausalSyncPort;
+  readonly recovery?: CausalSyncRecoveryPort;
   readonly registry: DeviceRegistry;
   readonly deviceId: StableId;
   readonly ids: Pick<IdPort, "next">;
@@ -43,6 +46,7 @@ export type SyncActorEvent =
   | { readonly type: "sync.request"; readonly request: SyncRequest }
   | { readonly type: "sync.reconnect" }
   | { readonly type: "sync.retry" }
+  | { readonly type: "sync.recover-corrupt-data" }
   | { readonly type: "sync.network.offline" }
   | { readonly type: "sync.network.online" }
   | { readonly type: "sync.disconnect" }
@@ -163,6 +167,17 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
           return result;
         },
       ),
+      resetRemoteSync: fromPromise(
+        async ({ input, signal }: {
+          input: SyncActorDependencies;
+          signal: AbortSignal;
+        }): Promise<void> => {
+          if (input.recovery === undefined) {
+            throw adapterError("unsupported", "sync.remote-reset");
+          }
+          await input.recovery.resetRemoteSyncFile({ signal });
+        },
+      ),
     },
     guards: {
       isConfigured: ({ context }) => context.accountEmail !== null,
@@ -174,6 +189,9 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
         context.error.code !== "forbidden",
       requestedOnline: ({ context }) => context.pendingAccountOnline,
       hasPendingRequest: ({ context }) => context.pendingRequest !== null,
+      canRecoverCorruptData: ({ context }) =>
+        context.error?.code === "corrupt-data" &&
+        dependencies.recovery !== undefined,
     },
   });
 
@@ -468,6 +486,36 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
           "sync.retire": "retired",
         },
       },
+      recovering: {
+        tags: ["loading", "recovery"],
+        invoke: {
+          src: "resetRemoteSync",
+          input: () => dependencies,
+          onDone: {
+            target: "synchronizing",
+            actions: assign({
+              pendingRequest: ({ context }) =>
+                context.pendingRequest ?? { reason: "manual" },
+              queued: () => false,
+              error: () => null,
+            }),
+          },
+          onError: {
+            target: "error",
+            actions: assign({
+              error: ({ event }) => syncFailure(event.error),
+            }),
+          },
+        },
+        on: {
+          "sync.network.offline": {
+            target: "offline",
+            actions: assign({ online: () => false }),
+          },
+          "sync.disconnect": "unconfigured",
+          "sync.retire": "retired",
+        },
+      },
       conflict: {
         tags: ["conflict"],
         on: {
@@ -531,6 +579,11 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
             },
             { target: "offline", guard: "isManualRetryableFailure" },
           ],
+          "sync.recover-corrupt-data": {
+            target: "recovering",
+            guard: "canRecoverCorruptData",
+            actions: assign({ error: () => null }),
+          },
           "sync.connect": {
             target: "idle",
             actions: assign({ online: () => true, error: () => null }),
@@ -580,6 +633,7 @@ export async function hydrateSyncDependencies(
 export function createDefaultSyncDependencies(input: {
   readonly local: LocalPort;
   readonly causal: CausalSyncPort;
+  readonly recovery?: CausalSyncRecoveryPort;
   readonly deviceId: StableId;
   readonly ids: Pick<IdPort, "next">;
   readonly clock: Pick<ClockPort, "now">;
@@ -587,6 +641,10 @@ export function createDefaultSyncDependencies(input: {
 }): SyncActorDependencies {
   return {
     ...input,
+    recovery: input.recovery ??
+      ("resetRemoteSyncFile" in input.causal
+        ? input.causal as CausalSyncRecoveryPort
+        : undefined),
     registry: createDeviceRegistry({
       local: input.local,
       deviceId: input.deviceId,

@@ -68,6 +68,7 @@ const callbacks = () => {
     onConnect: () => events.push("connect"),
     onReconnect: () => events.push("reconnect"),
     onRetry: () => events.push("retry"),
+    onRecoverCorruptData: () => events.push("recover-corrupt-data"),
     onSyncNow: () => events.push("sync-now"),
     onOpenConflicts: () => events.push("conflicts"),
     onManageDevices: () => events.push("devices"),
@@ -362,6 +363,67 @@ Deno.test("sync screen explains that reload requires a fresh authorization gestu
     });
   });
 });
+
+Deno.test(
+  "sync screen exposes explicit corrupt-data recovery confirmation only for corrupt data",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent }) => {
+      await withAriaGlobals(() => {
+        const result = callbacks();
+        render(
+          createElement(SyncAccountPanel, {
+            view: {
+              ...syncedView,
+              sync: "error",
+              errorCode: "corrupt-data",
+              recoveryAvailable: true,
+            },
+            knownDeviceCount: 1,
+            ...result,
+          }),
+        );
+        const view = within(document.body);
+        fireEvent.click(
+          view.getByRole("button", { name: "Reset hidden Drive sync file" }),
+        );
+        assert(
+          view.getByRole("dialog").textContent?.includes(
+            "deletes the malformed hidden cloud sync file",
+          ),
+        );
+        assert(
+          view.getByText(/local IndexedDB data/),
+        );
+        fireEvent.click(
+          view.getByRole("button", { name: "Delete remote sync file" }),
+        );
+        assert(result.events.includes("recover-corrupt-data"));
+      });
+    });
+
+    await withComponentHarness(async ({ render }) => {
+      await withAriaGlobals(() => {
+        render(
+          createElement(SyncAccountPanel, {
+            view: {
+              ...syncedView,
+              sync: "error",
+              errorCode: "invalid-request",
+              recoveryAvailable: true,
+            },
+            knownDeviceCount: 1,
+            onConnect: () => undefined,
+          }),
+        );
+        assert(
+          !within(document.body).queryByRole("button", {
+            name: "Reset hidden Drive sync file",
+          }),
+        );
+      });
+    });
+  },
+);
 
 Deno.test("sync account switch confirmation requires explicit confirm or cancel callbacks", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {

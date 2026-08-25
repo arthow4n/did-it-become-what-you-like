@@ -8,6 +8,7 @@ import {
   type CausalApplyResult,
   type CausalSnapshot,
   type CausalSyncPort,
+  type CausalSyncRecoveryPort,
   type ClockPort,
   cloneJson,
   type DriveAuthorizationPort,
@@ -271,9 +272,14 @@ export function createFakeLocalPort(): FakeLocalPort {
   return api;
 }
 
-export type FakeCausalSyncPort = CausalSyncPort & FakeControls & {
-  setSnapshot(snapshot: CausalSnapshot): void;
-};
+export type FakeCausalSyncPort =
+  & CausalSyncPort
+  & CausalSyncRecoveryPort
+  & FakeControls
+  & {
+    setSnapshot(snapshot: CausalSnapshot): void;
+    readonly resetCount: number;
+  };
 
 export function createFakeCausalSyncPort(
   initial: CausalSnapshot = {
@@ -285,6 +291,7 @@ export function createFakeCausalSyncPort(
 ): FakeCausalSyncPort {
   const controls = createControls("causal-sync");
   let snapshot = structuredClone(initial);
+  let resetCount = 0;
   const api: FakeCausalSyncPort = {
     read: async (options) => {
       controls.check(options);
@@ -329,12 +336,20 @@ export function createFakeCausalSyncPort(
         conflicts,
       };
     },
+    resetRemoteSyncFile: async (options) => {
+      controls.check(options);
+      resetCount += 1;
+      snapshot = structuredClone(initial);
+    },
     setSnapshot: (next) => {
       snapshot = structuredClone(next);
     },
     setScenario: controls.setScenario,
     failNext: controls.failNext,
     clearFailures: controls.clearFailures,
+    get resetCount(): number {
+      return resetCount;
+    },
   };
   return api;
 }

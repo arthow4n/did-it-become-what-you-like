@@ -3,6 +3,7 @@ export type SyncNetworkMode = "online" | "offline" | "reconnecting";
 export type ConfiguredSyncMode =
   | "synced"
   | "syncing"
+  | "recovering"
   | "conflict"
   | "authorization-error"
   | "retryable-error"
@@ -30,6 +31,24 @@ export type SyncConnectionViewModel =
     readonly pendingChangeCount: number;
     readonly unresolvedConflictCount: number;
     readonly message?: string;
+    readonly errorCode?:
+      | "aborted"
+      | "offline"
+      | "unauthorized"
+      | "forbidden"
+      | "not-found"
+      | "conflict"
+      | "quota"
+      | "corrupt-data"
+      | "partial-transport"
+      | "rate-limited"
+      | "invalid-request"
+      | "invalid"
+      | "unsupported"
+      | "unavailable"
+      | "retired"
+      | "unknown";
+    readonly recoveryAvailable?: boolean;
   };
 
 export type KnownDeviceViewModel = {
@@ -55,6 +74,7 @@ export type SyncAccountPanelCallbacks = {
   readonly onConnect: () => void;
   readonly onReconnect?: () => void;
   readonly onRetry?: () => void;
+  readonly onRecoverCorruptData?: () => void;
   readonly onSyncNow?: () => void;
   readonly onOpenConflicts?: () => void;
   readonly onManageDevices?: () => void;

@@ -16,6 +16,7 @@ import {
 } from "react";
 import {
   adapterError,
+  type CausalSyncRecoveryPort,
   type DriveAuthState,
   type SecretStoragePort,
 } from "../adapters/ports/index.ts";
@@ -132,6 +133,7 @@ type RuntimeIds = {
 export type SyncRuntimeBoundary = {
   readonly drive?: DriveAdapter;
   readonly causal?: CausalSyncPort;
+  readonly recovery?: CausalSyncRecoveryPort;
   readonly clientId?: string;
   readonly identity?: DriveIdentityProvider;
 };
@@ -154,6 +156,9 @@ function configuredRuntimeBoundary(): SyncRuntimeBoundary {
     ...(candidate.causal === undefined
       ? {}
       : { causal: candidate.causal as CausalSyncPort }),
+    ...(candidate.recovery === undefined
+      ? {}
+      : { recovery: candidate.recovery as CausalSyncRecoveryPort }),
     ...(typeof candidate.clientId === "string"
       ? { clientId: candidate.clientId }
       : {}),
@@ -338,6 +343,7 @@ function syncViewFromSnapshot(
     ? Actor extends { getSnapshot: () => infer Snapshot } ? Snapshot : never
     : never,
   driveStatus: DriveAuthState | null = "authorized",
+  recoveryAvailable = false,
 ): SyncConnectionViewModel {
   const context = snapshot.context;
   if (snapshot.matches("hydrating") || snapshot.matches("configuring")) {
@@ -360,10 +366,12 @@ function syncViewFromSnapshot(
     | "syncing"
     | "conflict"
     | "authorization-error"
+    | "recovering"
     | "retryable-error"
     | "error"
     | "retired" = "synced";
-  if (snapshot.matches("synchronizing")) sync = "syncing";
+  if (snapshot.matches("recovering")) sync = "recovering";
+  else if (snapshot.matches("synchronizing")) sync = "syncing";
   else if (snapshot.matches("conflict")) sync = "conflict";
   else if (snapshot.matches("retryableError")) sync = "retryable-error";
   else if (snapshot.matches("error")) sync = "error";
@@ -383,6 +391,9 @@ function syncViewFromSnapshot(
     pendingChangeCount: context.pendingChangeCount,
     unresolvedConflictCount: context.unresolvedConflictCount,
     ...(context.error === null ? {} : { message: context.error.message }),
+    ...(context.error === null ? {} : { errorCode: context.error.code }),
+    recoveryAvailable: recoveryAvailable &&
+      context.error?.code === "corrupt-data",
   };
 }
 
@@ -824,6 +835,10 @@ export function SyncPortabilityRuntime({
       createDefaultSyncDependencies({
         local: repository,
         causal,
+        recovery: runtimeBoundary.recovery ??
+          ("resetRemoteSyncFile" in causal
+            ? causal as CausalSyncRecoveryPort
+            : undefined),
         deviceId: StableIdSchema.parse(repository.deviceId),
         ids,
         clock,
@@ -831,7 +846,7 @@ export function SyncPortabilityRuntime({
           ? "offline"
           : "online",
       }),
-    [causal, ids, repository],
+    [causal, ids, repository, runtimeBoundary.recovery],
   );
   const importAdapter = useMemo(
     () =>
@@ -1044,6 +1059,7 @@ export function SyncPortabilityRuntime({
   const syncView = syncViewFromSnapshot(
     syncSnapshot,
     driveAdapter?.status() ?? null,
+    syncDependencies.recovery !== undefined,
   );
 
   useEffect(() => {
@@ -1551,6 +1567,8 @@ export function SyncPortabilityRuntime({
         knownDeviceCount={deviceProjection.devices.length}
         onConnect={() => authorizeDrive()}
         onRetry={() => sendSync({ type: "sync.retry" })}
+        onRecoverCorruptData={() =>
+          sendSync({ type: "sync.recover-corrupt-data" })}
         onSyncNow={() =>
           sendSync({ type: "sync.request", request: { reason: "manual" } })}
         onOpenConflicts={() => onNavigate("/settings/conflicts")}

@@ -167,7 +167,7 @@ PWA precache generated: OK
   - **Verification:** Open Create Project and Create Category dialogs. Footers must contain both `Cancel` and `Save` buttons.
   - **Commit:** `fix(ui): FIX-R2-05 add secondary Cancel button to project and category creation modals`
 
-- [ ] **STEP-R2-06 (FIX-R2-06) · Subdue Helper Description Text Styling**
+- [x] **STEP-R2-06 (FIX-R2-06) · Subdue Helper Description Text Styling**
   - **Priority:** P2 (Visual Hierarchy / Typographic Discipline)
   - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css)
   - **Action:** Set `.ds-field__description` to `color: var(--color-text-secondary); font-size: var(--font-size-caption); line-height: 1.3; margin-top: var(--space-1);`.

@@ -1336,6 +1336,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   S-404, S-405, and Q-601 are complete as recorded below.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
+- **GitHub Pages availability update:** the repository owner has re-enabled
+  GitHub Pages in the deployment workflow after the earlier manual disablement.
+  Q-604 may now perform its planned hosted artifact, base-path, offline, and
+  update smoke checks when that task is released; no live deployment result is
+  inferred before Q-604 runs those checks.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

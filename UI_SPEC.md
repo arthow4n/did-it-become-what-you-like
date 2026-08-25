@@ -17,9 +17,9 @@ visual design system.
 - The visual character is calm and minimal. The MVP has one comfortable dark
   theme with layered neutral surfaces and one restrained accent color. Exact
   roles, values, and component rules are defined in `DESIGN_SYSTEM.md`.
-- Mobile uses bottom navigation for **Expenses**, central **Add**,
-  **Organize**, and **Settings**. Desktop presents the same structure in a left
-  navigation rail.
+- Mobile uses bottom navigation for **Expenses**, central **Add**, **Organize**,
+  and **Settings**. Desktop presents the same structure in a left navigation
+  rail.
 - The current project selector belongs in the Expenses header rather than in a
   separate permanent navigation destination.
 - **Add** opens a choice between manual entry and **Scan with AI**. It is an
@@ -29,17 +29,17 @@ visual design system.
   a project or category opens its own focused screen.
 - Expenses is the primary read/review screen. Filters select which records are
   being examined, the expense list explains what was recorded, summary totals
-  explain how much the selection represents, and the category breakdown
-  explains where that money went.
+  explain how much the selection represents, and the category breakdown explains
+  where that money went.
 - Totals are integrated into Expenses rather than placed on a separate totals
   screen. The summary distinguishes **Outflows**, **Money back**, and **Net
   spent** so positive adjustments are visible rather than silently hidden.
 - Quick period choices include **Today**, **This month**, **This year**, and a
   custom calendar day/month/year. These are current or specifically selected
   calendar periods, not rolling windows. Within the selected project, a period
-  combines with at most one category, one currency, merchant/description
-  search, and an optional amount range. Every summary and list updates from the
-  same active filter selection.
+  combines with at most one category, one currency, merchant/description search,
+  and an optional amount range. Every summary and list updates from the same
+  active filter selection.
 - Responsive layouts must give content a natural width and height, wrap where
   appropriate, and never depend on page-level horizontal scrolling. A control
   row which genuinely benefits from horizontal overflow, such as compact quick
@@ -119,18 +119,17 @@ Application shell
 - Mobile uses a bottom bar with **Expenses**, central **Add**, **Organize**, and
   **Settings**. Add is an action which opens a choice between manual entry and
   AI scanning, not a persistent tab with its own empty page.
-- Desktop uses the same destinations in a left navigation rail. The content
-  area has a readable maximum width, while suitable list/detail screens may use
-  two columns.
+- Desktop uses the same destinations in a left navigation rail. The content area
+  has a readable maximum width, while suitable list/detail screens may use two
+  columns.
 - The selected project appears prominently in the Expenses header because it
   changes the scope of lists and totals.
-- A compact global status indicator communicates offline, syncing, conflict,
-  or error state. Activating it opens the relevant synchronization details.
+- A compact global status indicator communicates offline, syncing, conflict, or
+  error state. Activating it opens the relevant synchronization details.
 
 ### First Use and Installation
 
-**Status: approved.** There is no tutorial, walkthrough, or onboarding
-carousel.
+**Status: approved.** There is no tutorial, walkthrough, or onboarding carousel.
 
 ```text
 +----------------------------------+
@@ -149,9 +148,9 @@ carousel.
 +----------------------------------+
 ```
 
-- First launch presents only three useful paths: create the first local
-  project, restore a versioned JSON backup, or connect Google Drive. Each path
-  enters the already-approved focused workflow.
+- First launch presents only three useful paths: create the first local project,
+  restore a versioned JSON backup, or connect Google Drive. Each path enters the
+  already-approved focused workflow.
 - Gemini configuration is optional and remains discoverable from **Scan with
   AI** and Settings; it does not block ordinary first use.
 - The app assumes the owner can understand its plain labels. It never inserts a
@@ -216,22 +215,21 @@ carousel.
 Agreed behavior:
 
 - **This month** is the initial period. Today, This month, This year, and custom
-  calendar day/month/year selection remain quickly available. The quick
-  choices mean the current local calendar periods; rolling periods are not in
-  the initial release.
+  calendar day/month/year selection remain quickly available. The quick choices
+  mean the current local calendar periods; rolling periods are not in the
+  initial release.
 - The three largest categories are shown initially with **View all**. Selecting
   a category applies it as a filter.
 - A scanned receipt is summarized as one expandable row so a long receipt does
-  not overwhelm the list; expanding it reveals its independently editable
-  lines.
+  not overwhelm the list; expanding it reveals its independently editable lines.
 - An individual row shows merchant or description, category, signed amount,
   currency, and optional time when present. Full information is available from
   its details screen.
-- Quick periods and category remain directly available. Search, currency,
-  amount range, and other secondary criteria use a filter panel, with active
-  criteria represented by removable chips. Search matches merchant and
-  description. These criteria combine within the selected project rather than
-  replacing one another.
+- Quick periods and category remain directly available. Search, currency, amount
+  range, and other secondary criteria use a filter panel, with active criteria
+  represented by removable chips. Search matches merchant and description. These
+  criteria combine within the selected project rather than replacing one
+  another.
 - The list defaults to newest first by stored calendar date and optional time.
   The filter panel offers oldest first as the only alternate initial sort and
   ordering remains deterministic when records share the same date and time.
@@ -239,8 +237,8 @@ Agreed behavior:
   selected project and filters as the expense list.
 - When unresolved conflicts exist anywhere in the dataset, Expenses shows a
   persistent, non-color-only banner with the count and a labeled Review action.
-  The banner remains until resolution but does not block local entry, review,
-  or synchronization of non-conflicting data.
+  The banner remains until resolution but does not block local entry, review, or
+  synchronization of non-conflicting data.
 
 ### Screen 2: Add Choice
 
@@ -269,8 +267,8 @@ Agreed behavior:
   otherwise-empty page. Desktop uses the equivalent compact modal or popover.
 - Manual entry is the first option and AI scanning is second. Both are large,
   full-width, labeled touch targets and do not depend on icon recognition.
-- The AI choice includes a concise reminder that the receipt is sent to
-  Gemini. The first-ever scan still presents the fuller agreed disclosure.
+- The AI choice includes a concise reminder that the receipt is sent to Gemini.
+  The first-ever scan still presents the fuller agreed disclosure.
 - The sheet closes through its labeled close control, browser Back, Escape, or
   tapping outside. Keyboard focus is contained and restored appropriately.
 - When offline, manual entry remains enabled while AI scanning is visibly
@@ -304,9 +302,9 @@ Agreed behavior:
 
 Agreed behavior:
 
-- The owner enters a positive magnitude and chooses **Spent** or **Money
-  back**. The form maps those choices to the agreed negative and positive
-  persisted signs; it does not require manually typing a minus sign.
+- The owner enters a positive magnitude and chooses **Spent** or **Money back**.
+  The form maps those choices to the agreed negative and positive persisted
+  signs; it does not require manually typing a minus sign.
 - A new form defaults to the current project's currency and project,
   `Uncategorized`, and the calendar date produced by the configured local
   expense-day boundary. Every default remains changeable.
@@ -314,8 +312,8 @@ Agreed behavior:
   and restored after an accidental reload. Saving or explicitly discarding the
   form removes that draft; it is never synchronized or included in an export.
 - The chosen concrete date is always visible. For example, a form opened at
-  01:30 with a 03:00 boundary shows the previous calendar date and identifies
-  it as the default expense day rather than showing only an ambiguous “Today.”
+  01:30 with a 03:00 boundary shows the previous calendar date and identifies it
+  as the default expense day rather than showing only an ambiguous “Today.”
 - Amount, merchant, category, date, project, description, and time all remain
   visible; optional description and time are not hidden under a disclosure.
 - Merchant is initially empty. Previously used exact merchant/branch names are
@@ -400,10 +398,10 @@ Agreed behavior:
   structured-output validation. It can be cancelled. Success opens Receipt
   Review; failure offers Retry, another image or model, and manual entry.
 
-The XState scan actor owns image-selected, key-setup, key-validating,
-preparing, requesting, output-validating, review-ready, offline, failed, and
-cancelled modes. UI components must derive availability and rendering from
-that workflow rather than recreating it with unrelated booleans.
+The XState scan actor owns image-selected, key-setup, key-validating, preparing,
+requesting, output-validating, review-ready, offline, failed, and cancelled
+modes. UI components must derive availability and rendering from that workflow
+rather than recreating it with unrelated booleans.
 
 ### Screen 5: Receipt Review
 
@@ -451,10 +449,10 @@ Agreed behavior:
 - Saving atomically commits the parent receipt and every selected line. A
   remaining mismatch requires explicit confirmation. Closing a modified review
   requires discard confirmation.
-- Once structured extraction has passed browser validation, the review draft
-  and its workflow snapshot are persisted device-locally so review can resume
-  after an accidental reload. Saving or explicitly discarding clears the draft;
-  it is never synchronized or exported as an accepted record before Save.
+- Once structured extraction has passed browser validation, the review draft and
+  its workflow snapshot are persisted device-locally so review can resume after
+  an accidental reload. Saving or explicitly discarding clears the draft; it is
+  never synchronized or exported as an accepted record before Save.
 - The receipt image remains unpersisted under the previously agreed ephemeral
   inference-input rule.
 
@@ -484,15 +482,15 @@ Agreed behavior:
 
 Agreed behavior:
 
-- Organize is one landing destination containing compact Projects and
-  Categories sections.
+- Organize is one landing destination containing compact Projects and Categories
+  sections.
 - Each section previews up to three records and provides clearly labeled
   **Manage** and **New** actions. Larger collections remain on dedicated list
   screens rather than making the landing page excessively long.
 - A project preview shows name, default currency, and the current-project
   indicator. Expense counts are not shown here.
-- A category preview shows its name and identifies the built-in
-  `Uncategorized` category.
+- A category preview shows its name and identifies the built-in `Uncategorized`
+  category.
 - Sections and controls use natural-height responsive layout and ordinary
   vertical page scrolling.
 
@@ -533,8 +531,8 @@ Agreed behavior:
 - The current project remains first. Other active projects support custom order
   through drag and accessible move controls.
 - Archiving preserves a project and all of its expenses while hiding it from
-  ordinary project switching. The current project must be switched before it
-  can be archived. Archived projects can be restored.
+  ordinary project switching. The current project must be switched before it can
+  be archived. Archived projects can be restored.
 - An empty project can be deleted after ordinary confirmation. At least one
   active project must remain so every new expense always has a valid project.
 
@@ -586,8 +584,8 @@ active project is selected or created.
 
 Agreed behavior:
 
-- Active categories appear in their global custom order; archived categories
-  are initially collapsed. Search covers both sections and identifies archived
+- Active categories appear in their global custom order; archived categories are
+  initially collapsed. Search covers both sections and identifies archived
   matches.
 - Create and Edit use a focused bottom sheet on mobile and compact modal on
   desktop. Name is required, color is optional, and icons are not part of the
@@ -597,8 +595,8 @@ Agreed behavior:
   conflicts requires renaming it.
 - Drag handles and accessible Move up/Move down actions change the same global
   order used by category pickers and the Gemini category catalogue.
-- Archiving a used category preserves all historical relationships and keeps
-  the category visible where old expenses require it, while excluding it from
+- Archiving a used category preserves all historical relationships and keeps the
+  category visible where old expenses require it, while excluding it from
   new-entry and Gemini choices. An empty custom category may be deleted after
   confirmation.
 - **Delete and reassign** requires selecting a replacement category, defaulting
@@ -684,8 +682,8 @@ Agreed behavior:
 
 - The disconnected state offers **Connect Google Drive** and explains that the
   application requests only its hidden application-data folder.
-- The connected state shows account identity, current sync mode, last
-  successful sync, pending local changes, and **Sync now**.
+- The connected state shows account identity, current sync mode, last successful
+  sync, pending local changes, and **Sync now**.
 - Automatic synchronization is attempted after local changes, on launch, and
   when connectivity or authorization returns.
 - A prominent conflict card appears when needed, includes the unresolved count,
@@ -696,13 +694,13 @@ Agreed behavior:
   presenting them as lost. Manual sync is unavailable until online.
 - Authorization failure offers Reconnect. Switching accounts requires explicit
   confirmation and never merges accounts automatically. **Disconnect this
-  device** preserves local and cloud data; cloud deletion remains under Data
-  and privacy.
+  device** preserves local and cloud data; cloud deletion remains under Data and
+  privacy.
 
 ### Screen 10A: Conflict Review
 
-**Status: approved.** This screen is reachable from both the Expenses banner
-and Google Drive settings.
+**Status: approved.** This screen is reachable from both the Expenses banner and
+Google Drive settings.
 
 ```text
 +----------------------------------+
@@ -731,16 +729,16 @@ Agreed behavior:
 - The workflow begins with conflicts grouped by affected expense or receipt,
   then reviews one conflicting field at a time. Mobile navigates list to detail;
   desktop may use an equivalent two-column layout.
-- Every candidate is presented neutrally, with a device label and timestamp
-  when known. Neither presentation order nor timestamp identifies an automatic
+- Every candidate is presented neutrally, with a device label and timestamp when
+  known. Neither presentation order nor timestamp identifies an automatic
   winner.
 - The owner may select any candidate or enter another value which passes the
   field's normal validation.
 - Delete-versus-edit conflicts present explicit **Keep edited record** and
   **Delete record** actions and summarize the edits which deletion discards.
 - Each successful choice commits locally as a resolution revision referencing
-  all conflicting parents. Resolution works offline and joins normal sync
-  later. The conflict count/banner changes only after the local commit succeeds.
+  all conflicting parents. Resolution works offline and joins normal sync later.
+  The conflict count/banner changes only after the local commit succeeds.
 - Workflow progress and unresolved candidates are durable, so closing,
   reloading, or a failed sync cannot lose completed resolutions or make the UI
   claim a conflict is resolved prematurely.
@@ -774,8 +772,8 @@ Agreed behavior:
   when relevant, dataset-retirement/deletion-acknowledgement status.
 - Opaque device IDs stay out of the ordinary interface and appear only in an
   optional technical-details view for diagnostics.
-- Devices are never automatically removed merely because they have been
-  inactive for a long time.
+- Devices are never automatically removed merely because they have been inactive
+  for a long time.
 - Ordinary synchronization has no casual **Remove device** or **Mark lost**
   action. Lost-device handling and forced finalization exist only inside the
   strongly warned **Delete Everywhere** workflow, where their consequences are
@@ -814,9 +812,9 @@ Agreed behavior:
 - The model picker has type-ahead search because the returned model list may be
   long. It identifies receipt-compatible choices and explains why an exposed
   model is incompatible rather than treating every returned model as usable.
-- When listing metadata cannot establish the required capabilities, the model
-  is labeled **Needs test** and remains unavailable for receipt scanning until
-  its synthetic configuration test passes on this device.
+- When listing metadata cannot establish the required capabilities, the model is
+  labeled **Needs test** and remains unavailable for receipt scanning until its
+  synthetic configuration test passes on this device.
 - Refreshing models uses the entered key's available-model list. If the selected
   model disappears or becomes incompatible, scanning pauses and asks for a new
   selection instead of silently substituting one.
@@ -827,8 +825,8 @@ Agreed behavior:
   without sending a real receipt or expense data.
 - The screen distinguishes an invalid key, unavailable or deprecated model,
   quota/rate limit, offline state, and an otherwise unknown service error, and
-  gives a relevant corrective action for each. These are explicit workflow
-  modes rather than overlapping UI booleans.
+  gives a relevant corrective action for each. These are explicit workflow modes
+  rather than overlapping UI booleans.
 
 ### Screen 12: Import and Export
 
@@ -872,8 +870,8 @@ offer the native share sheet; a normal file download is always available.
 ```
 
 - Validation and preview show the schema version, record counts, required
-  migrations, warnings, and blocking errors before any mutation. An invalid
-  file cannot advance to commit.
+  migrations, warnings, and blocking errors before any mutation. An invalid file
+  cannot advance to commit.
 - **Merge** is the prominent recommended action. It works offline, commits
   atomically, and sends resulting conflicts and revisions through the ordinary
   synchronization and conflict-review workflows.
@@ -949,8 +947,8 @@ implemented during MVP work.
 +----------------------------------+
 ```
 
-- The three actions are visually separate and state their scope before the
-  owner enters any confirmation flow.
+- The three actions are visually separate and state their scope before the owner
+  enters any confirmation flow.
 - **Disconnect this device** stops synchronization but preserves this device's
   local dataset and all synchronized Drive data.
 - **Delete this device's data** erases this device's local dataset and also
@@ -967,8 +965,8 @@ implemented during MVP work.
 - Lost-device finalization exists only within this progress workflow, behind a
   strong warning that the inaccessible browser copy cannot be erased. It is not
   an ordinary device-list action.
-- The focused deletion actor owns explicit scope selection, confirmation,
-  safety export, retirement publication, Drive deletion, local erasure,
+- The focused deletion actor owns explicit scope selection, confirmation, safety
+  export, retirement publication, Drive deletion, local erasure,
   awaiting-device, forced-finalization, completed, and failure modes. Its
   non-financial progress state must survive reloads until the workflow reaches a
   terminal state.
@@ -1015,8 +1013,8 @@ implemented during MVP work.
 
 ## Cross-Cutting UI States
 
-Each relevant screen must eventually define and approve these states rather
-than only its ideal populated state:
+Each relevant screen must eventually define and approve these states rather than
+only its ideal populated state:
 
 - first use and empty data;
 - loading and local saving;
@@ -1031,16 +1029,15 @@ than only its ideal populated state:
 
 **Status: approved.**
 
-- Manual expense forms and validated structured receipt-review drafts persist
-  to the repository-namespaced IndexedDB as device-local workflow snapshots.
-  Source receipt images remain strictly in memory and are never part of a
-  snapshot.
+- Manual expense forms and validated structured receipt-review drafts persist to
+  the repository-namespaced IndexedDB as device-local workflow snapshots. Source
+  receipt images remain strictly in memory and are never part of a snapshot.
 - Drafts restore after accidental reload or browser restart. A successful Save
   or explicit **Discard changes** removes the corresponding draft.
-- In-app navigation away from a dirty form offers **Keep editing** and
-  **Discard changes**. Closing or reloading the page requests the browser's
-  standard unsaved-change warning where supported; draft persistence remains the
-  fallback because browsers do not guarantee that warning.
+- In-app navigation away from a dirty form offers **Keep editing** and **Discard
+  changes**. Closing or reloading the page requests the browser's standard
+  unsaved-change warning where supported; draft persistence remains the fallback
+  because browsers do not guarantee that warning.
 - Save actions enter an explicit local-saving mode which prevents duplicate
   submission. Navigation occurs only after the IndexedDB transaction succeeds.
 - A local-save failure keeps all entered data visible, explains that the record
@@ -1123,8 +1120,8 @@ not a separate interface or component set.
   neon accents, and decorative glow.
 - All component colors come from semantic theme tokens rather than screen-local
   hard-coded values. A future light token set must be addable without changing
-  component APIs, information hierarchy, or application workflows; creating
-  that palette is deferred and excluded from MVP work.
+  component APIs, information hierarchy, or application workflows; creating that
+  palette is deferred and excluded from MVP work.
 
 ## Screen Approval Checklist
 

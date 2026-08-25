@@ -128,6 +128,76 @@ PWA precache generated: OK
 
 ---
 
-## 5. Conclusion & Handoff
+---
 
-The application UI has achieved structural visual balance, predictable responsive hierarchy, and strict compliance with the *After Midnight* design system. All 13 items from the original audit checklist are fully completed and verified.
+## 5. Round 2 UI & Form Design Actionable Checklist
+
+- [x] **STEP-R2-01 (FIX-R2-01) · Wrap `CurrencyPicker` in `.ds-field-control-wrap`**
+  - **Priority:** P1 (Visual Bug / Misalignment)
+  - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L2033-L2065)
+  - **Action:** Wrap `<AriaInput>` and `<AriaButton className="ds-icon-button ds-search-field__clear">` in `<div className="ds-field-control-wrap">` so the dropdown chevron anchors cleanly inside the right edge of the input.
+  - **Verification:** Inspect Create Project and Expense Form. The chevron must be embedded inside the input control boundary.
+  - **Commit:** `fix(ui): FIX-R2-01 wrap CurrencyPicker in field-control-wrap to anchor chevron inside input`
+
+- [ ] **STEP-R2-02 (FIX-R2-02) · Mobile Viewport Body Bottom Clearance Padding**
+  - **Priority:** P1 (Layout / Usability)
+  - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css)
+  - **Action:** Set `.ds-app-frame__body` on mobile (`@media (max-width: 719px)`) to `padding-bottom: calc(var(--control-height) + var(--space-6) + env(safe-area-inset-bottom, 0px))`.
+  - **Verification:** Scroll long forms and expenses list on mobile (390x844). Content and submit buttons must have ample clearance above the bottom navigation bar.
+  - **Commit:** `fix(ui): FIX-R2-02 add bottom clearance padding to app-frame body on mobile viewports`
+
+- [ ] **STEP-R2-03 (FIX-R2-03) · Responsive Full-Width Form Action Buttons on Mobile**
+  - **Priority:** P1 (Form UX / Visual Hierarchy)
+  - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css), [`src/design-system/components.tsx`](../src/design-system/components.tsx)
+  - **Action:** Style `.ds-form-actions` on desktop with `justify-content: flex-end; gap: var(--space-3);`, and on mobile (`@media (max-width: 719px)`) with `flex-direction: column-reverse; width: 100%; gap: var(--space-2);` where buttons fill full width.
+  - **Verification:** Open ExpenseForm on mobile. "Save expense" must be full-width on top, and "Save and add another" full-width below it.
+  - **Commit:** `fix(ui): FIX-R2-03 responsive full-width vertical stack for form action buttons on mobile`
+
+- [ ] **STEP-R2-04 (FIX-R2-04) · Desktop 2-Column Responsive Pairing for Related Form Fields**
+  - **Priority:** P2 (Form Layout / Visual Balance)
+  - **Files:** [`src/features/local-ui.css`](../src/features/local-ui.css), [`src/features/local-ui.tsx`](../src/features/local-ui.tsx)
+  - **Action:** On desktop (`@media (min-width: 720px)`), pair `[Amount + Currency]` (3fr:1fr) and `[Date + Time]` (1fr:1fr) into horizontal 2-column rows, folding into single columns on mobile.
+  - **Verification:** Inspect ExpenseForm on 1280x800 desktop. Amount/Currency and Date/Time must sit side-by-side cleanly.
+  - **Commit:** `fix(ui): FIX-R2-04 pair Amount-Currency and Date-Time into responsive two-column desktop rows`
+
+- [ ] **STEP-R2-05 (FIX-R2-05) · Add Secondary Cancel Button to Create Project and Category Modals**
+  - **Priority:** P2 (Dialog Usability / Form Standards)
+  - **Files:** [`src/features/local-ui.tsx`](../src/features/local-ui.tsx)
+  - **Action:** Pair a secondary `Cancel` button before `Save project` in `CreateProjectModal` and before `Save category` in `CreateCategoryModal`.
+  - **Verification:** Open Create Project and Create Category dialogs. Footers must contain both `Cancel` and `Save` buttons.
+  - **Commit:** `fix(ui): FIX-R2-05 add secondary Cancel button to project and category creation modals`
+
+- [ ] **STEP-R2-06 (FIX-R2-06) · Subdue Helper Description Text Styling**
+  - **Priority:** P2 (Visual Hierarchy / Typographic Discipline)
+  - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css)
+  - **Action:** Set `.ds-field__description` to `color: var(--color-text-secondary); font-size: var(--font-size-caption); line-height: 1.3; margin-top: var(--space-1);`.
+  - **Verification:** Inspect form field descriptions (Amount, Date, Category color). Helper text must be distinctly subdued and subordinate to field labels.
+  - **Commit:** `fix(ui): FIX-R2-06 subdue field description text with secondary color and caption font size`
+
+- [ ] **STEP-R2-07 (FIX-R2-07) · Suppress DraftStatus on Clean Untouched Forms**
+  - **Priority:** P2 (Visual Clutter / UX)
+  - **Files:** [`src/features/local-ui.tsx`](../src/features/local-ui.tsx)
+  - **Action:** Only render `DraftStatus` for `"dirty"` state when user-entered values are actually present (`Boolean(draft.amount || draft.merchant || draft.description)`).
+  - **Verification:** Open "New expense" from the Add menu. Form must start with zero warning cards.
+  - **Commit:** `fix(ui): FIX-R2-07 suppress DraftStatus warning card on pristine untouched forms`
+
+- [ ] **STEP-R2-08 (FIX-R2-08) · Constrain Action Button Stretching in Desktop Settings Cards**
+  - **Priority:** P3 (Visual Balance)
+  - **Files:** [`src/features/local-ui.css`](../src/features/local-ui.css)
+  - **Action:** On desktop screens (`@media (min-width: 720px)`), set `Save and continue` in `GeminiQuickSetup` to natural width right-aligned (`align-self: flex-end; width: auto;`).
+  - **Verification:** Open Gemini Settings on 1280x800 desktop. Button must not stretch 600px wide.
+  - **Commit:** `fix(ui): FIX-R2-08 prevent 600px button stretching in desktop settings cards`
+
+- [ ] **STEP-R2-09 (FIX-R2-09) · Add Horizontal Swipe Scroll for Narrow Period Filter Tabs**
+  - **Priority:** P3 (Responsiveness)
+  - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css)
+  - **Action:** Enable smooth horizontal scroll with hidden scrollbar (`overflow-x: auto; scrollbar-width: none;`) on `.ds-filter-bar .ds-segmented-control` on narrow screens.
+  - **Verification:** Inspect FilterBar on 320px/360px viewport. Period tabs must scroll without clipping container edges.
+  - **Commit:** `fix(ui): FIX-R2-09 add horizontal swipe scroll to period segmented control on narrow screens`
+
+- [ ] **STEP-R2-10 (FIX-R2-10) · Constrain Desktop Standalone Project Selector Width**
+  - **Priority:** P3 (Visual Polish)
+  - **Files:** [`src/features/local-ui.css`](../src/features/local-ui.css)
+  - **Action:** Add `max-width: 360px` to standalone project pickers on desktop (`@media (min-width: 720px)`), maintaining 100% width on mobile.
+  - **Verification:** Inspect Expenses page on wide desktop. Project selector must not span full 1200px width.
+  - **Commit:** `fix(ui): FIX-R2-10 constrain standalone project picker max-width on desktop viewports`

@@ -2049,18 +2049,20 @@ export function CurrencyPicker(
       allowsEmptyCollection
     >
       <AriaLabel className="ds-field__label">{label}</AriaLabel>
-      <AriaInput
-        className="ds-field-control"
-        placeholder="Search ISO currency"
-      />
-      <AriaButton
-        className="ds-icon-button ds-search-field__clear"
-        aria-label="Show currency options"
-      >
-        <Icon>
-          <ChevronDown />
-        </Icon>
-      </AriaButton>
+      <div className="ds-field-control-wrap">
+        <AriaInput
+          className="ds-field-control ds-search-field__input"
+          placeholder="Search ISO currency"
+        />
+        <AriaButton
+          className="ds-icon-button ds-search-field__clear"
+          aria-label="Show currency options"
+        >
+          <Icon>
+            <ChevronDown />
+          </Icon>
+        </AriaButton>
+      </div>
       <AriaPopover className="ds-popover">
         <AriaListBox>
           {currencyOptions.map((option) => (

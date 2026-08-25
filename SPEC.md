@@ -8,11 +8,11 @@ after discussion and agreement. Implementation must not begin until the repo
 owner explicitly approves the specification.
 
 After product and screen decisions are complete, the project must define and
-approve the shared `DESIGN_SYSTEM.md` before planning UI implementation. It
-must then turn the approved specifications into dependency-ordered milestones,
+approve the shared `DESIGN_SYSTEM.md` before planning UI implementation. It must
+then turn the approved specifications into dependency-ordered milestones,
 identify prerequisites and safe parallel workstreams, and attach verification
-criteria. Neither design-system work nor milestone planning constitutes
-approval to begin application implementation.
+criteria. Neither design-system work nor milestone planning constitutes approval
+to begin application implementation.
 
 The terms in this document have the following meanings:
 
@@ -22,10 +22,10 @@ The terms in this document have the following meanings:
 
 ## Product Summary
 
-The application is a personal expense tracker for the repo owner. It should
-make everyday entry and review of expenses fast, work especially well on a
-phone, and keep its data in simple formats that remain easy to inspect and
-analyze outside the application.
+The application is a personal expense tracker for the repo owner. It should make
+everyday entry and review of expenses fast, work especially well on a phone, and
+keep its data in simple formats that remain easy to inspect and analyze outside
+the application.
 
 The device-local copy is the primary working copy. Core entry and review flows
 should remain available offline, while Google Drive provides automatic backup
@@ -42,8 +42,8 @@ and multi-device synchronization according to the agreed sync design.
   interaction.
 - **Accessible and responsive:** core flows must support touch, keyboards,
   assistive technology, narrow screens, and desktop screens.
-- **Progressive enhancement:** the browser experience must remain usable
-  without installing the PWA.
+- **Progressive enhancement:** the browser experience must remain usable without
+  installing the PWA.
 
 ## User Needs and Usage
 
@@ -51,8 +51,8 @@ and multi-device synchronization according to the agreed sync design.
   - immediately after a purchase, commonly by scanning its receipt or invoice;
   - manually later the same day; and
   - processing multiple expenses in a later session.
-- The application is primarily a trustworthy record for later reflection, not
-  a tool that must provide an immediate response after every entry.
+- The application is primarily a trustworthy record for later reflection, not a
+  tool that must provide an immediate response after every entry.
 - The owner wants to return later and answer questions such as:
   - how much was spent on a particular day, month, or year; and
   - how much was spent in each category during that period.
@@ -98,23 +98,22 @@ and multi-device synchronization according to the agreed sync design.
   a new manual form opens, including while travelling. Its native time input
   must show a live example with concrete dates.
 - The expense-day boundary affects only the initial date suggested for a new
-  manual expense. It must not rewrite a date explicitly chosen by the owner or
-  a transaction date extracted from a receipt or supplied by import. The form
-  must display the resulting concrete calendar date so the offset is never
-  hidden behind only a relative label such as “Today.” Once stored, the calendar
-  date is stable and must not change when the device enters another timezone.
+  manual expense. It must not rewrite a date explicitly chosen by the owner or a
+  transaction date extracted from a receipt or supplied by import. The form must
+  display the resulting concrete calendar date so the offset is never hidden
+  behind only a relative label such as “Today.” Once stored, the calendar date
+  is stable and must not change when the device enters another timezone.
 - Monetary amounts follow their natural direction from the owner's perspective:
-  purchases and other outflows are negative, while discounts, refunds,
-  cashback, bottle-deposit returns, and other inflows are positive. This sign
-  convention must also support possible future income records without a data
-  migration that reverses existing meanings.
+  purchases and other outflows are negative, while discounts, refunds, cashback,
+  bottle-deposit returns, and other inflows are positive. This sign convention
+  must also support possible future income records without a data migration that
+  reverses existing meanings.
 - Monetary amounts, quantities, and unit prices must be persisted as canonical
   decimal strings, never as JavaScript `Number` values or implicit integer minor
-  units. Examples include `"-10.99"` for an outflow and `"1.25"` for a
-  quantity.
+  units. Examples include `"-10.99"` for an outflow and `"1.25"` for a quantity.
 - Canonical decimal strings represent mathematical value rather than entered
-  formatting: redundant leading/trailing zeros are normalized, so `"10.90"`
-  may persist as `"10.9"`. Currency-aware display formatting restores the
+  formatting: redundant leading/trailing zeros are normalized, so `"10.90"` may
+  persist as `"10.9"`. Currency-aware display formatting restores the
   appropriate presentation.
 - All arithmetic over persisted decimal values must use a pinned
   arbitrary-precision decimal library. `big.js` in strict mode is the
@@ -126,17 +125,17 @@ and multi-device synchronization according to the agreed sync design.
 - A built-in `Uncategorized` category must always exist. It behaves as the
   fallback category for entries which have not been classified and cannot be
   renamed, archived, reordered, or deleted through category management.
-- Categories are shared globally across projects because the owner
-  generally uses the same category set in every context. Switching projects
-  isolates expense views but does not create a separate category catalogue.
+- Categories are shared globally across projects because the owner generally
+  uses the same category set in every context. Switching projects isolates
+  expense views but does not create a separate category catalogue.
 - Active categories have a global custom order used by manual pickers and the
   Gemini category catalogue. A category requires a case-insensitively unique
   trimmed active name, may have an optional color which is never its sole
   identifier, and does not require an icon in the initial release.
 - Archiving a category preserves historical relationships while excluding it
   from new-entry and Gemini choices. Empty custom categories can be deleted.
-  Deleting a used category requires atomic reassignment of all references
-  across all projects to an explicitly selected replacement, defaulting to
+  Deleting a used category requires atomic reassignment of all references across
+  all projects to an explicitly selected replacement, defaulting to
   `Uncategorized`, followed by a synchronized tombstone for the old category.
 - A deleted-category tombstone retains its replacement category ID so a late
   offline expense referencing the deleted ID is deterministically redirected
@@ -162,32 +161,30 @@ and multi-device synchronization according to the agreed sync design.
   deterministic stable tie-breaker, and does not add other sort modes.
 - Multiple currencies must be supported.
 - The application must support multiple user-defined projects.
-- Each project represents a distinct life or travel context whose
-  expenses should not be mixed in ordinary views. Examples include the owner's
-  former life in Taiwan, current life in Sweden, or an individual trip to
-  another country.
+- Each project represents a distinct life or travel context whose expenses
+  should not be mixed in ordinary views. Examples include the owner's former
+  life in Taiwan, current life in Sweden, or an individual trip to another
+  country.
 - A project must have a default/local currency so expenses can be recorded
   naturally in the currency of that context without requiring immediate
   conversion to a common reporting currency.
-- The project currency is a default, not a restriction. An individual entry
-  may override it, and one project may contain entries in multiple
-  currencies.
+- The project currency is a default, not a restriction. An individual entry may
+  override it, and one project may contain entries in multiple currencies.
 - Every expense belongs to exactly one project, defaulting to the currently
   selected project while remaining manually changeable.
 - The application must persist the most recently selected project and reopen
   that project on the next launch.
 - Normal expense lists, filters, and totals are scoped to the selected project.
   Entries from other projects remain hidden until the user switches projects.
-- Project archival is reversible and preserves every related record while
-  hiding the project from ordinary switching. Deleting an empty project removes
-  only that project after confirmation, and at least one active project must
-  remain.
+- Project archival is reversible and preserves every related record while hiding
+  the project from ordinary switching. Deleting an empty project removes only
+  that project after confirmation, and at least one active project must remain.
 - Deleting a populated project follows the approved `UI_SPEC.md` Screen 7A
   workflow: offer a complete JSON safety export, require strong confirmation,
   and atomically create synchronized tombstones for the project and every
   expense, receipt parent, receipt line, adjustment, and derived index entry
-  belonging to it. Global categories, other projects, their records, the
-  Gemini key, and unrelated settings remain unchanged.
+  belonging to it. Global categories, other projects, their records, the Gemini
+  key, and unrelated settings remain unchanged.
 - Populated-project deletion is logical synchronized deletion, not physical
   privacy erasure from Automerge history. Physical destruction of the complete
   dataset generation and history remains exclusive to Delete Everywhere.
@@ -200,8 +197,8 @@ and multi-device synchronization according to the agreed sync design.
 
 ### Invoice-Assisted Entry
 
-- The application must provide LLM-assisted entry from a scanned or
-  photographed invoice.
+- The application must provide LLM-assisted entry from a scanned or photographed
+  invoice.
 - The PWA must support both capturing a new receipt image with the device camera
   and selecting/importing an existing image from the device.
 - The LLM should produce draft expense entries for the relevant items on the
@@ -209,8 +206,8 @@ and multi-device synchronization according to the agreed sync design.
 - The future extraction prompt and review model must request and preserve the
   most specific merchant/shop identity visible on the receipt, including its
   branch or location when available.
-- The AI must suggest a category for every extracted item using only the
-  owner's existing category catalogue.
+- The AI must suggest a category for every extracted item using only the owner's
+  existing category catalogue.
 - The AI must never create categories. When no existing category can be chosen
   confidently, it must use `Uncategorized` for the draft.
 - A scanned receipt or invoice must produce a separate draft entry for every
@@ -229,8 +226,8 @@ and multi-device synchronization according to the agreed sync design.
   project, calendar date, optional time-of-day, currency, and the printed
   receipt total. Payment method, address, receipt number, and separate tax/VAT
   fields are excluded from the initial model. Each purchased item or adjustment
-  has its own stable record and identifier referencing the receipt. Records
-  must remain independently editable and mergeable rather than requiring every
+  has its own stable record and identifier referencing the receipt. Records must
+  remain independently editable and mergeable rather than requiring every
   receipt change to replace one large nested object.
 - A receipt parent belongs to the same single project as all of its lines and
   carries a stable `projectId`; one receipt cannot span projects.
@@ -253,14 +250,14 @@ and multi-device synchronization according to the agreed sync design.
   in IndexedDB, synchronized to Google Drive, or included in exports. Any
   temporary in-memory or browser-managed copy must be released after inference
   succeeds, fails, or is cancelled.
-- Generated entries must be presented for user review and correction before
-  they are saved. The review must show all entries about to be created and allow
-  the owner to add missing lines, edit AI-generated values, and remove incorrect
+- Generated entries must be presented for user review and correction before they
+  are saved. The review must show all entries about to be created and allow the
+  owner to add missing lines, edit AI-generated values, and remove incorrect
   lines.
-- Once structured extraction has passed browser validation, its review draft
-  and focused workflow snapshot must persist device-locally in IndexedDB so an
-  accidental reload does not lose completed inference work. The structured
-  draft is cleared on Save or explicit discard and is neither synchronized nor
+- Once structured extraction has passed browser validation, its review draft and
+  focused workflow snapshot must persist device-locally in IndexedDB so an
+  accidental reload does not lose completed inference work. The structured draft
+  is cleared on Save or explicit discard and is neither synchronized nor
   exported as an accepted record before Save. The source image remains strictly
   ephemeral and must never enter the persisted snapshot.
 - Saving a reviewed receipt must commit its parent record and all accepted lines
@@ -272,38 +269,37 @@ and multi-device synchronization according to the agreed sync design.
   potential issues, with a useful explanation rather than silently inventing a
   confident value.
 - AI-assisted receipt scanning requires an internet connection. When offline,
-  the application must explain that scanning is unavailable while keeping
-  manual entry fully usable. It must not retain or queue a selected receipt
-  image for later submission.
+  the application must explain that scanning is unavailable while keeping manual
+  entry fully usable. It must not retain or queue a selected receipt image for
+  later submission.
 - `@google/genai`, used with a Google AI Studio API key, is the provisional
   default SDK and service for this feature.
 - The owner chooses which compatible Gemini model performs receipt extraction.
   The application must use the SDK's model-listing API to refresh models
-  available to the entered API key rather than permanently hard-coding one
-  model name. It should recommend a suitable stable, fast model by default
-  while allowing the owner to select another compatible model. The picker must
-  provide type-ahead search because the returned list may be long.
+  available to the entered API key rather than permanently hard-coding one model
+  name. It should recommend a suitable stable, fast model by default while
+  allowing the owner to select another compatible model. The picker must provide
+  type-ahead search because the returned list may be long.
 - A model appearing in the API's list is not sufficient proof that it supports
   every required receipt feature or that it has free-tier quota. The model
   picker must identify or validate support for image input, content generation,
   and the required structured-output schema, explain incompatibility clearly,
   and recover when a previously selected model is removed or deprecated.
-- Receipt extraction must use Gemini's schema-constrained structured output,
-  not parse an unconstrained prose response. The response schema must be
-  versioned, cover the agreed receipt parent, lines, uncertainty, and mismatch
-  information, and be validated again in the browser before review data is
-  accepted.
+- Receipt extraction must use Gemini's schema-constrained structured output, not
+  parse an unconstrained prose response. The response schema must be versioned,
+  cover the agreed receipt parent, lines, uncertainty, and mismatch information,
+  and be validated again in the browser before review data is accepted.
 - Runtime validation and static types must share a maintainable source of truth.
-  Zod 4 is the provisional validator when a schema library is useful; Zod 3
-  must not be introduced. JSON Schema sent to Gemini and the corresponding
-  runtime validator must be generated from one definition where practical, or
-  otherwise be tested to remain equivalent. No type assertion may substitute
-  for validating model output.
-- Receipt-image resizing and compression are enabled by default to reduce
-  upload size and latency while preserving text readability. The owner may
-  disable this preparation in settings and send the selected image unchanged.
-  Preparation happens only in memory, and neither the original nor prepared
-  image is retained after the request succeeds, fails, or is cancelled.
+  Zod 4 is the provisional validator when a schema library is useful; Zod 3 must
+  not be introduced. JSON Schema sent to Gemini and the corresponding runtime
+  validator must be generated from one definition where practical, or otherwise
+  be tested to remain equivalent. No type assertion may substitute for
+  validating model output.
+- Receipt-image resizing and compression are enabled by default to reduce upload
+  size and latency while preserving text readability. The owner may disable this
+  preparation in settings and send the selected image unchanged. Preparation
+  happens only in memory, and neither the original nor prepared image is
+  retained after the request succeeds, fails, or is cancelled.
 - A failed, invalid, or incompatible extraction must save no receipt or expense
   records. The UI must explain the failure and offer retry, choosing another
   image or model, and switching to manual entry.
@@ -315,15 +311,15 @@ and multi-device synchronization according to the agreed sync design.
   or expense data. Errors must distinguish at least an invalid key, unavailable
   or deprecated model, quota/rate limiting, offline state, and an unknown
   service error, with a relevant corrective action for each.
-- Gemini may be contacted only following an explicit owner action such as
-  **Scan with AI**. The application must never scan receipts automatically or
-  make background inference requests.
+- Gemini may be contacted only following an explicit owner action such as **Scan
+  with AI**. The application must never scan receipts automatically or make
+  background inference requests.
 - A receipt request may send only the selected receipt image, the versioned
   extraction instructions/schema, active category stable IDs and names, device
-  locale, and the current project's default currency code. The API credential
-  is necessarily used to authorize that request. Expense history, project
-  names, merchant history, Google Drive contents, other device identifiers or
-  details, and sync metadata must never be included.
+  locale, and the current project's default currency code. The API credential is
+  necessarily used to authorize that request. Expense history, project names,
+  merchant history, Google Drive contents, other device identifiers or details,
+  and sync metadata must never be included.
 - The application does not attempt automatic visual redaction because an
   unreliable redactor could either leak content or remove information required
   for extraction. The owner must see the selected image before transmission and
@@ -347,10 +343,10 @@ and multi-device synchronization according to the agreed sync design.
 
 ### Local Data, Export, and Google Drive
 
-- The application must remain useful locally and must not depend on Google
-  Drive being continuously available.
-- Expense data must use two-way Google Drive synchronization after
-  authorization so changes made on one device can appear on another.
+- The application must remain useful locally and must not depend on Google Drive
+  being continuously available.
+- Expense data must use two-way Google Drive synchronization after authorization
+  so changes made on one device can appear on another.
 - Synchronization data must use Google Drive's hidden application-data folder to
   reduce accidental manual modification of internal sync state.
 - The user must be able to export their data directly as a plain file,
@@ -362,8 +358,8 @@ and multi-device synchronization according to the agreed sync design.
 - CSV import and export are excluded from the initial release. A flattened
   analysis export may be reconsidered later if it proves useful, but it is not
   part of the MVP.
-- The data must not require a proprietary database or the application itself
-  for basic inspection and analysis.
+- The data must not require a proprietary database or the application itself for
+  basic inspection and analysis.
 - A complete JSON export must contain every project and support restoring the
   application. Export must always support a normal file download and may also
   offer the native share sheet when the browser supports sharing files.
@@ -371,8 +367,8 @@ and multi-device synchronization according to the agreed sync design.
   merge and replace modes. Either mode must be atomic and must never leave a
   partially imported dataset.
 - Local changes must be saved to IndexedDB first and remain successful even when
-  Drive is unavailable. Synchronization must then be attempted after changes,
-  on app launch, when connectivity returns, and through a manual sync action.
+  Drive is unavailable. Synchronization must then be attempted after changes, on
+  app launch, when connectivity returns, and through a manual sync action.
 - Deletions must synchronize as tombstones rather than immediate physical
   removal, preventing an offline device from accidentally restoring deleted
   data. Tombstones are retained indefinitely in the initial release; later
@@ -393,23 +389,22 @@ and multi-device synchronization according to the agreed sync design.
   another valid value. Delete-versus-edit conflicts explicitly compare keeping
   the edited record with deleting it and summarize the edits deletion discards.
 - Conflict resolution can commit locally while offline. Durable workflow state
-  and unresolved candidate data must survive reloads; conflict indicators
-  update only after the local resolution revision commits successfully.
+  and unresolved candidate data must survive reloads; conflict indicators update
+  only after the local resolution revision commits successfully.
 - Wall-clock timestamps may support display and ordering but must not be the
   sole authority for conflict resolution, because device clocks and offline
   upload order are unreliable.
 - Automerge is the provisional default for causal revision, merge, and conflict
-  primitives. The application must not hand-roll the distributed merge
-  algorithm when Automerge provides the required behavior.
+  primitives. The application must not hand-roll the distributed merge algorithm
+  when Automerge provides the required behavior.
 - Automerge's browser IndexedDB storage adapter may be used with the required
-  repository-namespaced database. Application code must still provide the
-  Google Drive transport, expense schema, conflict-review workflow, and export
-  mapping.
+  repository-namespaced database. Application code must still provide the Google
+  Drive transport, expense schema, conflict-review workflow, and export mapping.
 - Automerge's compact internal representation may remain an implementation
-  detail in IndexedDB and hidden Drive sync data. User-controlled interchange
-  in the initial release remains versioned JSON.
-- Before implementation commits to Automerge, a focused compatibility check
-  must verify its current release with Deno 2, the production browser build,
+  detail in IndexedDB and hidden Drive sync data. User-controlled interchange in
+  the initial release remains versioned JSON.
+- Before implementation commits to Automerge, a focused compatibility check must
+  verify its current release with Deno 2, the production browser build,
   repository-namespaced IndexedDB, conflict inspection/resolution, and a Google
   Drive round trip.
 - That gate must exercise every critical agreed synchronization primitive,
@@ -487,22 +482,22 @@ and multi-device synchronization according to the agreed sync design.
   and transition to a durable disconnected/retired state when detected.
 - Deleting everywhere must first publish a minimal non-financial dataset
   retirement marker outside the sensitive Automerge document. It must then
-  physically remove the retired Automerge generation and its change history
-  from Drive and remove that generation from the initiating device's IndexedDB.
+  physically remove the retired Automerge generation and its change history from
+  Drive and remove that generation from the initiating device's IndexedDB.
 - Clearing or deleting current Automerge fields is not privacy erasure because
   prior values may remain in CRDT change history. Sensitive data must never be
-  copied into the retirement marker; the retired document/history itself must
-  be destroyed.
+  copied into the retirement marker; the retired document/history itself must be
+  destroyed.
 - Every device must check retirement state before upload. When a device observes
   its generation's marker, it must erase that entire local generation,
   acknowledge retirement if the protocol supports acknowledgements, and enter a
   durable disconnected/retired state without uploading.
 - Synchronization must maintain a registry of opaque known-device IDs,
-  recognizable synchronized device labels, and last-seen/acknowledgement
-  status so deletion progress can identify which devices remain outstanding.
-  New devices receive neutral default labels such as `Device 1`, and the owner
-  can rename them. The UI identifies the current device and presents last-seen
-  times approximately rather than implying exact presence information.
+  recognizable synchronized device labels, and last-seen/acknowledgement status
+  so deletion progress can identify which devices remain outstanding. New
+  devices receive neutral default labels such as `Device 1`, and the owner can
+  rename them. The UI identifies the current device and presents last-seen times
+  approximately rather than implying exact presence information.
 - Opaque device IDs must normally remain hidden and be available only in an
   optional technical-details view for diagnostics. A device must never be
   automatically removed from the registry merely because it has been inactive
@@ -520,8 +515,8 @@ and multi-device synchronization according to the agreed sync design.
   erased, but revoked authorization and the durable retirement marker must
   prevent it from silently recreating the retired cloud dataset if used later.
   Ordinary synchronization settings must not offer casual device removal or
-  lost-device actions; these controls belong only to the strongly warned
-  Delete Everywhere workflow.
+  lost-device actions; these controls belong only to the strongly warned Delete
+  Everywhere workflow.
 - Delete Everywhere must be owned by a focused XState actor with explicit scope
   selection, confirmation, safety-export, retirement-publication, Drive-delete,
   local-erasure, awaiting-device, forced-finalization, completed, and failure
@@ -544,8 +539,8 @@ and multi-device synchronization according to the agreed sync design.
 - When a filtered result contains multiple currencies, totals must be presented
   separately for each currency rather than combined into a misleading value.
 - Every entry must preserve its original amount and currency. The data model
-  must also preserve its transaction date. These source values are sufficient
-  to attach or look up historical exchange-rate data later without changing the
+  must also preserve its transaction date. These source values are sufficient to
+  attach or look up historical exchange-rate data later without changing the
   original record.
 - Cross-currency totals and comparisons are explicitly deferred and must not be
   implemented during MVP work. When pursued later, domestic/reporting currency,
@@ -565,14 +560,14 @@ and multi-device synchronization according to the agreed sync design.
 - Mobile is the primary form factor. Entry, invoice capture, filtering, and
   synchronization status must be comfortable on small touch screens.
 - Desktop browsers must also provide a complete and usable experience.
-- The application must be responsive rather than maintaining separate mobile
-  and desktop applications.
+- The application must be responsive rather than maintaining separate mobile and
+  desktop applications.
 - Navigation changes from the mobile bottom bar to a desktop left rail according
   to available layout width, not device-name detection. Exact thresholds belong
   to the later approved design system.
 - Wide Expenses layouts use a larger list column with a narrower contextual
-  column for category summaries, active filters, and related totals. Selecting
-  a record may open details beside the list; narrow layouts use a focused detail
+  column for category summaries, active filters, and related totals. Selecting a
+  record may open details beside the list; narrow layouts use a focused detail
   screen with ordinary Back behavior.
 - Forms must use readable maximum widths. Suitable review and list/detail flows
   may use two columns when space permits and collapse to the same natural-height
@@ -594,10 +589,10 @@ and multi-device synchronization according to the agreed sync design.
   target.
 - UI state changes are immediate by default for every owner: navigation,
   overlays, expansion, and responsive changes do not animate or delay input.
-  Restrained motion is allowed only as functional feedback for otherwise
-  unclear ongoing work, such as an indeterminate progress indicator. The
-  reduced-motion preference must replace even that movement with equivalent
-  static feedback where practical.
+  Restrained motion is allowed only as functional feedback for otherwise unclear
+  ongoing work, such as an indeterminate progress indicator. The reduced-motion
+  preference must replace even that movement with equivalent static feedback
+  where practical.
 - The MVP ships only a comfortable dark theme and has no theme switch. It uses
   layered near-black or charcoal neutral surfaces, readable non-glaring text,
   and a restrained accent rather than an undifferentiated pitch-black canvas,
@@ -619,8 +614,8 @@ and multi-device synchronization according to the agreed sync design.
 - After the application shell has been cached, offline launch must open existing
   local data normally with a compact non-blocking indicator. Local browsing and
   expense creation, editing, and deletion remain enabled; Drive and Gemini
-  actions explain that they require connectivity. First-use project creation
-  and local JSON restoration also remain available offline.
+  actions explain that they require connectivity. First-use project creation and
+  local JSON restoration also remain available offline.
 - The About screen must show the release version and short Git commit hash, the
   exact generative-AI disclosure from `README.md`, a local-first/no-tracking
   privacy summary, application and third-party license information, and a link
@@ -656,33 +651,33 @@ and multi-device synchronization according to the agreed sync design.
 - The project must use Deno 2 to execute all development and build tooling,
   including the frontend toolchain.
 - Application and test source code must use TypeScript 7 with strict type
-  checking. The project must pin the official stable `typescript@7` package,
-  and the canonical `deno task check` workflow must invoke that package's
-  `tsc` executable through Deno 2. Deno's separate experimental
-  `--unstable-tsgo` integration is neither required nor a substitute for this
-  dependency. Silently falling back to an older TypeScript checker is not
-  acceptable for the required type-checking gate.
+  checking. The project must pin the official stable `typescript@7` package, and
+  the canonical `deno task check` workflow must invoke that package's `tsc`
+  executable through Deno 2. Deno's separate experimental `--unstable-tsgo`
+  integration is neither required nor a substitute for this dependency. Silently
+  falling back to an older TypeScript checker is not acceptable for the required
+  type-checking gate.
 - `deno task` must be the canonical interface for project-owned development,
   formatting, linting, testing, building, and maintenance commands.
 - Development, testing, and deployment must not require a Node.js, npm, pnpm,
-  Yarn, or Bun project toolchain. Dependencies and tools must be compatible
-  with Deno 2 and reproducibly pinned or locked.
-- A backend should be avoided unless an agreed product requirement cannot be
-  met reasonably and safely in the client.
+  Yarn, or Bun project toolchain. Dependencies and tools must be compatible with
+  Deno 2 and reproducibly pinned or locked.
+- A backend should be avoided unless an agreed product requirement cannot be met
+  reasonably and safely in the client.
 - If a backend becomes necessary, it must be designed for and deployed on Deno
   Deploy.
-- Prefer a local-first, static architecture. Any proposal to introduce a
-  backend must identify the requirement it serves, explain why a browser-only
-  solution is insufficient, and be agreed upon before implementation.
+- Prefer a local-first, static architecture. Any proposal to introduce a backend
+  must identify the requirement it serves, explain why a browser-only solution
+  is insufficient, and be agreed upon before implementation.
 
 ### UI and Application State
 
 - XState v5 is required to drive application behavior and UI state.
 - The actor system must have a coarse root application actor for shared
   lifecycle and navigation, with focused invoked or spawned actors owning
-  expense editing, receipt scanning/review, synchronization, conflicts,
-  import, deletion, and other substantial workflows. It must not become one
-  giant global statechart.
+  expense editing, receipt scanning/review, synchronization, conflicts, import,
+  deletion, and other substantial workflows. It must not become one giant global
+  statechart.
 - Focused form and receipt-review actors must own dirty, draft-persisting,
   saving, saved, save-failed, retry, and discard behavior. Durable workflow
   state must use persisted XState snapshots for hydration rather than
@@ -701,18 +696,17 @@ and multi-device synchronization according to the agreed sync design.
 - UI availability and rendering must be derived from XState snapshots, state
   matching, tags, selectors, and permitted events rather than duplicated
   component-level workflow flags.
-- Business operations must be expressed as stable, typed, domain-oriented
-  events with runtime-validated payloads where events cross an untrusted or
-  serialized boundary. UI components dispatch those events and render actor
-  snapshots; they must not bypass actors to reproduce business decisions in
-  component handlers.
+- Business operations must be expressed as stable, typed, domain-oriented events
+  with runtime-validated payloads where events cross an untrusted or serialized
+  boundary. UI components dispatch those events and render actor snapshots; they
+  must not bypass actors to reproduce business decisions in component handlers.
 - Durable expense records may live in an appropriate persistence layer, but
   access to and mutation of them must be coordinated by the actor system.
 - React with `@xstate/react` is the confirmed UI framework.
 - Repository-owned design-system components must use React Aria Components for
   behavior-heavy accessible primitives, ordinary CSS with semantic custom
-  properties for styling, and directly imported Lucide React icons. The MVP
-  must not add Tailwind, runtime CSS-in-JS, or a second styled component library
+  properties for styling, and directly imported Lucide React icons. The MVP must
+  not add Tailwind, runtime CSS-in-JS, or a second styled component library
   without a newly agreed requirement.
 - Screens bind XState actors to components defined by `DESIGN_SYSTEM.md`.
   Application screens must not independently style raw React Aria controls into
@@ -741,9 +735,9 @@ and multi-device synchronization according to the agreed sync design.
   plain-text Markdown memory file. The memory is intended to help future scan
   prompts apply the owner's recurring preferences and corrections; it is not a
   second source of truth for expense records.
-- Any future memory write must be explicit, inspectable, editable, and
-  deletable by the owner. It must exclude receipt images, API keys, credentials,
-  raw prompts, and unrelated personal data, and must not silently upload or
+- Any future memory write must be explicit, inspectable, editable, and deletable
+  by the owner. It must exclude receipt images, API keys, credentials, raw
+  prompts, and unrelated personal data, and must not silently upload or
   synchronize content.
 - Future scan flows may attach the owner-approved memory content as bounded
   context, but the memory must never override the current receipt, the owner's
@@ -766,8 +760,8 @@ and multi-device synchronization according to the agreed sync design.
 - The IndexedDB database name must be namespaced with the repository name,
   `did-it-become-what-you-like`, so it cannot collide with databases created by
   other projects hosted on the same GitHub Pages origin.
-- Any related browser-storage identifiers must use the same repository
-  namespace where the storage API exposes a shared origin-level key space.
+- Any related browser-storage identifiers must use the same repository namespace
+  where the storage API exposes a shared origin-level key space.
 - Repository namespacing prevents accidental collisions but is not a security
   boundary. Browser storage is origin-scoped rather than URL-path-scoped, so
   other GitHub Pages projects served from the same owner origin may be able to
@@ -786,9 +780,9 @@ and multi-device synchronization according to the agreed sync design.
 ### Browser Integrations and Security
 
 - Google Drive authorization and API access should be implemented directly in
-  the browser if the agreed sync design can be delivered safely that way.
-  Google Identity Services supports browser-based authorization, so Drive
-  integration alone does not currently justify a backend.
+  the browser if the agreed sync design can be delivered safely that way. Google
+  Identity Services supports browser-based authorization, so Drive integration
+  alone does not currently justify a backend.
 - `@google/genai` technically supports browser initialization. However, its
   official documentation warns that client-side API keys are exposed and
   recommends a server-side implementation for production environments.
@@ -799,10 +793,10 @@ and multi-device synchronization according to the agreed sync design.
   will persist it in `localStorage` under a key namespaced with
   `did-it-become-what-you-like`.
 - The key is device-specific and must never be synchronized or included in any
-  data export. It is remembered automatically until the owner explicitly
-  deletes it; there is no separate remember-key or session-only option in the
-  initial release. The settings UI shows a stored key in masked form with only
-  a **Remove** action. Changing it means removing it and then entering the new
+  data export. It is remembered automatically until the owner explicitly deletes
+  it; there is no separate remember-key or session-only option in the initial
+  release. The settings UI shows a stored key in masked form with only a
+  **Remove** action. Changing it means removing it and then entering the new
   key; there is no redundant **Replace** control. Removing the key disables only
   AI scanning and does not remove expense data.
 - The selected Gemini model and image-preparation preference are also
@@ -817,22 +811,21 @@ and multi-device synchronization according to the agreed sync design.
   setup rather than redirecting away from the selected receipt. The setup must
   use a masked API-key input with paste and explicit reveal controls, repeat the
   concise client-side exposure warning, validate the key, persist it according
-  to the agreed automatic-remember behavior, and continue the pending scan
-  after successful setup. Validation errors remain in the setup for correction.
+  to the agreed automatic-remember behavior, and continue the pending scan after
+  successful setup. Validation errors remain in the setup for correction.
 - The frontend must minimize this accepted risk with a restrictive Content
-  Security Policy, no runtime CDN dependencies or unrelated third-party
-  scripts, safe rendering of user/LLM text, and a deliberately small dependency
-  surface.
+  Security Policy, no runtime CDN dependencies or unrelated third-party scripts,
+  safe rendering of user/LLM text, and a deliberately small dependency surface.
 - This accepted key design does not currently justify a Deno Deploy backend. It
   may be revisited if the threat model or deployment scope changes.
 - A custom domain is not required. Deployment uses the repository's standard
   GitHub Pages URL, with explicit acceptance that other projects on the same
   owner origin may share the browser-storage security boundary.
-- The supported browser policy is the latest two major releases of Chrome,
-  Edge, Firefox, and Safari. Current iOS Safari and Android Chrome are equal
-  primary mobile targets for camera/image selection, IndexedDB, offline launch,
-  and PWA installation where the platform exposes it. An unsupported browser
-  receives a concise explanation rather than an unreliable degraded workflow.
+- The supported browser policy is the latest two major releases of Chrome, Edge,
+  Firefox, and Safari. Current iOS Safari and Android Chrome are equal primary
+  mobile targets for camera/image selection, IndexedDB, offline launch, and PWA
+  installation where the platform exposes it. An unsupported browser receives a
+  concise explanation rather than an unreliable degraded workflow.
 - Before first use, the application must explain that invoice images and their
   extracted content are sent to Google Gemini. Later scan flows retain a visible
   reminder without requiring repetitive confirmation before every scan.
@@ -863,8 +856,8 @@ and multi-device synchronization according to the agreed sync design.
   assertions across many UI tests.
 - Component tests should focus on snapshot-to-view rendering, event wiring,
   validation presentation, and accessibility rather than re-testing statechart
-  logic. End-to-end tests remain required for a smaller set of critical
-  browser journeys because machine tests cannot prove layout, focus behavior,
+  logic. End-to-end tests remain required for a smaller set of critical browser
+  journeys because machine tests cannot prove layout, focus behavior,
   IndexedDB/service-worker integration, or external browser APIs work together.
 - Prefer the lowest reliable test layer for each behavior. Pure domain logic,
   schema validation, migrations, formatting, selectors, and utilities use unit
@@ -884,15 +877,15 @@ and multi-device synchronization according to the agreed sync design.
   never require live credentials in CI. Optional manual smoke tests may use
   credentials explicitly supplied by the owner and must never persist them in
   fixtures, logs, screenshots, or repository files.
-- Responsive acceptance uses `320x568` as a narrow stress viewport, `390x844`
-  as a common phone viewport, and `1280x800` as desktop. Tablet-specific checks
-  are added only for a component or screen whose composition materially changes
-  at that width.
-- Accessibility acceptance requires complete keyboard operation, visible
-  focus, correct names/roles/states and landmarks, functional static feedback
-  under reduced motion, and automated accessibility checks. Critical journeys
-  also receive `agent-browser` Chromium screenshots and accessibility-tree
-  inspection at the representative mobile and desktop viewports.
+- Responsive acceptance uses `320x568` as a narrow stress viewport, `390x844` as
+  a common phone viewport, and `1280x800` as desktop. Tablet-specific checks are
+  added only for a component or screen whose composition materially changes at
+  that width.
+- Accessibility acceptance requires complete keyboard operation, visible focus,
+  correct names/roles/states and landmarks, functional static feedback under
+  reduced motion, and automated accessibility checks. Critical journeys also
+  receive `agent-browser` Chromium screenshots and accessibility-tree inspection
+  at the representative mobile and desktop viewports.
 - A feature task is not complete when tests are postponed to a later cleanup
   milestone. Its appropriate unit/actor/component tests must be implemented and
   passing in the same task, while critical E2E coverage may be added at the
@@ -924,8 +917,8 @@ That file must contain:
 - a dependency graph and ordered milestones with stable task IDs;
 - for every task: scope and non-goals, prerequisites, allowed file/contract
   ownership, expected outputs, acceptance criteria, verification commands, and
-  status, including the cheapest appropriate unit, actor, component, or E2E
-  test layer and the exact tests delivered with that task;
+  status, including the cheapest appropriate unit, actor, component, or E2E test
+  layer and the exact tests delivered with that task;
 - explicit parallel lanes and collision rules so sub-agents are dispatched only
   where work is genuinely independent;
 - a worktree policy identifying when isolated worktrees are worthwhile, their
@@ -959,8 +952,8 @@ These questions must be resolved incrementally before implementation.
 ### 1. Expense Record and Invoice Semantics
 
 - There are no remaining MVP decisions in this section. Receipt parents,
-  independently editable lines, required line descriptions, monetary signs,
-  and optional quantity/unit-price fields are specified above.
+  independently editable lines, required line descriptions, monetary signs, and
+  optional quantity/unit-price fields are specified above.
 
 ### 2. Project Behavior
 
@@ -969,15 +962,15 @@ These questions must be resolved incrementally before implementation.
 
 ### 3. Currency Behavior — Deferred Beyond MVP
 
-- There are no remaining MVP decisions in this section. Cross-currency
-  reporting and its historical exchange-rate, provenance, and rounding rules
-  are one deferred feature batch and are not part of current specification work.
+- There are no remaining MVP decisions in this section. Cross-currency reporting
+  and its historical exchange-rate, provenance, and rounding rules are one
+  deferred feature batch and are not part of current specification work.
 
 ### 4. Local Persistence and Google Drive Sync
 
 - There are no remaining owner-preference decisions in this section. Automerge
-  receives one comprehensive compatibility gate; alternatives are evaluated
-  only if it fails.
+  receives one comprehensive compatibility gate; alternatives are evaluated only
+  if it fails.
 
 ### 5. Google Access and Privacy
 
@@ -994,8 +987,8 @@ These questions must be resolved incrementally before implementation.
 ### 7. Filtering and Reporting
 
 - There are no remaining MVP interaction decisions in this section. Calendar
-  periods, combinable project-scoped filters, search, sorting, and multi-currency
-  totals are specified above and in `UI_SPEC.md`.
+  periods, combinable project-scoped filters, search, sorting, and
+  multi-currency totals are specified above and in `UI_SPEC.md`.
 - Comparisons, trends, and charts remain post-MVP possibilities. Stable IDs,
   original signed decimal amounts and currencies, immutable transaction dates,
   and preserved historical records provide their initial data foundation.
@@ -1010,13 +1003,14 @@ These questions must be resolved incrementally before implementation.
 
 ### 9. Testing and Visual Acceptance
 
-- There are no remaining owner-preference decisions in this section. `deno
-  test`, React Testing Library/`happy-dom`, a proper provisional Playwright E2E
-  dependency, and separately installed `agent-browser` are subject to the
-  recorded foundation compatibility gates.
+- There are no remaining owner-preference decisions in this section.
+  `deno
+  test`, React Testing Library/`happy-dom`, a proper provisional
+  Playwright E2E dependency, and separately installed `agent-browser` are
+  subject to the recorded foundation compatibility gates.
 - Critical E2E journeys, representative viewports, accessibility gates, and the
-  fake-adapter boundary are specified above. Detailed synchronization and
-  Gemini behaviors belong at lower test layers; CI never requires live service
+  fake-adapter boundary are specified above. Detailed synchronization and Gemini
+  behaviors belong at lower test layers; CI never requires live service
   credentials.
 
 ## Recommended Decision Order

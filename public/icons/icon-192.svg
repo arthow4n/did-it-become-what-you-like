@@ -1,5 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-labelledby="title">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img"
+  aria-labelledby="title">
   <title id="title">Application placeholder icon</title>
   <rect width="192" height="192" fill="#ffffff" />
-  <rect x="32" y="32" width="128" height="128" fill="none" stroke="#000000" stroke-width="8" />
+  <rect x="32" y="32" width="128" height="128" fill="none" stroke="#000000"
+    stroke-width="8" />
 </svg>

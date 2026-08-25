@@ -1,7 +1,7 @@
 # Third-party notices
 
-This application is distributed under the MIT License in [LICENSE](LICENSE).
-Its source dependencies are published under their own licenses:
+This application is distributed under the MIT License in [LICENSE](LICENSE). Its
+source dependencies are published under their own licenses:
 
 - [React](https://github.com/facebook/react) — MIT License
 - [React DOM](https://github.com/facebook/react) — MIT License

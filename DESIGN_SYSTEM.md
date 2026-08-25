@@ -7,10 +7,10 @@ component and token decisions to the coding agent's best judgment based on all
 approved screens in `UI_SPEC.md`.
 
 This document is a design and component contract, not authorization to begin
-implementation. Exact token tuning may occur through the required visual
-gallery review without changing the semantic roles or component responsibilities.
-The repo owner must still approve the later implementation plan before
-application code is written.
+implementation. Exact token tuning may occur through the required visual gallery
+review without changing the semantic roles or component responsibilities. The
+repo owner must still approve the later implementation plan before application
+code is written.
 
 The system is named **After Midnight**: a calm, comfortable dark interface for
 quick expense entry and trustworthy later review. It should feel native and
@@ -78,25 +78,25 @@ APIs. Components must not hard-code palette values.
 
 ### Color roles
 
-| Token | Initial dark value | Responsibility |
-|---|---:|---|
-| `canvas` | `#101315` | App background |
-| `surface-1` | `#171B1F` | Primary cards and navigation |
-| `surface-2` | `#1E2429` | Raised controls and grouped sections |
-| `surface-3` | `#272E35` | Popovers, selected rows, overlays |
-| `border-subtle` | `#3B4650` | Non-essential separators |
-| `border-strong` | `#596875` | Interactive boundaries; at least 3:1 on `surface-1` |
-| `text-primary` | `#E8EDF1` | Primary copy; softened rather than pure white |
-| `text-secondary` | `#B7C0C8` | Supporting copy |
-| `text-muted` | `#89949E` | Metadata; still AA for ordinary text on `surface-1` |
-| `accent` | `#78DCCA` | Restrained primary action and selection |
-| `on-accent` | `#0A211E` | Text/icons on filled accent controls |
-| `positive` | `#86D9AA` | Money back, always with `+` and/or text |
-| `negative` | `#FF9E9E` | Expense outflow, always with a minus sign or label |
-| `danger` | `#FF9E9E` | Destructive actions and errors; separate semantic role |
-| `warning` | `#F0C674` | Review needed and mismatch states |
-| `info` | `#8FC8F8` | Neutral information and synchronization |
-| `focus-ring` | `#9AE8DA` | Keyboard focus indicator |
+| Token            | Initial dark value | Responsibility                                         |
+| ---------------- | -----------------: | ------------------------------------------------------ |
+| `canvas`         |          `#101315` | App background                                         |
+| `surface-1`      |          `#171B1F` | Primary cards and navigation                           |
+| `surface-2`      |          `#1E2429` | Raised controls and grouped sections                   |
+| `surface-3`      |          `#272E35` | Popovers, selected rows, overlays                      |
+| `border-subtle`  |          `#3B4650` | Non-essential separators                               |
+| `border-strong`  |          `#596875` | Interactive boundaries; at least 3:1 on `surface-1`    |
+| `text-primary`   |          `#E8EDF1` | Primary copy; softened rather than pure white          |
+| `text-secondary` |          `#B7C0C8` | Supporting copy                                        |
+| `text-muted`     |          `#89949E` | Metadata; still AA for ordinary text on `surface-1`    |
+| `accent`         |          `#78DCCA` | Restrained primary action and selection                |
+| `on-accent`      |          `#0A211E` | Text/icons on filled accent controls                   |
+| `positive`       |          `#86D9AA` | Money back, always with `+` and/or text                |
+| `negative`       |          `#FF9E9E` | Expense outflow, always with a minus sign or label     |
+| `danger`         |          `#FF9E9E` | Destructive actions and errors; separate semantic role |
+| `warning`        |          `#F0C674` | Review needed and mismatch states                      |
+| `info`           |          `#8FC8F8` | Neutral information and synchronization                |
+| `focus-ring`     |          `#9AE8DA` | Keyboard focus indicator                               |
 
 Status containers use dark tinted surfaces derived from these roles, while
 foreground text keeps AA contrast. The initial primary, secondary, muted,
@@ -132,87 +132,122 @@ role name guarantees contrast.
 
 Initial content-driven ranges, subject to visual verification, are:
 
-| Range | Width | Composition |
-|---|---:|---|
-| Compact | below 720px | Bottom navigation, one column, sheets/full screens |
-| Medium | 720–1023px | Rail where it fits, bounded one/two-column content |
-| Wide | 1024px and above | Rail plus list/summary or list/detail columns |
+| Range   |            Width | Composition                                        |
+| ------- | ---------------: | -------------------------------------------------- |
+| Compact |      below 720px | Bottom navigation, one column, sheets/full screens |
+| Medium  |       720–1023px | Rail where it fits, bounded one/two-column content |
+| Wide    | 1024px and above | Rail plus list/summary or list/detail columns      |
 
 - Maximum app content width: 1200px.
 - Maximum ordinary form width: 640px.
 - Maximum settings/readable content width: 760px.
 - Maximum receipt/conflict review width: 960px.
 - Respect safe-area insets for fixed mobile actions and bottom navigation.
-- Breakpoints may be tuned in the component gallery after visual inspection,
-  but screens must not branch on device names or duplicate workflows.
+- Breakpoints may be tuned in the component gallery after visual inspection, but
+  screens must not branch on device names or duplicate workflows.
 
 ### Layout, Flexbox, and Sizing Discipline
 
-To prevent awkward layout collapse, disproportionate control expansion, and flexbox abuse, all components and screens must follow these rules:
+To prevent awkward layout collapse, disproportionate control expansion, and
+flexbox abuse, all components and screens must follow these rules:
 
 1. **Natural vs Full-Width Sizing:**
-   - Text inputs, text areas, and complex search bars take container width up to the form maximum (`--form-max: 640px`).
-   - Compact controls (`Button`, `IconButton`, `SelectField`, `SegmentedControl`, `ColorChoiceField`, `NativeDateField`, `NativeTimeField`, `Badge`, `Chip`) MUST maintain their natural compact width or use explicit inline layout. Never blindly apply `flex: 1` or `width: 100%` where it stretches small controls into disproportionate shapes.
-   - For segmented choices spanning a full form width (e.g. "Spent / Money back"), use equal fractional distribution (`flex: 1 1 0` per segment) rather than letting one small segment float in an empty void.
+   - Text inputs, text areas, and complex search bars take container width up to
+     the form maximum (`--form-max: 640px`).
+   - Compact controls (`Button`, `IconButton`, `SelectField`,
+     `SegmentedControl`, `ColorChoiceField`, `NativeDateField`,
+     `NativeTimeField`, `Badge`, `Chip`) MUST maintain their natural compact
+     width or use explicit inline layout. Never blindly apply `flex: 1` or
+     `width: 100%` where it stretches small controls into disproportionate
+     shapes.
+   - For segmented choices spanning a full form width (e.g. "Spent / Money
+     back"), use equal fractional distribution (`flex: 1 1 0` per segment)
+     rather than letting one small segment float in an empty void.
 
 2. **Grid and Asymmetric Stretch Prevention:**
-   - Multi-column CSS Grid containers (`ResponsiveGrid`, multi-column cards, gallery sections) MUST specify `align-content: start; align-items: start;`. This prevents unequal column heights from vertically stretching short sibling items (e.g., preventing a pill-shaped `SegmentedControl` from expanding into a giant 220px oval/circle).
-   - Interactive components inside grid layouts must specify `align-self: start` where stretching is inappropriate.
+   - Multi-column CSS Grid containers (`ResponsiveGrid`, multi-column cards,
+     gallery sections) MUST specify `align-content: start; align-items: start;`.
+     This prevents unequal column heights from vertically stretching short
+     sibling items (e.g., preventing a pill-shaped `SegmentedControl` from
+     expanding into a giant 220px oval/circle).
+   - Interactive components inside grid layouts must specify `align-self: start`
+     where stretching is inappropriate.
 
 3. **Flexbox Compression & Text Overflow Protection:**
-   - In horizontal flex rows pairing titles or long descriptions with trailing metrics or actions (e.g. `ListRow`, `PageHeader`, `FilterBar`), trailing slots (`.ds-list-row__trailing`, buttons, status chips, monetary amounts) MUST specify `flex-shrink: 0; white-space: nowrap;`.
-   - The flexible text container (`.ds-list-row__main`, titles) must specify `flex: 1 1 auto; min-width: 0;` so that long text wraps or truncates gracefully without crushing adjacent elements.
-   - Monetary amounts (`.ds-money`) must NEVER use `overflow-wrap: anywhere; white-space: normal;` — currency amounts must stay on a single line (`white-space: nowrap; font-variant-numeric: tabular-nums;`).
+   - In horizontal flex rows pairing titles or long descriptions with trailing
+     metrics or actions (e.g. `ListRow`, `PageHeader`, `FilterBar`), trailing
+     slots (`.ds-list-row__trailing`, buttons, status chips, monetary amounts)
+     MUST specify `flex-shrink: 0; white-space: nowrap;`.
+   - The flexible text container (`.ds-list-row__main`, titles) must specify
+     `flex: 1 1 auto; min-width: 0;` so that long text wraps or truncates
+     gracefully without crushing adjacent elements.
+   - Monetary amounts (`.ds-money`) must NEVER use
+     `overflow-wrap: anywhere; white-space: normal;` — currency amounts must
+     stay on a single line
+     (`white-space: nowrap; font-variant-numeric: tabular-nums;`).
 
 4. **Spacing Rhythm & Visual Hierarchy:**
-   - Spacing between elements must strictly use the named 4px tokens. Never collapse gaps completely or use arbitrary un-tokenized gaps:
-     - `--space-1` (4px): tightly coupled sub-elements (icon + label in compact badge, segmented control item padding)
-     - `--space-2` (8px): intra-field gaps (label to control, inline chip list, tight button pairs)
-     - `--space-3` (12px): list row padding, filter bar items, related form groups
+   - Spacing between elements must strictly use the named 4px tokens. Never
+     collapse gaps completely or use arbitrary un-tokenized gaps:
+     - `--space-1` (4px): tightly coupled sub-elements (icon + label in compact
+       badge, segmented control item padding)
+     - `--space-2` (8px): intra-field gaps (label to control, inline chip list,
+       tight button pairs)
+     - `--space-3` (12px): list row padding, filter bar items, related form
+       groups
      - `--space-4` (16px): intra-card element stacking, section content padding
-     - `--space-5` (20px) / `--space-6` (24px): distinct form sections, cards in a stack, dialog content gaps
-     - `--space-7` (32px) / `--space-8` (40px): page-level landmarks and main layout margins
-   - Every interactive control must provide at least `--space-2` (8px) breathing room from neighboring elements.
+     - `--space-5` (20px) / `--space-6` (24px): distinct form sections, cards in
+       a stack, dialog content gaps
+     - `--space-7` (32px) / `--space-8` (40px): page-level landmarks and main
+       layout margins
+   - Every interactive control must provide at least `--space-2` (8px) breathing
+     room from neighboring elements.
 
 5. **Notification and Overlay Stability (Zero Layout Shifts):**
-   - Ephemeral feedback (`Toast`) must render inside a dedicated fixed overlay container (`position: fixed; bottom: ...; right: ...; z-index: 30;`).
-   - Interactive actions associated with notifications (such as Dismiss or Undo) must be colocated inside the floating notification container, NEVER placed in the regular document flow where they bump and shift page elements.
+   - Ephemeral feedback (`Toast`) must render inside a dedicated fixed overlay
+     container (`position: fixed; bottom: ...; right: ...; z-index: 30;`).
+   - Interactive actions associated with notifications (such as Dismiss or Undo)
+     must be colocated inside the floating notification container, NEVER placed
+     in the regular document flow where they bump and shift page elements.
 
 6. **Mobile Navigation & Touch Ergonomics:**
-   - Compact screens (`< 720px`) MUST anchor application navigation to the bottom viewport edge with safe-area padding (`env(safe-area-inset-bottom)`).
-   - Content container `<main>` must maintain bottom padding equal to bottom bar height plus safe-area insets.
+   - Compact screens (`< 720px`) MUST anchor application navigation to the
+     bottom viewport edge with safe-area padding
+     (`env(safe-area-inset-bottom)`).
+   - Content container `<main>` must maintain bottom padding equal to bottom bar
+     height plus safe-area insets.
    - Touch targets must meet the minimum 44px boundary.
 
 ## Component Map
 
 ### UI primitives
 
-| Component | Responsibility |
-|---|---|
-| `AppFrame` | Canvas, safe areas, bottom bar/rail transition, main landmark |
-| `PageHeader` | Back/close, title, project/scope, trailing status/actions |
-| `Stack`, `Inline`, `ResponsiveGrid`, `ContentContainer` | Tokenized layout without screen-local gap values |
-| `Text`, `Heading`, `MoneyText`, `DateText` | Semantic typography, signed money, tabular numbers, concrete dates |
-| `Icon` | Lucide sizing and decorative/accessibility policy |
-| `Button`, `IconButton`, `LinkButton` | Primary, secondary, quiet, and danger actions; loading included |
-| `ActionCard` | Large labeled first-use/add-choice action with description |
-| `Field` | Label, required/optional status, description, error, control slot |
-| `TextField`, `TextArea`, `SearchField`, `SecretField` | Common text entry, clear/reveal behavior, validation |
-| `DecimalField`, `MoneyField` | Decimal-string quantity/price and signed-domain money input; direction remains separate |
-| `NativeDateField`, `NativeTimeField`, `FileField` | Approved platform inputs inside the Field contract |
-| `SelectField`, `ComboBoxField` | Short selection and type-ahead long-list selection |
-| `ColorChoiceField` | Optional labeled category color with accessible presets/custom value |
-| `Checkbox`, `RadioGroup`, `Switch`, `SegmentedControl` | Boolean, exclusive, and compact mode selection |
-| `Chip`, `Badge`, `StatusDot` | Filters and status supplements; never color-only |
-| `Card`, `Section`, `Divider`, `Disclosure` | Grouping and natural-height expandable content |
-| `List`, `ListRow`, `DefinitionList` | Navigable/summary records with consistent density |
-| `AdaptiveDialog` | Sheet on compact screens, modal/popover on wider screens |
-| `ConfirmDialog` | Ordinary confirmation with safe initial focus |
-| `DangerDialog` | Strong destructive confirmation and typed phrase slot |
-| `Popover`, `Menu`, `Tooltip` | Accessible transient supporting controls |
-| `Banner`, `InlineNotice`, `Toast`, `StatusMessage` | Persistent, inline, transient, and announced feedback |
-| `Progress`, `Skeleton`, `EmptyState`, `ErrorState` | Async and collection states without layout jumps |
-| `StickyActionBar` | Safe-area-aware compact-screen primary actions |
+| Component                                               | Responsibility                                                                          |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `AppFrame`                                              | Canvas, safe areas, bottom bar/rail transition, main landmark                           |
+| `PageHeader`                                            | Back/close, title, project/scope, trailing status/actions                               |
+| `Stack`, `Inline`, `ResponsiveGrid`, `ContentContainer` | Tokenized layout without screen-local gap values                                        |
+| `Text`, `Heading`, `MoneyText`, `DateText`              | Semantic typography, signed money, tabular numbers, concrete dates                      |
+| `Icon`                                                  | Lucide sizing and decorative/accessibility policy                                       |
+| `Button`, `IconButton`, `LinkButton`                    | Primary, secondary, quiet, and danger actions; loading included                         |
+| `ActionCard`                                            | Large labeled first-use/add-choice action with description                              |
+| `Field`                                                 | Label, required/optional status, description, error, control slot                       |
+| `TextField`, `TextArea`, `SearchField`, `SecretField`   | Common text entry, clear/reveal behavior, validation                                    |
+| `DecimalField`, `MoneyField`                            | Decimal-string quantity/price and signed-domain money input; direction remains separate |
+| `NativeDateField`, `NativeTimeField`, `FileField`       | Approved platform inputs inside the Field contract                                      |
+| `SelectField`, `ComboBoxField`                          | Short selection and type-ahead long-list selection                                      |
+| `ColorChoiceField`                                      | Optional labeled category color with accessible presets/custom value                    |
+| `Checkbox`, `RadioGroup`, `Switch`, `SegmentedControl`  | Boolean, exclusive, and compact mode selection                                          |
+| `Chip`, `Badge`, `StatusDot`                            | Filters and status supplements; never color-only                                        |
+| `Card`, `Section`, `Divider`, `Disclosure`              | Grouping and natural-height expandable content                                          |
+| `List`, `ListRow`, `DefinitionList`                     | Navigable/summary records with consistent density                                       |
+| `AdaptiveDialog`                                        | Sheet on compact screens, modal/popover on wider screens                                |
+| `ConfirmDialog`                                         | Ordinary confirmation with safe initial focus                                           |
+| `DangerDialog`                                          | Strong destructive confirmation and typed phrase slot                                   |
+| `Popover`, `Menu`, `Tooltip`                            | Accessible transient supporting controls                                                |
+| `Banner`, `InlineNotice`, `Toast`, `StatusMessage`      | Persistent, inline, transient, and announced feedback                                   |
+| `Progress`, `Skeleton`, `EmptyState`, `ErrorState`      | Async and collection states without layout jumps                                        |
+| `StickyActionBar`                                       | Safe-area-aware compact-screen primary actions                                          |
 
 Every interactive primitive supports the applicable default, hover, pressed,
 focus-visible, selected, disabled, pending, invalid, and read-only states. A
@@ -220,71 +255,71 @@ pending control keeps its label or an equally descriptive accessible name.
 
 ### Reusable patterns
 
-| Pattern | Responsibility |
-|---|---|
-| `AppNavigation` | Expenses/Add/Organize/Settings bottom bar and desktop rail |
-| `GlobalStatus` | Offline, reconnecting, syncing, conflict, error, update status |
-| `FormLayout`, `FormActions`, `ErrorSummary`, `DraftStatus` | Consistent form spacing, validation, dirty/save feedback |
-| `FilterBar`, `FilterSheet`, `ActiveFilterChips` | Quick filters, advanced filters, removable active criteria |
-| `MasterDetail` | Mobile list-to-detail and wide two-column detail composition |
-| `ManagementList` | Active/archived sections, search, reorder and row actions |
-| `ReorderControls` | Drag plus keyboard-accessible move actions |
-| `SettingsList`, `SettingsRow` | Settings navigation with concise live summary |
-| `StatusPanel` | Identity, current state, timestamps, pending counts, actions |
-| `SafetyExportStep` | Reusable pre-destructive JSON export/decline confirmation |
-| `WorkflowProgress` | Named resumable steps, retry, and terminal result |
-| `UpdatePrompt` | Checking/current/ready/offline/error and guarded reload |
+| Pattern                                                    | Responsibility                                                 |
+| ---------------------------------------------------------- | -------------------------------------------------------------- |
+| `AppNavigation`                                            | Expenses/Add/Organize/Settings bottom bar and desktop rail     |
+| `GlobalStatus`                                             | Offline, reconnecting, syncing, conflict, error, update status |
+| `FormLayout`, `FormActions`, `ErrorSummary`, `DraftStatus` | Consistent form spacing, validation, dirty/save feedback       |
+| `FilterBar`, `FilterSheet`, `ActiveFilterChips`            | Quick filters, advanced filters, removable active criteria     |
+| `MasterDetail`                                             | Mobile list-to-detail and wide two-column detail composition   |
+| `ManagementList`                                           | Active/archived sections, search, reorder and row actions      |
+| `ReorderControls`                                          | Drag plus keyboard-accessible move actions                     |
+| `SettingsList`, `SettingsRow`                              | Settings navigation with concise live summary                  |
+| `StatusPanel`                                              | Identity, current state, timestamps, pending counts, actions   |
+| `SafetyExportStep`                                         | Reusable pre-destructive JSON export/decline confirmation      |
+| `WorkflowProgress`                                         | Named resumable steps, retry, and terminal result              |
+| `UpdatePrompt`                                             | Checking/current/ready/offline/error and guarded reload        |
 
 ### Domain composites
 
-| Composite | Responsibility |
-|---|---|
-| `ProjectPicker` | Current project selection and stable-ID values |
-| `PeriodPicker` | Today/month/year/custom calendar selection |
-| `CurrencyPicker`, `MerchantPicker` | Searchable ISO currency and local merchant suggestions |
-| `MoneySummary` | Net spent, outflows, and money back for identical filters |
-| `CategoryBreakdown` | Ranked category totals and filter activation |
-| `ExpenseList`, `ExpenseRow`, `ReceiptGroup` | Date grouping, records, expandable receipt parent/lines |
-| `ExpenseForm` | Shared create/edit fields and snapshot-derived save actions |
-| `ReceiptSourcePicker` | Native camera/file input, ephemeral preview, replace/remove |
-| `GeminiQuickSetup` | Inline key entry, warning, validation, resume action |
-| `ReceiptMetadata`, `ReceiptLineCard`, `ReceiptLineEditor` | Review/edit extracted parent and line values |
-| `ReceiptReconciliation` | Printed, selected, and difference totals plus warning |
-| `ProjectEditor`, `CategoryEditor` | Stable-ID entity create/edit forms |
-| `DeleteAndReassign` | Category replacement preview and atomic confirmation |
-| `ProjectDeletionReview` | Project scope summary, safety export, typed confirmation |
-| `SyncAccountPanel`, `KnownDeviceList` | Drive identity/status and recognizable devices |
-| `ConflictResolver` | Record/field progress, candidates, custom value, delete/edit |
-| `ModelPicker`, `GeminiConfigurationTest` | Searchable compatible models and explicit test states |
-| `ImportPreview`, `ImportModeChoice` | Schema/count validation and merge/dangerous replace |
-| `DeletionScopePicker`, `DeletionProgress` | Local/disconnect/everywhere scope and device acknowledgements |
-| `PreferenceExample` | Live expense-day boundary example with concrete dates |
-| `AboutSummary` | Version/build, disclosure, privacy, licenses, source, updates |
+| Composite                                                 | Responsibility                                                |
+| --------------------------------------------------------- | ------------------------------------------------------------- |
+| `ProjectPicker`                                           | Current project selection and stable-ID values                |
+| `PeriodPicker`                                            | Today/month/year/custom calendar selection                    |
+| `CurrencyPicker`, `MerchantPicker`                        | Searchable ISO currency and local merchant suggestions        |
+| `MoneySummary`                                            | Net spent, outflows, and money back for identical filters     |
+| `CategoryBreakdown`                                       | Ranked category totals and filter activation                  |
+| `ExpenseList`, `ExpenseRow`, `ReceiptGroup`               | Date grouping, records, expandable receipt parent/lines       |
+| `ExpenseForm`                                             | Shared create/edit fields and snapshot-derived save actions   |
+| `ReceiptSourcePicker`                                     | Native camera/file input, ephemeral preview, replace/remove   |
+| `GeminiQuickSetup`                                        | Inline key entry, warning, validation, resume action          |
+| `ReceiptMetadata`, `ReceiptLineCard`, `ReceiptLineEditor` | Review/edit extracted parent and line values                  |
+| `ReceiptReconciliation`                                   | Printed, selected, and difference totals plus warning         |
+| `ProjectEditor`, `CategoryEditor`                         | Stable-ID entity create/edit forms                            |
+| `DeleteAndReassign`                                       | Category replacement preview and atomic confirmation          |
+| `ProjectDeletionReview`                                   | Project scope summary, safety export, typed confirmation      |
+| `SyncAccountPanel`, `KnownDeviceList`                     | Drive identity/status and recognizable devices                |
+| `ConflictResolver`                                        | Record/field progress, candidates, custom value, delete/edit  |
+| `ModelPicker`, `GeminiConfigurationTest`                  | Searchable compatible models and explicit test states         |
+| `ImportPreview`, `ImportModeChoice`                       | Schema/count validation and merge/dangerous replace           |
+| `DeletionScopePicker`, `DeletionProgress`                 | Local/disconnect/everywhere scope and device acknowledgements |
+| `PreferenceExample`                                       | Live expense-day boundary example with concrete dates         |
+| `AboutSummary`                                            | Version/build, disclosure, privacy, licenses, source, updates |
 
 ## Screen-to-Component Mapping
 
-| Screen/workflow | Primary design-system composition |
-|---|---|
-| First use | `AppFrame`, `ContentContainer`, `ActionCard`, `InlineNotice` |
-| 1 Expenses | `PageHeader`, `ProjectPicker`, `GlobalStatus`, `Banner`, `PeriodPicker`, `FilterBar`, `MoneySummary`, `CategoryBreakdown`, `ExpenseList`, `ReceiptGroup` |
-| 2 Add Choice | `AdaptiveDialog`, two `ActionCard`s, `InlineNotice` |
-| 3 Manual/Create/Edit | `PageHeader`, `FormLayout`, `SegmentedControl`, `MoneyField`, `ComboBoxField`, native date/time fields, `DraftStatus`, `FormActions`, `Toast` |
-| 4 Scan Receipt | `PageHeader`, `ReceiptSourcePicker`, `StatusPanel`, `InlineNotice`, `GeminiQuickSetup`, `WorkflowProgress`, `StickyActionBar` |
-| 5 Receipt Review | `PageHeader`, `ReceiptMetadata`, `ReceiptReconciliation`, `ReceiptLineCard`, `ReceiptLineEditor`, `InlineNotice`, `StickyActionBar` |
-| 6 Organize | `PageHeader`, `Section`, `ActionCard`, preview `ListRow`s |
-| 7 Projects | `PageHeader`, `ManagementList`, `ReorderControls`, `ProjectEditor`, `ConfirmDialog`, `ProjectDeletionReview` |
-| 7A Populated project deletion | `ProjectDeletionReview`, `SafetyExportStep`, `DangerDialog`, `WorkflowProgress` |
-| 8 Categories | `PageHeader`, `ManagementList`, `SearchField`, `ReorderControls`, `CategoryEditor`, `DeleteAndReassign` |
-| 9 Settings | `PageHeader`, `SettingsList`, `SettingsRow` |
-| 10 Google Drive | `PageHeader`, `SyncAccountPanel`, `StatusPanel`, `SettingsList`, `InlineNotice`, `Button` variants |
-| 10A Conflicts | `PageHeader`, `MasterDetail`, `Progress`, `ConflictResolver`, `RadioGroup`, `InlineNotice` |
-| 10B Devices | `PageHeader`, `KnownDeviceList`, inline rename `TextField`, `StatusMessage` |
-| 11 Gemini Settings | `PageHeader`, `SecretField`, `ModelPicker`, `Switch`, `GeminiConfigurationTest`, `ErrorState` |
-| 12 Import/Export | `PageHeader`, `FileField`, `ImportPreview`, `ImportModeChoice`, `SafetyExportStep`, `WorkflowProgress`, `DangerDialog` |
-| 13 Preferences | `PageHeader`, `NativeTimeField`, `PreferenceExample` |
-| 14 Data and Privacy | `PageHeader`, `DefinitionList`, `SettingsList`, `DeletionScopePicker`, `SafetyExportStep`, `DeletionProgress`, `DangerDialog` |
-| 15 About | `PageHeader`, `AboutSummary`, `UpdatePrompt`, `DefinitionList`, link actions |
-| Cross-cutting drafts/saves | `DraftStatus`, `StatusMessage`, `ConfirmDialog`, `ErrorSummary`, `Toast` |
+| Screen/workflow               | Primary design-system composition                                                                                                                        |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| First use                     | `AppFrame`, `ContentContainer`, `ActionCard`, `InlineNotice`                                                                                             |
+| 1 Expenses                    | `PageHeader`, `ProjectPicker`, `GlobalStatus`, `Banner`, `PeriodPicker`, `FilterBar`, `MoneySummary`, `CategoryBreakdown`, `ExpenseList`, `ReceiptGroup` |
+| 2 Add Choice                  | `AdaptiveDialog`, two `ActionCard`s, `InlineNotice`                                                                                                      |
+| 3 Manual/Create/Edit          | `PageHeader`, `FormLayout`, `SegmentedControl`, `MoneyField`, `ComboBoxField`, native date/time fields, `DraftStatus`, `FormActions`, `Toast`            |
+| 4 Scan Receipt                | `PageHeader`, `ReceiptSourcePicker`, `StatusPanel`, `InlineNotice`, `GeminiQuickSetup`, `WorkflowProgress`, `StickyActionBar`                            |
+| 5 Receipt Review              | `PageHeader`, `ReceiptMetadata`, `ReceiptReconciliation`, `ReceiptLineCard`, `ReceiptLineEditor`, `InlineNotice`, `StickyActionBar`                      |
+| 6 Organize                    | `PageHeader`, `Section`, `ActionCard`, preview `ListRow`s                                                                                                |
+| 7 Projects                    | `PageHeader`, `ManagementList`, `ReorderControls`, `ProjectEditor`, `ConfirmDialog`, `ProjectDeletionReview`                                             |
+| 7A Populated project deletion | `ProjectDeletionReview`, `SafetyExportStep`, `DangerDialog`, `WorkflowProgress`                                                                          |
+| 8 Categories                  | `PageHeader`, `ManagementList`, `SearchField`, `ReorderControls`, `CategoryEditor`, `DeleteAndReassign`                                                  |
+| 9 Settings                    | `PageHeader`, `SettingsList`, `SettingsRow`                                                                                                              |
+| 10 Google Drive               | `PageHeader`, `SyncAccountPanel`, `StatusPanel`, `SettingsList`, `InlineNotice`, `Button` variants                                                       |
+| 10A Conflicts                 | `PageHeader`, `MasterDetail`, `Progress`, `ConflictResolver`, `RadioGroup`, `InlineNotice`                                                               |
+| 10B Devices                   | `PageHeader`, `KnownDeviceList`, inline rename `TextField`, `StatusMessage`                                                                              |
+| 11 Gemini Settings            | `PageHeader`, `SecretField`, `ModelPicker`, `Switch`, `GeminiConfigurationTest`, `ErrorState`                                                            |
+| 12 Import/Export              | `PageHeader`, `FileField`, `ImportPreview`, `ImportModeChoice`, `SafetyExportStep`, `WorkflowProgress`, `DangerDialog`                                   |
+| 13 Preferences                | `PageHeader`, `NativeTimeField`, `PreferenceExample`                                                                                                     |
+| 14 Data and Privacy           | `PageHeader`, `DefinitionList`, `SettingsList`, `DeletionScopePicker`, `SafetyExportStep`, `DeletionProgress`, `DangerDialog`                            |
+| 15 About                      | `PageHeader`, `AboutSummary`, `UpdatePrompt`, `DefinitionList`, link actions                                                                             |
+| Cross-cutting drafts/saves    | `DraftStatus`, `StatusMessage`, `ConfirmDialog`, `ErrorSummary`, `Toast`                                                                                 |
 
 This mapping is a reuse requirement, not a mandate that every listed component
 live in a separate file. Components should be split when they have a stable
@@ -334,7 +369,8 @@ It must render:
 The gallery is a verification surface, not a production route or a second
 component documentation framework. Exact token tuning happens there before
 screens are considered visually accepted. Changes to a shared component require
-checking all mapped screen consumers rather than only the component in isolation.
+checking all mapped screen consumers rather than only the component in
+isolation.
 
 ## Deferred Work
 

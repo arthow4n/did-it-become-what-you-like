@@ -272,8 +272,11 @@ export function formatMoney(amount: string | number, currency: string): string {
     /\B(?=(\d{3})+(?!\d))/g,
     ",",
   );
+  const formattedFraction = fraction !== undefined
+    ? (fraction.length === 1 ? `${fraction}0` : fraction)
+    : "";
   return `${currency} ${sign}${grouped || "0"}${
-    fraction ? `.${fraction}` : ""
+    formattedFraction ? `.${formattedFraction}` : ""
   }`;
 }
 

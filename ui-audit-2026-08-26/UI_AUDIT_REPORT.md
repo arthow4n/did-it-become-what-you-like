@@ -923,7 +923,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** Inspect Create Category form (swatches 36px) and trigger DangerDialog in gallery (shows Cancel + Delete buttons).
   - **Commit:** `fix(ui): FIX-12 standardize color swatch dimensions and pair cancel button in danger dialog footer`
 
-- [ ] **STEP-13 (FIX-13) · Format Currency Numbers to Consistent Two-Digit Decimal Precision**
+- [x] **STEP-13 (FIX-13) · Format Currency Numbers to Consistent Two-Digit Decimal Precision**
   - **Priority:** P3 (Formatting Consistency)
   - **Files:** [`src/domain/money/format.ts`](../src/domain/money/format.ts)
   - **Evidence:** [`screenshots/05_desktop_project_created_toast.png`](screenshots/05_desktop_project_created_toast.png), [`screenshots/15_desktop_expenses_list_with_item.png`](screenshots/15_desktop_expenses_list_with_item.png)

@@ -22,7 +22,10 @@ function decimalParts(value: CanonicalDecimal): {
 export function formatDecimal(value: CanonicalDecimal): string {
   const { sign, integer, fraction } = decimalParts(value);
   const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${sign}${grouped}${fraction ? `.${fraction}` : ""}`;
+  const formattedFraction = fraction
+    ? (fraction.length === 1 ? `${fraction}0` : fraction)
+    : "";
+  return `${sign}${grouped}${formattedFraction ? `.${formattedFraction}` : ""}`;
 }
 
 /** Formats a signed amount in the same code-first form used by the UI. */

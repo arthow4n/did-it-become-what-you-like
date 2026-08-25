@@ -3,6 +3,7 @@ import {
   deviceViewModels,
   formatApproximateLastSeen,
   observationsFromSyncConflicts,
+  requiresDriveAuthorization,
 } from "./sync-portability-runtime.tsx";
 
 declare const Deno: {
@@ -126,6 +127,13 @@ Deno.test("sync runtime formats ordinary last-seen values approximately", () => 
 
 Deno.test("sync runtime remains unavailable without OAuth configuration", () => {
   assert(createConfiguredDriveAdapter({}) === null);
+});
+
+Deno.test("sync runtime marks a configured account as authorization-needed after reload", () => {
+  assert(requiresDriveAuthorization("owner@example.com", "signed-out"));
+  assert(requiresDriveAuthorization("owner@example.com", null));
+  assert(!requiresDriveAuthorization("owner@example.com", "authorized"));
+  assert(!requiresDriveAuthorization(null, "signed-out"));
 });
 
 // Deno's --filter is a substring selector rather than an alternation regex.

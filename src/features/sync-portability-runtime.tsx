@@ -16,6 +16,7 @@ import {
 } from "react";
 import {
   adapterError,
+  type DriveAuthState,
   type SecretStoragePort,
 } from "../adapters/ports/index.ts";
 import {
@@ -325,10 +326,18 @@ function humanize(value: string): string {
     .replace(/^./, (character) => character.toUpperCase());
 }
 
+export function requiresDriveAuthorization(
+  accountEmail: string | null,
+  driveStatus: DriveAuthState | null,
+): boolean {
+  return accountEmail !== null && driveStatus !== "authorized";
+}
+
 function syncViewFromSnapshot(
   snapshot: ReturnType<typeof createSyncActor> extends infer Actor
     ? Actor extends { getSnapshot: () => infer Snapshot } ? Snapshot : never
     : never,
+  driveStatus: DriveAuthState | null = "authorized",
 ): SyncConnectionViewModel {
   const context = snapshot.context;
   if (snapshot.matches("hydrating") || snapshot.matches("configuring")) {
@@ -360,6 +369,7 @@ function syncViewFromSnapshot(
   else if (snapshot.matches("error")) sync = "error";
   else if (snapshot.matches("retired")) sync = "retired";
   if (
+    requiresDriveAuthorization(context.accountEmail, driveStatus) ||
     context.error?.code === "unauthorized" ||
     context.error?.code === "forbidden"
   ) sync = "authorization-error";
@@ -1031,7 +1041,10 @@ export function SyncPortabilityRuntime({
   const previousScreen = useRef<SyncPortabilityScreen>(null);
   const lastResolvedConflict = useRef<string | null>(null);
   const [deviceProjectionVersion, setDeviceProjectionVersion] = useState(0);
-  const syncView = syncViewFromSnapshot(syncSnapshot);
+  const syncView = syncViewFromSnapshot(
+    syncSnapshot,
+    driveAdapter?.status() ?? null,
+  );
 
   useEffect(() => {
     onSyncSummary?.(settingsSyncSummary(syncView));
@@ -1382,7 +1395,7 @@ export function SyncPortabilityRuntime({
     }
   }, [sendSync, syncSnapshot]);
 
-  const authorizeDrive = () => {
+  const authorizeDrive = (reconnect = false) => {
     if (driveAdapter === null) {
       onNotice(
         "Google Drive is unavailable until OAuth client configuration is provided.",
@@ -1390,7 +1403,10 @@ export function SyncPortabilityRuntime({
       return;
     }
     syncAfterAuthorization.current = true;
-    void driveAdapter.authorize().then((session) => {
+    const authorizationOptions = reconnect
+      ? { prompt: "" as const }
+      : undefined;
+    void driveAdapter.authorize(authorizationOptions).then((session) => {
       sendSync({
         type: "sync.configure",
         accountEmail: session.accountId,
@@ -1533,13 +1549,13 @@ export function SyncPortabilityRuntime({
       <GoogleDriveSyncScreen
         view={syncView}
         knownDeviceCount={deviceProjection.devices.length}
-        onConnect={authorizeDrive}
+        onConnect={() => authorizeDrive()}
         onRetry={() => sendSync({ type: "sync.retry" })}
         onSyncNow={() =>
           sendSync({ type: "sync.request", request: { reason: "manual" } })}
         onOpenConflicts={() => onNavigate("/settings/conflicts")}
         onManageDevices={() => onNavigate("/settings/devices")}
-        onSwitchAccount={authorizeDrive}
+        onSwitchAccount={() => authorizeDrive()}
         onConfirmAccountSwitch={() =>
           sendSync({ type: "sync.account.confirm" })}
         onCancelAccountSwitch={() => sendSync({ type: "sync.account.cancel" })}
@@ -1552,7 +1568,7 @@ export function SyncPortabilityRuntime({
             sendSync({ type: "sync.disconnect" });
           }).catch(() => onNotice("Google Drive could not be disconnected."));
         }}
-        onReconnect={authorizeDrive}
+        onReconnect={() => authorizeDrive(true)}
         onBack={() => onNavigate("/settings")}
       />
     )

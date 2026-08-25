@@ -78,6 +78,7 @@ type SyntheticCall = {
 class SyntheticDriveEndpoint {
   readonly calls: SyntheticCall[] = [];
   private readonly files = new Map<string, SyntheticFile>();
+  private aboutPermissionId: string | undefined;
   private nextId = 1;
   private revision = 1;
   private failures: Array<{ status: number; retryAfter?: string }> = [];
@@ -107,6 +108,10 @@ class SyntheticDriveEndpoint {
 
   failAfterMutation(status = 503): void {
     this.mutationFailure = status;
+  }
+
+  setAboutPermissionId(permissionId: string): void {
+    this.aboutPermissionId = permissionId;
   }
 
   seed(name: string, body: string): SyntheticFile {
@@ -188,7 +193,12 @@ class SyntheticDriveEndpoint {
     }
     if (path.endsWith("/about")) {
       return this.json({
-        user: { emailAddress: "synthetic-owner@example.test" },
+        user: {
+          emailAddress: "synthetic-owner@example.test",
+          ...(this.aboutPermissionId === undefined
+            ? {}
+            : { permissionId: this.aboutPermissionId }),
+        },
       });
     }
     if (path.endsWith("/files") && method === "GET") {
@@ -456,6 +466,41 @@ Deno.test("drive-adapter: authorization is least-scope, one-account, and revocab
   assertEquals(identity.revokeCount, 1);
   assertEquals(adapter.status(), "signed-out");
 });
+
+Deno.test("drive-adapter: permission ID remains the account-binding identity", async () => {
+  const { adapter, endpoint } = fixture();
+  endpoint.setAboutPermissionId("stable-drive-permission-id");
+  const session = await adapter.authorize();
+  assertEquals(session.accountId, "stable-drive-permission-id");
+});
+
+Deno.test(
+  "drive-adapter: reconnect uses an email hint and empty GIS prompt without persisting a token",
+  async () => {
+    const { adapter, identity } = fixture();
+    await authorized(adapter);
+    await adapter.disconnect();
+
+    await adapter.authorize({
+      loginHint: "synthetic-owner@example.test",
+      prompt: "",
+    });
+    assertEquals(
+      identity.configs[1]?.login_hint,
+      "synthetic-owner@example.test",
+    );
+    assertEquals(identity.configs[1]?.prompt, "");
+    assert(!JSON.stringify(identity.configs).includes(identity.issuedToken));
+
+    await adapter.disconnect();
+    await adapter.authorize({
+      loginHint: "opaque-drive-permission-id",
+      prompt: "",
+    });
+    assertEquals(identity.configs[2]?.login_hint, undefined);
+    assertEquals(identity.configs[2]?.prompt, "");
+  },
+);
 
 Deno.test("drive-adapter: cancellation and account mismatch never install a token", async () => {
   const cancelled = fixture();

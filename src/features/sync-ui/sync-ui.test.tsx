@@ -343,6 +343,26 @@ Deno.test("sync screen covers authorization, retryable, generic error, retired, 
   });
 });
 
+Deno.test("sync screen explains that reload requires a fresh authorization gesture", async () => {
+  await withComponentHarness(async ({ render }) => {
+    await withAriaGlobals(() => {
+      render(
+        createElement(SyncAccountPanel, {
+          view: { ...syncedView, sync: "authorization-error" },
+          knownDeviceCount: 1,
+          onConnect: () => undefined,
+          onReconnect: () => undefined,
+        }),
+      );
+      assert(
+        within(document.body).getByText(
+          /Authorize Google Drive again on this page/,
+        ),
+      );
+    });
+  });
+});
+
 Deno.test("sync account switch confirmation requires explicit confirm or cancel callbacks", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {

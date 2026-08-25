@@ -21,9 +21,27 @@ export type DriveTokenFailure = {
 export type DriveTokenClientConfig = {
   readonly client_id: string;
   readonly scope: string;
+  /** A verified email hint may avoid account selection after reconnect. */
+  readonly login_hint?: string;
+  /** Empty prompt reuses an existing grant without forcing consent UI. */
+  readonly prompt?: "";
   readonly callback: (response: DriveTokenSuccess) => void;
   readonly error_callback?: (response: DriveTokenFailure) => void;
 };
+
+export type DriveAuthorizationOptions = OperationOptions & {
+  /** Only an email from the persisted configured identity may be supplied. */
+  readonly loginHint?: string;
+  /** Reconnect uses GIS's empty prompt; other prompt modes are not needed. */
+  readonly prompt?: "";
+};
+
+const DRIVE_LOGIN_HINT = /^[^\s@]+@[^\s@]+$/u;
+
+export function isValidDriveLoginHint(value: unknown): value is string {
+  return typeof value === "string" && value.length <= 320 &&
+    DRIVE_LOGIN_HINT.test(value);
+}
 
 export interface DriveTokenClient {
   requestAccessToken(): void;

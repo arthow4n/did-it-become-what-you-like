@@ -23,7 +23,7 @@ function configuredCopy(
       label: "Authorization needed",
       tone: "danger",
       detail: view.message ??
-        "Google Drive authorization has expired or was revoked.",
+        "Authorize Google Drive again on this page to resume synchronization. Local data stays on this device.",
     };
   }
   if (view.sync === "conflict") {

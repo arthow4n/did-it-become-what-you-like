@@ -19,7 +19,12 @@ import type {
   DriveTransportPort,
   DriveWriteRequest,
 } from "../ports/drive.ts";
-import type { DriveFetch, DriveIdentityProvider } from "./browser.ts";
+import {
+  type DriveAuthorizationOptions,
+  type DriveFetch,
+  type DriveIdentityProvider,
+  isValidDriveLoginHint,
+} from "./browser.ts";
 import {
   defaultDriveFetch,
   DRIVE_API_ROOT,
@@ -61,15 +66,21 @@ export type DriveAdapterOptions = {
   readonly maxPages?: number;
 };
 
-export type DriveAdapter = DriveAuthorizationPort & DriveTransportPort & {
-  readonly readRetirementMarker: (
-    options?: OperationOptions,
-  ) => Promise<DriveRetirementMarker | undefined>;
-  readonly publishRetirementMarker: (
-    marker: DriveRetirementMarker,
-    options?: OperationOptions,
-  ) => Promise<DriveFile>;
-};
+export type DriveAdapter =
+  & Omit<DriveAuthorizationPort, "authorize">
+  & DriveTransportPort
+  & {
+    readonly authorize: (
+      options?: DriveAuthorizationOptions,
+    ) => Promise<DriveAuthSession>;
+    readonly readRetirementMarker: (
+      options?: OperationOptions,
+    ) => Promise<DriveRetirementMarker | undefined>;
+    readonly publishRetirementMarker: (
+      marker: DriveRetirementMarker,
+      options?: OperationOptions,
+    ) => Promise<DriveFile>;
+  };
 
 type AccessToken = {
   readonly value: string;
@@ -360,9 +371,11 @@ function accountIdFromAbout(
   const user = about?.user;
   const permissionId = user?.permissionId;
   const email = user?.emailAddress;
+  // Permission IDs are the stable account-binding identity. They are opaque
+  // Drive identifiers and must never be treated as a GIS login_hint.
   const accountId = typeof permissionId === "string" && permissionId.length > 0
     ? permissionId
-    : typeof email === "string" && email.length > 0
+    : isValidDriveLoginHint(email)
     ? email
     : undefined;
   if (accountId === undefined || !SAFE_ACCOUNT_ID.test(accountId)) {
@@ -861,7 +874,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
   }
 
   function requestToken(
-    optionsForOperation: OperationOptions | undefined,
+    optionsForOperation: DriveAuthorizationOptions | undefined,
   ): Promise<{ readonly value: string; readonly expiresIn: number }> {
     throwIfAborted(optionsForOperation?.signal);
     return new Promise((resolve, reject) => {
@@ -911,6 +924,12 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
         const client = options.identity.initTokenClient({
           client_id: options.clientId,
           scope: DRIVE_APP_DATA_SCOPE,
+          ...(isValidDriveLoginHint(optionsForOperation?.loginHint)
+            ? { login_hint: optionsForOperation.loginHint }
+            : {}),
+          ...(optionsForOperation?.prompt === ""
+            ? { prompt: "" as const }
+            : {}),
           callback,
           error_callback: errorCallback,
         });

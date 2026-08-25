@@ -935,7 +935,13 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### Q-604 — Produce and verify the GitHub Pages release
 
-- **Status/dependencies:** `READY`; depends on `Q-603`, which is complete.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `Q-603`, which is complete.
+- **Dispatch:** the integration owner has created the isolated worktree
+  `~/git/worktrees/did-it-become-what-you-like-q-604-release` on branch
+  `task/q-604-release` at root `60cd78a`. One bounded worker owns release
+  metadata, deployment workflow/config, artifact verification, and release
+  documentation only; it must preserve a timestamped untracked handover and
+  must not edit this plan, `master`, remotes, or another task's ownership.
 - **Ownership:** release metadata, deployment workflow/config and documentation;
   no feature code except release-blocking regression fixes through prior owners.
 - **Scope/non-goals:** clean production build, version/commit metadata, license
@@ -1306,12 +1312,13 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
   after closure-3 approval; Q-601, Q-602, and Q-603 are `COMPLETE`; and Q-604
-  is the next dependency-ready task.
+  is `IN_PROGRESS` in its isolated release worktree.
 - **Reconciled branch/upstream:** Q-603 source integration is at `1ce1947`
   (`Harden responsive expense filters`); its integrated `deno task verify`
-  passed, and the Q-603 ledger update is the next pushed checkpoint. Before
-  this update, `master` and `origin/master` were aligned at `d279325` (`Record
-  Q-603 hardening worker`), after the Q-602 ledger checkpoint and the
+  passed, and the Q-604 dispatch ledger update is the next pushed checkpoint.
+  Before this update, `master` and `origin/master` were aligned at `60cd78a`
+  (`Complete Q-603 hardening and release Q-604`), after the Q-602 ledger
+  checkpoint and the
   integrated source checkpoints `de8d40e` and `1ffd045`. The root contains
   only the intentionally untracked
   only the intentionally untracked
@@ -1436,7 +1443,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
   X-501, X-502, P-503, R-600, Q-601, Q-602, and Q-603 are `COMPLETE`; Q-604 is
-  `READY`; no worker or reviewer is active; and no task is interrupted.
+  `IN_PROGRESS` in its dedicated worktree; one worker is active; and no task
+  is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -1598,10 +1606,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** dispatch Q-604, the next dependency-ready M7 release task,
-  from the pushed Q-603 integration checkpoint. Use the now re-enabled GitHub
-  Pages workflow for the planned hosted artifact and live base-path/offline/
-  update checks; do not start R-700 until Q-604 is integrated and verified.
+- **Current task:** Q-604 is dispatched from the pushed Q-603 integration
+  checkpoint. Use the now re-enabled GitHub Pages workflow for the planned
+  hosted artifact and live base-path/offline/update checks; do not start R-700
+  until Q-604 is integrated and verified.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It

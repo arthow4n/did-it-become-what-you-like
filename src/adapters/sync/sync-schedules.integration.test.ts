@@ -491,6 +491,62 @@ Deno.test(
 );
 
 Deno.test(
+  "sync-schedules: explicit recovery deletes every duplicate remote sync file",
+  async () => {
+    const syncName = "__did-it-become-what-you-like.sync.json";
+    const files = [
+      {
+        id: "sync-copy-1",
+        name: syncName,
+        body: "first malformed copy",
+        etag: "etag-copy-1",
+        updatedAt: "2026-08-24T10:00:00.000Z",
+      },
+      {
+        id: "sync-copy-2",
+        name: syncName,
+        body: "second malformed copy",
+        etag: "etag-copy-2",
+        updatedAt: "2026-08-24T10:01:00.000Z",
+      },
+      {
+        id: "unrelated-file",
+        name: "unrelated.json",
+        body: '{"keep":true}',
+        etag: "etag-unrelated",
+        updatedAt: "2026-08-24T10:02:00.000Z",
+      },
+    ];
+    const drive = {
+      readRetirementMarker: () => Promise.resolve(undefined),
+      listAppData: () => Promise.resolve(files.map((file) => ({ ...file }))),
+      readAppData: () =>
+        Promise.reject(adapterError("corrupt-data", "drive.read")),
+      writeAppData: () =>
+        Promise.reject(adapterError("unsupported", "drive.write")),
+      deleteAppData: (
+        name: string,
+        expectedEtag?: string,
+      ): Promise<void> => {
+        const index = files.findIndex((file) =>
+          file.name === name && file.etag === expectedEtag
+        );
+        if (index < 0) {
+          return Promise.reject(adapterError("conflict", "drive.delete"));
+        }
+        files.splice(index, 1);
+        return Promise.resolve();
+      },
+    };
+    const causal = createDriveCausalSyncPort({ drive });
+
+    await causal.resetRemoteSyncFile();
+
+    assertEquals(files.map((file) => file.name), ["unrelated.json"]);
+  },
+);
+
+Deno.test(
   "sync-schedules: remote reset rejects a stale ETag without deleting the newer file",
   async () => {
     const baseDrive = createFakeDrivePorts();
@@ -499,21 +555,23 @@ Deno.test(
     const drive = {
       ...baseDrive,
       readRetirementMarker: () => Promise.resolve(undefined),
-      readAppData: async (
-        name: string,
+      listAppData: async (
         options?: Parameters<
-          typeof baseDrive.readAppData
-        >[1],
+          typeof baseDrive.listAppData
+        >[0],
       ) => {
-        const file = await baseDrive.readAppData(name, options);
+        const files = await baseDrive.listAppData(options);
+        const file = files.find((candidate) =>
+          candidate.name === "__did-it-become-what-you-like.sync.json"
+        );
         if (mutateOnRead && file !== undefined) {
           mutateOnRead = false;
           await baseDrive.writeAppData({
-            name,
+            name: file.name,
             body: "newer remote contents",
           });
         }
-        return file;
+        return files;
       },
     };
     await baseDrive.writeAppData({

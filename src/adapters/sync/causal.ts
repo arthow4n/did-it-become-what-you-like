@@ -992,24 +992,26 @@ export function createDriveCausalSyncPort(
       if (marker !== undefined) {
         throw adapterError("retired", "sync.remote-reset");
       }
-      // This is deliberately a fresh raw read. Parsing is not attempted, and
-      // the ETag returned here is the compare-and-delete guard for recovery.
-      const file = await options.drive.readAppData(
-        fileName,
-        operationOptions,
+      // List raw app-data files so recovery can remove duplicate sync files.
+      // Ordinary reads intentionally reject duplicate names, which otherwise
+      // makes the explicit recovery action unable to reach either copy.
+      const files = (await options.drive.listAppData(operationOptions)).filter(
+        (file) => file.name === fileName,
       );
-      if (file === undefined) {
+      if (files.length === 0) {
         knownFile = undefined;
         // Another authorized device may have removed the malformed file
         // between the visible error and this explicit recovery action. The
         // desired postcondition already holds, so continue with a fresh sync.
         return;
       }
-      await options.drive.deleteAppData(
-        fileName,
-        file.etag,
-        operationOptions,
-      );
+      for (const file of files) {
+        await options.drive.deleteAppData(
+          fileName,
+          file.etag,
+          operationOptions,
+        );
+      }
       knownFile = undefined;
     },
   };

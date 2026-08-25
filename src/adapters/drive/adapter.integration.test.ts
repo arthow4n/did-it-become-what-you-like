@@ -682,6 +682,37 @@ Deno.test("drive-adapter: writes and deletes honor conditional ETags", async () 
   await rejectsWithCode(adapter.deleteAppData("sync.json"), "not-found");
 });
 
+Deno.test(
+  "drive-adapter: duplicate names remain individually conditionally deletable",
+  async () => {
+    const { adapter, endpoint } = fixture();
+    endpoint.seed("duplicate-sync.json", "first malformed copy");
+    endpoint.seed("duplicate-sync.json", "second malformed copy");
+    endpoint.seed("unrelated.json", '{"keep":true}');
+    await authorized(adapter);
+
+    const listed = await adapter.listAppData();
+    const duplicates = listed.filter((file) =>
+      file.name === "duplicate-sync.json"
+    );
+    assertEquals(duplicates.length, 2);
+    await rejectsWithCode(
+      adapter.readAppData("duplicate-sync.json"),
+      "corrupt-data",
+    );
+
+    for (const duplicate of duplicates) {
+      await adapter.deleteAppData(duplicate.name, duplicate.etag);
+    }
+
+    assertEquals(endpoint.names(), ["unrelated.json"]);
+    assertEquals(
+      (await adapter.readAppData("unrelated.json"))?.body,
+      '{"keep":true}',
+    );
+  },
+);
+
 Deno.test("drive-adapter: retries remain idempotent after a lost mutation response", async () => {
   const { adapter, endpoint } = fixture();
   await authorized(adapter);

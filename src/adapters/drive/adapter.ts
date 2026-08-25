@@ -611,7 +611,6 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
   ): Promise<readonly AppDataMetadata[]> {
     const token = requireToken("drive.list");
     const result: AppDataMetadata[] = [];
-    const names = new Set<string>();
     let pageToken: string | undefined;
     for (let page = 0; page < maxPages; page += 1) {
       const pageResult = await withRetry(
@@ -652,10 +651,6 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
           { id: listedId, name: listedName },
           optionsForOperation,
         );
-        if (names.has(metadata.name)) {
-          throw adapterError("corrupt-data", "drive.list");
-        }
-        names.add(metadata.name);
         result.push(metadata);
       }
       if (response.nextPageToken === undefined) return result;
@@ -669,6 +664,20 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
       pageToken = response.nextPageToken;
     }
     throw adapterError("partial-transport", "drive.list");
+  }
+
+  async function metadataForName(
+    name: string,
+    operation: string,
+    optionsForOperation: OperationOptions | undefined,
+  ): Promise<AppDataMetadata | undefined> {
+    const matches = (await listMetadata(optionsForOperation)).filter((item) =>
+      item.name === name
+    );
+    if (matches.length > 1) {
+      throw adapterError("corrupt-data", operation);
+    }
+    return matches[0];
   }
 
   function bodyFor(
@@ -698,8 +707,10 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
     optionsForOperation: OperationOptions | undefined,
   ): Promise<DriveFile | undefined> {
     validFileName(name, "drive.read");
-    const metadata = (await listMetadata(optionsForOperation)).find((item) =>
-      item.name === name
+    const metadata = await metadataForName(
+      name,
+      "drive.read",
+      optionsForOperation,
     );
     if (metadata === undefined) return undefined;
     const response = await bodyFor(metadata, optionsForOperation);
@@ -716,8 +727,10 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
     }
     let attempted = false;
     return withRetry("drive.write", optionsForOperation, async () => {
-      const metadata = (await listMetadata(optionsForOperation)).find((item) =>
-        item.name === request.name
+      const metadata = await metadataForName(
+        request.name,
+        "drive.write",
+        optionsForOperation,
       );
       if (request.expectedEtag !== undefined) {
         if (metadata === undefined) {
@@ -787,10 +800,19 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
     validFileName(name, "drive.delete");
     let attempted = false;
     await withRetry("drive.delete", optionsForOperation, async () => {
-      const metadata = (await listMetadata(optionsForOperation)).find((item) =>
+      const matches = (await listMetadata(optionsForOperation)).filter((item) =>
         item.name === name
       );
+      const metadata = expectedEtag === undefined
+        ? matches.length === 1 ? matches[0] : undefined
+        : matches.find((item) => item.etag === expectedEtag);
+      if (expectedEtag === undefined && matches.length > 1) {
+        throw adapterError("corrupt-data", "drive.delete");
+      }
       if (metadata === undefined) {
+        if (expectedEtag !== undefined && matches.length > 0) {
+          throw adapterError("conflict", "drive.delete");
+        }
         if (ignoreMissing || attempted) return;
         throw adapterError("not-found", "drive.delete");
       }

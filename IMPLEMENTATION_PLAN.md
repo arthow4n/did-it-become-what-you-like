@@ -1381,8 +1381,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   R-700 is `BLOCKED` pending a fresh configured-Drive sync smoke and reload
   authorization check after the current production follow-up fixes.
 - **Reconciled branch/upstream:** the prior R-700 follow-up fixes remain
-  integrated and the latest owner-reported sync recovery correction is pushed
-  in `0de0939` (`Recover duplicate hidden Drive sync files`). The Q-604 hosted
+  integrated and the latest owner-reported sync diagnostic correction is
+  pushed in `942d561` (`Expose safe sync failure diagnostics`). The Q-604 hosted
   release and Plato's review targeted the earlier `71737ab`; the two findings
   and the bounded correction evidence are recorded above. The root worktree
   contains only the intentionally untracked `A-303-progress.md`,
@@ -1529,6 +1529,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `assets/index-CxefybvS.js`, which identifies build `8d38a4c` and contains the
   corrected recovery action. R-700 remains blocked pending the owner's fresh
   live configured-Drive smoke and reload authorization check.
+- **Live sync diagnostic checkpoint:** The owner reported the identical
+  corrupt-data result after the duplicate-file recovery deployment, proving
+  that duplicate names were not the complete live cause. Direct diagnostic
+  commit `942d561` preserves only the sync adapter's bounded, allowlisted
+  operation identifier through the XState failure context and renders it as a
+  `Diagnostic code` beside the existing local error copy; arbitrary service
+  text, tokens, file contents, and operations outside the safe identifier
+  grammar remain excluded. Focused sync-actor, actor-contract, and component
+  tests passed (41/41), followed by formatting, lint, type-check, all 264 core
+  tests, and both production builds. The commit is pushed to `origin/master`;
+  Pages deployment verification is active. R-700 remains `BLOCKED` pending one
+  owner reproduction on that deployment and the displayed diagnostic code,
+  which will identify the exact Drive/causal boundary for the next bounded
+  correction.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

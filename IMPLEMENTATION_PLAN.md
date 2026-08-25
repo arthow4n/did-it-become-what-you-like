@@ -897,7 +897,13 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### Q-603 — Cross-browser, accessibility, security, and visual hardening
 
-- **Status/dependencies:** `READY`; depends on `Q-602`, which is complete.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `Q-602`, which is complete.
+- **Dispatch:** the integration owner has created the isolated worktree
+  `~/git/worktrees/did-it-become-what-you-like-q-603-hardening` on branch
+  `task/q-603-hardening` at root `0e383fc`. One bounded worker owns the
+  hardening audit and only scoped regression fixes; it must preserve a
+  timestamped untracked handover and must not edit this plan, `master`,
+  remotes, or another task's ownership.
 - **Ownership:** audit reports and scoped regression fixes; no feature expansion.
 - **Scope/non-goals:** Chromium automated matrix, agent-browser screenshot/tree/
   axe review, keyboard/touch/focus, CSP/network/storage/secret audit, and manual
@@ -1284,8 +1290,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
-  after closure-3 approval; Q-601 and Q-602 are `COMPLETE`; and Q-603 is the
-  next dependency-ready task.
+  after closure-3 approval; Q-601 and Q-602 are `COMPLETE`; and Q-603 is
+  `IN_PROGRESS` in its isolated hardening worktree.
 - **Reconciled branch/upstream:** the Q-602 source integration is at `0582d2f`
   (`Finalize deterministic five-journey E2E suite`); the ledger update
   recording its verified completion is the next pushed checkpoint. Before this
@@ -1414,7 +1420,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
   X-501, X-502, P-503, R-600, Q-601, and Q-602 are `COMPLETE`; Q-603 is
-  `READY`; no worker or reviewer is active; and no task is interrupted.
+  `IN_PROGRESS` in its dedicated worktree; one worker is active; and no task
+  is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -1576,10 +1583,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** dispatch `Q-603`, the next dependency-ready M7 hardening
-  task, from the pushed Q-602 integration checkpoint. Keep Q-603 limited to
-  cross-browser, accessibility, security, and visual hardening; do not start
-  Q-604 until the audit and any scoped fixes are integrated and verified.
+- **Current task:** Q-603 is dispatched from the pushed Q-602 integration
+  checkpoint. Keep Q-603 limited to cross-browser, accessibility, security,
+  and visual hardening; do not start Q-604 until the audit and any scoped fixes
+  are integrated and verified.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It

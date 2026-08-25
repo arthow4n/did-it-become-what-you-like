@@ -942,6 +942,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   metadata, deployment workflow/config, artifact verification, and release
   documentation only; it must preserve a timestamped untracked handover and
   must not edit this plan, `master`, remotes, or another task's ownership.
+  Poincare (`01a036a8-8646-70f3-9e01-6ce36276c84e`) is the assigned worker.
 - **Ownership:** release metadata, deployment workflow/config and documentation;
   no feature code except release-blocking regression fixes through prior owners.
 - **Scope/non-goals:** clean production build, version/commit metadata, license

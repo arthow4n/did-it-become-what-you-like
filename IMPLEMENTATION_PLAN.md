@@ -430,7 +430,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 - **Outputs/acceptance:** contracts declared locked; no unresolved high/medium
   finding; downstream ownership can remain disjoint without inventing APIs.
 - **Tests:** full domain/actor/adapter/component suites and gallery visual/a11y.
-- **Verification:** `deno task verify`; `deno task gallery:verify`; clean Git state.
+- **Verification:** `deno task verify`; `deno task gallery`;
+  `deno task a11y:gallery`; clean Git state.
 
 ### M3 — Local Vertical Slice
 
@@ -845,7 +846,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### Q-601 — Close screen/state/design-system completeness gaps
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-600`, which is complete.
+- **Status/dependencies:** `COMPLETE`; depends on `R-600`, which is complete.
 - **Dispatch:** the integration owner has created the isolated worktree
   `~/git/worktrees/did-it-become-what-you-like-q-601-completeness` on branch
   `task/q-601-completeness` at root `64ce6ec`. One bounded worker is assigned
@@ -853,7 +854,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   Q-601 fixes; the worker must preserve a timestamped untracked handover and
   must not edit this plan, `master`, remotes, or another task's ownership.
   Einstein (`01a0362b-9f14-7eb1-8f32-3393099c337d`) owns the worktree and
-  started from the pushed plan checkpoint `b440222`.
+  started from the pushed plan checkpoint `b440222`; commit `2339426` was
+  inspected and integrated as `de8d40e`, and the worker was shut down.
 - **Ownership:** only gaps explicitly inventoried against specs; shared-component
   fixes precede affected feature fixes; no new product scope.
 - **Scope/non-goals:** map every approved screen/checklist state to implementation,
@@ -863,12 +865,14 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   and screen mappings match; no deferred feature leaked into MVP.
 - **Tests:** targeted regression at cheapest layer for every found gap; complete
   component/a11y suite; visual baselines reviewed rather than blindly updated.
-- **Verification:** `deno task verify`; `deno task gallery:verify`;
-  agent-browser full screen matrix.
+- **Verification:** `deno task verify`; `deno task gallery`;
+  `deno task a11y:gallery`; agent-browser full screen matrix. The historical
+  `deno task gallery:verify` name is not defined by the repository and is not
+  used as evidence.
 
 #### Q-602 — Finalize the five-journey E2E suite
 
-- **Status/dependencies:** `PENDING`; depends on `Q-601`.
+- **Status/dependencies:** `READY`; depends on `Q-601`, which is complete.
 - **Ownership:** `e2e/**` and E2E-only fake scenario setup; production behavior
   changes require a separate scoped fix with lower-layer regression test.
 - **Scope/non-goals:** make the approved local manual, fake Gemini receipt,
@@ -1270,12 +1274,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
-  after closure-3 approval; and Q-601 is `IN_PROGRESS` as the current
+  after closure-3 approval; Q-601 is `COMPLETE`; and Q-602 is the next
   dependency-ready task.
-- **Reconciled branch/upstream:** `master` and `origin/master` are aligned at
-  `a791d74` (`Close R-600 and release Q-601`), pushed after the integrated
-  source checkpoint `1ffd045` (`Record R-600 second fix wave`). The root
-  contains only the intentionally untracked
+- **Reconciled branch/upstream:** the Q-601 source integration is at `de8d40e`
+  (`Close Q-601 screen and design-system completeness gaps`); the ledger
+  update recording its verified completion is the next pushed checkpoint.
+  Before this update, `master` and `origin/master` were aligned at `3971334`
+  (`Record Q-601 worker ownership`), pushed after the integrated source
+  checkpoint `1ffd045` (`Record R-600 second fix wave`). The root contains
+  only the intentionally untracked
   artifacts and preserved recovery directory listed below;
   the final pushed R-500 ledger sequence includes `e375cf8` (`Close R-500 and
   reconcile plan ledger`) and `150ba7c` (`Record final pushed R-500
@@ -1320,7 +1327,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Completed implementation tasks:** `F-001` through `F-005`, `R-100`,
   `D-101`, `D-102`, `D-103`, `U-104`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, `A-301`, `R-200`, `A-302`, and `A-303`. Their required source, tests, and
   integration evidence are present on `master`; R-400, S-401, S-402, S-403,
-  S-404, and S-405 are complete as recorded below.
+  S-404, S-405, and Q-601 are complete as recorded below.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
@@ -1335,21 +1342,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   independently checked; `git status --short --branch` was clean at `5165d60`.
 - **Current reconciliation evidence:** L-205, L-204, L-202, L-203, and L-201 integration validation
   is recorded below. R-300, A-302, A-303, R-400, S-401–S-405, R-500, X-501,
-  and X-502 are complete. The latest root `deno task verify` passed after
-  X-502 integration: 233 task tests, 71 integration, 70 component, 35 domain,
-  1 actor, local E2E 3/3, gallery/browser/Pages/CI/toolchain validators,
-  both production builds, frozen audit, and `git diff --check`. X-502 focused
-  root validation passed `deno task test --filter delete-everywhere` (12),
-  `deno task test:integration --filter retirement` (7), and
-  `deno task test:component --filter destructive-flow` (5). Screen 10/14
-  browser inspection passed with no horizontal overflow, correct disconnected
-  scope warnings/copy, checked default key-removal choice, keyboard-reachable
-  dialog focus, and honest revocation-failure retry presentation; the local
-  page did not expose axe, while generic agent-browser axe smoke passed in the
-  full gate. The implementation plan task-heading count remains 37 with no
-  duplicate IDs; the root worktree contains only the intentionally untracked
-  A-303, R-300, and R-400 contrast-fix handovers plus the preserved S-404
-  root-artifact quarantine. Preserved worktrees are listed below.
+  X-502, and Q-601 are complete. The integrated Q-601 root `deno task verify`
+  passed 250 unit, 72 integration, 86 component, 37 domain, 1 actor, local
+  E2E 4/4, gallery/a11y/browser/Pages/CI/toolchain validators, both production
+  builds, frozen audit, and `git diff --check`. The implementation plan
+  task-heading count remains 37 with no duplicate IDs; the root worktree
+  contains only the intentionally untracked A-303, R-300, and R-400
+  contrast-fix handovers plus the preserved S-404 root-artifact quarantine.
+  Preserved worktrees are listed below.
 - **R-600 closure-3 reconciliation evidence:** The preserved independent
   review approved the integrated checkpoint with `S1=0`, `S2=0`, `S3=0`, and
   `S4=0`. Its exact matrix passed 249 unit, 72 integration, 81 component, 37
@@ -1362,6 +1362,19 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   native 1280x800 matrix after closure-5’s partial 320/390 review; the exact
   handover, counts, geometry, focus, cleanup, and unavailable-service boundary
   are recorded in the R-400 ledger below. No R-400 finding remains open.
+- **Q-601 completion evidence:** `2339426` was inspected and integrated as
+  `de8d40e`. Its tracked `Q-601-traceability.md` maps all 15 approved screens,
+  the shared component mapping, cross-cutting states, and deferred exclusions.
+  Bounded fixes cover searchable project currency, explicit category
+  replacement/count preview, editor and transient-state level-one headings,
+  six Settings groups with accessible names and live summaries, and the shared
+  custom category color control. The final agent-browser matrix covered 18
+  routes at 320x568, 390x844, and 1280x800: 54 snapshots, 54 screenshots, 54
+  axe reports, zero axe violations, 54/54 no-overflow checks, and focused
+  keyboard/focus checks passed. `deno task gallery` passed; the old
+  `deno task gallery:verify` command is unavailable because no such task is
+  defined. The worker handover remains preserved untracked in its dedicated
+  worktree, and no Q-601 finding remains open.
 - **Active wave:** `F-001` through `F-005`, `R-100`, `D-101`, `D-102`,
   `D-103`, `U-104`, `R-200`, `L-201`, `L-202`, `L-203`, `L-204`, `L-205`, and
   `A-301` are `COMPLETE`; the first bounded L-204/L-205/U-104 R-300 fix wave
@@ -1369,9 +1382,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501, X-502, P-503, and R-600 are `COMPLETE`; Q-601 is `IN_PROGRESS` with
-  Einstein active in the dedicated worktree; no other worker or reviewer is
-  active; and no task is interrupted.
+  X-501, X-502, P-503, R-600, and Q-601 are `COMPLETE`; Q-602 is `READY`;
+  no worker or reviewer is active; and no task is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -1533,10 +1545,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** dispatch `Q-601`, the next dependency-ready M7 hardening
-  task, from the pushed R-600 closure checkpoint. Keep Q-601 limited to the
-  explicit completeness inventory and approved-scope regression gaps; do not
-  start Q-602 until Q-601 evidence is integrated and verified.
+- **Current task:** dispatch `Q-602`, the next dependency-ready M7 hardening
+  task, from the pushed Q-601 integration checkpoint. Keep Q-602 limited to
+  the five approved deterministic E2E journeys; do not start Q-603 until the
+  repeated E2E evidence is integrated and verified.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It

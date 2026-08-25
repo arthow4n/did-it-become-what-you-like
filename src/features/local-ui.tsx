@@ -673,6 +673,7 @@ export function ExpensesScreen({
           )
           : null}
         <ProjectPicker
+          className="local-ui-expenses-project-picker"
           value={currentProject?.id}
           options={projectOptions}
           onValueChange={onProjectChange}

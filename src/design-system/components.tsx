@@ -2014,10 +2014,11 @@ function currencyOptionsWithIso(
 }
 
 export function ProjectPicker(
-  { options, value, onValueChange }: {
+  { options, value, onValueChange, className }: {
     options: SelectOption[];
     value?: string;
     onValueChange?: (value: string) => void;
+    className?: string;
   },
 ) {
   return (
@@ -2026,6 +2027,7 @@ export function ProjectPicker(
       options={options}
       value={value}
       onValueChange={onValueChange}
+      className={className}
     />
   );
 }

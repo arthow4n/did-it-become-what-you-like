@@ -195,7 +195,7 @@ PWA precache generated: OK
   - **Verification:** Inspect FilterBar on 320px/360px viewport. Period tabs must scroll without clipping container edges.
   - **Commit:** `fix(ui): FIX-R2-09 add horizontal swipe scroll to period segmented control on narrow screens`
 
-- [ ] **STEP-R2-10 (FIX-R2-10) · Constrain Desktop Standalone Project Selector Width**
+- [x] **STEP-R2-10 (FIX-R2-10) · Constrain Desktop Standalone Project Selector Width**
   - **Priority:** P3 (Visual Polish)
   - **Files:** [`src/features/local-ui.css`](../src/features/local-ui.css)
   - **Action:** Add `max-width: 360px` to standalone project pickers on desktop (`@media (min-width: 720px)`), maintaining 100% width on mobile.

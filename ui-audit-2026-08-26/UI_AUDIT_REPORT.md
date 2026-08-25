@@ -827,7 +827,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
 
 ### Step-by-Step Task Checklist
 
-- [ ] **STEP-01 (FIX-01) · Position Mobile Navigation at Bottom Viewport with Safe Areas**
+- [x] **STEP-01 (FIX-01) · Position Mobile Navigation at Bottom Viewport with Safe Areas**
   - **Priority:** P0 (Core Responsive Navigation)
   - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css), [`src/design-system/components.tsx`](../src/design-system/components.tsx)
   - **Evidence:** [`screenshots/02_mobile_home_initial.png`](screenshots/02_mobile_home_initial.png)

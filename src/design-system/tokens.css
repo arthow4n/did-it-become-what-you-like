@@ -155,7 +155,9 @@
 
   .ds-app-frame__main {
     min-width: 0;
-    padding: var(--space-6);
+    padding: var(--space-4);
+    padding-bottom: calc(var(--control-height) + var(--space-6) +
+      env(safe-area-inset-bottom));
   }
 
   .ds-content-container {
@@ -849,14 +851,21 @@
   }
 
   .ds-navigation {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
     display: flex;
-    gap: var(--space-2);
+    gap: var(--space-1);
     justify-content: space-around;
     padding: var(--space-2) max(var(--space-2), env(safe-area-inset-left))
       max(var(--space-2), env(safe-area-inset-bottom))
       max(var(--space-2), env(safe-area-inset-right));
     border-top: 1px solid var(--color-border-subtle);
-    background: var(--color-surface-1);
+    background: color-mix(in srgb, var(--color-surface-1) 94%, transparent);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 -4px 16px rgb(0 0 0 / 28%);
   }
 
   .ds-navigation__item {
@@ -864,9 +873,13 @@
     min-width: var(--target-min);
     min-height: var(--control-height);
     flex: 1;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--space-1);
+    gap: 2px;
+    font-size: var(--font-size-caption);
+    line-height: var(--line-height-tight);
+    padding: var(--space-1) var(--space-2);
     border: 0;
     border-radius: var(--radius-control);
     background: transparent;
@@ -885,10 +898,6 @@
 
   @media (max-width: 359px) {
     .ds-navigation__item {
-      gap: 0;
-      flex-direction: column;
-      font-size: var(--font-size-caption);
-      line-height: var(--line-height-tight);
       padding-inline: var(--space-1);
     }
   }
@@ -961,12 +970,16 @@
   @media (min-width: 720px) {
     .ds-app-frame__main {
       padding: var(--space-7);
+      padding-bottom: var(--space-7);
     }
 
     .ds-navigation {
       position: sticky;
       top: 0;
       bottom: auto;
+      left: auto;
+      right: auto;
+      z-index: 1;
       width: 220px;
       min-height: 100dvh;
       flex-direction: column;
@@ -974,11 +987,17 @@
       padding: var(--space-6) var(--space-3);
       border: 0;
       border-right: 1px solid var(--color-border-subtle);
+      box-shadow: none;
+      background: var(--color-surface-1);
+      backdrop-filter: none;
     }
 
     .ds-navigation__item {
       flex: 0 0 auto;
+      flex-direction: row;
       justify-content: flex-start;
+      gap: var(--space-2);
+      font-size: var(--font-size-body);
       padding-inline: var(--space-3);
     }
 

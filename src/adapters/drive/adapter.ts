@@ -92,11 +92,17 @@ type DriveMetadata = {
   readonly name?: unknown;
   readonly mimeType?: unknown;
   readonly modifiedTime?: unknown;
+  readonly version?: unknown;
 };
 
 type AppDataMetadata = {
   readonly id: string;
   readonly name: string;
+  /**
+   * Drive v3's monotonic file version, kept behind the port's opaque token.
+   * The browser cannot read Drive's ETag header from GitHub Pages because the
+   * API does not expose it through CORS.
+   */
   readonly etag: string;
   readonly modifiedTime: string;
   readonly mimeType: "application/json";
@@ -119,9 +125,9 @@ const SAFE_GENERATION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u;
 const SAFE_ACCOUNT_ID = /^[^\s\0]{1,320}$/u;
 const SAFE_TOKEN_TYPE = "Bearer";
 const DRIVE_METADATA_FIELDS =
-  "nextPageToken,files(id,name,mimeType,modifiedTime)";
-const DRIVE_FILE_METADATA_FIELDS = "id,name,mimeType,modifiedTime";
-const DRIVE_MUTATION_FIELDS = "id,name,mimeType,modifiedTime";
+  "nextPageToken,files(id,name,mimeType,modifiedTime,version)";
+const DRIVE_FILE_METADATA_FIELDS = "id,name,mimeType,modifiedTime,version";
+const DRIVE_MUTATION_FIELDS = "id,name,mimeType,modifiedTime,version";
 
 function defaultClock(): ClockPort {
   return {
@@ -287,13 +293,12 @@ function metadataValue(
 function appDataMetadata(
   value: unknown,
   operation: string,
-  etag: string | undefined,
 ): AppDataMetadata {
   const metadata = metadataValue(value, operation);
   if (
     typeof metadata.id !== "string" || metadata.id.length === 0 ||
     typeof metadata.name !== "string" ||
-    typeof etag !== "string" || etag.length === 0 ||
+    typeof metadata.version !== "string" || metadata.version.length === 0 ||
     typeof metadata.modifiedTime !== "string" ||
     !Number.isFinite(Date.parse(metadata.modifiedTime)) ||
     metadata.mimeType !== "application/json"
@@ -304,7 +309,7 @@ function appDataMetadata(
   return {
     id: metadata.id,
     name: metadata.name,
-    etag,
+    etag: metadata.version,
     modifiedTime: metadata.modifiedTime,
     mimeType: "application/json",
   };
@@ -592,11 +597,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
           optionsForOperation,
         ),
     );
-    const metadata = appDataMetadata(
-      response.value,
-      "drive.metadata",
-      response.etag,
-    );
+    const metadata = appDataMetadata(response.value, "drive.metadata");
     if (metadata.id !== listed.id || metadata.name !== listed.name) {
       throw adapterError("corrupt-data", "drive.metadata");
     }
@@ -691,12 +692,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
         },
         "drive.read",
         optionsForOperation,
-      ).then((response) => {
-        if (response.etag === undefined || response.etag.length === 0) {
-          throw adapterError("corrupt-data", "drive.read");
-        }
-        return { body: response.body, etag: response.etag };
-      }));
+      ).then((response) => ({ body: response.body, etag: metadata.etag })));
   }
 
   async function readAppDataInternal(
@@ -723,6 +719,10 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
       throw adapterError("invalid-request", "drive.write");
     }
     let attempted = false;
+    // Drive v3 exposes a monotonic `version` in JSON, but GitHub Pages cannot
+    // read the response ETag header. The metadata read immediately before the
+    // mutation therefore provides the browser-compatible stale-write check;
+    // never send the version value as If-Match because it is not an ETag.
     return withRetry("drive.write", optionsForOperation, async () => {
       const metadata = await metadataForName(
         request.name,
@@ -777,13 +777,12 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
           body: multipart.body,
           headers: {
             "Content-Type": multipart.contentType,
-            ...(metadata === undefined ? {} : { "If-Match": metadata.etag }),
           },
         },
         operation,
         optionsForOperation,
       );
-      const next = appDataMetadata(response.value, operation, response.etag);
+      const next = appDataMetadata(response.value, operation);
       return metadataToFile(next, request.body);
     });
   }
@@ -796,6 +795,8 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
   ): Promise<void> {
     validFileName(name, "drive.delete");
     let attempted = false;
+    // As with writes, select by the current Drive v3 version before deleting.
+    // The browser cannot observe the API's ETag header to send If-Match.
     await withRetry("drive.delete", optionsForOperation, async () => {
       const matches = (await listMetadata(optionsForOperation)).filter((item) =>
         item.name === name
@@ -824,7 +825,6 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
           {
             path: `files/${encodeURIComponent(metadata.id)}`,
             method: "DELETE",
-            headers: { "If-Match": metadata.etag },
           },
           "drive.delete",
           optionsForOperation,

@@ -242,7 +242,7 @@ class SyntheticDriveEndpoint {
           status: mutationFailure,
         });
       }
-      return this.json(this.metadata(next), next.etag);
+      return this.json(this.metadata(next));
     }
     if (current === undefined) {
       return new Response("missing", { status: 404 });
@@ -260,17 +260,13 @@ class SyntheticDriveEndpoint {
         status: 200,
         headers: {
           "content-type": "application/json",
-          ETag: current.etag,
         },
       });
     }
     if (method === "GET") {
-      return this.json(this.metadata(current), current.etag);
+      return this.json(this.metadata(current));
     }
     if (method === "DELETE") {
-      if (headers.get("if-match") !== current.etag) {
-        return new Response("stale", { status: 412 });
-      }
       this.files.delete(current.id);
       const mutationFailure = this.mutationFailure;
       this.mutationFailure = undefined;
@@ -283,9 +279,6 @@ class SyntheticDriveEndpoint {
     }
     if (method === "PATCH") {
       const parsed = parseMultipart(init?.body, headers.get("content-type"));
-      if (headers.get("if-match") !== current.etag) {
-        return new Response("stale", { status: 412 });
-      }
       const next: SyntheticFile = {
         ...current,
         body: parsed.body,
@@ -301,7 +294,7 @@ class SyntheticDriveEndpoint {
           status: mutationFailure,
         });
       }
-      return this.json(this.metadata(next), next.etag);
+      return this.json(this.metadata(next));
     }
     return new Response("unsupported", { status: 400 });
   };
@@ -312,6 +305,7 @@ class SyntheticDriveEndpoint {
       name: file.name,
       mimeType: "application/json",
       modifiedTime: file.modifiedTime,
+      version: file.etag,
     };
   }
 
@@ -556,7 +550,7 @@ Deno.test("drive-adapter: app-data pagination, body reads, and path isolation ar
 });
 
 Deno.test(
-  "drive-adapter: v3 projections omit etag and conditional headers still work",
+  "drive-adapter: v3 projections use version tokens without ETag headers",
   async () => {
     const { adapter, endpoint } = fixture({ pageSize: 2 });
     const seeded = endpoint.seed("sync.json", '{"v":0}');
@@ -595,7 +589,7 @@ Deno.test(
     assert(
       endpoint.calls.some((call) =>
         (call.method === "POST" || call.method === "PATCH") &&
-        call.fields === "id,name,mimeType,modifiedTime"
+        call.fields === "id,name,mimeType,modifiedTime,version"
       ),
       "mutation projections must remain v3-valid",
     );
@@ -603,16 +597,16 @@ Deno.test(
       endpoint.calls.some((call) =>
         call.method === "PATCH" &&
         call.path.startsWith("/upload/drive/v3/files/") &&
-        call.ifMatch === created.etag
+        call.ifMatch === undefined
       ),
-      "conditional update must use the upload URI and response ETag in If-Match",
+      "updates must use the upload URI without an unreadable ETag header",
     );
     assert(
       endpoint.calls.some((call) =>
         call.method === "DELETE" &&
-        call.ifMatch === updated.etag
+        call.ifMatch === undefined
       ),
-      "conditional delete must send the response ETag in If-Match",
+      "deletes must not depend on an unreadable ETag header",
     );
   },
 );
@@ -638,7 +632,7 @@ Deno.test(
       endpoint.calls.some((call) =>
         call.method === "POST" &&
         call.path === "/upload/drive/v3/files" &&
-        call.fields === "id,name,mimeType,modifiedTime"
+        call.fields === "id,name,mimeType,modifiedTime,version"
       ),
       "multipart create must use the Drive v3 upload URI",
     );
@@ -651,7 +645,7 @@ Deno.test(
   },
 );
 
-Deno.test("drive-adapter: writes and deletes honor conditional ETags", async () => {
+Deno.test("drive-adapter: writes and deletes reject stale version tokens", async () => {
   const { adapter } = fixture();
   await authorized(adapter);
   const first = await adapter.writeAppData({

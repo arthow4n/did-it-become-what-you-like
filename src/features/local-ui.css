@@ -68,6 +68,15 @@
     flex: 0 0 auto;
   }
 
+  .local-ui-expenses-filter-bar {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .local-ui-expenses-filter-bar > * {
+    flex: 1 1 240px;
+  }
+
   .local-ui-overlay {
     position: fixed;
     z-index: 10;

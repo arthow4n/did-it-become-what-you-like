@@ -1476,16 +1476,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `d2243df`; deployment `6088667519` is serving the corrected bundle. R-700
   remains blocked only on the owner's fresh configured-Drive smoke and reload
   authorization check.
-- **New owner-reported sync-corruption follow-up:** The owner then reported
+- **Completed owner-reported sync-corruption follow-up:** The owner reported
   `Stored data is invalid or corrupt` after clearing browser site data. Fresh
   local IndexedDB reproduction succeeds, while the hidden Drive app-data sync
   file survives browser storage deletion and can fail strict causal-envelope
-  parsing. Peirce (`01a03a57-6ff0-7791-9e1a-1cdb71400218`) owns the bounded
-  recovery fix from `081f74d`, with disjoint ownership of the causal/Drive
-  recovery boundary, sync actor event, and sync UI confirmation/tests. The
-  worker must not edit this plan, `master`, remotes, or preserved artifacts;
-  integration remains gated on explicit confirmation, ETag protection, focused
-  tests, and the full repository validation gate.
+  parsing. Peirce's worker commit `f8447e8` is integrated as `47465f5`, with
+  review hardening in `efb2e57`: an explicit confirmation-only recovery reads
+  the raw sync file, deletes only that file with its ETag, preserves local data
+  and retirement markers, warns about unsynced other devices, and then
+  resynchronizes. Recovery is unavailable for ordinary errors and stale ETags
+  fail closed. Focused adapter/causal, actor, and component tests passed;
+  root validation passed with 261 unit, 79 integration, 89 component, 37
+  domain, 1 actor, and 11 standalone E2E tests, plus gallery/browser/Pages/CI
+  checks, toolchain proof, both builds, frozen audit, and diff check. The
+  composite `deno task verify` encountered intermittent Playwright startup
+  timeouts in unrelated existing journeys on two attempts; the affected
+  journeys passed on standalone reruns and all constituent gates passed.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

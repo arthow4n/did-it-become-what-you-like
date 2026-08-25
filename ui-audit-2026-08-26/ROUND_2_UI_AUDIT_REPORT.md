@@ -139,7 +139,7 @@ PWA precache generated: OK
   - **Verification:** Inspect Create Project and Expense Form. The chevron must be embedded inside the input control boundary.
   - **Commit:** `fix(ui): FIX-R2-01 wrap CurrencyPicker in field-control-wrap to anchor chevron inside input`
 
-- [ ] **STEP-R2-02 (FIX-R2-02) · Mobile Viewport Body Bottom Clearance Padding**
+- [x] **STEP-R2-02 (FIX-R2-02) · Mobile Viewport Body Bottom Clearance Padding**
   - **Priority:** P1 (Layout / Usability)
   - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css)
   - **Action:** Set `.ds-app-frame__body` on mobile (`@media (max-width: 719px)`) to `padding-bottom: calc(var(--control-height) + var(--space-6) + env(safe-area-inset-bottom, 0px))`.

@@ -915,7 +915,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** Open "New expense" from the Add menu. Form must start clean without the top "Unsaved changes" warning card until edits occur.
   - **Commit:** `fix(ui): FIX-11 render draft status conditionally only on dirty or restored forms`
 
-- [ ] **STEP-12 (FIX-12) · Standardize Color Swatches (36px) & Add Cancel Button to DangerDialog**
+- [x] **STEP-12 (FIX-12) · Standardize Color Swatches (36px) & Add Cancel Button to DangerDialog**
   - **Priority:** P2 (Visual Balance & Safety)
   - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L826-L874, #L1301-L1336), [`src/design-system/tokens.css`](../src/design-system/tokens.css)
   - **Evidence:** [`screenshots/21_desktop_create_category_form.png`](screenshots/21_desktop_create_category_form.png), [`screenshots/39_desktop_danger_dialog.png`](screenshots/39_desktop_danger_dialog.png)

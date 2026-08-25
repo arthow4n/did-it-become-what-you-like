@@ -891,27 +891,24 @@ export function ColorChoiceField({
   return (
     <Field label={label} description={description}>
       <div
-        className="ds-inline"
+        className="ds-color-choice-group"
         role="group"
         aria-label={String(label)}
-        style={{ gap: "var(--space-2)" }}
       >
         {choices.map((choice) => (
           <button
             key={choice}
             type="button"
+            className="ds-color-choice__swatch"
             aria-label={`Choose ${choice}`}
             aria-pressed={value === choice}
             disabled={isDisabled}
             onClick={() => onValueChange?.(choice)}
             style={{
-              width: "var(--control-height)",
-              height: "var(--control-height)",
-              border: value === choice
-                ? "3px solid var(--color-focus-ring)"
-                : "2px solid var(--color-border-strong)",
-              borderRadius: "50%",
               background: choice,
+              boxShadow: value === choice
+                ? "0 0 0 2px var(--color-canvas), 0 0 0 4px var(--color-focus-ring)"
+                : undefined,
             }}
           />
         ))}
@@ -1357,39 +1354,64 @@ export function DeleteAndReassign({
   );
 }
 
-export type DangerDialogProps = ConfirmDialogProps & { phrase?: string };
+export type DangerDialogProps = ConfirmDialogProps & {
+  phrase?: string;
+  cancelLabel?: string;
+  onCancel?: () => void;
+};
 
 export function DangerDialog(
-  { phrase, description, onConfirm, ...props }: DangerDialogProps,
+  {
+    phrase,
+    description,
+    onConfirm,
+    cancelLabel = "Cancel",
+    onCancel,
+    ...props
+  }: DangerDialogProps,
 ) {
   const [typed, setTyped] = useState("");
   const requiresPhrase = Boolean(phrase);
   return (
     <AdaptiveDialog {...props}>
-      <Stack gap={5}>
-        <Inline>
-          <StatusDot tone="danger">Destructive action</StatusDot>
-        </Inline>
-        <Text>{description}</Text>
-        {phrase
-          ? (
-            <TextField
-              label={`Type ${phrase} to confirm`}
-              value={typed}
-              onChange={setTyped}
-            />
-          )
-          : null}
-        <Inline justify="end">
-          <Button
-            variant="danger"
-            isDisabled={requiresPhrase && typed !== phrase}
-            onPress={onConfirm}
-          >
-            {props.confirmLabel}
-          </Button>
-        </Inline>
-      </Stack>
+      {(close) => (
+        <Stack gap={5}>
+          <Inline>
+            <StatusDot tone="danger">Destructive action</StatusDot>
+          </Inline>
+          <Text>{description}</Text>
+          {phrase
+            ? (
+              <TextField
+                label={`Type ${phrase} to confirm`}
+                value={typed}
+                onChange={setTyped}
+              />
+            )
+            : null}
+          <Inline justify="end" gap={2}>
+            <Button
+              variant="secondary"
+              onPress={() => {
+                onCancel?.();
+                close();
+              }}
+            >
+              {cancelLabel}
+            </Button>
+            <Button
+              variant="danger"
+              isDisabled={requiresPhrase && typed !== phrase}
+              onPress={() => {
+                onConfirm();
+                close();
+              }}
+            >
+              {props.confirmLabel}
+            </Button>
+          </Inline>
+        </Stack>
+      )}
     </AdaptiveDialog>
   );
 }

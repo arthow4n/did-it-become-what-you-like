@@ -903,7 +903,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   `task/q-603-hardening` at root `0e383fc`. One bounded worker owns the
   hardening audit and only scoped regression fixes; it must preserve a
   timestamped untracked handover and must not edit this plan, `master`,
-  remotes, or another task's ownership.
+  remotes, or another task's ownership. Ampere
+  (`01a0367d-8c8f-7dd0-b462-ba07fbbd62e6`) is the assigned worker.
 - **Ownership:** audit reports and scoped regression fixes; no feature expansion.
 - **Scope/non-goals:** Chromium automated matrix, agent-browser screenshot/tree/
   axe review, keyboard/touch/focus, CSP/network/storage/secret audit, and manual

@@ -907,13 +907,13 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** View Gemini API Settings. "Show" / "Hide" toggle must sit inside the right edge of the API key password field.
   - **Commit:** `fix(ui): FIX-10 anchor secret field reveal toggle inline inside input trailing slot`
 
-- [ ] **STEP-11 (FIX-11) · Conditionally Show Draft Status Banner Only When Form is Dirty**
+- [x] **STEP-11 (FIX-11) · Render DraftStatus Conditionally Only on Dirty or Restored Forms**
   - **Priority:** P2 (Form Noise Reduction)
   - **Files:** [`src/features/local-ui.tsx`](../src/features/local-ui.tsx#L1910-L1935)
   - **Evidence:** [`screenshots/07_desktop_manual_expense_form.png`](screenshots/07_desktop_manual_expense_form.png)
   - **Action:** In `ManualExpenseFormScreen`, only render `<DraftStatus>` if `isDirty` is true or restored draft data is present. Do not show "Unsaved changes" on clean untouched forms.
   - **Verification:** Open "New expense" from the Add menu. Form must start clean without the top "Unsaved changes" warning card until edits occur.
-  - **Commit:** `fix(ui): FIX-11 show draft status warning only on dirty or restored forms`
+  - **Commit:** `fix(ui): FIX-11 render draft status conditionally only on dirty or restored forms`
 
 - [ ] **STEP-12 (FIX-12) · Standardize Color Swatches (36px) & Add Cancel Button to DangerDialog**
   - **Priority:** P2 (Visual Balance & Safety)

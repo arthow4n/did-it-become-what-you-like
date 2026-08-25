@@ -2417,30 +2417,33 @@ export function ManualExpenseScreen({
           }
         />
         <ExpenseForm
-          status={
-            <DraftStatus
-              state={failed
-                ? "failed"
-                : busy
-                ? "saving"
-                : snapshot.hasTag("draft-saving")
-                ? "saving"
-                : "dirty"}
-              detail={failed
-                ? snapshot.context.error?.message
-                : "Your unfinished form is saved on this device."}
-              action={failed
-                ? (
-                  <Button
-                    variant="secondary"
-                    onPress={() => send({ type: "expense.retry" })}
-                  >
-                    Retry save
-                  </Button>
-                )
-                : undefined}
-            />
-          }
+          status={failed || busy || snapshot.hasTag("dirty") ||
+              snapshot.hasTag("draft-saving")
+            ? (
+              <DraftStatus
+                state={failed
+                  ? "failed"
+                  : busy
+                  ? "saving"
+                  : snapshot.hasTag("draft-saving")
+                  ? "saving"
+                  : "dirty"}
+                detail={failed
+                  ? snapshot.context.error?.message
+                  : "Your unfinished form is saved on this device."}
+                action={failed
+                  ? (
+                    <Button
+                      variant="secondary"
+                      onPress={() => send({ type: "expense.retry" })}
+                    >
+                      Retry save
+                    </Button>
+                  )
+                  : undefined}
+              />
+            )
+            : undefined}
           actions={
             <>
               <Button

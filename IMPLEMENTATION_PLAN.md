@@ -1378,8 +1378,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
   after closure-3 approval; Q-601, Q-602, Q-603, and Q-604 are `COMPLETE`; and
-  R-700 is `BLOCKED` pending a fresh configured-Drive sync smoke after the
-  v3 ETag correction is deployed.
+  R-700 is `BLOCKED` pending a fresh configured-Drive sync smoke and reload
+  authorization check after the current production follow-up fixes.
 - **Reconciled branch/upstream:** the prior R-700 follow-up fix is pushed in
   `f475c19` (`Wire public license and Drive OAuth configuration`); the S-405
   v3 correction is integrated locally in `7119b8a` and is ready to push after
@@ -1444,6 +1444,21 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   recorded above. Pages run `32875077172` and deployment `6088023350` now serve
   the corrected source from `9c50f49`; the remaining step is one fresh
   configured-Drive sync smoke before R-700 review resumes.
+- **Active production follow-ups:** The owner reports that, after creating a
+  local expense, manual synchronization still returns `invalid-request` and
+  retry repeats the failure. The owner also reports that a page reload loses
+  the in-memory Drive authorization and requires reconnecting. These are
+  separate bounded investigations: S-406 owns the Drive request failure in
+  `~/git/worktrees/did-it-become-what-you-like-s-406-drive-sync` on branch
+  `task/s-406-drive-sync`, limited to `src/adapters/drive/**` and focused
+  adapter tests; S-407 owns reload-session authorization behavior in
+  `~/git/worktrees/did-it-become-what-you-like-s-407-drive-auth` on branch
+  `task/s-407-drive-auth`, limited to the browser OAuth boundary, runtime
+  composition, and focused tests. Neither may edit the other scope, the plan,
+  `master`, remotes, or preserved worktrees. The first-use no-project guard is
+  expected MVP behavior under `UI_SPEC.md` Screen 3/7; navigation placement
+  and broader UI polish are recorded as owner-requested post-MVP follow-ups,
+  not silently expanded into this production fix wave.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

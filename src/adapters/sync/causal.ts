@@ -1000,7 +1000,10 @@ export function createDriveCausalSyncPort(
       );
       if (file === undefined) {
         knownFile = undefined;
-        throw adapterError("not-found", "sync.remote-reset");
+        // Another authorized device may have removed the malformed file
+        // between the visible error and this explicit recovery action. The
+        // desired postcondition already holds, so continue with a fresh sync.
+        return;
       }
       await options.drive.deleteAppData(
         fileName,

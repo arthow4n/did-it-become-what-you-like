@@ -236,7 +236,9 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
                             This deletes the malformed hidden cloud sync file
                             only. It does not delete or replace this device's
                             local IndexedDB data, and it never deletes the
-                            dataset retirement marker.
+                            dataset retirement marker. Unsynced changes on other
+                            devices may be lost, so reconnect those devices and
+                            verify their data afterward.
                           </>
                         }
                         confirmLabel="Delete remote sync file"

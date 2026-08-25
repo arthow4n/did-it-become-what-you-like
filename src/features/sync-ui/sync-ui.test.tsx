@@ -394,6 +394,7 @@ Deno.test(
         assert(
           view.getByText(/local IndexedDB data/),
         );
+        assert(view.getByText(/other devices may be lost/));
         fireEvent.click(
           view.getByRole("button", { name: "Delete remote sync file" }),
         );

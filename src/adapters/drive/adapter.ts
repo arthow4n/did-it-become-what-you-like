@@ -92,7 +92,6 @@ type DriveMetadata = {
   readonly name?: unknown;
   readonly mimeType?: unknown;
   readonly modifiedTime?: unknown;
-  readonly parents?: unknown;
 };
 
 type AppDataMetadata = {
@@ -120,9 +119,9 @@ const SAFE_GENERATION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u;
 const SAFE_ACCOUNT_ID = /^[^\s\0]{1,320}$/u;
 const SAFE_TOKEN_TYPE = "Bearer";
 const DRIVE_METADATA_FIELDS =
-  "nextPageToken,files(id,name,mimeType,modifiedTime,parents)";
-const DRIVE_FILE_METADATA_FIELDS = "id,name,mimeType,modifiedTime,parents";
-const DRIVE_MUTATION_FIELDS = "id,name,mimeType,modifiedTime,parents";
+  "nextPageToken,files(id,name,mimeType,modifiedTime)";
+const DRIVE_FILE_METADATA_FIELDS = "id,name,mimeType,modifiedTime";
+const DRIVE_MUTATION_FIELDS = "id,name,mimeType,modifiedTime";
 
 function defaultClock(): ClockPort {
   return {
@@ -297,9 +296,7 @@ function appDataMetadata(
     typeof etag !== "string" || etag.length === 0 ||
     typeof metadata.modifiedTime !== "string" ||
     !Number.isFinite(Date.parse(metadata.modifiedTime)) ||
-    metadata.mimeType !== "application/json" ||
-    !Array.isArray(metadata.parents) || metadata.parents.length !== 1 ||
-    metadata.parents[0] !== "appDataFolder"
+    metadata.mimeType !== "application/json"
   ) {
     throw adapterError("corrupt-data", operation);
   }

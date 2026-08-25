@@ -312,7 +312,6 @@ class SyntheticDriveEndpoint {
       name: file.name,
       mimeType: "application/json",
       modifiedTime: file.modifiedTime,
-      parents: ["appDataFolder"],
     };
   }
 
@@ -596,7 +595,7 @@ Deno.test(
     assert(
       endpoint.calls.some((call) =>
         (call.method === "POST" || call.method === "PATCH") &&
-        call.fields === "id,name,mimeType,modifiedTime,parents"
+        call.fields === "id,name,mimeType,modifiedTime"
       ),
       "mutation projections must remain v3-valid",
     );
@@ -639,7 +638,7 @@ Deno.test(
       endpoint.calls.some((call) =>
         call.method === "POST" &&
         call.path === "/upload/drive/v3/files" &&
-        call.fields === "id,name,mimeType,modifiedTime,parents"
+        call.fields === "id,name,mimeType,modifiedTime"
       ),
       "multipart create must use the Drive v3 upload URI",
     );

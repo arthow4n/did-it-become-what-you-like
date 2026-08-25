@@ -981,7 +981,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   repository and this ledger first, preserve a timestamped untracked handover,
   and must not edit source, this plan, remotes, or another task's ownership.
   Any substantiated finding must return as a separately scoped fix through its
-  responsible task area.
+  responsible task area. Plato (`01a036c4-c4db-71a0-82cd-6e24fb101c33`) is the
+  assigned reviewer.
 - **Ownership:** full repository read-only review first; fixes individually
   scoped and returned through the responsible task area.
 - **Scope/non-goals:** independently compare code, tests, deployment, and this

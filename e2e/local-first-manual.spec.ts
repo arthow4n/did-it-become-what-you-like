@@ -64,7 +64,7 @@ test.describe("local-first-manual journey", () => {
     await expect(page.getByText("Local market")).toBeVisible();
     await expect(page.getByText("Second market")).toBeVisible();
     await expect(
-      page.getByLabel("Expenses").getByText("SEK -12.5", { exact: true }),
+      page.getByLabel("Expenses").getByText("SEK -12.50", { exact: true }),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Add expense" }).click();

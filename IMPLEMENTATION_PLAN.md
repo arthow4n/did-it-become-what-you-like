@@ -1458,7 +1458,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `master`, remotes, or preserved worktrees. The first-use no-project guard is
   expected MVP behavior under `UI_SPEC.md` Screen 3/7; navigation placement
   and broader UI polish are recorded as owner-requested post-MVP follow-ups,
-  not silently expanded into this production fix wave.
+  not silently expanded into this production fix wave. A third bounded task,
+  S-408, owns the missing `sync.retry` transition from the actor's generic
+  error state in `src/actors/sync/machine.ts` and its actor tests, so the
+  visible Retry action is not a no-op for non-retryable request failures.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

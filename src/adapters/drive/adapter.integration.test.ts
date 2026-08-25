@@ -68,6 +68,8 @@ type SyntheticCall = {
   readonly path: string;
   readonly spaces?: string;
   readonly pageToken?: string;
+  readonly fields?: string;
+  readonly alt?: string;
   readonly ifMatch?: string;
   readonly hasBearerHeader: boolean;
   readonly parent?: string;
@@ -112,7 +114,7 @@ class SyntheticDriveEndpoint {
       id: `file-${this.nextId++}`,
       name,
       body,
-      etag: `etag-${this.revision++}`,
+      etag: `"etag-${this.revision++}"`,
       modifiedTime: new Date(Date.UTC(2026, 7, 24, 12, 0, this.revision))
         .toISOString(),
     };
@@ -153,6 +155,12 @@ class SyntheticDriveEndpoint {
       ...(requestUrl.searchParams.get("pageToken") === null
         ? {}
         : { pageToken: requestUrl.searchParams.get("pageToken")! }),
+      ...(requestUrl.searchParams.get("fields") === null
+        ? {}
+        : { fields: requestUrl.searchParams.get("fields")! }),
+      ...(requestUrl.searchParams.get("alt") === null
+        ? {}
+        : { alt: requestUrl.searchParams.get("alt")! }),
       ...(headers.get("if-match") === null
         ? {}
         : { ifMatch: headers.get("if-match")! }),
@@ -186,7 +194,7 @@ class SyntheticDriveEndpoint {
         ...(nextOffset < this.files.size
           ? { nextPageToken: String(nextOffset) }
           : {}),
-      });
+      }, `"list-${this.revision}"`);
     }
     if (path.endsWith("/files") && method === "POST") {
       const parsed = parseMultipart(init?.body, headers.get("content-type"));
@@ -201,7 +209,7 @@ class SyntheticDriveEndpoint {
         id: `file-${this.nextId++}`,
         name: String(parsed.metadata.name),
         body: parsed.body,
-        etag: `etag-${this.revision++}`,
+        etag: `"etag-${this.revision++}"`,
         modifiedTime: new Date(
           Date.UTC(2026, 7, 24, 12, 0, this.revision),
         ).toISOString(),
@@ -214,7 +222,7 @@ class SyntheticDriveEndpoint {
           status: mutationFailure,
         });
       }
-      return this.json(this.metadata(next));
+      return this.json(this.metadata(next), next.etag);
     }
     if (current === undefined) {
       return new Response("missing", { status: 404 });
@@ -230,8 +238,14 @@ class SyntheticDriveEndpoint {
       }
       return new Response(current.body, {
         status: 200,
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          ETag: current.etag,
+        },
       });
+    }
+    if (method === "GET") {
+      return this.json(this.metadata(current), current.etag);
     }
     if (method === "DELETE") {
       if (headers.get("if-match") !== current.etag) {
@@ -255,7 +269,7 @@ class SyntheticDriveEndpoint {
       const next: SyntheticFile = {
         ...current,
         body: parsed.body,
-        etag: `etag-${this.revision++}`,
+        etag: `"etag-${this.revision++}"`,
         modifiedTime: new Date(Date.UTC(2026, 7, 24, 12, 0, this.revision))
           .toISOString(),
       };
@@ -267,7 +281,7 @@ class SyntheticDriveEndpoint {
           status: mutationFailure,
         });
       }
-      return this.json(this.metadata(next));
+      return this.json(this.metadata(next), next.etag);
     }
     return new Response("unsupported", { status: 400 });
   };
@@ -279,14 +293,16 @@ class SyntheticDriveEndpoint {
       mimeType: "application/json",
       modifiedTime: file.modifiedTime,
       parents: ["appDataFolder"],
-      etag: file.etag,
     };
   }
 
-  private json(value: unknown): Response {
+  private json(value: unknown, etag?: string): Response {
     return new Response(JSON.stringify(value), {
       status: 200,
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(etag === undefined ? {} : { ETag: etag }),
+      },
     });
   }
 }
@@ -484,6 +500,67 @@ Deno.test("drive-adapter: app-data pagination, body reads, and path isolation ar
     "invalid-request",
   );
 });
+
+Deno.test(
+  "drive-adapter: v3 projections omit etag and conditional headers still work",
+  async () => {
+    const { adapter, endpoint } = fixture({ pageSize: 2 });
+    const seeded = endpoint.seed("sync.json", '{"v":0}');
+    await authorized(adapter);
+
+    const listed = await adapter.readAppData("sync.json");
+    assertEquals(listed?.etag, seeded.etag);
+
+    const created = await adapter.writeAppData({
+      name: "conditional.json",
+      body: '{"v":1}',
+    });
+    const updated = await adapter.writeAppData({
+      name: "conditional.json",
+      body: '{"v":2}',
+      expectedEtag: created.etag,
+    });
+    await rejectsWithCode(
+      adapter.writeAppData({
+        name: "conditional.json",
+        body: "stale",
+        expectedEtag: created.etag,
+      }),
+      "conflict",
+    );
+    await adapter.deleteAppData("conditional.json", updated.etag);
+
+    const fieldSelections = endpoint.calls
+      .map((call) => call.fields)
+      .filter((fields): fields is string => fields !== undefined);
+    assert(fieldSelections.length > 0);
+    assert(
+      fieldSelections.every((fields) => !fields.includes("etag")),
+      "Drive v3 field selections must not request the removed etag field",
+    );
+    assert(
+      endpoint.calls.some((call) =>
+        (call.method === "POST" || call.method === "PATCH") &&
+        call.fields === "id,name,mimeType,modifiedTime,parents"
+      ),
+      "mutation projections must remain v3-valid",
+    );
+    assert(
+      endpoint.calls.some((call) =>
+        call.method === "PATCH" &&
+        call.ifMatch === created.etag
+      ),
+      "conditional update must send the response ETag in If-Match",
+    );
+    assert(
+      endpoint.calls.some((call) =>
+        call.method === "DELETE" &&
+        call.ifMatch === updated.etag
+      ),
+      "conditional delete must send the response ETag in If-Match",
+    );
+  },
+);
 
 Deno.test("drive-adapter: writes and deletes honor conditional ETags", async () => {
   const { adapter } = fixture();

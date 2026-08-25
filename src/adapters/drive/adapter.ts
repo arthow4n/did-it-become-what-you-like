@@ -81,7 +81,6 @@ type DriveMetadata = {
   readonly mimeType?: unknown;
   readonly modifiedTime?: unknown;
   readonly parents?: unknown;
-  readonly etag?: unknown;
 };
 
 type AppDataMetadata = {
@@ -109,7 +108,9 @@ const SAFE_GENERATION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u;
 const SAFE_ACCOUNT_ID = /^[^\s\0]{1,320}$/u;
 const SAFE_TOKEN_TYPE = "Bearer";
 const DRIVE_METADATA_FIELDS =
-  "nextPageToken,files(id,name,mimeType,modifiedTime,parents,etag)";
+  "nextPageToken,files(id,name,mimeType,modifiedTime,parents)";
+const DRIVE_FILE_METADATA_FIELDS = "id,name,mimeType,modifiedTime,parents";
+const DRIVE_MUTATION_FIELDS = "id,name,mimeType,modifiedTime,parents";
 
 function defaultClock(): ClockPort {
   return {
@@ -275,12 +276,13 @@ function metadataValue(
 function appDataMetadata(
   value: unknown,
   operation: string,
+  etag: string | undefined,
 ): AppDataMetadata {
   const metadata = metadataValue(value, operation);
   if (
     typeof metadata.id !== "string" || metadata.id.length === 0 ||
     typeof metadata.name !== "string" ||
-    typeof metadata.etag !== "string" || metadata.etag.length === 0 ||
+    typeof etag !== "string" || etag.length === 0 ||
     typeof metadata.modifiedTime !== "string" ||
     !Number.isFinite(Date.parse(metadata.modifiedTime)) ||
     metadata.mimeType !== "application/json" ||
@@ -293,7 +295,7 @@ function appDataMetadata(
   return {
     id: metadata.id,
     name: metadata.name,
-    etag: metadata.etag,
+    etag,
     modifiedTime: metadata.modifiedTime,
     mimeType: "application/json",
   };
@@ -302,12 +304,13 @@ function appDataMetadata(
 function metadataToFile(
   metadata: AppDataMetadata,
   body: string,
+  etag = metadata.etag,
 ): DriveFile {
   return {
     id: metadata.id,
     name: metadata.name,
     body,
-    etag: metadata.etag,
+    etag,
     updatedAt: metadata.modifiedTime,
   };
 }
@@ -519,7 +522,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
     request: Parameters<typeof responseFor>[1],
     operation: string,
     optionsForOperation: OperationOptions | undefined,
-  ): Promise<string> {
+  ): Promise<{ readonly body: string; readonly etag?: string }> {
     const response = await responseFor(
       token,
       request,
@@ -527,7 +530,9 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
       optionsForOperation,
     );
     try {
-      return await response.text();
+      const body = await response.text();
+      const etag = response.headers.get("etag") ?? undefined;
+      return { body, ...(etag === undefined ? {} : { etag }) };
     } catch {
       throw adapterError("partial-transport", operation);
     }
@@ -538,18 +543,51 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
     request: Parameters<typeof responseFor>[1],
     operation: string,
     optionsForOperation: OperationOptions | undefined,
-  ): Promise<unknown> {
-    const body = await responseText(
+  ): Promise<{ readonly value: unknown; readonly etag?: string }> {
+    const response = await responseText(
       token,
       request,
       operation,
       optionsForOperation,
     );
     try {
-      return JSON.parse(body) as unknown;
+      return {
+        value: JSON.parse(response.body) as unknown,
+        ...(response.etag === undefined ? {} : { etag: response.etag }),
+      };
     } catch {
       throw adapterError("corrupt-data", operation);
     }
+  }
+
+  async function metadataFor(
+    listed: { readonly id: string; readonly name: string },
+    optionsForOperation: OperationOptions | undefined,
+  ): Promise<AppDataMetadata> {
+    const token = requireToken("drive.metadata");
+    const response = await withRetry(
+      "drive.metadata",
+      optionsForOperation,
+      () =>
+        responseJson(
+          token,
+          {
+            path: `files/${encodeURIComponent(listed.id)}`,
+            parameters: { fields: DRIVE_FILE_METADATA_FIELDS },
+          },
+          "drive.metadata",
+          optionsForOperation,
+        ),
+    );
+    const metadata = appDataMetadata(
+      response.value,
+      "drive.metadata",
+      response.etag,
+    );
+    if (metadata.id !== listed.id || metadata.name !== listed.name) {
+      throw adapterError("corrupt-data", "drive.metadata");
+    }
+    return metadata;
   }
 
   async function listMetadata(
@@ -579,12 +617,25 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
             optionsForOperation,
           ),
       );
-      const response = jsonKeys(pageResult);
+      const response = jsonKeys(pageResult.value);
       if (response === undefined || !Array.isArray(response.files)) {
         throw adapterError("corrupt-data", "drive.list");
       }
       for (const item of response.files) {
-        const metadata = appDataMetadata(item, "drive.list");
+        const listed = metadataValue(item, "drive.list");
+        const listedId = listed.id;
+        const listedName = listed.name;
+        if (
+          typeof listedId !== "string" || listedId.length === 0 ||
+          typeof listedName !== "string"
+        ) {
+          throw adapterError("corrupt-data", "drive.list");
+        }
+        validFileName(listedName, "drive.list");
+        const metadata = await metadataFor(
+          { id: listedId, name: listedName },
+          optionsForOperation,
+        );
         if (names.has(metadata.name)) {
           throw adapterError("corrupt-data", "drive.list");
         }
@@ -607,7 +658,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
   function bodyFor(
     metadata: AppDataMetadata,
     optionsForOperation: OperationOptions | undefined,
-  ): Promise<string> {
+  ): Promise<{ readonly body: string; readonly etag: string }> {
     const token = requireToken("drive.read");
     return withRetry("drive.read", optionsForOperation, () =>
       responseText(
@@ -618,7 +669,12 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
         },
         "drive.read",
         optionsForOperation,
-      ));
+      ).then((response) => {
+        if (response.etag === undefined || response.etag.length === 0) {
+          throw adapterError("corrupt-data", "drive.read");
+        }
+        return { body: response.body, etag: response.etag };
+      }));
   }
 
   async function readAppDataInternal(
@@ -630,10 +686,8 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
       item.name === name
     );
     if (metadata === undefined) return undefined;
-    return metadataToFile(
-      metadata,
-      await bodyFor(metadata, optionsForOperation),
-    );
+    const response = await bodyFor(metadata, optionsForOperation);
+    return metadataToFile(metadata, response.body, response.etag);
   }
 
   function writeRaw(
@@ -656,8 +710,12 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
         if (metadata.etag !== request.expectedEtag) {
           if (attempted) {
             const currentBody = await bodyFor(metadata, optionsForOperation);
-            if (currentBody === request.body) {
-              return metadataToFile(metadata, currentBody);
+            if (currentBody.body === request.body) {
+              return metadataToFile(
+                metadata,
+                currentBody.body,
+                currentBody.etag,
+              );
             }
           }
           throw adapterError("conflict", "drive.write");
@@ -686,7 +744,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
             : `files/${encodeURIComponent(metadata.id)}`,
           parameters: {
             uploadType: "multipart",
-            fields: "id,name,mimeType,modifiedTime,parents,etag",
+            fields: DRIVE_MUTATION_FIELDS,
           },
           method: metadata === undefined ? "POST" : "PATCH",
           body: multipart.body,
@@ -698,7 +756,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
         operation,
         optionsForOperation,
       );
-      const next = appDataMetadata(response, operation);
+      const next = appDataMetadata(response.value, operation, response.etag);
       return metadataToFile(next, request.body);
     });
   }
@@ -914,7 +972,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
             ),
         );
         const nextAccountId = accountIdFromAbout(
-          response,
+          response.value,
           "drive.authorize.identity",
         );
         if (
@@ -970,13 +1028,15 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
 
     listAppData: async (optionsForOperation) => {
       const metadata = await listMetadata(optionsForOperation);
-      const files: DriveFile[] = [];
+      const files: Array<Promise<DriveFile>> = [];
       for (const item of metadata) {
         files.push(
-          metadataToFile(item, await bodyFor(item, optionsForOperation)),
+          bodyFor(item, optionsForOperation).then((response) =>
+            metadataToFile(item, response.body, response.etag)
+          ),
         );
       }
-      return files;
+      return await Promise.all(files);
     },
 
     readAppData: (name, optionsForOperation) =>

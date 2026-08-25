@@ -69,6 +69,7 @@ type SyntheticCall = {
   readonly spaces?: string;
   readonly pageToken?: string;
   readonly fields?: string;
+  readonly uploadType?: string;
   readonly alt?: string;
   readonly ifMatch?: string;
   readonly hasBearerHeader: boolean;
@@ -163,6 +164,9 @@ class SyntheticDriveEndpoint {
       ...(requestUrl.searchParams.get("fields") === null
         ? {}
         : { fields: requestUrl.searchParams.get("fields")! }),
+      ...(requestUrl.searchParams.get("uploadType") === null
+        ? {}
+        : { uploadType: requestUrl.searchParams.get("uploadType")! }),
       ...(requestUrl.searchParams.get("alt") === null
         ? {}
         : { alt: requestUrl.searchParams.get("alt")! }),
@@ -278,7 +282,9 @@ class SyntheticDriveEndpoint {
       return new Response(null, { status: 204 });
     }
     if (method === "PATCH") {
-      const parsed = parseMultipart(init?.body, headers.get("content-type"));
+      const parsed = requestUrl.searchParams.get("uploadType") === "media"
+        ? { metadata: {}, body: String(init?.body ?? "") }
+        : parseMultipart(init?.body, headers.get("content-type"));
       const next: SyntheticFile = {
         ...current,
         body: parsed.body,
@@ -597,9 +603,10 @@ Deno.test(
       endpoint.calls.some((call) =>
         call.method === "PATCH" &&
         call.path.startsWith("/upload/drive/v3/files/") &&
+        call.uploadType === "media" &&
         call.ifMatch === undefined
       ),
-      "updates must use the upload URI without an unreadable ETag header",
+      "updates must use a browser-compatible media upload without an ETag header",
     );
     assert(
       endpoint.calls.some((call) =>

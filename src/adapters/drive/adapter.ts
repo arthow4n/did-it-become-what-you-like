@@ -751,32 +751,33 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
         ? "drive.create"
         : "drive.update";
       const token = requireToken(operation);
-      const multipart = multipartBody(
-        metadata === undefined
-          ? {
+      const isCreate = metadata === undefined;
+      const multipart = isCreate
+        ? multipartBody(
+          {
             mimeType: "application/json",
             name: request.name,
             parents: ["appDataFolder"],
-          }
-          : { mimeType: "application/json" },
-        request.body,
-      );
+          },
+          request.body,
+        )
+        : undefined;
       attempted = true;
       const response = await responseJson(
         token,
         {
-          path: metadata === undefined
-            ? "files"
-            : `files/${encodeURIComponent(metadata.id)}`,
+          path: isCreate ? "files" : `files/${encodeURIComponent(metadata.id)}`,
           root: DRIVE_UPLOAD_ROOT,
           parameters: {
-            uploadType: "multipart",
+            uploadType: isCreate ? "multipart" : "media",
             fields: DRIVE_MUTATION_FIELDS,
           },
-          method: metadata === undefined ? "POST" : "PATCH",
-          body: multipart.body,
+          method: isCreate ? "POST" : "PATCH",
+          body: isCreate ? multipart!.body : request.body,
           headers: {
-            "Content-Type": multipart.contentType,
+            "Content-Type": isCreate
+              ? multipart!.contentType
+              : "application/json",
           },
         },
         operation,

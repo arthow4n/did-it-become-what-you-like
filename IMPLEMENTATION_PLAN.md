@@ -1631,6 +1631,18 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   because the independent review's temporary Vite server already occupied
   port 5173; no E2E failure was recorded. R-700 remains `IN_PROGRESS` pending
   the fresh reviewer’s final matrix and explicit approval.
+- **PWA install-offer regression correction:** The fresh R-700 review found
+  that the automatic update check could reach `update-ready` before the
+  approved install offer rendered, causing the offline/update journey's
+  required `Later` action to disappear. Commit `6b0510b` defers automatic
+  checks while install capability is available in the idle/install-offer
+  states; after `Later` or `Dismiss`, foreground and interval checks continue
+  through the XState update machine. The targeted offline/update E2E passed
+  1/1, the full E2E suite passed 11/11, and component validation passed 92/92.
+  The worker's full test/format/lint/check/build gates also passed. CI run
+  `32904142455` and Pages run `32904142444` succeeded; the live bundle is
+  `assets/index-Fgs8Cqap.js` and contains `6b0510b`, `shell.repository.refresh`,
+  and the update path. R-700 is ready for its final independent rerun.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

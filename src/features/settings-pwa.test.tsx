@@ -291,6 +291,64 @@ Deno.test("settings-final update protects dirty input and exposes offline status
   });
 });
 
+Deno.test("settings-final checks for updates when the app becomes active", async () => {
+  await withComponentHarness(async ({ window, render, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const basePort = createFakeUpdateInstallPort();
+      let checks = 0;
+      const port = {
+        ...basePort,
+        check: async (options?: Parameters<typeof basePort.check>[0]) => {
+          checks++;
+          return await basePort.check(options);
+        },
+      };
+      render(
+        createElement(
+          PwaRuntime,
+          {
+            usefulActionVersion: 0,
+            dirty: false,
+            port,
+            children: createElement("div", null, "content"),
+          },
+        ),
+      );
+      await waitFor(() => assert(checks === 1));
+      window.dispatchEvent(new window.Event("focus"));
+      await waitFor(() => assert(checks === 2));
+    });
+  });
+});
+
+Deno.test("settings-final startup check exposes a waiting update", async () => {
+  await withComponentHarness(async ({ window, render, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const port = createFakeUpdateInstallPort();
+      port.setUpdate();
+      render(
+        createElement(
+          PwaRuntime,
+          {
+            usefulActionVersion: 0,
+            dirty: false,
+            port,
+            children: createElement(AboutScreen, {
+              onClose: () => undefined,
+              onPrivacy: () => undefined,
+            }),
+          },
+        ),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getAllByRole("button", { name: "Reload to update" }).length)
+      );
+      assert(view.getAllByText("Update ready").length);
+    });
+  });
+});
+
 Deno.test("settings-final offline update status explains reconnecting", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaDomGlobals(window, async () => {

@@ -54,6 +54,8 @@ export type PwaStatus =
 
 type PwaInstallKind = "app" | "update" | null;
 
+const AUTOMATIC_UPDATE_CHECK_INTERVAL_MS = 5 * 60_000;
+
 export type PwaController = {
   readonly status: PwaStatus;
   readonly installKind: PwaInstallKind;
@@ -175,6 +177,10 @@ export function PwaRuntime({
   const [canInstall, setCanInstall] = useState(port.canInstall());
   const [installRequested, setInstallRequested] = useState(false);
   const latestUsefulAction = useRef(0);
+  const latestSnapshot = useRef(snapshot);
+  const automaticCheckStarted = useRef(false);
+  const initialUsefulActionVersion = useRef(usefulActionVersion);
+  latestSnapshot.current = snapshot;
 
   useEffect(() => {
     const eventTarget = typeof window === "undefined" ? globalThis : window;
@@ -190,6 +196,53 @@ export function PwaRuntime({
       eventTarget.removeEventListener("online", onOnline);
     };
   }, [send]);
+
+  useEffect(() => {
+    const isVisible = () =>
+      typeof document === "undefined" || document.visibilityState !== "hidden";
+    const checkAutomatically = () => {
+      if (globalThis.navigator?.onLine === false || !isVisible()) return;
+      const initialCheck = !automaticCheckStarted.current;
+      automaticCheckStarted.current = true;
+      if (
+        port.state() === "unsupported" ||
+        port.state() === "installing" ||
+        latestSnapshot.current.matches("installAvailable") ||
+        latestSnapshot.current.matches("installing") ||
+        latestSnapshot.current.matches("reloading") ||
+        (initialCheck && initialUsefulActionVersion.current > 0 &&
+          port.canInstall())
+      ) return;
+      send({ type: "update.check" });
+    };
+    const eventTarget = typeof window === "undefined" ? globalThis : window;
+    const onFocus = () => checkAutomatically();
+    const onOnline = () => checkAutomatically();
+    const onVisibilityChange = () => {
+      if (isVisible()) checkAutomatically();
+    };
+
+    checkAutomatically();
+    eventTarget.addEventListener("focus", onFocus);
+    eventTarget.addEventListener("online", onOnline);
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
+    const interval = import.meta.env?.PROD
+      ? globalThis.setInterval(
+        checkAutomatically,
+        AUTOMATIC_UPDATE_CHECK_INTERVAL_MS,
+      )
+      : undefined;
+    return () => {
+      eventTarget.removeEventListener("focus", onFocus);
+      eventTarget.removeEventListener("online", onOnline);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
+      if (interval !== undefined) globalThis.clearInterval(interval);
+    };
+  }, [port, send]);
 
   useEffect(() => {
     const unsubscribe = port.subscribeInstall((available) => {

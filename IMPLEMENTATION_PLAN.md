@@ -878,7 +878,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   `task/q-602-e2e` at root `d3982a0`. One bounded worker owns only `e2e/**`
   and E2E-only fake scenario setup; it must preserve a timestamped untracked
   handover and must not edit this plan, `master`, remotes, production source,
-  or another task's ownership.
+  or another task's ownership. Jason (`01a03665-eb3b-7882-af03-2e7956597aed`)
+  owns the worktree and started from the pushed plan checkpoint `15ffafe`.
 - **Ownership:** `e2e/**` and E2E-only fake scenario setup; production behavior
   changes require a separate scoped fix with lower-layer regression test.
 - **Scope/non-goals:** make the approved local manual, fake Gemini receipt,
@@ -1280,8 +1281,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
-  after closure-3 approval; Q-601 is `COMPLETE`; and Q-602 is the next
-  dependency-ready task.
+  after closure-3 approval; Q-601 is `COMPLETE`; and Q-602 is `IN_PROGRESS`.
 - **Reconciled branch/upstream:** the Q-601 source integration is at `de8d40e`
   (`Close Q-601 screen and design-system completeness gaps`); the ledger
   update recording its verified completion is the next pushed checkpoint.
@@ -1388,8 +1388,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501, X-502, P-503, R-600, and Q-601 are `COMPLETE`; Q-602 is `READY`;
-  no worker or reviewer is active; and no task is interrupted.
+  X-501, X-502, P-503, R-600, and Q-601 are `COMPLETE`; Q-602 is `IN_PROGRESS`
+  with Jason active in the dedicated worktree; no other worker or reviewer is
+  active; and no task is interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch

@@ -102,6 +102,24 @@
     }
   }
 
+  .local-ui-form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  @media (min-width: 720px) {
+    .local-ui-form-row--amount-currency {
+      grid-template-columns: 2fr 1fr;
+      align-items: start;
+    }
+
+    .local-ui-form-row--date-time {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+  }
+
   .local-ui-overlay {
     position: fixed;
     z-index: 10;

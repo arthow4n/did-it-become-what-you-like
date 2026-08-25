@@ -2475,23 +2475,25 @@ export function ManualExpenseScreen({
               label: "Money back",
             }]}
           />
-          <MoneyField
-            label="Amount"
-            isRequired
-            value={draft.amount}
-            onChange={(value) => update({ amount: value })}
-            currency={draft.currency}
-            error={validation.amount}
-          />
-          <CurrencyPicker
-            value={draft.currency}
-            options={CURRENCY_OPTIONS.map((code) => ({
-              id: code,
-              label: code,
-            }))}
-            onValueChange={(value) =>
-              update({ currency: CurrencyCodeSchema.parse(value) })}
-          />
+          <div className="local-ui-form-row local-ui-form-row--amount-currency">
+            <MoneyField
+              label="Amount"
+              isRequired
+              value={draft.amount}
+              onChange={(value) => update({ amount: value })}
+              currency={draft.currency}
+              error={validation.amount}
+            />
+            <CurrencyPicker
+              value={draft.currency}
+              options={CURRENCY_OPTIONS.map((code) => ({
+                id: code,
+                label: code,
+              }))}
+              onValueChange={(value) =>
+                update({ currency: CurrencyCodeSchema.parse(value) })}
+            />
+          </div>
           <MerchantPicker
             value={draft.merchant ?? ""}
             onValueChange={(value) => update({ merchant: value })}
@@ -2504,21 +2506,23 @@ export function ManualExpenseScreen({
             onValueChange={(value) => update({ categoryId: value })}
             error={validation.categoryId}
           />
-          <NativeDateField
-            label="Date"
-            required
-            value={draft.date}
-            onChange={(event) => update({ date: event.currentTarget.value })}
-            error={validation.date}
-            description="The concrete calendar date is saved exactly as shown."
-          />
-          <NativeTimeField
-            label="Time (optional)"
-            value={draft.time ?? ""}
-            onChange={(event) =>
-              update({ time: event.currentTarget.value || undefined })}
-            error={validation.time}
-          />
+          <div className="local-ui-form-row local-ui-form-row--date-time">
+            <NativeDateField
+              label="Date"
+              required
+              value={draft.date}
+              onChange={(event) => update({ date: event.currentTarget.value })}
+              error={validation.date}
+              description="The concrete calendar date is saved exactly as shown."
+            />
+            <NativeTimeField
+              label="Time (optional)"
+              value={draft.time ?? ""}
+              onChange={(event) =>
+                update({ time: event.currentTarget.value || undefined })}
+              error={validation.time}
+            />
+          </div>
           <ProjectPicker
             options={projects}
             value={draft.projectId}

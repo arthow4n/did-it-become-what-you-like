@@ -153,7 +153,7 @@ PWA precache generated: OK
   - **Verification:** Open ExpenseForm on mobile. "Save expense" must be full-width on top, and "Save and add another" full-width below it.
   - **Commit:** `fix(ui): FIX-R2-03 responsive full-width vertical stack for form action buttons on mobile`
 
-- [ ] **STEP-R2-04 (FIX-R2-04) · Desktop 2-Column Responsive Pairing for Related Form Fields**
+- [x] **STEP-R2-04 (FIX-R2-04) · Desktop 2-Column Responsive Pairing for Related Form Fields**
   - **Priority:** P2 (Form Layout / Visual Balance)
   - **Files:** [`src/features/local-ui.css`](../src/features/local-ui.css), [`src/features/local-ui.tsx`](../src/features/local-ui.tsx)
   - **Action:** On desktop (`@media (min-width: 720px)`), pair `[Amount + Currency]` (3fr:1fr) and `[Date + Time]` (1fr:1fr) into horizontal 2-column rows, folding into single columns on mobile.

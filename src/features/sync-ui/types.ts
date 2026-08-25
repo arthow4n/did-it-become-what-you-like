@@ -31,6 +31,8 @@ export type SyncConnectionViewModel =
     readonly pendingChangeCount: number;
     readonly unresolvedConflictCount: number;
     readonly message?: string;
+    /** Safe adapter boundary identifier shown only to aid troubleshooting. */
+    readonly diagnosticOperation?: string;
     readonly errorCode?:
       | "aborted"
       | "offline"

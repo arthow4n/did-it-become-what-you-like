@@ -252,6 +252,14 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
             >
               {view.message ??
                 "No local changes were lost. Review the error and retry when ready."}
+              {view.diagnosticOperation
+                ? (
+                  <>
+                    <br />
+                    Diagnostic code: {view.diagnosticOperation}
+                  </>
+                )
+                : null}
             </ErrorState>
           )
           : null}

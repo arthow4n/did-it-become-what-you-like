@@ -209,6 +209,7 @@ Deno.test(
       code: "invalid-request",
       message: "The request was invalid.",
       retryable: false,
+      operation: "causal-sync",
     });
     assert(!actor.getSnapshot().hasTag("retryable"));
     assert(actor.getSnapshot().can({ type: "sync.retry" }));

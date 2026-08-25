@@ -54,6 +54,8 @@ export type ContractFailure = {
   readonly code: PortErrorCode;
   readonly message: string;
   readonly retryable: boolean;
+  /** A bounded, non-sensitive adapter boundary identifier for diagnostics. */
+  readonly operation?: string;
 };
 
 const PORT_ERROR_MESSAGES: Readonly<Record<PortErrorCode, string>> = {
@@ -83,6 +85,8 @@ const RETRYABLE_PORT_ERRORS = new Set<PortErrorCode>([
   "unavailable",
 ]);
 
+const SAFE_OPERATION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$/;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -101,6 +105,7 @@ function isPortErrorCode(value: unknown): value is PortErrorCode {
 export function contractFailureFromError(
   error: unknown,
   fallback: ContractFailure,
+  options: { readonly preserveOperation?: boolean } = {},
 ): ContractFailure {
   if (!isRecord(error) || !isPortErrorCode(error.code)) return fallback;
 
@@ -110,7 +115,18 @@ export function contractFailureFromError(
   // code's safe retry policy (especially `unauthorized` and `retired`).
   const retryable = RETRYABLE_PORT_ERRORS.has(error.code);
 
-  return { code: error.code, message, retryable };
+  const operation = options.preserveOperation === true &&
+      typeof error.operation === "string" &&
+      SAFE_OPERATION.test(error.operation)
+    ? error.operation
+    : undefined;
+
+  return {
+    code: error.code,
+    message,
+    retryable,
+    ...(operation === undefined ? {} : { operation }),
+  };
 }
 
 export type ExpenseDraft = {

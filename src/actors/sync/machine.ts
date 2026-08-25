@@ -96,7 +96,7 @@ function syncFailure(error: unknown): ContractFailure {
     code: "unknown",
     message: "Synchronization failed.",
     retryable: true,
-  });
+  }, { preserveOperation: true });
 }
 
 function makeInitialContext(

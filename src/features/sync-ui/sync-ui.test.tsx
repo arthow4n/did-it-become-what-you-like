@@ -290,14 +290,16 @@ Deno.test("sync screen covers authorization, retryable, generic error, retired, 
             ...syncedView,
             sync: "error",
             message: "Drive is unavailable.",
+            diagnosticOperation: "drive.metadata",
           },
           knownDeviceCount: 1,
           onConnect: () => undefined,
         }),
       );
       const view = within(document.body);
-      assert(view.getByRole("alert"));
-      assert(view.getAllByText("Drive is unavailable.").length === 2);
+      const alert = view.getByRole("alert");
+      assert(alert.textContent?.includes("Drive is unavailable."));
+      assert(alert.textContent?.includes("Diagnostic code: drive.metadata"));
     });
   });
 

@@ -392,6 +392,9 @@ function syncViewFromSnapshot(
     unresolvedConflictCount: context.unresolvedConflictCount,
     ...(context.error === null ? {} : { message: context.error.message }),
     ...(context.error === null ? {} : { errorCode: context.error.code }),
+    ...(context.error?.operation === undefined
+      ? {}
+      : { diagnosticOperation: context.error.operation }),
     recoveryAvailable: recoveryAvailable &&
       context.error?.code === "corrupt-data",
   };

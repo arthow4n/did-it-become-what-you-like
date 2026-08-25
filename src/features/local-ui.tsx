@@ -739,6 +739,7 @@ export function ExpensesScreen({
                 onChange={setMaximum}
               />
               <SegmentedControl
+                fullWidth
                 label="Sort order"
                 value={sort}
                 onChange={(value) => setSort(value as "newest" | "oldest")}
@@ -2455,6 +2456,7 @@ export function ManualExpenseScreen({
         >
           {errors.length ? <ErrorSummary errors={errors} /> : null}
           <SegmentedControl
+            fullWidth
             label="Direction"
             value={draft.direction}
             onChange={(value) =>

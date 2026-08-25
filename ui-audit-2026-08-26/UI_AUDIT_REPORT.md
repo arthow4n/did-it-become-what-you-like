@@ -883,7 +883,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** Verify Expenses screen on desktop (1280px). Period buttons, Category dropdown, Search, and Filters button must align to an even bottom baseline.
   - **Commit:** `fix(ui): FIX-07 align filter bar controls to unified flex-end baseline`
 
-- [ ] **STEP-08 (FIX-08) · Enforce Natural Widths on Compact Inputs & Equalize Form Segmented Controls**
+- [x] **STEP-08 (FIX-08) · Enforce Natural Widths on Compact Inputs & Equalize Form Segmented Controls**
   - **Priority:** P1 (Form Layout Polish)
   - **Files:** [`src/features/local-ui.tsx`](../src/features/local-ui.tsx), [`src/features/local-ui.css`](../src/features/local-ui.css)
   - **Evidence:** [`screenshots/07_desktop_manual_expense_form.png`](screenshots/07_desktop_manual_expense_form.png), [`screenshots/18_desktop_organize_view.png`](screenshots/18_desktop_organize_view.png)

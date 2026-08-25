@@ -576,16 +576,21 @@ export function SearchField(
       onChange={onValueChange}
     >
       <AriaLabel className="ds-field__label">{label}</AriaLabel>
-      <AriaInput className="ds-field-control" placeholder={placeholder} />
-      <AriaButton
-        className="ds-icon-button ds-search-field__clear"
-        aria-label="Clear search"
-        onPress={() => onValueChange?.("")}
-      >
-        <Icon>
-          <X />
-        </Icon>
-      </AriaButton>
+      <div className="ds-field-control-wrap">
+        <AriaInput
+          className="ds-field-control ds-search-field__input"
+          placeholder={placeholder}
+        />
+        <AriaButton
+          className="ds-search-field__clear"
+          aria-label="Clear search"
+          onPress={() => onValueChange?.("")}
+        >
+          <Icon>
+            <X />
+          </Icon>
+        </AriaButton>
+      </div>
       {description
         ? (
           <AriaText slot="description" className="ds-field__description">

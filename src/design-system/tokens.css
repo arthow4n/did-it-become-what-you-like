@@ -474,19 +474,42 @@
     opacity: 0.58;
   }
 
-  .ds-search-field {
+  .ds-field-control-wrap {
     position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
   }
 
-  .ds-search-field .ds-field-control {
-    padding-inline-end: var(--space-9);
+  .ds-search-field__input {
+    padding-inline-end: var(--space-8);
   }
 
   .ds-search-field__clear {
     position: absolute;
     top: 50%;
-    right: var(--space-1);
+    right: var(--space-2);
     transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+
+  .ds-search-field__clear:hover {
+    color: var(--color-text-primary);
+    background: var(--color-surface-3);
+  }
+
+  .ds-search-field[data-empty] .ds-search-field__clear {
+    display: none;
   }
 
   .ds-checkbox,

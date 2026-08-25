@@ -835,7 +835,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** Run `deno task test:component`, check viewport `390×844` in `agent-browser`. Navigation must stick cleanly to the bottom.
   - **Commit:** `fix(ui): FIX-01 anchor mobile navigation to bottom tab bar with safe-area insets`
 
-- [ ] **STEP-02 (FIX-02) · Fix SearchField Input Control Wrapper & Clear Button Overflow**
+- [x] **STEP-02 (FIX-02) · Fix SearchField Input Control Wrapper & Clear Button Overflow**
   - **Priority:** P0 (Component Border Regression)
   - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L568-L598), [`src/design-system/tokens.css`](../src/design-system/tokens.css#L475-L489)
   - **Evidence:** [`screenshots/04_desktop_input_clear_button_bug.png`](screenshots/04_desktop_input_clear_button_bug.png), [`screenshots/13_desktop_expense_form_filled.png`](screenshots/13_desktop_expense_form_filled.png)

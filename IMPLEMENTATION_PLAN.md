@@ -973,18 +973,18 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-700 — Final independent release review and definition-of-done gate
 
-- **Status/dependencies:** `IN_PROGRESS`; the owner-supplied production OAuth
+- **Status/dependencies:** `COMPLETE`; the owner-supplied production OAuth
   configuration and fresh same-account desktop sync smoke are now complete;
   depends on `Q-604`, which is complete.
-- **Dispatch:** the earlier `review/r-700-final` handover remains preserved,
-  but it is not reused as closure evidence. A fresh read-only Luna `xhigh`
-  reviewer, Zeno (`01a03ac5-bc27-76e1-a906-37f66af996a5`), is independently
-  reviewing the current pushed `master` after the owner confirmed that a new
-  desktop can sync the existing data after refreshing the deployed bundle.
-  The reviewer must inspect the full repository and this ledger first,
-  preserve a timestamped untracked handover, and must not edit source, this
-  plan, remotes, or another task's ownership. Any substantiated finding must
-  return as a separately scoped fix through its responsible task area.
+- **Dispatch:** the earlier `review/r-700-final` handover and Zeno's paused
+  review remain preserved, but neither is used as final closure evidence. A
+  fresh read-only Luna `xhigh` reviewer, Chandrasekhar
+  (`01a03afa-ad5e-7aa2-a962-5ffca207db7b`), independently reviewed the final
+  source and Pages deployment after the owner confirmed that a new desktop can
+  sync the existing data and the projection refresh/PWA fixes were integrated.
+  The reviewer inspected the full repository and this ledger, preserved a
+  timestamped untracked handover, edited no source/plan/remotes, and issued
+  `APPROVE` with no severity-1/2/3/4 findings.
 - **Ownership:** full repository read-only review first; fixes individually
   scoped and returned through the responsible task area.
 - **Scope/non-goals:** independently compare code, tests, deployment, and this
@@ -1030,6 +1030,17 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   `6088023350` for `9c50f49`; the live bundle requests
   `nextPageToken,files(id,name,mimeType,modifiedTime,parents)` without the
   removed JSON `etag` field.
+- **Final closure evidence:** Chandrasekhar's final independent review
+  approved commit `212f199` after verifying the deployed bundle and live
+  Pages behavior. CI run `32904372312`, Pages run `32904372317`, and deployment
+  `6092975926` succeeded; the live bundle is `assets/index-Cp6NAvMS.js`.
+  Full E2E passed 11/11, offline/update E2E passed 1/1, core passed 266/266,
+  integration 83/83, components 92/92, domain 37/37, actor 1/1, and all
+  formatting, lint, type-check, build, release, Pages, CI, gallery/a11y,
+  browser, schema, and frozen-audit checks passed. The reviewer recorded
+  real authenticated Drive and several non-Chromium browser checks as
+  unavailable, while owner smoke/fake-Drive evidence covers the configured
+  Drive path. R-700 is complete.
 - **Outputs/acceptance:** traceability and security/privacy review complete; no
   severity-1/2 finding; severity-3 findings fixed or explicitly accepted by the
   owner; final checkpoint and evidence match Git and deployed commit.
@@ -1379,12 +1390,14 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
   after closure-3 approval; Q-601, Q-602, Q-603, and Q-604 are `COMPLETE`; and
-  R-700 is `BLOCKED` pending a fresh configured-Drive sync smoke and reload
-  authorization check after the current production follow-up fixes.
+  R-700 is `COMPLETE` after the fresh configured-Drive owner smoke, corrected
+  sync/view/PWA follow-ups, and final independent closure review.
 - **Reconciled branch/upstream:** the prior R-700 follow-up fixes remain
   integrated and the latest owner-reported sync adapter correction is pushed
   in `0ce0abe` (`Use media uploads for Drive updates`), after
-  `e3dc229` (`Use Drive v3 versions in browser sync`). The Q-604 hosted
+  `e3dc229` (`Use Drive v3 versions in browser sync`). The subsequent
+  projection/PWA corrections and final plan checkpoint are pushed through
+  `212f199`. The Q-604 hosted
   release and Plato's review targeted the earlier `71737ab`; the two findings
   and the bounded correction evidence are recorded above. The root worktree
   contains only the intentionally untracked `A-303-progress.md`,
@@ -1610,7 +1623,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   succeeded; the live bundle `assets/index-DqcTniHc.js` identifies `41edbe7`
   and contains the update-check path. An already-open tab still needs one
   refresh to receive this new behavior; future deployments are detected and
-  offered safely. R-700 review remains `IN_PROGRESS`.
+  offered safely. R-700 is now complete after the final independent review.
 - **Post-sync view refresh correction:** The owner clarified that the remaining
   confusion was not only stale deployment delivery: after a successful new
   device pull, the repository contained the remote records but the visible
@@ -1629,8 +1642,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   contains `4691249` and the refresh path. The first final `deno task verify`
   attempt reached E2E after all preceding gates passed but could not start
   because the independent review's temporary Vite server already occupied
-  port 5173; no E2E failure was recorded. R-700 remains `IN_PROGRESS` pending
-  the fresh reviewer’s final matrix and explicit approval.
+  port 5173; no E2E failure was recorded. The later full E2E rerun passed
+  11/11, and the final independent review approved the release.
 - **PWA install-offer regression correction:** The fresh R-700 review found
   that the automatic update check could reach `update-ready` before the
   approved install offer rendered, causing the offline/update journey's
@@ -1642,7 +1655,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   The worker's full test/format/lint/check/build gates also passed. CI run
   `32904142455` and Pages run `32904142444` succeeded; the live bundle is
   `assets/index-Fgs8Cqap.js` and contains `6b0510b`, `shell.repository.refresh`,
-  and the update path. R-700 is ready for its final independent rerun.
+  and the update path. R-700 is complete after the final independent rerun.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

@@ -181,7 +181,7 @@ PWA precache generated: OK
   - **Verification:** Open "New expense" from the Add menu. Form must start with zero warning cards.
   - **Commit:** `fix(ui): FIX-R2-07 suppress DraftStatus warning card on pristine untouched forms`
 
-- [ ] **STEP-R2-08 (FIX-R2-08) · Constrain Action Button Stretching in Desktop Settings Cards**
+- [x] **STEP-R2-08 (FIX-R2-08) · Constrain Action Button Stretching in Desktop Settings Cards**
   - **Priority:** P3 (Visual Balance)
   - **Files:** [`src/features/local-ui.css`](../src/features/local-ui.css)
   - **Action:** On desktop screens (`@media (min-width: 720px)`), set `Save and continue` in `GeminiQuickSetup` to natural width right-aligned (`align-self: flex-end; width: auto;`).

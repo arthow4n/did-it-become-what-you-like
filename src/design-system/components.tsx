@@ -2611,13 +2611,15 @@ export function GeminiQuickSetup(
           sent to Google Gemini. Expense history, project names, Drive data,
           other device details, and sync metadata are excluded.
         </InlineNotice>
-        <Button
-          pending={busy}
-          isDisabled={busy || value.trim().length === 0}
-          onPress={onSave}
-        >
-          Save and continue
-        </Button>
+        <FormActions>
+          <Button
+            pending={busy}
+            isDisabled={busy || value.trim().length === 0}
+            onPress={onSave}
+          >
+            Save and continue
+          </Button>
+        </FormActions>
       </Stack>
     </Card>
   );

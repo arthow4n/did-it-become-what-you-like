@@ -266,8 +266,8 @@
 
   .ds-money {
     font-variant-numeric: tabular-nums;
-    overflow-wrap: anywhere;
-    white-space: normal;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .ds-money[data-tone="positive"] {
@@ -714,11 +714,17 @@
   }
 
   .ds-list-row__main {
+    flex: 1 1 auto;
     min-width: 0;
   }
 
   .ds-list-row__main > * {
     overflow-wrap: anywhere;
+  }
+
+  .ds-list-row__trailing {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .ds-definition-list {

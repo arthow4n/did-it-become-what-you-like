@@ -867,7 +867,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** Run `deno task a11y:gallery`, inspect `gallery.html`. SegmentedControl must render as compact 48px pills, never 220px ovals.
   - **Commit:** `fix(ui): FIX-05 prevent grid stretching and constrain segmented control heights`
 
-- [ ] **STEP-06 (FIX-06) · Enforce Non-Wrapping Tabular Numbers on Currency Amounts**
+- [x] **STEP-06 (FIX-06) · Enforce Non-Wrapping Tabular Numbers on Currency Amounts**
   - **Priority:** P1 (Financial Readability)
   - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css#L263-L276, #L665-L683)
   - **Evidence:** [`screenshots/36_desktop_gallery_bottom_4.png`](screenshots/36_desktop_gallery_bottom_4.png)

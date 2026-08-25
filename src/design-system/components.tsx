@@ -1773,7 +1773,7 @@ export function FormLayout(
 export function FormActions(
   { children, className }: { children: ReactNode; className?: string },
 ) {
-  return <Inline justify="end" className={className}>{children}</Inline>;
+  return <div className={cx("ds-form-actions", className)}>{children}</div>;
 }
 
 export function ErrorSummary(

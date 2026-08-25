@@ -146,7 +146,7 @@ PWA precache generated: OK
   - **Verification:** Scroll long forms and expenses list on mobile (390x844). Content and submit buttons must have ample clearance above the bottom navigation bar.
   - **Commit:** `fix(ui): FIX-R2-02 add bottom clearance padding to app-frame body on mobile viewports`
 
-- [ ] **STEP-R2-03 (FIX-R2-03) · Responsive Full-Width Form Action Buttons on Mobile**
+- [x] **STEP-R2-03 (FIX-R2-03) · Responsive Full-Width Form Action Buttons on Mobile**
   - **Priority:** P1 (Form UX / Visual Hierarchy)
   - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css), [`src/design-system/components.tsx`](../src/design-system/components.tsx)
   - **Action:** Style `.ds-form-actions` on desktop with `justify-content: flex-end; gap: var(--space-3);`, and on mobile (`@media (max-width: 719px)`) with `flex-direction: column-reverse; width: 100%; gap: var(--space-2);` where buttons fill full width.

@@ -1024,7 +1024,11 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   73 integration, 86 component, 37 domain, 1 actor, 5 local E2E journeys,
   gallery/browser inspection, Pages/CI/toolchain checks, both builds, frozen
   audit, and diff check. R-700 remains blocked only until the corrected build
-  is deployed and a fresh configured-Drive sync smoke succeeds.
+  is deployed and a fresh configured-Drive sync smoke succeeds. The corrected
+  source is now deployed by Pages run `32875077172` and deployment
+  `6088023350` for `9c50f49`; the live bundle requests
+  `nextPageToken,files(id,name,mimeType,modifiedTime,parents)` without the
+  removed JSON `etag` field.
 - **Outputs/acceptance:** traceability and security/privacy review complete; no
   severity-1/2 finding; severity-3 findings fixed or explicitly accepted by the
   owner; final checkpoint and evidence match Git and deployed commit.
@@ -1437,9 +1441,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `src/adapters/drive/adapter.ts` and its adapter integration tests. The
   focused worker gates passed (format, lint, type-check, 13 integration tests,
   build, and diff check), followed by the root `deno task verify` evidence
-  recorded above. The next step is to push this checkpoint, verify the Pages
-  deployment, and obtain one fresh configured-Drive sync smoke before R-700
-  review resumes.
+  recorded above. Pages run `32875077172` and deployment `6088023350` now serve
+  the corrected source from `9c50f49`; the remaining step is one fresh
+  configured-Drive sync smoke before R-700 review resumes.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

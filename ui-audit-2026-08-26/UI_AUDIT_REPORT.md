@@ -851,7 +851,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** Trigger a project save or expense save. No existing elements on the screen must shift position when the toast appears.
   - **Commit:** `fix(ui): FIX-03 colocate toast dismiss and move toast to fixed overlay to eliminate layout shift`
 
-- [ ] **STEP-04 (FIX-04) · Place Required Field Asterisks Inline with Labels**
+- [x] **STEP-04 (FIX-04) · Place Required Field Asterisks Inline with Labels**
   - **Priority:** P1 (Form Typography Polish)
   - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L487-L496)
   - **Evidence:** [`screenshots/03_desktop_create_project_modal.png`](screenshots/03_desktop_create_project_modal.png), [`screenshots/07_desktop_manual_expense_form.png`](screenshots/07_desktop_manual_expense_form.png)

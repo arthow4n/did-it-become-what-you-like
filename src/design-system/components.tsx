@@ -490,8 +490,12 @@ export function TextField({
       isInvalid={Boolean(error) || isInvalid}
       className={cx("ds-field", className)}
     >
-      <AriaLabel className="ds-field__label">{label}</AriaLabel>
-      {props.isRequired ? <span className="ds-field__required">*</span> : null}
+      <AriaLabel className="ds-field__label">
+        {label}
+        {props.isRequired
+          ? <span className="ds-field__required" aria-hidden="true">*</span>
+          : null}
+      </AriaLabel>
       <AriaInput className="ds-field-control" placeholder={placeholder} />
       {description
         ? (
@@ -533,7 +537,12 @@ export function TextArea(
       isInvalid={Boolean(error) || props.isInvalid}
       className={cx("ds-field", className)}
     >
-      <AriaLabel className="ds-field__label">{label}</AriaLabel>
+      <AriaLabel className="ds-field__label">
+        {label}
+        {props.isRequired
+          ? <span className="ds-field__required" aria-hidden="true">*</span>
+          : null}
+      </AriaLabel>
       <AriaTextArea className="ds-field-control" placeholder={placeholder} />
       {description
         ? (

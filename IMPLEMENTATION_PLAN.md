@@ -1382,7 +1382,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   authorization check after the current production follow-up fixes.
 - **Reconciled branch/upstream:** the prior R-700 follow-up fixes remain
   integrated and the latest owner-reported sync adapter correction is pushed
-  in `e3dc229` (`Use Drive v3 versions in browser sync`). The Q-604 hosted
+  in `0ce0abe` (`Use media uploads for Drive updates`), after
+  `e3dc229` (`Use Drive v3 versions in browser sync`). The Q-604 hosted
   release and Plato's review targeted the earlier `71737ab`; the two findings
   and the bounded correction evidence are recorded above. The root worktree
   contains only the intentionally untracked `A-303-progress.md`,
@@ -1572,6 +1573,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `32898143940` and Pages run `32898143896` succeeded; the live bundle is
   `assets/index-B2rJZpPZ.js` and contains `e3dc229`. R-700 remains pending one
   live reset/retry smoke by the owner.
+- **New-device invalid-request correction:** The owner then reproduced
+  `The request was invalid` on a fresh desktop after connecting the same Google
+  account. Inspection of the causal exchange showed that a new device first
+  pulls the existing hidden Drive file and then registers its local device by
+  updating that file. The adapter was sending that existing-file replacement
+  as multipart upload, although Drive documents a media `PATCH` for updating
+  file content. Commit `0ce0abe` switches existing-file updates to
+  `PATCH ...?uploadType=media` with the raw JSON body while retaining multipart
+  only for first-file creation. The regression fixture exercises the media
+  update without browser-unavailable ETag headers. Focused Drive/sync/actor
+  validation passed 37/37, followed by `deno task fmt:check`, `deno task lint`,
+  `deno task check`, `deno task test` (264/264), and `deno task build`. CI run
+  `32899199076` passed; the Pages deployment for `32899199147` now serves
+  `assets/index-U1nMTh5b.js`, which identifies `0ce0abe` and contains the media
+  upload path. R-700 remains blocked pending the owner's fresh desktop sync
+  smoke and reload authorization check.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

@@ -1,6 +1,6 @@
 import { useActor } from "@xstate/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowLeft, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import {
   createProjectCategoryService,
   type ProjectCategoryService,
@@ -1261,9 +1261,12 @@ export function ProjectManager({
             title={editor.kind === "create" ? "Create project" : "Edit project"}
             headingLevel={1}
             leading={
-              <Button variant="quiet" onPress={() => setEditor(null)}>
-                Back
-              </Button>
+              <IconButton
+                icon={<ArrowLeft />}
+                aria-label="Back"
+                variant="quiet"
+                onPress={() => setEditor(null)}
+              />
             }
           />
           <Card as="section">
@@ -1353,12 +1356,12 @@ export function ProjectManager({
           headingLevel={1}
           title="Manage projects"
           leading={
-            <Button
+            <IconButton
+              icon={<ArrowLeft />}
+              aria-label="Back to organize"
               variant="quiet"
               onPress={() => onNavigate("/organize")}
-            >
-              Organize
-            </Button>
+            />
           }
           actions={
             <Button onPress={() => openEditor({ kind: "create" })}>
@@ -1858,9 +1861,12 @@ export function CategoryManager({
               : "Edit category"}
             headingLevel={1}
             leading={
-              <Button variant="quiet" onPress={() => setEditor(null)}>
-                Back
-              </Button>
+              <IconButton
+                icon={<ArrowLeft />}
+                aria-label="Back"
+                variant="quiet"
+                onPress={() => setEditor(null)}
+              />
             }
           />
           <Card as="section">
@@ -1953,12 +1959,12 @@ export function CategoryManager({
           headingLevel={1}
           title="Manage categories"
           leading={
-            <Button
+            <IconButton
+              icon={<ArrowLeft />}
+              aria-label="Back to organize"
               variant="quiet"
               onPress={() => onNavigate("/organize")}
-            >
-              Organize
-            </Button>
+            />
           }
           actions={
             <Button onPress={() => setEditor({ kind: "create" })}>
@@ -2402,12 +2408,12 @@ export function ManualExpenseScreen({
             ? "Edit expense"
             : "New expense"}
           leading={
-            <Button
+            <IconButton
+              icon={<X />}
+              aria-label="Close"
               variant="quiet"
               onPress={() => send({ type: "expense.back" })}
-            >
-              Close
-            </Button>
+            />
           }
         />
         <ExpenseForm

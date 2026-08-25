@@ -891,7 +891,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** Open Manual Expense Form. "Spent" and "Money back" tabs must divide the top width evenly with no trailing empty void.
   - **Commit:** `fix(ui): FIX-08 apply natural control widths and equalize form segmented choice tabs`
 
-- [ ] **STEP-09 (FIX-09) · Polish PageHeader Leading Back & Close Actions**
+- [x] **STEP-09 (FIX-09) · Polish PageHeader Leading Back/Close Actions**
   - **Priority:** P2 (Navigation Typography)
   - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L104-L130), [`src/features/local-ui.tsx`](../src/features/local-ui.tsx)
   - **Evidence:** [`screenshots/03_desktop_create_project_modal.png`](screenshots/03_desktop_create_project_modal.png), [`screenshots/19_desktop_manage_projects.png`](screenshots/19_desktop_manage_projects.png), [`screenshots/23_desktop_settings_drive_sync.png`](screenshots/23_desktop_settings_drive_sync.png)

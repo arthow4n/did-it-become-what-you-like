@@ -1457,11 +1457,12 @@ export function InlineNotice(
   );
 }
 
+export type ToastProps = Omit<BannerProps, "title" | "action"> & {
+  onDismiss?: () => void;
+};
+
 export function Toast(
-  { children, tone = "positive", className }: Omit<
-    BannerProps,
-    "title" | "action"
-  >,
+  { children, tone = "positive", onDismiss, className }: ToastProps,
 ) {
   return (
     <div
@@ -1470,7 +1471,21 @@ export function Toast(
       role="status"
       aria-live="polite"
     >
-      {children}
+      <div className="ds-toast__content">{children}</div>
+      {onDismiss
+        ? (
+          <button
+            type="button"
+            className="ds-toast__dismiss"
+            aria-label="Dismiss notification"
+            onClick={onDismiss}
+          >
+            <Icon size={16}>
+              <X />
+            </Icon>
+          </button>
+        )
+        : null}
     </div>
   );
 }

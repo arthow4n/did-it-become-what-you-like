@@ -843,7 +843,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** Run `deno task test:component`. Clear button must stay vertically centered inside the input field and not overflow borders.
   - **Commit:** `fix(ui): FIX-02 wrap search input and anchor clear button inside control bounds`
 
-- [ ] **STEP-03 (FIX-03) · Fix Notification Toast Overlay & Eliminate Layout Shift (CLS)**
+- [x] **STEP-03 (FIX-03) · Fix Notification Toast Overlay & Eliminate Layout Shift (CLS)**
   - **Priority:** P0 (Layout Stability & Jumping DOM)
   - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L1455-L1471), [`src/design-system/tokens.css`](../src/design-system/tokens.css#L787-L794), [`src/features/local-ui.tsx`](../src/features/local-ui.tsx#L3214-L3223)
   - **Evidence:** [`screenshots/14_desktop_toast_layout_bump_bug.png`](screenshots/14_desktop_toast_layout_bump_bug.png)

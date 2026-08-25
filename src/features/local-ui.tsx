@@ -3212,14 +3212,7 @@ export function LocalUiRuntime(
           )
           : null}
         {appNotice
-          ? (
-            <div className="local-ui-toast-wrap">
-              <Toast>{appNotice}</Toast>
-              <Button variant="quiet" onPress={() => setAppNotice(null)}>
-                Dismiss
-              </Button>
-            </div>
-          )
+          ? <Toast onDismiss={() => setAppNotice(null)}>{appNotice}</Toast>
           : null}
         <DirtyExitGuard
           isOpen={dirtyExitOpen}

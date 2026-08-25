@@ -400,6 +400,34 @@ function syncViewFromSnapshot(
   };
 }
 
+type SyncCompletionSnapshot = {
+  readonly value: unknown;
+  readonly context: { readonly lastSyncedAt: string | null };
+};
+
+export function completedSyncTimestamp(
+  snapshot: SyncCompletionSnapshot,
+): string | null {
+  if (
+    snapshot.context.lastSyncedAt === null ||
+    (snapshot.value !== "idle" && snapshot.value !== "conflict")
+  ) {
+    return null;
+  }
+  return snapshot.context.lastSyncedAt;
+}
+
+export function requestLocalShellRefreshAfterSync(
+  snapshot: SyncCompletionSnapshot,
+  handled: { current: string | null },
+  onRefresh: () => void,
+): void {
+  const completedAt = completedSyncTimestamp(snapshot);
+  if (completedAt === null || handled.current === completedAt) return;
+  handled.current = completedAt;
+  onRefresh();
+}
+
 function settingsSyncSummary(view: SyncConnectionViewModel): string {
   const label = syncStatusCopy(view).label;
   return view.mode === "configured" && view.lastSyncedAt !== null
@@ -807,6 +835,7 @@ export function SyncPortabilityRuntime({
   secretStorage,
   onLocalErased,
   onSyncSummary,
+  onSyncCompleted,
   children,
 }: {
   readonly repository: LocalRepository;
@@ -816,6 +845,7 @@ export function SyncPortabilityRuntime({
   readonly secretStorage: SecretStoragePort;
   readonly onLocalErased?: (scope: "local" | "everywhere") => void;
   readonly onSyncSummary?: (summary: string) => void;
+  readonly onSyncCompleted?: () => void;
   readonly children: ReactNode;
 }) {
   const ids = useMemo(createRuntimeIds, []);
@@ -1064,10 +1094,19 @@ export function SyncPortabilityRuntime({
     driveAdapter?.status() ?? null,
     syncDependencies.recovery !== undefined,
   );
+  const handledSyncCompletion = useRef<string | null>(null);
 
   useEffect(() => {
     onSyncSummary?.(settingsSyncSummary(syncView));
   }, [onSyncSummary, syncView]);
+
+  useEffect(() => {
+    requestLocalShellRefreshAfterSync(
+      syncSnapshot,
+      handledSyncCompletion,
+      () => onSyncCompleted?.(),
+    );
+  }, [onSyncCompleted, syncSnapshot]);
 
   useEffect(() => {
     const onOffline = () => sendSync({ type: "sync.network.offline" });

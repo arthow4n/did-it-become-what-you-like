@@ -3,6 +3,7 @@ import {
   deviceViewModels,
   formatApproximateLastSeen,
   observationsFromSyncConflicts,
+  requestLocalShellRefreshAfterSync,
   requiresDriveAuthorization,
 } from "./sync-portability-runtime.tsx";
 
@@ -135,6 +136,32 @@ Deno.test("sync runtime marks a configured account as authorization-needed after
   assert(!requiresDriveAuthorization("owner@example.com", "authorized"));
   assert(!requiresDriveAuthorization(null, "signed-out"));
 });
+
+Deno.test(
+  "sync runtime requests one local-shell refresh after a successful exchange",
+  () => {
+    const handled = { current: null as string | null };
+    let refreshRequests = 0;
+    const refresh = () => refreshRequests += 1;
+    const completed = {
+      value: "idle",
+      context: { lastSyncedAt: "2026-08-25T12:00:00.000Z" },
+    };
+
+    requestLocalShellRefreshAfterSync(completed, handled, refresh);
+    requestLocalShellRefreshAfterSync(completed, handled, refresh);
+    requestLocalShellRefreshAfterSync(
+      {
+        value: "synchronizing",
+        context: { lastSyncedAt: "2026-08-25T12:01:00.000Z" },
+      },
+      handled,
+      refresh,
+    );
+
+    assert(refreshRequests === 1);
+  },
+);
 
 // Deno's --filter is a substring selector rather than an alternation regex.
 // Keep the owner-requested selector names executable while the task aliases

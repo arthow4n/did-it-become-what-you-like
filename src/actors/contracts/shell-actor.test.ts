@@ -49,6 +49,12 @@ const projectTwo = {
   name: "Shell two",
 };
 
+const projectThree = {
+  ...projectOne,
+  id: "project-shell-three",
+  name: "Shell three",
+};
+
 async function createShellHarness(): Promise<{
   readonly local: FakeLocalPort;
   readonly service: ProjectCategoryService;
@@ -129,6 +135,37 @@ Deno.test("shell-actor: project failure retains retry and offline shell recovers
   assertEquals(actor.getSnapshot().context.route, "expenses");
   actor.stop();
 });
+
+Deno.test(
+  "shell-actor: repository refresh adopts external changes without resetting route or workflow",
+  async () => {
+    const harness = await createShellHarness();
+    const actor = createActor(
+      createLocalShellMachine({ organization: harness.service }),
+    ).start();
+    await settle();
+
+    actor.send({ type: "shell.navigate", route: "settings" });
+    actor.send({ type: "shell.workflow.open", workflow: "expense-form" });
+    await harness.service.commitProject({
+      type: "create",
+      project: projectThree,
+    });
+
+    actor.send({ type: "shell.repository.refresh" });
+    await settle();
+
+    assert(actor.getSnapshot().hasTag("project-ready"));
+    assert(
+      actor.getSnapshot().context.projectState?.projects.some((project) =>
+        project.id === projectThree.id
+      ),
+    );
+    assertEquals(actor.getSnapshot().context.route, "settings");
+    assertEquals(actor.getSnapshot().context.activeWorkflow, "expense-form");
+    actor.stop();
+  },
+);
 
 Deno.test("shell-actor: restoration failure exposes retryable shell error", async () => {
   const local = createFakeLocalPort();

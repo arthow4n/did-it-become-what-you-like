@@ -22,6 +22,7 @@ export type LocalShellEvent =
   | { readonly type: "shell.network.reconnecting" }
   | { readonly type: "shell.project.select"; readonly projectId: string }
   | { readonly type: "shell.project.retry" }
+  | { readonly type: "shell.repository.refresh" }
   | { readonly type: "shell.dataset.retired" }
   | { readonly type: "shell.retry" };
 
@@ -57,6 +58,9 @@ const shellSetup = setup({
   actors: {
     restoreShell: unwiredPort<void, RestoreShellOutput>(
       "local shell restoration",
+    ),
+    refreshProjectState: unwiredPort<void, ProjectCategoryState>(
+      "local repository refresh",
     ),
     switchProject: unwiredPort<string, OrganizationCommitOutput>(
       "local project selection",
@@ -156,11 +160,38 @@ function makeLocalShellMachine(initialNetwork: OnlineState) {
               ready: {
                 tags: ["project-ready"],
                 on: {
+                  "shell.repository.refresh": "refreshing",
                   "shell.project.select": {
                     target: "switching",
                     actions: assign({
                       pendingProjectId: ({ event }) => event.projectId,
                       error: () => null,
+                    }),
+                  },
+                },
+              },
+              refreshing: {
+                tags: ["refreshing"],
+                invoke: {
+                  src: "refreshProjectState",
+                  input: () => undefined,
+                  onDone: {
+                    target: "ready",
+                    actions: assign({
+                      projectState: ({ event }) => event.output,
+                      pendingProjectId: () => null,
+                      error: () => null,
+                    }),
+                  },
+                  onError: {
+                    target: "failed",
+                    actions: assign({
+                      error: ({ event }) =>
+                        shellFailure(event.error, {
+                          code: "unknown",
+                          message: "The local data could not be refreshed.",
+                          retryable: true,
+                        }),
                     }),
                   },
                 },
@@ -241,6 +272,9 @@ export function createLocalShellMachine(
           state,
         } satisfies RestoreShellOutput;
       }),
+      refreshProjectState: fromPromise(
+        async () => await dependencies.organization.getState(),
+      ),
       switchProject: fromPromise(
         async ({ input }: { input: string }) =>
           await dependencies.organization.commitProject({

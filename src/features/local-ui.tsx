@@ -2996,6 +2996,8 @@ export function LocalUiRuntime(
           onNotice={setAppNotice}
           secretStorage={secretStorage}
           onSyncSummary={setSyncSummary}
+          onSyncCompleted={() =>
+            sendShell({ type: "shell.repository.refresh" })}
           onLocalErased={(scope) => {
             void scope;
             if (typeof globalThis.location?.reload === "function") {

@@ -747,6 +747,66 @@ In `DangerDialog`:
 
 ---
 
+### Finding 14: Flexbox & Grid Sizing Abuse (Unnatural Element Widths & Crushed Controls)
+
+- **Severity:** High (Core UI Ergonomics & Responsive Structure)
+- **Viewports:** All
+- **Evidence:**
+  - `screenshots/07_desktop_manual_expense_form.png` (Spent / Money back void)
+  - `screenshots/18_desktop_organize_view.png` (Organize row widths)
+  - `screenshots/33_desktop_gallery_bottom.png` (Stretched ActionCards)
+  - `screenshots/36_desktop_gallery_bottom_4.png` (Crushed trailing cells)
+
+#### Code References
+- [`src/design-system/tokens.css`](../src/design-system/tokens.css)
+- [`src/features/local-ui.css`](../src/features/local-ui.css)
+
+#### Root Cause Analysis
+Throughout the interface, flexbox and grid properties are applied indiscriminately without setting appropriate constraints (`flex: 1` vs `flex: 0 0 auto`, missing `min-width: 0`, and missing `align-items: start`). This causes:
+1. Small compact controls (Date pickers, Time inputs, Currency selectors) to stretch to 100% full container width (640px) on desktop when they should naturally be compact or paired side-by-side.
+2. Segmented controls in forms to span 100% width with only one small pill on the left and a large empty void on the right.
+3. Asymmetrical multi-column grids in cards and galleries to stretch shorter columns into gigantic empty boxes.
+
+#### Remediation Plan for Coding Agent
+1. Enforce natural widths for compact controls (`Button`, `SelectField`, `SegmentedControl`, `ColorChoiceField`, `NativeDateField`, `NativeTimeField`, `Badge`, `Chip`).
+2. Provide a `fullWidth` prop/variant for `SegmentedControl` that splits segments evenly (`flex: 1 1 0` per segment).
+3. Ensure all multi-column grid containers (`ResponsiveGrid`, `.ds-gallery__section`) have `align-content: start; align-items: start;`.
+4. Ensure trailing metadata and monetary metrics in flex rows always have `flex-shrink: 0; white-space: nowrap;`.
+
+---
+
+### Finding 15: Missing Element Breathing Room & Spacing Rhythm Violations
+
+- **Severity:** Medium (Visual Polish & Visual Rhythm)
+- **Viewports:** All
+- **Evidence:**
+  - `screenshots/03_desktop_create_project_modal.png`
+  - `screenshots/12_mobile_manual_expense_form_save_buttons.png`
+  - `screenshots/19_desktop_manage_projects.png`
+  - `screenshots/30_desktop_receipt_scan_source_picker.png`
+
+#### Code References
+- [`src/design-system/tokens.css`](../src/design-system/tokens.css#L88-L98) (`--space-1` through `--space-10`)
+- [`src/features/local-ui.tsx`](../src/features/local-ui.tsx)
+
+#### Root Cause Analysis
+Several views fail to apply the 4px token spacing system consistently:
+- Buttons in action areas touch or float unevenly with zero margin/gap from container edges.
+- Text labels in `PageHeader` leading slots are crammed against headings with no visual boundary.
+- Take photo / Choose image buttons in `ReceiptSourcePicker` float directly against notices without standard card padding.
+
+#### Remediation Plan for Coding Agent
+1. Apply standard spacing scale across all component compositions:
+   - `--space-1` (4px): Micro-spacing (badges, compact pill padding)
+   - `--space-2` (8px): Intra-field elements, inline chips, tight button pairs
+   - `--space-3` (12px): List row padding, filter bar gaps
+   - `--space-4` (16px): Card internal padding, section element stacking
+   - `--space-5` (20px) / `--space-6` (24px): Distinct card stacks, dialog content padding
+   - `--space-7` (32px) / `--space-8` (40px): Page gutters and main landmark margins
+2. Enforce that every interactive element has at least `--space-2` (8px) breathing room from neighboring elements.
+
+---
+
 ## 4. Prioritized Action Plan for Implementation Agent
 
 This table orders the remediation tasks by dependency and impact so a future coding agent can implement them sequentially:
@@ -760,15 +820,24 @@ This table orders the remediation tasks by dependency and impact so a future cod
 | **P1** | `FIX-05` | **Fix CSS Grid Stretch on SegmentedControl & Cards:** Add `align-items: start;` to `ResponsiveGrid`; constrain SegmentedControl height. | `src/design-system/tokens.css` | Gallery displays compact pills, not 220px ovals. |
 | **P1** | `FIX-06` | **Fix Money Text Vertical Wrapping:** Set `white-space: nowrap; flex-shrink: 0;` on `.ds-money` and trailing list cells. | `src/design-system/tokens.css` | `SEK -286.40` never wraps character-by-character. |
 | **P1** | `FIX-07` | **Fix FilterBar Baseline Alignment:** Apply `align-items: flex-end;` and uniform heights across filter controls. | `src/design-system/tokens.css`, `src/features/local-ui.css` | Period picker, dropdowns, search, and filters button share a clean baseline. |
-| **P2** | `FIX-08` | **Polish PageHeader Back/Close Actions:** Replace plain text leading buttons with clean icon buttons (`ArrowLeft`, `X`). | `src/design-system/components.tsx`, `src/features/local-ui.tsx` | Back triggers are well-proportioned icon buttons. |
-| **P2** | `FIX-09` | **Refactor SecretField Reveal Toggle:** Move "Show value" toggle inline inside password input trailing slot. | `src/design-system/components.tsx`, `src/design-system/tokens.css` | Toggle sits inside field as trailing icon/button. |
-| **P2** | `FIX-10` | **Hide Premature Unsaved Changes Banner:** Only show `DraftStatus` when form is dirty or restored. | `src/features/local-ui.tsx` | Fresh "New expense" form is clean and uncluttered. |
-| **P2** | `FIX-11` | **Harmonize ColorChoiceField & Form Actions:** Standardize 36px color swatches and add Cancel button to `DangerDialog`. | `src/design-system/components.tsx`, `src/design-system/tokens.css` | Category color swatches and dialog footers look professional. |
-| **P3** | `FIX-12` | **Format Currency Decimal Precision:** Ensure two-digit decimal formatting (`SEK -250.50`). | `src/domain/money/` | All currency values display consistent 2-decimal precision. |
+| **P1** | `FIX-08` | **Enforce Layout & Flexbox Sizing Discipline:** Prevent arbitrary `width: 100%` on compact inputs; equalize form segmented controls. | `src/design-system/tokens.css`, `src/features/local-ui.css` | Compact inputs keep natural width; segmented controls distribute evenly. |
+| **P2** | `FIX-09` | **Polish PageHeader Back/Close Actions:** Replace plain text leading buttons with clean icon buttons (`ArrowLeft`, `X`). | `src/design-system/components.tsx`, `src/features/local-ui.tsx` | Back triggers are well-proportioned icon buttons. |
+| **P2** | `FIX-10` | **Refactor SecretField Reveal Toggle:** Move "Show value" toggle inline inside password input trailing slot. | `src/design-system/components.tsx`, `src/design-system/tokens.css` | Toggle sits inside field as trailing icon/button. |
+| **P2** | `FIX-11` | **Hide Premature Unsaved Changes Banner:** Only show `DraftStatus` when form is dirty or restored. | `src/features/local-ui.tsx` | Fresh "New expense" form is clean and uncluttered. |
+| **P2** | `FIX-12` | **Harmonize ColorChoiceField & Spacing Gaps:** Standardize 36px swatches, add Cancel to `DangerDialog`, apply 4px gap tokens. | `src/design-system/components.tsx`, `src/design-system/tokens.css` | Consistent breathing room and complete dialog action pairs. |
+| **P3** | `FIX-13` | **Format Currency Decimal Precision:** Ensure two-digit decimal formatting (`SEK -250.50`). | `src/domain/money/` | All currency values display consistent 2-decimal precision. |
 
 ---
 
-## 5. Verification Commands
+## 5. Supporting Guidelines & Skills
+
+To assist coding agents in building and maintaining high-quality UI:
+- **Design System Specification:** [`DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md) has been updated with explicit rules on layout, flexbox discipline, and spacing rhythm.
+- **Repository Skill:** [`.agents/skills/ui-ux-design-system/SKILL.md`](../.agents/skills/ui-ux-design-system/SKILL.md) provides an on-demand guide with top antipatterns and pre-flight visual review checklists.
+
+---
+
+## 6. Verification Commands
 
 Before and after completing fixes, the implementing agent must execute:
 ```bash

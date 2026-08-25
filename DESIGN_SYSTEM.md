@@ -146,6 +146,43 @@ Initial content-driven ranges, subject to visual verification, are:
 - Breakpoints may be tuned in the component gallery after visual inspection,
   but screens must not branch on device names or duplicate workflows.
 
+### Layout, Flexbox, and Sizing Discipline
+
+To prevent awkward layout collapse, disproportionate control expansion, and flexbox abuse, all components and screens must follow these rules:
+
+1. **Natural vs Full-Width Sizing:**
+   - Text inputs, text areas, and complex search bars take container width up to the form maximum (`--form-max: 640px`).
+   - Compact controls (`Button`, `IconButton`, `SelectField`, `SegmentedControl`, `ColorChoiceField`, `NativeDateField`, `NativeTimeField`, `Badge`, `Chip`) MUST maintain their natural compact width or use explicit inline layout. Never blindly apply `flex: 1` or `width: 100%` where it stretches small controls into disproportionate shapes.
+   - For segmented choices spanning a full form width (e.g. "Spent / Money back"), use equal fractional distribution (`flex: 1 1 0` per segment) rather than letting one small segment float in an empty void.
+
+2. **Grid and Asymmetric Stretch Prevention:**
+   - Multi-column CSS Grid containers (`ResponsiveGrid`, multi-column cards, gallery sections) MUST specify `align-content: start; align-items: start;`. This prevents unequal column heights from vertically stretching short sibling items (e.g., preventing a pill-shaped `SegmentedControl` from expanding into a giant 220px oval/circle).
+   - Interactive components inside grid layouts must specify `align-self: start` where stretching is inappropriate.
+
+3. **Flexbox Compression & Text Overflow Protection:**
+   - In horizontal flex rows pairing titles or long descriptions with trailing metrics or actions (e.g. `ListRow`, `PageHeader`, `FilterBar`), trailing slots (`.ds-list-row__trailing`, buttons, status chips, monetary amounts) MUST specify `flex-shrink: 0; white-space: nowrap;`.
+   - The flexible text container (`.ds-list-row__main`, titles) must specify `flex: 1 1 auto; min-width: 0;` so that long text wraps or truncates gracefully without crushing adjacent elements.
+   - Monetary amounts (`.ds-money`) must NEVER use `overflow-wrap: anywhere; white-space: normal;` — currency amounts must stay on a single line (`white-space: nowrap; font-variant-numeric: tabular-nums;`).
+
+4. **Spacing Rhythm & Visual Hierarchy:**
+   - Spacing between elements must strictly use the named 4px tokens. Never collapse gaps completely or use arbitrary un-tokenized gaps:
+     - `--space-1` (4px): tightly coupled sub-elements (icon + label in compact badge, segmented control item padding)
+     - `--space-2` (8px): intra-field gaps (label to control, inline chip list, tight button pairs)
+     - `--space-3` (12px): list row padding, filter bar items, related form groups
+     - `--space-4` (16px): intra-card element stacking, section content padding
+     - `--space-5` (20px) / `--space-6` (24px): distinct form sections, cards in a stack, dialog content gaps
+     - `--space-7` (32px) / `--space-8` (40px): page-level landmarks and main layout margins
+   - Every interactive control must provide at least `--space-2` (8px) breathing room from neighboring elements.
+
+5. **Notification and Overlay Stability (Zero Layout Shifts):**
+   - Ephemeral feedback (`Toast`) must render inside a dedicated fixed overlay container (`position: fixed; bottom: ...; right: ...; z-index: 30;`).
+   - Interactive actions associated with notifications (such as Dismiss or Undo) must be colocated inside the floating notification container, NEVER placed in the regular document flow where they bump and shift page elements.
+
+6. **Mobile Navigation & Touch Ergonomics:**
+   - Compact screens (`< 720px`) MUST anchor application navigation to the bottom viewport edge with safe-area padding (`env(safe-area-inset-bottom)`).
+   - Content container `<main>` must maintain bottom padding equal to bottom bar height plus safe-area insets.
+   - Touch targets must meet the minimum 44px boundary.
+
 ## Component Map
 
 ### UI primitives

@@ -1042,6 +1042,12 @@
     padding-block: var(--space-1);
   }
 
+  .ds-filter-bar .ds-segmented-control {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .ds-form-layout {
     width: min(100%, var(--form-max));
   }

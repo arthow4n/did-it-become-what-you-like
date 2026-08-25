@@ -95,6 +95,9 @@
 
     .local-ui-expenses-filter-bar .ds-segmented-control {
       width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
 
     .local-ui-expenses-filter-bar .ds-field {
@@ -178,14 +181,17 @@
     }
 
     .local-ui-expenses-filter-bar .ds-segmented-control {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      overflow: visible;
+      display: flex;
+      width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
 
     .local-ui-expenses-filter-bar .ds-segmented-control > * {
+      flex: 0 0 auto;
       min-width: 0;
-      white-space: normal;
+      white-space: nowrap;
     }
   }
 

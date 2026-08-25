@@ -188,7 +188,7 @@ PWA precache generated: OK
   - **Verification:** Open Gemini Settings on 1280x800 desktop. Button must not stretch 600px wide.
   - **Commit:** `fix(ui): FIX-R2-08 prevent 600px button stretching in desktop settings cards`
 
-- [ ] **STEP-R2-09 (FIX-R2-09) · Add Horizontal Swipe Scroll for Narrow Period Filter Tabs**
+- [x] **STEP-R2-09 (FIX-R2-09) · Add Horizontal Swipe Scroll for Narrow Period Filter Tabs**
   - **Priority:** P3 (Responsiveness)
   - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css)
   - **Action:** Enable smooth horizontal scroll with hidden scrollbar (`overflow-x: auto; scrollbar-width: none;`) on `.ds-filter-bar .ds-segmented-control` on narrow screens.

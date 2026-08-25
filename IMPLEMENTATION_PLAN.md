@@ -1476,6 +1476,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `d2243df`; deployment `6088667519` is serving the corrected bundle. R-700
   remains blocked only on the owner's fresh configured-Drive smoke and reload
   authorization check.
+- **New owner-reported sync-corruption follow-up:** The owner then reported
+  `Stored data is invalid or corrupt` after clearing browser site data. Fresh
+  local IndexedDB reproduction succeeds, while the hidden Drive app-data sync
+  file survives browser storage deletion and can fail strict causal-envelope
+  parsing. Peirce (`01a03a57-6ff0-7791-9e1a-1cdb71400218`) owns the bounded
+  recovery fix from `081f74d`, with disjoint ownership of the causal/Drive
+  recovery boundary, sync actor event, and sync UI confirmation/tests. The
+  worker must not edit this plan, `master`, remotes, or preserved artifacts;
+  integration remains gated on explicit confirmation, ETag protection, focused
+  tests, and the full repository validation gate.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

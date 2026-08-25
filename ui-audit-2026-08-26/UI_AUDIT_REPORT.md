@@ -899,7 +899,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** Inspect Manage Projects, Google Drive Settings, and Manual Expense Form. Back actions must render as clean 44px icon buttons with proper spacing from titles.
   - **Commit:** `fix(ui): FIX-09 replace plain text back buttons with styled icon buttons in page headers`
 
-- [ ] **STEP-10 (FIX-10) · Move SecretField "Show Value" Toggle Inline Inside Control**
+- [x] **STEP-10 (FIX-10) · Anchor SecretField Reveal Toggle Inside Trailing Input Slot**
   - **Priority:** P2 (Input Ergonomics)
   - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L604-L620), [`src/design-system/tokens.css`](../src/design-system/tokens.css)
   - **Evidence:** [`screenshots/24_desktop_settings_gemini.png`](screenshots/24_desktop_settings_gemini.png)

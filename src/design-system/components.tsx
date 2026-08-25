@@ -11,6 +11,8 @@ import {
   ChevronRight,
   CircleAlert,
   CircleCheck,
+  Eye,
+  EyeOff,
   LoaderCircle,
   Plus,
   X,
@@ -616,21 +618,62 @@ export type SecretFieldProps = Omit<SharedTextFieldProps, "type"> & {
 };
 
 export function SecretField(
-  { revealLabel = "Show value", ...props }: SecretFieldProps,
+  {
+    label,
+    placeholder,
+    description,
+    error,
+    className,
+    revealLabel = "Show value",
+    ...props
+  }: SecretFieldProps,
 ) {
   const [revealed, setRevealed] = useState(false);
   return (
-    <div className="ds-field">
-      <TextField {...props} type={revealed ? "text" : "password"} />
-      <Button
-        type="button"
-        variant="quiet"
-        onPress={() => setRevealed((current) => !current)}
-        aria-label={revealed ? "Hide value" : revealLabel}
-      >
-        {revealed ? "Hide" : revealLabel}
-      </Button>
-    </div>
+    <AriaTextField
+      {...props}
+      type={revealed ? "text" : "password"}
+      isInvalid={Boolean(error) || props.isInvalid}
+      className={cx("ds-field", "ds-secret-field", className)}
+    >
+      <AriaLabel className="ds-field__label">
+        {label}
+        {props.isRequired
+          ? <span className="ds-field__required" aria-hidden="true">*</span>
+          : null}
+      </AriaLabel>
+      <div className="ds-field-control-wrap">
+        <AriaInput
+          className="ds-field-control ds-secret-field__input"
+          placeholder={placeholder}
+        />
+        <AriaButton
+          className="ds-secret-field__toggle"
+          aria-label={revealed ? "Hide value" : revealLabel}
+          onPress={() => setRevealed((current) => !current)}
+        >
+          <Icon size={16}>
+            {revealed ? <EyeOff /> : <Eye />}
+          </Icon>
+        </AriaButton>
+      </div>
+      {description
+        ? (
+          <AriaText slot="description" className="ds-field__description">
+            {description}
+          </AriaText>
+        )
+        : null}
+      {error
+        ? (
+          <span role="alert">
+            <AriaFieldError className="ds-field__error">
+              {error}
+            </AriaFieldError>
+          </span>
+        )
+        : null}
+    </AriaTextField>
   );
 }
 

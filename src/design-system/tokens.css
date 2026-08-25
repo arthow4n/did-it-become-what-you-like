@@ -514,6 +514,33 @@
     display: none;
   }
 
+  .ds-secret-field__input {
+    padding-inline-end: var(--space-8);
+  }
+
+  .ds-secret-field__toggle {
+    position: absolute;
+    top: 50%;
+    right: var(--space-2);
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+
+  .ds-secret-field__toggle:hover {
+    color: var(--color-text-primary);
+    background: var(--color-surface-3);
+  }
+
   .ds-checkbox,
   .ds-switch,
   .ds-radio {

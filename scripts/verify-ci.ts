@@ -53,6 +53,10 @@ assert(
   pages.includes("deno task verify:pages"),
   "Pages deployment must verify the production artifact before upload",
 );
+assert(
+  pages.includes("VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}"),
+  "Pages must pass the non-secret Google OAuth client ID to the production build",
+);
 for (const [index, workflow] of workflows.entries()) {
   assert(
     workflow.includes("deno task release:verify"),

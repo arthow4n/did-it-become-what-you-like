@@ -23,6 +23,23 @@ The About screen is the user-facing provenance surface: it shows version
 `0.1.0`, the short Git commit, the exact generative-AI disclosure, license and
 third-party notice links, and the repository source link.
 
+## Google Drive OAuth configuration
+
+Configure the public Google OAuth client ID before testing Drive on Pages:
+
+1. In Google Cloud Console, select the app project and enable the Google Drive
+   API.
+2. Configure the OAuth consent screen. If the app is in Testing, add the
+   Google account used for the smoke test as a test user.
+3. Create an OAuth client ID with application type **Web application**.
+4. Add `https://arthow4n.github.io` as an authorized JavaScript origin. Do not
+   add the repository path.
+5. In GitHub, open **Settings → Secrets and variables → Actions → Variables**,
+   create `VITE_GOOGLE_CLIENT_ID`, and paste the client ID value. This client ID
+   is public; do not create or store a client secret for this static app.
+6. Run the Pages workflow, open the deployed app, and use **Settings → Google
+   Drive and sync → Connect Google Drive**.
+
 ## Local release checklist
 
 Run from a clean checkout of the intended release commit:

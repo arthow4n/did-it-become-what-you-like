@@ -3,6 +3,7 @@
 const BASE_PATH = "/did-it-become-what-you-like/";
 const DIST = "dist";
 const SOURCE_URL = "https://github.com/arthow4n/did-it-become-what-you-like";
+const LICENSE_URL = `${SOURCE_URL}/blob/master/LICENSE`;
 const NOTICES_URL = `${SOURCE_URL}/blob/master/THIRD_PARTY_NOTICES.md`;
 const SECRET_PATTERNS = [
   /AIza[0-9A-Za-z_-]{20,}/,
@@ -139,6 +140,12 @@ assert(
   "The deployed index must resolve its manifest under the repository base path.",
 );
 assert(
+  index.includes(
+    '<script src="https://accounts.google.com/gsi/client" defer></script>',
+  ),
+  "The deployed index must load Google Identity Services before the app.",
+);
+assert(
   !index.includes('src="/assets/') && !index.includes('href="/assets/'),
   "The deployed index must not contain origin-root asset URLs.",
 );
@@ -167,6 +174,7 @@ for (
     version,
     commit,
     SOURCE_URL,
+    LICENSE_URL,
     NOTICES_URL,
     "MIT License",
     "This application is 100% vibe-coded using ChatGPT Codex and Google Antigravity.",

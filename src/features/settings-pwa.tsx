@@ -37,6 +37,7 @@ import {
   APP_NAME,
   APP_VERSION,
   LICENSE_NAME,
+  LICENSE_URL,
   NOTICES_URL,
   SOURCE_URL,
 } from "../app/build-info.ts";
@@ -616,8 +617,13 @@ export function AboutScreen({
         </Card>
         <List label="About and source">
           <ListRow>
+            <LinkButton href={LICENSE_URL} target="_blank" rel="noreferrer">
+              Application license (MIT)
+            </LinkButton>
+          </ListRow>
+          <ListRow>
             <LinkButton href={NOTICES_URL} target="_blank" rel="noreferrer">
-              Open-source licenses and third-party notices
+              Third-party licenses and notices
             </LinkButton>
           </ListRow>
           <ListRow>

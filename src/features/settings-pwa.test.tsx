@@ -148,10 +148,21 @@ Deno.test("settings-final About exposes exact disclosure and build metadata", as
       ),
     );
     assert(view.getByRole("link", { name: "View source on GitHub" }));
+    const license = view.getByRole("link", {
+      name: "Application license (MIT)",
+    });
     assert(
-      view.getByRole("link", {
-        name: "Open-source licenses and third-party notices",
-      }),
+      license.getAttribute("href") ===
+        "https://github.com/arthow4n/did-it-become-what-you-like/blob/master/LICENSE",
+      "About must link directly to the repository license",
+    );
+    const notices = view.getByRole("link", {
+      name: "Third-party licenses and notices",
+    });
+    assert(
+      notices.getAttribute("href") ===
+        "https://github.com/arthow4n/did-it-become-what-you-like/blob/master/THIRD_PARTY_NOTICES.md",
+      "About must retain the third-party notices link",
     );
   });
 });

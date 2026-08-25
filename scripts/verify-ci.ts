@@ -53,6 +53,29 @@ assert(
   pages.includes("deno task verify:pages"),
   "Pages deployment must verify the production artifact before upload",
 );
+for (const [index, workflow] of workflows.entries()) {
+  assert(
+    workflow.includes("deno task release:verify"),
+    `workflow ${index + 1} must verify release provenance before publication`,
+  );
+}
+const releaseVerificationPosition = pages.indexOf(
+  "run: deno task release:verify",
+);
+const uploadPosition = pages.indexOf("actions/upload-pages-artifact@");
+assert(
+  releaseVerificationPosition >= 0 &&
+    releaseVerificationPosition < uploadPosition,
+  "Pages must verify release provenance before uploading the artifact",
+);
+const deployJob = pages.slice(pages.indexOf("\ndeploy:"));
+assert(
+  deployJob.length > 0 &&
+    !deployJob.includes("actions/checkout") &&
+    !deployJob.includes("deno task") &&
+    !/^\s+run:/m.test(deployJob),
+  "The Pages deploy job must consume the verified artifact without rebuilding",
+);
 assert(
   pages.includes(
     "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2",

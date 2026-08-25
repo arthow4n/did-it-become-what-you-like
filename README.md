@@ -16,3 +16,12 @@ This application is 100% vibe-coded using ChatGPT Codex and Google Antigravity.
 The application is released under the [MIT License](LICENSE). Third-party
 dependency licenses and notices are listed in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Release operations
+
+GitHub Pages publishes the verified `dist/` artifact from `master` at
+<https://arthow4n.github.io/did-it-become-what-you-like/>. Release checks bind
+the artifact to the checked-out short commit, verify repository-relative
+hash-routing/PWA behavior, and scan published text for secret-like values. See
+[RELEASE.md](RELEASE.md) for the local checklist, deployment boundary, and
+rollback procedure.

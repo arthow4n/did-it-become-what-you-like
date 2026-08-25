@@ -29,5 +29,7 @@ jobs:
         run: deno task build
       - name: Verify Pages artifact and routing
         run: deno task verify:pages
+      - name: Verify release artifact provenance and notices
+        run: deno task release:verify
       - name: Verify CI policy
         run: deno task verify:ci

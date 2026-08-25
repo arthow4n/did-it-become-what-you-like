@@ -7,6 +7,7 @@ import {
   initialCausalSnapshot,
 } from "../../adapters/sync/index.ts";
 import {
+  createFakeCausalSyncPort,
   createFakeIdPort,
   createFakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
@@ -186,6 +187,74 @@ Deno.test("sync-actor: offline, token expiry, quota, and retirement failures sta
   assertEquals(retired.getSnapshot().value, "retired");
   retired.stop();
 });
+
+Deno.test(
+  "sync-actor: generic sync failure retries online without dropping the pending request",
+  async () => {
+    const causal = createFakeCausalSyncPort(initialCausalSnapshot());
+    causal.failNext("invalid-request");
+    const actor = await configuredActor(causal);
+    const request = { reason: "local-change" as const };
+
+    actor.send({ type: "sync.request", request });
+    await waitFor(
+      () => actor.getSnapshot().value === "error",
+      "generic sync failure did not enter the error state",
+    );
+
+    assertEquals(actor.getSnapshot().context.error, {
+      code: "invalid-request",
+      message: "The request was invalid.",
+      retryable: false,
+    });
+    assert(!actor.getSnapshot().hasTag("retryable"));
+    assert(actor.getSnapshot().can({ type: "sync.retry" }));
+    assertEquals(actor.getSnapshot().context.pendingRequest, request);
+
+    actor.send({ type: "sync.retry" });
+    assertEquals(actor.getSnapshot().value, "synchronizing");
+    assertEquals(actor.getSnapshot().context.pendingRequest, request);
+    await waitFor(
+      () => actor.getSnapshot().value === "idle",
+      "generic sync failure retry did not complete online",
+    );
+    assertEquals(actor.getSnapshot().context.pendingRequest, null);
+    assertEquals(actor.getSnapshot().context.error, null);
+    actor.stop();
+  },
+);
+
+Deno.test(
+  "sync-actor: generic error retry stays offline when the actor is offline",
+  async () => {
+    const actor = createSyncActor({
+      ...dependencies(),
+      initialNetwork: "offline",
+    }).start();
+    await waitFor(
+      () => actor.getSnapshot().value === "unconfigured",
+      "offline sync actor did not hydrate",
+    );
+
+    actor.send({
+      type: "sync.configure",
+      accountEmail: "",
+      online: false,
+    });
+    await waitFor(
+      () => actor.getSnapshot().value === "error",
+      "offline configuration failure did not enter the error state",
+    );
+    assertEquals(actor.getSnapshot().context.online, false);
+    assertEquals(actor.getSnapshot().context.error?.retryable, false);
+
+    actor.send({ type: "sync.retry" });
+    assertEquals(actor.getSnapshot().value, "offline");
+    assertEquals(actor.getSnapshot().context.online, false);
+    assertEquals(actor.getSnapshot().context.error?.code, "invalid-request");
+    actor.stop();
+  },
+);
 
 Deno.test("sync-actor: concurrent triggers coalesce into a second causal exchange", async () => {
   let readCount = 0;

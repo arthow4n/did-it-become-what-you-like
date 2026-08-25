@@ -168,6 +168,10 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
       isConfigured: ({ context }) => context.accountEmail !== null,
       isOnline: ({ context }) => context.online,
       isQueued: ({ context }) => context.queued,
+      isManualRetryableFailure: ({ context }) =>
+        context.error !== null &&
+        context.error.code !== "unauthorized" &&
+        context.error.code !== "forbidden",
       requestedOnline: ({ context }) => context.pendingAccountOnline,
       hasPendingRequest: ({ context }) => context.pendingRequest !== null,
     },
@@ -515,6 +519,18 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
       error: {
         tags: ["error"],
         on: {
+          "sync.retry": [
+            {
+              target: "synchronizing",
+              guard: ({ context }) =>
+                context.online &&
+                context.error !== null &&
+                context.error.code !== "unauthorized" &&
+                context.error.code !== "forbidden",
+              actions: assign({ error: () => null }),
+            },
+            { target: "offline", guard: "isManualRetryableFailure" },
+          ],
           "sync.connect": {
             target: "idle",
             actions: assign({ online: () => true, error: () => null }),

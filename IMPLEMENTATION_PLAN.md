@@ -1381,8 +1381,8 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   R-700 is `BLOCKED` pending a fresh configured-Drive sync smoke and reload
   authorization check after the current production follow-up fixes.
 - **Reconciled branch/upstream:** the prior R-700 follow-up fixes remain
-  integrated and the latest owner-reported sync diagnostic correction is
-  pushed in `942d561` (`Expose safe sync failure diagnostics`). The Q-604 hosted
+  integrated and the latest owner-reported sync adapter correction is pushed
+  in `842b05d` (`Accept valid Drive app-data metadata`). The Q-604 hosted
   release and Plato's review targeted the earlier `71737ab`; the two findings
   and the bounded correction evidence are recorded above. The root worktree
   contains only the intentionally untracked `A-303-progress.md`,
@@ -1544,6 +1544,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   diagnostic label. R-700 remains `BLOCKED` pending one owner reproduction on
   that deployment and the displayed diagnostic code, which will identify the
   exact Drive/causal boundary for the next bounded correction.
+- **Drive metadata correction:** The diagnostic `drive.metadata` identified an
+  invalid assumption in the adapter: it required the `parents` response field
+  to equal the request alias `appDataFolder`. Google documents that alias for
+  creating and querying app-data files, while the returned parent is an ID and
+  the documented app-data response examples do not include `parents`. Commit
+  `842b05d` removes that invalid response-field request and equality check;
+  app-data space filtering, MIME type, timestamps, duplicate-name protection,
+  ETag-qualified mutations, and explicit recovery remain intact. The adapter
+  fixture now omits `parents` from every returned metadata response. Focused
+  Drive/sync/actor validation passed 37/37, followed by formatting, lint,
+  type-check, all 264 core tests, and both production builds. CI run
+  `32897509092` and Pages run `32897509082` succeeded; the live bundle is
+  `assets/index-B1BMlRjT.js` and contains `842b05d`. R-700 remains pending one
+  live reset/retry smoke by the owner.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

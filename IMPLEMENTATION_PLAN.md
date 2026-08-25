@@ -872,7 +872,13 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### Q-602 — Finalize the five-journey E2E suite
 
-- **Status/dependencies:** `READY`; depends on `Q-601`, which is complete.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `Q-601`, which is complete.
+- **Dispatch:** the integration owner has created the isolated worktree
+  `~/git/worktrees/did-it-become-what-you-like-q-602-e2e` on branch
+  `task/q-602-e2e` at root `d3982a0`. One bounded worker owns only `e2e/**`
+  and E2E-only fake scenario setup; it must preserve a timestamped untracked
+  handover and must not edit this plan, `master`, remotes, production source,
+  or another task's ownership.
 - **Ownership:** `e2e/**` and E2E-only fake scenario setup; production behavior
   changes require a separate scoped fix with lower-layer regression test.
 - **Scope/non-goals:** make the approved local manual, fake Gemini receipt,

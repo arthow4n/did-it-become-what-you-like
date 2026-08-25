@@ -1297,6 +1297,15 @@ export function ProjectManager({
                 )
                 : null}
               <FormActions>
+                <Button
+                  variant="secondary"
+                  onPress={() => {
+                    send({ type: "project.cancel" });
+                    onComplete?.();
+                  }}
+                >
+                  Cancel
+                </Button>
                 {snapshot.matches("failed")
                   ? (
                     <Button
@@ -1891,6 +1900,15 @@ export function CategoryManager({
                 )
                 : null}
               <FormActions>
+                <Button
+                  variant="secondary"
+                  onPress={() => {
+                    send({ type: "category.cancel" });
+                    onComplete?.();
+                  }}
+                >
+                  Cancel
+                </Button>
                 {snapshot.matches("failed")
                   ? (
                     <Button

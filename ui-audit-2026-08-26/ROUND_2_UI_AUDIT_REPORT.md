@@ -160,7 +160,7 @@ PWA precache generated: OK
   - **Verification:** Inspect ExpenseForm on 1280x800 desktop. Amount/Currency and Date/Time must sit side-by-side cleanly.
   - **Commit:** `fix(ui): FIX-R2-04 pair Amount-Currency and Date-Time into responsive two-column desktop rows`
 
-- [ ] **STEP-R2-05 (FIX-R2-05) · Add Secondary Cancel Button to Create Project and Category Modals**
+- [x] **STEP-R2-05 (FIX-R2-05) · Add Secondary Cancel Button to Create Project and Category Modals**
   - **Priority:** P2 (Dialog Usability / Form Standards)
   - **Files:** [`src/features/local-ui.tsx`](../src/features/local-ui.tsx)
   - **Action:** Pair a secondary `Cancel` button before `Save project` in `CreateProjectModal` and before `Save category` in `CreateCategoryModal`.

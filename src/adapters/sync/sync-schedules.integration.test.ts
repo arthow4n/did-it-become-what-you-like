@@ -16,7 +16,11 @@ import {
   readLocalDataset,
   writeLocalDataset,
 } from "./index.ts";
-import { runCausalExchange } from "./coordinator.ts";
+import {
+  rebuildPersistedCausalState,
+  runCausalExchange,
+} from "./coordinator.ts";
+import { CAUSAL_STATE_KEY } from "./causal.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -445,6 +449,44 @@ Deno.test(
     );
     assert(repaired !== undefined);
     assert(repaired.body.includes('"type":"causal-sync-envelope"'));
+  },
+);
+
+Deno.test(
+  "sync-schedules: corrupt local causal metadata can be rebuilt without losing records",
+  async () => {
+    const current = await client(
+      "device-local-recovery",
+      datasetWithExpense(
+        datasetWithProject("project-local-recovery"),
+        "expense-local-recovery",
+        "project-local-recovery",
+        "12.50",
+      ),
+    );
+    const remote = createInMemoryCausalSyncPort({
+      initialSnapshot: initialCausalSnapshot(),
+    });
+    await current.local.transaction(
+      "readwrite",
+      (transaction) =>
+        transaction.put("sync-metadata", CAUSAL_STATE_KEY, {
+          type: "s402-causal-state",
+          version: 1,
+          snapshot: "not-a-snapshot",
+        }),
+    );
+
+    await rebuildPersistedCausalState({ local: current.local });
+    await exchange(current, remote);
+
+    const dataset = await readLocalDataset(current.local);
+    assertEquals(dataset.projects.map((project) => project.id), [
+      "project-local-recovery",
+    ]);
+    assertEquals(dataset.expenses.map((expense) => expense.id), [
+      "expense-local-recovery",
+    ]);
   },
 );
 

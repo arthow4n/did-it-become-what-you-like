@@ -3,6 +3,7 @@ import {
   type CausalSyncPort,
 } from "../../adapters/ports/index.ts";
 import {
+  CAUSAL_STATE_KEY,
   createInMemoryCausalSyncPort,
   initialCausalSnapshot,
 } from "../../adapters/sync/index.ts";
@@ -64,9 +65,10 @@ function dependencies(
     initialSnapshot: initialCausalSnapshot(),
   }),
   deviceId = "device-actor",
+  local = createFakeLocalPort(),
 ) {
   return createDefaultSyncDependencies({
-    local: createFakeLocalPort(),
+    local,
     causal,
     deviceId,
     ids: createFakeIdPort(deviceId),
@@ -79,8 +81,9 @@ function dependencies(
 async function configuredActor(
   causal?: CausalSyncPort,
   deviceId = "device-actor",
+  local = createFakeLocalPort(),
 ) {
-  const actor = createSyncActor(dependencies(causal, deviceId)).start();
+  const actor = createSyncActor(dependencies(causal, deviceId, local)).start();
   await waitFor(
     () => actor.getSnapshot().value === "unconfigured",
     "sync actor did not hydrate",
@@ -228,8 +231,17 @@ Deno.test(
   "sync-actor: explicit corrupt-data recovery resets the remote file before syncing",
   async () => {
     const causal = createFakeCausalSyncPort(initialCausalSnapshot());
-    causal.failNext("corrupt-data");
-    const actor = await configuredActor(causal);
+    const local = createFakeLocalPort();
+    await local.transaction(
+      "readwrite",
+      (transaction) =>
+        transaction.put("sync-metadata", CAUSAL_STATE_KEY, {
+          type: "s402-causal-state",
+          version: 1,
+          snapshot: "not-a-snapshot",
+        }),
+    );
+    const actor = await configuredActor(causal, "device-actor", local);
 
     actor.send({ type: "sync.request", request: { reason: "manual" } });
     await waitFor(

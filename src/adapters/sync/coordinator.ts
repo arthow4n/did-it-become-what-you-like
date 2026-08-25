@@ -96,6 +96,34 @@ async function persistSnapshot(
   );
 }
 
+export type CausalStateRecoveryOptions = {
+  readonly local: LocalPort;
+  readonly deviceRecords?: () => readonly Device[];
+};
+
+/**
+ * Rebuild the local causal metadata without touching the user's records.
+ *
+ * This is intentionally separate from an ordinary exchange: an exchange must
+ * parse the previous snapshot first, while explicit corrupt-data recovery
+ * needs a clean starting point.
+ */
+export async function rebuildPersistedCausalState(
+  options: CausalStateRecoveryOptions,
+  operationOptions?: OperationOptions,
+): Promise<void> {
+  const dataset = withDeviceRecords(
+    await readLocalDataset(options.local, operationOptions),
+    options.deviceRecords?.(),
+  );
+  const snapshot = initialCausalSnapshot(dataset);
+  await options.local.transaction(
+    "readwrite",
+    (transaction) => persistSnapshot(transaction, snapshot, operationOptions),
+    operationOptions,
+  );
+}
+
 function appendLocalChange(
   snapshot: CausalSnapshot,
   dataset: PortableDataset,

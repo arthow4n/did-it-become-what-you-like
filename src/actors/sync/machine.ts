@@ -6,6 +6,7 @@ import type {
   IdPort,
   LocalPort,
   OnlineState,
+  OperationOptions,
   SyncConflict,
 } from "../../adapters/ports/index.ts";
 import { adapterError } from "../../adapters/ports/index.ts";
@@ -22,6 +23,7 @@ import {
 } from "../../adapters/sync/device-registry.ts";
 import {
   type CausalExchangeResult,
+  rebuildPersistedCausalState,
   runCausalExchange,
 } from "../../adapters/sync/coordinator.ts";
 
@@ -29,6 +31,9 @@ export type SyncActorDependencies = {
   readonly local: LocalPort;
   readonly causal: CausalSyncPort;
   readonly recovery?: CausalSyncRecoveryPort;
+  readonly rebuildLocalCausalState?: (
+    options?: OperationOptions,
+  ) => Promise<void>;
   readonly registry: DeviceRegistry;
   readonly deviceId: StableId;
   readonly ids: Pick<IdPort, "next">;
@@ -176,6 +181,7 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
             throw adapterError("unsupported", "sync.remote-reset");
           }
           await input.recovery.resetRemoteSyncFile({ signal });
+          await input.rebuildLocalCausalState?.({ signal });
         },
       ),
     },
@@ -634,22 +640,32 @@ export function createDefaultSyncDependencies(input: {
   readonly local: LocalPort;
   readonly causal: CausalSyncPort;
   readonly recovery?: CausalSyncRecoveryPort;
+  readonly rebuildLocalCausalState?: (
+    options?: OperationOptions,
+  ) => Promise<void>;
   readonly deviceId: StableId;
   readonly ids: Pick<IdPort, "next">;
   readonly clock: Pick<ClockPort, "now">;
   readonly initialNetwork?: OnlineState;
 }): SyncActorDependencies {
+  const registry = createDeviceRegistry({
+    local: input.local,
+    deviceId: input.deviceId,
+    clock: input.clock,
+    ids: input.ids,
+  });
   return {
     ...input,
     recovery: input.recovery ??
       ("resetRemoteSyncFile" in input.causal
         ? input.causal as CausalSyncRecoveryPort
         : undefined),
-    registry: createDeviceRegistry({
-      local: input.local,
-      deviceId: input.deviceId,
-      clock: input.clock,
-      ids: input.ids,
-    }),
+    rebuildLocalCausalState: input.rebuildLocalCausalState ??
+      ((options) =>
+        rebuildPersistedCausalState({
+          local: input.local,
+          deviceRecords: registry.portableDevices,
+        }, options)),
+    registry,
   };
 }

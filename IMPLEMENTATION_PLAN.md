@@ -973,7 +973,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-700 — Final independent release review and definition-of-done gate
 
-- **Status/dependencies:** `BLOCKED`; depends on `Q-604`, which is complete.
+- **Status/dependencies:** `BLOCKED` on one owner-supplied production OAuth
+  configuration; depends on `Q-604`, which is complete.
 - **Dispatch:** the integration owner has created the isolated review worktree
   `~/git/worktrees/did-it-become-what-you-like-r-700-final` on branch
   `review/r-700-final` at pushed `master` `5a65ffd`, and dispatched one fresh
@@ -991,20 +992,24 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 - **Evidence/blockers:** Plato's independent review completed the canonical
   matrix and live Pages audit at `71737ab`, with `deno task verify`, full E2E
   (`11 passed`), `deno task release:verify`, `deno task verify:ci`, and
-  `deno task verify:pages` all passing. Approval is blocked by two severity-2
-  findings. `S2-1` routes to `S-405` runtime Drive/auth composition with Q-604
-  production integration: `src/features/sync-portability-runtime.tsx` only
-  creates a real Drive adapter from `VITE_GOOGLE_CLIENT_ID` or a test global,
-  while the Pages build supplies neither and does not load Google Identity
-  Services; live Connect therefore reports OAuth configuration unavailable.
-  The minimum correction is a documented non-secret production OAuth client ID
-  and GIS browser boundary, plus a production-composition regression/smoke;
-  owner direction is required before supplying that external configuration.
-  `S2-2` routes to `P-503`: About defines `LICENSE_URL` in
-  `src/app/build-info.ts` but renders only the third-party-notices and source
-  links; add the explicit application-license link and exact href assertion.
-  No source or plan changes were made by the reviewer; its untracked handover
-  is preserved in the dedicated review worktree.
+  `deno task verify:pages` all passing. `S2-2` is resolved by `f475c19`: About
+  now renders the existing deterministic GitHub `LICENSE_URL`, retains the
+  notices/source links, and asserts both exact hrefs. `S2-1` production
+  composition is also wired in `f475c19`: Pages maps the non-secret repository
+  variable `VITE_GOOGLE_CLIENT_ID`, the deployed index loads Google Identity
+  Services before the app, and `RELEASE.md` records the owner setup steps.
+  Local `deno task verify` passed all required checks, including 250 unit, 72
+  integration, 86 component, 37 domain, 1 actor, 5 local E2E journeys,
+  gallery/browser inspection, Pages/CI/toolchain verification, both builds,
+  frozen audit, and diff check. CI run `32838627968` and Pages run
+  `32838627944` both succeeded for `f475c19`; deployment `6081452539` is the
+  resulting `github-pages` deployment. Live `agent-browser` inspection of
+  `#/settings/about` confirmed build `f475c19`, `Up to date`, and the exact
+  GitHub application-license, third-party-notices, and source links. Final
+  live Drive authorization remains blocked until the owner creates the Google
+  OAuth client, adds the repository variable, and reruns the Pages deployment;
+  then dispatch a fresh read-only R-700 closure reviewer. The earlier reviewer
+  handover remains preserved.
 - **Outputs/acceptance:** traceability and security/privacy review complete; no
   severity-1/2 finding; severity-3 findings fixed or explicitly accepted by the
   owner; final checkpoint and evidence match Git and deployed commit.
@@ -1354,26 +1359,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
   after closure-3 approval; Q-601, Q-602, Q-603, and Q-604 are `COMPLETE`; and
-  R-700 is `BLOCKED` on two severity-2 findings.
-- **Reconciled branch/upstream:** the independent R-700 review targeted
-  `71737ab` (`Record R-700 reviewer`) and found the blockers recorded below;
-  the blocker ledger update is the next pushed checkpoint. Before this update,
-  `master` and `origin/master` were aligned at `71737ab`, after the Q-604
-  hosted release and R-700 dispatch checkpoints and the
-  integrated source checkpoints `de8d40e` and `1ffd045`. The root contains
-  only the intentionally untracked
-  only the intentionally untracked
-  artifacts and preserved recovery directory listed below;
-  the final pushed R-500 ledger sequence includes `e375cf8` (`Close R-500 and
-  reconcile plan ledger`) and `150ba7c` (`Record final pushed R-500
-  checkpoint`), with source checkpoint `e6ee2cd` (`Fix higher-generation
-  causal packet adoption`) and S-405 source at `b423d9b` integrated beneath
-  it. The latest
-  completed-task ledger checkpoint before S-403 was `94f5f5c` after pushing the
-  S-402 completion ledger. The root worktree
-  contains only the intentionally untracked `A-303-progress.md`,
-  `R-300-progress.md`, `R-400-contrast-fix-progress.md`, and preserved
-  `recovered-s404-root-artifacts-2026-08-24/` recovery directory.
+  R-700 is `BLOCKED` on the owner-supplied production OAuth configuration.
+- **Reconciled branch/upstream:** the R-700 follow-up fix is pushed in
+  `f475c19` (`Wire public license and Drive OAuth configuration`), with
+  `master` and `origin/master` aligned there. The Q-604 hosted release and
+  Plato's review targeted the earlier `71737ab`; the two findings and the
+  bounded correction evidence are recorded above. The root worktree contains
+  only the intentionally untracked `A-303-progress.md`, `R-300-progress.md`,
+  `R-400-contrast-fix-progress.md`, and preserved
+  `recovered-s404-root-artifacts-2026-08-24/` recovery directory. Preserved
+  worktrees are listed below.
 - **Last approved pre-plan commit:** `179d180` (`Define browser and verification
   boundaries`).
 - **Draft plan commit:** `e9e0822` (`Add executable implementation orchestration
@@ -1412,9 +1407,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   implementation scope and does not expand the MVP or deferred exclusions.
 - **GitHub Pages availability update:** the repository owner re-enabled GitHub
   Pages in the deployment workflow after the earlier manual disablement. Q-604
-  then completed the hosted artifact, base-path, offline, and update smoke
-  checks: Pages deployment `6075255903` for `b1d33a7` reported success, and the
-  live repository URL served the verified bundle.
+  completed the hosted artifact, base-path, offline, and update smoke checks;
+  the follow-up `f475c19` CI run `32838627968` and Pages run `32838627944`
+  succeeded, and deployment `6081452539` served the exact live About build and
+  license link. The live Drive connection remains intentionally unclaimed until
+  the owner supplies `VITE_GOOGLE_CLIENT_ID` through the documented setup.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

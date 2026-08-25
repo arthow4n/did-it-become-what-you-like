@@ -5,6 +5,7 @@ import {
   modelOptions,
   ReceiptDisclosure,
   ReceiptImageStore,
+  ReceiptReviewScreen,
 } from "./receipt-ui.tsx";
 import {
   GeminiQuickSetup,
@@ -14,6 +15,7 @@ import {
 } from "../design-system/index.ts";
 import { DeviceLocalSettingsSchema } from "../domain/index.ts";
 import { withComponentHarness } from "../test-support/component-harness.tsx";
+import { createFakeLocalPort } from "../test-support/fakes/ports.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -82,6 +84,33 @@ Deno.test("receipt-ui disclosure states the exact permitted and excluded data", 
     fireEvent.click(view.getByRole("button", { name: "Continue to scan" }));
     fireEvent.click(view.getByRole("button", { name: "Cancel" }));
     assert(accepted && declined);
+  });
+});
+
+Deno.test("receipt-ui empty review state keeps a level-one heading", async () => {
+  await withComponentHarness(async ({ render, waitFor }) => {
+    const local = createFakeLocalPort();
+    render(
+      createElement(ReceiptReviewScreen, {
+        local,
+        state: {
+          projects: [],
+          categories: [],
+          expenses: [],
+          receipts: [],
+          receiptPurchaseLines: [],
+          receiptAdjustments: [],
+          tombstones: [],
+          projectOrder: [],
+        },
+        onClose: () => undefined,
+      }),
+    );
+    const view = within(document.body);
+    await waitFor(() => {
+      assert(view.getByText("There is no receipt review to restore."));
+    });
+    assert(view.getByRole("heading", { name: "Review receipt" }));
   });
 });
 

@@ -50,6 +50,7 @@ import {
   CurrencyPicker,
   DefaultNavigation,
   DefinitionList,
+  DeleteAndReassign,
   Disclosure,
   DraftStatus,
   EmptyState,
@@ -347,10 +348,14 @@ export function DirtyExitGuard({
   );
 }
 
-function LoadingScreen() {
+export type LoadingScreenProps = { readonly title?: string };
+
+export function LoadingScreen(props?: LoadingScreenProps) {
+  const title = props?.title ?? "Loading local data";
   return (
     <ContentContainer size="readable">
       <Stack gap={4}>
+        <PageHeader headingLevel={1} title={title} />
         <Skeleton style={{ width: "12rem", height: "2rem" }} />
         <Skeleton style={{ width: "100%", height: "6rem" }} />
         <Text tone="secondary">Loading local data…</Text>
@@ -1253,6 +1258,7 @@ export function ProjectManager({
         <Stack gap={5}>
           <PageHeader
             title={editor.kind === "create" ? "Create project" : "Edit project"}
+            headingLevel={1}
             leading={
               <Button variant="quiet" onPress={() => setEditor(null)}>
                 Back
@@ -1270,7 +1276,7 @@ export function ProjectManager({
                   ? snapshot.context.error.message
                   : undefined}
               />
-              <SelectField
+              <CurrencyPicker
                 label="Default currency"
                 options={CURRENCY_OPTIONS.map((code) => ({
                   id: code,
@@ -1650,18 +1656,20 @@ export function OrganizeScreen({
 export function SettingsScreen(
   {
     expenseDayBoundary,
+    syncSummary,
+    geminiSummary,
     onGemini,
     onSync,
-    onConflicts,
     onImport,
     onPrivacy,
     onPreferences,
     onAbout,
   }: {
     expenseDayBoundary: string;
+    syncSummary?: string;
+    geminiSummary?: string;
     onGemini?: () => void;
     onSync?: () => void;
-    onConflicts?: () => void;
     onImport?: () => void;
     onPrivacy?: () => void;
     onPreferences?: () => void;
@@ -1671,12 +1679,12 @@ export function SettingsScreen(
   const rows = [
     {
       label: "Google Drive and sync",
-      summary: "Not connected",
+      summary: syncSummary ?? "Open to view current sync status",
       available: Boolean(onSync),
     },
     {
       label: "Gemini receipt scanning",
-      summary: "Device-local key and model",
+      summary: geminiSummary ?? "Open to view key and model status",
       available: Boolean(onGemini),
     },
     {
@@ -1688,11 +1696,6 @@ export function SettingsScreen(
       label: "Import and export",
       summary: "JSON backup workflows",
       available: Boolean(onImport),
-    },
-    {
-      label: "Conflict review",
-      summary: "Resolve synchronized changes",
-      available: Boolean(onConflicts),
     },
     {
       label: "Data and privacy",
@@ -1717,14 +1720,13 @@ export function SettingsScreen(
                 <Button
                   variant="quiet"
                   isDisabled={!row.available}
+                  aria-label={"Open " + row.label}
                   onPress={row.label === "Gemini receipt scanning"
                     ? onGemini
                     : row.label === "Google Drive and sync"
                     ? onSync
                     : row.label === "Import and export"
                     ? onImport
-                    : row.label === "Conflict review"
-                    ? onConflicts
                     : row.label === "Data and privacy"
                     ? onPrivacy
                     : row.label === "Preferences"
@@ -1853,6 +1855,7 @@ export function CategoryManager({
             title={editor.kind === "create"
               ? "Create category"
               : "Edit category"}
+            headingLevel={1}
             leading={
               <Button variant="quiet" onPress={() => setEditor(null)}>
                 Back
@@ -1936,6 +1939,11 @@ export function CategoryManager({
     });
   };
   const uncategorized = state.categories.find((category) => category.system);
+  const replacementCategories = state.categories
+    .filter((candidate) =>
+      !candidate.archived && candidate.id !== uncategorized?.id
+    )
+    .concat(uncategorized ? [uncategorized] : []);
 
   return (
     <ContentContainer>
@@ -2014,21 +2022,29 @@ export function CategoryManager({
                         command: { type: "archive", categoryId: category.id },
                       })}
                   />
-                  <ConfirmDialog
+                  <DeleteAndReassign
                     trigger={
                       <Button variant="danger">Delete and reassign</Button>
                     }
                     title={`Delete ${category.name}?`}
-                    description={`References will be moved to Uncategorized across every project. This cannot be undone from the category list.`}
-                    confirmLabel="Delete and reassign"
-                    confirmVariant="danger"
-                    onConfirm={() =>
+                    description="Choose the category which should receive every reference to this category."
+                    replacementOptions={replacementCategories.map(
+                      (replacement) => ({
+                        id: replacement.id,
+                        label: replacement.name,
+                      }),
+                    )}
+                    defaultReplacementId={uncategorized?.id ?? ""}
+                    affectedCount={state.expenses.filter((expense) =>
+                      expense.categoryId === category.id
+                    ).length}
+                    onConfirm={(replacementCategoryId) =>
                       send({
                         type: "category.command",
                         command: {
                           type: "delete-and-reassign",
                           categoryId: category.id,
-                          replacementCategoryId: "category-uncategorized",
+                          replacementCategoryId,
                         },
                       })}
                   />
@@ -2110,29 +2126,34 @@ export function ManualExpenseRecoveryScreen({
   message,
   onRetry,
   onClose,
+  title = "New expense",
 }: {
   message: string;
   onRetry: () => void;
   onClose: () => void;
+  title?: string;
 }) {
   return (
     <ContentContainer size="readable">
-      <InlineNotice
-        tone="danger"
-        title="The expense form could not be opened"
-        action={
-          <Inline>
-            <Button variant="secondary" onPress={onRetry}>
-              Retry opening expense
-            </Button>
-            <Button variant="quiet" onPress={onClose}>
-              Back to expenses
-            </Button>
-          </Inline>
-        }
-      >
-        {message}
-      </InlineNotice>
+      <Stack gap={4}>
+        <PageHeader headingLevel={1} title={title} />
+        <InlineNotice
+          tone="danger"
+          title="The expense form could not be opened"
+          action={
+            <Inline>
+              <Button variant="secondary" onPress={onRetry}>
+                Retry opening expense
+              </Button>
+              <Button variant="quiet" onPress={onClose}>
+                Back to expenses
+              </Button>
+            </Inline>
+          }
+        >
+          {message}
+        </InlineNotice>
+      </Stack>
     </ContentContainer>
   );
 }
@@ -2337,6 +2358,7 @@ export function ManualExpenseScreen({
       <ManualExpenseRecoveryScreen
         message={snapshot.context.error?.message ??
           "Local draft data could not be restored."}
+        title={request.expense ? "Edit expense" : "New expense"}
         onRetry={retryOpening}
         onClose={onClosed}
       />
@@ -2346,7 +2368,9 @@ export function ManualExpenseScreen({
     snapshot.matches("hydrating") || snapshot.matches("opening") ||
     draft === null
   ) {
-    return <LoadingScreen />;
+    return (
+      <LoadingScreen title={request.expense ? "Edit expense" : "New expense"} />
+    );
   }
   const categories = state.categories.filter((category) =>
     !category.archived || category.id === draft.categoryId
@@ -2624,6 +2648,8 @@ export function LocalUiRuntime(
   const [deviceSettings, setDeviceSettings] = useState<DeviceLocalSettings>({
     imagePreparationEnabled: true,
   });
+  const [syncSummary, setSyncSummary] = useState("Not connected");
+  const [geminiSummary, setGeminiSummary] = useState("Not configured");
   const [receiptReview, setReceiptReview] = useState<ReceiptReviewDraft>();
   const imageStore = useMemo(() => new ReceiptImageStore(), []);
   const defaultReceipt = useMemo(
@@ -2657,6 +2683,25 @@ export function LocalUiRuntime(
       active = false;
     };
   }, [repository]);
+
+  useEffect(() => {
+    let active = true;
+    void secretStorage.get("gemini-api-key").then((key) => {
+      if (!active) return;
+      setGeminiSummary(
+        key === undefined
+          ? "Not configured"
+          : deviceSettings.selectedGeminiModel
+          ? "Key and model configured"
+          : "Key configured; choose a model",
+      );
+    }).catch(() => {
+      if (active) setGeminiSummary("Configuration status unavailable");
+    });
+    return () => {
+      active = false;
+    };
+  }, [deviceSettings.selectedGeminiModel, secretStorage]);
 
   useEffect(() => {
     const onOffline = () => sendShell({ type: "shell.network.offline" });
@@ -2859,6 +2904,13 @@ export function LocalUiRuntime(
 
   const updateDeviceSettings = async (next: DeviceLocalSettings) => {
     setDeviceSettings(next);
+    if (next.geminiKeyRevision === undefined) {
+      setGeminiSummary("Not configured");
+    } else if (next.selectedGeminiModel) {
+      setGeminiSummary("Key and model configured");
+    } else {
+      setGeminiSummary("Key configured; choose a model");
+    }
     try {
       await writeDeviceLocalSettings(repository, next);
     } catch {
@@ -2943,6 +2995,7 @@ export function LocalUiRuntime(
           onNavigate={(nextPath) => navigate(nextPath as LocalUiPath)}
           onNotice={setAppNotice}
           secretStorage={secretStorage}
+          onSyncSummary={setSyncSummary}
           onLocalErased={(scope) => {
             void scope;
             if (typeof globalThis.location?.reload === "function") {
@@ -3134,9 +3187,10 @@ export function LocalUiRuntime(
             ? (
               <SettingsScreen
                 expenseDayBoundary={expenseDayBoundary}
+                syncSummary={syncSummary}
+                geminiSummary={geminiSummary}
                 onGemini={() => navigate("/settings/gemini")}
                 onSync={() => navigate("/settings/sync")}
-                onConflicts={() => navigate("/settings/conflicts")}
                 onImport={() => navigate("/settings/import-export")}
                 onPrivacy={() => navigate("/settings/privacy")}
                 onPreferences={() => navigate("/settings/preferences")}

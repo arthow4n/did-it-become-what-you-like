@@ -858,6 +858,16 @@ export function ColorChoiceField({
             }}
           />
         ))}
+        <label className="ds-color-choice__custom">
+          <span>Custom</span>
+          <input
+            type="color"
+            aria-label={"Choose custom " + String(label)}
+            value={value ?? choices[0] ?? "#78DCCA"}
+            disabled={isDisabled}
+            onChange={(event) => onValueChange?.(event.currentTarget.value)}
+          />
+        </label>
       </div>
     </Field>
   );
@@ -1210,6 +1220,72 @@ export function ConfirmDialog({
               variant={confirmVariant}
               onPress={() => {
                 onConfirm();
+                close();
+              }}
+            >
+              {confirmLabel}
+            </Button>
+          </Inline>
+        </Stack>
+      )}
+    </AdaptiveDialog>
+  );
+}
+
+export type DeleteAndReassignProps = {
+  trigger: ReactNode;
+  title: ReactNode;
+  description: ReactNode;
+  replacementOptions: SelectOption[];
+  defaultReplacementId: string;
+  affectedCount: number;
+  onConfirm: (replacementCategoryId: string) => void;
+  confirmLabel?: string;
+};
+
+/**
+ * The shared destructive category workflow keeps replacement selection and
+ * confirmation in one accessible adaptive dialog. The actor still owns the
+ * resulting atomic command; this component only binds the controlled choice.
+ */
+export function DeleteAndReassign({
+  trigger,
+  title,
+  description,
+  replacementOptions,
+  defaultReplacementId,
+  affectedCount,
+  onConfirm,
+  confirmLabel = "Delete and reassign",
+}: DeleteAndReassignProps) {
+  const [replacementId, setReplacementId] = useState(defaultReplacementId);
+  return (
+    <AdaptiveDialog
+      trigger={trigger}
+      title={title}
+      onOpenChange={(open) => {
+        if (open) setReplacementId(defaultReplacementId);
+      }}
+    >
+      {(close) => (
+        <Stack gap={5}>
+          <Text>{description}</Text>
+          <Text tone="secondary">
+            {affectedCount} {affectedCount === 1 ? "expense" : "expenses"}{" "}
+            reference this category across every project.
+          </Text>
+          <SelectField
+            label="Replacement category"
+            options={replacementOptions}
+            value={replacementId}
+            onValueChange={setReplacementId}
+          />
+          <Inline justify="end">
+            <Button
+              variant="danger"
+              isDisabled={!replacementId}
+              onPress={() => {
+                onConfirm(replacementId);
                 close();
               }}
             >
@@ -1856,7 +1932,8 @@ export function ProjectPicker(
 }
 
 export function CurrencyPicker(
-  { options, value, onValueChange }: {
+  { label = "Currency", options, value, onValueChange }: {
+    label?: ReactNode;
     options: SelectOption[];
     value?: string;
     onValueChange?: (value: string) => void;
@@ -1872,7 +1949,7 @@ export function CurrencyPicker(
       className="ds-field ds-search-field ds-currency-picker"
       allowsEmptyCollection
     >
-      <AriaLabel className="ds-field__label">Currency</AriaLabel>
+      <AriaLabel className="ds-field__label">{label}</AriaLabel>
       <AriaInput
         className="ds-field-control"
         placeholder="Search ISO currency"

@@ -1392,7 +1392,10 @@ export function ReceiptReviewScreen({
   if (snapshot.matches("closed")) {
     return (
       <ContentContainer size="review">
-        <Text>There is no receipt review to restore.</Text>
+        <Stack gap={4}>
+          <PageHeader title="Review receipt" headingLevel={1} />
+          <Text>There is no receipt review to restore.</Text>
+        </Stack>
       </ContentContainer>
     );
   }
@@ -1400,9 +1403,12 @@ export function ReceiptReviewScreen({
   if (!review) {
     return (
       <ContentContainer size="review">
-        <ErrorState title="Receipt review unavailable">
-          The validated receipt draft could not be opened.
-        </ErrorState>
+        <Stack gap={4}>
+          <PageHeader title="Review receipt" headingLevel={1} />
+          <ErrorState title="Receipt review unavailable">
+            The validated receipt draft could not be opened.
+          </ErrorState>
+        </Stack>
       </ContentContainer>
     );
   }

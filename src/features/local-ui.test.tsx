@@ -6,6 +6,7 @@ import {
   DirtyExitGuard,
   ExpensesScreen,
   FirstUseScreen,
+  LoadingScreen,
   ManualExpenseRecoveryScreen,
   manualExpenseSubmitEvent,
   OrganizeScreen,
@@ -457,6 +458,14 @@ Deno.test("local UI null-draft recovery exposes retry and back actions", async (
   });
 });
 
+Deno.test("local UI expense loading state exposes a level-one heading", async () => {
+  await withComponentHarness(({ render }) => {
+    render(createElement(LoadingScreen));
+    const view = within(document.body);
+    assert(view.getByRole("heading", { name: "Loading local data" }));
+  });
+});
+
 Deno.test("local UI saved completion exposes undo and continue actions", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaDomGlobals(window, () => {
@@ -509,7 +518,17 @@ Deno.test("local UI organize and settings screens expose labeled destinations", 
           onNewProject: () => undefined,
           onNewCategory: () => undefined,
         }),
-        createElement(SettingsScreen, { expenseDayBoundary: "03:00" }),
+        createElement(SettingsScreen, {
+          expenseDayBoundary: "03:00",
+          syncSummary: "Synced · 2 minutes ago",
+          geminiSummary: "Key and model configured",
+          onSync: () => undefined,
+          onGemini: () => undefined,
+          onPreferences: () => undefined,
+          onImport: () => undefined,
+          onPrivacy: () => undefined,
+          onAbout: () => undefined,
+        }),
       ),
     );
     const view = within(document.body);
@@ -518,6 +537,12 @@ Deno.test("local UI organize and settings screens expose labeled destinations", 
     assert(view.getByRole("button", { name: "Manage categories" }));
     assert(view.getByRole("heading", { name: "Settings" }));
     assert(view.getByText("Expense day 03:00"));
+    assert(view.getByText("Synced · 2 minutes ago"));
+    assert(view.getByText("Key and model configured"));
+    assert(
+      view.getByRole("button", { name: "Open Google Drive and sync" }),
+    );
+    assert(view.queryByText("Conflict review") === null);
   });
 });
 
@@ -617,6 +642,10 @@ Deno.test("local UI category editor keeps built-in Uncategorized protected", asy
       );
       assert(view.getByRole("textbox", { name: "Category name" }));
       assert(view.getByRole("group", { name: "Category color (optional)" }));
+      assert(
+        view.getByLabelText("Choose custom Category color (optional)"),
+        "category color should expose a custom value control",
+      );
     });
   });
 });
@@ -642,6 +671,65 @@ Deno.test("local UI category manager exposes a level-one page heading", async ()
           }),
         )
       );
+    });
+  });
+});
+
+Deno.test("local UI project editor uses level-one heading and ISO currency picker", async () => {
+  await withComponentHarness(async ({ window, render, waitFor }) => {
+    const { service } = createTestService(organizedState);
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(ProjectManager, {
+          service,
+          state: organizedState,
+          initialCreate: true,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(
+          view.getByRole("heading", {
+            name: "Create project",
+            level: 1,
+          }),
+        )
+      );
+      assert(view.getByRole("combobox", { name: "Default currency" }));
+    });
+  });
+});
+
+Deno.test("local UI category deletion exposes replacement selection and affected count", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    const { service, commits } = createTestService(categoryState);
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(CategoryManager, {
+          service,
+          state: categoryState,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: "Delete and reassign" }))
+      );
+      fireEvent.click(
+        view.getByRole("button", { name: "Delete and reassign" }),
+      );
+      const dialog = await waitFor(() =>
+        view.getByRole("dialog", { name: "Delete Food?" })
+      );
+      assert(dialog.textContent?.includes("0 expenses"));
+      assert(
+        within(dialog).getByRole("button", { name: /Replacement category/ }),
+      );
+      assert(commits() === 0);
+      fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
     });
   });
 });

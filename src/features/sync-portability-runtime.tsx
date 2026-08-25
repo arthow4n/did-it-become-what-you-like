@@ -97,6 +97,7 @@ import {
   KnownDevicesScreen,
   type KnownDeviceViewModel,
   type SyncConnectionViewModel,
+  syncStatusCopy,
 } from "./sync-ui/index.ts";
 import {
   type DiagnosticDeviceViewModel,
@@ -373,6 +374,13 @@ function syncViewFromSnapshot(
     unresolvedConflictCount: context.unresolvedConflictCount,
     ...(context.error === null ? {} : { message: context.error.message }),
   };
+}
+
+function settingsSyncSummary(view: SyncConnectionViewModel): string {
+  const label = syncStatusCopy(view).label;
+  return view.mode === "configured" && view.lastSyncedAt !== null
+    ? `${label} · ${view.lastSyncedAt}`
+    : label;
 }
 
 export function formatApproximateLastSeen(
@@ -774,6 +782,7 @@ export function SyncPortabilityRuntime({
   onNotice,
   secretStorage,
   onLocalErased,
+  onSyncSummary,
   children,
 }: {
   readonly repository: LocalRepository;
@@ -782,6 +791,7 @@ export function SyncPortabilityRuntime({
   readonly onNotice: (message: string) => void;
   readonly secretStorage: SecretStoragePort;
   readonly onLocalErased?: (scope: "local" | "everywhere") => void;
+  readonly onSyncSummary?: (summary: string) => void;
   readonly children: ReactNode;
 }) {
   const ids = useMemo(createRuntimeIds, []);
@@ -1022,6 +1032,10 @@ export function SyncPortabilityRuntime({
   const lastResolvedConflict = useRef<string | null>(null);
   const [deviceProjectionVersion, setDeviceProjectionVersion] = useState(0);
   const syncView = syncViewFromSnapshot(syncSnapshot);
+
+  useEffect(() => {
+    onSyncSummary?.(settingsSyncSummary(syncView));
+  }, [onSyncSummary, syncView]);
 
   useEffect(() => {
     const onOffline = () => sendSync({ type: "sync.network.offline" });

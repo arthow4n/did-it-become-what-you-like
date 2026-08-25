@@ -13,6 +13,7 @@ import {
   ColorChoiceField,
   CurrencyPicker,
   DefinitionList,
+  DeleteAndReassign,
   ExpenseRow,
   FileField,
   formatMoney,
@@ -201,6 +202,57 @@ Deno.test("design-system native fields and definition lists expose valid semanti
       assertEqual(definitionList.querySelectorAll(":scope > div").length, 1);
       assertEqual(definitionList.querySelectorAll(":scope > span").length, 0);
       assert(view.getByRole("group", { name: "Category color" }));
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system color and delete-reassign composites expose controlled choices", async () => {
+  await withComponentHarness(({ window, render, fireEvent }) =>
+    withAriaDomGlobals(window, () => {
+      let color = "#78DCCA";
+      let replacement = "";
+      const mounted = render(
+        createElement(
+          "div",
+          null,
+          createElement(ColorChoiceField, {
+            label: "Category color",
+            value: color,
+            onValueChange: (value) => color = value,
+          }),
+          createElement(DeleteAndReassign, {
+            trigger: createElement(Button, null, "Delete category"),
+            title: "Delete Food?",
+            description: "Choose a replacement.",
+            replacementOptions: [
+              { id: "uncategorized", label: "Uncategorized" },
+              { id: "travel", label: "Travel" },
+            ],
+            defaultReplacementId: "uncategorized",
+            affectedCount: 3,
+            onConfirm: (value) => replacement = value,
+          }),
+        ),
+      );
+      const view = within(document.body);
+      fireEvent.change(
+        view.getByLabelText("Choose custom Category color"),
+        { target: { value: "#112233" } },
+      );
+      assertEqual(color, "#112233");
+      fireEvent.click(view.getByRole("button", { name: "Delete category" }));
+      const dialog = view.getByRole("dialog", { name: "Delete Food?" });
+      assert(dialog.textContent?.includes("3 expenses"));
+      const picker = within(dialog).getByRole("button", {
+        name: /Replacement category/,
+      });
+      fireEvent.click(picker);
+      fireEvent.click(view.getByRole("option", { name: "Travel" }));
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Delete and reassign" }),
+      );
+      assertEqual(replacement, "travel");
       mounted.unmount();
     })
   );

@@ -974,12 +974,14 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 #### R-700 — Final independent release review and definition-of-done gate
 
 - **Status/dependencies:** `IN_PROGRESS`; depends on `Q-604`, which is complete.
-- **Dispatch:** the integration owner has dispatched one fresh read-only Luna
-  `xhigh` reviewer against pushed `master` at `ac0e7e0`. The reviewer must
-  inspect the full repository and this ledger first, preserve a timestamped
-  untracked handover, and must not edit source, this plan, remotes, or another
-  task's ownership. Any substantiated finding must return as a separately
-  scoped fix through its responsible task area.
+- **Dispatch:** the integration owner has created the isolated review worktree
+  `~/git/worktrees/did-it-become-what-you-like-r-700-final` on branch
+  `review/r-700-final` at pushed `master` `5a65ffd`, and dispatched one fresh
+  read-only Luna `xhigh` reviewer. The reviewer must inspect the full
+  repository and this ledger first, preserve a timestamped untracked handover,
+  and must not edit source, this plan, remotes, or another task's ownership.
+  Any substantiated finding must return as a separately scoped fix through its
+  responsible task area.
 - **Ownership:** full repository read-only review first; fixes individually
   scoped and returned through the responsible task area.
 - **Scope/non-goals:** independently compare code, tests, deployment, and this

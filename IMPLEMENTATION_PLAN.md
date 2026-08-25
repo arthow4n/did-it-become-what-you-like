@@ -1014,7 +1014,17 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   live Drive authorization remains blocked until the owner creates the Google
   OAuth client, adds the repository variable, and reruns the Pages deployment;
   then dispatch a fresh read-only R-700 closure reviewer. The earlier reviewer
-  handover remains preserved.
+  handover remains preserved. The owner subsequently configured the repository
+  variable and confirmed that Google authorization succeeds, but the first
+  configured-Drive sync failed because of the v3 `etag` projection described
+  above. The bounded S-405 worker commit `9ec1ffd` removed those projections,
+  captured per-file HTTP `ETag` headers, preserved conditional mutation and
+  lost-response idempotency behavior, and added a v3 regression test. The root
+  integration commit is `7119b8a`. Root `deno task verify` passed: 251 unit,
+  73 integration, 86 component, 37 domain, 1 actor, 5 local E2E journeys,
+  gallery/browser inspection, Pages/CI/toolchain checks, both builds, frozen
+  audit, and diff check. R-700 remains blocked only until the corrected build
+  is deployed and a fresh configured-Drive sync smoke succeeds.
 - **Outputs/acceptance:** traceability and security/privacy review complete; no
   severity-1/2 finding; severity-3 findings fixed or explicitly accepted by the
   owner; final checkpoint and evidence match Git and deployed commit.
@@ -1364,10 +1374,12 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
   after closure-3 approval; Q-601, Q-602, Q-603, and Q-604 are `COMPLETE`; and
-  R-700 is `BLOCKED` on the owner-supplied production OAuth configuration.
-- **Reconciled branch/upstream:** the R-700 follow-up fix is pushed in
-  `f475c19` (`Wire public license and Drive OAuth configuration`), with
-  `master` and `origin/master` aligned there. The Q-604 hosted release and
+  R-700 is `BLOCKED` pending a fresh configured-Drive sync smoke after the
+  v3 ETag correction is deployed.
+- **Reconciled branch/upstream:** the prior R-700 follow-up fix is pushed in
+  `f475c19` (`Wire public license and Drive OAuth configuration`); the S-405
+  v3 correction is integrated locally in `7119b8a` and is ready to push after
+  this checkpoint. The Q-604 hosted release and
   Plato's review targeted the earlier `71737ab`; the two findings and the
   bounded correction evidence are recorded above. The root worktree contains
   only the intentionally untracked `A-303-progress.md`, `R-300-progress.md`,
@@ -1415,17 +1427,19 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   completed the hosted artifact, base-path, offline, and update smoke checks;
   the follow-up `f475c19` CI run `32838627968` and Pages run `32838627944`
   succeeded, and deployment `6081452539` served the exact live About build and
-  license link. The live Drive connection remains intentionally unclaimed until
-  the owner supplies `VITE_GOOGLE_CLIENT_ID` through the documented setup.
-- **Active production follow-up:** S-405's Drive adapter has been reopened for
-  the bounded v3 ETag compatibility fix. The integration owner prepared
-  `~/git/worktrees/did-it-become-what-you-like-s-405-drive-v3-compat` on branch
-  `task/s-405-drive-v3-compat`, based at `0657480`. Ownership is limited to
-  `src/adapters/drive/adapter.ts`, its adapter integration tests, and focused
-  production-composition evidence; no other task worktree or the existing
-  R-700 reviewer worktree may be changed. The next step is one bounded worker
-  commit, root integration, full required validation, and a fresh live Drive
-  sync smoke before R-700 review resumes.
+  license link. The owner has now supplied `VITE_GOOGLE_CLIENT_ID` through the
+  documented repository-variable setup, and Connect succeeds; live sync
+  evidence remains pending the corrected deployment.
+- **Completed production follow-up:** S-405's bounded v3 ETag compatibility
+  correction was implemented in the preserved worktree
+  `~/git/worktrees/did-it-become-what-you-like-s-405-drive-v3-compat` by
+  `9ec1ffd` and integrated on root as `7119b8a`. Ownership was limited to
+  `src/adapters/drive/adapter.ts` and its adapter integration tests. The
+  focused worker gates passed (format, lint, type-check, 13 integration tests,
+  build, and diff check), followed by the root `deno task verify` evidence
+  recorded above. The next step is to push this checkpoint, verify the Pages
+  deployment, and obtain one fresh configured-Drive sync smoke before R-700
+  review resumes.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

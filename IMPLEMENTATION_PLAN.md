@@ -935,7 +935,7 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### Q-604 — Produce and verify the GitHub Pages release
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `Q-603`, which is complete.
+- **Status/dependencies:** `COMPLETE`; depends on `Q-603`, which is complete.
 - **Dispatch:** the integration owner has created the isolated worktree
   `~/git/worktrees/did-it-become-what-you-like-q-604-release` on branch
   `task/q-604-release` at root `60cd78a`. One bounded worker owns release
@@ -955,10 +955,25 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   smoke without personal data, offline reload and update-ready exercise.
 - **Verification:** `deno task release:verify`; GitHub workflow success; live
   `agent-browser` smoke; record deployed commit in this checkpoint.
+- **Evidence:** Poincare's scoped release commit `9a8e0de` was integrated as
+  `b1d33a7`. It added `deno task release:verify`, release provenance and
+  notice checks to both CI and Pages workflows, and `RELEASE.md` with the
+  deployment boundary and rollback procedure. Root `deno task verify` and
+  `deno task release:verify` passed; release verification bound the artifact
+  to version `0.1.0`, commit `b1d33a7`, base path
+  `/did-it-become-what-you-like/`, PWA scope, metadata/notices, secret scan,
+  and SHA-256 artifact lines. GitHub CI #184 and Deploy to GitHub Pages #12
+  completed successfully; deployment `6075255903` reported `success` for
+  `github-pages`. Live `agent-browser` smoke at the repository URL and
+  `#/settings/about` passed at `390x844`: HTTP 200, current bundle, About
+  build `b1d33a7`, axe `0` violations, no browser errors, no page overflow,
+  active service worker, and offline reload retained the app. The live About
+  status was `Up to date`; no unsaved-input update prompt was claimed because
+  no update was available during this deployment.
 
 #### R-700 — Final independent release review and definition-of-done gate
 
-- **Status/dependencies:** `PENDING`; depends on `Q-604`.
+- **Status/dependencies:** `READY`; depends on `Q-604`, which is complete.
 - **Ownership:** full repository read-only review first; fixes individually
   scoped and returned through the responsible task area.
 - **Scope/non-goals:** independently compare code, tests, deployment, and this
@@ -1312,14 +1327,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   complete. M4 is released; S-403, S-404, and S-405 are complete. R-500 is
   `COMPLETE` after the bounded fix wave and fresh independent closure review;
   M5 is released; X-501, X-502, and P-503 are complete; R-600 is `COMPLETE`
-  after closure-3 approval; Q-601, Q-602, and Q-603 are `COMPLETE`; and Q-604
-  is `IN_PROGRESS` in its isolated release worktree.
-- **Reconciled branch/upstream:** Q-603 source integration is at `1ce1947`
-  (`Harden responsive expense filters`); its integrated `deno task verify`
-  passed, and the Q-604 dispatch ledger update is the next pushed checkpoint.
-  Before this update, `master` and `origin/master` were aligned at `60cd78a`
-  (`Complete Q-603 hardening and release Q-604`), after the Q-602 ledger
-  checkpoint and the
+  after closure-3 approval; Q-601, Q-602, Q-603, and Q-604 are `COMPLETE`; and
+  R-700 is the next dependency-ready task.
+- **Reconciled branch/upstream:** Q-604 source integration is at `b1d33a7`
+  (`Add verified GitHub Pages release checks`); its integrated `deno task
+  verify`, `deno task release:verify`, CI, Pages deployment, and live smoke
+  evidence passed, and the R-700 dispatch ledger update is the next pushed
+  checkpoint. Before this update, `master` and `origin/master` were aligned at
+  `564a18b` (`Record Q-604 release worker`), after the Q-603 ledger checkpoint
+  and the
   integrated source checkpoints `de8d40e` and `1ffd045`. The root contains
   only the intentionally untracked
   only the intentionally untracked
@@ -1370,11 +1386,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   S-404, S-405, Q-601, and Q-602 are complete as recorded below.
 - **Owner authorization:** received in this session; it authorizes the approved
   implementation scope and does not expand the MVP or deferred exclusions.
-- **GitHub Pages availability update:** the repository owner has re-enabled
-  GitHub Pages in the deployment workflow after the earlier manual disablement.
-  Q-604 may now perform its planned hosted artifact, base-path, offline, and
-  update smoke checks when that task is released; no live deployment result is
-  inferred before Q-604 runs those checks.
+- **GitHub Pages availability update:** the repository owner re-enabled GitHub
+  Pages in the deployment workflow after the earlier manual disablement. Q-604
+  then completed the hosted artifact, base-path, offline, and update smoke
+  checks: Pages deployment `6075255903` for `b1d33a7` reported success, and the
+  live repository URL served the verified bundle.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`
@@ -1443,9 +1459,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   custom-period/saved-Undo fix wave is `COMPLETE`; R-300, A-302, and A-303 are
   `COMPLETE`; R-400, S-401, S-402, S-403, S-404, and S-405 are `COMPLETE`;
   R-500 is `COMPLETE` after fresh independent closure review; M5 is released;
-  X-501, X-502, P-503, R-600, Q-601, Q-602, and Q-603 are `COMPLETE`; Q-604 is
-  `IN_PROGRESS` in its dedicated worktree; one worker is active; and no task
-  is interrupted.
+  X-501, X-502, P-503, R-600, Q-601, Q-602, Q-603, and Q-604 are `COMPLETE`;
+  R-700 is `READY`; no worker or reviewer is active; and no task is
+  interrupted.
 - **R-300 review recovery:** Curie (`01a03285-474b-7c61-ace3-485265e56041`)
   completed and was shut down after a read-only BLOCK in
   `~/git/worktrees/did-it-become-what-you-like-r-300-closure-4`, branch
@@ -1607,10 +1623,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   adapter and browser type-check limitation remain recorded for later M2/release
   review; R-100 closure confirmed the foundation fixes and compatibility
   decisions are sufficient to proceed.
-- **Current task:** Q-604 is dispatched from the pushed Q-603 integration
-  checkpoint. Use the now re-enabled GitHub Pages workflow for the planned
-  hosted artifact and live base-path/offline/update checks; do not start R-700
-  until Q-604 is integrated and verified.
+- **Current task:** dispatch R-700, the final independent release review and
+  definition-of-done gate, from the pushed Q-604 integration checkpoint. Keep
+  the review read-only first; any finding must return through its responsible
+  task area before closure.
 - **Interrupted review recovery:** Boole
   (`01a03123-61ee-79b2-b2c1-4e6ad08b0ab5`) was given repeated bounded waits and
   completion/interruption requests, then shut down while still running. It

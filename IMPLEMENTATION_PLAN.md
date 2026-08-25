@@ -1444,24 +1444,26 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   recorded above. Pages run `32875077172` and deployment `6088023350` now serve
   the corrected source from `9c50f49`; the remaining step is one fresh
   configured-Drive sync smoke before R-700 review resumes.
-- **Active production follow-ups:** The owner reports that, after creating a
-  local expense, manual synchronization still returns `invalid-request` and
-  retry repeats the failure. The owner also reports that a page reload loses
-  the in-memory Drive authorization and requires reconnecting. These are
-  separate bounded investigations: S-406 owns the Drive request failure in
-  `~/git/worktrees/did-it-become-what-you-like-s-406-drive-sync` on branch
-  `task/s-406-drive-sync`, limited to `src/adapters/drive/**` and focused
-  adapter tests; S-407 owns reload-session authorization behavior in
-  `~/git/worktrees/did-it-become-what-you-like-s-407-drive-auth` on branch
-  `task/s-407-drive-auth`, limited to the browser OAuth boundary, runtime
-  composition, and focused tests. Neither may edit the other scope, the plan,
-  `master`, remotes, or preserved worktrees. The first-use no-project guard is
-  expected MVP behavior under `UI_SPEC.md` Screen 3/7; navigation placement
-  and broader UI polish are recorded as owner-requested post-MVP follow-ups,
-  not silently expanded into this production fix wave. A third bounded task,
-  S-408, owns the missing `sync.retry` transition from the actor's generic
-  error state in `src/actors/sync/machine.ts` and its actor tests, so the
-  visible Retry action is not a no-op for non-retryable request failures.
+- **Active production follow-ups:** The owner reported that, after creating a
+  local expense, manual synchronization returned `invalid-request`, retry
+  repeated the failure, and a page reload lost in-memory Drive authorization.
+  S-406 completed the Drive request correction in
+  `~/git/worktrees/did-it-become-what-you-like-s-406-drive-sync` with worker
+  commit `57df9dd` and root integration `5b86cd1`; its focused format, lint,
+  type-check, 14 Drive integration tests, build, and diff checks passed. S-407
+  investigation concluded that bearer-token persistence is unsafe and
+  incompatible with browser-only GIS implicit flow; its preserved handover is
+  `~/git/worktrees/did-it-become-what-you-like-s-407-drive-auth/S-407-progress.md`.
+  The bounded implementation will use one-click reconnect with the stored
+  account hint and no repeated consent, without storing access or refresh
+  tokens. S-408 owns the missing `sync.retry` transition from the actor's
+  generic error state in `src/actors/sync/machine.ts` and its actor tests, so
+  the visible Retry action is not a no-op for non-retryable request failures.
+  The first-use no-project guard is expected MVP behavior under `UI_SPEC.md`
+  Screen 3/7; navigation placement and broader UI polish are recorded as
+  owner-requested post-MVP follow-ups, not silently expanded into this fix
+  wave. Neither follow-up may edit the other scope, the plan, `master`,
+  remotes, or preserved worktrees.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

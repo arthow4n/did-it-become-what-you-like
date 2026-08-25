@@ -114,7 +114,7 @@ When evaluating screens and components, audit against these 5 pillars:
 [Phase 4: Comprehensive Verification (Unit + A11y + E2E + Build)]
          │
          ▼
-[Phase 5: Post-Fix Visual Re-Capture & Clean Reporting]
+[Phase 5: Post-Fix Visual Re-Capture, Cleanup & Clean Reporting]
 ```
 
 ---
@@ -191,16 +191,25 @@ Once all checklist items are checked off:
 5. If any test expectation requires precision updating (e.g. formatted money
    string `SEK -12.50`), update the test, re-verify, commit, and push.
 
-### Phase 5: Post-Fix Visual Re-Capture & Clean Reporting
+### Phase 5: Post-Fix Visual Re-Capture, Cleanup & Clean Reporting
 
-1. Re-run the automated screenshot script to overwrite / refresh the screenshot
-   suite in `ui-audit-YYYY-MM-DD/round-N-screenshots/`.
+1. Re-run the automated screenshot script to refresh the screenshot suite in
+   `ui-audit-YYYY-MM-DD/round-N-screenshots/`.
 2. Inspect key screenshots (e.g., modals, form rows, mobile action stacks) to
    confirm visual perfection.
-3. Commit and push the updated screenshots.
-4. **Final Reporting Standard:**
+3. **Artifact Cleanup (Preserved in Git History):** After visual verification is
+   confirmed, remove the audit directory, screenshots, and report files from the
+   working tree (`git rm -r ui-audit-YYYY-MM-DD/`). All visual before/after
+   states and audit histories remain permanently queryable in Git history,
+   keeping the repository workspace lean.
+4. **Commit & Push Cleanup:**
+   ```bash
+   git commit -am "chore(audit): clean up audit reports and screenshots after completed remediation" && git push origin master
+   ```
+5. **Final Reporting Standard:**
    - Present a clear, concise markdown summary of the fixed items.
    - Report validation test counts (unit, component, a11y, e2e, build).
-   - Point to the screenshot folder for visual inspection.
+   - Note that visual verification passed and transient audit files have been
+     cleaned up.
    - **Do NOT repeat individual commit hashes or external links to commits in
      the final text report.**

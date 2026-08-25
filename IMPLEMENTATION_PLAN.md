@@ -998,6 +998,11 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   composition is also wired in `f475c19`: Pages maps the non-secret repository
   variable `VITE_GOOGLE_CLIENT_ID`, the deployed index loads Google Identity
   Services before the app, and `RELEASE.md` records the owner setup steps.
+  A live configured-Drive smoke then exposed a new S-405 production blocker:
+  first sync returns the safe `invalid-request` message. The adapter asks
+  Drive API v3 for the removed v2 `etag` JSON field in `files.list` and
+  mutation projections; the correction must use HTTP ETags while retaining
+  conditional writes. This is recorded as a bounded S-405 follow-up below.
   Local `deno task verify` passed all required checks, including 250 unit, 72
   integration, 86 component, 37 domain, 1 actor, 5 local E2E journeys,
   gallery/browser inspection, Pages/CI/toolchain verification, both builds,
@@ -1412,6 +1417,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   succeeded, and deployment `6081452539` served the exact live About build and
   license link. The live Drive connection remains intentionally unclaimed until
   the owner supplies `VITE_GOOGLE_CLIENT_ID` through the documented setup.
+- **Active production follow-up:** S-405's Drive adapter has been reopened for
+  the bounded v3 ETag compatibility fix. The integration owner prepared
+  `~/git/worktrees/did-it-become-what-you-like-s-405-drive-v3-compat` on branch
+  `task/s-405-drive-v3-compat`, based at `0657480`. Ownership is limited to
+  `src/adapters/drive/adapter.ts`, its adapter integration tests, and focused
+  production-composition evidence; no other task worktree or the existing
+  R-700 reviewer worktree may be changed. The next step is one bounded worker
+  commit, root integration, full required validation, and a fresh live Drive
+  sync smoke before R-700 review resumes.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

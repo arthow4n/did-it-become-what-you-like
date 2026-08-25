@@ -2435,8 +2435,13 @@ export function ManualExpenseScreen({
           }
         />
         <ExpenseForm
-          status={failed || busy || snapshot.hasTag("dirty") ||
-              snapshot.hasTag("draft-saving")
+          status={failed || busy || snapshot.hasTag("draft-saving") ||
+              (snapshot.hasTag("dirty") &&
+                Boolean(
+                  draft.amount.trim() || draft.merchant?.trim() ||
+                    draft.description?.trim() ||
+                    snapshot.context.originalExpense,
+                ))
             ? (
               <DraftStatus
                 state={failed

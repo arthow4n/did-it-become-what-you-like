@@ -174,7 +174,7 @@ PWA precache generated: OK
   - **Verification:** Inspect form field descriptions (Amount, Date, Category color). Helper text must be distinctly subdued and subordinate to field labels.
   - **Commit:** `fix(ui): FIX-R2-06 subdue field description text with secondary color and caption font size`
 
-- [ ] **STEP-R2-07 (FIX-R2-07) · Suppress DraftStatus on Clean Untouched Forms**
+- [x] **STEP-R2-07 (FIX-R2-07) · Suppress DraftStatus on Clean Untouched Forms**
   - **Priority:** P2 (Visual Clutter / UX)
   - **Files:** [`src/features/local-ui.tsx`](../src/features/local-ui.tsx)
   - **Action:** Only render `DraftStatus` for `"dirty"` state when user-entered values are actually present (`Boolean(draft.amount || draft.merchant || draft.description)`).

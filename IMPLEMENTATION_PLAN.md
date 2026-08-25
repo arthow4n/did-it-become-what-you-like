@@ -1472,7 +1472,10 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   gallery/browser inspection, Pages/CI/toolchain checks, both builds, frozen
   audit, and diff check. The focused configured-Drive E2E passed 2/2 after
   updating its fake adapter to report authorization truthfully across connect
-  and disconnect.
+  and disconnect. CI run `32878819812` and Pages run `32878820447` passed for
+  `d2243df`; deployment `6088667519` is serving the corrected bundle. R-700
+  remains blocked only on the owner's fresh configured-Drive smoke and reload
+  authorization check.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

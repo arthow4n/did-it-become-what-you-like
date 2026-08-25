@@ -805,25 +805,131 @@ Several views fail to apply the 4px token spacing system consistently:
    - `--space-7` (32px) / `--space-8` (40px): Page gutters and main landmark margins
 2. Enforce that every interactive element has at least `--space-2` (8px) breathing room from neighboring elements.
 
-## 4. Prioritized Action Plan for Implementation Agent
+## 4. Sequential Implementation Checklist (Single-Agent & Subagent Execution)
 
-This table orders the remediation tasks by dependency and impact so a future coding agent or orchestrator can track implementation progress:
+This checklist provides a linear, dependency-ordered sequence of 13 concrete tasks. A single coding agent can work through these tasks one by one, checking off each box upon successful implementation, testing, and commit.
 
-| Priority | Task ID | Description | Affected Files | Expected Verification |
-|---|---|---|---|---|
-| **P0** | `FIX-01` | **Fix Mobile Navigation Position:** Move bottom bar to `position: fixed; bottom: 0;` on mobile with safe-area insets. | `src/design-system/tokens.css`, `src/design-system/components.tsx` | Viewport `390×844` shows bottom tabs; content not obscured. |
-| **P0** | `FIX-02` | **Fix SearchField Clear Button:** Wrap input and button in control group; fix positioning; hide when empty. | `src/design-system/components.tsx`, `src/design-system/tokens.css` | Clear button stays vertically centered inside input control; no overflow. |
-| **P0** | `FIX-03` | **Fix Toast Layout Shift & Colocate Dismiss:** Remove in-flow toast wrapper; fix to bottom-right viewport overlay. | `src/features/local-ui.tsx`, `src/design-system/components.tsx`, `src/design-system/tokens.css` | Toast triggers without shifting DOM content; Dismiss button inside pill. |
-| **P1** | `FIX-04` | **Fix Required Asterisk Placement:** Move asterisk inside `AriaLabel` across all form fields. | `src/design-system/components.tsx` | Asterisk renders inline next to label text on same line. |
-| **P1** | `FIX-05` | **Fix CSS Grid Stretch on SegmentedControl & Cards:** Add `align-items: start;` to `ResponsiveGrid`; constrain SegmentedControl height. | `src/design-system/tokens.css` | Gallery displays compact pills, not 220px ovals. |
-| **P1** | `FIX-06` | **Fix Money Text Vertical Wrapping:** Set `white-space: nowrap; flex-shrink: 0;` on `.ds-money` and trailing list cells. | `src/design-system/tokens.css` | `SEK -286.40` never wraps character-by-character. |
-| **P1** | `FIX-07` | **Fix FilterBar Baseline Alignment:** Apply `align-items: flex-end;` and uniform heights across filter controls. | `src/design-system/tokens.css`, `src/features/local-ui.css` | Period picker, dropdowns, search, and filters button share a clean baseline. |
-| **P1** | `FIX-08` | **Enforce Layout & Flexbox Sizing Discipline:** Prevent arbitrary `width: 100%` on compact inputs; equalize form segmented controls. | `src/design-system/tokens.css`, `src/features/local-ui.css` | Compact inputs keep natural width; segmented controls distribute evenly. |
-| **P2** | `FIX-09` | **Polish PageHeader Back/Close Actions:** Replace plain text leading buttons with clean icon buttons (`ArrowLeft`, `X`). | `src/design-system/components.tsx`, `src/features/local-ui.tsx` | Back triggers are well-proportioned icon buttons. |
-| **P2** | `FIX-10` | **Refactor SecretField Reveal Toggle:** Move "Show value" toggle inline inside password input trailing slot. | `src/design-system/components.tsx`, `src/design-system/tokens.css` | Toggle sits inside field as trailing icon/button. |
-| **P2** | `FIX-11` | **Hide Premature Unsaved Changes Banner:** Only show `DraftStatus` when form is dirty or restored. | `src/features/local-ui.tsx` | Fresh "New expense" form is clean and uncluttered. |
-| **P2** | `FIX-12` | **Harmonize ColorChoiceField & Spacing Gaps:** Standardize 36px swatches, add Cancel to `DangerDialog`, apply 4px gap tokens. | `src/design-system/components.tsx`, `src/design-system/tokens.css` | Consistent breathing room and complete dialog action pairs. |
-| **P3** | `FIX-13` | **Format Currency Decimal Precision:** Ensure two-digit decimal formatting (`SEK -250.50`). | `src/domain/money/` | All currency values display consistent 2-decimal precision. |
+### Single-Agent Resumable Protocol
+
+```text
+1. Read this checklist to find the first unchecked item: `- [ ] **STEP-XX**`.
+2. Apply the exact code changes specified in that step.
+3. Run the step-specific verification command.
+4. Update the checkbox to `- [x]`.
+5. Run the repository gates:
+     deno task fmt:check && deno task lint && deno task check
+6. Commit with the specified commit message format:
+     git commit -am "fix(ui): FIX-XX <description>"
+7. Repeat until all 13 items are checked, then run `deno task test` and `deno task build`.
+```
+
+---
+
+### Step-by-Step Task Checklist
+
+- [ ] **STEP-01 (FIX-01) · Position Mobile Navigation at Bottom Viewport with Safe Areas**
+  - **Priority:** P0 (Core Responsive Navigation)
+  - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css), [`src/design-system/components.tsx`](../src/design-system/components.tsx)
+  - **Evidence:** [`screenshots/02_mobile_home_initial.png`](screenshots/02_mobile_home_initial.png)
+  - **Action:** In `.ds-navigation` media query for `< 720px`, add `position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));`. Add bottom padding to `.ds-app-frame__main`: `padding-bottom: calc(var(--control-height) + var(--space-6) + env(safe-area-inset-bottom));`. Style `.ds-navigation__item` vertically with 12px caption.
+  - **Verification:** Run `deno task test:component`, check viewport `390×844` in `agent-browser`. Navigation must stick cleanly to the bottom.
+  - **Commit:** `fix(ui): FIX-01 anchor mobile navigation to bottom tab bar with safe-area insets`
+
+- [ ] **STEP-02 (FIX-02) · Fix SearchField Input Control Wrapper & Clear Button Overflow**
+  - **Priority:** P0 (Component Border Regression)
+  - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L568-L598), [`src/design-system/tokens.css`](../src/design-system/tokens.css#L475-L489)
+  - **Evidence:** [`screenshots/04_desktop_input_clear_button_bug.png`](screenshots/04_desktop_input_clear_button_bug.png), [`screenshots/13_desktop_expense_form_filled.png`](screenshots/13_desktop_expense_form_filled.png)
+  - **Action:** In `SearchField`, wrap `<AriaInput>` and `<AriaButton>` inside a `<div className="ds-field-control-wrap">`. Apply `position: relative` to `.ds-field-control-wrap` (not `.ds-search-field`). Position `.ds-search-field__clear` at `top: 50%; right: var(--space-2); transform: translateY(-50%)` as a 28px quiet circular button. Hide when `[data-empty]`.
+  - **Verification:** Run `deno task test:component`. Clear button must stay vertically centered inside the input field and not overflow borders.
+  - **Commit:** `fix(ui): FIX-02 wrap search input and anchor clear button inside control bounds`
+
+- [ ] **STEP-03 (FIX-03) · Fix Notification Toast Overlay & Eliminate Layout Shift (CLS)**
+  - **Priority:** P0 (Layout Stability & Jumping DOM)
+  - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L1455-L1471), [`src/design-system/tokens.css`](../src/design-system/tokens.css#L787-L794), [`src/features/local-ui.tsx`](../src/features/local-ui.tsx#L3214-L3223)
+  - **Evidence:** [`screenshots/14_desktop_toast_layout_bump_bug.png`](screenshots/14_desktop_toast_layout_bump_bug.png)
+  - **Action:** Add `onDismiss` prop and an inline dismiss `<button>` directly inside `Toast`. In `src/features/local-ui.tsx`, delete `.local-ui-toast-wrap` from static flow and render `<Toast onDismiss={() => setAppNotice(null)}>{appNotice}</Toast>`. Ensure `.ds-toast` has `position: fixed; z-index: 30; right: var(--space-4); bottom: max(var(--space-4), calc(var(--control-height) + var(--space-4)))`.
+  - **Verification:** Trigger a project save or expense save. No existing elements on the screen must shift position when the toast appears.
+  - **Commit:** `fix(ui): FIX-03 colocate toast dismiss and move toast to fixed overlay to eliminate layout shift`
+
+- [ ] **STEP-04 (FIX-04) · Place Required Field Asterisks Inline with Labels**
+  - **Priority:** P1 (Form Typography Polish)
+  - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L487-L496)
+  - **Evidence:** [`screenshots/03_desktop_create_project_modal.png`](screenshots/03_desktop_create_project_modal.png), [`screenshots/07_desktop_manual_expense_form.png`](screenshots/07_desktop_manual_expense_form.png)
+  - **Action:** In `TextField`, `TextArea`, `NativeDateField`, `NativeTimeField`, and `SelectField`, move `{props.isRequired ? <span className="ds-field__required">*</span> : null}` inside the `<AriaLabel className="ds-field__label">` tag.
+  - **Verification:** Run `deno task test:component`. Verify required asterisks appear inline directly following the label text.
+  - **Commit:** `fix(ui): FIX-04 nest required asterisk inside label to prevent separate grid row break`
+
+- [ ] **STEP-05 (FIX-05) · Prevent CSS Grid Vertical Stretches on SegmentedControl & Cards**
+  - **Priority:** P1 (Distorted Oval Buttons)
+  - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css#L220-L223, #L546-L570)
+  - **Evidence:** [`screenshots/31_desktop_gallery_overview.png`](screenshots/31_desktop_gallery_overview.png), [`screenshots/32_desktop_gallery_middle.png`](screenshots/32_desktop_gallery_middle.png)
+  - **Action:** Add `align-content: start; align-items: start;` to `.ds-responsive-grid` and `.ds-gallery__section`. Set `align-self: start; height: var(--control-height);` on `.ds-segmented-control`. Add `.ds-segmented-control[data-full-width="true"]` with `flex: 1 1 0` per child for equal distribution.
+  - **Verification:** Run `deno task a11y:gallery`, inspect `gallery.html`. SegmentedControl must render as compact 48px pills, never 220px ovals.
+  - **Commit:** `fix(ui): FIX-05 prevent grid stretching and constrain segmented control heights`
+
+- [ ] **STEP-06 (FIX-06) · Enforce Non-Wrapping Tabular Numbers on Currency Amounts**
+  - **Priority:** P1 (Financial Readability)
+  - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css#L263-L276, #L665-L683)
+  - **Evidence:** [`screenshots/36_desktop_gallery_bottom_4.png`](screenshots/36_desktop_gallery_bottom_4.png)
+  - **Action:** In `.ds-money`, remove `overflow-wrap: anywhere; white-space: normal;`. Set `white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums;`. In `.ds-list-row`, set `.ds-list-row__trailing { flex: 0 0 auto; white-space: nowrap; }` and `.ds-list-row__main { flex: 1 1 auto; min-width: 0; }`.
+  - **Verification:** In `gallery.html`, view long expense row. Money strings (e.g. `SEK -286.40`) must stay on a single line.
+  - **Commit:** `fix(ui): FIX-06 prevent character-by-character vertical wrapping on monetary amounts`
+
+- [ ] **STEP-07 (FIX-07) · Align FilterBar Controls to Flex-End Baseline**
+  - **Priority:** P1 (Visual Hierarchy & Alignment)
+  - **Files:** [`src/features/local-ui.css`](../src/features/local-ui.css#L67-L79), [`src/design-system/tokens.css`](../src/design-system/tokens.css#L896-L903)
+  - **Evidence:** [`screenshots/05_desktop_project_created_toast.png`](screenshots/05_desktop_project_created_toast.png), [`screenshots/15_desktop_expenses_list_with_item.png`](screenshots/15_desktop_expenses_list_with_item.png)
+  - **Action:** Set `align-items: flex-end; gap: var(--space-3);` on `.ds-filter-bar` and `.local-ui-expenses-filter-bar`. On mobile (`< 720px`), change layout to `display: grid; grid-template-columns: 1fr; gap: var(--space-2);`.
+  - **Verification:** Verify Expenses screen on desktop (1280px). Period buttons, Category dropdown, Search, and Filters button must align to an even bottom baseline.
+  - **Commit:** `fix(ui): FIX-07 align filter bar controls to unified flex-end baseline`
+
+- [ ] **STEP-08 (FIX-08) · Enforce Natural Widths on Compact Inputs & Equalize Form Segmented Controls**
+  - **Priority:** P1 (Form Layout Polish)
+  - **Files:** [`src/features/local-ui.tsx`](../src/features/local-ui.tsx), [`src/features/local-ui.css`](../src/features/local-ui.css)
+  - **Evidence:** [`screenshots/07_desktop_manual_expense_form.png`](screenshots/07_desktop_manual_expense_form.png), [`screenshots/18_desktop_organize_view.png`](screenshots/18_desktop_organize_view.png)
+  - **Action:** Pass `fullWidth` to the "Spent / Money back" `SegmentedControl` in `ExpenseForm` so segments split 50/50. Ensure date, time, and currency selectors do not arbitrarily span 100% width on wide desktop screens when paired in a grid.
+  - **Verification:** Open Manual Expense Form. "Spent" and "Money back" tabs must divide the top width evenly with no trailing empty void.
+  - **Commit:** `fix(ui): FIX-08 apply natural control widths and equalize form segmented choice tabs`
+
+- [ ] **STEP-09 (FIX-09) · Polish PageHeader Leading Back & Close Actions**
+  - **Priority:** P2 (Navigation Typography)
+  - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L104-L130), [`src/features/local-ui.tsx`](../src/features/local-ui.tsx)
+  - **Evidence:** [`screenshots/03_desktop_create_project_modal.png`](screenshots/03_desktop_create_project_modal.png), [`screenshots/19_desktop_manage_projects.png`](screenshots/19_desktop_manage_projects.png), [`screenshots/23_desktop_settings_drive_sync.png`](screenshots/23_desktop_settings_drive_sync.png)
+  - **Action:** Replace plain text `<Button variant="quiet">Back</Button>` in `PageHeader` leading slots with an `IconButton` (using `<ArrowLeft size={20} />` for back and `<X size={20} />` for close) and accessible `aria-label`.
+  - **Verification:** Inspect Manage Projects, Google Drive Settings, and Manual Expense Form. Back actions must render as clean 44px icon buttons with proper spacing from titles.
+  - **Commit:** `fix(ui): FIX-09 replace plain text back buttons with styled icon buttons in page headers`
+
+- [ ] **STEP-10 (FIX-10) · Move SecretField "Show Value" Toggle Inline Inside Control**
+  - **Priority:** P2 (Input Ergonomics)
+  - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L604-L620), [`src/design-system/tokens.css`](../src/design-system/tokens.css)
+  - **Evidence:** [`screenshots/24_desktop_settings_gemini.png`](screenshots/24_desktop_settings_gemini.png)
+  - **Action:** Refactor `SecretField` to place the reveal toggle as an absolute trailing action inside `.ds-field-control-wrap` (`position: absolute; right: var(--space-2); top: 50%; transform: translateY(-50%);`) instead of rendering as a separate centered button below the input.
+  - **Verification:** View Gemini API Settings. "Show" / "Hide" toggle must sit inside the right edge of the API key password field.
+  - **Commit:** `fix(ui): FIX-10 anchor secret field reveal toggle inline inside input trailing slot`
+
+- [ ] **STEP-11 (FIX-11) · Conditionally Show Draft Status Banner Only When Form is Dirty**
+  - **Priority:** P2 (Form Noise Reduction)
+  - **Files:** [`src/features/local-ui.tsx`](../src/features/local-ui.tsx#L1910-L1935)
+  - **Evidence:** [`screenshots/07_desktop_manual_expense_form.png`](screenshots/07_desktop_manual_expense_form.png)
+  - **Action:** In `ManualExpenseFormScreen`, only render `<DraftStatus>` if `isDirty` is true or restored draft data is present. Do not show "Unsaved changes" on clean untouched forms.
+  - **Verification:** Open "New expense" from the Add menu. Form must start clean without the top "Unsaved changes" warning card until edits occur.
+  - **Commit:** `fix(ui): FIX-11 show draft status warning only on dirty or restored forms`
+
+- [ ] **STEP-12 (FIX-12) · Standardize Color Swatches (36px) & Add Cancel Button to DangerDialog**
+  - **Priority:** P2 (Visual Balance & Safety)
+  - **Files:** [`src/design-system/components.tsx`](../src/design-system/components.tsx#L826-L874, #L1301-L1336), [`src/design-system/tokens.css`](../src/design-system/tokens.css)
+  - **Evidence:** [`screenshots/21_desktop_create_category_form.png`](screenshots/21_desktop_create_category_form.png), [`screenshots/39_desktop_danger_dialog.png`](screenshots/39_desktop_danger_dialog.png)
+  - **Action:** In `ColorChoiceField`, set swatch dimensions to `36px × 36px` and align preset swatches with the custom color input in an `Inline` container with `--space-2` (8px) gap. In `DangerDialog`, add a secondary `<Button variant="secondary" onPress={close}>Cancel</Button>` preceding the destructive confirmation button in the footer.
+  - **Verification:** Inspect Create Category form (swatches 36px) and trigger DangerDialog in gallery (shows Cancel + Delete buttons).
+  - **Commit:** `fix(ui): FIX-12 standardize color swatch dimensions and pair cancel button in danger dialog footer`
+
+- [ ] **STEP-13 (FIX-13) · Format Currency Numbers to Consistent Two-Digit Decimal Precision**
+  - **Priority:** P3 (Formatting Consistency)
+  - **Files:** [`src/domain/money/format.ts`](../src/domain/money/format.ts)
+  - **Evidence:** [`screenshots/05_desktop_project_created_toast.png`](screenshots/05_desktop_project_created_toast.png), [`screenshots/15_desktop_expenses_list_with_item.png`](screenshots/15_desktop_expenses_list_with_item.png)
+  - **Action:** Ensure currency formatting functions pad fractional amounts to 2 decimal places (`SEK -250.50`, never `SEK -250.5`).
+  - **Verification:** Run `deno task test`. Saved expenses with fractional cents/öre must display exactly 2 decimal digits.
+  - **Commit:** `fix(ui): FIX-13 enforce two-digit decimal precision on fractional currency formatting`
 
 ---
 

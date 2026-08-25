@@ -11,6 +11,7 @@ async function installFakeDrive(
 ): Promise<void> {
   await page.addInitScript(({ boundaryKey, withConflict }) => {
     let authorizationCount = 0;
+    let authorized = false;
     let writeCount = 0;
     let conflictReturned = false;
     const files = new Map<string, {
@@ -93,9 +94,10 @@ async function installFakeDrive(
       },
     };
     const drive = {
-      status: () => "signed-out",
+      status: () => authorized ? "authorized" : "signed-out",
       authorize: () => {
         authorizationCount += 1;
+        authorized = true;
         return Promise.resolve({
           accountId: authorizationCount === 1
             ? "first@example.com"
@@ -103,7 +105,10 @@ async function installFakeDrive(
           scopes: ["appDataFolder"],
         });
       },
-      disconnect: () => Promise.resolve(),
+      disconnect: () => {
+        authorized = false;
+        return Promise.resolve();
+      },
       deleteEverywhere: () => Promise.resolve(),
       readRetirementMarker: () => Promise.resolve(undefined),
       listAppData: () => Promise.resolve([...files.values()]),

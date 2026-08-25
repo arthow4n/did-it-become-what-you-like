@@ -875,7 +875,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** In `gallery.html`, view long expense row. Money strings (e.g. `SEK -286.40`) must stay on a single line.
   - **Commit:** `fix(ui): FIX-06 prevent character-by-character vertical wrapping on monetary amounts`
 
-- [ ] **STEP-07 (FIX-07) · Align FilterBar Controls to Flex-End Baseline**
+- [x] **STEP-07 (FIX-07) · Align FilterBar Controls to Flex-End Baseline**
   - **Priority:** P1 (Visual Hierarchy & Alignment)
   - **Files:** [`src/features/local-ui.css`](../src/features/local-ui.css#L67-L79), [`src/design-system/tokens.css`](../src/design-system/tokens.css#L896-L903)
   - **Evidence:** [`screenshots/05_desktop_project_created_toast.png`](screenshots/05_desktop_project_created_toast.png), [`screenshots/15_desktop_expenses_list_with_item.png`](screenshots/15_desktop_expenses_list_with_item.png)

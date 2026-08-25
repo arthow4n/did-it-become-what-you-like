@@ -1380,10 +1380,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   after closure-3 approval; Q-601, Q-602, Q-603, and Q-604 are `COMPLETE`; and
   R-700 is `BLOCKED` pending a fresh configured-Drive sync smoke and reload
   authorization check after the current production follow-up fixes.
-- **Reconciled branch/upstream:** the prior R-700 follow-up fix is pushed in
-  `f475c19` (`Wire public license and Drive OAuth configuration`); the S-405
-  v3 correction is integrated locally in `7119b8a` and is ready to push after
-  this checkpoint. The Q-604 hosted release and
+- **Reconciled branch/upstream:** the prior R-700 follow-up fixes remain
+  integrated and the latest owner-reported sync recovery correction is pushed
+  in `9d04692` (`Rebuild local sync metadata during recovery`). The Q-604 hosted release and
   Plato's review targeted the earlier `71737ab`; the two findings and the
   bounded correction evidence are recorded above. The root worktree contains
   only the intentionally untracked `A-303-progress.md`, `R-300-progress.md`,
@@ -1494,6 +1493,22 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   journeys passed on standalone reruns and all constituent gates passed.
   CI run `32891890950` and Pages run `32891890933` passed for `df75ded`;
   deployment `6090859888` serves the recovery UI and corrected Drive bundle.
+- **Current owner-reported sync-corruption follow-up:** The owner reported that
+  clicking the explicit remote-reset action still left retry synchronization
+  failing with `Stored data is invalid or corrupt`. The direct correction is
+  pushed as `9d04692`: after deleting the malformed hidden Drive file, recovery
+  rebuilds only the persisted local causal snapshot from the intact local
+  records before retrying. Projects, expenses, and other local records are not
+  erased. Coordinator and actor regressions cover corrupt local metadata,
+  explicit recovery, record preservation, and successful resynchronization.
+  Focused actor and sync integration tests, 80 integration tests, 89 component
+  tests, formatting, lint, type-check, production build, focused configured-
+  Drive E2E (1/1), frozen audit, and diff check passed. The broad `deno task
+  test` run recorded 261 passes and one unrelated existing local-erase test
+  failure caused by missing default browser storage in the Deno environment;
+  that file failed identically when rerun alone, while the affected local UI
+  file passed alone. R-700 remains blocked pending the owner's fresh live
+  configured-Drive smoke and reload authorization check on the new deployment.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

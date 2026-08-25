@@ -1,5 +1,7 @@
 import { expect, test } from "./playwright.ts";
 
+test.use({ viewport: { width: 390, height: 844 } });
+
 const PWA_BOUNDARY_KEY = "__DID_IT_BECAME_WHAT_YOU_LIKE_PWA_BOUNDARY__";
 
 async function installFakePwaBoundary(

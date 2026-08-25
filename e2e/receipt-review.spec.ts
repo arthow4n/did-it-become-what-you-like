@@ -1,6 +1,8 @@
 import { Buffer } from "node:buffer";
 import { expect, test } from "./playwright.ts";
 
+test.use({ viewport: { width: 390, height: 844 } });
+
 const ONE_PIXEL_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
   "base64",
@@ -124,7 +126,7 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
   await expect(page.getByRole("dialog", { name: "Set up Gemini" }))
     .toBeVisible();
   await page.getByRole("textbox", { name: "API key" }).fill(
-    "AIza.fake-e2e-key",
+    "e2e-test-placeholder",
   );
   await page.getByRole("button", { name: "Save and continue" }).click();
   const modelPicker = page.getByRole("combobox", { name: "Model" });
@@ -208,7 +210,7 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
     "category-uncategorized",
   );
   expect(requestBody.systemInstruction.parts[0].text).toContain("SEK");
-  expect(JSON.stringify(requestBody)).not.toContain("AIza.fake-e2e-key");
+  expect(JSON.stringify(requestBody)).not.toContain("e2e-test-placeholder");
   expect(JSON.stringify(requestBody)).not.toContain("Receipt project");
   expect(await page.locator('input[type="file"]').count()).toBe(0);
   const localStorageKeys = await page.evaluate(() => Object.keys(localStorage));

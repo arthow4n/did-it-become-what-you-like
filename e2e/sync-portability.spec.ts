@@ -1,6 +1,8 @@
 import { expect, test } from "./playwright.ts";
 import type { Page } from "@playwright/test";
 
+test.use({ viewport: { width: 1280, height: 800 } });
+
 const BOUNDARY_KEY = "__DID_IT_BECAME_WHAT_YOU_LIKE_SYNC_BOUNDARY__";
 
 async function installFakeDrive(

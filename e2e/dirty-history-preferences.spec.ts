@@ -1,6 +1,8 @@
 import { Buffer } from "node:buffer";
 import { expect, test } from "./playwright.ts";
 
+test.use({ viewport: { width: 390, height: 844 } });
+
 const ONE_PIXEL_PNG =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 

@@ -1598,6 +1598,19 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   discard unsaved input. Fresh independent R-700 closure review is now
   `IN_PROGRESS` under Zeno; final gate status remains pending that review's
   evidence and any bounded fixes it identifies.
+- **Safe PWA update detection:** The owner noted that the newly deployed sync
+  fix required a manual page refresh before the open tab loaded it. The bounded
+  follow-up `41edbe7` adds automatic service-worker update checks on startup,
+  focus, visible-tab return, reconnect, and a five-minute production interval.
+  Checks dispatch through the existing XState update machine, preserve the
+  dirty-input guard, and never force a reload. Startup and foreground update
+  regressions passed 15/15; the integrated source then passed `deno task
+  fmt:check`, `deno task lint`, `deno task check`, `deno task test` (264/264),
+  and `deno task build`. CI run `32901078430` and Pages run `32901078699`
+  succeeded; the live bundle `assets/index-DqcTniHc.js` identifies `41edbe7`
+  and contains the update-check path. An already-open tab still needs one
+  refresh to receive this new behavior; future deployments are detected and
+  offered safely. R-700 review remains `IN_PROGRESS`.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

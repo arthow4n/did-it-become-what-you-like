@@ -805,11 +805,9 @@ Several views fail to apply the 4px token spacing system consistently:
    - `--space-7` (32px) / `--space-8` (40px): Page gutters and main landmark margins
 2. Enforce that every interactive element has at least `--space-2` (8px) breathing room from neighboring elements.
 
----
-
 ## 4. Prioritized Action Plan for Implementation Agent
 
-This table orders the remediation tasks by dependency and impact so a future coding agent can implement them sequentially:
+This table orders the remediation tasks by dependency and impact so a future coding agent or orchestrator can track implementation progress:
 
 | Priority | Task ID | Description | Affected Files | Expected Verification |
 |---|---|---|---|---|
@@ -829,7 +827,449 @@ This table orders the remediation tasks by dependency and impact so a future cod
 
 ---
 
-## 5. Supporting Guidelines & Skills
+## 5. Subagent Team Delegation & Workstream Orchestration Plan
+
+This section provides a battle-ready orchestration plan to delegate the remediation work across concurrent or sequential subagents without file collisions or merge conflicts.
+
+### 5.1 Workstream Matrix & File Ownership
+
+To prevent merge collisions, repository files are divided into disjoint ownership scopes:
+
+```mermaid
+graph TD
+    WS1["Workstream 1: Primitives & Tokens<br/>(src/design-system/components.tsx, tokens.css)"]
+    WS3A["Workstream 3A: Domain Currency Format<br/>(src/domain/money/)"]
+    WS2["Workstream 2: Feature Integration & Screens<br/>(src/features/local-ui.tsx, local-ui.css)"]
+    WS3B["Workstream 3B: QA & Visual Regression<br/>(agent-browser & gallery verification)"]
+
+    WS1 --> WS2
+    WS3A --> WS2
+    WS2 --> WS3B
+```
+
+| Workstream | Role / Agent | Owned Files | Assigned Tasks | Prerequisites |
+|---|---|---|---|---|
+| **WS-1** | Design System Specialist | `src/design-system/components.tsx`<br/>`src/design-system/tokens.css` | `FIX-01`, `FIX-02`, `FIX-03` (component), `FIX-04`, `FIX-05`, `FIX-06`, `FIX-09` (primitive), `FIX-10`, `FIX-12` | None |
+| **WS-2** | Application Feature Specialist | `src/features/local-ui.tsx`<br/>`src/features/local-ui.css`<br/>`src/features/settings-pwa.css` | `FIX-03` (shell), `FIX-07`, `FIX-08`, `FIX-09` (screens), `FIX-11` | WS-1 (reads updated primitives) |
+| **WS-3** | Domain & QA Specialist | `src/domain/money/format.ts`<br/>`src/design-system/gallery.tsx`<br/>`ui-audit-2026-08-26/` | `FIX-13`, regression test suite, before/after `agent-browser` captures | WS-1 & WS-2 |
+
+---
+
+### 5.2 Exact Code Specifications per Workstream
+
+#### Workstream 1: Primitives & Tokens Specification
+
+##### 1.1 `FIX-01`: Mobile Bottom Navigation & Main Padding
+In `src/design-system/tokens.css`:
+```css
+/* Update .ds-navigation for mobile (< 720px) */
+@media (max-width: 719px) {
+  .ds-navigation {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
+    background: var(--color-surface-1);
+    border-top: 1px solid var(--color-border-subtle);
+    box-shadow: 0 -4px 16px rgb(0 0 0 / 28%);
+  }
+
+  .ds-app-frame__main {
+    padding: var(--space-4);
+    padding-bottom: calc(var(--control-height) + var(--space-6) + env(safe-area-inset-bottom));
+  }
+
+  .ds-navigation__item {
+    flex-direction: column;
+    gap: 2px;
+    font-size: var(--font-size-caption);
+    min-height: 48px;
+    padding: var(--space-1) var(--space-2);
+  }
+}
+```
+
+##### 1.2 `FIX-02`: SearchField Clear Button Wrapper
+In `src/design-system/components.tsx` (`SearchField`):
+```tsx
+export function SearchField({
+  label,
+  placeholder,
+  description,
+  className,
+  onValueChange,
+  ...props
+}: SearchFieldProps) {
+  return (
+    <AriaSearchField
+      {...props}
+      className={cx("ds-field", "ds-search-field", className)}
+      onChange={onValueChange}
+    >
+      <AriaLabel className="ds-field__label">{label}</AriaLabel>
+      <div className="ds-field-control-wrap">
+        <AriaInput className="ds-field-control ds-search-field__input" placeholder={placeholder} />
+        <AriaButton
+          className="ds-search-field__clear"
+          aria-label="Clear search"
+          onPress={() => onValueChange?.("")}
+        >
+          <Icon><X size={16} /></Icon>
+        </AriaButton>
+      </div>
+      {description ? (
+        <AriaText slot="description" className="ds-field__description">
+          {description}
+        </AriaText>
+      ) : null}
+    </AriaSearchField>
+  );
+}
+```
+In `src/design-system/tokens.css`:
+```css
+.ds-field-control-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.ds-search-field__input {
+  padding-inline-end: var(--space-8);
+}
+
+.ds-search-field__clear {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.ds-search-field__clear:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-3);
+}
+
+.ds-search-field[data-empty] .ds-search-field__clear {
+  display: none;
+}
+```
+
+##### 1.3 `FIX-03`: Toast Component with Colocated Dismiss
+In `src/design-system/components.tsx` (`Toast`):
+```tsx
+export type ToastProps = {
+  children: ReactNode;
+  tone?: Tone;
+  onDismiss?: () => void;
+  className?: string;
+};
+
+export function Toast({
+  children,
+  tone = "positive",
+  onDismiss,
+  className,
+}: ToastProps) {
+  return (
+    <div
+      className={cx("ds-toast", "ds-status-message", className)}
+      data-tone={tone}
+      role="status"
+      aria-live="polite"
+    >
+      <div className="ds-toast__content">{children}</div>
+      {onDismiss ? (
+        <button
+          type="button"
+          className="ds-toast__dismiss"
+          aria-label="Dismiss notification"
+          onClick={onDismiss}
+        >
+          <X size={16} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+```
+In `src/design-system/tokens.css`:
+```css
+.ds-toast {
+  position: fixed;
+  z-index: 30;
+  right: var(--space-4);
+  bottom: max(var(--space-4), calc(var(--control-height) + var(--space-4)));
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: min(90vw, 420px);
+  box-shadow: var(--shadow-overlay);
+}
+
+.ds-toast__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.ds-toast__dismiss:hover {
+  opacity: 1;
+  background: rgb(255 255 255 / 12%);
+}
+```
+
+##### 1.4 `FIX-04`: Inline Required Field Asterisks
+In `src/design-system/components.tsx` (`TextField`, `TextArea`, `NativeDateField`, `NativeTimeField`, `SelectField`):
+```tsx
+<AriaLabel className="ds-field__label">
+  {label}
+  {props.isRequired ? <span className="ds-field__required" aria-hidden="true"> *</span> : null}
+</AriaLabel>
+```
+
+##### 1.5 `FIX-05`: Grid Stretches & SegmentedControl Height
+In `src/design-system/tokens.css`:
+```css
+.ds-responsive-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  align-items: start;
+}
+
+.ds-segmented-control {
+  display: inline-flex;
+  align-self: start;
+  min-height: var(--target-min);
+  height: var(--control-height);
+  max-width: 100%;
+  overflow-x: auto;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+}
+
+.ds-segmented-control[data-full-width="true"] {
+  display: flex;
+  width: 100%;
+}
+
+.ds-segmented-control[data-full-width="true"] > * {
+  flex: 1 1 0;
+  text-align: center;
+  justify-content: center;
+}
+```
+
+##### 1.6 `FIX-06`: Tabular Non-Wrapping Money Text
+In `src/design-system/tokens.css`:
+```css
+.ds-money {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ds-list-row {
+  display: flex;
+  min-width: 0;
+  min-height: var(--control-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.ds-list-row__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ds-list-row__trailing {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+```
+
+##### 1.7 `FIX-10`: SecretField Trailing Toggle
+In `src/design-system/components.tsx` (`SecretField`):
+```tsx
+export function SecretField({ revealLabel = "Show value", ...props }: SecretFieldProps) {
+  const [revealed, setRevealed] = useState(false);
+  return (
+    <AriaTextField
+      {...props}
+      type={revealed ? "text" : "password"}
+      className={cx("ds-field", "ds-secret-field", props.className)}
+    >
+      <AriaLabel className="ds-field__label">
+        {props.label}
+        {props.isRequired ? <span className="ds-field__required"> *</span> : null}
+      </AriaLabel>
+      <div className="ds-field-control-wrap">
+        <AriaInput className="ds-field-control ds-secret-field__input" placeholder={props.placeholder} />
+        <button
+          type="button"
+          className="ds-secret-field__toggle"
+          aria-label={revealed ? "Hide value" : revealLabel}
+          onClick={() => setRevealed((curr) => !curr)}
+        >
+          <Text size="label" tone="accent">{revealed ? "Hide" : "Show"}</Text>
+        </button>
+      </div>
+    </AriaTextField>
+  );
+}
+```
+
+---
+
+#### Workstream 2: Feature Shell & Screen Layouts Specification
+
+##### 2.1 `FIX-03` Shell Integration: Toast Invocation
+In `src/features/local-ui.tsx` (lines 3214-3223):
+```tsx
+/* Replace in-flow .local-ui-toast-wrap with direct floating Toast */
+{appNotice ? (
+  <Toast onDismiss={() => setAppNotice(null)}>
+    {appNotice}
+  </Toast>
+) : null}
+```
+
+##### 2.2 `FIX-07` & `FIX-08`: FilterBar Baseline & Form Natural Widths
+In `src/features/local-ui.css`:
+```css
+.local-ui-expenses-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+@media (max-width: 719px) {
+  .local-ui-expenses-filter-bar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+}
+```
+
+##### 2.3 `FIX-11`: Conditional Unsaved Changes Warning
+In `src/features/local-ui.tsx` (`ManualExpenseFormScreen`):
+```tsx
+/* Render DraftStatus only when form has active uncommitted changes */
+{isDirty ? (
+  <DraftStatus
+    title="Unsaved changes"
+    description="Your unfinished form is saved on this device."
+  />
+) : null}
+```
+
+---
+
+#### Workstream 3: Domain Formatting & QA Verification Specification
+
+##### 3.1 `FIX-13`: Decimal Currency Formatting
+In `src/domain/money/format.ts`:
+Ensure all fractional currencies format with fixed 2-decimal precision:
+```ts
+export function formatMoneyAmount(amount: string | number, currencyCode: string): string {
+  const numeric = Number(amount);
+  const formatted = numeric.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `${currencyCode} ${formatted}`;
+}
+```
+
+---
+
+### 5.3 Subagent Dispatch Prompts
+
+When orchestrating subagents via `invoke_subagent`, use the following task descriptions:
+
+#### Subagent 1 Prompt (Design System Primitives & Tokens)
+```text
+Task: Implement Design System Primitives & Tokens Remediation (FIX-01, FIX-02, FIX-03, FIX-04, FIX-05, FIX-06, FIX-09, FIX-10, FIX-12)
+Target Files: src/design-system/components.tsx, src/design-system/tokens.css
+Specification: Follow ui-audit-2026-08-26/UI_AUDIT_REPORT.md Section 5.2 (Workstream 1).
+Deliverables:
+1. Fix mobile bottom navigation (fixed bottom: 0 with safe area padding).
+2. Wrap SearchField input in .ds-field-control-wrap and position clear button cleanly.
+3. Update Toast component to colocate dismiss button.
+4. Move required asterisk inside AriaLabel.
+5. Set align-items: start on ResponsiveGrid and constrain SegmentedControl.
+6. Enforce white-space: nowrap on .ds-money.
+7. Refactor SecretField trailing toggle.
+8. Add Cancel button to DangerDialog and size ColorChoiceField to 36px.
+Validation: Run `deno task fmt:check`, `deno task lint`, `deno task check`, `deno task test:component`.
+```
+
+#### Subagent 2 Prompt (Features & App Shell Integration)
+```text
+Task: Implement Feature Shell & Screen Integration Remediation (FIX-03 Shell, FIX-07, FIX-08, FIX-09 Screens, FIX-11)
+Target Files: src/features/local-ui.tsx, src/features/local-ui.css, src/features/settings-pwa.css
+Prerequisite: Workstream 1 primitives must be completed.
+Specification: Follow ui-audit-2026-08-26/UI_AUDIT_REPORT.md Section 5.2 (Workstream 2).
+Deliverables:
+1. Remove in-flow .local-ui-toast-wrap from LocalShellApp; pass onDismiss to Toast.
+2. Align FilterBar controls to flex-end baseline; grid on mobile.
+3. Pass fullWidth prop to Spent/Money back segmented control.
+4. Conditionally render DraftStatus only when form isDirty.
+5. Update PageHeader leading triggers to use styled icon buttons with ArrowLeft / X.
+Validation: Run `deno task fmt:check`, `deno task lint`, `deno task check`, `deno task test:integration`, `deno task test`.
+```
+
+#### Subagent 3 Prompt (Domain Formatting & QA Verification)
+```text
+Task: Implement Currency Formatting & End-to-End Visual Verification (FIX-13 & QA)
+Target Files: src/domain/money/format.ts, ui-audit-2026-08-26/
+Prerequisite: Workstream 1 & 2 must be completed.
+Specification: Follow ui-audit-2026-08-26/UI_AUDIT_REPORT.md Section 5.2 (Workstream 3).
+Deliverables:
+1. Ensure money formatting enforces 2 decimal places for fractional currencies.
+2. Run full verification suite (`deno task verify`).
+3. Use agent-browser on mobile (390×844) and desktop (1280×800) to verify:
+   - Bottom mobile nav bar
+   - No clear button overflows
+   - Zero toast CLS layout shift
+   - No 220px segmented control ovals
+   - Clean FilterBar baseline
+Validation: Report exact terminal command outputs and capture verification screenshots.
+```
+
+---
+
+## 6. Supporting Guidelines & Skills
 
 To assist coding agents in building and maintaining high-quality UI:
 - **Design System Specification:** [`DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md) has been updated with explicit rules on layout, flexbox discipline, and spacing rhythm.
@@ -837,7 +1277,7 @@ To assist coding agents in building and maintaining high-quality UI:
 
 ---
 
-## 6. Verification Commands
+## 7. Verification Commands
 
 Before and after completing fixes, the implementing agent must execute:
 ```bash

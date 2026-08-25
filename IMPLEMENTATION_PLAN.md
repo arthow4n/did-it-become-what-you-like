@@ -1444,7 +1444,7 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   recorded above. Pages run `32875077172` and deployment `6088023350` now serve
   the corrected source from `9c50f49`; the remaining step is one fresh
   configured-Drive sync smoke before R-700 review resumes.
-- **Active production follow-ups:** The owner reported that, after creating a
+- **Production follow-up result:** The owner reported that, after creating a
   local expense, manual synchronization returned `invalid-request`, retry
   repeated the failure, and a page reload lost in-memory Drive authorization.
   S-406 completed the Drive request correction in
@@ -1454,16 +1454,25 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   investigation concluded that bearer-token persistence is unsafe and
   incompatible with browser-only GIS implicit flow; its preserved handover is
   `~/git/worktrees/did-it-become-what-you-like-s-407-drive-auth/S-407-progress.md`.
-  The bounded implementation will use one-click reconnect with the stored
-  account hint and no repeated consent, without storing access or refresh
-  tokens. S-408 owns the missing `sync.retry` transition from the actor's
-  generic error state in `src/actors/sync/machine.ts` and its actor tests, so
-  the visible Retry action is not a no-op for non-retryable request failures.
+  S-407's bounded implementation is integrated as `d17fe87` from worker
+  commit `9eba9e1`: reconnect uses GIS `prompt: ""` through the existing user
+  gesture, keeps bearer tokens memory-only, preserves permission-ID account
+  binding, and marks reloaded configured accounts as authorization-needed. S-408
+  is integrated as `14db5aa` from worker commit `c13fcba`: generic sync errors
+  now have a safe `sync.retry` transition, including honest offline behavior.
+  The bounded reconnect flow avoids repeated consent but cannot provide fully
+  automatic token persistence under browser-only GIS rules; a user gesture is
+  still required. Neither follow-up may edit the other scope, the plan,
+  `master`, remotes, or preserved worktrees.
   The first-use no-project guard is expected MVP behavior under `UI_SPEC.md`
   Screen 3/7; navigation placement and broader UI polish are recorded as
   owner-requested post-MVP follow-ups, not silently expanded into this fix
-  wave. Neither follow-up may edit the other scope, the plan, `master`,
-  remotes, or preserved worktrees.
+  wave. Root `deno task verify` passed after integration: 257 unit, 77
+  integration, 88 component, 37 domain, 1 actor, 5 local E2E journeys,
+  gallery/browser inspection, Pages/CI/toolchain checks, both builds, frozen
+  audit, and diff check. The focused configured-Drive E2E passed 2/2 after
+  updating its fake adapter to report authorization truthfully across connect
+  and disconnect.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

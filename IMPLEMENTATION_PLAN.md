@@ -1524,9 +1524,11 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   local-metadata rebuild/resync flow. Validation passed 264 aggregate tests,
   82 integration tests, 89 component tests, 9 focused sync-actor tests, focused
   configured-Drive E2E (1/1), formatting, lint, type-check, both builds, frozen
-  audit, and diff check. R-700 remains blocked pending the owner's fresh live
-  configured-Drive smoke and reload authorization check after Pages deploys
-  this commit.
+  audit, and diff check. CI run `32895505472` and Pages run `32895506403`
+  succeeded for checkpoint `8d38a4c`; the live site serves
+  `assets/index-CxefybvS.js`, which identifies build `8d38a4c` and contains the
+  corrected recovery action. R-700 remains blocked pending the owner's fresh
+  live configured-Drive smoke and reload authorization check.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

@@ -859,7 +859,7 @@ This checklist provides a linear, dependency-ordered sequence of 13 concrete tas
   - **Verification:** Run `deno task test:component`. Verify required asterisks appear inline directly following the label text.
   - **Commit:** `fix(ui): FIX-04 nest required asterisk inside label to prevent separate grid row break`
 
-- [ ] **STEP-05 (FIX-05) · Prevent CSS Grid Vertical Stretches on SegmentedControl & Cards**
+- [x] **STEP-05 (FIX-05) · Prevent CSS Grid Vertical Stretches on SegmentedControl & Cards**
   - **Priority:** P1 (Distorted Oval Buttons)
   - **Files:** [`src/design-system/tokens.css`](../src/design-system/tokens.css#L220-L223, #L546-L570)
   - **Evidence:** [`screenshots/31_desktop_gallery_overview.png`](screenshots/31_desktop_gallery_overview.png), [`screenshots/32_desktop_gallery_middle.png`](screenshots/32_desktop_gallery_middle.png)

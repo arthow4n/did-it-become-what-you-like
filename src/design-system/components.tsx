@@ -984,16 +984,18 @@ export type SegmentedControlProps =
   & {
     label: string;
     options: SegmentedOption[];
+    fullWidth?: boolean;
     className?: string;
   };
 
 export function SegmentedControl(
-  { label, options, className, ...props }: SegmentedControlProps,
+  { label, options, fullWidth, className, ...props }: SegmentedControlProps,
 ) {
   return (
     <AriaRadioGroup
       {...props}
       aria-label={label}
+      data-full-width={fullWidth ? "true" : undefined}
       className={cx("ds-segmented-control", className)}
     >
       {options.map((option) => (

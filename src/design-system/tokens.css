@@ -221,6 +221,8 @@
   .ds-responsive-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    align-items: start;
   }
 
   .ds-heading,
@@ -569,12 +571,26 @@
 
   .ds-segmented-control {
     display: inline-flex;
+    align-self: start;
+    min-height: var(--target-min);
+    height: var(--control-height);
     max-width: 100%;
     overflow-x: auto;
     padding: var(--space-1);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-pill);
     background: var(--color-surface-2);
+  }
+
+  .ds-segmented-control[data-full-width="true"] {
+    display: flex;
+    width: 100%;
+  }
+
+  .ds-segmented-control[data-full-width="true"] > * {
+    flex: 1 1 0;
+    text-align: center;
+    justify-content: center;
   }
 
   .ds-segmented-control > * {
@@ -1008,6 +1024,8 @@
   .ds-gallery__section {
     display: grid;
     gap: var(--space-4);
+    align-content: start;
+    align-items: start;
     padding: var(--space-4);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-card);
@@ -1017,6 +1035,8 @@
   .ds-gallery__surface {
     display: grid;
     gap: var(--space-4);
+    align-content: start;
+    align-items: start;
     padding: var(--space-4);
     border-radius: var(--radius-card);
     background: var(--color-surface-2);

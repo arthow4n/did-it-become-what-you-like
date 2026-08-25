@@ -973,17 +973,18 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 
 #### R-700 — Final independent release review and definition-of-done gate
 
-- **Status/dependencies:** `BLOCKED` on one owner-supplied production OAuth
-  configuration; depends on `Q-604`, which is complete.
-- **Dispatch:** the integration owner has created the isolated review worktree
-  `~/git/worktrees/did-it-become-what-you-like-r-700-final` on branch
-  `review/r-700-final` at pushed `master` `5a65ffd`, and dispatched one fresh
-  read-only Luna `xhigh` reviewer. The reviewer must inspect the full
-  repository and this ledger first, preserve a timestamped untracked handover,
-  and must not edit source, this plan, remotes, or another task's ownership.
-  Any substantiated finding must return as a separately scoped fix through its
-  responsible task area. Plato (`01a036c4-c4db-71a0-82cd-6e24fb101c33`) is the
-  assigned reviewer.
+- **Status/dependencies:** `IN_PROGRESS`; the owner-supplied production OAuth
+  configuration and fresh same-account desktop sync smoke are now complete;
+  depends on `Q-604`, which is complete.
+- **Dispatch:** the earlier `review/r-700-final` handover remains preserved,
+  but it is not reused as closure evidence. A fresh read-only Luna `xhigh`
+  reviewer, Zeno (`01a03ac5-bc27-76e1-a906-37f66af996a5`), is independently
+  reviewing the current pushed `master` after the owner confirmed that a new
+  desktop can sync the existing data after refreshing the deployed bundle.
+  The reviewer must inspect the full repository and this ledger first,
+  preserve a timestamped untracked handover, and must not edit source, this
+  plan, remotes, or another task's ownership. Any substantiated finding must
+  return as a separately scoped fix through its responsible task area.
 - **Ownership:** full repository read-only review first; fixes individually
   scoped and returned through the responsible task area.
 - **Scope/non-goals:** independently compare code, tests, deployment, and this
@@ -1587,8 +1588,16 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `deno task check`, `deno task test` (264/264), and `deno task build`. CI run
   `32899199076` passed; the Pages deployment for `32899199147` now serves
   `assets/index-U1nMTh5b.js`, which identifies `0ce0abe` and contains the media
-  upload path. R-700 remains blocked pending the owner's fresh desktop sync
-  smoke and reload authorization check.
+  upload path. R-700 remains pending the owner's fresh desktop sync smoke and
+  the fresh independent closure review recorded below.
+- **R-700 owner-smoke update:** The owner confirmed that the new desktop now
+  synchronizes successfully with the existing Google Drive data after a page
+  refresh. The refresh loaded the newly deployed bundle; it is not an
+  additional Drive data-recovery step. The existing PWA flow intentionally
+  offers a safe update/reload path rather than forcing a reload that could
+  discard unsaved input. Fresh independent R-700 closure review is now
+  `IN_PROGRESS` under Zeno; final gate status remains pending that review's
+  evidence and any bounded fixes it identifies.
 - **Completed documentation tasks:** `P-000`. Draft `e9e0822` was independently
   reviewed; all one severity-1, ten severity-2, and three severity-3 findings
   were fixed in `5165d60`. A read-only Luna `xhigh` closure review at `5165d60`

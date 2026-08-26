@@ -24,6 +24,8 @@
   owner says otherwise.
 - Keep commits focused and use commit messages that describe the completed
   change.
+- Any spec/impl plan/decision type of document deletion (archiving) should be
+  committed with `[archive]` in the commit message.
 - Never force-push or overwrite unrelated work to satisfy the automatic-push
   preference. Integrate concurrent remote changes safely.
 

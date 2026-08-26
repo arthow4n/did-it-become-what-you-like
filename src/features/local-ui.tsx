@@ -60,7 +60,6 @@ import {
   FilterBar,
   FilterSheet,
   FormActions,
-  GlobalStatus,
   Heading,
   Icon,
   IconButton,
@@ -654,14 +653,6 @@ export function ExpensesScreen({
           title="Expenses"
           eyebrow={currentProject?.name ?? "Local project"}
           description="Review the selected project and calendar period."
-          status={
-            <GlobalStatus
-              status={offline ? "offline" : "synced"}
-              detail={offline
-                ? "Local browsing and saving remain available."
-                : "Saved on this device."}
-            />
-          }
           actions={<Button onPress={onAdd}>Add expense</Button>}
         />
         {offline

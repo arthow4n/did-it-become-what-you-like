@@ -135,7 +135,7 @@
 
   .local-ui-overlay {
     position: fixed;
-    z-index: 10;
+    z-index: 40;
     inset: 0;
     display: grid;
     align-items: end;
@@ -176,6 +176,7 @@
 
     .local-ui-add-choice {
       border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
+      padding-bottom: max(var(--space-5), env(safe-area-inset-bottom));
     }
   }
 

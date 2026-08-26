@@ -225,30 +225,40 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-001 — Freeze facade contracts and encode migration governance
 
-- **Status/dependencies:** `IN_PROGRESS`; plan/governance work is authorized by
+- **Status/dependencies:** `COMPLETE`; plan/governance work was authorized by
   the owner's request to work autonomously on the M8 migration plan. Runtime
-  migration implementation remains unauthorized and is out of scope for this
+  migration implementation remains unauthorized and was out of scope for this
   task; depends on completed `R-700`.
 - **Owned scope:** `AGENTS.md`, `DESIGN_SYSTEM.md`, `IMPLEMENTATION_PLAN.md`,
   and contract/inventory documentation or tests under `src/design-system/**`; no
   runtime implementation.
-- [ ] Add the locked boundary rules above to `AGENTS.md` as permanent agent
+- [x] Add the locked boundary rules above to `AGENTS.md` as permanent agent
       rules and revise `DESIGN_SYSTEM.md` from repository-owned React Aria
       implementation to repository-facade/Mantine implementation.
-- [ ] Inventory every public export in `src/design-system/index.ts`, every
+- [x] Inventory every public export in `src/design-system/index.ts`, every
       consumer, and every React Aria primitive currently wrapped.
-- [ ] Classify each facade export as a direct Mantine wrapper, small facade
+- [x] Classify each facade export as a direct Mantine wrapper, small facade
       composition, domain composite, or approved native control, and record its
       target Mantine/public-browser primitive.
-- [ ] Freeze the current public contract with compile-time/API tests and
+- [x] Freeze the current public contract with compile-time/API tests and
       component behavior tests for representative props, callbacks, refs,
       labels, validation, focus, and controlled values.
-- [ ] Record any proposed facade change as an explicit impact item; default to
+- [x] Record any proposed facade change as an explicit impact item; default to
       preserving all application-facing contracts and screen markup.
 - **Focused verification:** `deno task test:affected`; documentation/import
   searches; changed-file format/lint; `git diff --check`.
-- **Acceptance:** governance is durable outside this plan, migration matrix has
-  no unclassified export, and no runtime/dependency change has occurred.
+- **Evidence:** commit `3726591` is pushed to `origin/master`. `deno task
+  test:affected` passed (1 test); direct design-system tests plus the new API
+  test passed (18 tests); `deno check --config deno.json
+  src/design-system/public-api.test.ts` passed; `deno fmt --check
+  src/design-system/public-api.test.ts` and `deno lint
+  src/design-system/public-api.test.ts` passed; the facade boundary search
+  found no component-library imports in `src/features/**` or `src/app/**`;
+  the export scan found all 151 public declarations named in
+  `DESIGN_SYSTEM.md`; and `git diff --check` passed.
+- **Acceptance:** governance is durable outside this plan, the migration matrix
+  has no unclassified export, and no runtime/dependency/generated-asset/
+  styling change occurred.
 
 #### M8-002 — Prove and pin Mantine compatibility
 
@@ -609,25 +619,31 @@ evidence, and the next action is dependency-safe.
 
 ## Current Checkpoint
 
-- **Plan state:** Released baseline through `R-700` is `COMPLETE`. `M8-001`
-  through `M8-010` and `R-810` through `R-850` are `PENDING`.
+- **Plan state:** Released baseline through `R-700` and `M8-001` are
+  `COMPLETE`. `M8-002` through `M8-010` and `R-810` through `R-850` remain
+  `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly requested autonomous work on the M8 migration plan. This
   authorizes M8-001 planning/governance reconciliation only; M8 runtime,
   dependency, generated-asset, and styling implementation remains unauthorized.
-- **Worktree state:** Repository is clean with no unmerged worktrees.
-- **Verification status:** Revised non-duplicating `deno task verify` passed at
-  commit `ee9f4fd`: 331 Deno tests, 11 E2E tests, gallery/axe at three
-  viewports, browser/toolchain checks, one build, Pages artifact inspection,
-  frozen audit, and diff check.
-- **M8 active/interrupted work:** The primary agent owns `M8-001` on `master`.
-  No implementation or review agent is assigned, no migration branch/worktree
-  exists, and no M8 commit is unpushed.
-- **Exact next action:** complete the M8-001 documentation and compile-time
-  contract freeze, run its focused checks, then commit/push the documentation
-  increment and stop before R-810 because no independent read-only reviewer is
-  available in this session.
+- **Worktree state:** `master` is clean and aligned with `origin/master`; no
+  M8 branch/worktree exists. Historical non-M8 worktrees remain present and
+  were preserved untouched.
+- **Verification status:** The released baseline's revised non-duplicating
+  `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
+  gallery/axe at three viewports, browser/toolchain checks, one build, Pages
+  artifact inspection, frozen audit, and diff check). M8-001 evidence is
+  recorded above for pushed commit `3726591`; no dependency/runtime check was
+  run because M8 implementation remains unauthorized.
+- **M8 active/interrupted work:** No implementation or review agent is
+  assigned, no migration branch/worktree exists, and no M8 commit is unpushed.
+  `M8-001` is complete; the primary agent has released ownership.
+- **Exact next action:** wait for an explicit owner instruction to start M8
+  migration implementation. Once received, run the M8 restart/recovery
+  checklist, mark only `M8-002` `IN_PROGRESS`, and execute it with the primary
+  agent; do not dispatch an implementation agent. At `R-810`, stop if no fresh
+  independent read-only reviewer is available.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

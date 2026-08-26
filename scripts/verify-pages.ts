@@ -1,11 +1,52 @@
 /// <reference path="./deno.d.ts" />
 
 import { hashRouteUrl } from "../src/app/routing.ts";
-import { assertRestrictiveCsp } from "../spikes/browser-integrations/pwa.ts";
 import {
   isWithinRepositoryServiceWorkerScope,
   serviceWorkerRegistrationTarget,
 } from "../src/app/pwa.ts";
+
+export const CSP_DIRECTIVES = {
+  "base-uri": ["'none'"],
+  "connect-src": [
+    "'self'",
+    "https://accounts.google.com",
+    "https://www.googleapis.com",
+    "https://generativelanguage.googleapis.com",
+  ],
+  "default-src": ["'self'"],
+  "font-src": ["'self'"],
+  "frame-src": ["https://accounts.google.com/gsi/"],
+  "img-src": ["'self'", "blob:", "data:"],
+  "manifest-src": ["'self'"],
+  "object-src": ["'none'"],
+  "script-src": [
+    "'self'",
+    "'wasm-unsafe-eval'",
+    "https://accounts.google.com/gsi/client",
+  ],
+  "style-src": ["'self'"],
+  "worker-src": ["'self'"],
+} as const;
+
+export function contentSecurityPolicy(): string {
+  return Object.entries(CSP_DIRECTIVES)
+    .map(([directive, sources]) => `${directive} ${sources.join(" ")}`)
+    .join("; ");
+}
+
+export function assertRestrictiveCsp(csp: string): void {
+  const expected = contentSecurityPolicy();
+  if (csp !== expected) {
+    throw new Error("CSP changed from the locked allowlist");
+  }
+  if (csp.includes("https:") && !csp.includes("https://accounts.google.com")) {
+    throw new Error("CSP has an unreviewed broad HTTPS source");
+  }
+  if (csp.includes("'unsafe-inline'") || csp.includes("'unsafe-eval'")) {
+    throw new Error("CSP permits unsafe script execution");
+  }
+}
 
 const BASE_PATH = "/did-it-become-what-you-like/";
 const DIST = "dist";

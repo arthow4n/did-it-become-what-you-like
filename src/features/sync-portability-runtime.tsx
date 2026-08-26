@@ -96,6 +96,7 @@ import {
 import {
   GlobalStatus as SyncGlobalStatus,
   GoogleDriveSyncScreen,
+  isGlobalStatusActionable,
   KnownDevicesScreen,
   type KnownDeviceViewModel,
   type SyncConnectionViewModel,
@@ -1768,14 +1769,21 @@ export function SyncPortabilityRuntime({
     )
     : children;
 
+  const showShellStatus = screen !== "sync" &&
+    isGlobalStatusActionable(syncView);
+
   return (
     <>
-      <div className="sync-ui-shell-status">
-        <SyncGlobalStatus
-          view={syncView}
-          onOpenSync={() => onNavigate("/settings/sync")}
-        />
-      </div>
+      {showShellStatus
+        ? (
+          <div className="sync-ui-shell-status">
+            <SyncGlobalStatus
+              view={syncView}
+              onOpenSync={() => onNavigate("/settings/sync")}
+            />
+          </div>
+        )
+        : null}
       {content}
     </>
   );

@@ -167,3 +167,46 @@ export function syncNowDisabledReason(
   }
   return undefined;
 }
+
+/**
+ * Determines whether the global sync status banner should be displayed in the shell.
+ *
+ * In steady-state local use (disconnected) or fresh healthy sync (synced < 24h with 0 pending changes),
+ * the top banner stays quietly hidden to maximize screen real estate and avoid noise.
+ *
+ * It appears only when user action or awareness is required:
+ * - connecting / account switch confirmation
+ * - non-synced states: authorization-error, conflict, error, retryable-error, retired, syncing, recovering
+ * - network offline / reconnecting (when configured)
+ * - stale sync: configured with pending changes or > 24 hours since last sync
+ */
+export function isGlobalStatusActionable(
+  view: SyncConnectionViewModel,
+): boolean {
+  if (view.mode === "disconnected") {
+    return false;
+  }
+  if (
+    view.mode === "connecting" ||
+    view.mode === "account-switch-confirmation"
+  ) {
+    return true;
+  }
+  if (view.network !== "online") {
+    return true;
+  }
+  if (view.sync !== "synced") {
+    return true;
+  }
+  if (view.pendingChangeCount > 0) {
+    return true;
+  }
+  if (view.lastSyncedAt) {
+    const elapsedMs = Date.now() - Date.parse(view.lastSyncedAt);
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    if (elapsedMs > ONE_DAY_MS) {
+      return true;
+    }
+  }
+  return false;
+}

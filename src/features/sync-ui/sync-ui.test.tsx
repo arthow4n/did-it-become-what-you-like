@@ -3,6 +3,7 @@ import { createElement } from "react";
 import {
   GlobalStatus,
   GoogleDriveSyncScreen,
+  isGlobalStatusActionable,
   KnownDeviceList,
   KnownDevicesScreen,
   type KnownDeviceViewModel,
@@ -470,6 +471,57 @@ Deno.test("sync GlobalStatus exposes compact labels and shell navigation", async
       assert(opened);
     });
   });
+});
+
+Deno.test("isGlobalStatusActionable identifies quiet steady-states and actionable events", () => {
+  assert(
+    !isGlobalStatusActionable({ mode: "disconnected" }),
+    "Disconnected local use should remain quiet",
+  );
+  assert(
+    !isGlobalStatusActionable({
+      ...syncedView,
+      lastSyncedAt: new Date().toISOString(),
+      pendingChangeCount: 0,
+      unresolvedConflictCount: 0,
+    }),
+    "Fresh synced steady-state should stay quiet",
+  );
+  assert(
+    isGlobalStatusActionable({
+      ...syncedView,
+      pendingChangeCount: 3,
+    }),
+    "Pending changes require global banner",
+  );
+  assert(
+    isGlobalStatusActionable({
+      ...syncedView,
+      lastSyncedAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+    }),
+    "Stale sync (>24h) requires global banner",
+  );
+  assert(
+    isGlobalStatusActionable({
+      ...syncedView,
+      sync: "authorization-error",
+    }),
+    "Authorization error requires global banner",
+  );
+  assert(
+    isGlobalStatusActionable({
+      ...syncedView,
+      sync: "conflict",
+    }),
+    "Conflicts require global banner",
+  );
+  assert(
+    isGlobalStatusActionable({
+      ...syncedView,
+      network: "offline",
+    }),
+    "Offline configured sync requires global banner",
+  );
 });
 
 Deno.test("known devices render current, last-seen, retirement, rename, and acknowledge events", async () => {

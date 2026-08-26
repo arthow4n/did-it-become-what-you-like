@@ -103,11 +103,11 @@ The MVP is complete only when all of the following are true:
 1. Every task through `R-700` is `COMPLETE`; no required behavior is represented
    only by a TODO, mock in production, skipped test, or undocumented manual
    step.
-2. `deno task fmt:check`, `deno task lint`, `deno task check`, `deno task test`,
-   `deno task test:integration`, `deno task test:component`,
-   `deno task test:e2e`, and `deno task build` pass from a clean clone using the
-   pinned Deno and lockfile state. `F-001` may adjust command names once and
-   must update this plan everywhere if it does.
+2. `deno task verify` passes from a clean clone using the pinned Deno and
+   lockfile state. Its test phase runs each discovered Deno test module once;
+   the gate must not follow the umbrella test task by rerunning its overlapping
+   component, integration, domain, or actor subsets. The five approved E2E
+   journeys also pass at the final gate.
 3. The five approved E2E journeys pass with deterministic fake external
    services. Lower-layer suites prove merge, retry, cancellation, migration,
    deletion, and validation detail without duplicating them in E2E.
@@ -221,8 +221,11 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
   toolchain.
 - **Tests:** strict compile failure fixture, XState actor transition, React Aria
   render/event, Testing Library role query, and one Playwright smoke page.
-- **Verification:** `deno task verify:toolchain`, which runs every disposable
-  spike proof and fails on any incompatibility; `git diff --check`.
+- **Verification:** historically, the complete F-001 gate ran every disposable
+  spike proof. The retained `deno task verify:toolchain` now checks only its
+  unique pinned TypeScript-version and expected strict-failure invariants; the
+  canonical `deno task verify` owns formatting, lint, compile, tests, E2E,
+  browser tooling, and build without invoking them twice; `git diff --check`.
 
 #### F-002 — Prove Automerge and IndexedDB semantics
 
@@ -1161,6 +1164,13 @@ Before any M8 edit, including after context compaction, a lost session, restart,
 failed push, or interrupted validation, the primary agent checks these items in
 order and records material discrepancies in **Current Checkpoint**:
 
+If context was compacted but the same agent session continues, Git was known
+clean, no command/push/reviewer was interrupted, and no branch/worktree state
+could have changed, use the short recovery path: reread the M8 task and Current
+Checkpoint, run `git status --short --branch`, and continue. Use the full list
+below whenever any repository, process, ownership, or evidence state is
+uncertain.
+
 - [ ] Read `AGENTS.md` and this entire M8 section, including the current task,
       latest completed review gate, and Current Checkpoint.
 - [ ] Read `UI_SPEC.md`, `DESIGN_SYSTEM.md`, and the public exports and tests in
@@ -1195,22 +1205,25 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       the behavior change; do not postpone tests to cleanup.
 - [ ] Implement only the current task and keep application imports on the
       facade.
-- [ ] Run the task's focused commands, then `deno task fmt:check`,
-      `deno task lint`, `deno task check`, and `deno task test:component`.
-- [ ] Run `deno task a11y:gallery` for component/rendering changes and
-      `deno task build` for dependency, provider, production source, CSS,
-      configuration, or asset changes.
-- [ ] Use `agent-browser` at `390x844` and `1280x800` for every visual task;
-      also use `320x568` where compact overflow is relevant. Inspect focus,
-      keyboard operation, overlays, long labels/values, disabled/error/loading
-      states, reduced motion, and axe/accessibility tree. Do not blindly accept
-      screenshots as baselines.
+- [ ] Format and lint changed files, run `deno task test:affected`, add only the
+      explicit check needed for non-import effects, and run `git diff --check`.
+      Use `deno test --related=<path>` for a known source file when it gives
+      clearer coverage.
+- [ ] Do not run the complete component, gallery, build, E2E, browser, or
+      repository verification matrix for an ordinary task. CSS, HTML, generated
+      assets, provider/configuration behavior, and browser-only interaction need
+      an explicit targeted check because Deno's module graph cannot observe
+      them.
+- [ ] Defer the coherent batch's full gallery/accessibility, build, and
+      `agent-browser` matrix to its next named `R-8*` checkpoint. Run an earlier
+      targeted visual check only for a newly changed focus, overlay, navigation,
+      responsive, or other unsafe-to-defer behavior.
 - [ ] Inspect `git diff`, `git diff --check`, and library-import searches for
       leaked Mantine/React Aria usage, unrelated edits, generated noise, and
       secrets.
 - [ ] Commit and push the focused green task to `master`; record commit hash,
-      exact commands and exit results, browser viewports/states, unavailable
-      checks, and next task in Current Checkpoint.
+      exact commands and exit results, any targeted browser evidence,
+      unavailable checks, and next task in Current Checkpoint.
 - [ ] Mark the task `COMPLETE` only after its integrated commit is pushed and
       all required evidence is recorded. Never use a failing WIP commit as a
       checkpoint.
@@ -1237,8 +1250,8 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       labels, validation, focus, and controlled values.
 - [ ] Record any proposed facade change as an explicit impact item; default to
       preserving all application-facing contracts and screen markup.
-- **Focused verification:** `deno task test:component --filter design-system`;
-  `deno task check`; documentation/import searches; `git diff --check`.
+- **Focused verification:** `deno task test:affected`; documentation/import
+  searches; changed-file format/lint; `git diff --check`.
 - **Acceptance:** governance is durable outside this plan, migration matrix has
   no unclassified export, and no runtime/dependency change has occurred.
 
@@ -1271,8 +1284,10 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       strategy, bundle evidence, and absence of premature production changes.
 - [ ] Reviewer reports `APPROVE` or `BLOCK`, severity, file/line evidence, exact
       commands/results, and minimal corrections.
-- [ ] Primary agent resolves every severity 1–3 finding, reruns the gate,
-      commits and pushes fixes, and records closure before `M8-003`.
+- [ ] Primary agent resolves every severity 1–3 finding and reruns only checks
+      affected by those fixes. Repeat the complete checkpoint matrix only when
+      shared or cross-cutting code changed; then commit, push, and record
+      closure before `M8-003`.
 - **Gate acceptance:** no unresolved severity 1–3 finding and full compatibility
   proof is green.
 
@@ -1292,8 +1307,9 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       long-text flex protection, compact grids, and semantic HTML.
 - [ ] Keep feature markup and imports unchanged unless a pre-recorded contract
       exception was approved at `R-810`.
-- **Focused verification:** design-system layout/typography tests, gallery a11y,
-  build, and gallery visual matrix at all three viewports.
+- **Focused verification:** affected tests, changed-file format/lint, and a
+  targeted gallery smoke only if a structural behavior cannot safely wait for
+  `R-820`.
 - **Acceptance:** structural gallery fixtures match approved semantics with no
   duplicate provider, palette leak, transition, or layout regression.
 
@@ -1314,8 +1330,8 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       keyboard/touch use, clear/reveal controls, decimal strings, select
       popovers, disabled/read-only state, focus ring, autofill, and compact
       overflow.
-- **Focused verification:** field/button component filters, gallery a11y, build,
-  agent-browser keyboard/form/error review at all three viewports.
+- **Focused verification:** affected tests, changed-file format/lint, and a
+  targeted keyboard/focus smoke only for behavior unsafe to defer to `R-820`.
 - **Acceptance:** screens retain facade contracts and no field relies on
   feature-owned Mantine styling or a second form-state authority.
 
@@ -1325,8 +1341,15 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - [ ] Fresh read-only reviewer audits provider/theme boundaries, public API
       compatibility, semantic markup, focus/error behavior, native controls,
       intrinsic sizing, mobile overflow, motion, tests, and visual evidence.
-- [ ] Primary agent fixes severity 1–3 findings, reruns all M8-003/M8-004
-      verification, commits, pushes, and records closure.
+- [ ] From the recorded pre-`M8-003` base commit, run affected tests once with
+      `deno test --allow-read --allow-write --allow-run --allow-env
+      --changed=<recorded-pre-M8-003-base-commit>`,
+      then run one gallery accessibility check, one production build, and one
+      agent-browser keyboard/form/layout matrix at all three viewports for the
+      combined `M8-003`/`M8-004` batch.
+- [ ] Primary agent fixes severity 1–3 findings and reruns only checks affected
+      by those fixes. Repeat the complete checkpoint matrix only when shared or
+      cross-cutting code changed; then commit, push, and record closure.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 ##### M8-005 — Migrate overlays, disclosure, menus, and feedback
@@ -1343,9 +1366,8 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       motion.
 - [ ] Exercise nested overlay, mobile bottom navigation, long error text,
       loading/retry, reduced-motion, and dirty-form exit interactions.
-- **Focused verification:** overlay/feedback component filters, gallery a11y,
-  relevant focused E2E where an approved journey crosses a dialog, build, and
-  agent-browser overlay/focus/z-index matrix.
+- **Focused verification:** affected tests and a targeted overlay/focus smoke
+  only when the changed behavior is unsafe to defer to `R-830`.
 - **Acceptance:** no focus loss, background interaction, clipped portal,
   navigation overlap, layout shift, or decorative motion regression.
 
@@ -1364,9 +1386,8 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       protection, pristine-form warning suppression, and cancel actions.
 - [ ] Do not adopt Mantine AppShell or notification managers directly in
       screens; the facade owns any use.
-- **Focused verification:** pattern/shell component filters, gallery a11y,
-  focused local/offline journey checks, build, and agent-browser shell/pattern
-  matrix at all three viewports.
+- **Focused verification:** affected tests and a targeted shell/responsive smoke
+  only when the changed behavior is unsafe to defer to `R-830`.
 - **Acceptance:** shell and reusable patterns remain screen-agnostic and meet
   all responsive/layering contracts.
 
@@ -1376,6 +1397,12 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - [ ] Fresh read-only reviewer audits overlay safety, focus, live regions,
       navigation, safe areas, z-index, form/filter state, reduced motion,
       responsive behavior, and contract leakage.
+- [ ] From the recorded pre-`M8-005` base commit, run affected tests once with
+      `deno test --allow-read --allow-write --allow-run --allow-env
+      --changed=<recorded-pre-M8-005-base-commit>`,
+      then run one gallery accessibility check, one production build, only
+      affected approved E2E journeys, and one overlay/shell agent-browser matrix
+      for the combined `M8-005`/`M8-006` batch.
 - [ ] Primary agent resolves severity 1–3 findings and records a pushed green
       closure before domain composites.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
@@ -1396,9 +1423,8 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - [ ] Add regressions for large/negative money, long project/category/merchant
       names, empty/error/loading/filter states, keyboard entry, narrow forms,
       and populated-project deletion.
-- **Focused verification:** local/manual/organization component tests, relevant
-  focused local E2E, gallery a11y, build, and agent-browser expense/manual/
-  organization screen matrix.
+- **Focused verification:** affected tests and an immediate targeted journey or
+  browser smoke only for behavior unsafe to defer to `R-840`.
 - **Acceptance:** no application business logic or Mantine imports leak into
   screens, and existing actor event contracts remain unchanged.
 
@@ -1418,9 +1444,8 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - [ ] Test long technical/error strings, secret reveal, model loading/failure,
       receipt line editing, conflict options, import progress/recovery, offline
       banners, focus restoration, and narrow review layouts.
-- **Focused verification:** receipt/settings/sync/conflict/import component
-  tests, only the already-approved focused E2E journeys affected by rendering,
-  gallery a11y, build, and agent-browser screen/state matrix.
+- **Focused verification:** affected tests and an immediate targeted journey or
+  browser smoke only for behavior unsafe to defer to `R-840`.
 - **Acceptance:** all remaining screens use the facade unchanged or through
   approved recorded exceptions; no product workflow semantics changed.
 
@@ -1431,8 +1456,15 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       through each migrated composite and audits privacy, destructive safety,
       conflict neutrality, offline honesty, accessibility, responsive layouts,
       and absence of duplicated state.
-- [ ] Primary agent resolves severity 1–3 findings and reruns the affected
-      component, E2E, a11y, build, and visual checks before closure.
+- [ ] From the recorded pre-`M8-007` base commit, run affected tests once with
+      `deno test --allow-read --allow-write --allow-run --allow-env
+      --changed=<recorded-pre-M8-007-base-commit>`,
+      then run one gallery accessibility check, one production build, only
+      affected approved E2E journeys, and one domain-screen agent-browser matrix
+      for the combined `M8-007`/`M8-008` batch.
+- [ ] Primary agent resolves severity 1–3 findings and reruns only checks
+      affected by those fixes. Repeat the complete checkpoint matrix only when
+      shared or cross-cutting code changed before closure.
 - **Gate acceptance:** no unresolved severity 1–3 finding and no actor/domain/
   adapter contract drift.
 
@@ -1454,8 +1486,9 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       types in public exports, and reintroduction of React Aria.
 - [ ] Run dependency/license/security checks and update third-party notices and
       architecture documentation.
-- **Focused verification:** boundary check; unused-selector/import searches;
-  `deno audit --frozen`; full component/a11y/build matrix.
+- **Focused verification:** boundary check, affected tests, unused-selector/
+  import searches, `deno audit --frozen`, and one production build. The final
+  gallery/a11y/browser and complete repository matrix belongs to `M8-010`.
 - **Acceptance:** one maintained low-level library remains, no copied or dead
   implementation survives, and future replacement remains localized behind the
   facade.
@@ -1465,15 +1498,10 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - **Status/dependencies:** `PENDING`; depends on `M8-009`.
 - **Owned scope:** regression fixes within M8 ownership, gallery/fixtures,
   documentation, and ledger evidence; no new feature or redesign.
-- [ ] Run the complete canonical verification matrix from a clean working tree:
-      `deno task fmt:check`, `deno task lint`, `deno task check`,
-      `deno task test`, `deno task test:integration`,
-      `deno task test:component`, `deno task test:domain`,
-      `deno task test:actor`, the five approved `deno task test:e2e` journeys,
-      `deno task a11y:gallery`, `deno task browser:verify`,
-      `deno task verify:pages`, `deno task verify:ci`,
-      `deno task verify:toolchain`, `deno task build`, `deno audit --frozen`,
-      and `git diff --check`.
+- [ ] Run `deno task verify` once from a clean working tree. It owns the
+      complete canonical static, Deno test, E2E, gallery/a11y, browser-tooling,
+      Pages, CI, toolchain, build, audit, and diff matrix; do not rerun its
+      constituent commands against the same commit.
 - [ ] Inspect the gallery and every approved screen/state at `320x568`,
       `390x844`, and `1280x800` with agent-browser, including keyboard,
       accessibility tree/axe, long content, large money, empty/loading/offline/
@@ -1561,24 +1589,25 @@ one integration task owns those collision points.
 
 ## Commit, Push, and Checkpoint Policy
 
-- **Mandatory pre-commit baseline:** every implementation commit must pass
-  `deno task fmt:check`, `deno task lint`, `deno task check`, and the focused
-  unit/actor/component/integration/E2E commands applicable to its changed files.
-  It must also pass `deno task build` whenever production source, dependencies,
-  build configuration, routing, PWA behavior, or generated assets changed. A
-  required failing command blocks the commit; it is never deferred to a review
-  gate or another agent.
+- **Risk-based pre-commit baseline:** format and lint changed files, run
+  `deno task test:affected`, add the narrowest explicit check for relevant
+  non-import effects, and run `git diff --check`. Use
+  `deno test --related=<path>` when a known source file needs direct dependency-
+  graph coverage. A required failing command blocks the commit.
 - Before `F-004` establishes the canonical task aliases, the isolated foundation
   spikes run the equivalent direct Deno commands written in their task entries;
   this is not permission to skip formatting, linting, type/proof execution, or
   diff validation.
-- **Additive layer matrix:** domain and actor changes run focused unit/actor
-  tests; persistence and service adapters run focused integration tests;
-  design-system/component/screen changes run component and accessibility tests;
-  a change touching an approved browser journey runs that focused E2E; visual UI
-  changes receive the task's agent-browser inspection before completion. Run
-  broader suites whenever shared contracts, configuration, or risk make the
-  focused command insufficient.
+- **Non-import effect matrix:** add schema documentation checks for schema
+  changes; an app build for dependencies or production build configuration;
+  gallery/browser inspection for CSS, HTML, focus, overlay, navigation, and
+  responsive behavior; the affected E2E for a changed journey seam; and Pages,
+  CI, PWA, or tooling checks only when their owned files or behavior changed.
+  Batch coherent UI visual checks at the next review gate.
+- `deno task verify` is a final/release or genuinely unbounded cross-cutting
+  gate. It runs each Deno test module and E2E suite once. Never run it and then
+  mechanically rerun its constituent or overlapping subset commands against the
+  same commit.
 - Every worker handoff lists each exact command, exit result, and any
   intentionally unavailable manual/platform check. “Tests pass” without command
   evidence is not acceptable to the integration owner.
@@ -1586,9 +1615,10 @@ one integration task owns those collision points.
   commits only when a reviewable foundation, behavior, and fix naturally
   separate. Tests required by the task ship with the behavior, never in a later
   cleanup commit.
-- Run the task's cheapest checks before committing. Run its full listed
-  verification before marking complete. Do not create knowingly red commits as
-  progress markers.
+- Run the task's cheapest capable checks before committing. A historical task
+  entry may list broader evidence used when that task originally completed; it
+  does not override this policy for new work. Do not create knowingly red
+  commits as progress markers.
 - After integration, make a small ledger/checkpoint commit if the task commit
   could not safely include it. Push `master` after each completed task or small
   inseparable integration group and after every review/fix gate.
@@ -1827,12 +1857,13 @@ For every implementation task:
 1. The implementer reads the authoritative specs, this task, locked contracts,
    and applicable skills; states assumptions and owned files before editing.
 2. The implementer writes the lowest-layer tests with or alongside behavior,
-   runs the complete mandatory pre-commit baseline and additive layer matrix,
-   records exact commands/results, inspects the diff for unrelated or secret
-   changes, and only then commits a green bounded result.
-3. The integration owner reviews scope and evidence before integration and runs
-   affected verification. A failed contract or collision returns to the worker;
-   it is not patched blindly during merge.
+   runs affected tests and the narrowest capable non-import checks, records
+   exact commands/results, inspects the diff for unrelated or secret changes,
+   and only then commits a green bounded result.
+3. The integration owner reviews scope and evidence before integration. It may
+   trust exact successful evidence for the same commit and reruns only checks
+   selected for a concrete integration risk. A failed contract or collision
+   returns to the worker; it is not patched blindly during merge.
 4. At each `R-*` gate, a fresh Luna `xhigh` reviewer independently inspects the
    milestone against specs, locked contracts, tests, and actual behavior. The
    reviewer is read-only first and reports severity, evidence, affected files,
@@ -1840,8 +1871,9 @@ For every implementation task:
 5. Substantiated findings become bounded fix tasks owned by the appropriate
    implementer or a fresh worker. Every fix adds/regresses the cheapest useful
    test and reruns the affected visual/a11y inspection where applicable.
-6. The integration owner reruns the entire gate, records evidence and commit,
-   pushes, and only then releases downstream dependencies.
+6. After fixes, the integration owner reruns affected validation and repeats the
+   entire gate only when shared or cross-cutting code changed. It records
+   evidence and commit, pushes, and only then releases downstream dependencies.
 
 Review severity: severity 1 risks data loss/security/privacy or makes a core
 flow unusable; severity 2 violates an approved requirement or architecture/test
@@ -1868,6 +1900,15 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 - **Worktree state:** Repository is clean with no unmerged worktrees.
 - **Verification status:** Full `deno task verify` passed across all test
   suites, builds, and browser/a11y validations.
+- **Validation-policy revision:** Risk-based affected testing is now the normal
+  task path; the umbrella test discovers each Deno test module once, the full
+  gate runs Deno tests/E2E/build once, Pages can inspect the existing artifact,
+  and UI/browser checks are checkpoint-batched. Fresh read-only review
+  `final_policy_review` approved closure after the committed-batch base commands
+  were made explicit. The revised `deno task verify` passed with 331 Deno tests,
+  11 E2E tests, three-viewpoint gallery/axe inspection, browser-tooling smoke,
+  unique toolchain invariants, one production/toolchain build, Pages artifact
+  inspection, frozen audit, and diff check.
 - **M8 active/interrupted work:** none. No implementation or review agent is
   assigned, no migration branch/worktree exists, and no M8 commit is unpushed.
 - **Unresolved M8 findings/blockers:** implementation authorization is the only

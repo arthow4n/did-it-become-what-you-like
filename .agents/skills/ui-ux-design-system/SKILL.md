@@ -179,16 +179,29 @@ breathing room from neighboring elements.
 
 ---
 
-## 5. Visual Pre-Flight Verification Procedure
+## 5. Risk-Based Visual Verification Procedure
 
-Whenever modifying UI or CSS, execute the following verification:
+Do not rerun the complete component, gallery, build, and browser matrix after
+each small UI edit. Validate at two levels:
 
-1. **Run Unit & Component Tests:**
+1. **Each UI edit:** normally run affected tests:
    ```bash
-   deno task test:component
-   deno task a11y:gallery
+   deno task test:affected
    ```
-2. **Inspect with `agent-browser`:**
+   Alternatively, when validating a known source file directly or when Git-
+   based changed selection is unsuitable, run:
+   ```bash
+   deno test --allow-read --allow-write --allow-run --allow-env \
+     --related=src/design-system/components.tsx
+   ```
+   Add an immediate targeted browser/gallery check only when the edit changes
+   focus, overlays, navigation, responsive layout, CSS-only behavior, or another
+   effect Deno's module graph cannot observe.
+2. **Named UI checkpoint:** run `deno task a11y:gallery`, the affected component
+   layer if additional coverage is required, one production build for the
+   coherent batch, and inspect all batch-owned states with `agent-browser`. Do
+   not rerun unchanged successful commands merely because a reviewer starts.
+3. **Inspect with `agent-browser` at the checkpoint:**
    - **Desktop Viewport (`1280×800`):**
      ```bash
      agent-browser set viewport 1280 800
@@ -200,12 +213,12 @@ Whenever modifying UI or CSS, execute the following verification:
      agent-browser set viewport 390 844
      agent-browser screenshot "mobile_check.png"
      ```
-3. **Verify Gallery Fixture:**
+4. **Verify Gallery Fixture:**
    ```bash
    agent-browser open "http://127.0.0.1:5173/did-it-become-what-you-like/src/design-system/gallery.html"
    agent-browser screenshot "gallery_check.png"
    ```
-4. **Checklist Before Marking Complete:**
+5. **Checklist Before Closing the Checkpoint:**
    - [ ] Mobile navigation tabs are anchored to the bottom.
    - [ ] No clear buttons or icons overflow their input borders.
    - [ ] No layout shift occurs when saving or triggering notifications.

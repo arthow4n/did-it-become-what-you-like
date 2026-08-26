@@ -61,23 +61,41 @@
   worktree, uncommitted changes, unpushed commits, recorded validations, and
   stale `IN_PROGRESS` ownership. Preserve all work and never guess that a task
   is complete merely because a commit or checklist entry exists.
-- Every implementation task must include and pass its appropriate tests before
-  it is marked complete. Prefer pure unit tests and XState actor/machine tests
-  for business rules and workflows; use component unit tests for rendering,
-  accessibility semantics, variants, and event wiring.
-- Before committing any implementation change, run `deno task fmt:check`,
-  `deno task lint`, `deno task check`, and every test command relevant to the
-  changed scope. Also run `deno task build` whenever production source,
-  dependencies, build configuration, routing, PWA behavior, or generated assets
-  changed. Do not commit while a required validation is failing.
-- Layer-specific pre-commit validation is additive: domain/actor work runs its
-  focused unit or actor tests; adapters and persistence run their integration
-  tests; components and screens run component/accessibility tests; and changes
-  affecting an approved browser journey run its focused E2E test. UI work also
-  receives the specified `agent-browser` inspection before its task is complete.
-- Sub-agents must report the exact validation commands and results with their
-  handoff. An unsupported summary such as “tests pass” is not sufficient
-  evidence for integration.
+- Context compaction alone does not require a full recovery audit when the same
+  agent session continues, Git state is known and clean, no command or push was
+  interrupted, and no worker/worktree exists. Re-read the current checkpoint and
+  task, confirm `git status --short --branch`, and continue. Use the full
+  protocol whenever ownership or repository state is uncertain.
+- Every implementation task must include and pass appropriate tests before it is
+  marked complete. Prefer pure unit and XState actor tests for business rules
+  and workflows, adapter integration tests for boundaries, and component tests
+  for rendering, accessibility semantics, variants, and event wiring.
+- Use risk-based validation. For an ordinary change, format and lint the changed
+  files, run `deno task test:affected`, run the narrowest additional check for
+  effects Deno's import graph cannot see, and run `git diff --check`. Use
+  `deno test --related=<path>` when validating a known source file directly.
+- `deno test --changed` and `--related` select tests through the transitive
+  module graph. They do not prove CSS, HTML, generated assets, service-worker
+  behavior, build configuration, deployment configuration, or external browser
+  journeys. Add only the explicit build, gallery, browser, integration, schema,
+  Pages, CI, or E2E check which can detect the changed non-import behavior.
+- Run the full `deno task verify` only at a final/release gate, after a
+  cross-cutting dependency/toolchain/configuration change whose impact cannot be
+  bounded reliably, or when CI exposes an unexpected broader failure. Do not run
+  an umbrella command and then rerun its constituent suites against the same
+  commit.
+- Batch visual validation at the next named UI review checkpoint. Individual UI
+  tasks run affected tests; perform an earlier targeted gallery or
+  `agent-browser` check only when the task introduces or changes focus,
+  overlays, navigation, responsive layout, or another visual behavior that
+  cannot safely wait for the checkpoint.
+- A reviewer may trust exact successful evidence recorded for the same commit
+  and should rerun only risk-selected commands. Do not mechanically repeat the
+  implementer's complete command matrix. After a fix, rerun affected validation;
+  repeat a full gate only when shared or cross-cutting code changed.
+- Record exact commands and results. An unsupported summary such as “tests pass”
+  is not sufficient evidence, but evidence collection must not cause an
+  otherwise identical command to be repeated without a stated risk reason.
 - Keep E2E coverage deliberately small and limited to critical journeys and
   browser-integration seams which unit, actor, and component tests cannot prove.
   Do not duplicate the same state-transition assertions at every test layer.

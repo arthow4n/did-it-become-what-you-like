@@ -223,12 +223,17 @@ When conducting an audit, follow this standard journey order:
 Execute checklist items sequentially following this exact per-step loop:
 
 1. **Apply Code Edits:** Modify the targeted CSS or component files.
-2. **Fast Pre-Commit Verification:** Run fast validation commands:
+2. **Fast Pre-Commit Verification:** Run affected tests and changed-file static
+   checks. Add a targeted browser check only when the step changes behavior that
+   the module graph cannot observe:
    ```bash
-   deno fmt src && deno task fmt:check && deno task lint && deno task check && deno task test:component
+   deno fmt <changed-files>
+   deno lint <changed-ts-or-tsx-files>
+   deno task test:affected
+   git diff --check
    ```
-   _(Note: Heavy Playwright E2E tests are postponed until all checklist items
-   are completed for maximum execution velocity)._
+   Do not run full component, E2E, build, gallery, or repository verification
+   after every checklist item.
 3. **Update Checklist:** Mark the step complete in the audit report markdown:
    `- [x] **STEP-XX (FIX-XX)** ...`
 4. **Commit & Push:** Commit immediately with a focused conventional message and
@@ -241,9 +246,10 @@ Execute checklist items sequentially following this exact per-step loop:
 
 Once all checklist items are checked off:
 
-1. **Run Full Test Suite:**
+1. **Run Tests Affected by the Complete Audit Batch:**
    ```bash
-   deno task test && deno task test:component
+   deno test --allow-read --allow-write --allow-run --allow-env \
+     --changed=<audit-base-commit>
    ```
 2. **Run Design System Accessibility Check:**
    ```bash
@@ -253,10 +259,13 @@ Once all checklist items are checked off:
    ```bash
    deno task build
    ```
-4. **Run End-to-End Test Suite:**
+4. **Run Only Affected Approved End-to-End Journeys:**
    ```bash
-   deno task test:e2e
+   deno task test:e2e --grep <affected-journey>
    ```
+   Run `deno task verify` only when this is the final/release gate or the audit
+   changed cross-cutting dependency, toolchain, or configuration behavior whose
+   impact cannot be bounded reliably.
 5. If any test expectation requires precision updating (e.g. formatted money
    string `SEK -12.50`), update the test, re-verify, commit, and push.
 

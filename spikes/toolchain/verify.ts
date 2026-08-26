@@ -85,21 +85,7 @@ try {
 
   await runExpectingTypeError();
 
-  for (
-    const [label, args] of [
-      ["format check", ["task", "fmt:check"]],
-      ["lint", ["task", "lint"]],
-      ["strict TypeScript compile", ["task", "check"]],
-      ["Deno unit and component tests", ["task", "test"]],
-      ["Vite and PWA production build", ["task", "build"]],
-      ["Playwright Chromium installation", ["task", "browser:install"]],
-      ["Playwright smoke page", ["task", "test:e2e"]],
-    ] as const
-  ) {
-    await run(label, args);
-  }
-
-  console.log("Toolchain proof passed.");
+  console.log("Unique toolchain invariants passed.");
 } catch (error) {
   failure = error;
 }

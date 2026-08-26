@@ -50,7 +50,7 @@ assert(
   "CI must run the foundation formatting and production build tasks",
 );
 assert(
-  pages.includes("deno task verify:pages"),
+  pages.includes("deno task verify:pages:artifact"),
   "Pages deployment must verify the production artifact before upload",
 );
 assert(

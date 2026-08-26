@@ -95,7 +95,9 @@ function extractCsp(html: string, source: string): string {
   return csp;
 }
 
-await runBuild();
+if (!Deno.args.includes("--existing-artifact")) {
+  await runBuild();
+}
 
 const index = await read(`${DIST}/index.html`);
 const sourceIndex = await read("index.html");

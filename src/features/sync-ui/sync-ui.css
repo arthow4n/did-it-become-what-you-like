@@ -16,6 +16,10 @@
     background: var(--color-warning-surface);
   }
 
+  .sync-ui-shell-status {
+    margin-bottom: var(--space-5);
+  }
+
   .sync-ui-global-status {
     min-width: 0;
     padding: var(--space-2) var(--space-3);

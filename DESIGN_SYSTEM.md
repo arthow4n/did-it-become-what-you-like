@@ -151,7 +151,7 @@ Initial content-driven ranges, subject to visual verification, are:
 To prevent awkward layout collapse, disproportionate control expansion, and
 flexbox abuse, all components and screens must follow these rules:
 
-1. **Natural vs Full-Width Sizing:**
+1. **Natural vs Full-Width Sizing & Form Ergonomics:**
    - Text inputs, text areas, and complex search bars take container width up to
      the form maximum (`--form-max: 640px`).
    - Compact controls (`Button`, `IconButton`, `SelectField`,
@@ -163,6 +163,22 @@ flexbox abuse, all components and screens must follow these rules:
    - For segmented choices spanning a full form width (e.g. "Spent / Money
      back"), use equal fractional distribution (`flex: 1 1 0` per segment)
      rather than letting one small segment float in an empty void.
+   - Multi-segment controls (e.g. Period selector) on narrow viewports
+     (`< 360px` or compact mobile) enable horizontal swipe scrolling with hidden
+     scrollbars to prevent label clipping.
+   - Tightly coupled fields (`[Amount + Currency]`, `[Date + Time]`) pair into
+     responsive two-column rows on desktop (`@media (min-width: 720px)`),
+     collapsing to a single column on mobile.
+   - Form action button groups on mobile (`< 720px`) expand to full width
+     (`width: 100%`) and stack vertically (`flex-direction: column-reverse`)
+     with the primary action on top. On desktop, action buttons retain natural
+     width (right-aligned).
+   - Embedded input adornments (search clear buttons, select chevrons like
+     `CurrencyPicker`, secret reveal toggles) must be enclosed inside
+     `.ds-field-control-wrap` with `position: relative` so icons anchor neatly
+     inside the right boundary of the input box.
+   - Description text below field labels uses secondary text color and caption
+     font size.
 
 2. **Grid and Asymmetric Stretch Prevention:**
    - Multi-column CSS Grid containers (`ResponsiveGrid`, multi-column cards,
@@ -185,6 +201,9 @@ flexbox abuse, all components and screens must follow these rules:
      `overflow-wrap: anywhere; white-space: normal;` — currency amounts must
      stay on a single line
      (`white-space: nowrap; font-variant-numeric: tabular-nums;`).
+   - Financial summaries (`.ds-money-summary`) must adapt responsively on
+     compact screens (`< 720px`) by stacking or using a balanced 2-column card
+     layout to prevent label clipping and tabular number truncation.
 
 4. **Spacing Rhythm & Visual Hierarchy:**
    - Spacing between elements must strictly use the named 4px tokens. Never
@@ -194,7 +213,7 @@ flexbox abuse, all components and screens must follow these rules:
      - `--space-2` (8px): intra-field gaps (label to control, inline chip list,
        tight button pairs)
      - `--space-3` (12px): list row padding, filter bar items, related form
-       groups
+       groups, section internal spacing
      - `--space-4` (16px): intra-card element stacking, section content padding
      - `--space-5` (20px) / `--space-6` (24px): distinct form sections, cards in
        a stack, dialog content gaps
@@ -202,21 +221,41 @@ flexbox abuse, all components and screens must follow these rules:
        layout margins
    - Every interactive control must provide at least `--space-2` (8px) breathing
      room from neighboring elements.
+   - Distinct management sections and cards must maintain `--space-3` (12px) to
+     `--space-4` (16px) vertical gap spacing.
+   - Top-level shell status banners must include bottom margin
+     (`margin-bottom: var(--space-4)`).
 
-5. **Notification and Overlay Stability (Zero Layout Shifts):**
+5. **Z-Index Layering & Overlay Hierarchy:**
+   - Content / Base: `z-index: 0`
+   - Sticky Action / Filter Bars: `z-index: 10`
+   - Fixed Mobile Bottom Navigation: `z-index: 20`
+   - Modals, Drawers & Overlays (`.ds-modal-overlay`, `.local-ui-overlay`):
+     `z-index: 40` (ensuring overlays sit cleanly over bottom navigation)
+   - Floating Toasts / Global Status Notifications: `z-index: 50`
    - Ephemeral feedback (`Toast`) must render inside a dedicated fixed overlay
-     container (`position: fixed; bottom: ...; right: ...; z-index: 30;`).
-   - Interactive actions associated with notifications (such as Dismiss or Undo)
-     must be colocated inside the floating notification container, NEVER placed
-     in the regular document flow where they bump and shift page elements.
+     container. Actions associated with notifications (Dismiss, Undo) must be
+     colocated inside the floating notification container, never in regular
+     flow.
 
 6. **Mobile Navigation & Touch Ergonomics:**
    - Compact screens (`< 720px`) MUST anchor application navigation to the
      bottom viewport edge with safe-area padding
-     (`env(safe-area-inset-bottom)`).
-   - Content container `<main>` must maintain bottom padding equal to bottom bar
-     height plus safe-area insets.
+     (`padding-bottom: max(var(--space-2), env(safe-area-inset-bottom))`).
+   - Bottom sheets (e.g. `AddChoiceScreen`) must include bottom safe-area
+     clearance
+     (`padding-bottom: max(var(--space-5), env(safe-area-inset-bottom))`).
+   - Content container `<main>` must maintain bottom padding
+     (`padding-bottom: calc(var(--control-height) + var(--space-8) + env(safe-area-inset-bottom, 0px))`)
+     so scrolled content is never clipped behind the fixed navigation bar.
    - Touch targets must meet the minimum 44px boundary.
+
+7. **Dialogs and Form State Hygiene:**
+   - Every modal, editor, or confirmation dialog must provide a secondary
+     `Cancel` button alongside the primary action.
+   - Pristine forms must suppress draft warning banners (`DraftStatus`) until
+     actual user modification occurs (`isDirty === true`).
+   - Safe focus restoration must occur on dialog/modal exit.
 
 ## Component Map
 

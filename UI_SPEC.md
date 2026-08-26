@@ -234,7 +234,11 @@ Agreed behavior:
   The filter panel offers oldest first as the only alternate initial sort and
   ordering remains deterministic when records share the same date and time.
 - The category breakdown and all three totals always reflect exactly the same
-  selected project and filters as the expense list.
+  selected project and filters as the expense list. The financial summary
+  (`.ds-money-summary`) adapts responsively on compact viewports (`< 720px`) by
+  stacking or using a 2-column card layout to prevent tabular number truncation.
+- On narrow viewports (`< 360px`), the quick period segmented control enables
+  horizontal swipe scrolling with hidden scrollbars to prevent text clipping.
 - When unresolved conflicts exist anywhere in the dataset, Expenses shows a
   persistent, non-color-only banner with the count and a labeled Review action.
   The banner remains until resolution but does not block local entry, review, or
@@ -265,6 +269,9 @@ Agreed behavior:
 
 - Add Choice is a mobile bottom sheet over Expenses rather than a separate
   otherwise-empty page. Desktop uses the equivalent compact modal or popover.
+- The bottom sheet overlay sits on top of mobile bottom navigation
+  (`z-index: 40`) and includes bottom safe-area clearance
+  (`padding-bottom: max(var(--space-5), env(safe-area-inset-bottom))`).
 - Manual entry is the first option and AI scanning is second. Both are large,
   full-width, labeled touch targets and do not depend on icon recognition.
 - The AI choice includes a concise reminder that the receipt is sent to Gemini.
@@ -308,6 +315,14 @@ Agreed behavior:
 - A new form defaults to the current project's currency and project,
   `Uncategorized`, and the calendar date produced by the configured local
   expense-day boundary. Every default remains changeable.
+- Desktop (`@media (min-width: 720px)`) pairs tightly coupled fields
+  (`[Amount + Currency]`, `[Date + Time]`) into responsive 2-column rows,
+  collapsing to a single column on mobile.
+- Form action buttons on mobile (`< 720px`) expand to full width (`width: 100%`)
+  and stack vertically (`flex-direction: column-reverse`) with the primary Save
+  action on top.
+- Draft / unsaved changes notices are suppressed on pristine forms until the
+  form is dirty (`isDirty === true`).
 - An unfinished create or edit form is saved as a device-local IndexedDB draft
   and restored after an accidental reload. Saving or explicitly discarding the
   form removes that draft; it is never synchronized or included in an export.
@@ -526,8 +541,9 @@ Agreed behavior:
 - Switching requires an explicit **Use** action rather than an accidental row
   tap; editing is a separate action.
 - Create and Edit use a focused bottom sheet on mobile and compact modal on
-  desktop, containing at least project name and default currency. Renaming
-  preserves the stable project ID and all relationships.
+  desktop, containing at least project name and default currency, paired with a
+  secondary Cancel action. Renaming preserves the stable project ID and all
+  relationships.
 - The current project remains first. Other active projects support custom order
   through drag and accessible move controls.
 - Archiving preserves a project and all of its expenses while hiding it from
@@ -588,8 +604,9 @@ Agreed behavior:
   initially collapsed. Search covers both sections and identifies archived
   matches.
 - Create and Edit use a focused bottom sheet on mobile and compact modal on
-  desktop. Name is required, color is optional, and icons are not part of the
-  MVP. Color is never the only category identifier.
+  desktop, paired with a secondary Cancel button. Name is required, color is
+  optional, and icons are not part of the MVP. Color is never the only category
+  identifier.
 - After trimming surrounding whitespace, active category names are unique
   without regard to letter case. Restoring an archived category whose name now
   conflicts requires renaming it.
@@ -641,6 +658,8 @@ Agreed behavior:
   scanning, and preference tasks over infrequent data administration.
 - Rows show useful current summaries such as last synchronization, Gemini
   configuration, and expense-day boundary.
+- On desktop viewports, action buttons inside cards maintain their natural
+  intrinsic width (right-aligned) rather than stretching across the container.
 - Destructive actions are inside **Data and privacy**, not exposed directly on
   the landing screen.
 - Settings search is excluded initially and may be added only if the collection

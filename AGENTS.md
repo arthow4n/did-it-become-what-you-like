@@ -114,3 +114,39 @@
   ownership, name one integration owner, define merge and verification order,
   and preserve every unintegrated change. Never remove a worktree containing
   uncommitted or unmerged work.
+
+### Design-system facade boundary
+
+For the approved Mantine migration and all later design-system work:
+
+1. Files under `src/features/**` and `src/app/**` must not import `@mantine/*`,
+   `react-aria-components`, or another component library. They import only the
+   repository design-system facade.
+2. Public design-system types, props, refs, callback signatures, and exports
+   must not expose Mantine-specific types or objects. Translate library events
+   internally and retain product-oriented contracts such as `onPress`, `tone`,
+   and repository variants unless a reviewed contract change is unavoidable.
+3. Semantic After Midnight tokens remain the visual source of truth. Map them
+   into `MantineProvider` and component defaults; do not replace them with raw
+   Mantine palette indexes in feature code.
+4. Screens may not use Mantine `styles`, `classNames`, CSS selectors, or
+   provider APIs. Library-specific customization stays inside
+   `src/design-system/**`.
+5. XState actors remain the authority for durable form and workflow state.
+   Mantine may own ephemeral component interaction state, but Mantine Form is
+   not introduced as a second business-state layer.
+6. Native date, time, file, and camera controls remain native where approved.
+   They use the same facade-level field contract and Mantine-compatible
+   presentation.
+7. Product/domain composites such as expense, receipt, conflict, sync,
+   destructive, and Gemini patterns remain repository-owned compositions. They
+   are assembled from facade primitives backed by Mantine rather than copied
+   library internals.
+8. Do not copy Mantine source into the repository. Prefer public, documented
+   Mantine APIs and pin all dependencies through `deno.json`/`deno.lock`.
+9. Ordinary interaction and layout transitions remain `0ms`; only approved
+   functional progress motion is allowed, with equivalent reduced-motion
+   feedback.
+10. A facade contract may change only after an impact inventory identifies all
+    consumers and tests, the change is recorded in `IMPLEMENTATION_PLAN.md`,
+    and the preceding or immediately following review gate approves it.

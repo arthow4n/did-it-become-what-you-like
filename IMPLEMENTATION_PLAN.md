@@ -174,6 +174,8 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 6. `M5 Synchronization/Portability`: `S-401`–`S-405`, then `R-500`.
 7. `M6 Destruction/PWA Completion`: `X-501`–`P-503`, then `R-600`.
 8. `M7 Hardening/Release`: `Q-601`–`Q-604`, then `R-700`.
+9. `M8 Mantine Migration`: `M8-001`–`M8-010`, with review checkpoints
+   `R-810`–`R-850`. M8 is sequential and single-implementer by design.
 
 ## Task Ledger
 
@@ -1071,7 +1073,449 @@ Cross-links omitted from the drawing remain explicit in each task. Milestones:
 - **Verification:** every Definition-of-Done command; clean `git status`;
   deployed/source commit equality; final plan-update commit pushed.
 
+### M8 — Mantine Design-System Migration
+
+#### M8 authority, outcome, and non-goals
+
+This milestone replaces repository-written low-level component behavior with
+maintained Mantine components behind the existing `src/design-system` facade.
+The repository owner approved Mantine as the selected library and approved this
+planning work, but **has not yet authorized migration implementation**. No M8
+source, dependency, generated-asset, or styling change may begin until the owner
+explicitly starts the migration in a later session.
+
+The target dependency flow is:
+
+```text
+features/app -> src/design-system public contracts -> Mantine
+                                                `-> small owned compositions
+```
+
+The migration is complete only when feature and app code still depend on the
+repository facade, Mantine owns applicable interaction behavior and baseline
+rendering, approved After Midnight semantics and appearance remain intact, and
+React Aria Components plus superseded CSS are removed.
+
+Non-goals: redesigning screens, changing product behavior, replacing XState,
+adopting Mantine Form as workflow state, introducing light-theme UI, replacing
+native date/time/file/camera behavior without evidence, changing the five E2E
+journeys, or exposing Mantine as an application-level dependency.
+
+#### Mandatory single-agent execution rule
+
+- One primary coding agent performs all M8 planning reconciliation, edits,
+  tests, fixes, commits, pushes, and checkpoint updates sequentially on
+  `master`. Do not dispatch implementation workers or advisors, do not create
+  implementation worktrees, and do not run overlapping migration tasks.
+- A fresh separate agent is permitted only at `R-810`, `R-820`, `R-830`,
+  `R-840`, and `R-850`, and is a read-only reviewer. It may inspect source,
+  diffs, tests, and browser output, but it must not edit, commit, push, create a
+  worktree, or delegate. The primary agent alone resolves findings.
+- If no independent reviewer is available, stop at the review gate and record it
+  as `BLOCKED`; do not self-approve or continue into the next group.
+- Context compaction or a new primary-agent session does not permit a second
+  concurrent implementer. The resumed agent first follows the recovery checklist
+  below, then continues the one `IN_PROGRESS` item or the next dependency-ready
+  item.
+
+#### Locked design-system boundary rules
+
+These rules are acceptance criteria for every M8 task and must be added to
+`AGENTS.md` and `DESIGN_SYSTEM.md` by `M8-001` before component migration:
+
+1. Files under `src/features/**` and `src/app/**` must not import `@mantine/*`,
+   `react-aria-components`, or another component library. They import only the
+   repository design-system facade.
+2. Public design-system types, props, refs, callback signatures, and exports
+   must not expose Mantine-specific types or objects. Translate library events
+   internally and retain product-oriented contracts such as `onPress`, `tone`,
+   and repository variants unless a reviewed contract change is unavoidable.
+3. Semantic After Midnight tokens remain the visual source of truth. Map them
+   into `MantineProvider` and component defaults; do not replace them with raw
+   Mantine palette indexes in feature code.
+4. Screens may not use Mantine `styles`, `classNames`, CSS selectors, or
+   provider APIs. Library-specific customization stays inside
+   `src/design-system/**`.
+5. XState actors remain the authority for durable form and workflow state.
+   Mantine may own ephemeral component interaction state, but Mantine Form is
+   not introduced as a second business-state layer.
+6. Native date, time, file, and camera controls remain native where approved.
+   They use the same facade-level field contract and Mantine-compatible
+   presentation.
+7. Product/domain composites such as expense, receipt, conflict, sync,
+   destructive, and Gemini patterns remain repository-owned compositions. They
+   must be assembled from facade primitives backed by Mantine rather than copied
+   library internals.
+8. Do not copy Mantine source into the repository. Prefer public, documented
+   Mantine APIs and pin all dependencies through `deno.json`/`deno.lock`.
+9. Ordinary interaction and layout transitions remain `0ms`; only approved
+   functional progress motion is allowed, with equivalent reduced-motion
+   feedback.
+10. A facade contract may change only after an impact inventory identifies all
+    consumers and tests, the change is recorded in this ledger, and the
+    preceding or immediately following review gate approves it.
+
+#### Restart and compaction recovery checklist for M8
+
+Before any M8 edit, including after context compaction, a lost session, restart,
+failed push, or interrupted validation, the primary agent checks these items in
+order and records material discrepancies in **Current Checkpoint**:
+
+- [ ] Read `AGENTS.md` and this entire M8 section, including the current task,
+      latest completed review gate, and Current Checkpoint.
+- [ ] Read `UI_SPEC.md`, `DESIGN_SYSTEM.md`, and the public exports and tests in
+      `src/design-system/**`; read feature files only as required by the current
+      task's impact inventory.
+- [ ] Run `git status --short --branch`, `git log --oneline --decorate -n 20`,
+      `git branch -vv`, `git worktree list --porcelain`, and
+      `git rev-list --left-right --count origin/master...master`.
+- [ ] When network is available, run `git fetch --prune origin`, repeat the
+      upstream comparison, and integrate remote changes safely without force.
+- [ ] Confirm that no implementation/review sub-agent is active and that no M8
+      worktree or branch contains unintegrated work. Preserve and reconcile any
+      unexpected work; never reset, discard, stash, or duplicate it.
+- [ ] Compare the recorded task status with the actual diff, commits, dependency
+      state, tests, gallery, and build. Actual repository evidence wins over
+      checklist state.
+- [ ] If a task was `IN_PROGRESS`, resume that exact task and first rerun any
+      missing or stale focused checks. Otherwise select only the first `READY`
+      item whose dependencies and prior review gate are complete.
+- [ ] Update Current Checkpoint before editing if HEAD/upstream, task status,
+      tests, active processes, or next action differs from the ledger.
+
+#### Per-task execution and evidence checklist
+
+Apply this checklist to `M8-001` through `M8-010` without exception:
+
+- [ ] Mark exactly one task `IN_PROGRESS` and update Current Checkpoint before
+      editing; all later tasks remain `PENDING`.
+- [ ] Inventory owned files, affected facade exports, consumer count, locked
+      contracts, and explicit non-goals.
+- [ ] Add or update the cheapest component/accessibility regression tests with
+      the behavior change; do not postpone tests to cleanup.
+- [ ] Implement only the current task and keep application imports on the
+      facade.
+- [ ] Run the task's focused commands, then `deno task fmt:check`,
+      `deno task lint`, `deno task check`, and `deno task test:component`.
+- [ ] Run `deno task a11y:gallery` for component/rendering changes and
+      `deno task build` for dependency, provider, production source, CSS,
+      configuration, or asset changes.
+- [ ] Use `agent-browser` at `390x844` and `1280x800` for every visual task;
+      also use `320x568` where compact overflow is relevant. Inspect focus,
+      keyboard operation, overlays, long labels/values, disabled/error/loading
+      states, reduced motion, and axe/accessibility tree. Do not blindly accept
+      screenshots as baselines.
+- [ ] Inspect `git diff`, `git diff --check`, and library-import searches for
+      leaked Mantine/React Aria usage, unrelated edits, generated noise, and
+      secrets.
+- [ ] Commit and push the focused green task to `master`; record commit hash,
+      exact commands and exit results, browser viewports/states, unavailable
+      checks, and next task in Current Checkpoint.
+- [ ] Mark the task `COMPLETE` only after its integrated commit is pushed and
+      all required evidence is recorded. Never use a failing WIP commit as a
+      checkpoint.
+
+#### Ordered migration checklist and ledger
+
+##### M8-001 — Freeze facade contracts and encode migration governance
+
+- **Status/dependencies:** `PENDING`; depends on explicit owner authorization to
+  start implementation and completed `R-700`.
+- **Owned scope:** `AGENTS.md`, `DESIGN_SYSTEM.md`, `IMPLEMENTATION_PLAN.md`,
+  and contract/inventory documentation or tests under `src/design-system/**`; no
+  runtime implementation.
+- [ ] Add the locked boundary rules above to `AGENTS.md` as permanent agent
+      rules and revise `DESIGN_SYSTEM.md` from repository-owned React Aria
+      implementation to repository-facade/Mantine implementation.
+- [ ] Inventory every public export in `src/design-system/index.ts`, every
+      consumer, and every React Aria primitive currently wrapped.
+- [ ] Classify each facade export as a direct Mantine wrapper, small facade
+      composition, domain composite, or approved native control, and record its
+      target Mantine/public-browser primitive.
+- [ ] Freeze the current public contract with compile-time/API tests and
+      component behavior tests for representative props, callbacks, refs,
+      labels, validation, focus, and controlled values.
+- [ ] Record any proposed facade change as an explicit impact item; default to
+      preserving all application-facing contracts and screen markup.
+- **Focused verification:** `deno task test:component --filter design-system`;
+  `deno task check`; documentation/import searches; `git diff --check`.
+- **Acceptance:** governance is durable outside this plan, migration matrix has
+  no unclassified export, and no runtime/dependency change has occurred.
+
+##### M8-002 — Prove and pin Mantine compatibility
+
+- **Status/dependencies:** `PENDING`; depends on `M8-001`.
+- **Owned scope:** `deno.json`, `deno.lock`, isolated compatibility proof/tests,
+  and minimal test-only provider support; no production facade conversion.
+- [ ] Verify the current stable Mantine release against pinned React 19.2,
+      strict TypeScript 7, Deno npm resolution, Vite production build, happy-dom
+      component tests, and Chromium.
+- [ ] Prove `MantineProvider`, CSS imports/layers, dark theme, controlled input,
+      modal focus restoration/portal, select keyboard behavior, notification,
+      reduced motion, and tree-shaken production build.
+- [ ] Measure and record baseline versus proof build CSS/JS sizes; size growth
+      is evidence for review, not permission to use private imports.
+- [ ] Pin only the packages required by the approved mapping. Do not add
+      `@mantine/form` or broad extensions without a mapped requirement.
+- **Focused verification:** compatibility proof tests; `deno task check`;
+  `deno task test:component`; `deno task build`; focused agent-browser proof.
+- **Acceptance:** all required behavior works through public Mantine APIs; any
+  failed prerequisite blocks `R-810` with exact evidence rather than triggering
+  an unreviewed fallback-library choice.
+
+##### R-810 — Governance and compatibility review checkpoint
+
+- **Status/dependencies:** `PENDING`; depends on `M8-001`, `M8-002`.
+- [ ] Fresh read-only reviewer checks the inventory, locked facade, dependency
+      choices, Deno/Vite/React compatibility, accessibility proof, styling
+      strategy, bundle evidence, and absence of premature production changes.
+- [ ] Reviewer reports `APPROVE` or `BLOCK`, severity, file/line evidence, exact
+      commands/results, and minimal corrections.
+- [ ] Primary agent resolves every severity 1–3 finding, reruns the gate,
+      commits and pushes fixes, and records closure before `M8-003`.
+- **Gate acceptance:** no unresolved severity 1–3 finding and full compatibility
+  proof is green.
+
+##### M8-003 — Introduce provider, theme mapping, and structural primitives
+
+- **Status/dependencies:** `PENDING`; depends on approved `R-810`.
+- **Owned scope:** app provider composition and design-system tokens/layout/
+  typography primitives only.
+- [ ] Add one facade-owned provider entry and map After Midnight color,
+      typography, spacing, radius, focus, control-height, z-index, and `0ms`
+      motion contracts into Mantine defaults while preserving semantic CSS
+      tokens for product styles.
+- [ ] Convert `ContentContainer`, `Stack`, `Inline`, `ResponsiveGrid`, `Text`,
+      `Heading`, `Card`, `Section`, `Divider`, `Icon`, `Badge`, `Chip`, and
+      `StatusDot` to Mantine-backed wrappers where the matrix specifies.
+- [ ] Preserve intrinsic/full-width rules, money nowrap/tabular behavior,
+      long-text flex protection, compact grids, and semantic HTML.
+- [ ] Keep feature markup and imports unchanged unless a pre-recorded contract
+      exception was approved at `R-810`.
+- **Focused verification:** design-system layout/typography tests, gallery a11y,
+  build, and gallery visual matrix at all three viewports.
+- **Acceptance:** structural gallery fixtures match approved semantics with no
+  duplicate provider, palette leak, transition, or layout regression.
+
+##### M8-004 — Migrate buttons and field controls
+
+- **Status/dependencies:** `PENDING`; depends on `M8-003`.
+- **Owned scope:** facade button/link/action and input/choice components plus
+  their tests and gallery fixtures.
+- [ ] Convert `Button`, `IconButton`, `LinkButton`, and `ActionCard`,
+      translating `onPress`, variants, loading/disabled state, refs, and
+      accessible names internally.
+- [ ] Convert `Field`, `TextField`, `TextArea`, `SearchField`, `SecretField`,
+      `DecimalField`, `MoneyField`, `SelectField`, `ColorChoiceField`,
+      `Checkbox`, `RadioGroup`, `Switch`, and `SegmentedControl`.
+- [ ] Retain native `NativeDateField`, `NativeTimeField`, and `FileField`
+      controls while adopting the shared Mantine-compatible field shell.
+- [ ] Test controlled updates, validation/error association, required labels,
+      keyboard/touch use, clear/reveal controls, decimal strings, select
+      popovers, disabled/read-only state, focus ring, autofill, and compact
+      overflow.
+- **Focused verification:** field/button component filters, gallery a11y, build,
+  agent-browser keyboard/form/error review at all three viewports.
+- **Acceptance:** screens retain facade contracts and no field relies on
+  feature-owned Mantine styling or a second form-state authority.
+
+##### R-820 — Foundation and controls review checkpoint
+
+- **Status/dependencies:** `PENDING`; depends on `M8-003`, `M8-004`.
+- [ ] Fresh read-only reviewer audits provider/theme boundaries, public API
+      compatibility, semantic markup, focus/error behavior, native controls,
+      intrinsic sizing, mobile overflow, motion, tests, and visual evidence.
+- [ ] Primary agent fixes severity 1–3 findings, reruns all M8-003/M8-004
+      verification, commits, pushes, and records closure.
+- **Gate acceptance:** no unresolved severity 1–3 finding.
+
+##### M8-005 — Migrate overlays, disclosure, menus, and feedback
+
+- **Status/dependencies:** `PENDING`; depends on approved `R-820`.
+- **Owned scope:** facade overlay and feedback primitives/patterns only.
+- [ ] Convert `Disclosure`, `AdaptiveDialog`, `ConfirmDialog`, `DangerDialog`,
+      `Popover`, `Menu`, and `Tooltip` using public Mantine components.
+- [ ] Convert `Banner`, `InlineNotice`, `Toast`, `StatusMessage`, `Progress`,
+      `Skeleton`, `EmptyState`, and `ErrorState`.
+- [ ] Preserve responsive modal/sheet composition, focus trap/restoration,
+      escape/cancel behavior, destructive confirmation rules, portal layering,
+      fixed toast placement, live-region semantics, and approved progress-only
+      motion.
+- [ ] Exercise nested overlay, mobile bottom navigation, long error text,
+      loading/retry, reduced-motion, and dirty-form exit interactions.
+- **Focused verification:** overlay/feedback component filters, gallery a11y,
+  relevant focused E2E where an approved journey crosses a dialog, build, and
+  agent-browser overlay/focus/z-index matrix.
+- **Acceptance:** no focus loss, background interaction, clipped portal,
+  navigation overlap, layout shift, or decorative motion regression.
+
+##### M8-006 — Migrate reusable navigation, form, filter, and status patterns
+
+- **Status/dependencies:** `PENDING`; depends on `M8-005`.
+- **Owned scope:** facade reusable patterns; no domain composites or actor
+  behavior.
+- [ ] Convert `AppFrame`, `PageHeader`, `AppNavigation`, `DefaultNavigation`,
+      `List`, `ListRow`, `DefinitionList`, `StickyActionBar`, `FormLayout`,
+      `FormActions`, `ErrorSummary`, `DraftStatus`, `FilterBar`,
+      `ActiveFilterChips`, `FilterSheet`, `StatusPanel`, `GlobalStatus`, and
+      `WorkflowProgress` to compositions of migrated facade primitives.
+- [ ] Preserve compact bottom navigation/safe areas, wide rail behavior, 44px
+      targets, sticky/fixed layering, immediate interaction, long labels, money
+      protection, pristine-form warning suppression, and cancel actions.
+- [ ] Do not adopt Mantine AppShell or notification managers directly in
+      screens; the facade owns any use.
+- **Focused verification:** pattern/shell component filters, gallery a11y,
+  focused local/offline journey checks, build, and agent-browser shell/pattern
+  matrix at all three viewports.
+- **Acceptance:** shell and reusable patterns remain screen-agnostic and meet
+  all responsive/layering contracts.
+
+##### R-830 — Overlay and reusable-pattern review checkpoint
+
+- **Status/dependencies:** `PENDING`; depends on `M8-005`, `M8-006`.
+- [ ] Fresh read-only reviewer audits overlay safety, focus, live regions,
+      navigation, safe areas, z-index, form/filter state, reduced motion,
+      responsive behavior, and contract leakage.
+- [ ] Primary agent resolves severity 1–3 findings and records a pushed green
+      closure before domain composites.
+- **Gate acceptance:** no unresolved severity 1–3 finding.
+
+##### M8-007 — Recompose expense, organization, and manual-entry components
+
+- **Status/dependencies:** `PENDING`; depends on approved `R-830`.
+- **Owned scope:** expense/project/category/manual-entry design-system
+  composites and affected feature presentation only; no actor/domain changes.
+- [ ] Recompose `PeriodPicker`, `ProjectPicker`, `CurrencyPicker`,
+      `MerchantPicker`, `MoneySummary`, `CategoryBreakdown`, `ExpenseRow`,
+      `ExpenseList`, `ExpenseForm`, and organization/deletion compositions from
+      migrated facade primitives.
+- [ ] Preserve controlled decimal/date/time values, project/category identity,
+      filter behavior, signed multi-currency presentation, reassign/delete
+      safeguards, dirty state, immediate save feedback, and existing actor
+      events.
+- [ ] Add regressions for large/negative money, long project/category/merchant
+      names, empty/error/loading/filter states, keyboard entry, narrow forms,
+      and populated-project deletion.
+- **Focused verification:** local/manual/organization component tests, relevant
+  focused local E2E, gallery a11y, build, and agent-browser expense/manual/
+  organization screen matrix.
+- **Acceptance:** no application business logic or Mantine imports leak into
+  screens, and existing actor event contracts remain unchanged.
+
+##### M8-008 — Recompose receipt, Gemini, sync, conflict, and portability UI
+
+- **Status/dependencies:** `PENDING`; depends on `M8-007`.
+- **Owned scope:** remaining domain composites and affected feature presentation
+  only; no actor, adapter, persistence, schema, or workflow change.
+- [ ] Recompose receipt source/metadata/line/editor/reconciliation components,
+      model picker/quick setup/configuration test, sync/global status, known
+      devices, conflict review, and import/export panels from migrated facade
+      primitives.
+- [ ] Preserve native file/camera capture, receipt image privacy, durable
+      drafts, mismatch/error states, secret handling, offline/reconnect honesty,
+      opaque-ID policy, conflict neutrality, import/replace warnings, and
+      destructive cancel/confirmation behavior.
+- [ ] Test long technical/error strings, secret reveal, model loading/failure,
+      receipt line editing, conflict options, import progress/recovery, offline
+      banners, focus restoration, and narrow review layouts.
+- **Focused verification:** receipt/settings/sync/conflict/import component
+  tests, only the already-approved focused E2E journeys affected by rendering,
+  gallery a11y, build, and agent-browser screen/state matrix.
+- **Acceptance:** all remaining screens use the facade unchanged or through
+  approved recorded exceptions; no product workflow semantics changed.
+
+##### R-840 — Domain-composite review checkpoint
+
+- **Status/dependencies:** `PENDING`; depends on `M8-007`, `M8-008`.
+- [ ] Fresh read-only reviewer traces representative actor snapshot/event paths
+      through each migrated composite and audits privacy, destructive safety,
+      conflict neutrality, offline honesty, accessibility, responsive layouts,
+      and absence of duplicated state.
+- [ ] Primary agent resolves severity 1–3 findings and reruns the affected
+      component, E2E, a11y, build, and visual checks before closure.
+- **Gate acceptance:** no unresolved severity 1–3 finding and no actor/domain/
+  adapter contract drift.
+
+##### M8-009 — Remove superseded implementation and enforce boundaries
+
+- **Status/dependencies:** `PENDING`; depends on approved `R-840`.
+- **Owned scope:** design-system implementation/CSS, dependency configuration,
+  static boundary checks, tests, and documentation; no visual redesign.
+- [ ] Verify every migration-matrix row is complete, then remove all
+      `react-aria-components` imports and its pinned dependency.
+- [ ] Delete only CSS selectors and helper code proven unused by searches,
+      coverage, gallery, build, and screen inspection; preserve semantic tokens
+      and feature styles still carrying product layout.
+- [ ] Split the monolithic design-system module into facade-owned modules only
+      if this improves reviewability without changing the public barrel or
+      creating library-specific imports in screens.
+- [ ] Add an automated boundary check that fails on `@mantine/*` or component-
+      library imports outside approved design-system/provider files, Mantine
+      types in public exports, and reintroduction of React Aria.
+- [ ] Run dependency/license/security checks and update third-party notices and
+      architecture documentation.
+- **Focused verification:** boundary check; unused-selector/import searches;
+  `deno audit --frozen`; full component/a11y/build matrix.
+- **Acceptance:** one maintained low-level library remains, no copied or dead
+  implementation survives, and future replacement remains localized behind the
+  facade.
+
+##### M8-010 — Full migration regression, visual closure, and handoff
+
+- **Status/dependencies:** `PENDING`; depends on `M8-009`.
+- **Owned scope:** regression fixes within M8 ownership, gallery/fixtures,
+  documentation, and ledger evidence; no new feature or redesign.
+- [ ] Run the complete canonical verification matrix from a clean working tree:
+      `deno task fmt:check`, `deno task lint`, `deno task check`,
+      `deno task test`, `deno task test:integration`,
+      `deno task test:component`, `deno task test:domain`,
+      `deno task test:actor`, the five approved `deno task test:e2e` journeys,
+      `deno task a11y:gallery`, `deno task browser:verify`,
+      `deno task verify:pages`, `deno task verify:ci`,
+      `deno task verify:toolchain`, `deno task build`, `deno audit --frozen`,
+      and `git diff --check`.
+- [ ] Inspect the gallery and every approved screen/state at `320x568`,
+      `390x844`, and `1280x800` with agent-browser, including keyboard,
+      accessibility tree/axe, long content, large money, empty/loading/offline/
+      error/conflict/destructive states, overlays, reduced motion, and safe
+      areas.
+- [ ] Compare production bundle evidence with the M8-002 baseline and explain
+      material growth; fix accidental duplication or imports.
+- [ ] Reconcile `UI_SPEC.md`, `DESIGN_SYSTEM.md`, `AGENTS.md`, README/licenses,
+      gallery, tests, migration matrix, and actual implementation.
+- [ ] Record exact final evidence, remaining accepted limitations (owner
+      approval required), commits, clean status, and rollback/recovery notes.
+- **Acceptance:** canonical verification is green, visual/state matrix has no
+  unresolved regression, documentation matches code, and repository/upstream are
+  aligned and clean.
+
+##### R-850 — Final independent Mantine migration review
+
+- **Status/dependencies:** `PENDING`; depends on `M8-010`.
+- [ ] Fresh read-only reviewer independently checks facade isolation, migration
+      matrix closure, public contract compatibility, accessibility, responsive
+      and overlay behavior, state ownership, security/privacy, dependency and
+      license state, dead code removal, tests, browser evidence, and clean
+      build.
+- [ ] Reviewer reruns risk-selected commands plus the boundary check and reports
+      `APPROVE` or `BLOCK` with severity and evidence.
+- [ ] Primary agent fixes every severity 1–3 finding, reruns the full affected
+      gate and complete canonical verification when shared code changed, then
+      requests a fresh closure review rather than asking the same reviewer to
+      approve its own fixes.
+- [ ] After approval, primary agent marks all M8 tasks and `R-850` `COMPLETE`,
+      records final commits/evidence in Current Checkpoint, commits, pushes, and
+      confirms clean alignment with `origin/master`.
+- **Gate acceptance:** no unresolved severity 1–3 finding, explicit fresh
+  `APPROVE`, full verification green, and clean pushed repository.
+
 ## Parallel Lanes, Agents, and Worktrees
+
+This section records the orchestration policy used by M0–M7. It does **not**
+apply to M8. The M8 Mandatory Single-Agent Execution Rule overrides it: M8 has
+no implementation sub-agents, parallel lanes, advisors, or implementation
+worktrees, and permits a separate agent only for its named read-only review
+gates.
 
 The future default orchestrator and bounded workers/reviewers may use
 `gpt-5.6-luna` with `xhigh` reasoning, as requested by the owner. Use the same
@@ -1408,7 +1852,9 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
 ## Current Checkpoint
 
 - **Plan state:** Implementation and milestones M0 through M7 (including Q-601,
-  Q-602, Q-603, Q-604, and R-700) are `COMPLETE`.
+  Q-602, Q-603, Q-604, and R-700) are `COMPLETE`. The ordered M8 Mantine
+  migration plan is written; `M8-001` through `M8-010` and `R-810` through
+  `R-850` are `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Integrated implementation state:** All features, adapters, XState actors, UI
   workflows, and PWA capabilities are integrated and verified.
@@ -1416,10 +1862,20 @@ fixed unless the owner explicitly accepts it. Severity 4 cannot expand MVP.
   `D-101`–`D-103`, `U-104`, `R-200`, `L-201`–`L-205`, `R-300`, `A-301`–`A-303`,
   `R-400`, `S-401`–`S-405`, `R-500`, `X-501`–`X-502`, `P-503`, `R-600`,
   `Q-601`–`Q-604`, `R-700`.
-- **Owner authorization:** Active.
+- **Owner authorization:** The owner approved Mantine as the migration target
+  and authorized preparation of this plan only. M8 implementation is not yet
+  authorized; a later explicit start instruction is required.
 - **Worktree state:** Repository is clean with no unmerged worktrees.
 - **Verification status:** Full `deno task verify` passed across all test
   suites, builds, and browser/a11y validations.
+- **M8 active/interrupted work:** none. No implementation or review agent is
+  assigned, no migration branch/worktree exists, and no M8 commit is unpushed.
+- **Unresolved M8 findings/blockers:** implementation authorization is the only
+  prerequisite not yet satisfied; this is an authorization boundary, not a
+  technical failure.
+- **Exact next action:** wait for explicit owner authorization. Once received,
+  run the M8 restart/recovery checklist, mark only `M8-001` `IN_PROGRESS`, and
+  execute it with the primary agent; do not dispatch an implementation agent.
 
 Every checkpoint update must record completed, active, and interrupted task IDs;
 integrated and unpushed commit hashes; verification commands/results; active or
@@ -1429,56 +1885,50 @@ applicable; and the exact next dependency-ready task or recovery action.
 ## Ready-to-Use Orchestration Prompt
 
 ```text
-Act as the implementation orchestrator for this repository. Use
-gpt-5.6-luna with xhigh reasoning for the orchestrator and for bounded workers
-and independent reviewers when available and useful.
+Act as the single primary coding agent for the M8 Mantine design-system
+migration in this repository. Do not act as a parallel orchestrator.
 
 Before changing anything:
 1. Read IMPLEMENTATION_PLAN.md completely.
-2. Reconcile its Current Checkpoint with the actual branch,
-   origin, commits, worktrees, files, and test results. Actual repository state
-   wins; update the ledger if stale. If any prior session, machine, push, or
-   worker was interrupted—or the state does not match exactly—execute the full
-   Interruption and Recovery Protocol before editing or dispatching. Preserve
-   all uncommitted/unintegrated work.
+2. Read the complete M8 section again and execute its Restart and Compaction
+   Recovery Checklist. Reconcile Current Checkpoint with branch, upstream,
+   commits, worktrees, active agents/processes, files, dependency state, and
+   test evidence. Actual repository evidence wins. Preserve all unexpected or
+   incomplete work and never reset, discard, stash, or duplicate it.
 3. Read AGENTS.md, SPEC.md, UI_SPEC.md, DESIGN_SYSTEM.md, README.md, and every
    applicable skill instruction completely before selecting or changing a task.
-4. Confirm that the owner has explicitly authorized implementation. If not,
-   stop without implementing.
+4. Confirm that the owner has explicitly authorized M8 implementation after
+   this plan was written. Approval of Mantine or of the plan alone is not
+   implementation authorization. If authorization is absent, stop without
+   changing source, dependencies, CSS, configuration, or generated assets.
 
-Then continue until the Definition of Done or a genuine owner decision is
-required:
-- Select only dependency-ready tasks. Use at most three sub-agents concurrently
-  and only for disjoint ownership listed in the plan. Create recorded worktrees
-  only when isolation is materially useful.
-- Give every worker one bounded task ID, authoritative requirements, owned files
-  and locked contracts, non-goals, exact acceptance criteria, tests, and commit
-  expectation. Workers must not edit the ledger or push/merge master.
-- Integrate as sole owner in the recorded order. Inspect every diff, run the
-  task's checks, keep tests with behavior, update the checkpoint, make focused
-  commits, and push master after each completed task or small inseparable group.
-- At every R-* gate, dispatch a fresh independent Luna xhigh reviewer read-only
-  first. Convert substantiated findings into scoped fixes with regression tests,
-  rerun the complete gate including agent-browser visual/a11y checks where
-  applicable, then push before releasing downstream tasks.
-- For a long-running worker or reviewer, apply the Long-Running Worker and
-  Review Progress Protocol. Prefer timestamped parent progress messages when
-  the child toolset truly supports them; otherwise create the recorded
-  untracked progress markdown in its dedicated `~` worktree and inspect it at
-  each bounded wait.
+Once authorized, continue sequentially until R-850 is COMPLETE or a genuine
+owner decision is required:
+- Use one primary agent only for all implementation, fixes, validation, commits,
+  pushes, and ledger updates. Never dispatch implementation workers or advisors,
+  never create an M8 worktree, and never overlap M8 tasks.
+- Mark exactly one dependency-ready task IN_PROGRESS. Follow its checklist and
+  the M8 per-task evidence checklist, preserve the facade and locked boundary
+  rules, inspect every diff, and commit/push only green focused changes.
+- After each task, record exact commands/results, browser states/viewports,
+  commit/push state, findings, and the next dependency-ready action in Current
+  Checkpoint so a compacted or restarted session can resume without inference.
+- Stop at R-810, R-820, R-830, R-840, and R-850. Only there, dispatch one fresh
+  independent read-only reviewer agent. The reviewer must not edit, commit,
+  push, create a worktree, or delegate. The primary agent fixes findings
+  sequentially and obtains the required fresh closure review.
 - Prefer unit/domain, XState actor, adapter integration, and component tests.
   Keep E2E to the five approved browser journeys and use a proper E2E dependency,
   not agent-browser, for pass/fail assertions. Use agent-browser separately for
   Chromium visual, interaction, accessibility-tree, and axe inspection.
-- Never add deferred scope, live credentials to CI, a backend, destructive Git
-  operations, force-pushes, or contract changes without the required recorded
-  approval. Never claim unavailable cross-browser checks were performed.
+- Never redesign screens, adopt Mantine Form for business state, leak Mantine
+  imports/types/styles into features, copy library source, add deferred scope,
+  weaken tests, add live credentials/backend behavior, use destructive Git, or
+  force-push. Never claim an unavailable check was performed.
 
 If blocked by a real owner decision, preserve and push all safe completed work,
-record the exact blocker and next possible task in IMPLEMENTATION_PLAN.md, and
-ask one concise numbered decision batch. Otherwise keep advancing the graph.
-If interrupted by a rate limit, session loss, machine restart, failed push, or
-worker disappearance, do not call it a product blocker: preserve the work,
-record `INTERRUPTED` state when possible, and make the next session begin with
-the Interruption and Recovery Protocol.
+record the exact blocker and recovery action in Current Checkpoint, and ask one
+concise decision batch. After interruption or compaction, preserve the work and
+make the next session restart from the M8 recovery checklist rather than from
+memory.
 ```

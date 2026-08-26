@@ -444,15 +444,18 @@ export function AddChoiceScreen({
     return () => {
       if (skipRestoreRef.current) return;
       const previous = previousFocusRef.current;
-      if (
-        previous && previous.isConnected && typeof previous.focus === "function"
-      ) {
-        try {
-          previous.focus();
-        } catch {
-          // ignore
+      globalThis.setTimeout(() => {
+        if (
+          previous && previous.isConnected &&
+          typeof previous.focus === "function"
+        ) {
+          try {
+            previous.focus();
+          } catch {
+            // ignore
+          }
         }
-      }
+      }, 0);
     };
   }, []);
 

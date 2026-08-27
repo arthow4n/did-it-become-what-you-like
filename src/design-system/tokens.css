@@ -429,7 +429,9 @@
   .ds-action-card {
     display: grid;
     width: 100%;
+    height: auto;
     min-height: 88px;
+    overflow: visible;
     gap: var(--space-1);
     justify-items: start;
     padding: var(--space-4);
@@ -443,6 +445,8 @@
   .ds-action-card .mantine-Button-inner {
     display: grid;
     width: 100%;
+    height: auto;
+    overflow: visible;
     min-width: 0;
     justify-items: start;
     gap: var(--space-1);
@@ -450,8 +454,10 @@
 
   .ds-action-card .mantine-Button-label {
     display: grid;
+    height: auto;
     min-width: 0;
     max-width: 100%;
+    overflow: visible;
     justify-items: start;
     overflow-wrap: anywhere;
     text-align: start;
@@ -792,6 +798,8 @@
     display: grid;
     gap: var(--space-2);
     grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
     margin: 0;
     padding: 0;
@@ -800,6 +808,8 @@
 
   .ds-list-row {
     display: flex;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
     min-height: var(--control-height);
     align-items: center;
@@ -815,20 +825,27 @@
 
   .ds-list-row__main > .ds-button {
     display: flex;
+    height: auto;
     width: 100%;
     min-width: 0;
+    overflow: visible;
+    min-height: var(--control-height);
     justify-content: flex-start;
   }
 
   .ds-list-row__main > .ds-button .mantine-Button-inner {
+    height: auto;
     width: 100%;
     min-width: 0;
+    overflow: visible;
     justify-content: flex-start;
   }
 
   .ds-list-row__main > .ds-button .mantine-Button-label {
+    height: auto;
     min-width: 0;
     max-width: 100%;
+    overflow: visible;
     overflow-wrap: anywhere;
     text-align: start;
     white-space: normal;
@@ -1174,6 +1191,9 @@
   }
 
   .ds-gallery {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     min-height: 100dvh;
     padding: var(--space-4);
     background: var(--color-canvas);
@@ -1181,6 +1201,8 @@
 
   .ds-gallery__section {
     display: grid;
+    min-width: 0;
+    max-width: 100%;
     gap: var(--space-4);
     align-content: start;
     align-items: start;
@@ -1192,6 +1214,8 @@
 
   .ds-gallery__surface {
     display: grid;
+    min-width: 0;
+    max-width: 100%;
     gap: var(--space-4);
     align-content: start;
     align-items: start;

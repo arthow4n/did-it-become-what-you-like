@@ -4,6 +4,7 @@ import type {
   ComponentProps,
   CSSProperties,
   ElementType,
+  KeyboardEvent,
   MouseEvent,
   ReactElement,
   ReactNode,
@@ -903,6 +904,12 @@ export function SecretField(
         "aria-label": revealed ? "Hide value" : revealLabel,
         className: "ds-secret-field__toggle",
         tabIndex: 0,
+        onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            setRevealed((current) => !current);
+          }
+        },
       }}
       aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
       onChange={(event) => onChange?.(event.currentTarget.value)}

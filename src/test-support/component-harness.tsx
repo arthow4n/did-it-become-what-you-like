@@ -11,9 +11,20 @@ export type ComponentHarness = {
   waitFor: typeof import("@testing-library/react").waitFor;
 };
 
+let harnessTurn = Promise.resolve();
+
+async function acquireHarnessTurn(): Promise<() => void> {
+  const previousTurn = harnessTurn;
+  let release!: () => void;
+  harnessTurn = new Promise<void>((resolve) => release = resolve);
+  await previousTurn;
+  return release;
+}
+
 export async function withComponentHarness<T>(
   callback: (harness: ComponentHarness) => T | Promise<T>,
 ): Promise<T> {
+  const release = await acquireHarnessTurn();
   const testWindow = new Window({ url: "http://component.test/" });
   const previous = new Map<PropertyKey, unknown>();
   const globals: Record<string, unknown> = {
@@ -63,12 +74,14 @@ export async function withComponentHarness<T>(
       fireEvent,
       waitFor,
     });
-    await new Promise<void>((resolve) => setTimeout(resolve, 25));
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
     return result;
   } finally {
     for (const [key, value] of previous) {
       Object.assign(globalThis, { [key]: value });
     }
     testWindow.close();
+    release();
   }
 }

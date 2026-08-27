@@ -334,8 +334,8 @@ Deno.test("design-system file facade reports rejected files", async () => {
 });
 
 Deno.test("design-system secret facade keeps reveal control keyboard reachable", async () => {
-  await withComponentHarness(({ window, render }) =>
-    withAriaDomGlobals(window, () => {
+  await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
+    withAriaDomGlobals(window, async () => {
       const mounted = render(
         createElement(SecretField, { label: "API key" }),
       );
@@ -344,6 +344,15 @@ Deno.test("design-system secret facade keeps reveal control keyboard reachable",
       });
       assertEqual(toggle.getAttribute("tabindex"), "0");
       assert(toggle.classList.contains("ds-secret-field__toggle"));
+      fireEvent.keyDown(toggle, { key: "Enter", code: "Enter" });
+      await waitFor(() => {
+        assertEqual(
+          (within(document.body).getByRole("textbox", {
+            name: "API key",
+          }) as HTMLInputElement).type,
+          "text",
+        );
+      });
       mounted.unmount();
     })
   );

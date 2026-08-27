@@ -135,9 +135,12 @@ For the approved Mantine migration and all later design-system work:
 5. XState actors remain the authority for durable form and workflow state.
    Mantine may own ephemeral component interaction state, but Mantine Form is
    not introduced as a second business-state layer.
-6. Native date, time, file, and camera controls remain native where approved.
-   They use the same facade-level field contract and Mantine-compatible
-   presentation.
+6. Prefer Mantine's documented `DateInput`, `TimeInput`, and `FileInput` or
+   `Dropzone` components behind the facade when their value, keyboard,
+   accessibility, and capture contracts are compatible. Preserve native date,
+   time, file, and camera behavior as the explicit fallback where a Mantine
+   wrapper cannot preserve it; all variants use the same facade-level field
+   contract.
 7. Product/domain composites such as expense, receipt, conflict, sync,
    destructive, and Gemini patterns remain repository-owned compositions. They
    are assembled from facade primitives backed by Mantine rather than copied

@@ -75,10 +75,9 @@ renumbered after work starts.
 
 This milestone replaces repository-written low-level component behavior with
 maintained Mantine components behind the existing `src/design-system` facade.
-The repository owner approved Mantine as the selected library and approved this
-planning work, but **has not yet authorized migration implementation**. No M8
-source, dependency, generated-asset, or styling change may begin until the owner
-explicitly starts the migration in a later session.
+The repository owner approved Mantine as the selected library and has now
+explicitly authorized migration implementation. The primary agent must still
+follow the ordered tasks, single-agent rule, review gates, and non-goals below.
 
 The target dependency flow is:
 
@@ -194,8 +193,12 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       editing; all later tasks remain `PENDING`.
 - [ ] Inventory owned files, affected facade exports, consumer count, locked
       contracts, and explicit non-goals.
-- [ ] Add or update the cheapest component/accessibility regression tests with
-      the behavior change; do not postpone tests to cleanup.
+- [ ] Add or update the cheapest boundary/contract regression test with the
+      behavior change; do not postpone tests to cleanup. Do not duplicate
+      Mantine's upstream accessibility or primitive-state test suite. A small
+      integration smoke may verify that the pinned package works in this
+      repository, but repository tests must focus on facade-owned translation,
+      product contracts, custom styling, and actor/event wiring.
 - [ ] Implement only the current task and keep application imports on the
       facade.
 - [ ] Format and lint changed files, run `deno task test:affected`, add only the
@@ -262,31 +265,56 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-002 — Prove and pin Mantine compatibility
 
-- **Status/dependencies:** `PENDING`; depends on `M8-001`.
+- **Status/dependencies:** `COMPLETE`; depends on completed `M8-001`.
 - **Owned scope:** `deno.json`, `deno.lock`, isolated compatibility proof/tests,
-  and minimal test-only provider support; no production facade conversion.
-- [ ] Verify the current stable Mantine release against pinned React 19.2,
-      strict TypeScript 7, Deno npm resolution, Vite production build, happy-dom
-      component tests, and Chromium.
-- [ ] Prove `MantineProvider`, CSS imports/layers, dark theme, controlled input,
-      modal focus restoration/portal, select keyboard behavior, notification,
-      reduced motion, and tree-shaken production build.
-- [ ] Measure and record baseline versus proof build CSS/JS sizes; size growth
-      is evidence for review, not permission to use private imports.
-- [ ] Pin only the packages required by the approved mapping. Do not add
-      `@mantine/form` or broad extensions without a mapped requirement.
-- **Focused verification:** compatibility proof tests; `deno task check`;
-  `deno task test:component`; `deno task build`; focused agent-browser proof.
-- **Acceptance:** all required behavior works through public Mantine APIs; any
-  failed prerequisite blocks `R-810` with exact evidence rather than triggering
-  an unreviewed fallback-library choice.
+  minimal test-only provider support, and the newly requested date/time/file
+  candidate proof; no production facade conversion.
+- [x] Verify the current stable Mantine release and the documented
+      `@mantine/dates` `DateInput`/`TimeInput`, core `FileInput`, and
+      `@mantine/dropzone` APIs against pinned React 19.2, strict TypeScript 7,
+      Deno npm resolution, Vite production build, happy-dom component tests,
+      and Chromium.
+- [x] Prove `MantineProvider`, CSS imports/layers, dark theme, controlled input,
+      date/time/file values, Dropzone keyboard activation and accepted/rejected
+      drops, camera capture attributes, modal focus restoration/portal, select
+      keyboard behavior, notification, reduced motion, and tree-shaken
+      production build.
+- [x] Extend the isolated proof to the preferred date/time/file controls while
+      retaining explicit native fallbacks in the migration contract.
+- [x] Measure and record baseline versus the extended proof build CSS/JS sizes;
+      size growth is evidence for review, not permission to use private imports.
+- [x] Pin only the packages required by the approved mapping. The lockfile now
+      includes core, hooks, notifications, dates, and dropzone plus their
+      required transitive packages; `@mantine/form` was not added.
+- **Focused verification:** the eight-test compatibility smoke is intentionally
+  an integration check, not a duplicate Mantine accessibility suite. `deno test
+  --allow-read --allow-write --allow-run --allow-env
+  src/design-system/mantine-compatibility.test.tsx` passed (8 tests);
+  `deno task test:affected` passed (340 tests); `deno task test:component`
+  passed (102 tests); `deno task check`, `deno task lint`, and
+  `deno task fmt:check` passed; `deno task build` passed for the application
+  and toolchain; and `deno task verify:mantine-compatibility` passed with one
+  tree-shaken proof entry. Chromium proof at the isolated Vite URL passed date
+  and time values, camera capture attributes, controlled input,
+  ArrowDown/Enter selection, modal open/Escape close, and notification
+  rendering; screenshot inspection and `agent-browser errors` found no page
+  errors. The unchanged application build measured 1,038,625 JavaScript bytes
+  and 30,076 CSS bytes (284.90 kB and 5.78 kB gzip); the extended proof
+  measured 513,589 JavaScript bytes and 281,376 CSS bytes (154.11 kB and 41.48
+  kB gzip).
+- **Acceptance:** all required behavior, including the preferred date/time/file
+  candidates or documented native fallbacks, works through public Mantine APIs;
+  no `@mantine/form` dependency or production facade conversion is added.
 
 #### R-810 — Governance and compatibility review checkpoint
 
 - **Status/dependencies:** `PENDING`; depends on `M8-001`, `M8-002`.
 - [ ] Fresh read-only reviewer checks the inventory, locked facade, dependency
-      choices, Deno/Vite/React compatibility, accessibility proof, styling
-      strategy, bundle evidence, and absence of premature production changes.
+      choices, Deno/Vite/React compatibility, focused facade-boundary proof,
+      styling strategy, bundle evidence, and absence of premature production
+      changes. The reviewer must distinguish repository wiring/contract checks
+      from Mantine's upstream accessibility coverage and must not require a
+      duplicate upstream primitive test suite.
 - [ ] Reviewer reports `APPROVE` or `BLOCK`, severity, file/line evidence, exact
       commands/results, and minimal corrections.
 - [ ] Primary agent resolves every severity 1–3 finding and reruns only checks
@@ -329,12 +357,18 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - [ ] Convert `Field`, `TextField`, `TextArea`, `SearchField`, `SecretField`,
       `DecimalField`, `MoneyField`, `SelectField`, `ColorChoiceField`,
       `Checkbox`, `RadioGroup`, `Switch`, and `SegmentedControl`.
-- [ ] Retain native `NativeDateField`, `NativeTimeField`, and `FileField`
-      controls while adopting the shared Mantine-compatible field shell.
-- [ ] Test controlled updates, validation/error association, required labels,
-      keyboard/touch use, clear/reveal controls, decimal strings, select
-      popovers, disabled/read-only state, focus ring, autofill, and compact
-      overflow.
+- [ ] Convert `NativeDateField`, `NativeTimeField`, and `FileField` to the
+      preferred Mantine `DateInput`, `TimeInput`, and Dropzone/FileInput facade
+      implementations after M8-002 proves value, accessibility, keyboard, and
+      capture compatibility; retain native controls only as explicit fallbacks.
+- [ ] Test facade-owned controlled updates, callback translation,
+      validation/error association, clear/reveal behavior, decimal strings,
+      date/time/file value adaptation, Dropzone acceptance/rejection and
+      camera capture, plus any custom compact-overflow or styling rules. Use
+      Mantine's upstream accessibility/primitive behavior as coverage rather
+      than reproducing its generic role, focus-ring, and keyboard test suite;
+      retain only a small integration smoke where it detects a repository
+      wiring risk.
 - **Focused verification:** affected tests, changed-file format/lint, and a
   targeted keyboard/focus smoke only for behavior unsafe to defer to `R-820`.
 - **Acceptance:** screens retain facade contracts and no field relies on
@@ -619,31 +653,33 @@ evidence, and the next action is dependency-safe.
 
 ## Current Checkpoint
 
-- **Plan state:** Released baseline through `R-700` and `M8-001` are
-  `COMPLETE`. `M8-002` through `M8-010` and `R-810` through `R-850` remain
-  `PENDING`.
+- **Plan state:** Released baseline through `R-700`, `M8-001`, and `M8-002`
+  are `COMPLETE`. `R-810`, `M8-003` through `M8-010`, and `R-820` through
+  `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
-  and explicitly requested autonomous work on the M8 migration plan. This
-  authorizes M8-001 planning/governance reconciliation only; M8 runtime,
-  dependency, generated-asset, and styling implementation remains unauthorized.
-- **Worktree state:** `master` is clean and aligned with `origin/master`; no
-  M8 branch/worktree exists. Historical non-M8 worktrees remain present and
-  were preserved untouched.
+  and explicitly authorized autonomous implementation of all M8 tasks.
+- **Worktree state:** `master` was clean and aligned with `origin/master` at
+  reconciliation; the partial M8-002 proof and this plan revision are now
+  uncommitted local work. No M8 branch/worktree exists. Historical non-M8
+  worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
   artifact inspection, frozen audit, and diff check). M8-001 evidence is
-  recorded above for pushed commit `3726591`; no dependency/runtime check was
-  run because M8 implementation remains unauthorized.
-- **M8 active/interrupted work:** No implementation or review agent is
-  assigned, no migration branch/worktree exists, and no M8 commit is unpushed.
-  `M8-001` is complete; the primary agent has released ownership.
-- **Exact next action:** wait for an explicit owner instruction to start M8
-  migration implementation. Once received, run the M8 restart/recovery
-  checklist, mark only `M8-002` `IN_PROGRESS`, and execute it with the primary
-  agent; do not dispatch an implementation agent. At `R-810`, stop if no fresh
-  independent read-only reviewer is available.
+  recorded above for pushed commit `3726591`. M8-002's extended compatibility
+  evidence is green, including the preferred date/time/file candidates,
+  Dropzone, builds, artifact verifier, affected tests, and Chromium proof. The
+  app still uses the pre-M8 React Aria facade; no production provider or facade
+  conversion has occurred.
+- **M8 active/interrupted work:** M8-002 is complete locally on `master`; the
+  primary agent owns the pending `R-810` gate. No review agent is assigned, no
+  migration branch/worktree exists, and the completed M8 commit is not yet
+  pushed. Historical non-M8 worktrees were preserved untouched.
+- **Exact next action:** run the final diff/import checks, commit and push
+  M8-002, then request a fresh read-only reviewer at `R-810`. Leave the review
+  agent running and wait/poll for its result; do not begin `M8-003` until
+  `R-810` is explicitly approved.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

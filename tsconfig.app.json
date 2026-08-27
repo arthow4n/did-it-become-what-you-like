@@ -17,6 +17,7 @@
     "src/**/*.tsx",
     "src/**/*.d.ts",
     "vite.config.ts",
-    "vite.gallery.config.ts"
+    "vite.gallery.config.ts",
+    "vite.mantine-compatibility.config.ts"
   ]
 }

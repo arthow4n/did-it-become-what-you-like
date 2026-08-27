@@ -37,9 +37,11 @@ quiet rather than like a dense financial dashboard.
 - **Icons:** use directly imported
   [`lucide-react`](https://lucide.dev/guide/react) icons. Text labels remain the
   default; icons never carry essential meaning alone.
-- **Native browser controls:** retain native file/camera capture and use native
-  date/time inputs where already approved. Wrap them in the same field contract
-  rather than replacing useful platform behavior.
+- **Date, time, and file controls:** prefer Mantine's documented `DateInput`,
+  `TimeInput`, and `Dropzone`/`FileInput` behind the facade when they preserve the
+  product's string values, keyboard behavior, accessibility, and file/camera
+  capture. Keep a native control as the explicit fallback when a Mantine
+  wrapper cannot preserve useful platform behavior.
 - **Dependencies:** declare and pin browser dependencies through the Deno 2
   dependency configuration. M8-002 must prove the selected stable Mantine
   packages, React 19.2, Lucide, XState, TypeScript 7, Deno npm resolution,
@@ -90,10 +92,51 @@ the source of truth and are mapped into `MantineProvider` and facade defaults.
 Mantine `styles`, `classNames`, provider APIs, copied source, private imports,
 and raw palette indexes are confined to `src/design-system/**` and the
 facade-owned provider. XState remains authoritative for durable form/workflow
-state, native date/time/file/camera controls remain native where approved, and
-domain composites remain repository-owned compositions. Ordinary interaction
+state, date/time/file/camera controls remain behind the facade (prefer Mantine
+wrappers with a native fallback), and domain composites remain repository-owned
+compositions. Ordinary interaction
 and layout changes remain immediate (`0ms`); only approved functional progress
 motion may move, with a reduced-motion equivalent.
+
+### Mantine compatibility proof
+
+M8-002 pins `@mantine/core`, `@mantine/hooks`, `@mantine/notifications`,
+`@mantine/dates`, and `@mantine/dropzone` to `9.5.0`, the current stable
+release selected for the migration. Their required `dayjs` and dropzone
+transitives are lockfile-resolved, while React `19.2.8`, TypeScript `7.0.2`,
+Vite `8.2.2`, and the existing Deno npm resolution remain pinned. The isolated
+proof lives in
+`src/design-system/mantine-compatibility-proof.tsx` and is built by
+`vite.mantine-compatibility.config.ts`; it is not imported by the application
+or public facade.
+
+The proof uses only public Mantine APIs and covers the provider's dark scheme,
+controlled input, date/time/file value adaptation, Dropzone keyboard activation,
+camera capture attributes, accepted/rejected drops, modal portal and focus
+return, keyboard selection, notifications, reduced motion, and layered CSS. It
+imports `@mantine/core/styles.layer.css` before the dates, dropzone, and
+notifications layers, with repository tokens after all package layers.
+`scripts/verify-mantine-compatibility.ts` requires one JS and one CSS proof
+asset, checks the layer output, and rejects unused component sentinels from the
+tree-shaken bundle. These are small integration smokes for the pinned packages
+and repository wiring, not a duplicate of Mantine's upstream accessibility or
+primitive-state test suite.
+
+The owner has expanded the input direction: M8-002 must also evaluate the
+documented [`DateInput`](https://mantine.dev/dates/date-input/),
+[`TimeInput`](https://mantine.dev/dates/time-input/), and
+[`Dropzone`](https://mantine.dev/x/dropzone/) APIs, with core
+[`FileInput`](https://mantine.dev/core/file-input/) as the simpler fallback.
+The facade must preserve the existing ISO/time/file callbacks, keyboard access,
+accepted/rejected-file feedback, and mobile camera capture; native controls
+remain the explicit fallback if a candidate fails one of those contracts.
+
+The unchanged application build measured `1,038,625` JavaScript bytes and
+`30,076` CSS bytes (`284.90 kB` and `5.78 kB` gzip). The extended isolated
+Mantine proof measured `513,589` JavaScript bytes and `281,376` CSS bytes
+(`154.11 kB` and `41.48 kB` gzip). These measurements are compatibility
+evidence only; they do not authorize private imports or production facade
+conversion.
 
 The facade is intentionally divided into four migration classes:
 
@@ -365,9 +408,9 @@ their implementation before the ordered task and review gate.
 | `SecretFieldProps`, `SecretField` | direct Mantine wrapper | React Aria text field/input plus local reveal state | Mantine `PasswordInput`, preserving the reveal contract |
 | `DecimalFieldProps`, `DecimalField` | direct Mantine wrapper | text input with decimal input mode | Mantine `TextInput` with string-preserving decimal semantics |
 | `MoneyFieldProps`, `MoneyField` | small facade composition | `TextField` plus product guidance | Mantine `TextInput` and shared `Field` contract; direction remains outside |
-| `NativeDateFieldProps`, `NativeDateField` | approved native control | browser `input[type=date]` plus `Field` | native date input plus Mantine-compatible field shell |
-| `NativeTimeFieldProps`, `NativeTimeField` | approved native control | browser `input[type=time]` plus `Field` | native time input plus Mantine-compatible field shell |
-| `FileFieldProps`, `FileField` | approved native control | browser `input[type=file]` plus `Field` | native file/camera input plus Mantine-compatible field shell |
+| `NativeDateFieldProps`, `NativeDateField` | direct Mantine wrapper with native fallback | browser `input[type=date]` plus `Field` | Mantine `DateInput` behind the facade, preserving ISO strings and a native fallback |
+| `NativeTimeFieldProps`, `NativeTimeField` | direct Mantine wrapper with native fallback | browser `input[type=time]` plus `Field` | Mantine `TimeInput` behind the facade, preserving time strings and a native fallback |
+| `FileFieldProps`, `FileField` | small facade composition with native fallback | browser `input[type=file]` plus `Field` | Mantine `Dropzone` preferred, `FileInput` fallback, preserving file/camera capture and rejection semantics |
 | `SelectOption`, `SelectFieldProps`, `SelectField` | direct Mantine wrapper | React Aria select/list box/popover primitives | Mantine `Select`/public combobox primitives with translated selection |
 | `ColorChoiceFieldProps`, `ColorChoiceField` | approved native control | native color input plus facade preset buttons | native `input[type=color]` plus Mantine layout/controls; preserve presets |
 | `CheckboxProps`, `Checkbox` | direct Mantine wrapper | React Aria checkbox | Mantine `Checkbox` |
@@ -402,10 +445,10 @@ their implementation before the ordered task and review gate.
 | `FormLayout`, `FormActions`, `ErrorSummary`, `DraftStatus` | reusable patterns | semantic wrappers and `StatusPanel` | migrated facade layout/status primitives; XState remains state authority |
 | `FilterBar`, `ActiveFilterChips`, `FilterSheet` | reusable patterns | facade layout, `Chip`, and `AdaptiveDialog` | migrated facade layout/chip/dialog primitives |
 | `StatusPanel`, `WorkflowProgress` | reusable patterns | facade layout, `Progress`, and `Badge` | migrated facade layout/progress/badge primitives |
-| `PeriodPicker`, `ProjectPicker`, `CurrencyPicker`, `MerchantPicker` | domain composites | facade selectors and native date field | migrated facade `SegmentedControl`, select/combobox, and native date primitives |
+| `PeriodPicker`, `ProjectPicker`, `CurrencyPicker`, `MerchantPicker` | domain composites | facade selectors and date field | migrated facade `SegmentedControl`, select/combobox, and Mantine `DateInput` with a native fallback |
 | `MoneySummaryItem`, `MoneySummary`, `CategoryTotal`, `CategoryBreakdown` | domain composites | `MoneyText`, `List`, and semantic sections | migrated facade typography/layout/list primitives; signed totals stay domain-owned |
 | `ExpenseViewModel`, `ExpenseRow`, `ExpenseList`, `ReceiptGroupProps`, `ReceiptGroup` | domain composites | facade list/disclosure/money primitives | migrated facade list/disclosure/money primitives; view models remain repository types |
-| `ReceiptReconciliation`, `ReceiptSourcePicker`, `ReceiptMetadataViewModel`, `ReceiptMetadata` | domain composites | facade card/field/notice/native capture primitives | migrated facade card/field/notice primitives plus native file/camera behavior |
+| `ReceiptReconciliation`, `ReceiptSourcePicker`, `ReceiptMetadataViewModel`, `ReceiptMetadata` | domain composites | facade card/field/notice/file capture primitives | migrated facade card/field/notice primitives plus Mantine Dropzone/FileInput capture with a native fallback |
 | `ReceiptLineViewModel`, `ReceiptLineCard`, `ReceiptLineEditorValue`, `ReceiptLineEditor` | domain composites | facade card, checkbox, field, and select primitives | migrated facade card/field/choice primitives; controlled editor values remain stable |
 | `GeminiModelViewModel`, `ModelPicker` | domain composite | React Aria combo box/list box/popover | facade combobox/select primitives; compatibility and secret policy remain outside |
 | `GeminiQuickSetup`, `GeminiConfigurationTest` | domain composites | facade card, secret field, notice, form, and status patterns | migrated facade primitives; no Mantine Form or duplicated durable state |
@@ -479,6 +522,7 @@ superseded dependency is removed.
 | `M8-API-004` | Controlled text, decimal, money, date/time, select, segmented, switch, checkbox, and picker values are bound to actors in feature files. | Preserve string values and immediate callback behavior. Mantine Form is not introduced; XState actors remain durable state authority. |
 | `M8-API-005` | Feature files pass facade `className` hooks for product layout, but no feature file imports a library-specific styling API. | Preserve approved facade class hooks where needed for product CSS; all Mantine `styles`, `classNames`, selectors, and provider configuration stay inside the facade/provider. |
 | `M8-API-006` | `src/design-system/gallery.tsx` and `src/design-system/design-system.test.tsx` are the shared visual/behavior contract fixtures; `src/features/receipt-ui.test.tsx` is the feature-facing component regression surface. | Extend the cheapest affected fixture in each migration task and defer the complete gallery/browser matrix to the named review gate. |
+| `M8-API-007` | `NativeDateField`, `NativeTimeField`, and `FileField` currently expose native controls and product-facing string/file callbacks. The owner now prefers Mantine `DateInput`, `TimeInput`, and `FileInput`/`Dropzone` where they preserve those contracts. | Re-evaluate these three rows before `M8-004`: prove `@mantine/dates`, core `FileInput`, and `@mantine/dropzone`; preserve ISO/time/file and camera-capture semantics; retain native controls only as explicit compatibility fallbacks; and test keyboard activation plus accepted/rejected drops. Record any callback or markup impact before changing feature consumers. |
 
 No facade contract change is proposed by M8-001. The only planned changes are
 the internal library backing and the removal of implementation-derived public
@@ -535,7 +579,7 @@ an approved task and review gate say otherwise.
 | First use                     | `AppFrame`, `ContentContainer`, `ActionCard`, `InlineNotice`                                                                                             |
 | 1 Expenses                    | `PageHeader`, `ProjectPicker`, `GlobalStatus`, `Banner`, `PeriodPicker`, `FilterBar`, `MoneySummary`, `CategoryBreakdown`, `ExpenseList`, `ReceiptGroup` |
 | 2 Add Choice                  | `AdaptiveDialog`, two `ActionCard`s, `InlineNotice`                                                                                                      |
-| 3 Manual/Create/Edit          | `PageHeader`, `FormLayout`, `SegmentedControl`, `MoneyField`, `ComboBoxField`, native date/time fields, `DraftStatus`, `FormActions`, `Toast`            |
+| 3 Manual/Create/Edit          | `PageHeader`, `FormLayout`, `SegmentedControl`, `MoneyField`, `ComboBoxField`, date/time facade fields, `DraftStatus`, `FormActions`, `Toast`            |
 | 4 Scan Receipt                | `PageHeader`, `ReceiptSourcePicker`, `StatusPanel`, `InlineNotice`, `GeminiQuickSetup`, `WorkflowProgress`, `StickyActionBar`                            |
 | 5 Receipt Review              | `PageHeader`, `ReceiptMetadata`, `ReceiptReconciliation`, `ReceiptLineCard`, `ReceiptLineEditor`, `InlineNotice`, `StickyActionBar`                      |
 | 6 Organize                    | `PageHeader`, `Section`, `ActionCard`, preview `ListRow`s                                                                                                |

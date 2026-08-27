@@ -691,11 +691,11 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-006 — Migrate reusable navigation, form, filter, and status patterns
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-005`.
+- **Status/dependencies:** `COMPLETE`; depends on `M8-005`.
 - **Owned scope:** facade reusable patterns; no domain composites or actor
   behavior.
-- **Current task scope:** inventory the reusable facade roots, consumers, and
-  tests; start with `AppFrame`, `PageHeader`, `AppNavigation`, and
+- **Completed task scope:** inventory the reusable facade roots, consumers, and
+  tests; migrate `AppFrame`, `PageHeader`, `AppNavigation`, and
   `DefaultNavigation`, preserving screen-level contracts and responsive shell
   boundaries.
 - **Shell slice evidence (2026-08-27):** `AppFrame`, `PageHeader`, and the
@@ -707,19 +707,30 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   `deno task check`, `deno task lint` (207 files), and `git diff --check` all
   passed. The repository is clean and aligned with `origin/master` at
   `7bb9e87`.
-- **Exact next action:** migrate the reusable list/definition/form structure
-  (`List`, `ListRow`, `DefinitionList`, `FormLayout`, `FormActions`, and
-  `ErrorSummary`) with Mantine structural primitives while preserving native
-  list/definition semantics and mobile form action ordering.
-- [ ] Convert `AppFrame`, `PageHeader`, `AppNavigation`, `DefaultNavigation`,
+- **Historical implementation sequence:** the shell slice landed first, then
+  the reusable list/definition/form structure (`List`, `ListRow`,
+  `DefinitionList`, `FormLayout`, `FormActions`, and `ErrorSummary`), followed
+  by filters, status, workflow, and sticky-action facades.
+- **Reusable pattern completion evidence (2026-08-27):** The full M8-006
+  reusable facade set is pushed at `a5d4b19` and `f3f2a0b`: shell/navigation,
+  lists/definitions, form layout/actions, error summaries, sticky actions,
+  filters/chips/sheets, status panels, draft/global status, and workflow
+  progress now compose public Mantine primitives through the facade. Native
+  landmarks/list/definition semantics, 44px targets, compact bottom navigation,
+  wide rail layout, sticky layering, and existing screen contracts remain
+  intact. The final affected run `deno task test:affected` passed (105 tests,
+  0 failures); `deno task build` passed with only the existing chunk-size
+  warning, `deno task fmt:check` checked 223 files, `deno task check` passed,
+  `deno task lint` checked 207 files, and `git diff --check` passed.
+- [x] Convert `AppFrame`, `PageHeader`, `AppNavigation`, `DefaultNavigation`,
       `List`, `ListRow`, `DefinitionList`, `StickyActionBar`, `FormLayout`,
       `FormActions`, `ErrorSummary`, `DraftStatus`, `FilterBar`,
       `ActiveFilterChips`, `FilterSheet`, `StatusPanel`, `GlobalStatus`, and
       `WorkflowProgress` to compositions of migrated facade primitives.
-- [ ] Preserve compact bottom navigation/safe areas, wide rail behavior, 44px
+- [x] Preserve compact bottom navigation/safe areas, wide rail behavior, 44px
       targets, sticky/fixed layering, immediate interaction, long labels, money
       protection, pristine-form warning suppression, and cancel actions.
-- [ ] Do not adopt Mantine AppShell or notification managers directly in
+- [x] Do not adopt Mantine AppShell or notification managers directly in
       screens; the facade owns any use.
 - **Focused verification:** affected tests and a targeted shell/responsive smoke
   only when the changed behavior is unsafe to defer to `R-830`.
@@ -728,7 +739,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### R-830 — Overlay and reusable-pattern review checkpoint
 
-- **Status/dependencies:** `PENDING`; depends on `M8-005`, `M8-006`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-005`, `M8-006`.
 - [ ] Fresh read-only reviewer audits overlay safety, focus, live regions,
       navigation, safe areas, z-index, form/filter state, reduced motion,
       responsive behavior, and contract leakage.
@@ -950,17 +961,17 @@ evidence, and the next action is dependency-safe.
 ## Current Checkpoint
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
-  `R-810`, `M8-003`, `M8-004`, `R-820`, and `M8-005` are `COMPLETE`;
-  `M8-006` is `IN_PROGRESS`; `M8-007` through `M8-010`, and `R-830` through
-  `R-850` remain `PENDING`.
+  `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, and `M8-006` are
+  `COMPLETE`; `R-830` is `IN_PROGRESS`; `M8-007` through `M8-010`, and
+  `R-840` through `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `7bb9e87` (`feat(migration): move shell facades to Mantine`); R-820 is
-  approved and closed, M8-005 is complete, and the first M8-006 shell slice is
-  complete. No M8 branch/worktree or review agent is active. Historical non-M8
-  worktrees remain present and were preserved untouched.
+  `a5d4b19` (`feat(migration): finish reusable status facades`); R-820 is
+  approved and closed, M8-005 and M8-006 are complete, and the repository is
+  ready for the R-830 review. No M8 branch/worktree or review agent is active.
+  Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -985,12 +996,13 @@ evidence, and the next action is dependency-safe.
   agent; the latest closure review approved R-820 at `221f76e` with all
   evidence recorded above; M8-005 is complete; its overlay slice is pushed at
   `76c5235`, notification feedback at `bd5cc90`, and remaining feedback at
-  `6c904fc`; the M8-006 shell slice is pushed at `7bb9e87`; no review agent,
-  migration branch, or M8 worktree is active; historical non-M8 worktrees were
-  preserved untouched.
-- **Exact next action:** migrate List, ListRow, DefinitionList, FormLayout,
-  FormActions, and ErrorSummary to Mantine-backed structural compositions,
-  then run the affected tests and record the exact evidence here.
+  `6c904fc`; M8-006 is pushed through shell `7bb9e87`, list/form/status
+  `f3f2a0b`, and final sticky-action `a5d4b19`; no review agent, migration
+  branch, or M8 worktree is active; historical non-M8 worktrees were preserved
+  untouched.
+- **Exact next action:** invoke one fresh read-only R-830 reviewer against the
+  combined M8-005/M8-006 batch and wait for its complete evidence/report before
+  opening M8-007.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

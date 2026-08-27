@@ -893,7 +893,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### R-840 — Domain-composite review checkpoint
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-007`, `M8-008`.
+- **Status/dependencies:** `BLOCKED`; depends on `M8-007`, `M8-008`.
 - [x] Fresh read-only reviewer traces representative actor snapshot/event paths
       through each migrated composite and audits privacy, destructive safety,
       conflict neutrality, offline honesty, accessibility, responsive layouts,
@@ -917,9 +917,6 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   affected browser matrix passed the other domain/privacy/focus checks;
   Playwright E2E remained unavailable because existing Vite PID 515499 occupies
   port 5173 and was left untouched. The reviewer was closed after its report.
-- [x] Primary agent resolves severity 1–3 findings and reruns only checks
-      affected by those fixes. Repeat the complete checkpoint matrix only when
-      shared or cross-cutting code changed before closure.
 - **Remediation evidence (2026-08-27):** Pushed commit `5566307` adds the
   explicit Cancel action to forced finalization and a product regression
   covering both confirm/cancel callbacks. It also constrains known-device
@@ -927,6 +924,23 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   and DOM containment regressions. The focused destruction/sync test command
   passed (20 tests), and targeted TypeScript, format, lint, and diff checks
   passed. A fresh closure review remains required.
+- **Closure review attempt (2026-08-27):** Fresh read-only reviewer Turing
+  (`01a04208-7f8c-7a23-aa36-41bd370a49ee`) audited pushed `HEAD 06f0cc8` and
+  returned `BLOCK`. It verified the forced-finalization Cancel and badge
+  containment fixes, but found a severity-1 data-safety regression: hydrated
+  known devices can be absent from the memoized live projection used by
+  Delete Everywhere after sync hydration. It also found a severity-2 contract
+  regression: receipt line and metadata editors have no explicit Cancel action.
+  The reviewer recorded 109 changed tests, 82 targeted actor/domain/adapter
+  tests, 41 related changed-file tests, 1 actor test, gallery accessibility at
+  all three viewports, production build with only the existing chunk warning,
+  full check/lint/format/diff success, and no direct feature/app library
+  imports. Playwright E2E remained unavailable because the existing Vite server
+  occupied port 5173 and was left untouched. The reviewer was closed after its
+  final report.
+- [ ] Primary agent resolves severity 1–3 findings and reruns only checks
+      affected by those fixes. Repeat the complete checkpoint matrix only when
+      shared or cross-cutting code changed before closure.
 - **Gate acceptance:** no unresolved severity 1–3 finding and no actor/domain/
   adapter contract drift.
 
@@ -1078,19 +1092,18 @@ evidence, and the next action is dependency-safe.
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
-  `COMPLETE`; `M8-007` and `M8-008` are `COMPLETE`; `R-840` is `IN_PROGRESS`;
+  `COMPLETE`; `M8-007` and `M8-008` are `COMPLETE`; `R-840` is `BLOCKED`;
   `M8-009` through `M8-010`, and `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
-- **Worktree state:** `master` is aligned with `origin/master` at pushed fix
-  commit `5566307` (`fix(migration): close destructive and device review
-  findings`), with the
+- **Worktree state:** `master` is aligned with `origin/master` at pushed plan
+  commit `06f0cc8` (`docs(plan): record R-840 remediation evidence`), with the
   implementation batch and R-830 remediations pushed; R-830 is approved and
-  closed, M8-007 and M8-008 are complete, and R-840 remediation is pushed with
-  closure review pending. R-820 is approved and closed, and M8-005 and M8-006
-  are complete. No M8 branch/worktree or review agent is active; the primary
-  agent owns the closure gate.
+  closed, M8-007 and M8-008 are complete, and the R-840 closure review found
+  two unresolved findings. R-820 is approved and closed, and M8-005 and
+  M8-006 are complete. No M8 branch/worktree or review agent is active; the
+  primary agent owns the R-840 remediation.
   Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -1123,10 +1136,11 @@ evidence, and the next action is dependency-safe.
   agent, migration branch, or M8 worktree is active; historical non-M8
   worktrees were preserved untouched. The primary agent owns the R-840
   closure gate.
-- **Exact next action:** commit this remediation checkpoint, dispatch a fresh
-  read-only R-840 closure reviewer against `HEAD 5566307`, wait for its full
-  report without killing a slow review, and resolve any new severity 1–3
-  finding before opening M8-009.
+- **Exact next action:** commit this blocked-gate checkpoint, fix live device
+  projection invalidation across hydration/merge/touch/rename/acknowledgement/
+  import updates, add explicit Cancel actions to receipt line and metadata
+  editors with regressions, rerun affected checks, and request a fresh R-840
+  closure review.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

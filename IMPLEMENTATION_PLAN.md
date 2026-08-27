@@ -402,17 +402,17 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### R-820 — Foundation and controls review checkpoint
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-003`, `M8-004`.
-- [ ] Fresh read-only reviewer audits provider/theme boundaries, public API
+- **Status/dependencies:** `COMPLETE`; depends on `M8-003`, `M8-004`.
+- [x] Fresh read-only reviewer audits provider/theme boundaries, public API
       compatibility, semantic markup, focus/error behavior, native controls,
       intrinsic sizing, mobile overflow, motion, tests, and visual evidence.
-- [ ] From pre-`M8-003` base commit `12f12c4`, run affected tests once with
+- [x] From pre-`M8-003` base commit `12f12c4`, run affected tests once with
       `deno test --allow-read --allow-write --allow-run --allow-env
       --changed=12f12c4`,
       then run one gallery accessibility check, one production build, and one
       agent-browser keyboard/form/layout matrix at all three viewports for the
       combined `M8-003`/`M8-004` batch.
-- [ ] Primary agent fixes severity 1–3 findings and reruns only checks affected
+- [x] Primary agent fixes severity 1–3 findings and reruns only checks affected
       by those fixes. Repeat the complete checkpoint matrix only when shared or
       cross-cutting code changed; then commit, push, and record closure.
 - **Review evidence (R-820 initial pass, 2026-08-27):** Fresh read-only reviewer
@@ -587,11 +587,30 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - **Exact next action:** invoke a fresh read-only R-820 closure reviewer at the
   pushed `c1907d5` checkpoint and record approval or any remaining severity
   1–3 finding before opening M8-005.
+- **Final closure evidence (2026-08-27):** Fresh read-only reviewer Hubble
+  (`01a0416e-42c8-7e31-aaaf-745af7185a07`) audited pushed `HEAD 221f76e`
+  against `12f12c4` and returned **APPROVE** with no unresolved severity 1–3
+  findings. `deno test --allow-read --allow-write --allow-run --allow-env
+  --changed=12f12c4` passed (113 tests), `deno task a11y:gallery` passed at
+  all three viewports, `deno task build` passed with only the existing
+  non-blocking chunk-size warning, `deno task check` passed, `deno task lint`
+  checked 207 files, and `git diff --check 12f12c4..HEAD` passed. Browser
+  measurements were page width `1280/390/320` at the three viewports;
+  ExpenseRow right edges were `1219/345/275px`; MoneyText local scroll/client
+  widths were `444/444`, `311/300`, and `311/230`; and FilterBar remained
+  contained with local segmented scrolling. Dialog Enter, date default, file
+  rejection, SearchField clear, SecretField Space/Enter, Switch validation
+  mapping, long ActionCard content, zero transition motion, and facade-boundary
+  checks all passed. Direct axe was clean; the reviewer treated only the
+  intentional focusable money scroller and fixed-overlay heuristics as
+  non-findings.
+- **Gate acceptance:** R-820 is approved and closed. M8-005 is the sole
+  dependency-ready task and is now marked `IN_PROGRESS`.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
 
-- **Status/dependencies:** `PENDING`; depends on approved `R-820`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on approved `R-820`.
 - **Owned scope:** facade overlay and feedback primitives/patterns only.
 - [ ] Convert `Disclosure`, `AdaptiveDialog`, `ConfirmDialog`, `DangerDialog`,
       `Popover`, `Menu`, and `Tooltip` using public Mantine components.
@@ -608,6 +627,10 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       motion.
 - [ ] Exercise nested overlay, mobile bottom navigation, long error text,
       loading/retry, reduced-motion, and dirty-form exit interactions.
+- **Current task scope:** Start with an impact inventory of the current
+  overlay/feedback facade implementations, their tests, provider composition,
+  and notification call sites. Keep feature imports on the facade and use
+  Mantine Notifications only through the provider-owned integration boundary.
 - **Focused verification:** affected tests and a targeted overlay/focus smoke
   only when the changed behavior is unsafe to defer to `R-830`.
 - **Acceptance:** no focus loss, background interaction, clipped portal,
@@ -857,17 +880,17 @@ evidence, and the next action is dependency-safe.
 ## Current Checkpoint
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
-  `R-810`, `M8-003`, and `M8-004` are `COMPLETE`; `R-820` is `IN_PROGRESS`;
-  `M8-005` through `M8-010`, and `R-830` through `R-850` remain `PENDING`.
+  `R-810`, `M8-003`, `M8-004`, and `R-820` are `COMPLETE`; `M8-005` is
+  `IN_PROGRESS`; `M8-006` through `M8-010`, and `R-830` through `R-850`
+  remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `c1907d5` (`fix(migration): contain large gallery money example`); the
-  standalone MoneyText overflow and the follow-up scroller accessibility issue
-  are fixed and locally validated, and this plan update is the only current
-  uncommitted change. No M8 branch/worktree or review agent is active.
-  Historical non-M8 worktrees remain present and were preserved untouched.
+  `221f76e` (`docs(plan): record gallery money containment`); R-820 is approved
+  and closed, and this plan update is the only current uncommitted change before
+  starting M8-005. No M8 branch/worktree or review agent is active. Historical
+  non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -889,15 +912,13 @@ evidence, and the next action is dependency-safe.
   and the gallery-track fix is pushed at `2806236`, with evidence recorded
   above; the latest R-820 closure review is complete at `447b8e9` with the
   single finding resolved by `2806236`; R-820 remains owned by the primary
-  agent; the latest closure review is complete at `a56d3ba` with its MoneyText
-  fixture finding and follow-up validation recorded above; the correction is
-  pushed at `c1907d5`, and R-820 remains open pending a fresh closure review;
-  no review agent, migration branch, or M8 worktree is active; historical
-  non-M8 worktrees were preserved untouched.
-- **Exact next action:** invoke another fresh read-only R-820 closure reviewer,
-  have it rerun the combined M8-003/M8-004 affected, gallery, build, and
-  three-viewport browser matrix after the gallery-track fix, and record
-  approval or any remaining severity 1–3 finding before opening M8-005.
+  agent; the latest closure review approved R-820 at `221f76e` with all
+  evidence recorded above; M8-005 is now owned by the primary agent; no review
+  agent, migration branch, or M8 worktree is active; historical non-M8
+  worktrees were preserved untouched.
+- **Exact next action:** inventory M8-005 overlay/feedback exports, consumers,
+  tests, provider composition, notification call sites, and locked contracts;
+  then implement the first dependency-safe slice and record its evidence.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

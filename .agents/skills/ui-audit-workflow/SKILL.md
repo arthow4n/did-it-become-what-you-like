@@ -182,6 +182,8 @@ When conducting an audit, follow this standard journey order:
          ▼
 [Phase 2: Multi-Dimensional Audit & Checklist Generation]
          │
+         ├─► [Optional: Convert to IMPLEMENTATION_PLAN.md via implementation-planning skill]
+         │
          ▼
 [Phase 3: Step-by-Step Remediation (Fast Gates + Commit + Push)]
          │
@@ -217,6 +219,12 @@ When conducting an audit, follow this standard journey order:
    - **Actionable Remediation Checklist:** Numbered steps (`STEP-01`, `STEP-02`,
      ...) specifying exact target files, required CSS/JSX adjustments, and
      verification criteria.
+3. **User Direction & Planning Decision:**
+   - Ask the user whether to convert the audit report into an executable
+     milestone in `IMPLEMENTATION_PLAN.md` using the `implementation-planning`
+     skill (with batched workstreams, formal review gates, and lifecycle
+     archiving) or to proceed directly with the transient checklist loop in
+     Phase 3 below.
 
 ### Phase 3: Step-by-Step Remediation Protocol
 

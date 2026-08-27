@@ -893,17 +893,30 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### R-840 — Domain-composite review checkpoint
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-007`, `M8-008`.
-- [ ] Fresh read-only reviewer traces representative actor snapshot/event paths
+- **Status/dependencies:** `BLOCKED`; depends on `M8-007`, `M8-008`.
+- [x] Fresh read-only reviewer traces representative actor snapshot/event paths
       through each migrated composite and audits privacy, destructive safety,
       conflict neutrality, offline honesty, accessibility, responsive layouts,
       and absence of duplicated state.
-- [ ] From the recorded pre-`M8-007` base commit, run affected tests once with
+- [x] From the recorded pre-`M8-007` base commit
+      `7eaa58413da2cd153b6b4ca5c865885e323699a2`, run affected tests once with
       `deno test --allow-read --allow-write --allow-run --allow-env
-      --changed=<recorded-pre-M8-007-base-commit>`,
+      --changed=7eaa58413da2cd153b6b4ca5c865885e323699a2`,
       then run one gallery accessibility check, one production build, only
       affected approved E2E journeys, and one domain-screen agent-browser matrix
       for the combined `M8-007`/`M8-008` batch.
+- **Review attempt (2026-08-27):** Fresh read-only reviewer Volta
+  (`01a041ee-ed38-7a91-ac35-d75d1bd6091c`) audited pushed `HEAD 3e28366` and
+  returned `BLOCK`. It found severity-2 missing Cancel action in the forced
+  finalization state at `src/features/destruction-ui.tsx`, a severity-2 320px
+  known-device overflow caused by the retirement badge, and a severity-3 plan
+  reproducibility/status mismatch. The reviewer recorded 107 passed changed
+  tests, 55 passed actor/domain tests, 2 passed device-registry tests, gallery
+  accessibility at all three viewports, a production build with only the
+  existing chunk warning, and `git diff --check 7eaa584..HEAD` passed. The
+  affected browser matrix passed the other domain/privacy/focus checks;
+  Playwright E2E remained unavailable because existing Vite PID 515499 occupies
+  port 5173 and was left untouched. The reviewer was closed after its report.
 - [ ] Primary agent resolves severity 1–3 findings and reruns only checks
       affected by those fixes. Repeat the complete checkpoint matrix only when
       shared or cross-cutting code changed before closure.
@@ -1058,7 +1071,8 @@ evidence, and the next action is dependency-safe.
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
-  `COMPLETE`; `M8-007` is `COMPLETE`; `M8-008` is `IN_PROGRESS`; `M8-009`
+  `COMPLETE`; `M8-007` and `M8-008` are `COMPLETE`; `R-840` is `BLOCKED`;
+  `M8-009`
   through `M8-010`, and
   `R-840` through `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
@@ -1068,7 +1082,8 @@ evidence, and the next action is dependency-safe.
   implementation commit `c40a7ff` (`feat(migration): finish portability facade
   composition`), with the
   implementation batch and R-830 remediations pushed; R-830 is approved and
-  closed, M8-007 is complete, and M8-008 is the sole active task;
+  closed, M8-007 and M8-008 are complete, and R-840 is blocked on review
+  findings;
   R-820 is approved and closed, and M8-005 and M8-006 are complete. M8-008 is
   complete and R-840 is the sole active review gate. No M8 branch/worktree or
   other review agent is active; the primary agent owns the gate.
@@ -1102,11 +1117,12 @@ evidence, and the next action is dependency-safe.
   `Sartre`, `Faraday`, and `Peirce` are closed with R-830 approved and all
   severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; no review
   agent, migration branch, or M8 worktree is active; historical non-M8
-  worktrees were preserved untouched.
-- **Exact next action:** commit this checkpoint, dispatch one fresh read-only
-  R-840 reviewer against the pushed M8-007/M8-008 batch, wait for its complete
-  report without killing a slow review, and resolve any severity 1–3 findings
-  before opening M8-009.
+  worktrees were preserved untouched. The primary agent owns the R-840
+  remediation.
+- **Exact next action:** commit this blocked-gate checkpoint, add the forced
+  finalization Cancel action and regression, constrain the known-device
+  retirement badge at 320px with a regression, rerun affected checks, and
+  request a fresh R-840 closure review.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

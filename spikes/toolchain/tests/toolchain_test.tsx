@@ -23,7 +23,7 @@ const { proofAmount, proofSchema, ToolchainProof } = await import(
   "../src/compatibility.tsx"
 );
 
-Deno.test("React Aria renders an accessible button and handles its press", async () => {
+Deno.test("the toolchain renders an accessible native button and handles its click", async () => {
   render(<ToolchainProof />);
 
   const button = screen.getByRole("button", {

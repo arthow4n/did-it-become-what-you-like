@@ -2,7 +2,6 @@ import { useActor } from "@xstate/react";
 import { ScanLine } from "lucide-react";
 import Big from "big.js";
 import React from "react";
-import { Button } from "react-aria-components";
 import { z } from "zod";
 import { setup } from "xstate";
 
@@ -41,12 +40,13 @@ export function ToolchainProof(): React.JSX.Element {
   const [snapshot, send] = useActor(proofMachine);
 
   return (
-    <Button
+    <button
+      type="button"
       aria-label="Increment proof counter"
-      onPress={() => send({ type: "increment" })}
+      onClick={() => send({ type: "increment" })}
     >
       <ScanLine aria-hidden="true" />
       Count {snapshot.context.count}
-    </Button>
+    </button>
   );
 }

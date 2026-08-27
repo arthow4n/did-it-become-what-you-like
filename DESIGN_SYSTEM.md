@@ -25,9 +25,9 @@ quiet rather than like a dense financial dashboard.
 - **Accessible behavior:** the repository-owned facade is the only application
   UI boundary. During M8, maintained Mantine components provide applicable
   low-level behavior through public APIs; the facade translates their events
-  and preserves product-oriented contracts. The pre-M8 implementation is
-  recorded in the migration matrix below and remains React Aria-backed until
-  the ordered migration reaches it.
+  and preserves product-oriented contracts. The migration matrix below records
+  the pre-M8 implementation and the selected Mantine replacement for each
+  facade contract.
 - **Styling:** semantic After Midnight CSS custom properties remain the visual
   source of truth. Mantine provider values and component defaults map to those
   roles; library-specific customization stays inside `src/design-system/**`.
@@ -50,9 +50,9 @@ quiet rather than like a dense financial dashboard.
 
 Mantine provides maintained low-level behavior, not the product's semantic
 appearance or workflow state. Application screens must import repository-owned
-design-system components rather than styling Mantine, React Aria, or another
-library independently. A screen may use ordinary semantic layout elements, but
-it must not create a parallel button, field, overlay, notice, or status pattern.
+design-system components rather than styling Mantine or another library
+independently. A screen may use ordinary semantic layout elements, but it must
+not create a parallel button, field, overlay, notice, or status pattern.
 
 ## Ownership Boundary
 
@@ -77,14 +77,13 @@ semantic tokens
 - XState actors own durable workflow state and permitted actions. Components
   receive controlled values, status, and callbacks or typed event dispatchers.
 - Mantine may own ephemeral interaction state such as focus and popover
-  mechanics. It must not become a second source of business truth. Until the
-  ordered migration removes it, React Aria may own the same ephemeral state in
-  the legacy facade implementation only.
+  mechanics. It must not become a second source of business truth. The
+  superseded React Aria implementation is not a runtime dependency.
 
 ## Mantine migration boundary
 
 The migration preserves the public `src/design-system/index.ts` facade. Feature
-and app files never import Mantine or React Aria directly. Public design-system
+and app files never import Mantine or another component library directly. Public design-system
 props, refs, callback signatures, and types remain library-neutral; library
 events are translated inside the facade. After Midnight semantic tokens remain
 the source of truth and are mapped into `MantineProvider` and facade defaults.
@@ -393,7 +392,7 @@ publicly exported prop/view type, but every public symbol is named. The target
 column names only public Mantine or browser primitives; it does not authorize
 their implementation before the ordered task and review gate.
 
-| Public exports | Class | Current backing | M8 target primitive/composition |
+| Public exports | Class | Pre-M8 backing | M8 target primitive/composition |
 | --- | --- | --- | --- |
 | `Space` | facade type | CSS token scale | semantic CSS tokens mapped to Mantine spacing |
 | `AppFrameProps`, `AppFrame` | small facade composition | semantic `aside`/`main` and CSS | Mantine `Box` plus semantic landmarks; retain facade-owned shell layout |
@@ -487,7 +486,7 @@ public API surface and are covered by the export matrix above.
 | `src/design-system/gallery.tsx` | Gallery fixtures import the primitive, pattern, and composite symbols needed to exercise the visual contract; see its import block for the exhaustive fixture list. |
 | `src/design-system/design-system.test.tsx` | `AdaptiveDialog`, `Button`, `Checkbox`, `ColorChoiceField`, `CurrencyPicker`, `DefinitionList`, `DeleteAndReassign`, `ExpenseRow`, `FileField`, `formatMoney`, `MerchantPicker`, `MoneySummary`, `MoneyText`, `NativeDateField`, `NativeTimeField`, `PageHeader`, `PeriodPicker`, `Progress`, `SegmentedControl`, `TextField` |
 
-### Legacy React Aria inventory and impact register
+### Historical React Aria inventory and impact register
 
 Before M8, every React Aria value primitive is imported only by
 `src/design-system/components.tsx`. The wrapped inventory is:
@@ -515,23 +514,22 @@ Before M8, every React Aria value primitive is imported only by
 | `Text`, `TextArea`, `TextField` | text, textarea, search, secret, decimal, money, model fields | Mantine typography/input primitives behind facade |
 | `Tooltip`, `TooltipTrigger` | `Tooltip` | Mantine `Tooltip` |
 
-The current public prop aliases `AriaButtonProps`, `AriaCheckboxProps`,
+The pre-M8 public prop aliases `AriaButtonProps`, `AriaCheckboxProps`,
 `AriaDisclosureProps`, `AriaProgressBarProps`, `AriaRadioGroupProps`,
 `AriaSearchFieldProps`, `AriaSelectProps`, `AriaSwitchProps`, and
-`AriaTextFieldProps` are implementation-derived dependencies of the public
-facade types. They are not application imports, but they are explicit M8 API
-impact items and must be translated to facade-owned contracts before the
-superseded dependency is removed.
+`AriaTextFieldProps` were implementation-derived dependencies of the pre-M8
+facade types. M8 translated those contracts to browser and product-owned
+types; none of these aliases is exported by the current public barrel.
 
 | Impact ID | Frozen baseline and affected consumers | Migration decision |
 | --- | --- | --- |
-| `M8-API-001` | `Button`, `Checkbox`, `Disclosure`, `Progress`, `RadioGroup`, `SearchField`, `SelectField`, `Switch`, `TextField`, `TextArea`, and `SecretField` public types derive part of their shape from React Aria types. Application call sites rely on `onPress`, `onChange`, `isDisabled`, `isSelected`, `value`, and related controlled props. | Preserve the application-facing behavior while replacing inherited library types with facade-owned types in the ordered control task. No Mantine type may appear in the public barrel. |
-| `M8-API-002` | Selection callbacks currently translate React Aria keys/events in `SelectField`, `SegmentedControl`, `RadioGroup`, `ModelPicker`, and pickers. | Keep product callbacks (`onValueChange`, `onChange`) and translate Mantine events internally. Record any unavoidable signature change before editing consumers. |
+| `M8-API-001` | Pre-M8 `Button`, `Checkbox`, `Disclosure`, `Progress`, `RadioGroup`, `SearchField`, `SelectField`, `Switch`, `TextField`, `TextArea`, and `SecretField` public types derived part of their shape from React Aria types. Application call sites relied on `onPress`, `onChange`, `isDisabled`, `isSelected`, `value`, and related controlled props. | Complete: application-facing behavior is preserved with facade-owned types. No Mantine type appears in the public barrel. |
+| `M8-API-002` | Pre-M8 selection callbacks translated React Aria keys/events in `SelectField`, `SegmentedControl`, `RadioGroup`, `ModelPicker`, and pickers. | Complete: product callbacks (`onValueChange`, `onChange`) remain stable and Mantine events are translated internally. |
 | `M8-API-003` | Current components do not consistently forward DOM refs; native field prop aliases inherit browser input props, while custom facade controls expose no documented ref contract. | Treat ref support as an explicit contract decision in M8-003/M8-004. Do not silently add or remove ref behavior; if forwarding is required, inventory all consumers and test focus/imperative use. |
 | `M8-API-004` | Controlled text, decimal, money, date/time, select, segmented, switch, checkbox, and picker values are bound to actors in feature files. | Preserve string values and immediate callback behavior. Mantine Form is not introduced; XState actors remain durable state authority. |
 | `M8-API-005` | Feature files pass facade `className` hooks for product layout, but no feature file imports a library-specific styling API. | Preserve approved facade class hooks where needed for product CSS; all Mantine `styles`, `classNames`, selectors, and provider configuration stay inside the facade/provider. |
 | `M8-API-006` | `src/design-system/gallery.tsx` and `src/design-system/design-system.test.tsx` are the shared visual/behavior contract fixtures; `src/features/receipt-ui.test.tsx` is the feature-facing component regression surface. | Extend the cheapest affected fixture in each migration task and defer the complete gallery/browser matrix to the named review gate. |
-| `M8-API-007` | `NativeDateField`, `NativeTimeField`, and `FileField` currently expose native controls and product-facing string/file callbacks. The owner now prefers Mantine `DateInput`, `TimeInput`, and `FileInput`/`Dropzone` where they preserve those contracts. | Re-evaluate these three rows before `M8-004`: prove `@mantine/dates`, core `FileInput`, and `@mantine/dropzone`; preserve ISO/time/file and camera-capture semantics; retain native controls only as explicit compatibility fallbacks; and test keyboard activation plus accepted/rejected drops. Record any callback or markup impact before changing feature consumers. |
+| `M8-API-007` | `NativeDateField`, `NativeTimeField`, and `FileField` exposed native controls and product-facing string/file callbacks before M8. | Complete: Mantine `DateInput`, `TimeInput`, and Dropzone now sit behind the facade, preserving ISO/time/file callbacks, keyboard access, accepted/rejected-file feedback, and mobile camera capture. The native behavior remains the explicit platform fallback boundary where applicable. |
 
 No facade contract change is proposed by M8-001. The only planned changes are
 the internal library backing and the removal of implementation-derived public

@@ -6,8 +6,8 @@ source dependencies are published under their own licenses:
 - [React](https://github.com/facebook/react) — MIT License
 - [React DOM](https://github.com/facebook/react) — MIT License
 - [XState](https://github.com/statelyai/xstate) — MIT License
-- [React Aria Components](https://github.com/adobe/react-spectrum) — Apache
-  License 2.0
+- [Mantine](https://github.com/mantinedev/mantine) — MIT License
+- [Day.js](https://github.com/iamkun/dayjs) — MIT License
 - [Lucide](https://github.com/lucide-icons/lucide) — ISC License
 - [Zod](https://github.com/colinhacks/zod) — MIT License
 - [big.js](https://github.com/MikeMcl/big.js) — MIT License

@@ -539,8 +539,8 @@ export function DesignSystemGallery() {
               >
                 <Stack gap={4}>
                   <Text>
-                    Focus is contained by React Aria and returns to the trigger
-                    on close.
+                    Focus is contained by Mantine and returns to the trigger on
+                    close.
                   </Text>
                   <Button>Continue</Button>
                 </Stack>

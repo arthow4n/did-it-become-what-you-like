@@ -1,8 +1,10 @@
-import { useId, useState } from "react";
+import { forwardRef, isValidElement, useId, useState } from "react";
 import type {
   ComponentProps,
   CSSProperties,
   ElementType,
+  MouseEvent,
+  ReactElement,
   ReactNode,
 } from "react";
 import {
@@ -13,12 +15,12 @@ import {
   CircleCheck,
   Eye,
   EyeOff,
-  LoaderCircle,
   Plus,
   X,
 } from "lucide-react";
 import {
   Badge as MantineBadge,
+  Button as MantineButton,
   Card as MantineCard,
   Container as MantineContainer,
   Divider as MantineDivider,
@@ -49,6 +51,7 @@ import {
   Modal as AriaModal,
   ModalOverlay as AriaModalOverlay,
   Popover as AriaPopover,
+  Pressable,
   ProgressBar as AriaProgressBar,
   Radio as AriaRadio,
   RadioGroup as AriaRadioGroup,
@@ -416,34 +419,79 @@ export type ButtonProps = Omit<AriaButtonProps, "children" | "className"> & {
   className?: string;
 };
 
-export function Button({
-  children,
-  variant = "primary",
-  pending = false,
-  className,
-  isPending,
-  ...props
-}: ButtonProps) {
-  return (
-    <AriaButton
-      {...props}
-      isPending={pending || isPending}
-      className={cx("ds-button", className)}
-      data-variant={variant}
-      data-pending={pending || isPending ? "true" : undefined}
-      aria-busy={pending || isPending ? "true" : undefined}
-    >
-      {pending || isPending
-        ? (
-          <Icon>
-            <LoaderCircle />
-          </Icon>
-        )
-        : null}
-      {children}
-    </AriaButton>
+const mantineButtonVariants: Record<
+  ButtonVariant,
+  "filled" | "outline" | "subtle"
+> = {
+  primary: "filled",
+  secondary: "outline",
+  quiet: "subtle",
+  danger: "filled",
+};
+
+function invokePress(
+  onPress: ButtonProps["onPress"],
+  event: MouseEvent<HTMLButtonElement>,
+): void {
+  onPress?.(
+    event as unknown as Parameters<NonNullable<ButtonProps["onPress"]>>[0],
   );
 }
+
+type InjectedClickProps = {
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
+};
+
+function pressableTrigger(trigger: ReactNode): ReactNode {
+  return isValidElement(trigger)
+    ? (
+      <Pressable>
+        {trigger as ReactElement<never, string>}
+      </Pressable>
+    )
+    : trigger;
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button(
+    {
+      children,
+      variant = "primary",
+      pending = false,
+      className,
+      onPress,
+      isDisabled,
+      isPending,
+      slot,
+      ...props
+    },
+    ref,
+  ) {
+    const isBusy = pending || Boolean(isPending);
+    const injectedOnClick = (props as ButtonProps & InjectedClickProps).onClick;
+    return (
+      <MantineButton
+        {...props}
+        ref={ref}
+        variant={mantineButtonVariants[variant]}
+        color={variant === "danger" ? "negative" : "accent"}
+        disabled={isDisabled}
+        loading={isBusy}
+        slot={slot ?? undefined}
+        onClick={(event) => {
+          injectedOnClick?.(event);
+          invokePress(onPress, event);
+        }}
+        className={cx("ds-button", className)}
+        data-variant={variant}
+        data-pending={isBusy ? "true" : undefined}
+        aria-busy={isBusy ? "true" : undefined}
+      >
+        {children}
+      </MantineButton>
+    );
+  },
+);
 
 export type IconButtonProps = Omit<ButtonProps, "children"> & {
   icon: ReactNode;
@@ -477,13 +525,16 @@ export function LinkButton({
   ...props
 }: LinkButtonProps) {
   return (
-    <a
+    <MantineButton
       {...props}
+      component="a"
+      variant={mantineButtonVariants[variant]}
+      color={variant === "danger" ? "negative" : "accent"}
       className={cx("ds-link-button", className)}
       data-variant={variant}
     >
       {children}
-    </a>
+    </MantineButton>
   );
 }
 
@@ -494,16 +545,43 @@ export type ActionCardProps = Omit<ButtonProps, "children"> & {
 };
 
 export function ActionCard(
-  { title, description, icon, ...props }: ActionCardProps,
+  {
+    title,
+    description,
+    icon,
+    pending = false,
+    onPress,
+    isDisabled,
+    isPending,
+    slot,
+    ...props
+  }: ActionCardProps,
 ) {
+  const isBusy = pending || Boolean(isPending);
+  const injectedOnClick =
+    (props as ActionCardProps & InjectedClickProps).onClick;
   return (
-    <AriaButton {...props} className={cx("ds-action-card", props.className)}>
+    <MantineButton
+      {...props}
+      variant="default"
+      component="button"
+      disabled={isDisabled}
+      loading={isBusy}
+      slot={slot ?? undefined}
+      onClick={(event) => {
+        injectedOnClick?.(event);
+        invokePress(onPress, event);
+      }}
+      className={cx("ds-action-card", props.className)}
+      data-pending={isBusy ? "true" : undefined}
+      aria-busy={isBusy ? "true" : undefined}
+    >
       {icon ? <Icon>{icon}</Icon> : null}
       <strong>{title}</strong>
       {description
         ? <span className="ds-action-card__description">{description}</span>
         : null}
-    </AriaButton>
+    </MantineButton>
   );
 }
 
@@ -1375,7 +1453,7 @@ export function AdaptiveDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
     >
-      {trigger}
+      {pressableTrigger(trigger)}
       <AriaModalOverlay
         className="ds-overlay-backdrop"
         isDismissable={isDismissable}
@@ -1579,7 +1657,7 @@ export type PopoverProps = {
 export function Popover({ trigger, children, label, className }: PopoverProps) {
   return (
     <AriaDialogTrigger>
-      {trigger}
+      {pressableTrigger(trigger)}
       <AriaPopover className={cx("ds-popover", className)}>
         <AriaDialog aria-label={label}>{children}</AriaDialog>
       </AriaPopover>
@@ -1602,7 +1680,7 @@ export function Menu({
 }) {
   return (
     <AriaMenuTrigger>
-      {trigger}
+      {pressableTrigger(trigger)}
       <AriaPopover className="ds-menu">
         <AriaMenu aria-label={label}>
           {items.map((item) => (
@@ -1632,7 +1710,7 @@ export function Tooltip(
 ) {
   return (
     <AriaTooltipTrigger>
-      {trigger}
+      {pressableTrigger(trigger)}
       <AriaTooltip className="ds-popover" aria-label={label}>
         {children}
       </AriaTooltip>

@@ -117,7 +117,7 @@
     gap: var(--space-3);
   }
 
-  .conflict-import-loading-blocks span {
+  .conflict-import-loading-blocks .ds-skeleton {
     display: block;
     min-height: var(--control-height);
     border-radius: var(--radius-card);

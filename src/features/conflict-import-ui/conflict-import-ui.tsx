@@ -20,6 +20,7 @@ import {
   Progress,
   RadioGroup,
   Section,
+  Skeleton,
   Stack,
   StatusMessage,
   Text,
@@ -136,7 +137,8 @@ function TechnicalDetailsDisclosure({ details }: {
       </Button>
       {isOpen
         ? (
-          <div
+          <Stack
+            gap={3}
             className="conflict-import-technical-details__content"
             role="region"
             aria-label="Technical details (diagnostics)"
@@ -169,7 +171,7 @@ function TechnicalDetailsDisclosure({ details }: {
                 }]),
               ]}
             />
-          </div>
+          </Stack>
         )
         : null}
     </Section>
@@ -295,11 +297,16 @@ export function ConflictDetail({
               </Text>
               {group.discardedEditedValues?.length
                 ? (
-                  <ul className="conflict-import-discarded-values">
+                  <List
+                    label="Discarded edited values"
+                    className="conflict-import-discarded-values"
+                  >
                     {group.discardedEditedValues.map((value, index) => (
-                      <li key={index}>{displayConflictValue(value)}</li>
+                      <ListRow key={index}>
+                        {displayConflictValue(value)}
+                      </ListRow>
                     ))}
-                  </ul>
+                  </List>
                 )
                 : (
                   <Text tone="muted">
@@ -463,14 +470,15 @@ export function ConflictReviewScreen({
           ? (
             <Stack gap={4} aria-label="Loading conflicts">
               <Progress label="Loading conflicts" indeterminate />
-              <div
+              <Stack
+                gap={3}
                 className="conflict-import-loading-blocks"
                 aria-hidden="true"
               >
-                <span />
-                <span />
-                <span />
-              </div>
+                <Skeleton />
+                <Skeleton />
+                <Skeleton />
+              </Stack>
             </Stack>
           )
           : viewModel.phase === "completed" || viewModel.groups.length === 0
@@ -499,7 +507,8 @@ export function ConflictReviewScreen({
                   </ErrorState>
                 )
                 : null}
-              <div
+              <Stack
+                gap={5}
                 className="conflict-import-master-detail"
                 data-pane={viewModel.pane}
               >
@@ -555,7 +564,7 @@ export function ConflictReviewScreen({
                       </EmptyState>
                     )}
                 </Section>
-              </div>
+              </Stack>
             </>
           )}
       </Stack>
@@ -722,11 +731,11 @@ export function ImportPreview({ preview }: ImportPreviewProps) {
         {preview.warnings.length
           ? (
             <InlineNotice tone="warning" title="Review these warnings">
-              <ul>
+              <List label="Import warnings">
                 {preview.warnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
+                  <ListRow key={warning}>{warning}</ListRow>
                 ))}
-              </ul>
+              </List>
             </InlineNotice>
           )
           : null}
@@ -1016,7 +1025,7 @@ export function ImportPanel({
               />
               {replacing
                 ? (
-                  <div className="conflict-import-replace-warning">
+                  <Stack gap={4} className="conflict-import-replace-warning">
                     <InlineNotice
                       tone="danger"
                       title="Replace all current data"
@@ -1044,7 +1053,7 @@ export function ImportPanel({
                         </InlineNotice>
                       )
                       : null}
-                  </div>
+                  </Stack>
                 )
                 : (
                   <InlineNotice tone="info" title="Recommended">

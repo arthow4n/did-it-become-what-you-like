@@ -147,6 +147,9 @@ export type StackProps = {
   style?: CSSProperties;
   ref?: Ref<HTMLDivElement>;
   role?: ComponentProps<"div">["role"];
+  "aria-label"?: string;
+  "aria-hidden"?: boolean | "true" | "false";
+  "data-pane"?: string;
 };
 
 function mantineSpacing(gap: Space): string {
@@ -161,12 +164,18 @@ export function Stack({
   style,
   ref,
   role,
+  "aria-label": ariaLabel,
+  "aria-hidden": ariaHidden,
+  "data-pane": dataPane,
 }: StackProps) {
   return (
     <MantineStack
       component={Tag as "div"}
       ref={ref}
       role={role}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden}
+      data-pane={dataPane}
       gap={mantineSpacing(gap)}
       className={cx("ds-stack", className)}
       style={{ ...style, ...gapStyle(gap) }}

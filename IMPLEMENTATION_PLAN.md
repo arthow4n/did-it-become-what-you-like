@@ -893,7 +893,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### R-840 — Domain-composite review checkpoint
 
-- **Status/dependencies:** `BLOCKED`; depends on `M8-007`, `M8-008`.
+- **Status/dependencies:** `COMPLETE`; depends on `M8-007`, `M8-008`.
 - [x] Fresh read-only reviewer traces representative actor snapshot/event paths
       through each migrated composite and audits privacy, destructive safety,
       conflict neutrality, offline honesty, accessibility, responsive layouts,
@@ -1007,7 +1007,13 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   tooling, and diff checks. Playwright E2E remained unavailable because the
   existing Vite server occupied port 5173 and was left untouched. The
   reviewer was closed after its final report.
-- [ ] Primary agent resolves severity 1–3 findings and reruns only checks
+- **Final closure reconciliation (2026-08-27):** Sagan's final independent
+  review found no source-level R-840 defect and only requested that this
+  checkpoint stop describing the already-pushed bookkeeping remediation as
+  pending. This plan update makes that correction, marks the primary-agent
+  remediation complete, and satisfies the gate: no unresolved severity 1–3
+  finding or actor/domain/adapter contract drift remains.
+- [x] Primary agent resolves severity 1–3 findings and reruns only checks
       affected by those fixes. Repeat the complete checkpoint matrix only when
       shared or cross-cutting code changed before closure.
 - **Gate acceptance:** no unresolved severity 1–3 finding and no actor/domain/
@@ -1015,7 +1021,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-009 — Remove superseded implementation and enforce boundaries
 
-- **Status/dependencies:** `PENDING`; depends on approved `R-840`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on approved `R-840`.
 - **Owned scope:** design-system implementation/CSS, dependency configuration,
   static boundary checks, tests, and documentation; no visual redesign.
 - [ ] Verify every migration-matrix row is complete, then remove all
@@ -1161,8 +1167,8 @@ evidence, and the next action is dependency-safe.
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
-  `COMPLETE`; `M8-007` and `M8-008` are `COMPLETE`; `R-840` is `BLOCKED`;
-  `M8-009` through `M8-010`, and `R-850` remain `PENDING`.
+  `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
+  `IN_PROGRESS`; `M8-010` and `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
@@ -1172,8 +1178,7 @@ evidence, and the next action is dependency-safe.
   closed, M8-007 and M8-008 are complete, and the R-840 closure review found
   one bookkeeping finding remaining. R-820 is approved and closed, and M8-005 and
   M8-006 are complete. No M8 branch/worktree or review agent is active; the
-  primary agent owns the R-840 bookkeeping remediation after the latest
-  closure review confirmed substantive implementation findings are resolved.
+  R-840 closure gate complete and M8-009 now owned by the primary agent.
   Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -1204,12 +1209,12 @@ evidence, and the next action is dependency-safe.
   `Sartre`, `Faraday`, and `Peirce` are closed with R-830 approved and all
   severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; no review
   agent, migration branch, or M8 worktree is active; historical non-M8
-  worktrees were preserved untouched. The primary agent owns the R-840
-  closure gate.
-- **Exact next action:** commit this checkpoint reconciliation, request another
-  independent R-840 closure review against the resulting pushed `HEAD`, wait
-  for its full report without killing a slow review, and open M8-009 only
-  after the gate is approved.
+  worktrees were preserved untouched. R-840 is complete and the primary agent
+  owns M8-009.
+- **Exact next action:** audit the M8-009 migration matrix and current
+  `react-aria-components` dependency/docs/static-boundary inventory, then
+  implement the dependency and boundary cleanup in focused commits with
+  affected tests and exact evidence.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

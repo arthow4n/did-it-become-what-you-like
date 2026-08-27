@@ -677,7 +677,7 @@ Deno.test("local UI category manager exposes a level-one page heading", async ()
 });
 
 Deno.test("local UI project editor uses level-one heading and ISO currency picker", async () => {
-  await withComponentHarness(async ({ window, render, waitFor }) => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service } = createTestService(organizedState);
     await withAriaDomGlobals(window, async () => {
       render(
@@ -699,6 +699,45 @@ Deno.test("local UI project editor uses level-one heading and ISO currency picke
         )
       );
       assert(view.getByRole("combobox", { name: "Default currency" }));
+      fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+      await waitFor(() =>
+        assert(
+          view.getByRole("heading", {
+            name: "Manage projects",
+            level: 1,
+          }),
+        )
+      );
+    });
+  });
+});
+
+Deno.test("local UI category editor cancel button exits back to category list", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    const { service } = createTestService(categoryState);
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(CategoryManager, {
+          service,
+          state: categoryState,
+          initialCreate: true,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Create category" }))
+      );
+      fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+      await waitFor(() =>
+        assert(
+          view.getByRole("heading", {
+            name: "Manage categories",
+            level: 1,
+          }),
+        )
+      );
     });
   });
 });

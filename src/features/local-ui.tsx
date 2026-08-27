@@ -1302,6 +1302,7 @@ export function ProjectManager({
                   variant="secondary"
                   onPress={() => {
                     send({ type: "project.cancel" });
+                    setEditor(null);
                     onComplete?.();
                   }}
                 >
@@ -1905,6 +1906,7 @@ export function CategoryManager({
                   variant="secondary"
                   onPress={() => {
                     send({ type: "category.cancel" });
+                    setEditor(null);
                     onComplete?.();
                   }}
                 >
@@ -2596,6 +2598,7 @@ export function ManualExpenseScreen({
             <InlineNotice tone="danger" title="Delete expense">
               <Button
                 variant="danger"
+                fullWidth
                 onPress={() => send({ type: "expense.delete" })}
               >
                 Delete this expense

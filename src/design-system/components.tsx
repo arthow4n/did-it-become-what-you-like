@@ -447,6 +447,7 @@ export type ButtonProps =
     pending?: boolean;
     isDisabled?: boolean;
     isPending?: boolean;
+    fullWidth?: boolean;
     onPress?: (event: MouseEvent<HTMLButtonElement>) => void;
     slot?: string;
     className?: string;
@@ -523,6 +524,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       children,
       variant = "primary",
       pending = false,
+      fullWidth,
       className,
       onPress,
       isDisabled,
@@ -538,6 +540,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <MantineButton
         {...props}
         ref={ref}
+        fullWidth={fullWidth}
         variant={mantineButtonVariants[variant]}
         color={variant === "danger" ? "negative" : "accent"}
         disabled={isDisabled}
@@ -549,6 +552,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         }}
         className={cx("ds-button", className)}
         data-variant={variant}
+        data-full-width={fullWidth ? "true" : undefined}
         data-pending={isBusy ? "true" : undefined}
         aria-busy={isBusy ? "true" : undefined}
       >

@@ -359,6 +359,11 @@
     text-decoration: none;
   }
 
+  .ds-button[data-full-width="true"],
+  .ds-link-button[data-full-width="true"] {
+    width: 100%;
+  }
+
   .ds-button[data-variant="primary"],
   .ds-link-button[data-variant="primary"] {
     background: var(--color-accent);

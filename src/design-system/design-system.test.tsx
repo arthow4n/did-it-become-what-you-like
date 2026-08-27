@@ -667,12 +667,17 @@ Deno.test("design-system dialog uses a named overlay and returns a useful trigge
         ),
       );
       const view = within(document.body);
+      const dialogRoot = document.querySelector(
+        '[data-dialog-layout="adaptive"]',
+      );
+      assertEqual(dialogRoot?.getAttribute("aria-hidden"), "true");
       const trigger = view.getByRole("button", { name: "Open details" });
       fireEvent.keyDown(trigger, { key: "Enter", code: "Enter" });
       fireEvent.keyUp(trigger, { key: "Enter", code: "Enter" });
       await waitFor(() =>
         assert(view.getByRole("dialog", { name: "Details" }))
       );
+      assertEqual(dialogRoot?.getAttribute("aria-hidden"), "false");
       assert(document.querySelector('[data-dialog-layout="adaptive"]'));
       assert(view.getByText("Dialog content"));
       mounted.unmount();

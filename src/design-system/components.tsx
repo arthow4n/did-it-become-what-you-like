@@ -1895,7 +1895,7 @@ export function AdaptiveDialog({
     transitionProps: { duration: 0, exitDuration: 0 },
     zIndex: "var(--layer-overlay)",
     overlayProps: { className: "ds-overlay-backdrop" },
-    "aria-label": String(title),
+    "aria-hidden": !opened,
     "data-dialog-layout": "adaptive",
   } as const;
   return (

@@ -143,16 +143,6 @@
 }
 
 @layer components {
-  .ds-surface {
-    background: var(--color-surface-1);
-    color: var(--color-text-primary);
-  }
-
-  .ds-canvas {
-    background: var(--color-canvas);
-    color: var(--color-text-primary);
-  }
-
   .ds-app-frame {
     min-height: 100dvh;
     background: var(--color-canvas);
@@ -486,24 +476,6 @@
     min-width: 0;
   }
 
-  .ds-field__label {
-    color: var(--color-text-primary);
-    font-size: var(--font-size-label);
-    font-weight: 650;
-  }
-
-  .ds-field__required {
-    color: var(--color-warning);
-  }
-
-  .ds-field__description {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-caption);
-    line-height: var(--line-height-tight);
-    margin-top: var(--space-1);
-  }
-
-  .ds-field__error,
   .ds-error-summary {
     color: var(--color-danger);
   }
@@ -531,13 +503,6 @@
   .ds-field-control:disabled {
     cursor: not-allowed;
     opacity: 0.58;
-  }
-
-  .ds-field-control-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-    width: 100%;
   }
 
   .ds-field-control[type="search"]::-webkit-search-decoration,
@@ -614,51 +579,6 @@
     align-items: center;
     gap: var(--space-2);
     color: var(--color-text-primary);
-  }
-
-  .ds-checkbox__indicator,
-  .ds-radio__indicator,
-  .ds-switch__indicator {
-    display: grid;
-    width: 22px;
-    height: 22px;
-    flex: 0 0 auto;
-    place-items: center;
-    border: 2px solid var(--color-border-strong);
-    background: var(--color-surface-2);
-  }
-
-  .ds-checkbox__indicator {
-    border-radius: 5px;
-  }
-
-  .ds-radio__indicator {
-    border-radius: 50%;
-  }
-
-  .ds-switch__indicator {
-    width: 44px;
-    border-radius: var(--radius-pill);
-  }
-
-  .ds-checkbox[data-selected] .ds-checkbox__indicator,
-  .ds-radio[data-selected] .ds-radio__indicator,
-  .ds-switch[data-selected] .ds-switch__indicator {
-    border-color: var(--color-accent);
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-  }
-
-  .ds-switch__thumb {
-    width: 16px;
-    height: 16px;
-    margin-inline-start: 0;
-    border-radius: 50%;
-    background: currentColor;
-  }
-
-  .ds-switch[data-selected] .ds-switch__thumb {
-    margin-inline-start: auto;
   }
 
   .ds-segmented-control {
@@ -853,11 +773,6 @@
 
   .ds-list-row__main > * {
     overflow-wrap: anywhere;
-  }
-
-  .ds-list-row__trailing {
-    flex: 0 0 auto;
-    white-space: nowrap;
   }
 
   .ds-definition-list {
@@ -1195,13 +1110,6 @@
     padding-inline-start: var(--space-6);
   }
 
-  .ds-draft-status {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    align-items: center;
-  }
-
   .ds-money-summary {
     display: grid;
     gap: var(--space-3);
@@ -1211,20 +1119,6 @@
   .ds-money-summary__value {
     display: grid;
     gap: var(--space-1);
-  }
-
-  .ds-domain-list {
-    display: grid;
-    gap: var(--space-2);
-  }
-
-  .ds-gallery {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    min-height: 100dvh;
-    padding: var(--space-4);
-    background: var(--color-canvas);
   }
 
   .ds-gallery__section {
@@ -1333,10 +1227,6 @@
   @media (min-width: 1024px) {
     .ds-responsive-grid[data-columns="3"] {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .ds-gallery {
-      padding: var(--space-7);
     }
 
     .ds-overlay-backdrop {

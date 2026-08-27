@@ -698,6 +698,19 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   tests; start with `AppFrame`, `PageHeader`, `AppNavigation`, and
   `DefaultNavigation`, preserving screen-level contracts and responsive shell
   boundaries.
+- **Shell slice evidence (2026-08-27):** `AppFrame`, `PageHeader`, and the
+  `AppNavigation`/`DefaultNavigation` path now use Mantine Box and
+  UnstyledButton primitives at pushed commit `7bb9e87`. Landmark structure,
+  selected `aria-current`, disabled/`aria-disabled`, callback wiring, and the
+  existing compact-bottom/wide-rail CSS contract are preserved. The affected
+  run `deno task test:affected` passed (103 tests, 0 failures);
+  `deno task check`, `deno task lint` (207 files), and `git diff --check` all
+  passed. The repository is clean and aligned with `origin/master` at
+  `7bb9e87`.
+- **Exact next action:** migrate the reusable list/definition/form structure
+  (`List`, `ListRow`, `DefinitionList`, `FormLayout`, `FormActions`, and
+  `ErrorSummary`) with Mantine structural primitives while preserving native
+  list/definition semantics and mobile form action ordering.
 - [ ] Convert `AppFrame`, `PageHeader`, `AppNavigation`, `DefaultNavigation`,
       `List`, `ListRow`, `DefinitionList`, `StickyActionBar`, `FormLayout`,
       `FormActions`, `ErrorSummary`, `DraftStatus`, `FilterBar`,
@@ -944,11 +957,10 @@ evidence, and the next action is dependency-safe.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `6c904fc` (`feat(migration): move remaining feedback facades to Mantine`);
-  R-820 is approved and closed, M8-005 is complete, and M8-006 is now the
-  active dependency-ready task. No M8 branch/worktree or review agent is
-  active. Historical non-M8 worktrees remain present and were preserved
-  untouched.
+  `7bb9e87` (`feat(migration): move shell facades to Mantine`); R-820 is
+  approved and closed, M8-005 is complete, and the first M8-006 shell slice is
+  complete. No M8 branch/worktree or review agent is active. Historical non-M8
+  worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -971,14 +983,14 @@ evidence, and the next action is dependency-safe.
   above; the latest R-820 closure review is complete at `447b8e9` with the
   single finding resolved by `2806236`; R-820 remains owned by the primary
   agent; the latest closure review approved R-820 at `221f76e` with all
-  evidence recorded above; M8-005 is now owned by the primary agent; the
-  overlay slice is pushed at `76c5235` and the notification feedback slice is
-  pushed at `bd5cc90`, and the remaining feedback slice is pushed at
-  `6c904fc`; no review agent, migration branch, or M8 worktree is active;
-  historical non-M8 worktrees were preserved untouched.
-- **Exact next action:** inventory M8-006 reusable navigation, form, filter, and
-  status facades and their consumers/tests; then migrate AppFrame, PageHeader,
-  and navigation primitives in the first dependency-safe slice.
+  evidence recorded above; M8-005 is complete; its overlay slice is pushed at
+  `76c5235`, notification feedback at `bd5cc90`, and remaining feedback at
+  `6c904fc`; the M8-006 shell slice is pushed at `7bb9e87`; no review agent,
+  migration branch, or M8 worktree is active; historical non-M8 worktrees were
+  preserved untouched.
+- **Exact next action:** migrate List, ListRow, DefinitionList, FormLayout,
+  FormActions, and ErrorSummary to Mantine-backed structural compositions,
+  then run the affected tests and record the exact evidence here.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

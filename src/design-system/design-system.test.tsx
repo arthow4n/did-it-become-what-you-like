@@ -14,6 +14,7 @@ import {
   Banner,
   Button,
   Card,
+  CategoryBreakdown,
   Checkbox,
   Chip,
   ColorChoiceField,
@@ -1126,6 +1127,35 @@ Deno.test("design-system money summary exposes a valid labeled group", async () 
   });
 });
 
+Deno.test("design-system category totals preserve long identity and signed money", async () => {
+  await withComponentHarness(({ window, render, fireEvent }) =>
+    withAriaDomGlobals(window, () => {
+      let selected = "";
+      const categoryName = "Very long category name that must remain readable";
+      const mounted = render(
+        createElement(CategoryBreakdown, {
+          categories: [{
+            id: "category-travel",
+            name: categoryName,
+            amount: "-999999999999999999999.99",
+            currency: "SEK",
+          }],
+          onSelect: (id) => selected = id,
+        }),
+      );
+      const view = within(document.body);
+      const list = view.getByRole("list", { name: "Category totals" });
+      const categoryButton = within(list).getByRole("button", {
+        name: categoryName,
+      });
+      assert(view.getByText("SEK -999,999,999,999,999,999,999.99"));
+      fireEvent.click(categoryButton);
+      assertEqual(selected, "category-travel");
+      mounted.unmount();
+    })
+  );
+});
+
 Deno.test("application root leaves the main landmark to AppFrame", async () => {
   const html = await Deno.readTextFile(
     new URL("../../index.html", import.meta.url),
@@ -1199,9 +1229,7 @@ Deno.test("design-system currency search and merchant clearing remain functional
       );
       const view = within(document.body);
       const currencyInput = view.getByRole("combobox", { name: "Currency" });
-      fireEvent.click(
-        view.getByRole("button", { name: /Show currency options/ }),
-      );
+      fireEvent.click(currencyInput);
       fireEvent.change(currencyInput, { target: { value: "CHF" } });
       const swissOption = view.getByRole("option", { name: "CHF" });
       fireEvent.click(swissOption);

@@ -1245,6 +1245,7 @@ export type SelectFieldProps = {
   name?: string;
   placeholder?: string;
   autoFocus?: boolean;
+  searchable?: boolean;
   className?: string;
 };
 
@@ -1268,6 +1269,7 @@ export function SelectField({
   isOpen: _isOpen,
   onOpenChange: _onOpenChange,
   slot,
+  searchable = false,
   ...props
 }: SelectFieldProps) {
   const mantineProps = props as unknown as ComponentProps<typeof MantineSelect>;
@@ -1286,6 +1288,7 @@ export function SelectField({
       }))}
       value={selectedValue}
       defaultValue={defaultValue}
+      searchable={searchable}
       onChange={(nextValue) => {
         if (nextValue !== null) {
           onValueChange?.(String(nextValue));
@@ -2851,45 +2854,15 @@ export function CurrencyPicker(
 ) {
   const currencyOptions = currencyOptionsWithIso(options, value);
   return (
-    <AriaComboBox
-      selectedKey={value}
-      onSelectionChange={(next) => {
-        if (next !== null) onValueChange?.(String(next));
-      }}
-      className="ds-field ds-search-field ds-currency-picker"
-      allowsEmptyCollection
-    >
-      <AriaLabel className="ds-field__label">{label}</AriaLabel>
-      <div className="ds-field-control-wrap">
-        <AriaInput
-          className="ds-field-control ds-search-field__input"
-          placeholder="Search ISO currency"
-        />
-        <AriaButton
-          className="ds-icon-button ds-search-field__clear"
-          aria-label="Show currency options"
-        >
-          <Icon>
-            <ChevronDown />
-          </Icon>
-        </AriaButton>
-      </div>
-      <AriaPopover className="ds-popover">
-        <AriaListBox>
-          {currencyOptions.map((option) => (
-            <AriaListBoxItem
-              key={option.id}
-              id={option.id}
-              textValue={option.label}
-              isDisabled={option.disabled}
-              className="ds-menu-item"
-            >
-              {option.label}
-            </AriaListBoxItem>
-          ))}
-        </AriaListBox>
-      </AriaPopover>
-    </AriaComboBox>
+    <SelectField
+      label={label}
+      options={currencyOptions}
+      value={value}
+      onValueChange={onValueChange}
+      searchable
+      placeholder="Search ISO currency"
+      className="ds-currency-picker"
+    />
   );
 }
 
@@ -2923,22 +2896,26 @@ export function MoneySummary(
   { items, className }: { items: MoneySummaryItem[]; className?: string },
 ) {
   return (
-    <div
+    <MantineBox
       className={cx("ds-money-summary", className)}
       role="group"
       aria-label="Money summary"
     >
       {items.map((item) => (
-        <div className="ds-money-summary__value" key={item.label}>
+        <MantineBox
+          component="div"
+          className="ds-money-summary__value"
+          key={item.label}
+        >
           <Text tone="secondary" size="label">{item.label}</Text>
           <MoneyText
             amount={item.amount}
             currency={item.currency}
             tone={item.tone}
           />
-        </div>
+        </MantineBox>
       ))}
-    </div>
+    </MantineBox>
   );
 }
 
@@ -2966,16 +2943,22 @@ export function CategoryBreakdown(
       </Inline>
       <List label="Category totals">
         {categories.map((category) => (
-          <li className="ds-list-row" key={category.id}>
+          <ListRow
+            key={category.id}
+            trailing={
+              <MoneyText
+                amount={category.amount}
+                currency={category.currency}
+              />
+            }
+          >
             <Button
               variant="quiet"
-              onPress={() =>
-                onSelect?.(category.id)}
+              onPress={() => onSelect?.(category.id)}
             >
               {category.name}
             </Button>
-            <MoneyText amount={category.amount} currency={category.currency} />
-          </li>
+          </ListRow>
         ))}
       </List>
     </Section>

@@ -1199,6 +1199,18 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   `3b94827` passed 362 Deno tests, 11 E2E journeys, gallery/axe at three
   viewports, browser/toolchain/CI checks, the strengthened boundary scan, both
   builds, Pages artifact verification, frozen audit, and diff checks.
+- **Fresh closure review evidence (2026-08-27):** Fresh read-only reviewer
+  Confucius (`01a042c2-99cb-7272-9946-76525b4e8f75`) audited pushed `HEAD
+  47568cc` and returned `BLOCK` with one severity-2 and three severity-3
+  findings: compact feature navigation still used `gap: 0`, feature overlay
+  CSS hard-coded `z-index: 40`, the receipt preview referenced undefined
+  `var(--surface-2)` instead of `var(--color-surface-2)`, and the checkpoint
+  still said remediation was active after the previous fix and canonical gate.
+  Its independent risk-selected verification passed the boundary scan, focused
+  suites, TypeScript, lint, audit, builds, gallery/axe, E2E, compatibility,
+  and diff checks. Confucius was closed after its report. The primary agent
+  owns these feature-CSS and checkpoint remediations and must request another
+  fresh closure review after the next canonical gate.
 - [ ] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and
@@ -1297,7 +1309,7 @@ evidence, and the next action is dependency-safe.
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
   `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with the
-  primary agent remediating Herschel's three findings before fresh closure.
+  primary agent remediating Confucius's four findings before fresh closure.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
@@ -1308,8 +1320,8 @@ evidence, and the next action is dependency-safe.
   The initial R-850 reviewer is closed; no migration branch or M8 worktree is
   active; historical non-M8 worktrees remain present and were preserved
   untouched. R-840 and M8-010 are complete, and the Herschel remediation is
-  pushed at `3b94827`; no implementation or review worktree is active and no
-  M8 change is unpushed.
+  pushed at `3b94827`; the fresh Confucius closure review is closed; no
+  implementation or review worktree is active and no M8 change is unpushed.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -1348,12 +1360,15 @@ evidence, and the next action is dependency-safe.
   boundary task, and documentation evidence above; the initial R-850 reviewer
   is closed; the fresh Newton closure reviewer is closed; Herschel's fresh
   closure review is also closed and its three findings are remediated at
-  `3b94827`; no migration branch or M8 worktree is active; historical
+  `3b94827`; Confucius's fresh closure review is closed and its four findings
+  are now owned by the primary agent; no migration branch or M8 worktree is active; historical
   non-M8 worktrees were preserved untouched. R-840 and M8-010 are complete.
   The final canonical gate passed at `3b94827`; no implementation or
   documentation change is unpushed.
-- **Exact next action:** request a new independent R-850 closure review. Do
-  not reuse Hooke, Newton, or Herschel for closure approval.
+- **Exact next action:** fix the four Confucius findings in feature CSS and
+  the checkpoint, run the complete canonical gate, commit and push all
+  evidence, then request a new independent R-850 closure review. Do not reuse
+  Hooke, Newton, Herschel, or Confucius for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

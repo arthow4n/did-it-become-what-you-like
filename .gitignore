@@ -20,3 +20,4 @@ coverage/
 /.chrome-for-testing/
 /.agent-browser/
 /.e2e-artifacts/
+/ui-audit-*/

@@ -753,6 +753,19 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   overlay/shell matrix confirmed the 320px sticky overlap while 390px and
   1280px overlay/shell checks passed. No reviewer edits or repository changes
   were made.
+- **Primary remediation (2026-08-27):** The primary agent resolved the
+  severity-1–3 findings in focused pushed commits: `e65083d` hides closed
+  Mantine dialog roots and removes the invalid root label, `aec0e16` lifts
+  mobile sticky actions above the full bottom-navigation/safe-area region,
+  `9d7477d` adds explicit Cancel contracts/actions to the shared confirmation
+  facades, and `d4e21b5` restores 44px hit areas for search-clear, secret-reveal,
+  and notification-dismiss actions. The direct design-system suite passed 30
+  tests; `deno task test:component` passed 115 tests; `deno task a11y:gallery`
+  passed all three viewports; `deno task build` passed with only the existing
+  chunk-size warning; `deno task fmt:check` checked 223 files; `deno task lint`
+  checked 207 files; `deno task check` and `git diff --check` passed. The
+  approved E2E command was attempted again and remains blocked by the existing
+  dev server on port 5173; that process was left untouched.
 - [ ] Fresh read-only reviewer audits overlay safety, focus, live regions,
       navigation, safe areas, z-index, form/filter state, reduced motion,
       responsive behavior, and contract leakage.
@@ -981,8 +994,8 @@ evidence, and the next action is dependency-safe.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `e92c7f1` (`docs(plan): close M8-006 and open R-830`), with implementation
-  state ending at `a5d4b19` (`feat(migration): finish reusable status facades`);
+  `d4e21b5` (`fix(design-system): restore icon action hit areas`), with the
+  implementation batch and R-830 remediations pushed;
   R-820 is
   approved and closed, M8-005 and M8-006 are complete, and R-830 is active
   because its first review returned `BLOCK`. No M8 branch/worktree or review
@@ -1014,12 +1027,12 @@ evidence, and the next action is dependency-safe.
   `76c5235`, notification feedback at `bd5cc90`, and remaining feedback at
   `6c904fc`; M8-006 is pushed through shell `7bb9e87`, list/form/status
   `f3f2a0b`, and final sticky-action `a5d4b19`; the first R-830 review by
-  `Sartre` is closed with the blocking findings recorded above; no review
-  agent, migration branch, or M8 worktree is active; historical non-M8
-  worktrees were preserved untouched.
-- **Exact next action:** resolve Sartre's severity-1–3 R-830 findings in
-  focused facade/CSS commits, run affected and targeted gallery/browser checks,
-  then request a fresh read-only closure review before opening M8-007.
+  `Sartre` is closed with its findings resolved and the closure gate is ready
+  for a fresh reviewer; no review agent, migration branch, or M8 worktree is
+  active; historical non-M8 worktrees were preserved untouched.
+- **Exact next action:** invoke one fresh read-only R-830 closure reviewer
+  against the remediated combined M8-005/M8-006 batch and wait for its
+  complete evidence/report before opening M8-007.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

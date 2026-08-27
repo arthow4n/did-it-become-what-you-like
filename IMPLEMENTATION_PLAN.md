@@ -1222,6 +1222,19 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   `05b46a3` with 363 Deno tests, 11 E2E journeys, gallery/axe at three
   viewports, browser/toolchain/CI checks, the strengthened boundary scan, both
   builds, Pages artifact verification, frozen audit, and diff checks.
+- **Fresh closure review evidence (2026-08-27):** Fresh read-only reviewer
+  Descartes (`01a042d7-b896-7961-8ae4-7eea0b349ba5`) audited pushed `HEAD
+  43f346e` and returned `BLOCK` with three severity-2 and two severity-3
+  findings: compact shared dialogs lacked bottom safe-area clearance; receipt
+  scan failure cleared the image and disabled Retry; typed destructive dialog
+  confirmation persisted after cancel/reopen; `Inline` and `ResponsiveGrid`
+  dropped public layout refs/ARIA props; and the dirty-update reload action
+  remained enabled. Its independent risk-selected verification passed the
+  boundary scan, 41 design-system/Mantine/API tests, 18 local UI tests, 24
+  receipt/actor/integration tests, TypeScript, lint, builds, gallery/axe,
+  browser checks, E2E, audit, and diff checks. Descartes was closed after its
+  report. The primary agent owns these five contract remediations and must
+  request another fresh closure review after the next canonical gate.
 - [ ] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and
@@ -1320,7 +1333,7 @@ evidence, and the next action is dependency-safe.
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
   `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with the
-  Confucius remediation complete and fresh closure review pending.
+  primary agent remediating Descartes's five findings before fresh closure.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
@@ -1332,8 +1345,9 @@ evidence, and the next action is dependency-safe.
   active; historical non-M8 worktrees remain present and were preserved
   untouched. R-840 and M8-010 are complete, and the Confucius remediation is
   pushed at `05b46a3`; the fresh Confucius closure review is closed and its
-  findings are remediated below; no implementation or review worktree is
-  active and no M8 change is unpushed.
+  findings are remediated below; Descartes's fresh closure review is closed;
+  no implementation or review worktree is active and no M8 change is
+  unpushed.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -1374,13 +1388,15 @@ evidence, and the next action is dependency-safe.
   closure review is also closed and its three findings are remediated at
   `3b94827`; Confucius's fresh closure review is closed and its four findings
   are remediated at `05b46a3`; the latest canonical gate is recorded above and
-  fresh R-850 closure is pending; no migration branch or M8 worktree is active;
-  historical
-  non-M8 worktrees were preserved untouched. R-840 and M8-010 are complete.
+  Descartes's five findings are now owned by the primary agent; no migration
+  branch or M8 worktree is active; historical non-M8 worktrees were preserved
+  untouched. R-840 and M8-010 are complete.
   The final canonical gate passed at `05b46a3`; no implementation or
   documentation change is unpushed.
-- **Exact next action:** request a new independent R-850 closure review. Do
-  not reuse Hooke, Newton, Herschel, or Confucius for closure approval.
+- **Exact next action:** fix Descartes's five findings, run and record the
+  complete canonical gate, commit and push the evidence, then request a new
+  independent R-850 closure review. Do not reuse Hooke, Newton, Herschel,
+  Confucius, or Descartes for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

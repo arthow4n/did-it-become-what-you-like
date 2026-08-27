@@ -1076,13 +1076,13 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - [x] Run `deno task verify` from a clean working tree. The final corrected
       checkpoint passed the complete canonical static, Deno test, E2E,
       gallery/a11y, browser-tooling, Pages, CI, toolchain, build, audit, and
-      diff matrix: 362 Deno tests, 11 E2E journeys, gallery/axe at 320x568,
+      diff matrix: 363 Deno tests, 11 E2E journeys, gallery/axe at 320x568,
       390x844, and 1280x800, browser visual/tree/axe smoke, boundary scan,
       both production builds, Pages artifact verification, and no known audit
       vulnerabilities. The first attempt was blocked by the occupied local
       Vite port; after enabling safe existing-server reuse, the only stale
-      receipt journey locators were updated, and the post-Herschel token
-      remediation rerun passed at `3b94827`.
+      receipt journey locators were updated, and the post-Confucius feature-CSS
+      remediation rerun passed at `05b46a3`.
 - [x] Inspect the gallery and every approved screen/state at `320x568`,
       `390x844`, and `1280x800` with agent-browser, including keyboard,
       accessibility tree/axe, long content, large money, empty/loading/offline/
@@ -1092,16 +1092,16 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       regression; no new product styling was introduced by M8-009.
 - [x] Compare production bundle evidence with the M8-002 baseline and explain
       material growth; fix accidental duplication or imports. The final app
-      build at the latest gate is `1,181.27 kB` JavaScript / `290.84 kB` CSS
-      (`325.57 kB` / `42.90 kB` gzip), versus the unchanged pre-Mantine
+      build at the latest gate is `1,181.27 kB` JavaScript / `290.88 kB` CSS
+      (`325.57 kB` / `42.89 kB` gzip), versus the unchanged pre-Mantine
       baseline of
       `1,038,625` JavaScript bytes / `30,076` CSS bytes (`284.90 kB` /
       `5.78 kB` gzip). The expected increase is Mantine's maintained runtime
       and layered component CSS; the boundary scan found no accidental library
       imports in screens and the isolated proof retained one tree-shaken entry.
-      The earlier `1,180.87`/`325.39` and `02edfb9` `290.76`/`42.88` receipts
-      were from earlier builds; the exact current output is from the final
-      `3b94827` gate.
+      The earlier `1,180.87`/`325.39`, `02edfb9` `290.76`/`42.88`, and
+      `3b94827` `290.84`/`42.90` receipts were from earlier builds; the exact
+      current output is from the final `05b46a3` gate.
 - [x] Reconcile `UI_SPEC.md`, `DESIGN_SYSTEM.md`, `AGENTS.md`, README/licenses,
       gallery, tests, migration matrix, and actual implementation. The public
       barrel remains facade-only; the design-system document now marks React
@@ -1112,7 +1112,8 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       The E2E runner fix is pushed at `2873dfe`, the receipt journey contract
       fix at `2189863`, the scoped conflict-journey timeout is pushed at
       `d792cd1`, and the post-remediation canonical gate is green at
-      `02edfb9`. That gate passed 362 Deno tests, 11 E2E journeys,
+      `02edfb9`. The latest gate after feature-CSS remediation passed at
+      `05b46a3` with 363 Deno tests, 11 E2E journeys,
       gallery/axe at three viewports, browser/toolchain/CI checks, the
       strengthened boundary scan, both builds, Pages artifact verification,
       frozen audit, and diff checks. No unresolved M8 limitation requires
@@ -1211,6 +1212,16 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   and diff checks. Confucius was closed after its report. The primary agent
   owns these feature-CSS and checkpoint remediations and must request another
   fresh closure review after the next canonical gate.
+- **Primary remediation evidence after Confucius (2026-08-27):** Pushed
+  `05b46a3` replaces the invalid receipt-preview surface token with
+  `var(--color-surface-2)`, maps the feature overlay to `var(--layer-overlay)`,
+  and keeps compact navigation at the named `var(--space-1)` gap. The new
+  local UI CSS contract test passed with the complete local UI suite at 18
+  tests; `deno task test:affected` also passed 18 tests, and TypeScript, lint,
+  frozen audit, and diff checks passed. The complete canonical gate passed on
+  `05b46a3` with 363 Deno tests, 11 E2E journeys, gallery/axe at three
+  viewports, browser/toolchain/CI checks, the strengthened boundary scan, both
+  builds, Pages artifact verification, frozen audit, and diff checks.
 - [ ] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and
@@ -1309,7 +1320,8 @@ evidence, and the next action is dependency-safe.
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
   `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with the
-  primary agent remediating Confucius's four findings before fresh closure.
+  primary agent remediating Confucius's latest three CSS findings and stale
+  checkpoint before fresh closure.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
@@ -1319,9 +1331,10 @@ evidence, and the next action is dependency-safe.
   complete. R-820 is approved and closed, and M8-005 and M8-006 are complete.
   The initial R-850 reviewer is closed; no migration branch or M8 worktree is
   active; historical non-M8 worktrees remain present and were preserved
-  untouched. R-840 and M8-010 are complete, and the Herschel remediation is
-  pushed at `3b94827`; the fresh Confucius closure review is closed; no
-  implementation or review worktree is active and no M8 change is unpushed.
+  untouched. R-840 and M8-010 are complete, and the Confucius remediation is
+  pushed at `05b46a3`; the fresh Confucius closure review is closed and its
+  latest findings are recorded below; no implementation or review worktree is
+  active and no M8 change is unpushed.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -1361,14 +1374,16 @@ evidence, and the next action is dependency-safe.
   is closed; the fresh Newton closure reviewer is closed; Herschel's fresh
   closure review is also closed and its three findings are remediated at
   `3b94827`; Confucius's fresh closure review is closed and its four findings
-  are now owned by the primary agent; no migration branch or M8 worktree is active; historical
+  are remediated at `05b46a3`; the latest Confucius review found three CSS
+  contract defects and one stale checkpoint statement, now owned by the
+  primary agent; no migration branch or M8 worktree is active; historical
   non-M8 worktrees were preserved untouched. R-840 and M8-010 are complete.
-  The final canonical gate passed at `3b94827`; no implementation or
+  The final canonical gate passed at `05b46a3`; no implementation or
   documentation change is unpushed.
-- **Exact next action:** fix the four Confucius findings in feature CSS and
-  the checkpoint, run the complete canonical gate, commit and push all
-  evidence, then request a new independent R-850 closure review. Do not reuse
-  Hooke, Newton, Herschel, or Confucius for closure approval.
+- **Exact next action:** fix the latest Confucius CSS and checkpoint findings,
+  run and record the complete canonical gate, then request a new independent
+  R-850 closure review. Do not reuse Hooke, Newton, Herschel, or Confucius for
+  closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

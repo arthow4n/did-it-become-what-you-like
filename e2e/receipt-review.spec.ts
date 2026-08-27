@@ -131,7 +131,9 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
   await page.getByRole("button", { name: "Save and continue" }).click();
   const modelPicker = page.getByRole("combobox", { name: "Model" });
   await expect(modelPicker).toBeVisible();
-  await page.getByRole("button", { name: /Show model options/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Hide options" }),
+  ).toBeVisible();
   await modelPicker.fill("Fake Gemini Compatible");
   await expect(
     page.getByRole("option", { name: /Fake Gemini Compatible/ }),
@@ -162,10 +164,14 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
     .toBeVisible();
   await page.getByRole("button", { name: /Fake Receipt Market/ }).click();
   await expect(page.getByText("Fake Receipt Market").first()).toBeVisible();
+  const receiptGroup = page.getByRole("region", {
+    name: "Fake Receipt Market 2026-08-24",
+  });
+  await expect(receiptGroup).toBeVisible();
   await expect(
-    page.getByRole("group", { name: /Fake Receipt Market/ }).getByText(
-      "Fake Receipt Market",
-    ),
+    receiptGroup.getByRole("button", {
+      name: /Fake Receipt Market Uncategorized/,
+    }),
   ).toBeVisible();
 
   expect(requests.length).toBeGreaterThanOrEqual(2);

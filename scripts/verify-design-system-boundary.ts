@@ -62,6 +62,70 @@ assert(
   "the public design-system barrel must not expose Mantine-specific types",
 );
 
+function hasMantinePublicType(source: string): string | undefined {
+  const publicTypePattern = /export\s+(?:type|interface)\s+([A-Za-z_$][\w$]*)/g;
+  for (const match of source.matchAll(publicTypePattern)) {
+    const start = match.index ?? 0;
+    const isInterface = /\binterface\b/.test(match[0]);
+    let braces = 0;
+    let parentheses = 0;
+    let brackets = 0;
+    let end = source.length;
+    for (let index = start; index < source.length; index++) {
+      const character = source[index];
+      if (character === "{") braces++;
+      else if (character === "}") {
+        braces--;
+        if (isInterface && braces === 0) {
+          end = index + 1;
+          break;
+        }
+      } else if (character === "(") parentheses++;
+      else if (character === ")") parentheses--;
+      else if (character === "[") brackets++;
+      else if (character === "]") brackets--;
+      else if (
+        character === ";" && braces === 0 && parentheses === 0 &&
+        brackets === 0
+      ) {
+        end = index + 1;
+        break;
+      }
+    }
+    const declaration = source.slice(start, end);
+    if (
+      /(?:@mantine\/|\bMantine[A-Z]\w*\b|\bMantine\b)/.test(declaration)
+    ) {
+      return match[1];
+    }
+  }
+
+  const exportedTypedValuePattern =
+    /export\s+(?:const|let|var)\s+[A-Za-z_$][\w$]*(?:\s*:\s*[\s\S]*?)?\s*=/g;
+  for (const match of source.matchAll(exportedTypedValuePattern)) {
+    if (/(?:@mantine\/|\bMantine[A-Z]\w*\b|\bMantine\b)/.test(match[0])) {
+      return match[0].replace(/\s*=\s*$/, "").trim();
+    }
+  }
+  return undefined;
+}
+
+for (
+  const path of [
+    "src/design-system/components.tsx",
+    "src/design-system/provider.tsx",
+  ]
+) {
+  const source = await Deno.readTextFile(path);
+  const leakedType = hasMantinePublicType(source);
+  assert(
+    !leakedType,
+    `${path} exposes a Mantine-specific public declaration: ${
+      leakedType ?? "unknown"
+    }`,
+  );
+}
+
 const denoConfig = await Deno.readTextFile("deno.json");
 assert(
   !denoConfig.includes("react-aria-components"),

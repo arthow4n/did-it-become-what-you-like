@@ -697,9 +697,28 @@ type FieldStateProps = {
   isReadOnly?: boolean;
   isRequired?: boolean;
   isInvalid?: boolean;
-  validationBehavior?: "aria" | "native";
+  validationBehavior?: ValidationBehavior;
   slot?: string;
 };
+
+type ValidationBehavior = "aria" | "native";
+
+type ValidationAttributes = {
+  required?: boolean;
+  "aria-required"?: "true";
+};
+
+function validationAttributes(
+  isRequired: boolean | undefined,
+  validationBehavior: ValidationBehavior | undefined,
+  supportsNativeValidation = true,
+): ValidationAttributes {
+  if (!isRequired) return {};
+  if (validationBehavior === "aria" || !supportsNativeValidation) {
+    return { "aria-required": "true" };
+  }
+  return { required: true };
+}
 
 type SharedTextFieldProps =
   & Omit<
@@ -733,13 +752,14 @@ export function TextField({
   isReadOnly,
   isRequired,
   isInvalid,
-  validationBehavior: _validationBehavior,
+  validationBehavior,
   slot,
   ...props
 }: SharedTextFieldProps) {
   const mantineProps = props as unknown as ComponentProps<
     typeof MantineTextInput
   >;
+  const validation = validationAttributes(isRequired, validationBehavior);
   return (
     <MantineTextInput
       {...mantineProps}
@@ -747,7 +767,7 @@ export function TextField({
       placeholder={placeholder}
       description={description}
       error={error}
-      required={isRequired}
+      {...validation}
       disabled={isDisabled}
       readOnly={isReadOnly}
       slot={slot ?? undefined}
@@ -792,7 +812,7 @@ export function TextArea(
     isReadOnly,
     isRequired,
     isInvalid,
-    validationBehavior: _validationBehavior,
+    validationBehavior,
     slot,
     ...props
   }: TextAreaProps,
@@ -800,6 +820,7 @@ export function TextArea(
   const mantineProps = props as unknown as ComponentProps<
     typeof MantineTextarea
   >;
+  const validation = validationAttributes(isRequired, validationBehavior);
   return (
     <MantineTextarea
       {...mantineProps}
@@ -807,7 +828,7 @@ export function TextArea(
       placeholder={placeholder}
       description={description}
       error={error}
-      required={isRequired}
+      {...validation}
       disabled={isDisabled}
       readOnly={isReadOnly}
       slot={slot ?? undefined}
@@ -855,7 +876,7 @@ export function SearchField(
     isReadOnly,
     isRequired,
     isInvalid,
-    validationBehavior: _validationBehavior,
+    validationBehavior,
     slot,
     ...props
   }: SearchFieldProps,
@@ -867,6 +888,7 @@ export function SearchField(
   const mantineProps = props as unknown as ComponentProps<
     typeof MantineTextInput
   >;
+  const validation = validationAttributes(isRequired, validationBehavior);
   const handleValueChange = (nextValue: string) => {
     if (value === undefined) setUncontrolledValue(nextValue);
     onChange?.(nextValue);
@@ -880,7 +902,7 @@ export function SearchField(
       label={label}
       placeholder={placeholder}
       description={description}
-      required={isRequired}
+      {...validation}
       disabled={isDisabled}
       readOnly={isReadOnly}
       aria-invalid={isInvalid ? "true" : undefined}
@@ -926,7 +948,7 @@ export function SecretField(
     isReadOnly,
     isRequired,
     isInvalid,
-    validationBehavior: _validationBehavior,
+    validationBehavior,
     slot,
     ...props
   }: SecretFieldProps,
@@ -935,6 +957,7 @@ export function SecretField(
   const mantineProps = props as unknown as ComponentProps<
     typeof MantinePasswordInput
   >;
+  const validation = validationAttributes(isRequired, validationBehavior);
   return (
     <MantinePasswordInput
       {...mantineProps}
@@ -942,7 +965,7 @@ export function SecretField(
       placeholder={placeholder}
       description={description}
       error={error}
-      required={isRequired}
+      {...validation}
       disabled={isDisabled}
       readOnly={isReadOnly}
       visible={revealed}
@@ -1272,15 +1295,17 @@ export function SelectField({
   isReadOnly,
   isRequired,
   isInvalid,
-  validationBehavior: _validationBehavior,
-  isOpen: _isOpen,
-  onOpenChange: _onOpenChange,
+  validationBehavior,
+  isOpen,
+  onOpenChange,
   slot,
   searchable = false,
   renderOption,
   ...props
 }: SelectFieldProps) {
   const mantineProps = props as unknown as ComponentProps<typeof MantineSelect>;
+  const validation = validationAttributes(isRequired, validationBehavior);
+  const openState = isOpen === undefined ? {} : { dropdownOpened: isOpen };
   const selectedValue = value ??
     (selectedKey == null ? undefined : String(selectedKey));
   const defaultValue = explicitDefaultValue ??
@@ -1288,6 +1313,7 @@ export function SelectField({
   return (
     <MantineSelect
       {...mantineProps}
+      {...openState}
       label={label}
       data={options.map((option) => ({
         value: option.id,
@@ -1321,8 +1347,10 @@ export function SelectField({
       error={error}
       disabled={isDisabled}
       readOnly={isReadOnly}
-      required={isRequired}
+      {...validation}
       aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
+      onDropdownOpen={onOpenChange ? () => onOpenChange(true) : undefined}
+      onDropdownClose={onOpenChange ? () => onOpenChange(false) : undefined}
       slot={slot ?? undefined}
       comboboxProps={{ withinPortal: false }}
       className={cx("ds-field", className)}
@@ -1426,13 +1454,14 @@ export function Checkbox({
   isReadOnly,
   isRequired,
   isInvalid,
-  validationBehavior: _validationBehavior,
+  validationBehavior,
   slot,
   ...props
 }: CheckboxProps) {
   const mantineProps = props as unknown as ComponentProps<
     typeof MantineCheckbox
   >;
+  const validation = validationAttributes(isRequired, validationBehavior);
   return (
     <MantineCheckbox
       {...mantineProps}
@@ -1443,7 +1472,7 @@ export function Checkbox({
       onChange={(event) => onChange?.(event.currentTarget.checked)}
       disabled={isDisabled}
       readOnly={isReadOnly}
-      required={isRequired}
+      {...validation}
       aria-invalid={isInvalid ? "true" : undefined}
       slot={slot ?? undefined}
       className={cx("ds-checkbox", className)}
@@ -1484,12 +1513,13 @@ export function RadioGroup(
     isReadOnly,
     isRequired,
     isInvalid,
-    validationBehavior: _validationBehavior,
+    validationBehavior,
     name,
     slot,
     ...props
   }: RadioGroupProps,
 ) {
+  const validation = validationAttributes(isRequired, validationBehavior);
   return (
     <MantineRadioGroup
       {...(props as unknown as ComponentProps<typeof MantineRadioGroup>)}
@@ -1501,7 +1531,7 @@ export function RadioGroup(
       onChange={onChange}
       disabled={isDisabled}
       readOnly={isReadOnly}
-      required={isRequired}
+      {...validation}
       aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
       name={name}
       slot={slot ?? undefined}
@@ -1513,6 +1543,8 @@ export function RadioGroup(
           value={option.id}
           label={option.label}
           disabled={option.disabled}
+          required={validation.required}
+          aria-required={validation["aria-required"]}
           className="ds-radio"
         />
       ))}
@@ -1544,11 +1576,12 @@ export function Switch({
   isReadOnly,
   isRequired,
   isInvalid,
-  validationBehavior: _validationBehavior,
+  validationBehavior,
   slot,
   ...props
 }: SwitchProps) {
   const mantineProps = props as unknown as ComponentProps<typeof MantineSwitch>;
+  const validation = validationAttributes(isRequired, validationBehavior);
   return (
     <MantineSwitch
       {...mantineProps}
@@ -1558,7 +1591,7 @@ export function Switch({
       onChange={(event) => onChange?.(event.currentTarget.checked)}
       disabled={isDisabled}
       readOnly={isReadOnly}
-      required={isRequired}
+      {...validation}
       aria-invalid={isInvalid ? "true" : undefined}
       slot={slot ?? undefined}
       className={cx("ds-switch", className)}
@@ -1576,6 +1609,8 @@ export type SegmentedControlProps = {
   onChange?: (value: string) => void;
   isDisabled?: boolean;
   isReadOnly?: boolean;
+  isRequired?: boolean;
+  isInvalid?: boolean;
   validationBehavior?: "aria" | "native";
   name?: string;
   id?: string;
@@ -1595,12 +1630,19 @@ export function SegmentedControl(
     onChange,
     isDisabled,
     isReadOnly,
+    isRequired,
+    isInvalid,
     name,
     slot,
-    validationBehavior: _validationBehavior,
+    validationBehavior,
     ...props
   }: SegmentedControlProps,
 ) {
+  const validation = validationAttributes(
+    isRequired,
+    validationBehavior,
+    false,
+  );
   return (
     <MantineSegmentedControl
       {...(props as unknown as ComponentProps<typeof MantineSegmentedControl>)}
@@ -1617,6 +1659,8 @@ export function SegmentedControl(
       name={name}
       fullWidth={fullWidth}
       aria-label={label}
+      {...validation}
+      aria-invalid={isInvalid ? "true" : undefined}
       slot={slot ?? undefined}
       className={cx("ds-segmented-control", className)}
       data-full-width={fullWidth ? "true" : undefined}

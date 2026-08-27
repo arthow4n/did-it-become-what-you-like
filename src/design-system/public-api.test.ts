@@ -25,6 +25,8 @@ type ContractChecks = [
   HasKey<ButtonProps, "pending">,
   HasKey<SelectFieldProps, "value">,
   HasKey<SelectFieldProps, "onValueChange">,
+  HasKey<SelectFieldProps, "isOpen">,
+  HasKey<SelectFieldProps, "onOpenChange">,
   HasKey<AdaptiveDialogProps, "onOpenChange">,
   HasKey<NativeDateFieldProps, "ref">,
 ];
@@ -76,6 +78,8 @@ const representativeProps: {
 };
 
 const contractChecks: ContractChecks = [
+  true,
+  true,
   true,
   true,
   true,

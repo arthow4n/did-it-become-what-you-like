@@ -57,6 +57,7 @@ import {
   SecretField,
   Section,
   SegmentedControl,
+  SelectField,
   Skeleton,
   Stack,
   StatusDot,
@@ -182,11 +183,15 @@ Deno.test("design-system fields expose names, descriptions, and invalid semantic
           label: "Merchant",
           description: "Previously used names stay local.",
           error: "Enter a merchant or description.",
+          isRequired: true,
+          validationBehavior: "native",
         }),
       );
       const view = within(document.body);
       const field = view.getByRole("textbox", { name: "Merchant" });
       assertEqual(field.getAttribute("aria-invalid"), "true");
+      assert(field.hasAttribute("required"));
+      assert(!field.hasAttribute("aria-required"));
       assert(field.getAttribute("aria-describedby"));
       assert(view.getByText("Enter a merchant or description."));
       mounted.unmount();
@@ -571,13 +576,37 @@ Deno.test("design-system selection and progress remain keyboard-addressable", as
       fireEvent.click(view.getByRole("radio", { name: "Travel" }));
       const syncSwitch = view.getByRole("switch", { name: "Automatic sync" });
       assertEqual(syncSwitch.getAttribute("aria-invalid"), "true");
-      assert(syncSwitch.hasAttribute("required"));
+      assertEqual(syncSwitch.getAttribute("aria-required"), "true");
+      assert(!syncSwitch.hasAttribute("required"));
       fireEvent.click(syncSwitch);
       assertEqual(direction, "back");
       assert(archived);
       assertEqual(category, "travel");
       assert(autoSync);
       assert(view.getByRole("progressbar", { name: "Preparing receipt" }));
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system select preserves controlled open state and callbacks", async () => {
+  await withComponentHarness(({ window, render, fireEvent }) =>
+    withAriaDomGlobals(window, () => {
+      let nextOpen: boolean | undefined;
+      const mounted = render(
+        createElement(SelectField, {
+          label: "Currency",
+          options: [{ id: "SEK", label: "SEK" }],
+          isOpen: true,
+          onOpenChange: (open) => nextOpen = open,
+        }),
+      );
+      const view = within(document.body);
+      assert(view.getByRole("option", { name: "SEK" }));
+      fireEvent.keyDown(view.getByRole("combobox", { name: "Currency" }), {
+        key: "Escape",
+      });
+      assertEqual(nextOpen, false);
       mounted.unmount();
     })
   );

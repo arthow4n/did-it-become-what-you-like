@@ -740,6 +740,19 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 #### R-830 — Overlay and reusable-pattern review checkpoint
 
 - **Status/dependencies:** `IN_PROGRESS`; depends on `M8-005`, `M8-006`.
+- **Review attempt (2026-08-27):** Fresh read-only reviewer `01a041a5-d6f1-7762-9956-103806fb9f75`
+  (`Sartre`) audited `HEAD e92c7f1` against the recorded pre-M8-005 base
+  `12f12c4` and returned `BLOCK`. The review found severity-2 adaptive-dialog
+  ARIA/closed-portal exposure, severity-2 mobile sticky-action overlap with
+  bottom navigation, severity-2 missing explicit Cancel actions in
+  `ConfirmDialog`/`DeleteAndReassign`, and severity-3 sub-44px repository-owned
+  icon hit areas. It also recorded the exact evidence: affected tests passed
+  (`119 passed, 0 failed`), build passed with the existing chunk warning, the
+  gallery check failed on narrow adaptive-dialog ARIA/portal violations, the
+  E2E command was blocked by an existing dev server on port 5173, and the
+  overlay/shell matrix confirmed the 320px sticky overlap while 390px and
+  1280px overlay/shell checks passed. No reviewer edits or repository changes
+  were made.
 - [ ] Fresh read-only reviewer audits overlay safety, focus, live regions,
       navigation, safe areas, z-index, form/filter state, reduced motion,
       responsive behavior, and contract leakage.
@@ -968,9 +981,12 @@ evidence, and the next action is dependency-safe.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `a5d4b19` (`feat(migration): finish reusable status facades`); R-820 is
-  approved and closed, M8-005 and M8-006 are complete, and the repository is
-  ready for the R-830 review. No M8 branch/worktree or review agent is active.
+  `e92c7f1` (`docs(plan): close M8-006 and open R-830`), with implementation
+  state ending at `a5d4b19` (`feat(migration): finish reusable status facades`);
+  R-820 is
+  approved and closed, M8-005 and M8-006 are complete, and R-830 is active
+  because its first review returned `BLOCK`. No M8 branch/worktree or review
+  agent is active; the primary agent owns the listed fixes.
   Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -997,12 +1013,13 @@ evidence, and the next action is dependency-safe.
   evidence recorded above; M8-005 is complete; its overlay slice is pushed at
   `76c5235`, notification feedback at `bd5cc90`, and remaining feedback at
   `6c904fc`; M8-006 is pushed through shell `7bb9e87`, list/form/status
-  `f3f2a0b`, and final sticky-action `a5d4b19`; no review agent, migration
-  branch, or M8 worktree is active; historical non-M8 worktrees were preserved
-  untouched.
-- **Exact next action:** invoke one fresh read-only R-830 reviewer against the
-  combined M8-005/M8-006 batch and wait for its complete evidence/report before
-  opening M8-007.
+  `f3f2a0b`, and final sticky-action `a5d4b19`; the first R-830 review by
+  `Sartre` is closed with the blocking findings recorded above; no review
+  agent, migration branch, or M8 worktree is active; historical non-M8
+  worktrees were preserved untouched.
+- **Exact next action:** resolve Sartre's severity-1–3 R-830 findings in
+  focused facade/CSS commits, run affected and targeted gallery/browser checks,
+  then request a fresh read-only closure review before opening M8-007.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

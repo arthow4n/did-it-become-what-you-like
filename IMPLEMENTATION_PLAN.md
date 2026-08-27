@@ -497,6 +497,19 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   formatting and `git diff --check` passed. A fresh closure reviewer must
   verify the three viewport scroll-width measurements before the gate can
   close.
+- **Fourth closure review evidence (2026-08-27):** Fresh read-only reviewer
+  confirmed FilterBar containment and that Switch validation mapping is fixed,
+  but returned **BLOCK**. The gallery accessibility check, production build,
+  and diff check passed; the browser matrix found `ExpenseRow` still reaches
+  356px at the 320px viewport, its long label is clipped by the 48px trigger,
+  and the long ActionCard content is clipped by the fixed 88px button height.
+  The keyboard reveal toggle is reachable and Space works, but Enter does not
+  activate it. The changed test command also exposed a reproducible shared
+  harness race: `deno test ... --changed=12f12c4` failed after 96 passes with
+  18 cancelled tests and React DOM `window.event` errors originating from
+  concurrent global DOM harness cleanup (`component-harness.tsx:14`).
+  FilterBar measured contained at 940px desktop, 302px at 390px, and 232px at
+  320px; the remaining page overflow was isolated to ExpenseRow.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
@@ -798,10 +811,10 @@ evidence, and the next action is dependency-safe.
   R-820 remains owned by the primary agent;
   no review agent, migration branch, or M8 worktree is active; historical
   non-M8 worktrees were preserved untouched.
-- **Exact next action:** invoke a fresh read-only R-820 closure reviewer, have
-  it rerun the combined M8-003/M8-004 affected, gallery, build, and
-  three-viewport browser matrix from the current pushed HEAD, and record
-  approval or any remaining severity 1–3 finding before opening M8-005.
+- **Exact next action:** fix the remaining ExpenseRow overflow/clipping,
+  ActionCard height, SecretField Enter activation, and shared component-harness
+  race; rerun related tests and the complete R-820 matrix, then invoke another
+  fresh read-only closure reviewer before opening M8-005.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

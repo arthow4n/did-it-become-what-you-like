@@ -1104,8 +1104,13 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - [x] Record exact final evidence, remaining accepted limitations (owner
       approval required), commits, clean status, and rollback/recovery notes.
       The E2E runner fix is pushed at `2873dfe`, the receipt journey contract
-      fix at `2189863`, and the final canonical gate is green on the pushed
-      checkpoint. No unresolved M8 limitation requires owner acceptance;
+      fix at `2189863`, the scoped conflict-journey timeout is pushed at
+      `d792cd1`, and the post-remediation canonical gate is green at
+      `669ec3d`. That gate passed 362 Deno tests, 11 E2E journeys,
+      gallery/axe at three viewports, browser/toolchain/CI checks, the
+      strengthened boundary scan, both builds, Pages artifact verification,
+      frozen audit, and diff checks. No unresolved M8 limitation requires
+      owner acceptance;
       rollback remains ordinary revert of the focused commits, with all prior
       worktrees preserved untouched.
 - **Acceptance:** canonical verification is green, visual/state matrix has no
@@ -1115,6 +1120,17 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 #### R-850 — Final independent Mantine migration review
 
 - **Status/dependencies:** `IN_PROGRESS`; depends on `M8-010`.
+- **Fresh closure review evidence (2026-08-27):** Fresh read-only reviewer
+  Newton (`01a04291-06c8-7940-bf67-a403c1ab173b`) audited pushed `HEAD
+  669ec3d` and returned `BLOCK` with three findings: the checkpoint still
+  described the post-remediation canonical gate as pending despite its green
+  result; the migration documentation omitted the two provider exports,
+  named nonexistent `ComboBoxField`, and misstated direct-import consumers;
+  and the gallery used `aria-label` on a focusable generic `div` without a
+  supported role. Its independent risk-selected verification passed the
+  boundary scan, 41 focused design-system/Mantine/API tests, 113 affected
+  tests, TypeScript, lint, format, frozen audit, builds, gallery at three
+  viewports, and browser checks. Newton was closed after its report.
 - **Initial review evidence (2026-08-27):** Fresh read-only reviewer Hooke
   (`01a04265-fa88-7273-ba37-0497183358a8`) audited pushed `HEAD 41c6586` and
   returned `BLOCK` with two substantive findings and one stale-checkpoint
@@ -1288,13 +1304,15 @@ evidence, and the next action is dependency-safe.
   severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; M8-009 is
   complete with the React Aria dependency removal, dead-selector cleanup,
   boundary task, and documentation evidence above; the initial R-850 reviewer
-  is closed and the primary agent owns its remediation; no migration branch or
-  M8 worktree is active; historical non-M8 worktrees were preserved untouched.
-  R-840 and M8-010 are complete. The post-review canonical gate remains
-  pending on pushed `d792cd1`.
-- **Exact next action:** from clean pushed `d792cd1`, run the single canonical
-  `deno task verify` gate, then request a fresh independent R-850 closure
-  review. Do not reuse Hooke for closure approval.
+  is closed; the fresh Newton closure reviewer is also closed and the primary
+  agent owns its three-finding remediation; no migration branch or M8 worktree
+  is active; historical non-M8 worktrees were preserved untouched. R-840 and
+  M8-010 are complete. The post-remediation canonical gate passed at
+  `669ec3d`; documentation and gallery fixes remain unpushed.
+- **Exact next action:** reconcile the provider/export/import documentation and
+  the gallery money fixture, run the affected design-system and gallery checks,
+  commit and push the remediation, then request a new independent R-850
+  closure review. Do not reuse Hooke or Newton for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

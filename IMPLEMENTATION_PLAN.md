@@ -808,18 +808,32 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-007 — Recompose expense, organization, and manual-entry components
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on approved `R-830`.
+- **Status/dependencies:** `COMPLETE`; depends on approved `R-830`.
 - **Owned scope:** expense/project/category/manual-entry design-system
   composites and affected feature presentation only; no actor/domain changes.
-- [ ] Recompose `PeriodPicker`, `ProjectPicker`, `CurrencyPicker`,
+- **Implementation evidence (2026-08-27):** The expense/domain slice is pushed
+  at `e41ee4b`. `CurrencyPicker` now composes the migrated facade
+  `SelectField` with Mantine-backed searchable selection and ISO options;
+  `MoneySummary` uses the Mantine-backed facade layout root; and
+  `CategoryBreakdown` composes `ListRow` so category identity and signed money
+  stay inside the migrated list contract. `PeriodPicker`, `ProjectPicker`,
+  `MerchantPicker`, `ExpenseRow`, `ExpenseList`, and `ExpenseForm` already
+  compose the migrated facade controls/patterns; organization managers and
+  deletion flows likewise remain facade-only with actor commands unchanged.
+  The direct design-system suite passed 31 tests, the component/feature suite
+  passed 116 tests, `deno task build` passed with only the existing chunk-size
+  warning, `deno task fmt:check` checked 223 files, `deno task lint` checked 207
+  files, `deno task check`, and `git diff --check` passed. No actor, domain,
+  persistence, or application Mantine imports changed.
+- [x] Recompose `PeriodPicker`, `ProjectPicker`, `CurrencyPicker`,
       `MerchantPicker`, `MoneySummary`, `CategoryBreakdown`, `ExpenseRow`,
       `ExpenseList`, `ExpenseForm`, and organization/deletion compositions from
       migrated facade primitives.
-- [ ] Preserve controlled decimal/date/time values, project/category identity,
+- [x] Preserve controlled decimal/date/time values, project/category identity,
       filter behavior, signed multi-currency presentation, reassign/delete
       safeguards, dirty state, immediate save feedback, and existing actor
       events.
-- [ ] Add regressions for large/negative money, long project/category/merchant
+- [x] Add regressions for large/negative money, long project/category/merchant
       names, empty/error/loading/filter states, keyboard entry, narrow forms,
       and populated-project deletion.
 - **Focused verification:** affected tests and an immediate targeted journey or
@@ -829,7 +843,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-008 — Recompose receipt, Gemini, sync, conflict, and portability UI
 
-- **Status/dependencies:** `PENDING`; depends on `M8-007`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-007`.
 - **Owned scope:** remaining domain composites and affected feature presentation
   only; no actor, adapter, persistence, schema, or workflow change.
 - [ ] Recompose receipt source/metadata/line/editor/reconciliation components,
@@ -1015,15 +1029,16 @@ evidence, and the next action is dependency-safe.
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
-  `COMPLETE`; `M8-007` is `IN_PROGRESS`; `M8-008` through `M8-010`, and
+  `COMPLETE`; `M8-007` is `COMPLETE`; `M8-008` is `IN_PROGRESS`; `M8-009`
+  through `M8-010`, and
   `R-840` through `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `c3aa34a` (`fix(receipt): keep disclosure action above navigation`), with the
+  `e41ee4b` (`feat(migration): recompose expense summary facades`), with the
   implementation batch and R-830 remediations pushed; R-830 is approved and
-  closed, and M8-007 is the sole active task;
+  closed, M8-007 is complete, and M8-008 is the sole active task;
   R-820 is
   approved and closed, M8-005 and M8-006 are complete, and R-830 is active
   because its first review returned `BLOCK`. No M8 branch/worktree or review
@@ -1056,12 +1071,12 @@ evidence, and the next action is dependency-safe.
   `6c904fc`; M8-006 is pushed through shell `7bb9e87`, list/form/status
   `f3f2a0b`, and final sticky-action `a5d4b19`; the first R-830 review by
   `Sartre`, `Faraday`, and `Peirce` are closed with R-830 approved and all
-  severity-1–3 findings resolved; no review agent, migration branch, or M8
-  worktree is active; historical non-M8 worktrees were preserved untouched.
-- **Exact next action:** inventory M8-007 consumers/tests and implement the
-  first dependency-ready expense/manual-entry composite slice, beginning with
-  the controlled date/time, project/currency/merchant inputs and focused
-  facade-boundary regressions.
+  severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; no review
+  agent, migration branch, or M8 worktree is active; historical non-M8
+  worktrees were preserved untouched.
+- **Exact next action:** inventory M8-008 receipt, Gemini, sync, conflict, and
+  portability consumers/tests and implement the first dependency-ready
+  receipt/Gemini composite slice with focused facade-boundary regressions.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

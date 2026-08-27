@@ -610,22 +610,22 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on approved `R-820`.
+- **Status/dependencies:** `COMPLETE`; depends on approved `R-820`.
 - **Owned scope:** facade overlay and feedback primitives/patterns only.
-- [ ] Convert `Disclosure`, `AdaptiveDialog`, `ConfirmDialog`, `DangerDialog`,
+- [x] Convert `Disclosure`, `AdaptiveDialog`, `ConfirmDialog`, `DangerDialog`,
       `Popover`, `Menu`, and `Tooltip` using public Mantine components.
-- [ ] Convert `Banner`, `InlineNotice`, `Toast`, `StatusMessage`, `Progress`,
+- [x] Convert `Banner`, `InlineNotice`, `Toast`, `StatusMessage`, `Progress`,
       `Skeleton`, `EmptyState`, and `ErrorState`.
-- [ ] Use Mantine Notifications as the notification infrastructure: mount its
+- [x] Use Mantine Notifications as the notification infrastructure: mount its
       provider-owned host and adapt the public `Toast`/status facade to it.
       Do not invent a repository notification manager or duplicate Mantine's
       notification primitive; preserve the facade's fixed placement, live
       region, dismiss, and undo contracts at the integration boundary.
-- [ ] Preserve responsive modal/sheet composition, focus trap/restoration,
+- [x] Preserve responsive modal/sheet composition, focus trap/restoration,
       escape/cancel behavior, destructive confirmation rules, portal layering,
       fixed toast placement, live-region semantics, and approved progress-only
       motion.
-- [ ] Exercise nested overlay, mobile bottom navigation, long error text,
+- [x] Exercise nested overlay, mobile bottom navigation, long error text,
       loading/retry, reduced-motion, and dirty-form exit interactions.
 - **Current task scope:** Start with an impact inventory of the current
   overlay/feedback facade implementations, their tests, provider composition,
@@ -666,6 +666,24 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   `Skeleton`, `EmptyState`, and `ErrorState`) to public Mantine components,
   preserving progressbar semantics, reduced-motion behavior, and long/error
   content layout; then run the affected component and feature tests.
+- **Remaining feedback slice evidence (2026-08-27):** `Progress`, `Skeleton`,
+  `EmptyState`, and `ErrorState` are now Mantine-backed at pushed commit
+  `6c904fc`. The progress facade preserves one labeled facade-owned progressbar,
+  min/max/value semantics, an indeterminate state without `aria-valuenow`, and
+  Mantine's track/section rendering with zero transition duration. Skeleton is
+  explicitly static; empty and error states retain their heading and long-copy
+  structure. `deno task test:affected` passed (102 tests, 0 failures),
+  `deno task build` passed with only the existing chunk-size warning,
+  `deno task fmt:check` checked 223 files, `deno task check` passed,
+  `deno task lint` checked 207 files, and `git diff --check` passed.
+- **M8-005 completion:** All listed M8-005 facade conversions and the
+  provider-owned notification boundary are implemented and pushed. Existing
+  overlay/feature contract tests cover dirty exits, loading/retry, long error
+  content, and notification/live-region behavior; combined viewport and visual
+  review remains intentionally batched for `R-830` after M8-006.
+- **Exact next action:** mark M8-005 complete and begin the dependency-ready
+  M8-006 reusable navigation/form/filter/status inventory, starting with
+  `AppFrame`, `PageHeader`, and navigation primitives.
 - **Focused verification:** affected tests and a targeted overlay/focus smoke
   only when the changed behavior is unsafe to defer to `R-830`.
 - **Acceptance:** no focus loss, background interaction, clipped portal,
@@ -673,9 +691,13 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-006 — Migrate reusable navigation, form, filter, and status patterns
 
-- **Status/dependencies:** `PENDING`; depends on `M8-005`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-005`.
 - **Owned scope:** facade reusable patterns; no domain composites or actor
   behavior.
+- **Current task scope:** inventory the reusable facade roots, consumers, and
+  tests; start with `AppFrame`, `PageHeader`, `AppNavigation`, and
+  `DefaultNavigation`, preserving screen-level contracts and responsive shell
+  boundaries.
 - [ ] Convert `AppFrame`, `PageHeader`, `AppNavigation`, `DefaultNavigation`,
       `List`, `ListRow`, `DefinitionList`, `StickyActionBar`, `FormLayout`,
       `FormActions`, `ErrorSummary`, `DraftStatus`, `FilterBar`,
@@ -915,16 +937,16 @@ evidence, and the next action is dependency-safe.
 ## Current Checkpoint
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
-  `R-810`, `M8-003`, `M8-004`, and `R-820` are `COMPLETE`; `M8-005` is
-  `IN_PROGRESS`; `M8-006` through `M8-010`, and `R-830` through `R-850`
-  remain `PENDING`.
+  `R-810`, `M8-003`, `M8-004`, `R-820`, and `M8-005` are `COMPLETE`;
+  `M8-006` is `IN_PROGRESS`; `M8-007` through `M8-010`, and `R-830` through
+  `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `bd5cc90` (`feat(migration): route feedback through Mantine notifications`);
-  R-820 is approved and closed, and the overlay plus notification feedback
-  slices of M8-005 are complete. No M8 branch/worktree or review agent is
+  `6c904fc` (`feat(migration): move remaining feedback facades to Mantine`);
+  R-820 is approved and closed, M8-005 is complete, and M8-006 is now the
+  active dependency-ready task. No M8 branch/worktree or review agent is
   active. Historical non-M8 worktrees remain present and were preserved
   untouched.
 - **Verification status:** The released baseline's revised non-duplicating
@@ -951,11 +973,12 @@ evidence, and the next action is dependency-safe.
   agent; the latest closure review approved R-820 at `221f76e` with all
   evidence recorded above; M8-005 is now owned by the primary agent; the
   overlay slice is pushed at `76c5235` and the notification feedback slice is
-  pushed at `bd5cc90`; no review agent, migration branch, or M8 worktree is
-  active; historical non-M8 worktrees were preserved untouched.
-- **Exact next action:** migrate Progress, Skeleton, EmptyState, and ErrorState
-  to Mantine-backed facade implementations, then run the affected component
-  and feature tests and record the exact evidence here.
+  pushed at `bd5cc90`, and the remaining feedback slice is pushed at
+  `6c904fc`; no review agent, migration branch, or M8 worktree is active;
+  historical non-M8 worktrees were preserved untouched.
+- **Exact next action:** inventory M8-006 reusable navigation, form, filter, and
+  status facades and their consumers/tests; then migrate AppFrame, PageHeader,
+  and navigation primitives in the first dependency-safe slice.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

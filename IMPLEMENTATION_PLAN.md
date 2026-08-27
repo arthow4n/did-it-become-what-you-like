@@ -649,6 +649,23 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   Notifications host plus `Banner`, `InlineNotice`, `Toast`, and
   `StatusMessage`; then add only the facade-boundary tests needed to prove
   live-region, dismiss, and notification integration contracts.
+- **Feedback slice evidence (2026-08-27):** The provider-owned Notifications
+  host and the `Banner`, `InlineNotice`, `Toast`, and `StatusMessage` facades
+  are pushed at `bd5cc90`. The host owns the fixed bottom-right placement,
+  toast z-layer, immediate transitions, and Mantine notification store;
+  `Toast` retains a polite status live region, optional dismiss action, and
+  callback boundary for undo/action content. Alert-backed notices preserve
+  tone and alert/status semantics. `deno task test:affected` passed (115 tests,
+  0 failures), including the Mantine compatibility suite;
+  `deno task build` passed with only the existing chunk-size warning,
+  `deno task fmt:check` checked 223 files, `deno task check` passed,
+  `deno task lint` checked 207 files, and `git diff --check` passed. The
+  repository is clean and `master` is aligned with `origin/master` at
+  `bd5cc90`.
+- **Exact next action:** migrate the remaining feedback facades (`Progress`,
+  `Skeleton`, `EmptyState`, and `ErrorState`) to public Mantine components,
+  preserving progressbar semantics, reduced-motion behavior, and long/error
+  content layout; then run the affected component and feature tests.
 - **Focused verification:** affected tests and a targeted overlay/focus smoke
   only when the changed behavior is unsafe to defer to `R-830`.
 - **Acceptance:** no focus loss, background interaction, clipped portal,
@@ -905,10 +922,11 @@ evidence, and the next action is dependency-safe.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `76c5235` (`feat(migration): move overlay facades to Mantine`); R-820 is
-  approved and closed, and the first M8-005 overlay slice is complete. No M8
-  branch/worktree or review agent is active. Historical non-M8 worktrees remain
-  present and were preserved untouched.
+  `bd5cc90` (`feat(migration): route feedback through Mantine notifications`);
+  R-820 is approved and closed, and the overlay plus notification feedback
+  slices of M8-005 are complete. No M8 branch/worktree or review agent is
+  active. Historical non-M8 worktrees remain present and were preserved
+  untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -932,11 +950,12 @@ evidence, and the next action is dependency-safe.
   single finding resolved by `2806236`; R-820 remains owned by the primary
   agent; the latest closure review approved R-820 at `221f76e` with all
   evidence recorded above; M8-005 is now owned by the primary agent; the
-  overlay slice is pushed at `76c5235`; no review agent, migration branch, or
-  M8 worktree is active; historical non-M8 worktrees were preserved untouched.
-- **Exact next action:** add the provider-owned Mantine Notifications host and
-  migrate the Banner/InlineNotice/Toast/StatusMessage feedback boundary, then
-  run its focused tests and record the exact evidence here.
+  overlay slice is pushed at `76c5235` and the notification feedback slice is
+  pushed at `bd5cc90`; no review agent, migration branch, or M8 worktree is
+  active; historical non-M8 worktrees were preserved untouched.
+- **Exact next action:** migrate Progress, Skeleton, EmptyState, and ErrorState
+  to Mantine-backed facade implementations, then run the affected component
+  and feature tests and record the exact evidence here.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

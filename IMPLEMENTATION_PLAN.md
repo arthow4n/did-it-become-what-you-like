@@ -766,6 +766,22 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   checked 207 files; `deno task check` and `git diff --check` passed. The
   approved E2E command was attempted again and remains blocked by the existing
   dev server on port 5173; that process was left untouched.
+- **Closure review attempt (2026-08-27):** Fresh read-only reviewer
+  `01a041c1-644d-76e0-82c3-dd1b31867ad9` (`Faraday`) rechecked the remediated
+  batch and returned `BLOCK` for one severity-2 repository integration issue:
+  the enabled `ReceiptDisclosure` “Continue to scan” action remained in normal
+  flow and was covered by fixed bottom navigation at 320px. The reviewer
+  otherwise confirmed the dialog/portal, sticky, and hit-area fixes, with
+  gallery, build, affected tests, and 390px/1280px browser checks green; the
+  approved E2E command remained blocked by the existing port-5173 dev server.
+- **Closure remediation (2026-08-27):** `c3aa34a` moves the disclosure action
+  into the shared `StickyActionBar`, retains the explicit disclosure Cancel
+  action in the card, and adds a focused ownership assertion. The receipt suite
+  passed 8 tests, `deno task test:affected` reported no additional selected
+  modules, `deno task a11y:gallery` passed all three viewports, `deno task
+  build` passed with only the existing chunk-size warning, `deno task fmt:check`
+  checked 223 files, `deno task lint` checked 207 files, `deno task check`,
+  and `git diff --check` passed. A fresh closure reviewer is still required.
 - [ ] Fresh read-only reviewer audits overlay safety, focus, live regions,
       navigation, safe areas, z-index, form/filter state, reduced motion,
       responsive behavior, and contract leakage.
@@ -994,7 +1010,7 @@ evidence, and the next action is dependency-safe.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `d4e21b5` (`fix(design-system): restore icon action hit areas`), with the
+  `c3aa34a` (`fix(receipt): keep disclosure action above navigation`), with the
   implementation batch and R-830 remediations pushed;
   R-820 is
   approved and closed, M8-005 and M8-006 are complete, and R-830 is active
@@ -1027,12 +1043,13 @@ evidence, and the next action is dependency-safe.
   `76c5235`, notification feedback at `bd5cc90`, and remaining feedback at
   `6c904fc`; M8-006 is pushed through shell `7bb9e87`, list/form/status
   `f3f2a0b`, and final sticky-action `a5d4b19`; the first R-830 review by
-  `Sartre` is closed with its findings resolved and the closure gate is ready
-  for a fresh reviewer; no review agent, migration branch, or M8 worktree is
-  active; historical non-M8 worktrees were preserved untouched.
+  `Sartre` and the first closure review by `Faraday` are closed with their
+  findings resolved or awaiting closure evidence as recorded above; no review
+  agent, migration branch, or M8 worktree is active; historical non-M8
+  worktrees were preserved untouched.
 - **Exact next action:** invoke one fresh read-only R-830 closure reviewer
-  against the remediated combined M8-005/M8-006 batch and wait for its
-  complete evidence/report before opening M8-007.
+  against the latest `c3aa34a` batch and wait for its complete evidence/report
+  before opening M8-007.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

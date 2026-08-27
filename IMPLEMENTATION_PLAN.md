@@ -846,6 +846,17 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - **Status/dependencies:** `IN_PROGRESS`; depends on `M8-007`.
 - **Owned scope:** remaining domain composites and affected feature presentation
   only; no actor, adapter, persistence, schema, or workflow change.
+- **Impact inventory (2026-08-27):** Receipt, conflict/import, sync, and
+  portability feature files already keep their field, list, notice, status,
+  and workflow imports on the facade. The remaining direct component-library
+  implementation in this scope is `ModelPicker` in
+  `src/design-system/components.tsx`, which still wraps React Aria. Receipt
+  capture uses one imperative native file input for the approved camera/file
+  contract; the facade `FileField`/Mantine Dropzone boundary must own that
+  input while preserving `capture`, privacy-safe previews, and object-URL
+  cleanup. Remaining raw feature wrappers are layout/semantic containers,
+  native image preview, or CSS-required master-detail boundaries and will be
+  changed only where a facade primitive can preserve their contract.
 - [ ] Recompose receipt source/metadata/line/editor/reconciliation components,
       model picker/quick setup/configuration test, sync/global status, known
       devices, conflict review, and import/export panels from migrated facade
@@ -1035,14 +1046,12 @@ evidence, and the next action is dependency-safe.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
-- **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `e41ee4b` (`feat(migration): recompose expense summary facades`), with the
+- **Worktree state:** `master` is aligned with `origin/master` at pushed plan
+  commit `04fde67` (`docs(plan): close M8-007 and start M8-008`), with the
   implementation batch and R-830 remediations pushed; R-830 is approved and
   closed, M8-007 is complete, and M8-008 is the sole active task;
-  R-820 is
-  approved and closed, M8-005 and M8-006 are complete, and R-830 is active
-  because its first review returned `BLOCK`. No M8 branch/worktree or review
-  agent is active; the primary agent owns the listed fixes.
+  R-820 is approved and closed, and M8-005 and M8-006 are complete. No M8
+  branch/worktree or review agent is active; the primary agent owns M8-008.
   Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -1074,9 +1083,11 @@ evidence, and the next action is dependency-safe.
   severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; no review
   agent, migration branch, or M8 worktree is active; historical non-M8
   worktrees were preserved untouched.
-- **Exact next action:** inventory M8-008 receipt, Gemini, sync, conflict, and
-  portability consumers/tests and implement the first dependency-ready
-  receipt/Gemini composite slice with focused facade-boundary regressions.
+- **Exact next action:** migrate `ModelPicker` to the Mantine-backed facade,
+  route receipt capture through the facade `FileField` Dropzone boundary while
+  preserving native camera/file behavior, add focused contract regressions, and
+  record the pushed slice before continuing through the remaining M8-008
+  domain composites.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

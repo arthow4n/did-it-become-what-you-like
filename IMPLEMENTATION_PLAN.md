@@ -434,6 +434,21 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   secret reveal, SearchField clear, and SegmentedControl transition behavior;
   the date-open evidence was saved as `/tmp/r820-gallery-date-open.png` and
   narrow ActionCard evidence as `/tmp/r820-app-narrow-first.png`.
+- **Fix evidence:** Primary fixes are pushed at `265d5b8` and cover all ten
+  findings: Mantine error/red tokens and date/dropzone layers are mapped;
+  ActionCard children are intrinsically shrinkable; date defaults are
+  uncontrolled when appropriate; the secret toggle is keyboard reachable;
+  SearchField owns uncontrolled clear state; FileField reports rejected files
+  through its facade callback and live error; migrated public control types are
+  facade-owned; segmented transitions are disabled; and Mantine-backed
+  triggers retain the React Aria press bridge, including disabled controlled
+  triggers. `deno task check` passed, `deno task lint` passed (207 files),
+  `deno task test:affected` passed (113 tests), the focused design-system test
+  passed (23 tests), targeted `deno fmt --check` passed for all changed source
+  files, and `git diff --check` passed. A repository-wide `deno fmt --check`
+  still reports pre-existing formatting drift in `AGENTS.md`,
+  `IMPLEMENTATION_PLAN.md`, and `DESIGN_SYSTEM.md`; those unrelated document
+  rewrites were not included in the implementation commit.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
@@ -710,7 +725,7 @@ evidence, and the next action is dependency-safe.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `eaa02d7` (`feat(migration): move facade controls to Mantine`); no
+  `265d5b8` (`fix(migration): resolve R-820 control findings`); no
   implementation changes are currently uncommitted. No M8 branch/worktree or
   review agent is active. Historical non-M8 worktrees remain present and were
   preserved untouched.
@@ -731,13 +746,13 @@ evidence, and the next action is dependency-safe.
 - **M8 active/interrupted work:** M8-002 is complete and pushed at `12f12c4`;
   R-810 was approved by the fresh read-only reviewer with no findings and is
   closed at `492d9c1`. M8-003 is complete and pushed at `18bac20`; M8-004 is
-  complete and pushed at `eaa02d7`. R-820 is now owned by the primary agent;
+  complete and pushed at `eaa02d7`; R-820 remains owned by the primary agent;
   no review agent, migration branch, or M8 worktree is active; historical
   non-M8 worktrees were preserved untouched.
-- **Exact next action:** invoke one fresh read-only R-820 reviewer, have it run
-  the combined M8-003/M8-004 affected, gallery, build, and three-viewport
-  browser matrix from base `12f12c4`, then resolve every severity 1–3 finding
-  before opening M8-005.
+- **Exact next action:** invoke one fresh read-only R-820 closure reviewer, have
+  it rerun the combined M8-003/M8-004 affected, gallery, build, and
+  three-viewport browser matrix from base `12f12c4`, and record approval or any
+  remaining severity 1–3 finding before opening M8-005.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

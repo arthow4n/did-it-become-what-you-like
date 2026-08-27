@@ -1201,6 +1201,7 @@
 
   .ds-gallery__section {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     min-width: 0;
     max-width: 100%;
     gap: var(--space-4);
@@ -1214,6 +1215,7 @@
 
   .ds-gallery__surface {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     min-width: 0;
     max-width: 100%;
     gap: var(--space-4);

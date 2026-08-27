@@ -314,6 +314,43 @@ Deno.test("destructive-flow component explains inaccessible devices and exposes 
   });
 });
 
+Deno.test("destructive-flow forced finalization exposes an explicit cancel action", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent }) => {
+    await withAriaGlobals(window, () => {
+      const result = callbacks();
+      render(
+        createElement(
+          DataPrivacyScreen,
+          props({
+            deleteEverywhere: {
+              phase: "forced-finalization",
+              safetyExported: true,
+              safetyDeclined: false,
+              declineConfirmed: false,
+              generation: 4,
+              knownDeviceCount: 2,
+              acknowledgedDeviceCount: 1,
+              forcedDeviceCount: 1,
+              revoking: false,
+            },
+            onConfirmDeleteEverywhere: result.onConfirmDeleteEverywhere,
+            onCancelDeleteEverywhere: result.onCancelDeleteEverywhere,
+          }),
+        ),
+      );
+      const view = within(document.body);
+      fireEvent.click(view.getByRole("button", {
+        name: "Confirm forced finalization",
+      }));
+      fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+      assert(
+        result.events.join(",") === "confirm-everywhere,cancel-everywhere",
+        "forced finalization must expose both confirm and cancel callbacks",
+      );
+    });
+  });
+});
+
 Deno.test("destructive-flow component exposes finalization failure and retry", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaGlobals(window, () => {

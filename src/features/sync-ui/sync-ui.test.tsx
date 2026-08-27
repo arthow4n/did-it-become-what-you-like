@@ -14,6 +14,7 @@ import { withComponentHarness } from "../../test-support/component-harness.tsx";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
+  readTextFile(path: string | URL): Promise<string>;
 };
 
 function assert(
@@ -548,6 +549,11 @@ Deno.test("known devices render current, last-seen, retirement, rename, and ackn
       assert(view.getByRole("heading", { name: "Stockholm phone" }));
       assert(view.getByText("Current device"));
       assert(view.getByText("Seen 2 days ago"));
+      assert(
+        view.getByText("Current device").closest(".sync-ui-device-row")
+          ?.querySelector(".ds-badge"),
+        "device badges must remain inside the shrinkable device row",
+      );
       fireEvent.click(
         view.getByRole("button", { name: "Acknowledge retirement" }),
       );
@@ -646,4 +652,14 @@ Deno.test("known devices keep rename controls ordered after activation", async (
       );
     });
   });
+});
+
+Deno.test("known device acknowledgement badges have a narrow-layout containment contract", async () => {
+  const css = await Deno.readTextFile(
+    new URL("./sync-ui.css", import.meta.url),
+  );
+  assert(css.includes(".sync-ui-device-row .ds-badge"));
+  assert(css.includes("max-width: 100%"));
+  assert(css.includes("overflow-wrap: anywhere"));
+  assert(css.includes("white-space: normal"));
 });

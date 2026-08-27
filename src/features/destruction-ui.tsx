@@ -484,12 +484,20 @@ export function DataPrivacyScreen({
                         cloud retirement without claiming that a lost browser
                         was erased.
                       </InlineNotice>
-                      <Button
-                        variant="danger"
-                        onPress={onConfirmDeleteEverywhere}
-                      >
-                        Confirm forced finalization
-                      </Button>
+                      <FormActions>
+                        <Button
+                          variant="danger"
+                          onPress={onConfirmDeleteEverywhere}
+                        >
+                          Confirm forced finalization
+                        </Button>
+                        <Button
+                          variant="quiet"
+                          onPress={onCancelDeleteEverywhere}
+                        >
+                          Cancel
+                        </Button>
+                      </FormActions>
                     </Stack>
                   )
                   : null}

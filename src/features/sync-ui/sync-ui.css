@@ -47,6 +47,14 @@
 
   .sync-ui-device-row__content {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .sync-ui-device-row .ds-badge {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 
   .sync-ui-device-row__retirement {

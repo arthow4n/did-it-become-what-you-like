@@ -61,7 +61,7 @@ import {
   TimeInput as MantineTimeInput,
 } from "@mantine/dates";
 import { Dropzone as MantineDropzone } from "@mantine/dropzone";
-import { useMediaQuery } from "@mantine/hooks";
+import { useMediaQuery, useMergedRef } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 export type Space = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export type Tone = "neutral" | "positive" | "warning" | "danger" | "info";
@@ -1200,6 +1200,7 @@ export function FileField(
     description,
     className,
     id,
+    ref: publicRef,
     onChange,
     onReject,
     inputRef,
@@ -1214,6 +1215,7 @@ export function FileField(
   const generatedId = useId();
   const controlId = id ?? generatedId;
   const dropzoneAccept = dropzoneAcceptFor(accept);
+  const nativeInputRef = useMergedRef(inputRef, publicRef);
   const [hasRejection, setHasRejection] = useState(false);
   return (
     <Field
@@ -1241,7 +1243,7 @@ export function FileField(
         className="ds-file-dropzone"
         inputProps={{
           ...props,
-          ref: inputRef,
+          ref: nativeInputRef,
           id: controlId,
           accept,
           capture,
@@ -2258,6 +2260,7 @@ export function Menu({
     <MantineMenu
       trapFocus={false}
       returnFocus
+      withinPortal={false}
       withInitialFocusPlaceholder={false}
       transitionProps={{ duration: 0, exitDuration: 0 }}
       zIndex="var(--layer-overlay)"

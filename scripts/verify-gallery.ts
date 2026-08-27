@@ -164,9 +164,13 @@ async function main(): Promise<void> {
       if (name === "phone") {
         await runAgent(installed, [
           "eval",
-          "(() => { const trigger = Array.from(document.querySelectorAll('button')).find((node) => node.textContent?.trim() === 'Open menu'); if (!trigger) throw new Error('Gallery menu trigger is missing.'); trigger.click(); return true; })()",
+          "(() => { const trigger = Array.from(document.querySelectorAll('button')).find((node) => node.textContent?.trim() === 'Open menu'); if (!trigger) throw new Error('Gallery menu trigger is missing.'); trigger.scrollIntoView({ block: 'center', inline: 'nearest' }); const rect = trigger.getBoundingClientRect(); if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) throw new Error('Gallery menu trigger is not visible.'); trigger.click(); return true; })()",
         ]);
         await runAgent(installed, ["wait", "100"]);
+        await runAgent(installed, [
+          "eval",
+          "(() => { const menu = document.querySelector('[role=\\\"menu\\\"]'); if (!menu) throw new Error('Gallery menu did not open.'); const rect = menu.getBoundingClientRect(); if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) throw new Error('Gallery menu is not visible.'); if (!menu.closest('main')) throw new Error('Gallery menu is outside the application landmark.'); return true; })()",
+        ]);
         await runAgent(installed, [
           "eval",
           "axe.run(document).then(r => { window.__galleryMenuAxe = JSON.stringify(r) })",

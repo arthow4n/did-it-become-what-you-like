@@ -336,7 +336,9 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-003 — Introduce provider, theme mapping, and structural primitives
 
-- **Status/dependencies:** `PENDING`; depends on approved `R-810`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on approved `R-810`.
+- **Owner:** primary agent; production edits are isolated to the facade,
+  provider composition, app entry, design-system fixtures, and this plan.
 - **Owned scope:** app provider composition and design-system tokens/layout/
   typography primitives only.
 - [ ] Add one facade-owned provider entry and map After Midnight color,
@@ -664,13 +666,13 @@ evidence, and the next action is dependency-safe.
 ## Current Checkpoint
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`, and
-  `R-810` are `COMPLETE`; `M8-003` through `M8-010`, and `R-820` through
+  `R-810` are `COMPLETE`; `M8-003` is `IN_PROGRESS`; `M8-004` through `M8-010`, and `R-820` through
   `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is clean and aligned with `origin/master` at
-  the pending R-810-closure commit; no M8 branch/worktree exists. Historical non-M8
+  pushed commit `492d9c1`; no M8 branch/worktree exists. Historical non-M8
   worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -683,12 +685,12 @@ evidence, and the next action is dependency-safe.
   conversion has occurred.
 - **M8 active/interrupted work:** M8-002 is complete and pushed at `12f12c4`;
   R-810 was approved by the fresh read-only reviewer with no findings and is
-  recorded for closure. No review agent remains active, no migration
-  branch/worktree exists, and historical non-M8 worktrees were preserved
-  untouched.
-- **Exact next action:** commit and push this R-810 closure, then begin
-  `M8-003` by reconciling the provider, theme, token, and structural primitive
-  contracts before editing production UI.
+  closed at `492d9c1`. M8-003 is now owned by the primary agent. No review
+  agent, migration branch, or worktree is active, and historical non-M8
+  worktrees were preserved untouched.
+- **Exact next action:** implement and test the facade-owned provider, semantic
+  Mantine theme mapping, and structural wrappers; keep feature markup/imports
+  unchanged and record the task evidence before requesting R-820.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

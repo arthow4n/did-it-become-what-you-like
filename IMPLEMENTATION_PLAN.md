@@ -631,6 +631,24 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   overlay/feedback facade implementations, their tests, provider composition,
   and notification call sites. Keep feature imports on the facade and use
   Mantine Notifications only through the provider-owned integration boundary.
+- **Overlay slice evidence (2026-08-27):** The first dependency-safe slice is
+  pushed at `76c5235`. `Disclosure` now uses Mantine Accordion;
+  `AdaptiveDialog` uses Mantine Modal/Drawer with the existing responsive
+  facade contract; and `Popover`, `Menu`, and `Tooltip` use their public
+  Mantine counterparts. The slice preserves controlled disclosure/dialog
+  callbacks, keyboard opening, focus restoration, portal layering, immediate
+  transitions, and facade-only feature imports. The focused contract test was
+  added without duplicating Mantine's upstream primitive accessibility tests.
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  --related=src/design-system/components.tsx` passed (100 tests, 0 failures),
+  `deno fmt --check` passed for the three changed files, `deno task check`,
+  `deno task lint` (207 files), and `git diff --check` all passed. The
+  repository is clean and `master` is aligned with `origin/master` at
+  `76c5235`.
+- **Exact next action:** inventory and migrate the provider-owned Mantine
+  Notifications host plus `Banner`, `InlineNotice`, `Toast`, and
+  `StatusMessage`; then add only the facade-boundary tests needed to prove
+  live-region, dismiss, and notification integration contracts.
 - **Focused verification:** affected tests and a targeted overlay/focus smoke
   only when the changed behavior is unsafe to defer to `R-830`.
 - **Acceptance:** no focus loss, background interaction, clipped portal,
@@ -887,10 +905,10 @@ evidence, and the next action is dependency-safe.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `221f76e` (`docs(plan): record gallery money containment`); R-820 is approved
-  and closed, and this plan update is the only current uncommitted change before
-  starting M8-005. No M8 branch/worktree or review agent is active. Historical
-  non-M8 worktrees remain present and were preserved untouched.
+  `76c5235` (`feat(migration): move overlay facades to Mantine`); R-820 is
+  approved and closed, and the first M8-005 overlay slice is complete. No M8
+  branch/worktree or review agent is active. Historical non-M8 worktrees remain
+  present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -913,12 +931,12 @@ evidence, and the next action is dependency-safe.
   above; the latest R-820 closure review is complete at `447b8e9` with the
   single finding resolved by `2806236`; R-820 remains owned by the primary
   agent; the latest closure review approved R-820 at `221f76e` with all
-  evidence recorded above; M8-005 is now owned by the primary agent; no review
-  agent, migration branch, or M8 worktree is active; historical non-M8
-  worktrees were preserved untouched.
-- **Exact next action:** inventory M8-005 overlay/feedback exports, consumers,
-  tests, provider composition, notification call sites, and locked contracts;
-  then implement the first dependency-safe slice and record its evidence.
+  evidence recorded above; M8-005 is now owned by the primary agent; the
+  overlay slice is pushed at `76c5235`; no review agent, migration branch, or
+  M8 worktree is active; historical non-M8 worktrees were preserved untouched.
+- **Exact next action:** add the provider-owned Mantine Notifications host and
+  migrate the Banner/InlineNotice/Toast/StatusMessage feedback boundary, then
+  run its focused tests and record the exact evidence here.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

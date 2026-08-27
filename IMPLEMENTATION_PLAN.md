@@ -336,31 +336,38 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-003 — Introduce provider, theme mapping, and structural primitives
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on approved `R-810`.
+- **Status/dependencies:** `COMPLETE`; depends on approved `R-810`.
 - **Owner:** primary agent; production edits are isolated to the facade,
   provider composition, app entry, design-system fixtures, and this plan.
 - **Owned scope:** app provider composition and design-system tokens/layout/
   typography primitives only.
-- [ ] Add one facade-owned provider entry and map After Midnight color,
+- [x] Add one facade-owned provider entry and map After Midnight color,
       typography, spacing, radius, focus, control-height, z-index, and `0ms`
       motion contracts into Mantine defaults while preserving semantic CSS
       tokens for product styles.
-- [ ] Convert `ContentContainer`, `Stack`, `Inline`, `ResponsiveGrid`, `Text`,
+- [x] Convert `ContentContainer`, `Stack`, `Inline`, `ResponsiveGrid`, `Text`,
       `Heading`, `Card`, `Section`, `Divider`, `Icon`, `Badge`, `Chip`, and
       `StatusDot` to Mantine-backed wrappers where the matrix specifies.
-- [ ] Preserve intrinsic/full-width rules, money nowrap/tabular behavior,
+- [x] Preserve intrinsic/full-width rules, money nowrap/tabular behavior,
       long-text flex protection, compact grids, and semantic HTML.
-- [ ] Keep feature markup and imports unchanged unless a pre-recorded contract
+- [x] Keep feature markup and imports unchanged unless a pre-recorded contract
       exception was approved at `R-810`.
-- **Focused verification:** affected tests, changed-file format/lint, and a
-  targeted gallery smoke only if a structural behavior cannot safely wait for
-  `R-820`.
+- **Focused verification:** `deno task check` passed; `deno task lint` passed
+  (207 files); `deno task fmt:check` passed (223 files);
+  `deno task test:affected` passed (109 tests); `deno task test:component`
+  passed (104 tests); `deno task build` passed (4,109 app modules, 261.17 kB
+  CSS / 1,095.05 kB JS, plus the toolchain build); `deno task gallery` passed
+  (3,904 modules, 252.57 kB CSS / 1,118.03 kB JS); the facade-boundary search
+  found no Mantine or React Aria imports in `src/app/**` or `src/features/**`;
+  and `git diff --check` passed.
 - **Acceptance:** structural gallery fixtures match approved semantics with no
   duplicate provider, palette leak, transition, or layout regression.
 
 #### M8-004 — Migrate buttons and field controls
 
-- **Status/dependencies:** `PENDING`; depends on `M8-003`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-003`.
+- **Owner:** primary agent; use the existing facade contract and Mantine's
+  public APIs only.
 - **Owned scope:** facade button/link/action and input/choice components plus
   their tests and gallery fixtures.
 - [ ] Convert `Button`, `IconButton`, `LinkButton`, and `ActionCard`,
@@ -671,34 +678,35 @@ evidence, and the next action is dependency-safe.
 ## Current Checkpoint
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`, and
-  `R-810` are `COMPLETE`; `M8-003` is `IN_PROGRESS`; `M8-004` through `M8-010`, and `R-820` through
-  `R-850` remain `PENDING`.
+  `R-810` are `COMPLETE`; `M8-003` is `COMPLETE`; `M8-004` is `IN_PROGRESS`;
+  `M8-005` through `M8-010`, and `R-820` through `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `e1cc776` (`docs(plan): require Mantine notifications`) with the expected
-  uncommitted M8-003 provider, styles, structural facade, token, gallery, and
-  component-harness changes in the primary worktree. No M8 branch/worktree or
-  review agent is active. Historical non-M8 worktrees remain present and were
-  preserved untouched.
+  `18bac20` (`feat(migration): add Mantine provider and structural facade`);
+  the plan is being updated to open M8-004, and no implementation changes are
+  currently uncommitted. No M8 branch/worktree or review agent is active.
+  Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
   artifact inspection, frozen audit, and diff check). M8-001 evidence is
   recorded above for pushed commit `3726591`. M8-002's extended compatibility
   evidence is green, including the preferred date/time/file candidates,
-  Dropzone, builds, artifact verifier, affected tests, and Chromium proof. The
-  app still uses the pre-M8 React Aria facade; no production provider or facade
-  conversion has occurred.
+  Dropzone, builds, artifact verifier, affected tests, and Chromium proof. M8-003
+  is now pushed and green: its provider, style entry, structural facade
+  wrappers, token layers, gallery, and component harness passed the recorded
+  checks above.
 - **M8 active/interrupted work:** M8-002 is complete and pushed at `12f12c4`;
   R-810 was approved by the fresh read-only reviewer with no findings and is
-  closed at `492d9c1`. M8-003 remains owned by the primary agent with its
-  implementation changes uncommitted. No review agent, migration branch, or
-  M8 worktree is active; historical non-M8 worktrees were preserved untouched.
-- **Exact next action:** finish M8-003 validation, commit and push the
-  provider/structural facade batch, then begin M8-004 controls while preserving
-  the facade-only boundary and the focused non-duplicating test policy.
+  closed at `492d9c1`. M8-003 is complete and pushed at `18bac20`; M8-004 is
+  now owned by the primary agent. No review agent, migration branch, or M8
+  worktree is active; historical non-M8 worktrees were preserved untouched.
+- **Exact next action:** inventory M8-004's facade consumers and contracts,
+  then migrate buttons and field controls behind the facade, prioritizing
+  Mantine `DateInput`, `TimeInput`, `FileInput`/Dropzone and focused
+  non-duplicating contract tests.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

@@ -739,7 +739,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### R-830 — Overlay and reusable-pattern review checkpoint
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-005`, `M8-006`.
+- **Status/dependencies:** `COMPLETE`; depends on `M8-005`, `M8-006`.
 - **Review attempt (2026-08-27):** Fresh read-only reviewer `01a041a5-d6f1-7762-9956-103806fb9f75`
   (`Sartre`) audited `HEAD e92c7f1` against the recorded pre-M8-005 base
   `12f12c4` and returned `BLOCK`. The review found severity-2 adaptive-dialog
@@ -782,22 +782,33 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   build` passed with only the existing chunk-size warning, `deno task fmt:check`
   checked 223 files, `deno task lint` checked 207 files, `deno task check`,
   and `git diff --check` passed. A fresh closure reviewer is still required.
-- [ ] Fresh read-only reviewer audits overlay safety, focus, live regions,
+- **Closure approval (2026-08-27):** Fresh read-only reviewer
+  `01a041d2-2599-7592-ad6d-811184042281` (`Peirce`) audited pushed `35744b5`
+  against `12f12c4` and returned `APPROVE` with no unresolved severity 1–3
+  findings. The reviewer recorded 120 affected tests passed, gallery/build/
+  check/lint/format/diff checks green, no facade-boundary leakage, and browser
+  passes at 320x568, 390x844, and 1280x800. At 320px, the enabled receipt
+  disclosure action was 48px high, inside `StickyActionBar`, outside bottom
+  navigation, and a semantic click advanced correctly. The approved E2E
+  command remained unavailable only because the existing port-5173 dev server
+  was occupied; the known production chunk warning is non-blocking. Generic
+  Mantine primitive behavior remains upstream-owned and was not duplicated.
+- [x] Fresh read-only reviewer audits overlay safety, focus, live regions,
       navigation, safe areas, z-index, form/filter state, reduced motion,
       responsive behavior, and contract leakage.
-- [ ] From the recorded pre-`M8-005` base commit, run affected tests once with
+- [x] From the recorded pre-`M8-005` base commit, run affected tests once with
       `deno test --allow-read --allow-write --allow-run --allow-env
       --changed=<recorded-pre-M8-005-base-commit>`,
       then run one gallery accessibility check, one production build, only
       affected approved E2E journeys, and one overlay/shell agent-browser matrix
       for the combined `M8-005`/`M8-006` batch.
-- [ ] Primary agent resolves severity 1–3 findings and records a pushed green
+- [x] Primary agent resolves severity 1–3 findings and records a pushed green
       closure before domain composites.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-007 — Recompose expense, organization, and manual-entry components
 
-- **Status/dependencies:** `PENDING`; depends on approved `R-830`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on approved `R-830`.
 - **Owned scope:** expense/project/category/manual-entry design-system
   composites and affected feature presentation only; no actor/domain changes.
 - [ ] Recompose `PeriodPicker`, `ProjectPicker`, `CurrencyPicker`,
@@ -1003,15 +1014,16 @@ evidence, and the next action is dependency-safe.
 ## Current Checkpoint
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
-  `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, and `M8-006` are
-  `COMPLETE`; `R-830` is `IN_PROGRESS`; `M8-007` through `M8-010`, and
+  `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
+  `COMPLETE`; `M8-007` is `IN_PROGRESS`; `M8-008` through `M8-010`, and
   `R-840` through `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
   `c3aa34a` (`fix(receipt): keep disclosure action above navigation`), with the
-  implementation batch and R-830 remediations pushed;
+  implementation batch and R-830 remediations pushed; R-830 is approved and
+  closed, and M8-007 is the sole active task;
   R-820 is
   approved and closed, M8-005 and M8-006 are complete, and R-830 is active
   because its first review returned `BLOCK`. No M8 branch/worktree or review
@@ -1043,13 +1055,13 @@ evidence, and the next action is dependency-safe.
   `76c5235`, notification feedback at `bd5cc90`, and remaining feedback at
   `6c904fc`; M8-006 is pushed through shell `7bb9e87`, list/form/status
   `f3f2a0b`, and final sticky-action `a5d4b19`; the first R-830 review by
-  `Sartre` and the first closure review by `Faraday` are closed with their
-  findings resolved or awaiting closure evidence as recorded above; no review
-  agent, migration branch, or M8 worktree is active; historical non-M8
-  worktrees were preserved untouched.
-- **Exact next action:** invoke one fresh read-only R-830 closure reviewer
-  against the latest `c3aa34a` batch and wait for its complete evidence/report
-  before opening M8-007.
+  `Sartre`, `Faraday`, and `Peirce` are closed with R-830 approved and all
+  severity-1–3 findings resolved; no review agent, migration branch, or M8
+  worktree is active; historical non-M8 worktrees were preserved untouched.
+- **Exact next action:** inventory M8-007 consumers/tests and implement the
+  first dependency-ready expense/manual-entry composite slice, beginning with
+  the controlled date/time, project/currency/merchant inputs and focused
+  facade-boundary regressions.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

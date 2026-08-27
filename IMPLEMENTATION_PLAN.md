@@ -510,6 +510,16 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   concurrent global DOM harness cleanup (`component-harness.tsx:14`).
   FilterBar measured contained at 940px desktop, 302px at 390px, and 232px at
   320px; the remaining page overflow was isolated to ExpenseRow.
+- **Fifth-fix evidence:** The remaining blockers are fixed and pushed at
+  `5f765d1`. ActionCard and ExpenseRow Mantine buttons now override the
+  primitive fixed height/overflow so long content grows and wraps; list/gallery
+  tracks are explicitly shrinkable; SecretField handles Enter on its keyboard
+  reachable toggle; and `withComponentHarness` serializes shared DOM globals
+  and drains scheduled work before restoring them. `deno test
+  --allow-read --allow-write --allow-run --allow-env --changed=12f12c4` passed
+  (113 tests, 0 failures), `deno task check` passed, `deno task lint` passed
+  (207 files), targeted `deno fmt --check` passed (4 files), and `git
+  diff --check` passed.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
@@ -811,10 +821,10 @@ evidence, and the next action is dependency-safe.
   R-820 remains owned by the primary agent;
   no review agent, migration branch, or M8 worktree is active; historical
   non-M8 worktrees were preserved untouched.
-- **Exact next action:** fix the remaining ExpenseRow overflow/clipping,
-  ActionCard height, SecretField Enter activation, and shared component-harness
-  race; rerun related tests and the complete R-820 matrix, then invoke another
-  fresh read-only closure reviewer before opening M8-005.
+- **Exact next action:** invoke another fresh read-only R-820 closure reviewer,
+  have it rerun the combined M8-003/M8-004 affected, gallery, build, and
+  three-viewport browser matrix from the current pushed HEAD, and record
+  approval or any remaining severity 1–3 finding before opening M8-005.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

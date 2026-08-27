@@ -1120,6 +1120,15 @@
     color: var(--color-on-accent);
   }
 
+  @media (max-width: 719px) {
+    .ds-sticky-action-bar {
+      bottom: calc(
+        var(--control-height) + var(--space-2) +
+        max(var(--space-2), env(safe-area-inset-bottom, 0px)) + 1px
+      );
+    }
+  }
+
   @media (max-width: 359px) {
     .ds-navigation__item {
       padding-inline: var(--space-1);

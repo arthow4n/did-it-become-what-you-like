@@ -257,8 +257,9 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   src/design-system/public-api.test.ts` and `deno lint
   src/design-system/public-api.test.ts` passed; the facade boundary search
   found no component-library imports in `src/features/**` or `src/app/**`;
-  the export scan found all 151 public declarations named in
-  `DESIGN_SYSTEM.md`; and `git diff --check` passed.
+  the export scan found all 151 component declarations named in
+  `DESIGN_SYSTEM.md`, with the two provider exports documented in the same
+  matrix; and `git diff --check` passed.
 - **Acceptance:** governance is durable outside this plan, the migration matrix
   has no unclassified export, and no runtime/dependency/generated-asset/
   styling change occurred.

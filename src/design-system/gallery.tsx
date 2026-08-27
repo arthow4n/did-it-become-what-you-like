@@ -519,6 +519,7 @@ export function DesignSystemGallery() {
               <div
                 className="ds-gallery__money-example"
                 aria-label="Large money example"
+                role="group"
                 tabIndex={0}
               >
                 <MoneyText

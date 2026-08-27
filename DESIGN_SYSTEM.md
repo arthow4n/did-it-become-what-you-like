@@ -365,7 +365,7 @@ flexbox abuse, all components and screens must follow these rules:
 | `TextField`, `TextArea`, `SearchField`, `SecretField`   | Common text entry, clear/reveal behavior, validation                                    |
 | `DecimalField`, `MoneyField`                            | Decimal-string quantity/price and signed-domain money input; direction remains separate |
 | `NativeDateField`, `NativeTimeField`, `FileField`       | Approved platform inputs inside the Field contract                                      |
-| `SelectField`, `ComboBoxField`                          | Short selection and type-ahead long-list selection                                      |
+| `SelectField`                                           | Short selection and type-ahead long-list selection                                      |
 | `ColorChoiceField`                                      | Optional labeled category color with accessible presets/custom value                    |
 | `Checkbox`, `RadioGroup`, `Switch`, `SegmentedControl`  | Boolean, exclusive, and compact mode selection                                          |
 | `Chip`, `Badge`, `StatusDot`                            | Filters and status supplements; never color-only                                        |
@@ -386,11 +386,14 @@ pending control keeps its label or an equally descriptive accessible name.
 ## M8-001 facade inventory and migration matrix
 
 The public barrel is `src/design-system/index.ts`; it currently re-exports all
-public symbols from `src/design-system/components.tsx`. The matrix below is
-the contract inventory for M8-001. A row may group a component with its
-publicly exported prop/view type, but every public symbol is named. The target
-column names only public Mantine or browser primitives; it does not authorize
-their implementation before the ordered task and review gate.
+public symbols from `src/design-system/components.tsx` and
+`src/design-system/provider.tsx`. The components module has 151 public
+declarations and the provider module adds its two documented provider exports.
+The matrix below is the contract inventory for M8-001. A row may group a
+component with its publicly exported prop/view type, but every public symbol is
+named. The target column names only public Mantine or browser primitives; it
+does not authorize their implementation before the ordered task and review
+gate.
 
 | Public exports | Class | Pre-M8 backing | M8 target primitive/composition |
 | --- | --- | --- | --- |
@@ -411,6 +414,7 @@ their implementation before the ordered task and review gate.
 | `LinkButtonProps`, `LinkButton` | direct Mantine wrapper | semantic anchor and CSS | Mantine `Anchor` with facade variant styling |
 | `ActionCardProps`, `ActionCard` | small facade composition | React Aria `Button` with semantic content | Mantine `UnstyledButton`/`Card` composition |
 | `FieldProps`, `Field` | small facade composition | semantic label/description/error wrapper | Mantine `Input.Wrapper`, `Input.Label`, `Input.Description`, and `Input.Error` |
+| `DesignSystemProviderProps`, `DesignSystemProvider` | provider boundary | no pre-M8 provider contract | Mantine `MantineProvider` plus notification host, semantic theme mapping, and dark-scheme lock |
 | `TextField`, `TextAreaProps`, `TextArea` | direct Mantine wrapper | React Aria text field/input primitives | Mantine `TextInput` and `Textarea` behind the shared field contract |
 | `SearchFieldProps`, `SearchField` | small facade composition | React Aria search field, input, and clear button | Mantine `TextInput`/`Autocomplete` plus facade clear action |
 | `SecretFieldProps`, `SecretField` | direct Mantine wrapper | React Aria text field/input plus local reveal state | Mantine `PasswordInput`, preserving the reveal contract |
@@ -464,18 +468,21 @@ their implementation before the ordered task and review gate.
 
 ### Direct facade consumers
 
-There are twelve direct import sites: nine production feature modules, one
-feature test, and the two design-system verification modules. The application
-has no direct design-system import from `src/app/**`; `src/app/main.tsx` only
-loads the semantic token stylesheet. This table records the complete consumer
-set and the imported facade symbols; symbols not named in a consumer are still
-public API surface and are covered by the export matrix above.
+There are twelve direct imports from the public barrel: ten production feature
+modules, one feature test, and the public API contract test. The gallery and
+component behavior test intentionally import `components.tsx` directly as
+owned facade fixtures. The application root intentionally imports the
+facade-owned provider from `provider.tsx` and the facade style entry; it does
+not import Mantine or a library-specific styling API. Symbols not named in a
+consumer are still public API surface and are covered by the export matrix
+above.
 
 | Consumer | Imported facade symbols |
 | --- | --- |
 | `src/features/conflict-import-ui/conflict-import-ui.tsx` | `Badge`, `Banner`, `Button`, `Card`, `Checkbox`, `ContentContainer`, `DefinitionList`, `Divider`, `EmptyState`, `ErrorState`, `FileField`, `Heading`, `Inline`, `InlineNotice`, `List`, `ListRow`, `PageHeader`, `Progress`, `RadioGroup`, `Section`, `Stack`, `StatusMessage`, `Text`, `TextArea`, `WorkflowProgress` |
 | `src/features/destruction-ui.tsx` | `AdaptiveDialog`, `Badge`, `Button`, `Checkbox`, `ContentContainer`, `DefinitionList`, `FormActions`, `Heading`, `Inline`, `InlineNotice`, `List`, `ListRow`, `PageHeader`, `Stack`, `Text`, `WorkflowProgress` |
 | `src/features/local-ui.tsx` | `ActionCard`, `ActiveFilterChips`, `AdaptiveDialog`, `AppFrame`, `Badge`, `Banner`, `Button`, `Card`, `CategoryBreakdown`, `ColorChoiceField`, `ConfirmDialog`, `ContentContainer`, `CurrencyPicker`, `DefaultNavigation`, `DefinitionList`, `DeleteAndReassign`, `Disclosure`, `DraftStatus`, `EmptyState`, `ErrorSummary`, `ExpenseForm`, `ExpenseList`, `FilterBar`, `FilterSheet`, `FormActions`, `Heading`, `Icon`, `IconButton`, `Inline`, `InlineNotice`, `List`, `ListRow`, `MerchantPicker`, `MoneyField`, `MoneySummary`, `NativeDateField`, `NativeTimeField`, `PageHeader`, `PeriodPicker`, `ProjectPicker`, `ReceiptGroup`, `SearchField`, `SegmentedControl`, `SelectField`, `Skeleton`, `Stack`, `Text`, `TextArea`, `TextField`, `Toast` |
+| `src/features/sync-portability-runtime.tsx` | `Stack` |
 | `src/features/receipt-ui.tsx` | `AdaptiveDialog`, `Button`, `Card`, `ContentContainer`, `ErrorState`, `GeminiConfigurationTest`, `GeminiQuickSetup`, `Heading`, `Inline`, `InlineNotice`, `ModelPicker`, `NativeDateField`, `PageHeader`, `ReceiptLineCard`, `ReceiptLineEditor`, `ReceiptMetadata`, `ReceiptReconciliation`, `ReceiptSourcePicker`, `Stack`, `StatusPanel`, `StickyActionBar`, `Switch`, `Text`, `TextField`, `WorkflowProgress` |
 | `src/features/settings-pwa.tsx` | `Button`, `Card`, `ContentContainer`, `DefinitionList`, `FormActions`, `Heading`, `InlineNotice`, `LinkButton`, `List`, `ListRow`, `NativeTimeField`, `PageHeader`, `Stack`, `StatusMessage`, `Text` |
 | `src/features/sync-ui/global-status.tsx` | `Button`, `Inline`, `StatusDot`, `Text` |
@@ -483,6 +490,9 @@ public API surface and are covered by the export matrix above.
 | `src/features/sync-ui/sync-account-panel.tsx` | `Button`, `Card`, `ConfirmDialog`, `ContentContainer`, `DefinitionList`, `ErrorState`, `Heading`, `Icon`, `Inline`, `InlineNotice`, `PageHeader`, `Progress`, `Section`, `Stack`, `StatusDot`, `StatusPanel`, `Switch`, `Text` |
 | `src/features/sync-ui/sync-status.ts` | type `Tone` |
 | `src/features/receipt-ui.test.tsx` | `GeminiQuickSetup`, `ModelPicker`, `ReceiptLineCard`, `ReceiptSourcePicker` |
+| `src/design-system/public-api.test.ts` | Public barrel representative type and value exports |
+| `src/app/main.tsx` | `DesignSystemProvider` and facade style entry; application-root provider boundary |
+| `src/test-support/component-harness.tsx` | `DesignSystemProvider`; isolated facade test provider boundary |
 | `src/design-system/gallery.tsx` | Gallery fixtures import the primitive, pattern, and composite symbols needed to exercise the visual contract; see its import block for the exhaustive fixture list. |
 | `src/design-system/design-system.test.tsx` | `AdaptiveDialog`, `Button`, `Checkbox`, `ColorChoiceField`, `CurrencyPicker`, `DefinitionList`, `DeleteAndReassign`, `ExpenseRow`, `FileField`, `formatMoney`, `MerchantPicker`, `MoneySummary`, `MoneyText`, `NativeDateField`, `NativeTimeField`, `PageHeader`, `PeriodPicker`, `Progress`, `SegmentedControl`, `TextField` |
 
@@ -586,7 +596,7 @@ an approved task and review gate say otherwise.
 | First use                     | `AppFrame`, `ContentContainer`, `ActionCard`, `InlineNotice`                                                                                             |
 | 1 Expenses                    | `PageHeader`, `ProjectPicker`, `GlobalStatus`, `Banner`, `PeriodPicker`, `FilterBar`, `MoneySummary`, `CategoryBreakdown`, `ExpenseList`, `ReceiptGroup` |
 | 2 Add Choice                  | `AdaptiveDialog`, two `ActionCard`s, `InlineNotice`                                                                                                      |
-| 3 Manual/Create/Edit          | `PageHeader`, `FormLayout`, `SegmentedControl`, `MoneyField`, `ComboBoxField`, date/time facade fields, `DraftStatus`, `FormActions`, `Toast`            |
+| 3 Manual/Create/Edit          | `PageHeader`, `FormLayout`, `SegmentedControl`, `MoneyField`, `MerchantPicker`, `SelectField`, date/time facade fields, `DraftStatus`, `FormActions`, `Toast` |
 | 4 Scan Receipt                | `PageHeader`, `ReceiptSourcePicker`, `StatusPanel`, `InlineNotice`, `GeminiQuickSetup`, `WorkflowProgress`, `StickyActionBar`                            |
 | 5 Receipt Review              | `PageHeader`, `ReceiptMetadata`, `ReceiptReconciliation`, `ReceiptLineCard`, `ReceiptLineEditor`, `InlineNotice`, `StickyActionBar`                      |
 | 6 Organize                    | `PageHeader`, `Section`, `ActionCard`, preview `ListRow`s                                                                                                |

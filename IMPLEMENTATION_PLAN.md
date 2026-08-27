@@ -449,6 +449,21 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   still reports pre-existing formatting drift in `AGENTS.md`,
   `IMPLEMENTATION_PLAN.md`, and `DESIGN_SYSTEM.md`; those unrelated document
   rewrites were not included in the implementation commit.
+- **Closure review evidence (2026-08-27):** Fresh read-only reviewer audited
+  `HEAD a74da1f` against `12f12c4` and confirmed the original ten findings are
+  resolved. The required affected run passed (113 tests), `deno task
+  a11y:gallery` passed at all three viewports, `deno task build` passed, and
+  `git diff --check 12f12c4..HEAD` passed. Browser checks passed for dialog
+  Enter opening, date default, file rejection feedback, SearchField clear,
+  keyboard secret reveal, ActionCard sizing, and zero segmented transition
+  duration at 1280x800, 390x844, and 320x568. The gate remains **BLOCKED** on
+  two new S2 findings: long `ExpenseRow` content creates document widths of
+  1843px at 1280px and 1113px at both narrow viewports; and `SwitchProps`
+  declares `isRequired`, `isInvalid`, and `validationBehavior` without mapping
+  or removing them in the Mantine adapter. Evidence points to the gallery
+  fixture at `gallery.tsx:83-84`/`477-492`, the production row at
+  `components.tsx:2751-2777`, row constraints at `tokens.css:800-817`, and
+  the switch adapter at `components.tsx:1444-1471`.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
@@ -749,10 +764,9 @@ evidence, and the next action is dependency-safe.
   complete and pushed at `eaa02d7`; R-820 remains owned by the primary agent;
   no review agent, migration branch, or M8 worktree is active; historical
   non-M8 worktrees were preserved untouched.
-- **Exact next action:** invoke one fresh read-only R-820 closure reviewer, have
-  it rerun the combined M8-003/M8-004 affected, gallery, build, and
-  three-viewport browser matrix from base `12f12c4`, and record approval or any
-  remaining severity 1–3 finding before opening M8-005.
+- **Exact next action:** fix the two remaining R-820 S2 findings, rerun the
+  affected controls and targeted layout/semantics checks, commit and push, then
+  invoke a fresh read-only R-820 closure reviewer before opening M8-005.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

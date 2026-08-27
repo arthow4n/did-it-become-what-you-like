@@ -16,15 +16,9 @@ import type {
   MouseEvent,
   ReactElement,
   ReactNode,
+  Ref,
 } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  CircleAlert,
-  CircleCheck,
-  Plus,
-  X,
-} from "lucide-react";
+import { ChevronRight, CircleAlert, CircleCheck, Plus, X } from "lucide-react";
 import {
   Accordion as MantineAccordion,
   ActionIcon as MantineActionIcon,
@@ -69,15 +63,6 @@ import {
 import { Dropzone as MantineDropzone } from "@mantine/dropzone";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import {
-  Button as AriaButton,
-  ComboBox as AriaComboBox,
-  Input as AriaInput,
-  Label as AriaLabel,
-  ListBox as AriaListBox,
-  ListBoxItem as AriaListBoxItem,
-  Popover as AriaPopover,
-} from "react-aria-components";
 export type Space = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export type Tone = "neutral" | "positive" | "warning" | "danger" | "info";
 export type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
@@ -160,6 +145,8 @@ export type StackProps = {
   className?: string;
   as?: ElementType;
   style?: CSSProperties;
+  ref?: Ref<HTMLDivElement>;
+  role?: ComponentProps<"div">["role"];
 };
 
 function mantineSpacing(gap: Space): string {
@@ -172,10 +159,14 @@ export function Stack({
   className,
   as: Tag = "div",
   style,
+  ref,
+  role,
 }: StackProps) {
   return (
     <MantineStack
       component={Tag as "div"}
+      ref={ref}
+      role={role}
       gap={mantineSpacing(gap)}
       className={cx("ds-stack", className)}
       style={{ ...style, ...gapStyle(gap) }}
@@ -1146,6 +1137,8 @@ export type FileFieldProps =
     label: ReactNode;
     description?: ReactNode;
     onReject?: (files: File[]) => void;
+    inputRef?: Ref<HTMLInputElement>;
+    openRef?: Ref<() => void | undefined>;
     className?: string;
   };
 
@@ -1157,6 +1150,8 @@ export function FileField(
     id,
     onChange,
     onReject,
+    inputRef,
+    openRef,
     accept,
     capture,
     multiple,
@@ -1179,6 +1174,7 @@ export function FileField(
       className={className}
     >
       <MantineDropzone
+        openRef={openRef}
         accept={dropzoneAccept}
         multiple={multiple}
         disabled={disabled}
@@ -1193,12 +1189,13 @@ export function FileField(
         className="ds-file-dropzone"
         inputProps={{
           ...props,
+          ref: inputRef,
           id: controlId,
           accept,
           capture,
           multiple,
           disabled,
-        }}
+        } as ComponentProps<"input">}
       >
         <MantineDropzone.Accept>
           <span className="ds-dropzone__prompt">
@@ -1246,6 +1243,7 @@ export type SelectFieldProps = {
   placeholder?: string;
   autoFocus?: boolean;
   searchable?: boolean;
+  renderOption?: (option: SelectOption) => ReactNode;
   className?: string;
 };
 
@@ -1270,6 +1268,7 @@ export function SelectField({
   onOpenChange: _onOpenChange,
   slot,
   searchable = false,
+  renderOption,
   ...props
 }: SelectFieldProps) {
   const mantineProps = props as unknown as ComponentProps<typeof MantineSelect>;
@@ -1289,6 +1288,20 @@ export function SelectField({
       value={selectedValue}
       defaultValue={defaultValue}
       searchable={searchable}
+      renderOption={renderOption
+        ? ({ option }) => {
+          const selected = options.find((candidate) =>
+            candidate.id === String(option.value)
+          );
+          return renderOption(
+            selected ?? {
+              id: String(option.value),
+              label: option.label,
+              disabled: option.disabled,
+            },
+          );
+        }
+        : undefined}
       onChange={(nextValue) => {
         if (nextValue !== null) {
           onValueChange?.(String(nextValue));
@@ -3325,50 +3338,32 @@ export function ModelPicker(
   },
 ) {
   return (
-    <AriaComboBox
-      selectedKey={value}
-      onSelectionChange={(next) => {
-        if (next !== null) onValueChange?.(String(next));
-      }}
+    <SelectField
+      label="Model"
+      options={options.map((option) => ({
+        id: option.id,
+        label: option.label,
+        disabled: option.disabled || option.status === "Incompatible",
+      }))}
+      value={value}
+      onValueChange={onValueChange}
       isDisabled={disabled}
-      className="ds-field ds-search-field ds-model-picker"
-      allowsEmptyCollection
-    >
-      <AriaLabel className="ds-field__label">Model</AriaLabel>
-      <AriaInput
-        className="ds-field-control"
-        placeholder="Search models"
-      />
-      <AriaButton
-        className="ds-icon-button ds-search-field__clear"
-        aria-label="Show model options"
-      >
-        <Icon>
-          <ChevronDown />
-        </Icon>
-      </AriaButton>
-      <AriaPopover className="ds-popover">
-        <AriaListBox>
-          {options.map((option) => (
-            <AriaListBoxItem
-              key={option.id}
-              id={option.id}
-              textValue={option.label}
-              isDisabled={option.disabled || option.status === "Incompatible"}
-              className="ds-menu-item"
-            >
-              <Stack gap={1}>
-                <span>{option.label}</span>
-                <Text size="label" tone="secondary">
-                  {option.status}
-                  {option.reason ? ` · ${option.reason}` : ""}
-                </Text>
-              </Stack>
-            </AriaListBoxItem>
-          ))}
-        </AriaListBox>
-      </AriaPopover>
-    </AriaComboBox>
+      searchable
+      placeholder="Search models"
+      className="ds-model-picker"
+      renderOption={(option) => {
+        const model = options.find((candidate) => candidate.id === option.id);
+        return (
+          <Stack gap={1}>
+            <span>{option.label}</span>
+            <Text size="label" tone="secondary">
+              {model?.status ?? "Unknown"}
+              {model?.reason ? ` · ${model.reason}` : ""}
+            </Text>
+          </Stack>
+        );
+      }}
+    />
   );
 }
 

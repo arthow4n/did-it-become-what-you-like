@@ -1,4 +1,10 @@
-import { Button, Inline, StatusDot, Text } from "../../design-system/index.ts";
+import {
+  Button,
+  Inline,
+  Stack,
+  StatusDot,
+  Text,
+} from "../../design-system/index.ts";
 import { syncStatusCopy } from "./sync-status.ts";
 import type { SyncConnectionViewModel } from "./types.ts";
 
@@ -14,7 +20,7 @@ export function GlobalStatus({ view, onOpenSync }: GlobalStatusProps) {
     ? "Open Google Drive synchronization"
     : "Open synchronization details";
   return (
-    <div className="sync-ui-global-status" role="status">
+    <Stack gap={1} className="sync-ui-global-status" role="status">
       <Inline gap={2} justify="space-between">
         <Inline gap={2}>
           <StatusDot tone={copy.tone}>{copy.label}</StatusDot>
@@ -32,6 +38,6 @@ export function GlobalStatus({ view, onOpenSync }: GlobalStatusProps) {
           )
           : null}
       </Inline>
-    </div>
+    </Stack>
   );
 }

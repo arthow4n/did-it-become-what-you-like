@@ -52,11 +52,14 @@ import {
   Card,
   ContentContainer,
   ErrorState,
+  FileField,
   GeminiConfigurationTest,
   GeminiQuickSetup,
   Heading,
   Inline,
   InlineNotice,
+  List,
+  ListRow,
   ModelPicker,
   NativeDateField,
   PageHeader,
@@ -553,11 +556,14 @@ export function ReceiptScanScreen({
   const [modelsLoading, setModelsLoading] = useState(false);
   const [hasKey, setHasKey] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [captureMode, setCaptureMode] = useState(false);
+  const [filePickerRequest, setFilePickerRequest] = useState(0);
   const [pendingScan, setPendingScan] = useState(false);
   const [testState, setTestState] = useState<
     "idle" | "testing" | "passed" | "failed"
   >("idle");
   const sourceInputRef = useRef<HTMLInputElement>(null);
+  const sourceOpenRef = useRef<() => void | undefined>(null);
   const openSent = useRef(false);
   const reviewSent = useRef(false);
   const selectedImageRef = useRef(selectedImage);
@@ -612,6 +618,11 @@ export function ReceiptScanScreen({
     ) return;
     optionsRef.current?.scrollIntoView?.({ block: "start", behavior: "auto" });
   }, [optionsOpen]);
+
+  useEffect(() => {
+    if (filePickerRequest === 0) return;
+    sourceOpenRef.current?.();
+  }, [filePickerRequest]);
 
   useEffect(() => {
     let active = true;
@@ -699,12 +710,9 @@ export function ReceiptScanScreen({
   };
 
   const startFilePicker = (capture: boolean) => {
-    const input = sourceInputRef.current;
-    if (!input) return;
-    if (capture) input.setAttribute("capture", "environment");
-    else input.removeAttribute("capture");
-    input.value = "";
-    input.click();
+    if (sourceInputRef.current) sourceInputRef.current.value = "";
+    setCaptureMode(capture);
+    setFilePickerRequest((request) => request + 1);
   };
 
   const saveAndContinue = async () => {
@@ -975,12 +983,14 @@ export function ReceiptScanScreen({
 
   return (
     <ContentContainer size="form">
-      <input
-        ref={sourceInputRef}
-        type="file"
+      <FileField
+        label="Receipt image file"
         accept="image/jpeg,image/png,image/webp"
-        className="receipt-ui-file-input"
-        aria-label="Receipt image file"
+        capture={captureMode ? "environment" : undefined}
+        multiple={false}
+        className="receipt-ui-file-field"
+        inputRef={sourceInputRef}
+        openRef={sourceOpenRef}
         onChange={(event) => void chooseFile(event.currentTarget.files?.[0])}
       />
       <Stack gap={5}>
@@ -1035,7 +1045,11 @@ export function ReceiptScanScreen({
         />
         {optionsOpen
           ? (
-            <div ref={optionsRef} className="receipt-ui-scan-options">
+            <Stack
+              ref={optionsRef}
+              gap={1}
+              className="receipt-ui-scan-options"
+            >
               <Card as="section">
                 <Stack gap={4}>
                   <ModelPicker
@@ -1067,7 +1081,7 @@ export function ReceiptScanScreen({
                   </Button>
                 </Stack>
               </Card>
-            </div>
+            </Stack>
           )
           : null}
         {modelError
@@ -1158,7 +1172,7 @@ export function ReceiptScanScreen({
               }
             }}
           >
-            <div className="receipt-ui-quick-setup">
+            <Stack gap={1} className="receipt-ui-quick-setup">
               <GeminiQuickSetup
                 showHeading={false}
                 autoFocus
@@ -1171,7 +1185,7 @@ export function ReceiptScanScreen({
                 error={keyError}
                 busy={keyBusy}
               />
-            </div>
+            </Stack>
           </AdaptiveDialog>
         )
         : null}
@@ -1503,9 +1517,11 @@ export function ReceiptReviewScreen({
         {review.uncertainty.length
           ? (
             <InlineNotice tone="warning" title="AI review notes">
-              <ul>
-                {review.uncertainty.map((item) => <li key={item}>{item}</li>)}
-              </ul>
+              <List label="AI review notes">
+                {review.uncertainty.map((item) => (
+                  <ListRow key={item}>{item}</ListRow>
+                ))}
+              </List>
             </InlineNotice>
           )
           : null}

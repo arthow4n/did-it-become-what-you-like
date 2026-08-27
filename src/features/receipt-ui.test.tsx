@@ -232,9 +232,7 @@ Deno.test("receipt-ui keeps Needs test models selectable and evidence device-loc
       );
       const view = within(document.body);
       const modelInput = view.getByRole("combobox", { name: "Model" });
-      fireEvent.click(
-        view.getByRole("button", { name: /Show model options/ }),
-      );
+      fireEvent.click(modelInput);
       fireEvent.change(modelInput, { target: { value: "Synthetic" } });
       const option = view.getByRole("option", {
         name: /Synthetic model · Needs test/,

@@ -255,6 +255,8 @@ Deno.test("design-system field facades translate Mantine value and file events",
       let date = "";
       let time = "";
       let selectedFile = "";
+      let fileInput: HTMLInputElement | undefined;
+      let openFilePicker: (() => void | undefined) | undefined;
       render(
         createElement(
           "div",
@@ -274,6 +276,12 @@ Deno.test("design-system field facades translate Mantine value and file events",
           createElement(FileField, {
             label: "Receipt image",
             accept: "image/png",
+            inputRef: (input) => {
+              fileInput = input ?? undefined;
+            },
+            openRef: (open) => {
+              openFilePicker = open ?? undefined;
+            },
             onChange: (event) => {
               selectedFile = event.currentTarget.files?.[0]?.name ?? "";
             },
@@ -299,6 +307,8 @@ Deno.test("design-system field facades translate Mantine value and file events",
         assertEqual(date, "2026-08-27");
         assertEqual(time, "14:30");
         assertEqual(selectedFile, "receipt.png");
+        assert(fileInput, "FileField must expose its native input ref");
+        assert(openFilePicker, "FileField must expose its Dropzone open ref");
       });
     })
   );

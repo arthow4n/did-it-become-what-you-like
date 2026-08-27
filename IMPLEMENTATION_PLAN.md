@@ -1158,7 +1158,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### R-850 — Final independent Mantine migration review
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-010`.
+- **Status/dependencies:** `COMPLETE`; depends on `M8-010`.
 - **Fresh closure review evidence (2026-08-27):** Fresh read-only reviewer
   Newton (`01a04291-06c8-7940-bf67-a403c1ab173b`) audited pushed `HEAD
   669ec3d` and returned `BLOCK` with three findings: the checkpoint still
@@ -1323,18 +1323,27 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   type-check, lint, format, and diff checks passed. The complete canonical
   gate is the next required checkpoint because shared design-system code and
   browser verification changed.
-- [ ] Fresh read-only reviewer independently checks facade isolation, migration
+- **Final closure review evidence (2026-08-27):** Fresh read-only reviewer
+  Cicero (`01a04331-d6f3-7ae1-9ca5-d1eff4409351`) audited pushed `HEAD
+  3254098` and returned `APPROVE`; no severity 1–3 findings remain. Cicero
+  independently verified `deno task verify` (365 Deno tests, 11 E2E journeys,
+  gallery/axe at 320, 390, and 1280px, builds, CSP/runtime, Pages, CI, audit,
+  and diff checks), boundary verification across 167 files, Mantine
+  compatibility proof, `deno task release:verify`, the 153-declaration public
+  matrix, and the FileField ref/visible-menu fixes. Working tree was clean and
+  upstream divergence was `0 0`; Cicero was closed after its report.
+- [x] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and
       license state, dead code removal, tests, browser evidence, and clean
       build.
-- [ ] Reviewer reruns risk-selected commands plus the boundary check and reports
+- [x] Reviewer reruns risk-selected commands plus the boundary check and reports
       `APPROVE` or `BLOCK` with severity and evidence.
-- [ ] Primary agent fixes every severity 1–3 finding, reruns the full affected
+- [x] Primary agent fixes every severity 1–3 finding, reruns the full affected
       gate and complete canonical verification when shared code changed, then
       requests a fresh closure review rather than asking the same reviewer to
       approve its own fixes.
-- [ ] After approval, primary agent marks all M8 tasks and `R-850` `COMPLETE`,
+- [x] After approval, primary agent marks all M8 tasks and `R-850` `COMPLETE`,
       records final commits/evidence in Current Checkpoint, commits, pushes, and
       confirms clean alignment with `origin/master`.
 - **Gate acceptance:** no unresolved severity 1–3 finding, explicit fresh
@@ -1420,17 +1429,17 @@ evidence, and the next action is dependency-safe.
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
-  `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with all five
+  `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `COMPLETE` with all five
   Descartes findings, Kuhn's two severity-2 findings, and Darwin's two
-  severity-2 findings remediated; the canonical gate passed from `0b9e25a`
-  and a fresh closure review is pending.
+  severity-2 findings remediated; `R-850` is `COMPLETE` after Cicero's fresh
+  `APPROVE` at pushed review checkpoint `3254098`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master` at
-  pushed implementation checkpoint `0b9e25a`; this plan update is the next
+  pushed review checkpoint `3254098`; this final plan update is the next
   pushed documentation checkpoint.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at the current
-  pushed implementation checkpoint `0b9e25a`, with the implementation batch,
+  pushed review checkpoint `3254098`, with the implementation batch,
   R-830 remediations,
   R-840 closure fixes, and M8-009 cleanup pushed; R-830, R-840, and M8-009 are
   complete. R-820 is approved and closed, and M8-005 and M8-006 are complete.
@@ -1442,7 +1451,7 @@ evidence, and the next action is dependency-safe.
   Descartes's five findings are remediated in `b9a6835`, `d3e9d57`, `4dac785`,
   and `8dca502`; Darwin's review is closed; no implementation or review
   worktree is active and no M8 change is unpushed; the two Darwin remediations
-  are pushed and the primary agent owns the fresh R-850 closure review.
+  are pushed and fresh R-850 closure reviewer Cicero is closed after approval.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -1485,15 +1494,16 @@ evidence, and the next action is dependency-safe.
   are remediated at `05b46a3`; the latest canonical gate is recorded above and
   Descartes's five findings are remediated; Kuhn's CSP/menu findings are
   remediated; Darwin's fresh closure review is closed with the two findings
-  recorded above and both are fixed in `0b9e25a`; no migration
+  recorded above and both are fixed in `0b9e25a`; Cicero's fresh closure
+  review approved the complete migration at `3254098`; no migration
   branch or M8 worktree is active; historical non-M8 worktrees were preserved
   untouched. R-840 and M8-010 are complete.
   The final canonical gate after the Darwin remediation passed from
-  `0b9e25a`; its exact evidence is recorded in M8-010 above, and this plan
-  update is the current pushed documentation checkpoint.
-- **Exact next action:** request a new independent R-850 closure review from a
-  reviewer not previously used for this gate. Do not reuse Hooke, Newton,
-  Herschel, Confucius, Descartes, Kuhn, or Darwin for closure approval.
+  `0b9e25a`; its exact evidence is recorded in M8-010 above. Cicero's fresh
+  closure review approved the pushed review checkpoint `3254098`; this final
+  plan update records the completed M8 batch.
+- **Exact next action:** push this final checkpoint and hand off the completed
+  M8 Mantine migration; no further M8 implementation or review action remains.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

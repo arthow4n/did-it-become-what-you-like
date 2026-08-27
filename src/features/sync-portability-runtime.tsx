@@ -68,6 +68,7 @@ import { runCausalExchange } from "../adapters/sync/coordinator.ts";
 import type { FileSharePort } from "../adapters/ports/index.ts";
 import type { CausalSyncPort } from "../adapters/ports/index.ts";
 import { type StableId, StableIdSchema } from "../domain/index.ts";
+import { Stack } from "../design-system/index.ts";
 import {
   clearDeleteEverywhereProgress,
   type DeleteEverywhereProgressPhase,
@@ -1776,12 +1777,12 @@ export function SyncPortabilityRuntime({
     <>
       {showShellStatus
         ? (
-          <div className="sync-ui-shell-status">
+          <Stack gap={1} className="sync-ui-shell-status">
             <SyncGlobalStatus
               view={syncView}
               onOpenSync={() => onNavigate("/settings/sync")}
             />
-          </div>
+          </Stack>
         )
         : null}
       {content}

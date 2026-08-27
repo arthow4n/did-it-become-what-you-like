@@ -34,6 +34,7 @@ export async function withComponentHarness<T>(
     Document: testWindow.Document,
     Element: testWindow.Element,
     File: testWindow.File,
+    HTMLAnchorElement: testWindow.HTMLAnchorElement,
     HTMLElement: testWindow.HTMLElement,
     MutationObserver: testWindow.MutationObserver,
     Node: testWindow.Node,

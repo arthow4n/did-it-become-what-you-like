@@ -18,12 +18,14 @@ import {
   CurrencyPicker,
   DefinitionList,
   DeleteAndReassign,
+  Disclosure,
   Divider,
   ExpenseRow,
   FileField,
   formatMoney,
   Heading,
   Inline,
+  Menu,
   MerchantPicker,
   MoneySummary,
   MoneyText,
@@ -31,6 +33,7 @@ import {
   NativeTimeField,
   PageHeader,
   PeriodPicker,
+  Popover,
   Progress,
   RadioGroup,
   ResponsiveGrid,
@@ -43,6 +46,7 @@ import {
   Switch,
   Text,
   TextField,
+  Tooltip,
 } from "./components.tsx";
 import { DesignSystemProvider } from "./provider.tsx";
 
@@ -651,6 +655,64 @@ Deno.test("design-system dialog uses a named overlay and returns a useful trigge
       );
       assert(document.querySelector('[data-dialog-layout="adaptive"]'));
       assert(view.getByText("Dialog content"));
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("M8 overlay facades preserve disclosure and menu contracts", async () => {
+  await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
+    withAriaDomGlobals(window, async () => {
+      let expanded = false;
+      let action = "";
+      const mounted = render(
+        createElement(
+          "div",
+          null,
+          createElement(
+            Disclosure,
+            {
+              title: "Archived records",
+              onExpandedChange: (value) => expanded = value,
+              children: createElement("p", null, "Older records"),
+            },
+          ),
+          createElement(Menu, {
+            trigger: createElement(Button, null, "Open actions"),
+            items: [{ id: "edit", label: "Edit record" }],
+            onAction: (id) => action = id,
+          }),
+          createElement(Popover, {
+            trigger: createElement(Button, null, "Open help"),
+            label: "Help",
+            children: createElement("p", null, "Helpful details"),
+          }),
+          createElement(
+            Tooltip,
+            {
+              trigger: createElement(Button, null, "Explain"),
+              label: "Explanation",
+              children: "More context",
+            },
+          ),
+        ),
+      );
+      const view = within(document.body);
+      const disclosure = view.getByRole("button", {
+        name: "Archived records",
+      });
+      assertEqual(disclosure.getAttribute("aria-expanded"), "false");
+      fireEvent.click(disclosure);
+      assertEqual(disclosure.getAttribute("aria-expanded"), "true");
+      assert(expanded);
+      fireEvent.click(view.getByRole("button", { name: "Open actions" }));
+      const item = await waitFor(() =>
+        view.getByRole("menuitem", { name: "Edit record" })
+      );
+      fireEvent.click(item);
+      assertEqual(action, "edit");
+      fireEvent.click(view.getByRole("button", { name: "Open help" }));
+      await waitFor(() => view.getByText("Helpful details"));
       mounted.unmount();
     })
   );

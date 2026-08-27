@@ -1,4 +1,10 @@
-import { forwardRef, isValidElement, useId, useState } from "react";
+import {
+  cloneElement,
+  forwardRef,
+  isValidElement,
+  useId,
+  useState,
+} from "react";
 import type {
   ChangeEvent,
   ComponentProps,
@@ -18,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  Accordion as MantineAccordion,
   ActionIcon as MantineActionIcon,
   Badge as MantineBadge,
   Button as MantineButton,
@@ -25,11 +32,15 @@ import {
   Checkbox as MantineCheckbox,
   Container as MantineContainer,
   Divider as MantineDivider,
+  Drawer as MantineDrawer,
   Group as MantineGroup,
   Input as MantineInput,
+  Menu as MantineMenu,
+  Modal as MantineModal,
   Paper as MantinePaper,
   PasswordInput as MantinePasswordInput,
   Pill as MantinePill,
+  Popover as MantinePopover,
   Radio as MantineRadio,
   RadioGroup as MantineRadioGroup,
   SegmentedControl as MantineSegmentedControl,
@@ -41,33 +52,23 @@ import {
   Textarea as MantineTextarea,
   TextInput as MantineTextInput,
   Title as MantineTitle,
+  Tooltip as MantineTooltip,
 } from "@mantine/core";
 import {
   DateInput as MantineDateInput,
   TimeInput as MantineTimeInput,
 } from "@mantine/dates";
 import { Dropzone as MantineDropzone } from "@mantine/dropzone";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   Button as AriaButton,
   ComboBox as AriaComboBox,
-  Dialog as AriaDialog,
-  DialogTrigger as AriaDialogTrigger,
-  Disclosure as AriaDisclosure,
-  DisclosurePanel as AriaDisclosurePanel,
   Input as AriaInput,
   Label as AriaLabel,
   ListBox as AriaListBox,
   ListBoxItem as AriaListBoxItem,
-  Menu as AriaMenu,
-  MenuItem as AriaMenuItem,
-  MenuTrigger as AriaMenuTrigger,
-  Modal as AriaModal,
-  ModalOverlay as AriaModalOverlay,
   Popover as AriaPopover,
-  Pressable,
   ProgressBar as AriaProgressBar,
-  Tooltip as AriaTooltip,
-  TooltipTrigger as AriaTooltipTrigger,
 } from "react-aria-components";
 export type Space = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export type Tone = "neutral" | "positive" | "warning" | "danger" | "info";
@@ -438,16 +439,48 @@ type InjectedClickProps = {
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 };
 
-function pressableTrigger(trigger: ReactNode): ReactNode {
+function openableTrigger(
+  trigger: ReactNode,
+  onOpen: () => void,
+): ReactNode {
   if (!isValidElement(trigger)) return trigger;
-  const triggerProps = trigger.props as Record<string, unknown>;
-  const isDisabled = triggerProps.isDisabled === true ||
-    triggerProps.disabled === true;
-  return (
-    <Pressable isDisabled={isDisabled}>
-      {trigger as ReactElement<never, string>}
-    </Pressable>
-  );
+  const triggerProps = trigger.props as {
+    onClick?: (event: MouseEvent<HTMLElement>) => void;
+    onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void;
+  };
+  type TriggerElementProps = {
+    onClick?: (event: MouseEvent<HTMLElement>) => void;
+    onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void;
+    [key: string]: unknown;
+  };
+  return cloneElement(trigger as ReactElement<TriggerElementProps>, {
+    onClick: (event: MouseEvent<HTMLElement>) => {
+      triggerProps.onClick?.(event);
+      if (!event.defaultPrevented) onOpen();
+    },
+    onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
+      triggerProps.onKeyDown?.(event);
+      if (
+        !event.defaultPrevented &&
+        (event.key === "Enter" || event.key === " ")
+      ) {
+        onOpen();
+      }
+    },
+  });
+}
+
+function useOpenState(
+  value: boolean | undefined,
+  onChange: ((open: boolean) => void) | undefined,
+): [boolean, (open: boolean) => void] {
+  const [uncontrolled, setUncontrolled] = useState(value ?? false);
+  const open = value ?? uncontrolled;
+  const setOpen = (next: boolean) => {
+    if (value === undefined) setUncontrolled(next);
+    onChange?.(next);
+  };
+  return [open, setOpen];
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -1709,20 +1742,44 @@ export type DisclosureProps = {
 };
 
 export function Disclosure(
-  { title, children, className, ...props }: DisclosureProps,
+  {
+    title,
+    children,
+    className,
+    isExpanded,
+    defaultExpanded,
+    onExpandedChange,
+  }: DisclosureProps,
 ) {
   return (
-    <AriaDisclosure {...props} className={cx("ds-disclosure", className)}>
-      <AriaButton slot="trigger" className="ds-disclosure__trigger">
-        <span>{title}</span>
+    <MantineAccordion
+      className={cx("ds-disclosure", className)}
+      value={isExpanded === undefined
+        ? undefined
+        : isExpanded
+        ? "disclosure"
+        : null}
+      defaultValue={defaultExpanded ? "disclosure" : undefined}
+      onChange={(value) => onExpandedChange?.(value === "disclosure")}
+      chevron={
         <Icon>
           <ChevronRight />
         </Icon>
-      </AriaButton>
-      <AriaDisclosurePanel className="ds-disclosure__panel">
-        {children}
-      </AriaDisclosurePanel>
-    </AriaDisclosure>
+      }
+      chevronPosition="right"
+      disableChevronRotation
+      transitionDuration={0}
+      order={3}
+      classNames={{
+        control: "ds-disclosure__trigger",
+        panel: "ds-disclosure__panel",
+      }}
+    >
+      <MantineAccordion.Item value="disclosure">
+        <MantineAccordion.Control>{title}</MantineAccordion.Control>
+        <MantineAccordion.Panel>{children}</MantineAccordion.Panel>
+      </MantineAccordion.Item>
+    </MantineAccordion>
   );
 }
 
@@ -1796,38 +1853,53 @@ export function AdaptiveDialog({
   onOpenChange,
   className,
 }: AdaptiveDialogProps) {
+  const isWide = useMediaQuery("(min-width: 45em)", false);
+  const [opened, setOpened] = useOpenState(isOpen, onOpenChange);
+  const close = () => setOpened(false);
+  const dialogChildren = typeof children === "function"
+    ? children(close)
+    : children;
+  const content = <Stack gap={4}>{dialogChildren}</Stack>;
+  const triggerNode = openableTrigger(trigger, () => setOpened(true));
+  const commonProps = {
+    opened,
+    onClose: close,
+    closeOnClickOutside: isDismissable,
+    closeOnEscape: isDismissable,
+    withOverlay: true,
+    withCloseButton: true,
+    closeButtonProps: { "aria-label": closeLabel },
+    transitionProps: { duration: 0, exitDuration: 0 },
+    zIndex: "var(--layer-overlay)",
+    overlayProps: { className: "ds-overlay-backdrop" },
+    "aria-label": String(title),
+    "data-dialog-layout": "adaptive",
+  } as const;
   return (
-    <AriaDialogTrigger
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-    >
-      {pressableTrigger(trigger)}
-      <AriaModalOverlay
-        className="ds-overlay-backdrop"
-        isDismissable={isDismissable}
-      >
-        <AriaModal className={cx("ds-dialog", className)}>
-          <AriaDialog
-            aria-label={String(title)}
-            data-dialog-layout="adaptive"
+    <>
+      {triggerNode}
+      {isWide
+        ? (
+          <MantineModal
+            {...commonProps}
+            title={title}
+            classNames={{ content: cx("ds-dialog", className) }}
           >
-            {({ close }) => (
-              <Stack gap={4}>
-                <Inline justify="space-between">
-                  <Heading>{title}</Heading>
-                  <IconButton
-                    aria-label={closeLabel}
-                    icon={<X />}
-                    onPress={close}
-                  />
-                </Inline>
-                {typeof children === "function" ? children(close) : children}
-              </Stack>
-            )}
-          </AriaDialog>
-        </AriaModal>
-      </AriaModalOverlay>
-    </AriaDialogTrigger>
+            {content}
+          </MantineModal>
+        )
+        : (
+          <MantineDrawer
+            {...commonProps}
+            position="bottom"
+            size="auto"
+            title={title}
+            classNames={{ content: cx("ds-dialog", className) }}
+          >
+            {content}
+          </MantineDrawer>
+        )}
+    </>
   );
 }
 
@@ -2004,12 +2076,20 @@ export type PopoverProps = {
 
 export function Popover({ trigger, children, label, className }: PopoverProps) {
   return (
-    <AriaDialogTrigger>
-      {pressableTrigger(trigger)}
-      <AriaPopover className={cx("ds-popover", className)}>
-        <AriaDialog aria-label={label}>{children}</AriaDialog>
-      </AriaPopover>
-    </AriaDialogTrigger>
+    <MantinePopover
+      returnFocus
+      trapFocus
+      transitionProps={{ duration: 0, exitDuration: 0 }}
+      zIndex="var(--layer-overlay)"
+    >
+      <MantinePopover.Target>{trigger}</MantinePopover.Target>
+      <MantinePopover.Dropdown
+        aria-label={label}
+        className={cx("ds-popover", className)}
+      >
+        {children}
+      </MantinePopover.Dropdown>
+    </MantinePopover>
   );
 }
 
@@ -2027,25 +2107,26 @@ export function Menu({
   onAction?: (id: string) => void;
 }) {
   return (
-    <AriaMenuTrigger>
-      {pressableTrigger(trigger)}
-      <AriaPopover className="ds-menu">
-        <AriaMenu aria-label={label}>
-          {items.map((item) => (
-            <AriaMenuItem
-              key={item.id}
-              id={item.id}
-              textValue={item.label}
-              isDisabled={item.disabled}
-              className="ds-menu-item"
-              onAction={() => onAction?.(item.id)}
-            >
-              {item.label}
-            </AriaMenuItem>
-          ))}
-        </AriaMenu>
-      </AriaPopover>
-    </AriaMenuTrigger>
+    <MantineMenu
+      trapFocus
+      returnFocus
+      transitionProps={{ duration: 0, exitDuration: 0 }}
+      zIndex="var(--layer-overlay)"
+    >
+      <MantineMenu.Target>{trigger}</MantineMenu.Target>
+      <MantineMenu.Dropdown className="ds-menu" aria-label={label}>
+        {items.map((item) => (
+          <MantineMenu.Item
+            key={item.id}
+            disabled={item.disabled}
+            className="ds-menu-item"
+            onClick={() => onAction?.(item.id)}
+          >
+            {item.label}
+          </MantineMenu.Item>
+        ))}
+      </MantineMenu.Dropdown>
+    </MantineMenu>
   );
 }
 
@@ -2057,12 +2138,15 @@ export function Tooltip(
   },
 ) {
   return (
-    <AriaTooltipTrigger>
-      {pressableTrigger(trigger)}
-      <AriaTooltip className="ds-popover" aria-label={label}>
-        {children}
-      </AriaTooltip>
-    </AriaTooltipTrigger>
+    <MantineTooltip
+      label={children}
+      aria-label={label}
+      classNames={{ tooltip: "ds-popover" }}
+      transitionProps={{ duration: 0, exitDuration: 0 }}
+      events={{ hover: true, focus: true, touch: false }}
+    >
+      {trigger}
+    </MantineTooltip>
   );
 }
 

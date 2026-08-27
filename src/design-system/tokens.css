@@ -1226,6 +1226,13 @@
     background: var(--color-surface-2);
   }
 
+  .ds-gallery__money-example {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
   @media (min-width: 720px) {
     .ds-app-frame__main {
       padding: var(--space-7);

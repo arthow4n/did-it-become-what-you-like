@@ -516,11 +516,17 @@ export function DesignSystemGallery() {
                 currency="SEK"
               />
               <DateText value="2026-08-24" />
-              <MoneyText
-                amount="-999999999999999999999.99"
-                currency="SEK"
-                tone="negative"
-              />
+              <div
+                className="ds-gallery__money-example"
+                aria-label="Large money example"
+                tabIndex={0}
+              >
+                <MoneyText
+                  amount="-999999999999999999999.99"
+                  currency="SEK"
+                  tone="negative"
+                />
+              </div>
             </section>
           </ResponsiveGrid>
 

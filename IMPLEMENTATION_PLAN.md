@@ -475,6 +475,19 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   --related=src/design-system/components.tsx` passed (99 tests). The
   post-commit `deno task test:affected` selected no modules because the fix was
   already committed; the related run provides the direct affected evidence.
+- **Third closure review evidence (2026-08-27):** Fresh read-only reviewer
+  audited pushed `HEAD 1232814` against `12f12c4`. All ten initial findings and
+  the Switch validation mapping were confirmed resolved. The required affected
+  run passed (113 tests), `deno task a11y:gallery` passed, `deno task build`
+  passed, and `git diff --check 12f12c4..HEAD` passed. Keyboard/form checks
+  passed at 1280x800, 390x844, and 320x568 for dialog Enter, date default,
+  rejection feedback, search clear, secret reveal, Switch semantics, and
+  segmented motion. The gate remains **BLOCKED** on two S2 layout findings:
+  `ExpenseRow` still reaches 356.359px at 320px because its containing grid
+  track expands beyond the available width, and `FilterBar` still produces a
+  496px document width at both 390px and 320px. Evidence points to
+  `components.tsx:2763`, `tokens.css:800`, `gallery.tsx:477`, and the FilterBar
+  styles at `tokens.css:1097`.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
@@ -776,10 +789,9 @@ evidence, and the next action is dependency-safe.
   R-820 remains owned by the primary agent;
   no review agent, migration branch, or M8 worktree is active; historical
   non-M8 worktrees were preserved untouched.
-- **Exact next action:** invoke a fresh read-only R-820 closure reviewer, have
-  it rerun the combined M8-003/M8-004 affected, gallery, build, and
-  three-viewport browser matrix from the current pushed HEAD, and record
-  approval or any remaining severity 1–3 finding before opening M8-005.
+- **Exact next action:** fix the two remaining R-820 S2 layout findings, rerun
+  targeted layout and related component checks, commit and push, then invoke a
+  fresh read-only R-820 closure reviewer before opening M8-005.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

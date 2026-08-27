@@ -294,9 +294,10 @@ Deno.test("settings-final update protects dirty input and exposes offline status
       assert(
         view.getByText("Save or discard unsaved changes before reloading."),
       );
-      fireEvent.click(
-        view.getAllByRole("button", { name: "Reload to update" })[0],
-      );
+      const reload =
+        view.getAllByRole("button", { name: "Reload to update" })[0];
+      assert((reload as HTMLButtonElement).disabled);
+      fireEvent.click(reload);
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
       assert(port.reloadCount === 0, "dirty input must not start a reload");
     });

@@ -361,6 +361,7 @@ export function PwaRuntime({
             unfinished input.
             <FormActions>
               <Button
+                isDisabled={dirty}
                 onPress={controller.reloadToUpdate}
               >
                 Reload to update

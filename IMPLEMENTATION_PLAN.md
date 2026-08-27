@@ -659,9 +659,8 @@ evidence, and the next action is dependency-safe.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
-- **Worktree state:** `master` was clean and aligned with `origin/master` at
-  reconciliation; the partial M8-002 proof and this plan revision are now
-  uncommitted local work. No M8 branch/worktree exists. Historical non-M8
+- **Worktree state:** `master` is clean and aligned with `origin/master` at
+  pushed commit `12f12c4`; no M8 branch/worktree exists. Historical non-M8
   worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -672,14 +671,13 @@ evidence, and the next action is dependency-safe.
   Dropzone, builds, artifact verifier, affected tests, and Chromium proof. The
   app still uses the pre-M8 React Aria facade; no production provider or facade
   conversion has occurred.
-- **M8 active/interrupted work:** M8-002 is complete locally on `master`; the
-  primary agent owns the pending `R-810` gate. No review agent is assigned, no
-  migration branch/worktree exists, and the completed M8 commit is not yet
-  pushed. Historical non-M8 worktrees were preserved untouched.
-- **Exact next action:** run the final diff/import checks, commit and push
-  M8-002, then request a fresh read-only reviewer at `R-810`. Leave the review
-  agent running and wait/poll for its result; do not begin `M8-003` until
-  `R-810` is explicitly approved.
+- **M8 active/interrupted work:** M8-002 is complete and pushed at `12f12c4`;
+  the primary agent owns the pending `R-810` gate. No review agent is assigned,
+  no migration branch/worktree exists, and historical non-M8 worktrees were
+  preserved untouched.
+- **Exact next action:** request a fresh read-only reviewer at `R-810`. Leave
+  the review agent running and wait/poll for its result; do not begin `M8-003`
+  until `R-810` is explicitly approved.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

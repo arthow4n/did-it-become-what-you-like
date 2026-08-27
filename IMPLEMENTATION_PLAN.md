@@ -1083,6 +1083,14 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       Vite port; after enabling safe existing-server reuse, the only stale
       receipt journey locators were updated, and the post-Confucius feature-CSS
       remediation rerun passed at `05b46a3`.
+- [x] Re-ran the complete canonical gate after the Descartes remediation from
+      pushed `8dca502`. The gate passed with 365 Deno tests, 11 E2E journeys,
+      gallery/axe at 320x568, 390x844, and 1280x800, browser visual/tree/axe
+      smoke, CI/toolchain checks, boundary verification across 167 source
+      files, both production builds, Pages artifact verification, frozen audit
+      with no known vulnerabilities, and `git diff --check`. The app build
+      receipt was 1,181.63 kB JavaScript / 290.94 kB CSS (325.64 kB / 42.89 kB
+      gzip); Automerge WASM was 3,571.25 kB (1,138.81 kB gzip).
 - [x] Inspect the gallery and every approved screen/state at `320x568`,
       `390x844`, and `1280x800` with agent-browser, including keyboard,
       accessibility tree/axe, long content, large money, empty/loading/offline/
@@ -1092,8 +1100,8 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       regression; no new product styling was introduced by M8-009.
 - [x] Compare production bundle evidence with the M8-002 baseline and explain
       material growth; fix accidental duplication or imports. The final app
-      build at the latest gate is `1,181.27 kB` JavaScript / `290.88 kB` CSS
-      (`325.57 kB` / `42.89 kB` gzip), versus the unchanged pre-Mantine
+      build at the latest gate is `1,181.63 kB` JavaScript / `290.94 kB` CSS
+      (`325.64 kB` / `42.89 kB` gzip), versus the unchanged pre-Mantine
       baseline of
       `1,038,625` JavaScript bytes / `30,076` CSS bytes (`284.90 kB` /
       `5.78 kB` gzip). The expected increase is Mantine's maintained runtime
@@ -1101,7 +1109,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       imports in screens and the isolated proof retained one tree-shaken entry.
       The earlier `1,180.87`/`325.39`, `02edfb9` `290.76`/`42.88`, and
       `3b94827` `290.84`/`42.90` receipts were from earlier builds; the exact
-      current output is from the final `05b46a3` gate.
+      current output is from the final `8dca502` gate.
 - [x] Reconcile `UI_SPEC.md`, `DESIGN_SYSTEM.md`, `AGENTS.md`, README/licenses,
       gallery, tests, migration matrix, and actual implementation. The public
       barrel remains facade-only; the design-system document now marks React
@@ -1112,11 +1120,11 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       The E2E runner fix is pushed at `2873dfe`, the receipt journey contract
       fix at `2189863`, the scoped conflict-journey timeout is pushed at
       `d792cd1`, and the post-remediation canonical gate is green at
-      `02edfb9`. The latest gate after feature-CSS remediation passed at
-      `05b46a3` with 363 Deno tests, 11 E2E journeys,
-      gallery/axe at three viewports, browser/toolchain/CI checks, the
-      strengthened boundary scan, both builds, Pages artifact verification,
-      frozen audit, and diff checks. No unresolved M8 limitation requires
+      `02edfb9`. The latest gate after the Descartes remediation passed at
+      `8dca502` with 365 Deno tests, 11 E2E journeys, gallery/axe at three
+      viewports, browser/toolchain/CI checks, the strengthened boundary scan,
+      both builds, Pages artifact verification, frozen audit, and diff checks.
+      No unresolved M8 limitation requires
       owner acceptance;
       rollback remains ordinary revert of the focused commits, with all prior
       worktrees preserved untouched.
@@ -1235,6 +1243,19 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   browser checks, E2E, audit, and diff checks. Descartes was closed after its
   report. The primary agent owns these five contract remediations and must
   request another fresh closure review after the next canonical gate.
+- **Primary remediation evidence after Descartes (2026-08-27):** Pushed
+  `b9a6835` adds compact-dialog bottom safe-area clearance, preserves public
+  `Inline`/`ResponsiveGrid` refs and ARIA/data props, and resets typed danger
+  confirmation on every reopen, with focused component and CSS regressions.
+  Pushed `d3e9d57` retains the receipt's ephemeral source file for an in-session
+  retry while releasing decoded bytes, updates the privacy copy, and adds the
+  store regression. Pushed `4dac785` disables the update reload action while
+  dirty and adds the component regression. Pushed `8dca502` dispatches the
+  state-machine `receipt.retry` event from the failed-state Retry action and
+  updates the two affected E2E contracts. Focused UI/receipt/actor tests passed
+  71 tests in total; the focused offline-update and receipt-review journeys
+  passed 2/2; the complete canonical gate then passed from `8dca502` with the
+  evidence recorded in M8-010 above.
 - [ ] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and
@@ -1332,13 +1353,14 @@ evidence, and the next action is dependency-safe.
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
-  `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with the
-  primary agent remediating Descartes's five findings before fresh closure.
-- **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
+  `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with all five
+  Descartes findings remediated and a fresh closure review pending.
+- **Reconciled branch/upstream:** `master` is aligned with `origin/master` at
+  pushed `8dca502`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at the current
-  pushed checkpoint, with the implementation batch, R-830 remediations,
+  pushed checkpoint `8dca502`, with the implementation batch, R-830 remediations,
   R-840 closure fixes, and M8-009 cleanup pushed; R-830, R-840, and M8-009 are
   complete. R-820 is approved and closed, and M8-005 and M8-006 are complete.
   The initial R-850 reviewer is closed; no migration branch or M8 worktree is
@@ -1346,8 +1368,9 @@ evidence, and the next action is dependency-safe.
   untouched. R-840 and M8-010 are complete, and the Confucius remediation is
   pushed at `05b46a3`; the fresh Confucius closure review is closed and its
   findings are remediated below; Descartes's fresh closure review is closed;
-  no implementation or review worktree is active and no M8 change is
-  unpushed.
+  Descartes's five findings are remediated in `b9a6835`, `d3e9d57`, `4dac785`,
+  and `8dca502`; no implementation or review worktree is active and no M8
+  change is unpushed.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -1388,15 +1411,14 @@ evidence, and the next action is dependency-safe.
   closure review is also closed and its three findings are remediated at
   `3b94827`; Confucius's fresh closure review is closed and its four findings
   are remediated at `05b46a3`; the latest canonical gate is recorded above and
-  Descartes's five findings are now owned by the primary agent; no migration
+  Descartes's five findings are remediated and await fresh closure review; no migration
   branch or M8 worktree is active; historical non-M8 worktrees were preserved
   untouched. R-840 and M8-010 are complete.
-  The final canonical gate passed at `05b46a3`; no implementation or
+  The final canonical gate passed at `8dca502`; no implementation or
   documentation change is unpushed.
-- **Exact next action:** fix Descartes's five findings, run and record the
-  complete canonical gate, commit and push the evidence, then request a new
-  independent R-850 closure review. Do not reuse Hooke, Newton, Herschel,
-  Confucius, or Descartes for closure approval.
+- **Exact next action:** request a new independent R-850 closure review from a
+  reviewer not previously used for this gate. Do not reuse Hooke, Newton,
+  Herschel, Confucius, or Descartes for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

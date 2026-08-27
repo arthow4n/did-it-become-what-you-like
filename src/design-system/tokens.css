@@ -821,6 +821,7 @@
     max-height: min(90dvh, 760px);
     overflow: auto;
     padding: var(--space-6);
+    padding-bottom: max(var(--space-6), env(safe-area-inset-bottom));
     border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
   }
 

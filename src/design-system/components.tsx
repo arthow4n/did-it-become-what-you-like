@@ -196,10 +196,20 @@ export function Inline({
   as: Tag = "div",
   justify,
   style,
+  ref,
+  role,
+  "aria-label": ariaLabel,
+  "aria-hidden": ariaHidden,
+  "data-pane": dataPane,
 }: InlineProps) {
   return (
     <MantineGroup
       component={Tag as "div"}
+      ref={ref}
+      role={role}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden}
+      data-pane={dataPane}
       gap={mantineSpacing(gap)}
       justify={justify}
       align="center"
@@ -222,10 +232,20 @@ export function ResponsiveGrid({
   as: Tag = "div",
   columns = 2,
   style,
+  ref,
+  role,
+  "aria-label": ariaLabel,
+  "aria-hidden": ariaHidden,
+  "data-pane": dataPane,
 }: ResponsiveGridProps) {
   return (
     <MantineSimpleGrid
       component={Tag as "div"}
+      ref={ref}
+      role={role}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden}
+      data-pane={dataPane}
       cols={columns}
       spacing={mantineSpacing(gap)}
       className={cx("ds-responsive-grid", className)}
@@ -2136,13 +2156,23 @@ export function DangerDialog(
     onConfirm,
     cancelLabel = "Cancel",
     onCancel,
+    onOpenChange,
     ...props
   }: DangerDialogProps,
 ) {
   const [typed, setTyped] = useState("");
   const requiresPhrase = Boolean(phrase);
+  useEffect(() => {
+    if (props.isOpen) setTyped("");
+  }, [props.isOpen]);
   return (
-    <AdaptiveDialog {...props}>
+    <AdaptiveDialog
+      {...props}
+      onOpenChange={(open) => {
+        if (open) setTyped("");
+        onOpenChange?.(open);
+      }}
+    >
       {(close) => (
         <Stack gap={5}>
           <Inline>

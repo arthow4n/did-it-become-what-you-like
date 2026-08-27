@@ -21,6 +21,7 @@ import {
   ConfirmDialog,
   ContentContainer,
   CurrencyPicker,
+  DangerDialog,
   DefaultNavigation,
   DefinitionList,
   DeleteAndReassign,
@@ -510,6 +511,47 @@ Deno.test("design-system confirmation facade exposes an explicit cancel action",
   );
 });
 
+Deno.test("design-system danger confirmation resets its phrase after cancel and reopen", async () => {
+  await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
+    withAriaDomGlobals(window, async () => {
+      const mounted = render(
+        createElement(DangerDialog, {
+          trigger: createElement(Button, null, "Delete project"),
+          title: "Delete project?",
+          description: "This cannot be undone.",
+          phrase: "DELETE",
+          confirmLabel: "Delete project",
+          onConfirm: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      fireEvent.click(view.getByRole("button", { name: "Delete project" }));
+      let dialog = view.getByRole("dialog", { name: "Delete project?" });
+      const input = within(dialog).getByRole("textbox", {
+        name: "Type DELETE to confirm",
+      });
+      fireEvent.input(input, { target: { value: "DELETE" } });
+      const confirm = within(dialog).getByRole("button", {
+        name: "Delete project",
+      });
+      assert(!(confirm as HTMLButtonElement).disabled);
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+      await waitFor(() =>
+        assert(view.queryByRole("dialog", { name: "Delete project?" }) === null)
+      );
+      fireEvent.click(view.getByRole("button", { name: "Delete project" }));
+      dialog = view.getByRole("dialog", { name: "Delete project?" });
+      assert(
+        (within(dialog).getByRole("button", {
+          name: "Delete project",
+        }) as HTMLButtonElement).disabled,
+        "reopened danger dialogs must require the phrase again",
+      );
+      mounted.unmount();
+    })
+  );
+});
+
 Deno.test("design-system gallery keeps the required fixture coverage", async () => {
   const source = await Deno.readTextFile(
     new URL("./gallery.tsx", import.meta.url),
@@ -670,6 +712,8 @@ Deno.test("M8 provider maps semantic tokens and locks the dark scheme", async ()
 Deno.test("M8 structural facade wrappers retain semantic roots over Mantine", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaDomGlobals(window, () => {
+      let inlineRef: HTMLDivElement | null = null;
+      let gridRef: HTMLDivElement | null = null;
       const mounted = render(
         createElement(
           "div",
@@ -679,12 +723,26 @@ Deno.test("M8 structural facade wrappers retain semantic roots over Mantine", as
             gap: 4,
             children: "Stack content",
           }),
-          createElement(Inline, { children: "Inline content" }),
+          createElement(Inline, {
+            children: "Inline content",
+            role: "group",
+            "aria-label": "Inline content",
+            "data-pane": "inline",
+            ref: (node) => {
+              inlineRef = node;
+            },
+          }),
           createElement(
             ResponsiveGrid,
             {
               columns: 3,
               children: createElement("span", null, "Grid content"),
+              role: "region",
+              "aria-label": "Grid content",
+              "data-pane": "grid",
+              ref: (node) => {
+                gridRef = node;
+              },
             },
           ),
           createElement(
@@ -727,6 +785,7 @@ Deno.test("M8 structural facade wrappers retain semantic roots over Mantine", as
         );
         return element;
       };
+      const view = within(document.body);
       hasMantineRoot("section.ds-stack", "mantine-Stack-root");
       hasMantineRoot(".ds-inline", "mantine-Group-root");
       const grid = hasMantineRoot(
@@ -734,6 +793,20 @@ Deno.test("M8 structural facade wrappers retain semantic roots over Mantine", as
         "mantine-SimpleGrid-root",
       );
       assertEqual(grid.getAttribute("data-columns"), "3");
+      assertEqual(inlineRef, document.querySelector(".ds-inline"));
+      assertEqual(gridRef, grid);
+      assertEqual(
+        view.getByRole("group", { name: "Inline content" }).getAttribute(
+          "data-pane",
+        ),
+        "inline",
+      );
+      assertEqual(
+        view.getByRole("region", { name: "Grid content" }).getAttribute(
+          "data-pane",
+        ),
+        "grid",
+      );
       hasMantineRoot(
         ".ds-content-container[data-size='form']",
         "mantine-Container-root",
@@ -1131,6 +1204,11 @@ Deno.test("design-system CSS locks semantic tokens, immediate motion, targets, a
   assert(css.includes("--target-min: 44px"));
   assert(css.includes("@media (max-width: 359px)"));
   assert(css.includes("max(var(--space-2), env(safe-area-inset-bottom, 0px))"));
+  assert(
+    css.includes(
+      "padding-bottom: max(var(--space-6), env(safe-area-inset-bottom));",
+    ),
+  );
   assert(css.includes(".ds-sticky-action-bar"));
   for (
     const selector of [

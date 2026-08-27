@@ -1091,6 +1091,16 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       with no known vulnerabilities, and `git diff --check`. The app build
       receipt was 1,181.63 kB JavaScript / 290.94 kB CSS (325.64 kB / 42.89 kB
       gzip); Automerge WASM was 3,571.25 kB (1,138.81 kB gzip).
+- [x] Re-ran the complete canonical gate after the Kuhn remediation from
+      pushed `03e9f21`. The gate passed with 365 Deno tests, 11 E2E journeys,
+      gallery/axe at 320x568, 390x844, and 1280x800 including the opened-menu
+      check, browser visual/tree/axe smoke, CI/toolchain checks, boundary
+      verification across 167 source files, production and Mantine proof
+      builds, production Mantine/CSP browser smoke, Pages artifact
+      verification, frozen audit with no known vulnerabilities, and
+      `git diff --check`. The app build remained 1,181.63 kB JavaScript /
+      290.94 kB CSS (325.64 kB / 42.89 kB gzip); Automerge WASM remained
+      3,571.25 kB (1,138.81 kB gzip).
 - [x] Inspect the gallery and every approved screen/state at `320x568`,
       `390x844`, and `1280x800` with agent-browser, including keyboard,
       accessibility tree/axe, long content, large money, empty/loading/offline/
@@ -1109,7 +1119,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       imports in screens and the isolated proof retained one tree-shaken entry.
       The earlier `1,180.87`/`325.39`, `02edfb9` `290.76`/`42.88`, and
       `3b94827` `290.84`/`42.90` receipts were from earlier builds; the exact
-      current output is from the final `8dca502` gate.
+      current output is from the final `03e9f21` gate.
 - [x] Reconcile `UI_SPEC.md`, `DESIGN_SYSTEM.md`, `AGENTS.md`, README/licenses,
       gallery, tests, migration matrix, and actual implementation. The public
       barrel remains facade-only; the design-system document now marks React
@@ -1120,10 +1130,12 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       The E2E runner fix is pushed at `2873dfe`, the receipt journey contract
       fix at `2189863`, the scoped conflict-journey timeout is pushed at
       `d792cd1`, and the post-remediation canonical gate is green at
-      `02edfb9`. The latest gate after the Descartes remediation passed at
-      `8dca502` with 365 Deno tests, 11 E2E journeys, gallery/axe at three
-      viewports, browser/toolchain/CI checks, the strengthened boundary scan,
-      both builds, Pages artifact verification, frozen audit, and diff checks.
+      `02edfb9`. The latest gate after the Kuhn remediation passed at
+      `03e9f21` with 365 Deno tests, 11 E2E journeys, gallery/axe at three
+      viewports including the opened-menu check, browser/toolchain/CI checks,
+      the strengthened boundary scan, production and Mantine proof builds,
+      production Mantine/CSP browser smoke, Pages artifact verification,
+      frozen audit, and diff checks.
       No unresolved M8 limitation requires
       owner acceptance;
       rollback remains ordinary revert of the focused commits, with all prior
@@ -1267,6 +1279,16 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   builds, Pages, audit, and clean alignment. Kuhn was closed after the report;
   the primary agent owns the CSP/menu remediations and must record the plan
   commit in the next checkpoint before requesting another fresh review.
+- **Primary remediation evidence after Kuhn (2026-08-27):** Pushed `03e9f21`
+  scopes CSP's inline-style allowance to Mantine's nonce-less runtime style
+  blocks while keeping script execution strict, disables the Mantine menu
+  focus placeholder/focus trap that created the invalid presentation child,
+  adds opened-menu axe coverage to the gallery check, and adds a production
+  browser smoke that verifies runtime variables and control styles under the
+  built CSP. The design-system suite passed 33 tests; gallery/axe, production
+  browser smoke, Pages artifact verification, lint, type-check, format, and
+  diff checks passed; the complete canonical gate passed from `03e9f21` with
+  the evidence recorded in M8-010 above.
 - [ ] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and
@@ -1365,14 +1387,14 @@ evidence, and the next action is dependency-safe.
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
   `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with all five
-  Descartes findings are remediated; the Kuhn closure review found two new
-  severity-2 issues and a fresh closure review is pending.
+  Descartes findings are remediated; Kuhn's two severity-2 findings are
+  remediated and a fresh closure review is pending.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master` at
-  pushed `916bbc1`.
+  pushed `03e9f21`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at the current
-  pushed checkpoint `916bbc1`, with the implementation batch, R-830 remediations,
+  pushed checkpoint `03e9f21`, with the implementation batch, R-830 remediations,
   R-840 closure fixes, and M8-009 cleanup pushed; R-830, R-840, and M8-009 are
   complete. R-820 is approved and closed, and M8-005 and M8-006 are complete.
   The initial R-850 reviewer is closed; no migration branch or M8 worktree is
@@ -1423,16 +1445,15 @@ evidence, and the next action is dependency-safe.
   closure review is also closed and its three findings are remediated at
   `3b94827`; Confucius's fresh closure review is closed and its four findings
   are remediated at `05b46a3`; the latest canonical gate is recorded above and
-  Descartes's five findings are remediated; Kuhn's CSP/menu findings are now
-  owned by the primary agent and await fresh closure review; no migration
+  Descartes's five findings are remediated; Kuhn's CSP/menu findings are
+  remediated and await fresh closure review; no migration
   branch or M8 worktree is active; historical non-M8 worktrees were preserved
   untouched. R-840 and M8-010 are complete.
-  The final canonical gate passed at `8dca502`; no implementation or
+  The final canonical gate passed at `03e9f21`; no implementation or
   documentation change is unpushed.
-- **Exact next action:** fix Kuhn's CSP and Menu findings, run and record the
-  affected checks and complete canonical gate, commit and push the checkpoint,
-  then request a new independent R-850 closure review. Do not reuse Hooke,
-  Newton, Herschel, Confucius, Descartes, or Kuhn for closure approval.
+- **Exact next action:** request a new independent R-850 closure review from a
+  reviewer not previously used for this gate. Do not reuse Hooke, Newton,
+  Herschel, Confucius, Descartes, or Kuhn for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

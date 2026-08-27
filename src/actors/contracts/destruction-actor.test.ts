@@ -384,6 +384,31 @@ Deno.test(
   },
 );
 
+Deno.test("delete-everywhere forced finalization remains cancelable", async () => {
+  const actor = createActor(
+    createDeleteEverywhereMachine(deleteDependencies({ calls: [] })),
+  ).start();
+  actor.send({
+    type: "delete-everywhere.open",
+    generation: 64,
+    progress: {
+      knownDeviceCount: 2,
+      acknowledgedDeviceCount: 1,
+      forcedDeviceCount: 0,
+    },
+  });
+  actor.send({ type: "delete-everywhere.decline-safety-export" });
+  actor.send({ type: "delete-everywhere.confirm-decline" });
+  actor.send({ type: "delete-everywhere.confirm" });
+  await settle();
+  actor.send({ type: "delete-everywhere.force-finalize" });
+  await settle();
+  assert(actor.getSnapshot().matches("forcedFinalization"));
+  actor.send({ type: "delete-everywhere.cancel" });
+  assert(actor.getSnapshot().matches("cancelled"));
+  actor.stop();
+});
+
 Deno.test("delete-everywhere actor keeps failed Drive deletion retryable without erasing local data", async () => {
   const calls: string[] = [];
   let fail = true;

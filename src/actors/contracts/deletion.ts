@@ -600,6 +600,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
           }),
         },
         "delete-everywhere.confirm": "persistingCompletion",
+        "delete-everywhere.cancel": "cancelled",
       },
     },
     persistingCompletion: {

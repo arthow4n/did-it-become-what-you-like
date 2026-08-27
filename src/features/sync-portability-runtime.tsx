@@ -496,6 +496,24 @@ export function deviceViewModels(
   };
 }
 
+export function deleteEverywhereProgressForDevices(
+  devices: readonly Pick<DestructionDeviceView, "acknowledged">[],
+): {
+  readonly knownDeviceCount: number;
+  readonly acknowledgedDeviceCount: number;
+  readonly forcedDeviceCount: number;
+} {
+  const knownDeviceCount = Math.max(1, devices.length);
+  return {
+    knownDeviceCount,
+    acknowledgedDeviceCount: Math.min(
+      knownDeviceCount,
+      devices.filter((device) => device.acknowledged).length,
+    ),
+    forcedDeviceCount: 0,
+  };
+}
+
 function connectivityFor(
   online: boolean,
 ): SyncNetworkMode {
@@ -1543,11 +1561,7 @@ export function SyncPortabilityRuntime({
 
   const openDeleteEverywhere = () => {
     deleteFinalizationHandled.current = false;
-    const knownDeviceCount = Math.max(1, destructionDevices.length);
-    const acknowledgedDeviceCount = Math.min(
-      knownDeviceCount,
-      destructionDevices.filter((device) => device.acknowledged).length,
-    );
+    const progress = deleteEverywhereProgressForDevices(destructionDevices);
     if (
       deleteEverywhereSnapshot.matches("completed") ||
       deleteEverywhereSnapshot.matches("cancelled") ||
@@ -1560,11 +1574,7 @@ export function SyncPortabilityRuntime({
     sendDeleteEverywhere({
       type: "delete-everywhere.open",
       generation: localGeneration,
-      progress: {
-        knownDeviceCount,
-        acknowledgedDeviceCount,
-        forcedDeviceCount: 0,
-      },
+      progress,
     });
   };
 
@@ -1573,18 +1583,11 @@ export function SyncPortabilityRuntime({
       return;
     }
     setDeleteOpenRequested(false);
-    const knownDeviceCount = Math.max(1, destructionDevices.length);
+    const progress = deleteEverywhereProgressForDevices(destructionDevices);
     sendDeleteEverywhere({
       type: "delete-everywhere.open",
       generation: localGeneration,
-      progress: {
-        knownDeviceCount,
-        acknowledgedDeviceCount: Math.min(
-          knownDeviceCount,
-          destructionDevices.filter((device) => device.acknowledged).length,
-        ),
-        forcedDeviceCount: 0,
-      },
+      progress,
     });
   }, [
     deleteEverywhereSnapshot,

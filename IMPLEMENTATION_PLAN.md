@@ -411,6 +411,11 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       `Popover`, `Menu`, and `Tooltip` using public Mantine components.
 - [ ] Convert `Banner`, `InlineNotice`, `Toast`, `StatusMessage`, `Progress`,
       `Skeleton`, `EmptyState`, and `ErrorState`.
+- [ ] Use Mantine Notifications as the notification infrastructure: mount its
+      provider-owned host and adapt the public `Toast`/status facade to it.
+      Do not invent a repository notification manager or duplicate Mantine's
+      notification primitive; preserve the facade's fixed placement, live
+      region, dismiss, and undo contracts at the integration boundary.
 - [ ] Preserve responsive modal/sheet composition, focus trap/restoration,
       escape/cancel behavior, destructive confirmation rules, portal layering,
       fixed toast placement, live-region semantics, and approved progress-only

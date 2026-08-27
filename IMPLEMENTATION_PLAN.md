@@ -1320,8 +1320,7 @@ evidence, and the next action is dependency-safe.
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
   `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with the
-  primary agent remediating Confucius's latest three CSS findings and stale
-  checkpoint before fresh closure.
+  Confucius remediation complete and fresh closure review pending.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
@@ -1333,7 +1332,7 @@ evidence, and the next action is dependency-safe.
   active; historical non-M8 worktrees remain present and were preserved
   untouched. R-840 and M8-010 are complete, and the Confucius remediation is
   pushed at `05b46a3`; the fresh Confucius closure review is closed and its
-  latest findings are recorded below; no implementation or review worktree is
+  findings are remediated below; no implementation or review worktree is
   active and no M8 change is unpushed.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -1374,16 +1373,14 @@ evidence, and the next action is dependency-safe.
   is closed; the fresh Newton closure reviewer is closed; Herschel's fresh
   closure review is also closed and its three findings are remediated at
   `3b94827`; Confucius's fresh closure review is closed and its four findings
-  are remediated at `05b46a3`; the latest Confucius review found three CSS
-  contract defects and one stale checkpoint statement, now owned by the
-  primary agent; no migration branch or M8 worktree is active; historical
+  are remediated at `05b46a3`; the latest canonical gate is recorded above and
+  fresh R-850 closure is pending; no migration branch or M8 worktree is active;
+  historical
   non-M8 worktrees were preserved untouched. R-840 and M8-010 are complete.
   The final canonical gate passed at `05b46a3`; no implementation or
   documentation change is unpushed.
-- **Exact next action:** fix the latest Confucius CSS and checkpoint findings,
-  run and record the complete canonical gate, then request a new independent
-  R-850 closure review. Do not reuse Hooke, Newton, Herschel, or Confucius for
-  closure approval.
+- **Exact next action:** request a new independent R-850 closure review. Do
+  not reuse Hooke, Newton, Herschel, or Confucius for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

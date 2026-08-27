@@ -49,6 +49,11 @@ export type ReceiptScanMachineDependencies = {
   readonly gemini: GeminiModelAndExtractionPort;
   readonly imagePreparation: ImagePreparationPort;
   readonly resolveImage: ReceiptImageResolver;
+  /**
+   * Called after each attempt so the owner can discard derived image bytes.
+   * Interactive owners may retain their ephemeral source for Retry until the
+   * scan UI performs terminal cleanup.
+   */
   readonly releaseImage?: (image: ReceiptImageRef) => void | Promise<void>;
   readonly nextLineId?: () => StableId;
 };
@@ -93,8 +98,9 @@ async function extractReview(
 
 /**
  * Injects the A-301 image/Gemini ports and browser-side review validation into
- * the locked scan lifecycle. The ephemeral image is available only to the
- * invoked request and is released on success, failure, or cancellation.
+ * the locked scan lifecycle. Derived image data is released after every
+ * attempt; the interactive owner controls terminal cleanup of its ephemeral
+ * source so a failed scan can be retried.
  */
 export function createReceiptScanMachine(
   dependencies: ReceiptScanMachineDependencies,

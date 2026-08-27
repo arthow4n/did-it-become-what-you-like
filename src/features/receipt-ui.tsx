@@ -197,6 +197,17 @@ export class ReceiptImageStore {
     this.remove(ref);
   }
 
+  /**
+   * Discard decoded bytes after an attempt while retaining the ephemeral file
+   * and preview URL for an in-session retry.
+   */
+  releaseForRetry(ref: ReceiptImageRef): void {
+    const entry = this.#entries.get(ref.ephemeralId);
+    if (!entry) return;
+    entry.bytes?.fill(0);
+    entry.bytes = undefined;
+  }
+
   remove(ref: ReceiptImageRef): void {
     const entry = this.#entries.get(ref.ephemeralId);
     if (!entry) return;
@@ -401,7 +412,7 @@ export function createDefaultReceiptUiDependencies(
       gemini,
       imagePreparation,
       resolveImage,
-      releaseImage: (image) => imageStore.release(image),
+      releaseImage: (image) => imageStore.releaseForRetry(image),
     },
   };
 }
@@ -494,9 +505,9 @@ export function ReceiptDisclosure({ onAccept, onDecline }: {
           </Text>
           <Text tone="secondary">
             Expense history, project names, Drive data, other device identifiers
-            or details, and sync metadata are excluded. The image is removed
-            from memory after this scan path finishes and is never saved to this
-            app.
+            or details, and sync metadata are excluded. The image remains only
+            in memory while this scan is open and is removed when you leave or
+            complete it; it is never saved to this app.
           </Text>
           <Inline>
             <Button variant="quiet" onPress={onDecline}>Cancel</Button>
@@ -671,10 +682,6 @@ export function ReceiptScanScreen({
       onReview(snapshot.context.review);
     }
   }, [imageStore, onReview, snapshot]);
-
-  useEffect(() => {
-    if (snapshot.matches("failed")) clearSelectedImage();
-  }, [snapshot]);
 
   useEffect(() => {
     if (snapshot.matches("cancelled") || snapshot.matches("manualEntry")) {
@@ -1021,8 +1028,10 @@ export function ReceiptScanScreen({
         {selectedImage
           ? (
             <InlineNotice tone="info" title="Receipt is sent to Google Gemini.">
-              Embedded metadata is always removed before sending. The image is
-              used only for this scan and is not retained.
+              Embedded metadata is always removed before sending. The image
+              remains in memory only while this scan is open so you can retry or
+              replace it; it is removed when you leave, discard, or complete the
+              scan.
             </InlineNotice>
           )
           : null}

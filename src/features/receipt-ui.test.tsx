@@ -281,6 +281,19 @@ Deno.test("receipt-ui releases file, byte, and object URL state on terminal clea
   assert(rejected, "Released image bytes must not remain resolvable");
 });
 
+Deno.test("receipt-ui retains an ephemeral source for an in-session retry", async () => {
+  const store = new ReceiptImageStore();
+  const file = new File([new Uint8Array([1, 2, 3])], "receipt.png", {
+    type: "image/png",
+  });
+  const image = store.add(file);
+  await store.resolve(image);
+  store.releaseForRetry(image);
+  const retried = await store.resolve(image);
+  assert(retried.bytes.length === file.size);
+  store.release(image);
+});
+
 Deno.test("receipt-ui keeps Needs test models selectable and evidence device-local", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(() => {

@@ -1101,6 +1101,18 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       `git diff --check`. The app build remained 1,181.63 kB JavaScript /
       290.94 kB CSS (325.64 kB / 42.89 kB gzip); Automerge WASM remained
       3,571.25 kB (1,138.81 kB gzip).
+- [x] Re-ran the complete canonical gate after the Darwin remediations from
+      pushed implementation `0b9e25a`. `deno task verify` passed formatting,
+      lint, strict type-check, 365 Deno tests, 11 E2E journeys, gallery/axe at
+      320x568, 390x844, and 1280x800 including the visible-menu landmark
+      assertion, browser visual/tree/axe smoke, CI/toolchain checks, boundary
+      verification across 167 source files, production and Mantine proof
+      builds, production Mantine/CSP browser smoke, Pages artifact
+      verification, frozen audit with no known vulnerabilities, and
+      `git diff --check`. The app build receipt was 1,181.64 kB JavaScript /
+      290.94 kB CSS (325.65 kB / 42.89 kB gzip); Automerge WASM was
+      3,571.25 kB (1,138.81 kB gzip). The plan checkpoint recording this gate
+      is pushed separately after the implementation commit.
 - [x] Inspect the gallery and every approved screen/state at `320x568`,
       `390x844`, and `1280x800` with agent-browser, including keyboard,
       accessibility tree/axe, long content, large money, empty/loading/offline/
@@ -1119,7 +1131,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       imports in screens and the isolated proof retained one tree-shaken entry.
       The earlier `1,180.87`/`325.39`, `02edfb9` `290.76`/`42.88`, and
       `3b94827` `290.84`/`42.90` receipts were from earlier builds; the exact
-      current output is from the final `03e9f21` gate.
+      current output is from the final `0b9e25a` gate.
 - [x] Reconcile `UI_SPEC.md`, `DESIGN_SYSTEM.md`, `AGENTS.md`, README/licenses,
       gallery, tests, migration matrix, and actual implementation. The public
       barrel remains facade-only; the design-system document now marks React
@@ -1130,12 +1142,12 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       The E2E runner fix is pushed at `2873dfe`, the receipt journey contract
       fix at `2189863`, the scoped conflict-journey timeout is pushed at
       `d792cd1`, and the post-remediation canonical gate is green at
-      `02edfb9`. The latest gate after the Kuhn remediation passed at
-      `03e9f21` with 365 Deno tests, 11 E2E journeys, gallery/axe at three
-      viewports including the opened-menu check, browser/toolchain/CI checks,
-      the strengthened boundary scan, production and Mantine proof builds,
-      production Mantine/CSP browser smoke, Pages artifact verification,
-      frozen audit, and diff checks.
+      `02edfb9`. The latest gate after the Darwin remediation passed from
+      `0b9e25a` with 365 Deno tests, 11 E2E journeys, gallery/axe at three
+      viewports including the visible-menu landmark check, browser/toolchain/
+      CI checks, the strengthened boundary scan, production and Mantine proof
+      builds, production Mantine/CSP browser smoke, Pages artifact
+      verification, frozen audit, and diff checks.
       No unresolved M8 limitation requires
       owner acceptance;
       rollback remains ordinary revert of the focused commits, with all prior
@@ -1410,15 +1422,16 @@ evidence, and the next action is dependency-safe.
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
   `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with all five
   Descartes findings, Kuhn's two severity-2 findings, and Darwin's two
-  severity-2 findings remediated; the canonical gate and a fresh closure
-  review are pending.
+  severity-2 findings remediated; the canonical gate passed from `0b9e25a`
+  and a fresh closure review is pending.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master` at
   pushed implementation checkpoint `0b9e25a`; this plan update is the next
   pushed documentation checkpoint.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at the current
-  pushed implementation checkpoint `0b9e25a`, with the implementation batch, R-830 remediations,
+  pushed implementation checkpoint `0b9e25a`, with the implementation batch,
+  R-830 remediations,
   R-840 closure fixes, and M8-009 cleanup pushed; R-830, R-840, and M8-009 are
   complete. R-820 is approved and closed, and M8-005 and M8-006 are complete.
   The initial R-850 reviewer is closed; no migration branch or M8 worktree is
@@ -1429,7 +1442,7 @@ evidence, and the next action is dependency-safe.
   Descartes's five findings are remediated in `b9a6835`, `d3e9d57`, `4dac785`,
   and `8dca502`; Darwin's review is closed; no implementation or review
   worktree is active and no M8 change is unpushed; the two Darwin remediations
-  are pushed and the primary agent owns the canonical gate.
+  are pushed and the primary agent owns the fresh R-850 closure review.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -1475,13 +1488,12 @@ evidence, and the next action is dependency-safe.
   recorded above and both are fixed in `0b9e25a`; no migration
   branch or M8 worktree is active; historical non-M8 worktrees were preserved
   untouched. R-840 and M8-010 are complete.
-  The final canonical gate passed at `03e9f21`; the Darwin remediation gate
-  has passed its focused checks from `0b9e25a`, and the current plan update is
-  being pushed alongside that implementation checkpoint.
-- **Exact next action:** run the complete canonical gate from `0b9e25a`, record
-  its exact evidence in this checkpoint, and request a new independent R-850
-  closure review. Do not reuse Hooke, Newton, Herschel, Confucius, Descartes,
-  Kuhn, or Darwin for closure approval.
+  The final canonical gate after the Darwin remediation passed from
+  `0b9e25a`; its exact evidence is recorded in M8-010 above, and this plan
+  update is the current pushed documentation checkpoint.
+- **Exact next action:** request a new independent R-850 closure review from a
+  reviewer not previously used for this gate. Do not reuse Hooke, Newton,
+  Herschel, Confucius, Descartes, Kuhn, or Darwin for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

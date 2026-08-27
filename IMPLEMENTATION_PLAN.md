@@ -1302,6 +1302,15 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   builds, Pages, audit, and clean aligned Git state. Darwin was closed after
   its report. The primary agent owns these two remediations and must update
   the checkpoint before requesting another fresh closure review.
+- **Primary remediation evidence after Darwin (2026-08-27):** Pushed `0b9e25a`
+  composes `FileField`'s public browser ref with its explicit `inputRef`,
+  renders the shared Mantine menu within the application landmark, and makes
+  the gallery scroll to and assert visibility of the trigger and menu before
+  its opened-menu axe run. The focused component/feature suite passed 125
+  tests; gallery/axe passed at all three viewports with the visible menu;
+  type-check, lint, format, and diff checks passed. The complete canonical
+  gate is the next required checkpoint because shared design-system code and
+  browser verification changed.
 - [ ] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and
@@ -1400,15 +1409,16 @@ evidence, and the next action is dependency-safe.
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
   `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with all five
-  Descartes findings and Kuhn's two severity-2 findings remediated; Darwin's
-  fresh closure review found the two severity-2 issues recorded above, and
-  the next remediation is pending.
+  Descartes findings, Kuhn's two severity-2 findings, and Darwin's two
+  severity-2 findings remediated; the canonical gate and a fresh closure
+  review are pending.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master` at
-  pushed `373479f` (the plan-only checkpoint that records Darwin's BLOCK).
+  pushed implementation checkpoint `0b9e25a`; this plan update is the next
+  pushed documentation checkpoint.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at the current
-  pushed checkpoint `373479f`, with the implementation batch, R-830 remediations,
+  pushed implementation checkpoint `0b9e25a`, with the implementation batch, R-830 remediations,
   R-840 closure fixes, and M8-009 cleanup pushed; R-830, R-840, and M8-009 are
   complete. R-820 is approved and closed, and M8-005 and M8-006 are complete.
   The initial R-850 reviewer is closed; no migration branch or M8 worktree is
@@ -1418,8 +1428,8 @@ evidence, and the next action is dependency-safe.
   findings are remediated below; Descartes's fresh closure review is closed;
   Descartes's five findings are remediated in `b9a6835`, `d3e9d57`, `4dac785`,
   and `8dca502`; Darwin's review is closed; no implementation or review
-  worktree is active and no M8 change is unpushed; the primary agent owns the
-  two new remediations.
+  worktree is active and no M8 change is unpushed; the two Darwin remediations
+  are pushed and the primary agent owns the canonical gate.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -1462,16 +1472,16 @@ evidence, and the next action is dependency-safe.
   are remediated at `05b46a3`; the latest canonical gate is recorded above and
   Descartes's five findings are remediated; Kuhn's CSP/menu findings are
   remediated; Darwin's fresh closure review is closed with the two findings
-  recorded above; no migration
+  recorded above and both are fixed in `0b9e25a`; no migration
   branch or M8 worktree is active; historical non-M8 worktrees were preserved
   untouched. R-840 and M8-010 are complete.
-  The final canonical gate passed at `03e9f21`; the current plan checkpoint is
-  pushed at `373479f`.
-- **Exact next action:** fix Darwin's `FileField` public-ref and visible-menu
-  landmark findings, add focused regressions plus visible-menu axe coverage,
-  run the complete canonical gate, update this checkpoint, and request a new
-  independent R-850 closure review. Do not reuse Hooke, Newton, Herschel,
-  Confucius, Descartes, Kuhn, or Darwin for closure approval.
+  The final canonical gate passed at `03e9f21`; the Darwin remediation gate
+  has passed its focused checks from `0b9e25a`, and the current plan update is
+  being pushed alongside that implementation checkpoint.
+- **Exact next action:** run the complete canonical gate from `0b9e25a`, record
+  its exact evidence in this checkpoint, and request a new independent R-850
+  closure review. Do not reuse Hooke, Newton, Herschel, Confucius, Descartes,
+  Kuhn, or Darwin for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

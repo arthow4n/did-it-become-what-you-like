@@ -34,6 +34,8 @@ import {
   Progress,
   RadioGroup,
   ResponsiveGrid,
+  SearchField,
+  SecretField,
   Section,
   SegmentedControl,
   Stack,
@@ -173,7 +175,10 @@ Deno.test("design-system native fields and definition lists expose valid semanti
         createElement(
           "div",
           null,
-          createElement(NativeDateField, { label: "Expense date" }),
+          createElement(NativeDateField, {
+            label: "Expense date",
+            defaultValue: "2026-08-24",
+          }),
           createElement(NativeTimeField, { label: "Expense time" }),
           createElement(FileField, { label: "Receipt image" }),
           createElement(DefinitionList, {
@@ -191,6 +196,7 @@ Deno.test("design-system native fields and definition lists expose valid semanti
       const timeControl = view.getByLabelText("Expense time");
       const fileControl = view.getByLabelText("Receipt image");
       assert(dateControl);
+      assertEqual((dateControl as HTMLInputElement).value, "2026-08-24");
       assert(timeControl);
       assertEqual(fileControl.getAttribute("type"), "file");
       const nativeControls = [
@@ -268,6 +274,77 @@ Deno.test("design-system field facades translate Mantine value and file events",
         assertEqual(time, "14:30");
         assertEqual(selectedFile, "receipt.png");
       });
+    })
+  );
+});
+
+Deno.test("design-system search facade owns uncontrolled clear state", async () => {
+  await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
+    withAriaDomGlobals(window, async () => {
+      const changes: string[] = [];
+      const mounted = render(
+        createElement(SearchField, {
+          label: "Find",
+          defaultValue: "Coffee",
+          onValueChange: (value) => changes.push(value),
+        }),
+      );
+      const view = within(document.body);
+      const search = view.getByRole("searchbox", {
+        name: "Find",
+      }) as HTMLInputElement;
+      assertEqual(search.value, "Coffee");
+      fireEvent.click(view.getByRole("button", { name: "Clear search" }));
+      await waitFor(() => {
+        assertEqual(search.value, "");
+        assertEqual(changes[changes.length - 1], "");
+        assertEqual(search.getAttribute("data-empty"), "true");
+      });
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system file facade reports rejected files", async () => {
+  await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
+    withAriaDomGlobals(window, async () => {
+      let rejected: File[] = [];
+      const mounted = render(
+        createElement(FileField, {
+          label: "Receipt image",
+          accept: "image/png",
+          onReject: (files) => rejected = files,
+        }),
+      );
+      const view = within(document.body);
+      const file = new File(["not an image"], "receipt.txt", {
+        type: "text/plain",
+      });
+      fireEvent.change(view.getByLabelText("Receipt image"), {
+        target: { files: [file] },
+      });
+      await waitFor(() => {
+        assertEqual(rejected.length, 1);
+        assert(view.getByRole("alert"));
+        assert(view.getByText("That file type is not accepted."));
+      });
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system secret facade keeps reveal control keyboard reachable", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaDomGlobals(window, () => {
+      const mounted = render(
+        createElement(SecretField, { label: "API key" }),
+      );
+      const toggle = within(document.body).getByRole("button", {
+        name: "Show value",
+      });
+      assertEqual(toggle.getAttribute("tabindex"), "0");
+      assert(toggle.classList.contains("ds-secret-field__toggle"));
+      mounted.unmount();
     })
   );
 });
@@ -538,8 +615,8 @@ Deno.test("M8 structural facade wrappers retain semantic roots over Mantine", as
 });
 
 Deno.test("design-system dialog uses a named overlay and returns a useful trigger", async () => {
-  await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+  await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
+    withAriaDomGlobals(window, async () => {
       const mounted = render(
         createElement(
           AdaptiveDialog,
@@ -552,8 +629,11 @@ Deno.test("design-system dialog uses a named overlay and returns a useful trigge
       );
       const view = within(document.body);
       const trigger = view.getByRole("button", { name: "Open details" });
-      fireEvent.click(trigger);
-      assert(view.getByRole("dialog", { name: "Details" }));
+      fireEvent.keyDown(trigger, { key: "Enter", code: "Enter" });
+      fireEvent.keyUp(trigger, { key: "Enter", code: "Enter" });
+      await waitFor(() =>
+        assert(view.getByRole("dialog", { name: "Details" }))
+      );
       assert(document.querySelector('[data-dialog-layout="adaptive"]'));
       assert(view.getByText("Dialog content"));
       mounted.unmount();

@@ -68,18 +68,6 @@ import {
   Tooltip as AriaTooltip,
   TooltipTrigger as AriaTooltipTrigger,
 } from "react-aria-components";
-import type {
-  ButtonProps as AriaButtonProps,
-  CheckboxProps as AriaCheckboxProps,
-  DisclosureProps as AriaDisclosureProps,
-  ProgressBarProps as AriaProgressBarProps,
-  RadioGroupProps as AriaRadioGroupProps,
-  SearchFieldProps as AriaSearchFieldProps,
-  SelectProps as AriaSelectProps,
-  SwitchProps as AriaSwitchProps,
-  TextFieldProps as AriaTextFieldProps,
-} from "react-aria-components";
-
 export type Space = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export type Tone = "neutral" | "positive" | "warning" | "danger" | "info";
 export type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
@@ -415,12 +403,18 @@ export function Icon({ children, label, size = 20, className }: IconProps) {
   );
 }
 
-export type ButtonProps = Omit<AriaButtonProps, "children" | "className"> & {
-  children?: ReactNode;
-  variant?: ButtonVariant;
-  pending?: boolean;
-  className?: string;
-};
+export type ButtonProps =
+  & Omit<ComponentProps<"button">, "children" | "className" | "onClick">
+  & {
+    children?: ReactNode;
+    variant?: ButtonVariant;
+    pending?: boolean;
+    isDisabled?: boolean;
+    isPending?: boolean;
+    onPress?: (event: MouseEvent<HTMLButtonElement>) => void;
+    slot?: string;
+    className?: string;
+  };
 
 const mantineButtonVariants: Record<
   ButtonVariant,
@@ -436,9 +430,7 @@ function invokePress(
   onPress: ButtonProps["onPress"],
   event: MouseEvent<HTMLButtonElement>,
 ): void {
-  onPress?.(
-    event as unknown as Parameters<NonNullable<ButtonProps["onPress"]>>[0],
-  );
+  onPress?.(event);
 }
 
 type InjectedClickProps = {
@@ -446,13 +438,15 @@ type InjectedClickProps = {
 };
 
 function pressableTrigger(trigger: ReactNode): ReactNode {
-  return isValidElement(trigger)
-    ? (
-      <Pressable>
-        {trigger as ReactElement<never, string>}
-      </Pressable>
-    )
-    : trigger;
+  if (!isValidElement(trigger)) return trigger;
+  const triggerProps = trigger.props as Record<string, unknown>;
+  const isDisabled = triggerProps.isDisabled === true ||
+    triggerProps.disabled === true;
+  return (
+    <Pressable isDisabled={isDisabled}>
+      {trigger as ReactElement<never, string>}
+    </Pressable>
+  );
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -650,15 +644,35 @@ export function Field(
   );
 }
 
+type FieldStateProps = {
+  isDisabled?: boolean;
+  isReadOnly?: boolean;
+  isRequired?: boolean;
+  isInvalid?: boolean;
+  validationBehavior?: "aria" | "native";
+  slot?: string;
+};
+
 type SharedTextFieldProps =
-  & Omit<AriaTextFieldProps, "children" | "className">
+  & Omit<
+    ComponentProps<"input">,
+    | "children"
+    | "className"
+    | "defaultValue"
+    | "onChange"
+    | "value"
+  >
   & {
     label: ReactNode;
     placeholder?: string;
     description?: ReactNode;
     error?: ReactNode;
+    value?: string;
+    defaultValue?: string;
+    onChange?: (value: string) => void;
     className?: string;
-  };
+  }
+  & FieldStateProps;
 
 export function TextField({
   label,
@@ -698,14 +712,25 @@ export function TextField({
 }
 
 export type TextAreaProps =
-  & Omit<AriaTextFieldProps, "children" | "className">
+  & Omit<
+    ComponentProps<"textarea">,
+    | "children"
+    | "className"
+    | "defaultValue"
+    | "onChange"
+    | "value"
+  >
   & {
     label: ReactNode;
     placeholder?: string;
     description?: ReactNode;
     error?: ReactNode;
+    value?: string;
+    defaultValue?: string;
+    onChange?: (value: string) => void;
     className?: string;
-  };
+  }
+  & FieldStateProps;
 
 export function TextArea(
   {
@@ -747,14 +772,26 @@ export function TextArea(
 }
 
 export type SearchFieldProps =
-  & Omit<AriaSearchFieldProps, "children" | "className">
+  & Omit<
+    ComponentProps<"input">,
+    | "children"
+    | "className"
+    | "defaultValue"
+    | "onChange"
+    | "type"
+    | "value"
+  >
   & {
     label: ReactNode;
     placeholder?: string;
     description?: ReactNode;
+    value?: string;
+    defaultValue?: string;
+    onChange?: (value: string) => void;
     className?: string;
     onValueChange?: (value: string) => void;
-  };
+  }
+  & FieldStateProps;
 
 export function SearchField(
   {
@@ -762,6 +799,8 @@ export function SearchField(
     placeholder,
     description,
     className,
+    value,
+    defaultValue,
     onValueChange,
     onChange,
     isDisabled,
@@ -773,17 +812,23 @@ export function SearchField(
     ...props
   }: SearchFieldProps,
 ) {
+  const [uncontrolledValue, setUncontrolledValue] = useState(
+    defaultValue ?? "",
+  );
+  const currentValue = value === undefined ? uncontrolledValue : value;
   const mantineProps = props as unknown as ComponentProps<
     typeof MantineTextInput
   >;
-  const handleValueChange = (value: string) => {
-    onChange?.(value);
-    onValueChange?.(value);
+  const handleValueChange = (nextValue: string) => {
+    if (value === undefined) setUncontrolledValue(nextValue);
+    onChange?.(nextValue);
+    onValueChange?.(nextValue);
   };
   return (
     <MantineTextInput
       {...mantineProps}
       type="search"
+      value={currentValue}
       label={label}
       placeholder={placeholder}
       description={description}
@@ -792,6 +837,7 @@ export function SearchField(
       readOnly={isReadOnly}
       aria-invalid={isInvalid ? "true" : undefined}
       className={cx("ds-field", "ds-search-field", className)}
+      data-empty={currentValue.length === 0 ? "true" : undefined}
       classNames={{ input: "ds-field-control ds-search-field__input" }}
       slot={slot ?? undefined}
       onChange={(event) => handleValueChange(event.currentTarget.value)}
@@ -855,6 +901,8 @@ export function SecretField(
       onVisibilityChange={setRevealed}
       visibilityToggleButtonProps={{
         "aria-label": revealed ? "Hide value" : revealLabel,
+        className: "ds-secret-field__toggle",
+        tabIndex: 0,
       }}
       aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
       onChange={(event) => onChange?.(event.currentTarget.value)}
@@ -984,7 +1032,7 @@ export function NativeDateField(
       error={error}
       required={props.required}
       id={controlId}
-      value={dateValue ?? null}
+      value={dateValue}
       defaultValue={dateDefaultValue}
       onChange={(nextValue) => emitInputChange(onChange, nextValue ?? "")}
       valueFormat="YYYY-MM-DD"
@@ -1043,6 +1091,7 @@ export type FileFieldProps =
   & {
     label: ReactNode;
     description?: ReactNode;
+    onReject?: (files: File[]) => void;
     className?: string;
   };
 
@@ -1053,6 +1102,7 @@ export function FileField(
     className,
     id,
     onChange,
+    onReject,
     accept,
     capture,
     multiple,
@@ -1063,10 +1113,14 @@ export function FileField(
   const generatedId = useId();
   const controlId = id ?? generatedId;
   const dropzoneAccept = dropzoneAcceptFor(accept);
+  const [hasRejection, setHasRejection] = useState(false);
   return (
     <Field
       label={label}
       description={description}
+      error={hasRejection
+        ? <span role="alert">That file type is not accepted.</span>
+        : undefined}
       controlId={controlId}
       className={className}
     >
@@ -1074,8 +1128,14 @@ export function FileField(
         accept={dropzoneAccept}
         multiple={multiple}
         disabled={disabled}
-        onDrop={(files) => emitFileChange(onChange, files)}
-        onReject={() => undefined}
+        onDrop={(files) => {
+          setHasRejection(false);
+          emitFileChange(onChange, files);
+        }}
+        onReject={(rejections) => {
+          setHasRejection(true);
+          onReject?.(rejections.map(({ file }) => file as File));
+        }}
         className="ds-file-dropzone"
         inputProps={{
           ...props,
@@ -1108,18 +1168,31 @@ export function FileField(
 
 export type SelectOption = { id: string; label: string; disabled?: boolean };
 
-export type SelectFieldProps =
-  & Omit<AriaSelectProps<object>, "children" | "className">
-  & {
-    label: ReactNode;
-    options: SelectOption[];
-    value?: string;
-    onValueChange?: (value: string) => void;
-    description?: ReactNode;
-    error?: ReactNode;
-    isReadOnly?: boolean;
-    className?: string;
-  };
+export type SelectFieldProps = {
+  label: ReactNode;
+  options: SelectOption[];
+  value?: string;
+  defaultValue?: string;
+  selectedKey?: string | number | null;
+  defaultSelectedKey?: string | number | null;
+  onValueChange?: (value: string) => void;
+  onSelectionChange?: (value: string) => void;
+  description?: ReactNode;
+  error?: ReactNode;
+  isDisabled?: boolean;
+  isReadOnly?: boolean;
+  isRequired?: boolean;
+  isInvalid?: boolean;
+  isOpen?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
+  validationBehavior?: "aria" | "native";
+  slot?: string;
+  id?: string;
+  name?: string;
+  placeholder?: string;
+  autoFocus?: boolean;
+  className?: string;
+};
 
 export function SelectField({
   label,
@@ -1131,21 +1204,23 @@ export function SelectField({
   className,
   selectedKey,
   defaultSelectedKey,
+  defaultValue: explicitDefaultValue,
   onSelectionChange,
   isDisabled,
   isReadOnly,
   isRequired,
   isInvalid,
   validationBehavior: _validationBehavior,
+  isOpen: _isOpen,
+  onOpenChange: _onOpenChange,
   slot,
   ...props
 }: SelectFieldProps) {
   const mantineProps = props as unknown as ComponentProps<typeof MantineSelect>;
   const selectedValue = value ??
     (selectedKey == null ? undefined : String(selectedKey));
-  const defaultValue = defaultSelectedKey == null
-    ? undefined
-    : String(defaultSelectedKey);
+  const defaultValue = explicitDefaultValue ??
+    (defaultSelectedKey == null ? undefined : String(defaultSelectedKey));
   return (
     <MantineSelect
       {...mantineProps}
@@ -1234,10 +1309,31 @@ export function ColorChoiceField({
 }
 
 export type CheckboxProps =
-  & Omit<AriaCheckboxProps, "children" | "className">
+  & Omit<
+    ComponentProps<"input">,
+    | "type"
+    | "children"
+    | "className"
+    | "checked"
+    | "defaultChecked"
+    | "disabled"
+    | "onChange"
+    | "readOnly"
+    | "required"
+  >
   & {
     children: ReactNode;
     className?: string;
+    isSelected?: boolean;
+    defaultSelected?: boolean;
+    isIndeterminate?: boolean;
+    onChange?: (selected: boolean) => void;
+    isDisabled?: boolean;
+    isReadOnly?: boolean;
+    isRequired?: boolean;
+    isInvalid?: boolean;
+    validationBehavior?: "aria" | "native";
+    slot?: string;
   };
 
 export function Checkbox({
@@ -1276,15 +1372,24 @@ export function Checkbox({
   );
 }
 
-export type RadioGroupProps =
-  & Omit<AriaRadioGroupProps, "children" | "className">
-  & {
-    label: ReactNode;
-    options: SelectOption[];
-    description?: ReactNode;
-    error?: ReactNode;
-    className?: string;
-  };
+export type RadioGroupProps = {
+  label: ReactNode;
+  options: SelectOption[];
+  description?: ReactNode;
+  error?: ReactNode;
+  className?: string;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  isDisabled?: boolean;
+  isReadOnly?: boolean;
+  isRequired?: boolean;
+  isInvalid?: boolean;
+  validationBehavior?: "aria" | "native";
+  name?: string;
+  id?: string;
+  slot?: string;
+};
 
 export function RadioGroup(
   {
@@ -1336,9 +1441,18 @@ export function RadioGroup(
   );
 }
 
-export type SwitchProps = Omit<AriaSwitchProps, "children" | "className"> & {
+export type SwitchProps = {
   children: ReactNode;
   className?: string;
+  isSelected?: boolean;
+  defaultSelected?: boolean;
+  onChange?: (selected: boolean) => void;
+  isDisabled?: boolean;
+  isReadOnly?: boolean;
+  isRequired?: boolean;
+  isInvalid?: boolean;
+  validationBehavior?: "aria" | "native";
+  slot?: string;
 };
 
 export function Switch({
@@ -1370,14 +1484,21 @@ export function Switch({
 
 export type SegmentedOption = SelectOption & { description?: string };
 
-export type SegmentedControlProps =
-  & Omit<AriaRadioGroupProps, "children" | "className">
-  & {
-    label: string;
-    options: SegmentedOption[];
-    fullWidth?: boolean;
-    className?: string;
-  };
+export type SegmentedControlProps = {
+  label: string;
+  options: SegmentedOption[];
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  isDisabled?: boolean;
+  isReadOnly?: boolean;
+  validationBehavior?: "aria" | "native";
+  name?: string;
+  id?: string;
+  slot?: string;
+  fullWidth?: boolean;
+  className?: string;
+};
 
 export function SegmentedControl(
   {
@@ -1566,13 +1687,14 @@ export function Divider({
   );
 }
 
-export type DisclosureProps =
-  & Omit<AriaDisclosureProps, "children" | "className">
-  & {
-    title: ReactNode;
-    children: ReactNode;
-    className?: string;
-  };
+export type DisclosureProps = {
+  title: ReactNode;
+  children: ReactNode;
+  className?: string;
+  isExpanded?: boolean;
+  defaultExpanded?: boolean;
+  onExpandedChange?: (isExpanded: boolean) => void;
+};
 
 export function Disclosure(
   { title, children, className, ...props }: DisclosureProps,
@@ -2026,14 +2148,14 @@ export function StatusMessage(
   );
 }
 
-export type ProgressProps =
-  & Omit<AriaProgressBarProps, "className" | "children">
-  & {
-    label: string;
-    value?: number;
-    indeterminate?: boolean;
-    className?: string;
-  };
+export type ProgressProps = {
+  label: string;
+  value?: number;
+  indeterminate?: boolean;
+  minValue?: number;
+  maxValue?: number;
+  className?: string;
+};
 
 export function Progress(
   { label, value, indeterminate, className, ...props }: ProgressProps,

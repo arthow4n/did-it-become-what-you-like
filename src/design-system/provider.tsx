@@ -144,6 +144,8 @@ const afterMidnightTheme = createTheme({
     positive: semanticColor("positive"),
     negative: semanticColor("negative"),
     danger: semanticColor("danger"),
+    error: semanticColor("danger"),
+    red: semanticColor("danger"),
     warning: semanticColor("warning"),
     info: semanticColor("info"),
     focusRing: semanticColor("focus-ring"),

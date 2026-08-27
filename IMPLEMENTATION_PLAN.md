@@ -415,6 +415,25 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - [ ] Primary agent fixes severity 1–3 findings and reruns only checks affected
       by those fixes. Repeat the complete checkpoint matrix only when shared or
       cross-cutting code changed; then commit, push, and record closure.
+- **Review evidence (R-820 initial pass, 2026-08-27):** Fresh read-only reviewer
+  audited `HEAD 7915486` against base `12f12c4` and returned **BLOCK** with ten
+  findings: S2 semantic error contrast using Mantine's default error token; S2
+  missing Mantine dates and Dropzone style layers; S2 narrow ActionCard
+  intrinsic-width clipping; S2 `NativeDateField` suppressing `defaultValue`;
+  S2 SecretField reveal control excluded from keyboard focus; S2 uncontrolled
+  SearchField clear not updating its value; S2 FileField rejection being
+  discarded without facade feedback; S2 migrated public control types exposing
+  React Aria prop declarations; S2 SegmentedControl retaining decorative
+  transition motion; and S3 Pressable warnings around Mantine-backed dialog
+  triggers with no browser proof of keyboard opening. The reviewer recorded
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  --changed=12f12c4` passing (110 tests), `deno task build` passing (4233
+  modules; JS 1324.80 kB; CSS 261.17 kB), `git diff --check` passing, and
+  `deno task a11y:gallery` failing on two serious contrast findings. The
+  three-viewport agent-browser matrix also failed on overflow, date default,
+  secret reveal, SearchField clear, and SegmentedControl transition behavior;
+  the date-open evidence was saved as `/tmp/r820-gallery-date-open.png` and
+  narrow ActionCard evidence as `/tmp/r820-app-narrow-first.png`.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback

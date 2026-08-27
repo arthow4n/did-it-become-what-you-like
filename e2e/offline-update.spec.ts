@@ -109,7 +109,9 @@ test("offline-update keeps local launch, install fallback, update readiness, and
   await expect(
     page.getByText("Save or discard unsaved changes before reloading."),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Reload to update" }).first().click();
+  await expect(
+    page.getByRole("button", { name: "Reload to update" }).first(),
+  ).toBeDisabled();
   await expect(
     page.getByText("Save or discard unsaved changes before reloading."),
   ).toBeVisible();

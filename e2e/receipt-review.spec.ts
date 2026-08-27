@@ -141,19 +141,14 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
   await page.getByRole("option", { name: /Fake Gemini Compatible/ }).click();
   await expect(page.getByText(/quota was exceeded/)).toBeVisible();
   await expect(page.getByText("provider-only-secret")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Retry" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Retry" })).toBeEnabled();
   await expect.poll(() =>
     page.getByLabel("Receipt image file").evaluate((input) => ({
       value: input.value,
       fileCount: input.files?.length ?? 0,
     }))
-  ).toEqual({ value: "", fileCount: 0 });
-  await page.getByLabel("Receipt image file").setInputFiles({
-    name: "receipt-retry.png",
-    mimeType: "image/png",
-    buffer: ONE_PIXEL_PNG,
-  });
-  await page.getByRole("button", { name: "Scan with AI" }).click();
+  ).toMatchObject({ fileCount: 1 });
+  await page.getByRole("button", { name: "Retry" }).click();
   await expect(page.getByRole("heading", { name: "Review receipt" }))
     .toBeVisible();
   await expect(page.getByRole("heading", { name: "Fake Receipt Market" }))

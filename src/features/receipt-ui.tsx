@@ -894,7 +894,11 @@ export function ReceiptScanScreen({
       return;
     }
     setPendingScanState(false);
-    send({ type: "receipt.scan", input: scanInput });
+    send(
+      snapshot.matches("failed")
+        ? { type: "receipt.retry", input: scanInput }
+        : { type: "receipt.scan", input: scanInput },
+    );
   };
 
   const actorError = snapshot.context.error?.message;

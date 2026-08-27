@@ -1107,7 +1107,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       The E2E runner fix is pushed at `2873dfe`, the receipt journey contract
       fix at `2189863`, the scoped conflict-journey timeout is pushed at
       `d792cd1`, and the post-remediation canonical gate is green at
-      `669ec3d`. That gate passed 362 Deno tests, 11 E2E journeys,
+      `02edfb9`. That gate passed 362 Deno tests, 11 E2E journeys,
       gallery/axe at three viewports, browser/toolchain/CI checks, the
       strengthened boundary scan, both builds, Pages artifact verification,
       frozen audit, and diff checks. No unresolved M8 limitation requires
@@ -1157,8 +1157,20 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   conflict-resolution journey an explicit 60-second timeout after repeated
   full-suite timing pressure; the complete E2E suite passed all 11 journeys.
   The first post-remediation canonical run reached 362 Deno tests but had the
-  same conflict journey timeout; its isolated rerun passed 1/1, so the
-  timeout remediation is included in the next complete gate.
+  same conflict journey timeout; its isolated rerun passed 1/1. The subsequent
+  complete gate passed at `669ec3d`, and the final gate after the
+  documentation/gallery remediation passed at `02edfb9`.
+- **Primary remediation evidence after Newton (2026-08-27):** Pushed
+  `02edfb9` reconciles the public matrix with the 151 component declarations
+  plus the two provider exports, records the twelve barrel consumers and
+  intentional provider/fixture imports, removes stale `ComboBoxField` claims,
+  and gives the gallery's focusable money fixture the supported `group` role.
+  `deno task a11y:gallery`, `deno task check`, `deno task lint`, focused
+  boundary verification, and `git diff --check` passed. The final canonical
+  gate passed on the same pushed commit with 362 Deno tests, 11 E2E journeys,
+  gallery/axe at three viewports, browser/toolchain/CI checks, the strengthened
+  boundary scan, both builds, Pages artifact verification, frozen audit, and
+  diff checks.
 - [ ] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and
@@ -1308,12 +1320,10 @@ evidence, and the next action is dependency-safe.
   is closed; the fresh Newton closure reviewer is also closed and the primary
   agent owns its three-finding remediation; no migration branch or M8 worktree
   is active; historical non-M8 worktrees were preserved untouched. R-840 and
-  M8-010 are complete. The post-remediation canonical gate passed at
-  `669ec3d`; documentation and gallery fixes remain unpushed.
-- **Exact next action:** reconcile the provider/export/import documentation and
-  the gallery money fixture, run the affected design-system and gallery checks,
-  commit and push the remediation, then request a new independent R-850
-  closure review. Do not reuse Hooke or Newton for closure approval.
+  M8-010 are complete. The final canonical gate passed at `02edfb9`; no
+  implementation or documentation change is unpushed.
+- **Exact next action:** request a new independent R-850 closure review. Do
+  not reuse Hooke or Newton for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

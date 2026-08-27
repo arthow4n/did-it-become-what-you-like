@@ -520,6 +520,23 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   (113 tests, 0 failures), `deno task check` passed, `deno task lint` passed
   (207 files), targeted `deno fmt --check` passed (4 files), and `git
   diff --check` passed.
+- **Fifth closure review evidence (2026-08-27):** Fresh read-only reviewer
+  audited pushed `HEAD 447b8e9` against `12f12c4`. The required affected run
+  passed (113 tests), `deno task a11y:gallery` passed at all three viewports,
+  `deno task build` passed, and `git diff --check 12f12c4..HEAD` passed. The
+  reviewer confirmed FilterBar containment, fully wrapped ExpenseRow labels,
+  long ActionCard content, Switch validation mapping, keyboard SecretField
+  reveal, dialog/date/file/search behavior, and zero segmented transition
+  duration. The gate remains **BLOCKED** on one S2 layout finding: at
+  `320x568`, `documentElement.scrollWidth` and `body.scrollWidth` are `356px`
+  versus a `320px` viewport, with the ExpenseRow ending at `x=356.36px`
+  (`x=45px`, width `311.36px`). The long label itself wraps without clipping;
+  evidence isolates the remaining expansion to the containing gallery grid
+  track at `tokens.css:1202`. No other finding remains.
+- **Exact next action:** constrain the gallery section/surface grid tracks with
+  an explicit `minmax(0, 1fr)` column, run the affected checks and diff check,
+  commit and push the focused fix, update this checkpoint, and request a fresh
+  read-only closure review before opening M8-005.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
@@ -796,10 +813,11 @@ evidence, and the next action is dependency-safe.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `265d5b8` (`fix(migration): resolve R-820 control findings`); no
-  implementation changes are currently uncommitted. No M8 branch/worktree or
-  review agent is active. Historical non-M8 worktrees remain present and were
-  preserved untouched.
+  `447b8e9` (`docs(plan): record R-820 fifth fixes`); the latest closure review
+  has completed and found one remaining S2 gallery-track overflow at 320px;
+  this plan update is the only current uncommitted change. No M8 branch/worktree
+  or review agent is active. Historical non-M8 worktrees remain present and
+  were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -817,13 +835,15 @@ evidence, and the next action is dependency-safe.
 - **M8 active/interrupted work:** M8-002 is complete and pushed at `12f12c4`;
   R-810 was approved by the fresh read-only reviewer with no findings and is
   closed at `492d9c1`. M8-003 is complete and pushed at `18bac20`; M8-004 is
-  complete and pushed at `eaa02d7`; the second R-820 fix is pushed at `78fbf2a`;
-  R-820 remains owned by the primary agent;
-  no review agent, migration branch, or M8 worktree is active; historical
-  non-M8 worktrees were preserved untouched.
+  complete and pushed at `eaa02d7`; the fifth R-820 fix is pushed at `5f765d1`
+  and its evidence is recorded above; the latest R-820 closure review is
+  complete at `447b8e9` with the single remaining gallery-track finding
+  recorded above; R-820 remains owned by the primary agent; no review agent,
+  migration branch, or M8 worktree is active; historical non-M8 worktrees were
+  preserved untouched.
 - **Exact next action:** invoke another fresh read-only R-820 closure reviewer,
   have it rerun the combined M8-003/M8-004 affected, gallery, build, and
-  three-viewport browser matrix from the current pushed HEAD, and record
+  three-viewport browser matrix after the gallery-track fix, and record
   approval or any remaining severity 1–3 finding before opening M8-005.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,

@@ -676,9 +676,12 @@ evidence, and the next action is dependency-safe.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
-- **Worktree state:** `master` is clean and aligned with `origin/master` at
-  pushed commit `492d9c1`; no M8 branch/worktree exists. Historical non-M8
-  worktrees remain present and were preserved untouched.
+- **Worktree state:** `master` is aligned with `origin/master` at pushed commit
+  `e1cc776` (`docs(plan): require Mantine notifications`) with the expected
+  uncommitted M8-003 provider, styles, structural facade, token, gallery, and
+  component-harness changes in the primary worktree. No M8 branch/worktree or
+  review agent is active. Historical non-M8 worktrees remain present and were
+  preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -690,12 +693,12 @@ evidence, and the next action is dependency-safe.
   conversion has occurred.
 - **M8 active/interrupted work:** M8-002 is complete and pushed at `12f12c4`;
   R-810 was approved by the fresh read-only reviewer with no findings and is
-  closed at `492d9c1`. M8-003 is now owned by the primary agent. No review
-  agent, migration branch, or worktree is active, and historical non-M8
-  worktrees were preserved untouched.
-- **Exact next action:** implement and test the facade-owned provider, semantic
-  Mantine theme mapping, and structural wrappers; keep feature markup/imports
-  unchanged and record the task evidence before requesting R-820.
+  closed at `492d9c1`. M8-003 remains owned by the primary agent with its
+  implementation changes uncommitted. No review agent, migration branch, or
+  M8 worktree is active; historical non-M8 worktrees were preserved untouched.
+- **Exact next action:** finish M8-003 validation, commit and push the
+  provider/structural facade batch, then begin M8-004 controls while preserving
+  the facade-only boundary and the focused non-duplicating test policy.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

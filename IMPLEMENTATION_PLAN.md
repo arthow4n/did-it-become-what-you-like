@@ -1072,21 +1072,17 @@ evidence, and the next action is dependency-safe.
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007` and `M8-008` are `COMPLETE`; `R-840` is `BLOCKED`;
-  `M8-009`
-  through `M8-010`, and
-  `R-840` through `R-850` remain `PENDING`.
+  `M8-009` through `M8-010`, and `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
-- **Worktree state:** `master` is aligned with `origin/master` at pushed
-  implementation commit `c40a7ff` (`feat(migration): finish portability facade
-  composition`), with the
+- **Worktree state:** `master` is aligned with `origin/master` at pushed plan
+  commit `854073a` (`docs(plan): record R-840 review findings`), with the
   implementation batch and R-830 remediations pushed; R-830 is approved and
   closed, M8-007 and M8-008 are complete, and R-840 is blocked on review
-  findings;
-  R-820 is approved and closed, and M8-005 and M8-006 are complete. M8-008 is
-  complete and R-840 is the sole active review gate. No M8 branch/worktree or
-  other review agent is active; the primary agent owns the gate.
+  findings. R-820 is approved and closed, and M8-005 and M8-006 are complete.
+  No M8 branch/worktree or review agent is active; the primary agent owns the
+  R-840 remediation.
   Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,

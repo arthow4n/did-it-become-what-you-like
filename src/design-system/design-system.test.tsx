@@ -1068,6 +1068,22 @@ Deno.test("design-system CSS locks semantic tokens, immediate motion, targets, a
   assert(css.includes("@media (max-width: 359px)"));
   assert(css.includes("max(var(--space-2), env(safe-area-inset-bottom, 0px))"));
   assert(css.includes(".ds-sticky-action-bar"));
+  for (
+    const selector of [
+      ".ds-search-field__clear",
+      ".ds-secret-field__toggle",
+      ".ds-toast__dismiss",
+    ]
+  ) {
+    const ruleStart = css.indexOf(selector);
+    const ruleEnd = css.indexOf("}", ruleStart);
+    assert(
+      ruleStart >= 0 &&
+        css.slice(ruleStart, ruleEnd).includes("width: 44px;") &&
+        css.slice(ruleStart, ruleEnd).includes("height: 44px;"),
+      `${selector} must retain a 44px hit area`,
+    );
+  }
   assert(css.includes("flex-direction: column;"));
   assert(css.includes("@media (prefers-reduced-motion: reduce)"));
   assert(css.includes("@media (forced-colors: active)"));

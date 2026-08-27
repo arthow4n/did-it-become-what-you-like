@@ -1021,32 +1021,55 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-009 — Remove superseded implementation and enforce boundaries
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on approved `R-840`.
+- **Status/dependencies:** `COMPLETE`; depends on approved `R-840`.
 - **Owned scope:** design-system implementation/CSS, dependency configuration,
   static boundary checks, tests, and documentation; no visual redesign.
-- [ ] Verify every migration-matrix row is complete, then remove all
-      `react-aria-components` imports and its pinned dependency.
-- [ ] Delete only CSS selectors and helper code proven unused by searches,
+- [x] Verify every migration-matrix row is complete, then remove all
+      `react-aria-components` imports and its pinned dependency. The public
+      matrix now labels the historical column `Pre-M8 backing`; the dependency
+      and its transitive lock entries are absent from `deno.json` and
+      `deno.lock`, including the old toolchain proof.
+- [x] Delete only CSS selectors and helper code proven unused by searches,
       coverage, gallery, build, and screen inspection; preserve semantic tokens
-      and feature styles still carrying product layout.
-- [ ] Split the monolithic design-system module into facade-owned modules only
+      and feature styles still carrying product layout. The selector audit
+      returned no CSS class present only in CSS after removal; no helper had an
+      unused import/reference signal, so no speculative helper deletion was
+      made. Existing R-840 gallery/screen evidence and the current design-system
+      fixture/build checks cover the retained styling boundary.
+- [x] Split the monolithic design-system module into facade-owned modules only
       if this improves reviewability without changing the public barrel or
-      creating library-specific imports in screens.
-- [ ] Add an automated boundary check that fails on `@mantine/*` or component-
+      creating library-specific imports in screens. No split was warranted in
+      this cleanup: the public barrel is unchanged and all library details
+      remain localized to the existing facade/provider boundary.
+- [x] Add an automated boundary check that fails on `@mantine/*` or component-
       library imports outside approved design-system/provider files, Mantine
-      types in public exports, and reintroduction of React Aria.
-- [ ] Run dependency/license/security checks and update third-party notices and
-      architecture documentation.
-- **Focused verification:** boundary check, affected tests, unused-selector/
-  import searches, `deno audit --frozen`, and one production build. The final
-  gallery/a11y/browser and complete repository matrix belongs to `M8-010`.
+      types in public exports, and reintroduction of React Aria. The new
+      `scripts/verify-design-system-boundary.ts` task scans application and
+      toolchain source, the public barrel, import map, and lockfile.
+- [x] Run dependency/license/security checks and update third-party notices and
+      architecture documentation. React Aria was removed from the notices;
+      Mantine and Day.js are recorded as current production dependencies, and
+      the architecture document now distinguishes historical React Aria
+      inventory from current Mantine backing.
+- **Focused verification (2026-08-27):** `deno task
+  verify:design-system-boundary` passed across 167 source files;
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  src/design-system/design-system.test.tsx
+  src/design-system/mantine-compatibility.test.tsx` passed 39 tests;
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  spikes/toolchain/tests/toolchain_test.tsx` passed 2 tests;
+  `deno task test:affected` found no affected test modules; `deno task check`,
+  `deno task lint`, `deno audit --frozen`, `deno task build`, and
+  `deno task verify:mantine-compatibility` passed; `git diff --check` passed.
+  The final gallery/a11y/browser and complete repository matrix belongs to
+  `M8-010`.
 - **Acceptance:** one maintained low-level library remains, no copied or dead
   implementation survives, and future replacement remains localized behind the
   facade.
 
 #### M8-010 — Full migration regression, visual closure, and handoff
 
-- **Status/dependencies:** `PENDING`; depends on `M8-009`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-009`.
 - **Owned scope:** regression fixes within M8 ownership, gallery/fixtures,
   documentation, and ledger evidence; no new feature or redesign.
 - [ ] Run `deno task verify` once from a clean working tree. It owns the
@@ -1168,18 +1191,17 @@ evidence, and the next action is dependency-safe.
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
-  `IN_PROGRESS`; `M8-010` and `R-850` remain `PENDING`.
+  `COMPLETE`; `M8-010` is `IN_PROGRESS` and `R-850` remains `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at the current
-  pushed checkpoint, with the
-  implementation batch and R-830 remediations pushed; R-830 is approved and
-  closed, M8-007 and M8-008 are complete, and the R-840 closure review found
-  one bookkeeping finding remaining. R-820 is approved and closed, and M8-005 and
-  M8-006 are complete. No M8 branch/worktree or review agent is active; the
-  R-840 closure gate complete and M8-009 now owned by the primary agent.
-  Historical non-M8 worktrees remain present and were preserved untouched.
+  pushed checkpoint, with the implementation batch, R-830 remediations,
+  R-840 closure fixes, and M8-009 cleanup pushed; R-830, R-840, and M8-009 are
+  complete. R-820 is approved and closed, and M8-005 and M8-006 are complete.
+  No M8 branch/worktree or review agent is active; M8-010 is now owned by the
+  primary agent. Historical non-M8 worktrees remain present and were preserved
+  untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -1193,7 +1215,13 @@ evidence, and the next action is dependency-safe.
   buttons, fields, choices, dates, times, and Dropzone preserve facade
   contracts; `deno task test:affected` passed with 109 tests before the final
   assertion-only additions, and `deno task test:component` passed with 105
-  tests afterward.
+  tests afterward. M8-009 is pushed and green: the boundary verifier passed
+  across 167 source files; the design-system and Mantine compatibility suites
+  passed 39 tests; the toolchain proof passed 2 tests; affected-test selection
+  reported no affected modules; strict TypeScript, lint, frozen audit, app and
+  Mantine proof builds, and diff checks passed. The CSS selector audit found no
+  remaining selector referenced only by CSS, and third-party notices and
+  architecture documentation match the dependency state.
 - **M8 active/interrupted work:** M8-002 is complete and pushed at `12f12c4`;
   R-810 was approved by the fresh read-only reviewer with no findings and is
   closed at `492d9c1`. M8-003 is complete and pushed at `18bac20`; M8-004 is
@@ -1207,14 +1235,16 @@ evidence, and the next action is dependency-safe.
   `6c904fc`; M8-006 is pushed through shell `7bb9e87`, list/form/status
   `f3f2a0b`, and final sticky-action `a5d4b19`; the first R-830 review by
   `Sartre`, `Faraday`, and `Peirce` are closed with R-830 approved and all
-  severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; no review
+  severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; M8-009 is
+  complete with the React Aria dependency removal, dead-selector cleanup,
+  boundary task, and documentation evidence above; no review
   agent, migration branch, or M8 worktree is active; historical non-M8
   worktrees were preserved untouched. R-840 is complete and the primary agent
-  owns M8-009.
-- **Exact next action:** audit the M8-009 migration matrix and current
-  `react-aria-components` dependency/docs/static-boundary inventory, then
-  implement the dependency and boundary cleanup in focused commits with
-  affected tests and exact evidence.
+  owns M8-010.
+- **Exact next action:** from the clean pushed checkpoint, run the single
+  canonical `deno task verify` gate for M8-010, then perform its named gallery,
+  accessibility, browser, bundle, and documentation review before requesting
+  fresh R-850 independent review.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

@@ -308,7 +308,10 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### R-810 — Governance and compatibility review checkpoint
 
-- **Status/dependencies:** `PENDING`; depends on `M8-001`, `M8-002`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-001`, `M8-002`.
+- **Assigned reviewer:** `01a0408a-8fb5-7c31-8f3d-9f6824436a65` (`Linnaeus`),
+  fresh read-only review of pushed HEAD `27771ff`; the primary agent is
+  waiting/polling and will not begin `M8-003` before an explicit approval.
 - [ ] Fresh read-only reviewer checks the inventory, locked facade, dependency
       choices, Deno/Vite/React compatibility, focused facade-boundary proof,
       styling strategy, bundle evidence, and absence of premature production
@@ -654,13 +657,13 @@ evidence, and the next action is dependency-safe.
 ## Current Checkpoint
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, and `M8-002`
-  are `COMPLETE`. `R-810`, `M8-003` through `M8-010`, and `R-820` through
+  are `COMPLETE`. `R-810` is `IN_PROGRESS`; `M8-003` through `M8-010`, and `R-820` through
   `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is clean and aligned with `origin/master` at
-  pushed commit `12f12c4`; no M8 branch/worktree exists. Historical non-M8
+  pushed commit `27771ff`; no M8 branch/worktree exists. Historical non-M8
   worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -672,12 +675,13 @@ evidence, and the next action is dependency-safe.
   app still uses the pre-M8 React Aria facade; no production provider or facade
   conversion has occurred.
 - **M8 active/interrupted work:** M8-002 is complete and pushed at `12f12c4`;
-  the primary agent owns the pending `R-810` gate. No review agent is assigned,
-  no migration branch/worktree exists, and historical non-M8 worktrees were
+  the primary agent owns the `R-810` gate while reviewer
+  `01a0408a-8fb5-7c31-8f3d-9f6824436a65` (`Linnaeus`) reviews read-only. No
+  migration branch/worktree exists, and historical non-M8 worktrees were
   preserved untouched.
-- **Exact next action:** request a fresh read-only reviewer at `R-810`. Leave
-  the review agent running and wait/poll for its result; do not begin `M8-003`
-  until `R-810` is explicitly approved.
+- **Exact next action:** wait/poll the assigned reviewer until it reports
+  `APPROVE` or `BLOCK`; do not begin `M8-003` until `R-810` is explicitly
+  approved, and keep the reviewer running during a long review.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

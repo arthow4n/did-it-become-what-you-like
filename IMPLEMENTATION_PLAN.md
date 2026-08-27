@@ -893,7 +893,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### R-840 — Domain-composite review checkpoint
 
-- **Status/dependencies:** `BLOCKED`; depends on `M8-007`, `M8-008`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-007`, `M8-008`.
 - [x] Fresh read-only reviewer traces representative actor snapshot/event paths
       through each migrated composite and audits privacy, destructive safety,
       conflict neutrality, offline honesty, accessibility, responsive layouts,
@@ -917,9 +917,16 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   affected browser matrix passed the other domain/privacy/focus checks;
   Playwright E2E remained unavailable because existing Vite PID 515499 occupies
   port 5173 and was left untouched. The reviewer was closed after its report.
-- [ ] Primary agent resolves severity 1–3 findings and reruns only checks
+- [x] Primary agent resolves severity 1–3 findings and reruns only checks
       affected by those fixes. Repeat the complete checkpoint matrix only when
       shared or cross-cutting code changed before closure.
+- **Remediation evidence (2026-08-27):** Pushed commit `5566307` adds the
+  explicit Cancel action to forced finalization and a product regression
+  covering both confirm/cancel callbacks. It also constrains known-device
+  retirement badges to the row width with wrapping and adds narrow-layout CSS
+  and DOM containment regressions. The focused destruction/sync test command
+  passed (20 tests), and targeted TypeScript, format, lint, and diff checks
+  passed. A fresh closure review remains required.
 - **Gate acceptance:** no unresolved severity 1–3 finding and no actor/domain/
   adapter contract drift.
 
@@ -1071,18 +1078,19 @@ evidence, and the next action is dependency-safe.
 
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
-  `COMPLETE`; `M8-007` and `M8-008` are `COMPLETE`; `R-840` is `BLOCKED`;
+  `COMPLETE`; `M8-007` and `M8-008` are `COMPLETE`; `R-840` is `IN_PROGRESS`;
   `M8-009` through `M8-010`, and `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
-- **Worktree state:** `master` is aligned with `origin/master` at pushed plan
-  commit `854073a` (`docs(plan): record R-840 review findings`), with the
+- **Worktree state:** `master` is aligned with `origin/master` at pushed fix
+  commit `5566307` (`fix(migration): close destructive and device review
+  findings`), with the
   implementation batch and R-830 remediations pushed; R-830 is approved and
-  closed, M8-007 and M8-008 are complete, and R-840 is blocked on review
-  findings. R-820 is approved and closed, and M8-005 and M8-006 are complete.
-  No M8 branch/worktree or review agent is active; the primary agent owns the
-  R-840 remediation.
+  closed, M8-007 and M8-008 are complete, and R-840 remediation is pushed with
+  closure review pending. R-820 is approved and closed, and M8-005 and M8-006
+  are complete. No M8 branch/worktree or review agent is active; the primary
+  agent owns the closure gate.
   Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -1114,11 +1122,11 @@ evidence, and the next action is dependency-safe.
   severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; no review
   agent, migration branch, or M8 worktree is active; historical non-M8
   worktrees were preserved untouched. The primary agent owns the R-840
-  remediation.
-- **Exact next action:** commit this blocked-gate checkpoint, add the forced
-  finalization Cancel action and regression, constrain the known-device
-  retirement badge at 320px with a regression, rerun affected checks, and
-  request a fresh R-840 closure review.
+  closure gate.
+- **Exact next action:** commit this remediation checkpoint, dispatch a fresh
+  read-only R-840 closure reviewer against `HEAD 5566307`, wait for its full
+  report without killing a slow review, and resolve any new severity 1–3
+  finding before opening M8-009.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

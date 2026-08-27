@@ -60,6 +60,7 @@ import {
   StatusDot,
   StatusMessage,
   StatusPanel,
+  StickyActionBar,
   Switch,
   Text,
   TextField,
@@ -922,6 +923,11 @@ Deno.test("M8 list and form facades preserve native structures", async () => {
           createElement(ErrorSummary, {
             errors: [{ id: "merchant", message: "Merchant is required" }],
           }),
+          createElement(
+            StickyActionBar,
+            null,
+            createElement(Button, { variant: "secondary" }, "Continue"),
+          ),
         ),
       );
       const view = within(document.body);
@@ -937,6 +943,7 @@ Deno.test("M8 list and form facades preserve native structures", async () => {
       assert(view.getByRole("button", { name: "Save" }));
       assert(view.getByRole("alert"));
       assert(view.getByText("Merchant is required"));
+      assert(view.getByRole("button", { name: "Continue" }));
       mounted.unmount();
     })
   );

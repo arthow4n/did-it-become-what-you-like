@@ -2444,8 +2444,11 @@ export function ErrorState(
 export function StickyActionBar(
   { children, className }: { children: ReactNode; className?: string },
 ) {
-  return <div className={cx("ds-sticky-action-bar", className)}>{children}
-  </div>;
+  return (
+    <MantineBox className={cx("ds-sticky-action-bar", className)}>
+      {children}
+    </MantineBox>
+  );
 }
 
 export type NavigationItem = {

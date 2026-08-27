@@ -30,6 +30,7 @@ import {
   ActionIcon as MantineActionIcon,
   Alert as MantineAlert,
   Badge as MantineBadge,
+  Box as MantineBox,
   Button as MantineButton,
   Card as MantineCard,
   Checkbox as MantineCheckbox,
@@ -58,6 +59,7 @@ import {
   TextInput as MantineTextInput,
   Title as MantineTitle,
   Tooltip as MantineTooltip,
+  UnstyledButton as MantineUnstyledButton,
 } from "@mantine/core";
 import {
   DateInput as MantineDateInput,
@@ -97,12 +99,18 @@ export type AppFrameProps = {
 
 export function AppFrame({ children, navigation, className }: AppFrameProps) {
   return (
-    <div className={cx("ds-app-frame", className)}>
+    <MantineBox className={cx("ds-app-frame", className)}>
       {navigation
-        ? <aside className="ds-app-frame__navigation">{navigation}</aside>
+        ? (
+          <MantineBox component="aside" className="ds-app-frame__navigation">
+            {navigation}
+          </MantineBox>
+        )
         : null}
-      <main className="ds-app-frame__main">{children}</main>
-    </div>
+      <MantineBox component="main" className="ds-app-frame__main">
+        {children}
+      </MantineBox>
+    </MantineBox>
   );
 }
 
@@ -128,20 +136,20 @@ export function PageHeader({
   as: Tag = "header",
 }: PageHeaderProps) {
   return (
-    <Tag className="ds-page-header">
-      <div className="ds-page-header__title">
+    <MantineBox component={Tag} className="ds-page-header">
+      <MantineBox component="div" className="ds-page-header__title">
         {leading}
         <Stack gap={1}>
           {eyebrow ? <Text size="label" tone="muted">{eyebrow}</Text> : null}
           <Heading level={headingLevel}>{title}</Heading>
           {description ? <Text tone="secondary">{description}</Text> : null}
         </Stack>
-      </div>
-      <div className="ds-page-header__actions">
+      </MantineBox>
+      <MantineBox component="div" className="ds-page-header__actions">
         {status}
         {actions}
-      </div>
-    </Tag>
+      </MantineBox>
+    </MantineBox>
   );
 }
 
@@ -2447,22 +2455,24 @@ export function AppNavigation(
   },
 ) {
   return (
-    <nav className="ds-navigation" aria-label={label}>
+    <MantineBox component="nav" className="ds-navigation" aria-label={label}>
       {items.map((item) => (
-        <AriaButton
+        <MantineUnstyledButton
           key={item.id}
+          type="button"
           className="ds-navigation__item"
-          isDisabled={item.disabled}
+          disabled={item.disabled}
           data-selected={item.selected ? "true" : undefined}
           data-action={item.action ? "true" : undefined}
           aria-current={item.selected ? "page" : undefined}
-          onPress={() => onSelect?.(item.id)}
+          aria-disabled={item.disabled ? "true" : undefined}
+          onClick={() => onSelect?.(item.id)}
         >
           {item.icon ? <Icon>{item.icon}</Icon> : null}
           <span>{item.label}</span>
-        </AriaButton>
+        </MantineUnstyledButton>
       ))}
-    </nav>
+    </MantineBox>
   );
 }
 

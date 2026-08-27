@@ -8,6 +8,7 @@ import { createElement } from "react";
 import { withComponentHarness } from "../test-support/component-harness.tsx";
 import {
   AdaptiveDialog,
+  AppFrame,
   Badge,
   Banner,
   Button,
@@ -17,6 +18,7 @@ import {
   ColorChoiceField,
   ContentContainer,
   CurrencyPicker,
+  DefaultNavigation,
   DefinitionList,
   DeleteAndReassign,
   Disclosure,
@@ -840,6 +842,37 @@ Deno.test("M8 remaining feedback facades preserve progress and state contracts",
       mounted.unmount();
     })
   );
+});
+
+Deno.test("M8 shell facades preserve landmarks and navigation state", async () => {
+  await withComponentHarness(({ render, fireEvent }) => {
+    let selected = "";
+    const mounted = render(
+      createElement(
+        AppFrame,
+        {
+          navigation: createElement(DefaultNavigation, {
+            selected: "settings",
+            onSelect: (id) => selected = id,
+          }),
+          children: createElement(PageHeader, {
+            title: "Settings",
+            headingLevel: 1,
+          }),
+        },
+      ),
+    );
+    const view = within(document.body);
+    assert(view.getByRole("main"));
+    assert(view.getByRole("complementary"));
+    assert(view.getByRole("navigation", { name: "Application" }));
+    assert(view.getByRole("heading", { name: "Settings", level: 1 }));
+    const settings = view.getByRole("button", { name: "Settings" });
+    assertEqual(settings.getAttribute("aria-current"), "page");
+    fireEvent.click(view.getByRole("button", { name: "Expenses" }));
+    assertEqual(selected, "expenses");
+    mounted.unmount();
+  });
 });
 
 Deno.test("design-system adaptive dialog keeps sheet and desktop modal positioning", async () => {

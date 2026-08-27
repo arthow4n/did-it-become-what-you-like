@@ -947,6 +947,21 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   no-save regressions. `deno task test:affected` passed with 61 tests, and
   targeted format, lint, and `git diff --check` passed. A fresh closure review
   remains required.
+- **Closure review attempt (2026-08-27):** Fresh read-only reviewer Parfit
+  (`01a04226-b3eb-71b1-8aac-28a494f4ddef`) audited pushed `HEAD 7fb3dea` and
+  returned `BLOCK`. It found a severity-2 actor gap: forced finalization still
+  ignores `delete-everywhere.cancel` even though the UI exposes that action.
+  It also recorded severity-3 gaps for this checkpoint referring to the
+  pre-review plan commit rather than actual `HEAD 7fb3dea`, and for lacking a
+  runtime-boundary regression that proves hydrated/merged registry devices
+  render and feed Delete Everywhere counts. The reviewer verified the
+  registry subscription implementation and receipt Cancel behavior, and
+  recorded 29 relevant UI/registry tests, 16 actor/domain tests, 20 adapter
+  integrations, 43 destruction/import actor-contract tests, 10 import-export
+  integration tests, frozen audit, TypeScript, format, lint, build, gallery at
+  all three viewports, and diff checks as passing. Playwright E2E remained
+  unavailable because the existing Vite server occupied port 5173 and was
+  left untouched. The reviewer was closed after its final report.
 - [ ] Primary agent resolves severity 1–3 findings and reruns only checks
       affected by those fixes. Repeat the complete checkpoint matrix only when
       shared or cross-cutting code changed before closure.
@@ -1111,10 +1126,10 @@ evidence, and the next action is dependency-safe.
   cancel`), with the
   implementation batch and R-830 remediations pushed; R-830 is approved and
   closed, M8-007 and M8-008 are complete, and the R-840 closure review found
-  two unresolved findings. R-820 is approved and closed, and M8-005 and
+  three unresolved findings. R-820 is approved and closed, and M8-005 and
   M8-006 are complete. No M8 branch/worktree or review agent is active; the
-  primary agent owns the R-840 closure gate and the latest remediation is
-  pushed with closure review pending.
+  primary agent owns the R-840 remediation after the latest closure review
+  found three unresolved findings.
   Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -1147,10 +1162,11 @@ evidence, and the next action is dependency-safe.
   agent, migration branch, or M8 worktree is active; historical non-M8
   worktrees were preserved untouched. The primary agent owns the R-840
   closure gate.
-- **Exact next action:** commit this remediation evidence, request a fresh
-  independent R-840 closure review against `HEAD f5974f8`, wait for its full
-  report without killing a slow review, and resolve any new severity 1–3
-  finding before opening M8-009.
+- **Exact next action:** commit this blocked-gate checkpoint, add a real
+  forced-finalization Cancel transition and actor regression, add a runtime
+  boundary regression for hydrated device rendering/Deletion Everywhere
+  counts, reconcile the checkpoint to the resulting pushed HEAD, rerun
+  affected checks, and request another independent R-840 closure review.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

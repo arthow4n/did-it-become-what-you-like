@@ -81,7 +81,11 @@ Deno.test("receipt-ui disclosure states the exact permitted and excluded data", 
     assert(view.getByRole("heading", { name: "Before sending this receipt" }));
     assert(view.getByText(/active category IDs and names/));
     assert(view.getByText(/Expense history, project names, Drive data/));
-    fireEvent.click(view.getByRole("button", { name: "Continue to scan" }));
+    const continueButton = view.getByRole("button", {
+      name: "Continue to scan",
+    });
+    assert(continueButton.closest(".ds-sticky-action-bar"));
+    fireEvent.click(continueButton);
     fireEvent.click(view.getByRole("button", { name: "Cancel" }));
     assert(accepted && declined);
   });

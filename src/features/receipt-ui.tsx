@@ -479,25 +479,30 @@ export function ReceiptDisclosure({ onAccept, onDecline }: {
   onDecline: () => void;
 }) {
   return (
-    <Card as="section">
-      <Stack gap={4}>
-        <Heading size="sm">Before sending this receipt</Heading>
-        <Text>
-          This receipt image, the extraction schema and instructions, active
-          category IDs and names, your device locale, and the project currency
-          code may be sent to Google Gemini for extraction.
-        </Text>
-        <Text tone="secondary">
-          Expense history, project names, Drive data, other device identifiers
-          or details, and sync metadata are excluded. The image is removed from
-          memory after this scan path finishes and is never saved to this app.
-        </Text>
-        <Inline>
-          <Button onPress={onAccept}>Continue to scan</Button>
-          <Button variant="quiet" onPress={onDecline}>Cancel</Button>
-        </Inline>
-      </Stack>
-    </Card>
+    <>
+      <Card as="section">
+        <Stack gap={4}>
+          <Heading size="sm">Before sending this receipt</Heading>
+          <Text>
+            This receipt image, the extraction schema and instructions, active
+            category IDs and names, your device locale, and the project currency
+            code may be sent to Google Gemini for extraction.
+          </Text>
+          <Text tone="secondary">
+            Expense history, project names, Drive data, other device identifiers
+            or details, and sync metadata are excluded. The image is removed
+            from memory after this scan path finishes and is never saved to this
+            app.
+          </Text>
+          <Inline>
+            <Button variant="quiet" onPress={onDecline}>Cancel</Button>
+          </Inline>
+        </Stack>
+      </Card>
+      <StickyActionBar>
+        <Button onPress={onAccept}>Continue to scan</Button>
+      </StickyActionBar>
+    </>
   );
 }
 

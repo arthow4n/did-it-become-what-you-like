@@ -7,6 +7,7 @@ import { within } from "@testing-library/dom";
 import { createElement } from "react";
 import { withComponentHarness } from "../test-support/component-harness.tsx";
 import {
+  ActiveFilterChips,
   AdaptiveDialog,
   AppFrame,
   Badge,
@@ -23,11 +24,13 @@ import {
   DeleteAndReassign,
   Disclosure,
   Divider,
+  DraftStatus,
   EmptyState,
   ErrorState,
   ErrorSummary,
   ExpenseRow,
   FileField,
+  FilterBar,
   FormActions,
   formatMoney,
   FormLayout,
@@ -56,11 +59,13 @@ import {
   Stack,
   StatusDot,
   StatusMessage,
+  StatusPanel,
   Switch,
   Text,
   TextField,
   Toast,
   Tooltip,
+  WorkflowProgress,
 } from "./components.tsx";
 import { DesignSystemProvider } from "./provider.tsx";
 
@@ -932,6 +937,59 @@ Deno.test("M8 list and form facades preserve native structures", async () => {
       assert(view.getByRole("button", { name: "Save" }));
       assert(view.getByRole("alert"));
       assert(view.getByText("Merchant is required"));
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("M8 filter and status facades preserve grouping and workflow state", async () => {
+  await withComponentHarness(({ window, render, fireEvent }) =>
+    withAriaDomGlobals(window, () => {
+      let removed = 0;
+      const mounted = render(
+        createElement(
+          "div",
+          null,
+          createElement(
+            FilterBar,
+            null,
+            createElement(ActiveFilterChips, {
+              filters: [{
+                id: "project",
+                label: "Project: Sweden",
+                onRemove: () => removed++,
+              }],
+            }),
+          ),
+          createElement(DraftStatus, {
+            state: "saving",
+            detail: "Saving locally",
+          }),
+          createElement(StatusPanel, {
+            title: "Sync status",
+            detail: "Waiting for a connection",
+            tone: "warning",
+          }),
+          createElement(WorkflowProgress, {
+            steps: ["Choose scope", "Confirm deletion"],
+            current: 1,
+            status: "Deletion progress",
+          }),
+        ),
+      );
+      const view = within(document.body);
+      assert(view.getByRole("group", { name: "Filters" }));
+      const remove = view.getByRole("button", {
+        name: "Remove Project: Sweden",
+      });
+      fireEvent.click(remove);
+      assertEqual(removed, 1);
+      assert(!view.queryByText("No unsaved changes"));
+      assert(view.getAllByText("Saving locally").length >= 2);
+      assert(view.getByText("Waiting for a connection"));
+      assert(view.getByRole("progressbar", { name: "Deletion progress" }));
+      assert(view.getByRole("list", { name: "Workflow steps" }));
+      assertEqual(view.getAllByRole("listitem").length, 2);
       mounted.unmount();
     })
   );

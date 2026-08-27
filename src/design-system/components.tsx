@@ -2595,13 +2595,13 @@ export function FilterBar(
   { children, className }: { children: ReactNode; className?: string },
 ) {
   return (
-    <div
+    <MantineBox
       className={cx("ds-filter-bar", className)}
       role="group"
       aria-label="Filters"
     >
       {children}
-    </div>
+    </MantineBox>
   );
 }
 
@@ -2638,7 +2638,12 @@ export function StatusPanel(
   },
 ) {
   return (
-    <div className="ds-status-panel" data-tone={tone}>
+    <MantinePaper
+      className="ds-status-panel"
+      data-tone={tone}
+      withBorder={false}
+      shadow="none"
+    >
       <Inline justify="space-between">
         <Stack gap={1}>
           <strong>{title}</strong>
@@ -2646,7 +2651,7 @@ export function StatusPanel(
         </Stack>
         {action}
       </Inline>
-    </div>
+    </MantinePaper>
   );
 }
 
@@ -2664,9 +2669,16 @@ export function WorkflowProgress(
         label={status ? String(status) : "Workflow progress"}
         value={steps.length ? ((current + 1) / steps.length) * 100 : 0}
       />
-      <ol className="ds-list" aria-label="Workflow steps">
+      <MantineList
+        type="ordered"
+        className="ds-list"
+        aria-label="Workflow steps"
+        listStyleType="none"
+        withPadding={false}
+      >
         {steps.map((step, index) => (
-          <li
+          <MantineBox
+            component="li"
             key={step}
             className="ds-list-row"
             data-current={index === current ? "true" : undefined}
@@ -2677,9 +2689,9 @@ export function WorkflowProgress(
               : index === current
               ? <Badge tone="info">Current</Badge>
               : <Badge>Next</Badge>}
-          </li>
+          </MantineBox>
         ))}
-      </ol>
+      </MantineList>
       {action}
     </Stack>
   );

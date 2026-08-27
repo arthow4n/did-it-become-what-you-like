@@ -2256,8 +2256,9 @@ export function Menu({
 }) {
   return (
     <MantineMenu
-      trapFocus
+      trapFocus={false}
       returnFocus
+      withInitialFocusPlaceholder={false}
       transitionProps={{ duration: 0, exitDuration: 0 }}
       zIndex="var(--layer-overlay)"
     >

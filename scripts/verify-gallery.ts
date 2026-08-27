@@ -161,6 +161,31 @@ async function main(): Promise<void> {
           }`,
         );
       }
+      if (name === "phone") {
+        await runAgent(installed, [
+          "eval",
+          "(() => { const trigger = Array.from(document.querySelectorAll('button')).find((node) => node.textContent?.trim() === 'Open menu'); if (!trigger) throw new Error('Gallery menu trigger is missing.'); trigger.click(); return true; })()",
+        ]);
+        await runAgent(installed, ["wait", "100"]);
+        await runAgent(installed, [
+          "eval",
+          "axe.run(document).then(r => { window.__galleryMenuAxe = JSON.stringify(r) })",
+        ]);
+        await runAgent(installed, ["wait", "250"]);
+        const menuAxe = parseJsonResult(
+          (await runAgent(installed, ["eval", "window.__galleryMenuAxe"]))
+            .output,
+        );
+        if (
+          !Array.isArray(menuAxe.violations) || menuAxe.violations.length !== 0
+        ) {
+          throw new Error(
+            `axe reported violations with the gallery menu open: ${
+              JSON.stringify(menuAxe.violations)
+            }`,
+          );
+        }
+      }
     }
     console.log(
       `Design-system gallery passed native screenshot/tree/axe inspection for ${VIEWPORTS.length} viewports on agent-browser ${AGENT_BROWSER_VERSION} + Chrome ${CHROME_FOR_TESTING_VERSION} (${platformDescription()}).`,

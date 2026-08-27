@@ -25,7 +25,10 @@ export const CSP_DIRECTIVES = {
     "'wasm-unsafe-eval'",
     "https://accounts.google.com/gsi/client",
   ],
-  "style-src": ["'self'"],
+  // MantineProvider emits nonce-less runtime variable/class style blocks in
+  // this static Pages deployment. Keep the allowance scoped to styles; the
+  // script policy remains free of unsafe execution sources.
+  "style-src": ["'self'", "'unsafe-inline'"],
   "worker-src": ["'self'"],
 } as const;
 
@@ -43,7 +46,14 @@ export function assertRestrictiveCsp(csp: string): void {
   if (csp.includes("https:") && !csp.includes("https://accounts.google.com")) {
     throw new Error("CSP has an unreviewed broad HTTPS source");
   }
-  if (csp.includes("'unsafe-inline'") || csp.includes("'unsafe-eval'")) {
+  const scriptDirective =
+    csp.split(";").find((directive) =>
+      directive.trimStart().startsWith("script-src")
+    ) ?? "";
+  if (
+    scriptDirective.includes("'unsafe-inline'") ||
+    scriptDirective.includes("'unsafe-eval'")
+  ) {
     throw new Error("CSP permits unsafe script execution");
   }
 }

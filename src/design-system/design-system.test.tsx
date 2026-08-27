@@ -903,6 +903,11 @@ Deno.test("M8 overlay facades preserve disclosure and menu contracts", async () 
       assertEqual(disclosure.getAttribute("aria-expanded"), "true");
       assert(expanded);
       fireEvent.click(view.getByRole("button", { name: "Open actions" }));
+      const menu = view.getByRole("menu", { name: "Open actions" });
+      assert(
+        !menu.querySelector('[role="presentation"]'),
+        "menus must not contain Mantine's presentation focus placeholder",
+      );
       const item = await waitFor(() =>
         view.getByRole("menuitem", { name: "Edit record" })
       );

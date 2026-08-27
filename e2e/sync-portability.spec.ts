@@ -188,6 +188,10 @@ test("drive-reconnect routes authorization, account switching, sync, and reconne
 });
 
 test("conflict-resolution routes field candidates and clears the global banner only after local resolution", async ({ isolatedContext }) => {
+  // This journey performs two full routed sync projections after the conflict
+  // write. Keep its timeout explicit instead of weakening the suite-wide
+  // timeout for ordinary journeys.
+  test.setTimeout(60_000);
   const page = await isolatedContext.newPage();
   await installFakeDrive(page, { withConflict: true });
   await createProject(page, "Conflict journey project");

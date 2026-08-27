@@ -25,12 +25,17 @@ import {
   Divider,
   EmptyState,
   ErrorState,
+  ErrorSummary,
   ExpenseRow,
   FileField,
+  FormActions,
   formatMoney,
+  FormLayout,
   Heading,
   Inline,
   InlineNotice,
+  List,
+  ListRow,
   Menu,
   MerchantPicker,
   MoneySummary,
@@ -873,6 +878,63 @@ Deno.test("M8 shell facades preserve landmarks and navigation state", async () =
     assertEqual(selected, "expenses");
     mounted.unmount();
   });
+});
+
+Deno.test("M8 list and form facades preserve native structures", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaDomGlobals(window, () => {
+      const mounted = render(
+        createElement(
+          "div",
+          null,
+          createElement(
+            List,
+            {
+              label: "Saved receipts",
+              children: createElement(
+                ListRow,
+                {
+                  leading: createElement("span", null, "Receipt"),
+                  trailing: createElement(Badge, null, "Saved"),
+                  children: "Grocery store",
+                },
+              ),
+            },
+          ),
+          createElement(DefinitionList, {
+            items: [{ term: "Currency", description: "SEK" }],
+          }),
+          createElement(
+            FormLayout,
+            null,
+            createElement(TextField, { label: "Merchant" }),
+            createElement(
+              FormActions,
+              null,
+              createElement(Button, null, "Save"),
+            ),
+          ),
+          createElement(ErrorSummary, {
+            errors: [{ id: "merchant", message: "Merchant is required" }],
+          }),
+        ),
+      );
+      const view = within(document.body);
+      assert(view.getByRole("list", { name: "Saved receipts" }));
+      assert(
+        document.querySelector(".ds-list-row")?.textContent?.includes(
+          "Grocery store",
+        ),
+      );
+      assertEqual(document.querySelector("dt")?.textContent, "Currency");
+      assertEqual(document.querySelector("dd")?.textContent, "SEK");
+      assert(view.getByRole("textbox", { name: "Merchant" }));
+      assert(view.getByRole("button", { name: "Save" }));
+      assert(view.getByRole("alert"));
+      assert(view.getByText("Merchant is required"));
+      mounted.unmount();
+    })
+  );
 });
 
 Deno.test("design-system adaptive dialog keeps sheet and desktop modal positioning", async () => {

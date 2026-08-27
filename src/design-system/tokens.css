@@ -1181,6 +1181,11 @@
     padding: var(--space-4);
   }
 
+  .ds-error-summary__list {
+    margin-block-start: var(--space-3);
+    padding-inline-start: var(--space-6);
+  }
+
   .ds-draft-status {
     display: flex;
     flex-wrap: wrap;

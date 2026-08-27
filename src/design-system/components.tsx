@@ -39,6 +39,7 @@ import {
   Drawer as MantineDrawer,
   Group as MantineGroup,
   Input as MantineInput,
+  List as MantineList,
   Menu as MantineMenu,
   Modal as MantineModal,
   Paper as MantinePaper,
@@ -1804,7 +1805,14 @@ export type ListProps = {
 
 export function List({ children, label, className }: ListProps) {
   return (
-    <ul className={cx("ds-list", className)} aria-label={label}>{children}</ul>
+    <MantineList
+      className={cx("ds-list", className)}
+      aria-label={label}
+      listStyleType="none"
+      withPadding={false}
+    >
+      {children}
+    </MantineList>
   );
 }
 
@@ -1819,11 +1827,13 @@ export function ListRow(
   { children, leading, trailing, className }: ListRowProps,
 ) {
   return (
-    <li className={cx("ds-list-row", className)}>
+    <MantineBox component="li" className={cx("ds-list-row", className)}>
       {leading}
-      <div className="ds-list-row__main">{children}</div>
+      <MantineBox component="div" className="ds-list-row__main">
+        {children}
+      </MantineBox>
       {trailing}
-    </li>
+    </MantineBox>
   );
 }
 
@@ -1834,14 +1844,14 @@ export type DefinitionListProps = {
 
 export function DefinitionList({ items, className }: DefinitionListProps) {
   return (
-    <dl className={cx("ds-definition-list", className)}>
+    <MantineBox component="dl" className={cx("ds-definition-list", className)}>
       {items.map((item, index) => (
-        <div key={index} style={{ display: "contents" }}>
+        <MantineBox key={index} component="div" style={{ display: "contents" }}>
           <dt>{item.term}</dt>
           <dd>{item.description}</dd>
-        </div>
+        </MantineBox>
       ))}
-    </dl>
+    </MantineBox>
   );
 }
 
@@ -2516,16 +2526,20 @@ export function FormLayout(
   { children, className }: { children: ReactNode; className?: string },
 ) {
   return (
-    <div className={cx("ds-form-layout", className)}>
+    <MantineBox className={cx("ds-form-layout", className)}>
       <Stack gap={5}>{children}</Stack>
-    </div>
+    </MantineBox>
   );
 }
 
 export function FormActions(
   { children, className }: { children: ReactNode; className?: string },
 ) {
-  return <div className={cx("ds-form-actions", className)}>{children}</div>;
+  return (
+    <MantineBox className={cx("ds-form-actions", className)}>
+      {children}
+    </MantineBox>
+  );
 }
 
 export function ErrorSummary(
@@ -2536,18 +2550,20 @@ export function ErrorSummary(
   },
 ) {
   return (
-    <div
+    <MantineBox
       className={cx("ds-error-summary", className)}
       role="alert"
       tabIndex={-1}
     >
       <strong>{title}</strong>
-      <ul>
+      <MantineList className="ds-error-summary__list" listStyleType="disc">
         {errors.map((error, index) => (
-          <li key={error.id ?? index}>{error.message}</li>
+          <MantineList.Item key={error.id ?? index}>
+            {error.message}
+          </MantineList.Item>
         ))}
-      </ul>
-    </div>
+      </MantineList>
+    </MantineBox>
   );
 }
 

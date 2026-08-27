@@ -6,7 +6,7 @@ export default defineConfig({
   webServer: {
     command: "deno task dev --host 127.0.0.1",
     url: "http://127.0.0.1:5173/did-it-become-what-you-like/",
-    reuseExistingServer: false,
+    reuseExistingServer: true,
     timeout: 30_000,
   },
   timeout: 30_000,

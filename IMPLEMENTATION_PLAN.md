@@ -1076,7 +1076,7 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - [x] Run `deno task verify` from a clean working tree. The final corrected
       checkpoint passed the complete canonical static, Deno test, E2E,
       gallery/a11y, browser-tooling, Pages, CI, toolchain, build, audit, and
-      diff matrix: 361 Deno tests, 11 E2E journeys, gallery/axe at 320x568,
+      diff matrix: 362 Deno tests, 11 E2E journeys, gallery/axe at 320x568,
       390x844, and 1280x800, browser visual/tree/axe smoke, boundary scan,
       both production builds, Pages artifact verification, and no known audit
       vulnerabilities. The first attempt was blocked by the occupied local
@@ -1091,12 +1091,15 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
       regression; no new product styling was introduced by M8-009.
 - [x] Compare production bundle evidence with the M8-002 baseline and explain
       material growth; fix accidental duplication or imports. The final app
-      build is `1,180.87 kB` JavaScript / `290.76 kB` CSS (`325.39 kB` /
+      build is `1,181.27 kB` JavaScript / `290.76 kB` CSS (`325.57 kB` /
       `42.88 kB` gzip), versus the unchanged pre-Mantine baseline of
       `1,038,625` JavaScript bytes / `30,076` CSS bytes (`284.90 kB` /
       `5.78 kB` gzip). The expected increase is Mantine's maintained runtime
       and layered component CSS; the boundary scan found no accidental library
       imports in screens and the isolated proof retained one tree-shaken entry.
+      The earlier `1,180.87`/`325.39` measurement was from an earlier build
+      receipt and is superseded by the exact output from the final
+      `02edfb9` gate.
 - [x] Reconcile `UI_SPEC.md`, `DESIGN_SYSTEM.md`, `AGENTS.md`, README/licenses,
       gallery, tests, migration matrix, and actual implementation. The public
       barrel remains facade-only; the design-system document now marks React
@@ -1169,8 +1172,19 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   boundary verification, and `git diff --check` passed. The final canonical
   gate passed on the same pushed commit with 362 Deno tests, 11 E2E journeys,
   gallery/axe at three viewports, browser/toolchain/CI checks, the strengthened
-  boundary scan, both builds, Pages artifact verification, frozen audit, and
-  diff checks.
+      boundary scan, both builds, Pages artifact verification, frozen audit, and
+      diff checks.
+- **Fresh closure review evidence (2026-08-27):** Fresh read-only reviewer
+  Herschel (`01a042a8-e883-7263-b58b-d0f637a325e7`) audited pushed `HEAD
+  87ebe4b` and returned `BLOCK` with one severity-2 semantic-token finding
+  and two severity-3 findings: the danger button foreground hard-coded
+  `#241113` despite the semantic-token contract; navigation used an arbitrary
+  `2px` gap despite the named 4px spacing scale; and M8-010 contained stale
+  test/build receipt values. Herschel otherwise verified the aligned clean
+  state, boundary scan, focused suites, gallery/axe, E2E, builds, and audit;
+  the reviewer was closed after its report. The primary agent owns these
+  contained remediations and must add focused contrast/token coverage before
+  requesting closure again.
 - [ ] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and
@@ -1268,8 +1282,8 @@ evidence, and the next action is dependency-safe.
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
-  `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with primary
-  remediation complete and fresh closure review pending.
+  `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with the
+  primary agent remediating Herschel's three findings before fresh closure.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
@@ -1279,8 +1293,9 @@ evidence, and the next action is dependency-safe.
   complete. R-820 is approved and closed, and M8-005 and M8-006 are complete.
   The initial R-850 reviewer is closed; no migration branch or M8 worktree is
   active; historical non-M8 worktrees remain present and were preserved
-  untouched. R-840 and M8-010 are complete, and the primary agent has finished
-  the initial R-850 remediation on pushed `d792cd1`.
+  untouched. R-840 and M8-010 are complete, and the primary agent is working
+  from pushed `87ebe4b`; the next token/doc/test fix is intentionally not yet
+  committed.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -1317,13 +1332,17 @@ evidence, and the next action is dependency-safe.
   severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; M8-009 is
   complete with the React Aria dependency removal, dead-selector cleanup,
   boundary task, and documentation evidence above; the initial R-850 reviewer
-  is closed; the fresh Newton closure reviewer is also closed and the primary
-  agent owns its three-finding remediation; no migration branch or M8 worktree
-  is active; historical non-M8 worktrees were preserved untouched. R-840 and
-  M8-010 are complete. The final canonical gate passed at `02edfb9`; no
-  implementation or documentation change is unpushed.
-- **Exact next action:** request a new independent R-850 closure review. Do
-  not reuse Hooke or Newton for closure approval.
+  is closed; the fresh Newton closure reviewer is closed; Herschel's fresh
+  closure review is also closed and the primary agent owns its three-finding
+  remediation; no migration branch or M8 worktree is active; historical
+  non-M8 worktrees were preserved untouched. R-840 and M8-010 are complete.
+  The final canonical gate passed at `02edfb9`; no implementation or
+  documentation change is unpushed.
+- **Exact next action:** commit and push the semantic danger-token, named
+  spacing-token, focused contrast coverage, and reconciled evidence changes;
+  run the complete canonical gate from that code commit; then request a new
+  independent R-850 closure review. Do not reuse Hooke, Newton, or Herschel
+  for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

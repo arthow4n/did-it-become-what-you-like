@@ -1931,6 +1931,8 @@ export type ConfirmDialogProps = Omit<AdaptiveDialogProps, "children"> & {
   confirmLabel: string;
   onConfirm: () => void;
   confirmVariant?: ButtonVariant;
+  cancelLabel?: string;
+  onCancel?: () => void;
 };
 
 export function ConfirmDialog({
@@ -1938,6 +1940,8 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   confirmVariant = "primary",
+  cancelLabel = "Cancel",
+  onCancel,
   ...props
 }: ConfirmDialogProps) {
   return (
@@ -1945,7 +1949,16 @@ export function ConfirmDialog({
       {(close) => (
         <Stack gap={5}>
           <Text>{description}</Text>
-          <Inline justify="end">
+          <Inline justify="end" gap={2}>
+            <Button
+              variant="secondary"
+              onPress={() => {
+                onCancel?.();
+                close();
+              }}
+            >
+              {cancelLabel}
+            </Button>
             <Button
               variant={confirmVariant}
               onPress={() => {
@@ -1971,6 +1984,8 @@ export type DeleteAndReassignProps = {
   affectedCount: number;
   onConfirm: (replacementCategoryId: string) => void;
   confirmLabel?: string;
+  cancelLabel?: string;
+  onCancel?: () => void;
 };
 
 /**
@@ -1987,6 +2002,8 @@ export function DeleteAndReassign({
   affectedCount,
   onConfirm,
   confirmLabel = "Delete and reassign",
+  cancelLabel = "Cancel",
+  onCancel,
 }: DeleteAndReassignProps) {
   const [replacementId, setReplacementId] = useState(defaultReplacementId);
   return (
@@ -2010,7 +2027,16 @@ export function DeleteAndReassign({
             value={replacementId}
             onValueChange={setReplacementId}
           />
-          <Inline justify="end">
+          <Inline justify="end" gap={2}>
+            <Button
+              variant="secondary"
+              onPress={() => {
+                onCancel?.();
+                close();
+              }}
+            >
+              {cancelLabel}
+            </Button>
             <Button
               variant="danger"
               isDisabled={!replacementId}

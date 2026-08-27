@@ -17,6 +17,7 @@ import {
   Checkbox,
   Chip,
   ColorChoiceField,
+  ConfirmDialog,
   ContentContainer,
   CurrencyPicker,
   DefaultNavigation,
@@ -387,6 +388,7 @@ Deno.test("design-system color and delete-reassign composites expose controlled 
     withAriaDomGlobals(window, async () => {
       let color = "#78DCCA";
       let replacement = "";
+      let cancelled = false;
       const mounted = render(
         createElement(
           "div",
@@ -407,6 +409,7 @@ Deno.test("design-system color and delete-reassign composites expose controlled 
             defaultReplacementId: "uncategorized",
             affectedCount: 3,
             onConfirm: (value) => replacement = value,
+            onCancel: () => cancelled = true,
           }),
         ),
       );
@@ -419,7 +422,11 @@ Deno.test("design-system color and delete-reassign composites expose controlled 
       fireEvent.click(view.getByRole("button", { name: "Delete category" }));
       const dialog = view.getByRole("dialog", { name: "Delete Food?" });
       assert(dialog.textContent?.includes("3 expenses"));
-      const picker = within(dialog).getByRole("combobox", {
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+      assert(cancelled);
+      fireEvent.click(view.getByRole("button", { name: "Delete category" }));
+      const reopenedDialog = view.getByRole("dialog", { name: "Delete Food?" });
+      const picker = within(reopenedDialog).getByRole("combobox", {
         name: /Replacement category/,
       });
       fireEvent.click(picker);
@@ -427,9 +434,37 @@ Deno.test("design-system color and delete-reassign composites expose controlled 
       fireEvent.click(view.getByRole("option", { name: "Travel" }));
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
       fireEvent.click(
-        within(dialog).getByRole("button", { name: "Delete and reassign" }),
+        within(reopenedDialog).getByRole("button", {
+          name: "Delete and reassign",
+        }),
       );
       assertEqual(replacement, "travel");
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system confirmation facade exposes an explicit cancel action", async () => {
+  await withComponentHarness(({ window, render, fireEvent }) =>
+    withAriaDomGlobals(window, () => {
+      let confirmed = false;
+      let cancelled = false;
+      const mounted = render(
+        createElement(ConfirmDialog, {
+          trigger: createElement(Button, null, "Archive category"),
+          title: "Archive Food?",
+          description: "Existing expenses keep this category.",
+          confirmLabel: "Archive category",
+          onConfirm: () => confirmed = true,
+          onCancel: () => cancelled = true,
+        }),
+      );
+      const view = within(document.body);
+      fireEvent.click(view.getByRole("button", { name: "Archive category" }));
+      const dialog = view.getByRole("dialog", { name: "Archive Food?" });
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+      assert(cancelled);
+      assert(!confirmed);
       mounted.unmount();
     })
   );

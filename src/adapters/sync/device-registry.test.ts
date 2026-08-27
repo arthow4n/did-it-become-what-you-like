@@ -99,3 +99,35 @@ Deno.test("sync-device-registry: account switching requires explicit confirmatio
   );
   assertEquals(registry.state().accountEmail, "other@example.test");
 });
+
+Deno.test("sync-device-registry: projection subscribers observe hydration and updates", async () => {
+  const local = createFakeLocalPort();
+  const clock = createTestClock("2026-08-24T10:00:00.000Z");
+  const first = createDeviceRegistry({
+    local,
+    deviceId: "device-current",
+    clock: { now: clock.nowIso },
+  });
+  await first.hydrate();
+  await first.register("device-remote", "Travel phone");
+
+  const restarted = createDeviceRegistry({
+    local,
+    deviceId: "device-current",
+    clock: { now: clock.nowIso },
+  });
+  let updates = 0;
+  const unsubscribe = restarted.subscribe(() => updates++);
+  assertEquals(restarted.revision(), 0);
+  await restarted.hydrate();
+  assertEquals(restarted.revision(), 1);
+  assertEquals(updates, 1);
+  assertEquals(restarted.ordinaryProjection().length, 2);
+
+  await restarted.rename("device-remote", "Travel phone 2");
+  assertEquals(restarted.revision(), 2);
+  assertEquals(updates, 2);
+  unsubscribe();
+  await restarted.acknowledge("device-remote");
+  assertEquals(updates, 2);
+});

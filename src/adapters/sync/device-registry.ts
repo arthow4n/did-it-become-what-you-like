@@ -36,6 +36,8 @@ export type DiagnosticDeviceProjection = KnownDeviceProjection & {
 export type DeviceRegistry = {
   readonly hydrate: () => Promise<DeviceRegistryState>;
   readonly state: () => DeviceRegistryState;
+  readonly revision: () => number;
+  readonly subscribe: (listener: () => void) => () => void;
   readonly configureAccount: (
     accountEmail: string,
     confirmed: boolean,
@@ -154,6 +156,13 @@ export function createDeviceRegistry(options: {
   readonly ids?: Pick<IdPort, "next">;
 }): DeviceRegistry {
   let current = defaultState(options.deviceId, options.clock.now());
+  let currentRevision = 0;
+  const listeners = new Set<() => void>();
+
+  const notify = (): void => {
+    currentRevision += 1;
+    for (const listener of listeners) listener();
+  };
 
   const persist = async (): Promise<void> => {
     const value: PersistedRegistry = {
@@ -180,6 +189,7 @@ export function createDeviceRegistry(options: {
       return current;
     }
     current = parseState(value);
+    notify();
     return current;
   };
 
@@ -205,6 +215,11 @@ export function createDeviceRegistry(options: {
   return {
     hydrate,
     state: () => structuredClone(current),
+    revision: () => currentRevision,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
     configureAccount: async (accountEmail, confirmed) => {
       if (accountEmail.trim().length === 0) {
         throw adapterError("invalid-request", "sync.account.configure");
@@ -216,6 +231,7 @@ export function createDeviceRegistry(options: {
       ) return "confirmation-required";
       current = { ...current, accountEmail };
       await persist();
+      notify();
       return "configured";
     },
     register: async (deviceId, label, registerOptions = {}) => {
@@ -234,6 +250,7 @@ export function createDeviceRegistry(options: {
               },
             };
             await persist();
+            notify();
           })();
         }
         return;
@@ -259,16 +276,19 @@ export function createDeviceRegistry(options: {
         },
       };
       await persist();
+      notify();
     },
     rename: async (deviceId, label) => {
       const device = findDevice(deviceId);
       replaceDevice({ ...device, label: normalizeLabel(label) });
       await persist();
+      notify();
     },
     touch: async (deviceId = current.currentDeviceId) => {
       const device = findDevice(deviceId);
       replaceDevice({ ...device, lastSeenAt: options.clock.now() });
       await persist();
+      notify();
     },
     acknowledge: async (deviceId) => {
       findDevice(deviceId);
@@ -280,6 +300,7 @@ export function createDeviceRegistry(options: {
         },
       };
       await persist();
+      notify();
     },
     merge: async (devices) => {
       for (const candidate of devices) {
@@ -304,6 +325,7 @@ export function createDeviceRegistry(options: {
         }
       }
       await persist();
+      notify();
     },
     ordinaryProjection: () =>
       current.devices.map((device) => ({

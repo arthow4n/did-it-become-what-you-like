@@ -2,9 +2,11 @@ import { within } from "@testing-library/dom";
 import { createElement } from "react";
 import {
   GeminiSettingsScreen,
+  LineEditorDialog,
   modelOptions,
   ReceiptDisclosure,
   ReceiptImageStore,
+  ReceiptMetadataEditor,
   ReceiptReviewScreen,
 } from "./receipt-ui.tsx";
 import {
@@ -170,6 +172,70 @@ Deno.test("receipt-ui line card exposes uncertainty, selection, edit, and remove
       fireEvent.click(view.getByRole("button", { name: "Edit" }));
       fireEvent.click(view.getByRole("button", { name: "Remove" }));
       assert(selected === true && edited && removed);
+    });
+  });
+});
+
+Deno.test("receipt-ui line editor cancel leaves the review line unchanged", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    await withAriaGlobals(async () => {
+      let saves = 0;
+      render(
+        createElement(LineEditorDialog, {
+          line: {
+            type: "purchase",
+            id: "receipt-line-cancel",
+            description: "Milk",
+            categoryId: "category-uncategorized",
+            lineTotal: "-4",
+            selected: true,
+            uncertain: false,
+          },
+          categories: [],
+          linkOptions: [],
+          onSave: () => saves++,
+          triggerLabel: "Edit",
+        }),
+      );
+      const view = within(document.body);
+      fireEvent.click(view.getByRole("button", { name: "Edit" }));
+      await waitFor(() => assert(view.getByRole("dialog")));
+      fireEvent.input(view.getAllByRole("textbox")[0], {
+        target: { value: "Changed" },
+      });
+      fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+      await waitFor(() => assert(view.queryByRole("dialog") === null));
+      assert(saves === 0);
+    });
+  });
+});
+
+Deno.test("receipt-ui metadata editor cancel preserves the parent draft", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    await withAriaGlobals(async () => {
+      let saves = 0;
+      let closes = 0;
+      render(
+        createElement(ReceiptMetadataEditor, {
+          parent: {
+            projectId: "project-receipt-cancel",
+            date: "2026-08-24",
+            merchant: "Market branch",
+            currency: "SEK",
+            printedTotal: "-4",
+          },
+          onSave: () => saves++,
+          onClose: () => closes++,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => assert(view.getByRole("dialog")));
+      fireEvent.input(view.getByLabelText("Merchant"), {
+        target: { value: "Changed" },
+      });
+      fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+      await waitFor(() => assert(closes === 1));
+      assert(saves === 0);
     });
   });
 });

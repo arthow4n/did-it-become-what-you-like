@@ -1090,7 +1090,11 @@ export function SyncPortabilityRuntime({
   >(null);
   const previousScreen = useRef<SyncPortabilityScreen>(null);
   const lastResolvedConflict = useRef<string | null>(null);
-  const [deviceProjectionVersion, setDeviceProjectionVersion] = useState(0);
+  const deviceProjectionVersion = useSyncExternalStore(
+    syncDependencies.registry.subscribe,
+    syncDependencies.registry.revision,
+    syncDependencies.registry.revision,
+  );
   const syncView = syncViewFromSnapshot(
     syncSnapshot,
     driveAdapter?.status() ?? null,
@@ -1646,7 +1650,6 @@ export function SyncPortabilityRuntime({
           if (diagnostic === undefined) return;
           try {
             await syncDependencies.registry.rename(diagnostic.id, device.label);
-            setDeviceProjectionVersion((version) => version + 1);
           } catch {
             onNotice("This device name could not be saved.");
           }
@@ -1658,7 +1661,6 @@ export function SyncPortabilityRuntime({
           if (diagnostic === undefined) return;
           try {
             await syncDependencies.registry.acknowledge(diagnostic.id);
-            setDeviceProjectionVersion((version) => version + 1);
           } catch {
             onNotice("This device retirement could not be acknowledged.");
           }

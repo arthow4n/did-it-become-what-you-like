@@ -53,6 +53,7 @@ import {
   ContentContainer,
   ErrorState,
   FileField,
+  FormActions,
   GeminiConfigurationTest,
   GeminiQuickSetup,
   Heading,
@@ -1258,7 +1259,7 @@ function updatedLine(
   return undefined;
 }
 
-function LineEditorDialog({
+export function LineEditorDialog({
   line,
   categories,
   linkOptions,
@@ -1298,21 +1299,28 @@ function LineEditorDialog({
               </InlineNotice>
             )
             : null}
-          <Button
-            isDisabled={value.description.trim().length === 0}
-            onPress={() => {
-              const next = updatedLine(line, value);
-              if (!next) {
-                setError("Enter valid decimal values before saving this line.");
-                return;
-              }
-              onSave(next);
-              close();
-              onClose?.();
-            }}
-          >
-            Save line
-          </Button>
+          <FormActions>
+            <Button
+              isDisabled={value.description.trim().length === 0}
+              onPress={() => {
+                const next = updatedLine(line, value);
+                if (!next) {
+                  setError(
+                    "Enter valid decimal values before saving this line.",
+                  );
+                  return;
+                }
+                onSave(next);
+                close();
+                onClose?.();
+              }}
+            >
+              Save line
+            </Button>
+            <Button variant="secondary" onPress={close}>
+              Cancel
+            </Button>
+          </FormActions>
         </Stack>
       )}
     </AdaptiveDialog>
@@ -1632,7 +1640,7 @@ export function ReceiptReviewScreen({
   );
 }
 
-function ReceiptMetadataEditor({
+export function ReceiptMetadataEditor({
   parent,
   onSave,
   error,
@@ -1690,18 +1698,23 @@ function ReceiptMetadataEditor({
             </InlineNotice>
           )
           : null}
-        <Button
-          onPress={() =>
-            onSave({
-              ...parent,
-              merchant: merchant.trim() || undefined,
-              date,
-              currency,
-              printedTotal,
-            })}
-        >
-          Save details
-        </Button>
+        <FormActions>
+          <Button
+            onPress={() =>
+              onSave({
+                ...parent,
+                merchant: merchant.trim() || undefined,
+                date,
+                currency,
+                printedTotal,
+              })}
+          >
+            Save details
+          </Button>
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
+        </FormActions>
       </Stack>
     </AdaptiveDialog>
   );

@@ -812,6 +812,27 @@
     min-width: 0;
   }
 
+  .ds-list-row__main > .ds-button {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+
+  .ds-list-row__main > .ds-button .mantine-Button-inner {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+
+  .ds-list-row__main > .ds-button .mantine-Button-label {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: start;
+    white-space: normal;
+  }
+
   .ds-list-row__main > * {
     overflow-wrap: anywhere;
   }

@@ -1463,6 +1463,9 @@ export function Switch({
   onChange,
   isDisabled,
   isReadOnly,
+  isRequired,
+  isInvalid,
+  validationBehavior: _validationBehavior,
   slot,
   ...props
 }: SwitchProps) {
@@ -1476,6 +1479,8 @@ export function Switch({
       onChange={(event) => onChange?.(event.currentTarget.checked)}
       disabled={isDisabled}
       readOnly={isReadOnly}
+      required={isRequired}
+      aria-invalid={isInvalid ? "true" : undefined}
       slot={slot ?? undefined}
       className={cx("ds-switch", className)}
     />
@@ -2764,7 +2769,11 @@ export function ExpenseRow(
         />
       }
     >
-      <Button variant="quiet" onPress={() => onSelect?.(expense.id)}>
+      <Button
+        variant="quiet"
+        className="ds-expense-row__trigger"
+        onPress={() => onSelect?.(expense.id)}
+      >
         <Stack gap={1}>
           <strong>
             {expense.merchant || expense.description || "Untitled expense"}

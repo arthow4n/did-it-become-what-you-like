@@ -471,6 +471,9 @@ Deno.test("design-system selection and progress remain keyboard-addressable", as
           }),
           createElement(Switch, {
             children: "Automatic sync",
+            isRequired: true,
+            isInvalid: true,
+            validationBehavior: "aria",
             onChange: (value) => autoSync = value,
           }),
           createElement(Progress, {
@@ -487,7 +490,10 @@ Deno.test("design-system selection and progress remain keyboard-addressable", as
       fireEvent.click(view.getByRole("radio", { name: "Money back" }));
       fireEvent.click(view.getByRole("checkbox", { name: "Include archived" }));
       fireEvent.click(view.getByRole("radio", { name: "Travel" }));
-      fireEvent.click(view.getByRole("switch", { name: "Automatic sync" }));
+      const syncSwitch = view.getByRole("switch", { name: "Automatic sync" });
+      assertEqual(syncSwitch.getAttribute("aria-invalid"), "true");
+      assert(syncSwitch.hasAttribute("required"));
+      fireEvent.click(syncSwitch);
       assertEqual(direction, "back");
       assert(archived);
       assertEqual(category, "travel");

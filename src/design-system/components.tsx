@@ -44,11 +44,13 @@ import {
   PasswordInput as MantinePasswordInput,
   Pill as MantinePill,
   Popover as MantinePopover,
+  Progress as MantineProgress,
   Radio as MantineRadio,
   RadioGroup as MantineRadioGroup,
   SegmentedControl as MantineSegmentedControl,
   Select as MantineSelect,
   SimpleGrid as MantineSimpleGrid,
+  Skeleton as MantineSkeleton,
   Stack as MantineStack,
   Switch as MantineSwitch,
   Text as MantineText,
@@ -72,7 +74,6 @@ import {
   ListBox as AriaListBox,
   ListBoxItem as AriaListBoxItem,
   Popover as AriaPopover,
-  ProgressBar as AriaProgressBar,
 } from "react-aria-components";
 export type Space = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export type Tone = "neutral" | "positive" | "warning" | "danger" | "info";
@@ -2304,40 +2305,58 @@ export type ProgressProps = {
 };
 
 export function Progress(
-  { label, value, indeterminate, className, ...props }: ProgressProps,
+  {
+    label,
+    value,
+    indeterminate = false,
+    minValue = 0,
+    maxValue = 100,
+    className,
+  }: ProgressProps,
 ) {
+  const currentValue = value ?? minValue;
+  const percentage = maxValue > minValue
+    ? Math.min(
+      100,
+      Math.max(0, ((currentValue - minValue) / (maxValue - minValue)) * 100),
+    )
+    : 0;
   return (
-    <AriaProgressBar
-      {...props}
-      value={indeterminate ? undefined : value}
+    <div
       aria-label={label}
       className={cx("ds-progress", className)}
       data-indeterminate={indeterminate ? "true" : "false"}
+      role="progressbar"
+      aria-valuemin={minValue}
+      aria-valuemax={maxValue}
+      {...(indeterminate ? {} : {
+        "aria-valuenow": currentValue,
+        "aria-valuetext": `${Math.round(percentage)}%`,
+      })}
     >
-      {({ percentage, valueText }) => (
-        <>
-          <div
-            className="ds-inline"
-            style={{ justifyContent: "space-between" }}
-          >
-            <span>{label}</span>
-            <span>
-              {indeterminate
-                ? "In progress"
-                : valueText ?? `${Math.round(percentage ?? 0)}%`}
-            </span>
-          </div>
-          <div className="ds-progress__track" aria-hidden="true">
-            <div
-              className="ds-progress__bar"
-              style={indeterminate
-                ? undefined
-                : { width: `${percentage ?? 0}%` }}
-            />
-          </div>
-        </>
-      )}
-    </AriaProgressBar>
+      <div
+        className="ds-inline"
+        style={{ justifyContent: "space-between" }}
+      >
+        <span>{label}</span>
+        <span>
+          {indeterminate ? "In progress" : `${Math.round(percentage)}%`}
+        </span>
+      </div>
+      <MantineProgress.Root
+        className="ds-progress__track"
+        aria-hidden="true"
+        transitionDuration={0}
+      >
+        <MantineProgress.Section
+          value={indeterminate ? 35 : percentage}
+          color="accent"
+          className="ds-progress__bar"
+          withAria={false}
+          animated={false}
+        />
+      </MantineProgress.Root>
+    </div>
   );
 }
 
@@ -2345,9 +2364,10 @@ export function Skeleton(
   { className, style }: { className?: string; style?: CSSProperties },
 ) {
   return (
-    <div
+    <MantineSkeleton
       className={cx("ds-skeleton", className)}
       aria-hidden="true"
+      animate={false}
       style={style}
     />
   );
@@ -2362,13 +2382,18 @@ export function EmptyState(
   },
 ) {
   return (
-    <div className={cx("ds-empty-state", className)}>
+    <MantinePaper
+      component="section"
+      className={cx("ds-empty-state", className)}
+      withBorder={false}
+      shadow="none"
+    >
       <Stack gap={3}>
         <Heading size="sm">{title}</Heading>
         <Text>{children}</Text>
         {action}
       </Stack>
-    </div>
+    </MantinePaper>
   );
 }
 
@@ -2381,13 +2406,20 @@ export function ErrorState(
   },
 ) {
   return (
-    <div className={cx("ds-error-state", className)} role="alert">
+    <MantineAlert
+      className={cx("ds-error-state", className)}
+      color="danger"
+      variant="light"
+      radius="md"
+      data-tone="danger"
+      role="alert"
+    >
       <Stack gap={3}>
         <Heading size="sm">{title}</Heading>
         <Text>{children}</Text>
         {action}
       </Stack>
-    </div>
+    </MantineAlert>
   );
 }
 

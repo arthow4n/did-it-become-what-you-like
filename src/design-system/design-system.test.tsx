@@ -21,6 +21,8 @@ import {
   DeleteAndReassign,
   Disclosure,
   Divider,
+  EmptyState,
+  ErrorState,
   ExpenseRow,
   FileField,
   formatMoney,
@@ -43,6 +45,7 @@ import {
   SecretField,
   Section,
   SegmentedControl,
+  Skeleton,
   Stack,
   StatusDot,
   StatusMessage,
@@ -782,6 +785,58 @@ Deno.test("M8 feedback facades preserve live regions and notification dismissal"
         assertEqual(dismissed, 1);
         assert(!view.queryByText("Expense saved"));
       });
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("M8 remaining feedback facades preserve progress and state contracts", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaDomGlobals(window, () => {
+      const mounted = render(
+        createElement(
+          "div",
+          null,
+          createElement(Progress, {
+            label: "Uploading receipt",
+            value: 25,
+            minValue: 0,
+            maxValue: 50,
+          }),
+          createElement(Progress, {
+            label: "Preparing receipt",
+            indeterminate: true,
+          }),
+          createElement(Skeleton, {
+            style: { width: "14rem", height: "2rem" },
+          }),
+          createElement(EmptyState, {
+            title: "No receipts",
+            children: "Add a receipt to get started.",
+          }),
+          createElement(ErrorState, {
+            title: "Receipt unavailable",
+            children: "The receipt could not be loaded.",
+          }),
+        ),
+      );
+      const view = within(document.body);
+      const determinate = view.getByRole("progressbar", {
+        name: "Uploading receipt",
+      });
+      assertEqual(determinate.getAttribute("aria-valuenow"), "25");
+      assertEqual(determinate.getAttribute("aria-valuemax"), "50");
+      assertEqual(determinate.getAttribute("aria-valuetext"), "50%");
+      const indeterminate = view.getByRole("progressbar", {
+        name: "Preparing receipt",
+      });
+      assert(!indeterminate.hasAttribute("aria-valuenow"));
+      assert(view.getByText("In progress"));
+      assert(document.querySelector('.ds-skeleton[aria-hidden="true"]'));
+      assert(document.querySelector("section.ds-empty-state"));
+      assert(view.getByRole("heading", { name: "No receipts" }));
+      assert(view.getByRole("alert"));
+      assert(view.getByRole("heading", { name: "Receipt unavailable" }));
       mounted.unmount();
     })
   );

@@ -843,39 +843,57 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-008 — Recompose receipt, Gemini, sync, conflict, and portability UI
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-007`.
+- **Status/dependencies:** `COMPLETE`; depends on `M8-007`.
 - **Owned scope:** remaining domain composites and affected feature presentation
   only; no actor, adapter, persistence, schema, or workflow change.
 - **Impact inventory (2026-08-27):** Receipt, conflict/import, sync, and
   portability feature files already keep their field, list, notice, status,
   and workflow imports on the facade. The remaining direct component-library
   implementation in this scope is `ModelPicker` in
-  `src/design-system/components.tsx`, which still wraps React Aria. Receipt
+  `src/design-system/components.tsx`, which was migrated in this task. Receipt
   capture uses one imperative native file input for the approved camera/file
   contract; the facade `FileField`/Mantine Dropzone boundary must own that
   input while preserving `capture`, privacy-safe previews, and object-URL
   cleanup. Remaining raw feature wrappers are layout/semantic containers,
   native image preview, or CSS-required master-detail boundaries and will be
   changed only where a facade primitive can preserve their contract.
-- [ ] Recompose receipt source/metadata/line/editor/reconciliation components,
-      model picker/quick setup/configuration test, sync/global status, known
-      devices, conflict review, and import/export panels from migrated facade
-      primitives.
-- [ ] Preserve native file/camera capture, receipt image privacy, durable
-      drafts, mismatch/error states, secret handling, offline/reconnect honesty,
-      opaque-ID policy, conflict neutrality, import/replace warnings, and
-      destructive cancel/confirmation behavior.
-- [ ] Test long technical/error strings, secret reveal, model loading/failure,
-      receipt line editing, conflict options, import progress/recovery, offline
-      banners, focus restoration, and narrow review layouts.
-- **Focused verification:** affected tests and an immediate targeted journey or
+- [x] Recompose receipt source/metadata/line/editor/reconciliation components,
+  model picker/quick setup/configuration test, sync/global status, known
+  devices, conflict review, and import/export panels from migrated facade
+  primitives.
+- [x] Preserve native file/camera capture, receipt image privacy, durable
+  drafts, mismatch/error states, secret handling, offline/reconnect honesty,
+  opaque-ID policy, conflict neutrality, import/replace warnings, and
+  destructive cancel/confirmation behavior.
+- [x] Test long technical/error strings, secret reveal, model loading/failure,
+  receipt line editing, conflict options, import progress/recovery, offline
+  banners, focus restoration, and narrow review layouts.
+- **Implementation evidence (2026-08-27):** The complete domain-composite slice
+  is pushed through `c40a7ff`. `ModelPicker` now composes the Mantine-backed
+  searchable `SelectField` with facade-owned status/reason rendering; receipt
+  capture now uses the facade `FileField` Dropzone boundary with controlled
+  camera capture, input/open refs, single-file semantics, and unchanged
+  privacy-safe image lifecycle; receipt uncertainty, conflict/import warnings,
+  discarded values, diagnostics, loading placeholders, master-detail,
+  replacement, global sync, and portability wrappers use facade compositions.
+  Known devices, receipt metadata/line/editor/reconciliation, Gemini setup and
+  configuration status, and actor/event boundaries remain unchanged. No
+  feature/app Mantine or React Aria imports remain; native image preview stays
+  an approved privacy-preserving boundary.
+- **Focused verification (2026-08-27):** Direct receipt/Gemini and design-system
+  tests passed (39 tests); direct conflict/import and sync UI tests passed (24
+  tests); `deno task test:affected` passed (27 tests); targeted TypeScript
+  checks, `deno fmt --check`, `deno lint`, and `git diff --check` passed for
+  each changed slice. The complete component/gallery/build/browser matrix is
+  intentionally delegated to `R-840`.
+- [x] Run affected tests and an immediate targeted journey or
   browser smoke only for behavior unsafe to defer to `R-840`.
 - **Acceptance:** all remaining screens use the facade unchanged or through
   approved recorded exceptions; no product workflow semantics changed.
 
 #### R-840 — Domain-composite review checkpoint
 
-- **Status/dependencies:** `PENDING`; depends on `M8-007`, `M8-008`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-007`, `M8-008`.
 - [ ] Fresh read-only reviewer traces representative actor snapshot/event paths
       through each migrated composite and audits privacy, destructive safety,
       conflict neutrality, offline honesty, accessibility, responsive layouts,
@@ -1046,12 +1064,14 @@ evidence, and the next action is dependency-safe.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
-- **Worktree state:** `master` is aligned with `origin/master` at pushed plan
-  commit `04fde67` (`docs(plan): close M8-007 and start M8-008`), with the
+- **Worktree state:** `master` is aligned with `origin/master` at pushed
+  implementation commit `c40a7ff` (`feat(migration): finish portability facade
+  composition`), with the
   implementation batch and R-830 remediations pushed; R-830 is approved and
   closed, M8-007 is complete, and M8-008 is the sole active task;
-  R-820 is approved and closed, and M8-005 and M8-006 are complete. No M8
-  branch/worktree or review agent is active; the primary agent owns M8-008.
+  R-820 is approved and closed, and M8-005 and M8-006 are complete. M8-008 is
+  complete and R-840 is the sole active review gate. No M8 branch/worktree or
+  other review agent is active; the primary agent owns the gate.
   Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -1083,11 +1103,10 @@ evidence, and the next action is dependency-safe.
   severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; no review
   agent, migration branch, or M8 worktree is active; historical non-M8
   worktrees were preserved untouched.
-- **Exact next action:** migrate `ModelPicker` to the Mantine-backed facade,
-  route receipt capture through the facade `FileField` Dropzone boundary while
-  preserving native camera/file behavior, add focused contract regressions, and
-  record the pushed slice before continuing through the remaining M8-008
-  domain composites.
+- **Exact next action:** commit this checkpoint, dispatch one fresh read-only
+  R-840 reviewer against the pushed M8-007/M8-008 batch, wait for its complete
+  report without killing a slow review, and resolve any severity 1–3 findings
+  before opening M8-009.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

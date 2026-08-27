@@ -595,10 +595,18 @@
     height: var(--control-height);
     max-width: 100%;
     overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
     padding: var(--space-1);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-pill);
     background: var(--color-surface-2);
+  }
+
+  .ds-segmented-control .mantine-SegmentedControl-root {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .ds-segmented-control[data-full-width="true"] {
@@ -612,6 +620,7 @@
     justify-content: center;
   }
 
+  .ds-segmented-control .mantine-SegmentedControl-control,
   .ds-segmented-control > * {
     min-height: var(--target-min);
     border: 0;
@@ -619,6 +628,11 @@
     background: transparent;
     color: var(--color-text-secondary);
     padding: var(--space-2) var(--space-3);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .ds-segmented-control .mantine-SegmentedControl-label {
     white-space: nowrap;
   }
 
@@ -639,6 +653,9 @@
   .ds-badge,
   .ds-status-dot {
     display: inline-flex;
+    flex-shrink: 0;
+    white-space: nowrap;
+    max-width: none;
     height: auto;
     min-height: 32px;
     align-items: center;
@@ -656,9 +673,15 @@
 
   .ds-badge,
   .ds-status-dot {
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-1) var(--space-3);
     background: var(--color-info-surface);
     color: var(--color-info);
+  }
+
+  .ds-badge .mantine-Badge-label {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
   }
 
   .ds-badge[data-tone="positive"],
@@ -745,9 +768,16 @@
     padding: var(--space-3) var(--space-4);
   }
 
+  .ds-list-row > *:not(.ds-list-row__main) {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
   .ds-list-row__main {
     flex: 1 1 auto;
     min-width: 0;
+    word-break: normal;
+    overflow-wrap: anywhere;
   }
 
   .ds-list-row__main > .ds-button {
@@ -773,12 +803,15 @@
     min-width: 0;
     max-width: 100%;
     overflow: visible;
+    word-break: normal;
     overflow-wrap: anywhere;
     text-align: start;
     white-space: normal;
   }
 
   .ds-list-row__main > * {
+    min-width: 0;
+    word-break: normal;
     overflow-wrap: anywhere;
   }
 
@@ -1222,6 +1255,15 @@
   }
 
   @media (max-width: 719px) {
+    .ds-page-header__actions {
+      width: 100%;
+    }
+
+    .ds-page-header__actions > .ds-button,
+    .ds-page-header__actions > button {
+      width: 100%;
+    }
+
     .ds-filter-bar > * {
       flex: 1 1 100%;
     }
@@ -1229,6 +1271,9 @@
     .ds-filter-bar .ds-segmented-control {
       min-width: 0;
       max-width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
   }
 

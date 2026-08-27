@@ -372,6 +372,14 @@ Deno.test("local UI expenses exposes shared filters, empty state, and add event"
     const view = within(document.body);
     assert(view.getByRole("heading", { name: "Expenses" }));
     assert(view.getByRole("button", { name: /Filters/ }));
+    const searchRow = document.querySelector(
+      ".local-ui-expenses-filter-bar__search-row",
+    );
+    assert(searchRow, "Find and Filters should be grouped in search-row");
+    assert(
+      searchRow.querySelector(".local-ui-expenses-filter-bar__trigger"),
+      "Filters button should be inside search-row",
+    );
     assert(view.getByText("No expenses in this period"));
     fireEvent.click(view.getByRole("button", { name: "Add expense" }));
     assert(addCount === 1, "Add expense should dispatch the callback");

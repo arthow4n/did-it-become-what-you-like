@@ -96,6 +96,10 @@
     height: var(--control-height);
   }
 
+  .local-ui-expenses-filter-bar__search-row {
+    display: contents;
+  }
+
   @media (max-width: 719px) {
     .local-ui-expenses-filter-bar {
       display: grid;
@@ -112,6 +116,23 @@
 
     .local-ui-expenses-filter-bar .ds-field {
       width: 100%;
+    }
+
+    .local-ui-expenses-filter-bar__search-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-2);
+      align-items: end;
+      width: 100%;
+    }
+
+    .local-ui-expenses-filter-bar__search-row > * {
+      min-width: 0;
+    }
+
+    .local-ui-expenses-filter-bar__trigger {
+      height: var(--control-height);
+      white-space: nowrap;
     }
   }
 

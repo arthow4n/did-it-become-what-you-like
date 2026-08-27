@@ -700,57 +700,62 @@ export function ExpensesScreen({
             onValueChange={(value) =>
               setCategoryId(value === "all" ? "" : value)}
           />
-          <SearchField
-            label="Find"
-            placeholder="Merchant or description"
-            value={search}
-            onValueChange={setSearch}
-          />
-          <FilterSheet
-            trigger={
-              <Button variant="secondary">
-                <Icon>
-                  <SlidersHorizontal />
-                </Icon>{" "}
-                Filters
-              </Button>
-            }
-          >
-            <Stack gap={4}>
-              <CurrencyPicker
-                value={currency || "all"}
-                options={[
-                  { id: "all", label: "All currencies" },
-                  ...CURRENCY_OPTIONS.map((code) => ({
-                    id: code,
-                    label: code,
-                  })),
-                ]}
-                onValueChange={(value) =>
-                  setCurrency(value === "all" ? "" : value)}
-              />
-              <TextField
-                label="Minimum signed amount"
-                value={minimum}
-                onChange={setMinimum}
-              />
-              <TextField
-                label="Maximum signed amount"
-                value={maximum}
-                onChange={setMaximum}
-              />
-              <SegmentedControl
-                fullWidth
-                label="Sort order"
-                value={sort}
-                onChange={(value) => setSort(value as "newest" | "oldest")}
-                options={[{ id: "newest", label: "Newest first" }, {
-                  id: "oldest",
-                  label: "Oldest first",
-                }]}
-              />
-            </Stack>
-          </FilterSheet>
+          <div className="local-ui-expenses-filter-bar__search-row">
+            <SearchField
+              label="Find"
+              placeholder="Merchant or description"
+              value={search}
+              onValueChange={setSearch}
+            />
+            <FilterSheet
+              trigger={
+                <Button
+                  variant="secondary"
+                  className="local-ui-expenses-filter-bar__trigger"
+                >
+                  <Icon>
+                    <SlidersHorizontal />
+                  </Icon>{" "}
+                  Filters
+                </Button>
+              }
+            >
+              <Stack gap={4}>
+                <CurrencyPicker
+                  value={currency || "all"}
+                  options={[
+                    { id: "all", label: "All currencies" },
+                    ...CURRENCY_OPTIONS.map((code) => ({
+                      id: code,
+                      label: code,
+                    })),
+                  ]}
+                  onValueChange={(value) =>
+                    setCurrency(value === "all" ? "" : value)}
+                />
+                <TextField
+                  label="Minimum signed amount"
+                  value={minimum}
+                  onChange={setMinimum}
+                />
+                <TextField
+                  label="Maximum signed amount"
+                  value={maximum}
+                  onChange={setMaximum}
+                />
+                <SegmentedControl
+                  fullWidth
+                  label="Sort order"
+                  value={sort}
+                  onChange={(value) => setSort(value as "newest" | "oldest")}
+                  options={[{ id: "newest", label: "Newest first" }, {
+                    id: "oldest",
+                    label: "Oldest first",
+                  }]}
+                />
+              </Stack>
+            </FilterSheet>
+          </div>
         </FilterBar>
         <ActiveFilterChips
           filters={[

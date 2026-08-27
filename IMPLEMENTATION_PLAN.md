@@ -464,6 +464,17 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   fixture at `gallery.tsx:83-84`/`477-492`, the production row at
   `components.tsx:2751-2777`, row constraints at `tokens.css:800-817`, and
   the switch adapter at `components.tsx:1444-1471`.
+- **Second-fix evidence:** The two closure blockers are fixed and pushed at
+  `78fbf2a`: `ExpenseRow` now gives its list-row action a shrinkable full-width
+  facade hook with wrapping Mantine inner/label constraints, and `Switch`
+  consumes `isRequired`, `isInvalid`, and `validationBehavior`, mapping the
+  supported states and preventing unsupported props from leaking. `deno task
+  check` passed, `deno task lint` passed (207 files), targeted `deno fmt
+  --check` passed for the three changed source files, `git diff --check` passed,
+  and `deno test --allow-read --allow-write --allow-run --allow-env
+  --related=src/design-system/components.tsx` passed (99 tests). The
+  post-commit `deno task test:affected` selected no modules because the fix was
+  already committed; the related run provides the direct affected evidence.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
@@ -761,12 +772,14 @@ evidence, and the next action is dependency-safe.
 - **M8 active/interrupted work:** M8-002 is complete and pushed at `12f12c4`;
   R-810 was approved by the fresh read-only reviewer with no findings and is
   closed at `492d9c1`. M8-003 is complete and pushed at `18bac20`; M8-004 is
-  complete and pushed at `eaa02d7`; R-820 remains owned by the primary agent;
+  complete and pushed at `eaa02d7`; the second R-820 fix is pushed at `78fbf2a`;
+  R-820 remains owned by the primary agent;
   no review agent, migration branch, or M8 worktree is active; historical
   non-M8 worktrees were preserved untouched.
-- **Exact next action:** fix the two remaining R-820 S2 findings, rerun the
-  affected controls and targeted layout/semantics checks, commit and push, then
-  invoke a fresh read-only R-820 closure reviewer before opening M8-005.
+- **Exact next action:** invoke a fresh read-only R-820 closure reviewer, have
+  it rerun the combined M8-003/M8-004 affected, gallery, build, and
+  three-viewport browser matrix from the current pushed HEAD, and record
+  approval or any remaining severity 1–3 finding before opening M8-005.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

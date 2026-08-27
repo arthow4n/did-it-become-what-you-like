@@ -65,6 +65,7 @@
     --color-positive: #86d9aa;
     --color-negative: #ff9e9e;
     --color-danger: #ff9e9e;
+    --color-on-danger: #241113;
     --color-warning: #f0c674;
     --color-info: #8fc8f8;
     --color-focus-ring: #9ae8da;
@@ -134,6 +135,7 @@
       --color-positive: Highlight;
       --color-negative: Mark;
       --color-danger: Mark;
+      --color-on-danger: MarkText;
       --color-warning: Highlight;
       --color-info: Highlight;
       --color-focus-ring: Highlight;
@@ -379,7 +381,7 @@
   .ds-button[data-variant="danger"],
   .ds-link-button[data-variant="danger"] {
     background: var(--color-danger);
-    color: #241113;
+    color: var(--color-on-danger);
   }
 
   .ds-button[data-variant="primary"][data-pending="true"],
@@ -1015,7 +1017,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: var(--space-1);
     font-size: var(--font-size-caption);
     line-height: var(--line-height-tight);
     padding: var(--space-1) var(--space-2);

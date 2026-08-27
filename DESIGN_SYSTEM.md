@@ -183,6 +183,7 @@ APIs. Components must not hard-code palette values.
 | `positive`       |          `#86D9AA` | Money back, always with `+` and/or text                |
 | `negative`       |          `#FF9E9E` | Expense outflow, always with a minus sign or label     |
 | `danger`         |          `#FF9E9E` | Destructive actions and errors; separate semantic role |
+| `on-danger`      |          `#241113` | Text/icons on filled danger controls                   |
 | `warning`        |          `#F0C674` | Review needed and mismatch states                      |
 | `info`           |          `#8FC8F8` | Neutral information and synchronization                |
 | `focus-ring`     |          `#9AE8DA` | Keyboard focus indicator                               |
@@ -190,8 +191,8 @@ APIs. Components must not hard-code palette values.
 Status containers use dark tinted surfaces derived from these roles, while
 foreground text keeps AA contrast. The initial primary, secondary, muted,
 accent, positive, negative/danger, warning, and info foregrounds all exceed
-4.5:1 on `surface-1`; token changes must be rechecked rather than assuming the
-role name guarantees contrast.
+4.5:1 on `surface-1`, and `on-danger` exceeds 4.5:1 on `danger`; token changes
+must be rechecked rather than assuming the role name guarantees contrast.
 
 ### Type, spacing, and shape
 

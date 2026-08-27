@@ -90,6 +90,30 @@ function assertEqual<T>(
   }
 }
 
+function hexToken(css: string, token: string): string {
+  const match = css.match(new RegExp(`--${token}:\\s*(#[0-9a-f]{6})`, "i"));
+  assert(match, `Expected ${token} to have a hex value`);
+  return match[1].toLowerCase();
+}
+
+function relativeLuminance(hex: string): number {
+  const channels = [0, 1, 2].map((channel) => {
+    const value = Number.parseInt(
+      hex.slice(1 + channel * 2, 3 + channel * 2),
+      16,
+    ) / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrastRatio(first: string, second: string): number {
+  const firstLuminance = relativeLuminance(first);
+  const secondLuminance = relativeLuminance(second);
+  return (Math.max(firstLuminance, secondLuminance) + 0.05) /
+    (Math.min(firstLuminance, secondLuminance) + 0.05);
+}
+
 async function withAriaDomGlobals<T>(
   testWindow: {
     HTMLButtonElement: unknown;
@@ -1129,6 +1153,38 @@ Deno.test("design-system CSS locks semantic tokens, immediate motion, targets, a
   assert(css.includes("@media (forced-colors: active)"));
   assert(css.includes("@keyframes ds-progress"));
   assert(css.includes("overflow-wrap: anywhere;"));
+
+  const surface = hexToken(css, "color-surface-1");
+  for (
+    const token of [
+      "color-text-primary",
+      "color-text-secondary",
+      "color-text-muted",
+      "color-accent",
+      "color-positive",
+      "color-negative",
+      "color-danger",
+      "color-warning",
+      "color-info",
+    ]
+  ) {
+    assert(
+      contrastRatio(hexToken(css, token), surface) >= 4.5,
+      `${token} must retain 4.5:1 contrast on color-surface-1`,
+    );
+  }
+  assert(
+    contrastRatio(
+      hexToken(css, "color-on-danger"),
+      hexToken(css, "color-danger"),
+    ) >=
+      4.5,
+    "color-on-danger must retain 4.5:1 contrast on color-danger",
+  );
+  assert(css.includes("color: var(--color-on-danger);"));
+  assert(!css.includes("color: #241113;"));
+  assert(css.includes("gap: var(--space-1);"));
+  assert(!css.includes("gap: 2px;"));
 });
 
 Deno.test("design-system page headers can provide the application heading", async () => {

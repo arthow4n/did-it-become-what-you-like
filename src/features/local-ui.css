@@ -25,7 +25,7 @@
     max-height: 36rem;
     object-fit: contain;
     border-radius: var(--radius-control);
-    background: var(--surface-2);
+    background: var(--color-surface-2);
   }
 
   .receipt-ui-quick-setup {
@@ -135,7 +135,7 @@
 
   .local-ui-overlay {
     position: fixed;
-    z-index: 40;
+    z-index: var(--layer-overlay);
     inset: 0;
     display: grid;
     align-items: end;
@@ -164,7 +164,7 @@
 
   @media (max-width: 719px) {
     .ds-navigation__item {
-      gap: 0;
+      gap: var(--space-1);
       flex-direction: column;
       font-size: var(--font-size-caption);
       line-height: var(--line-height-tight);

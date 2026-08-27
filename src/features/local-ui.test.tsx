@@ -26,6 +26,7 @@ import { withComponentHarness } from "../test-support/component-harness.tsx";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
+  readTextFile(path: string | URL): Promise<string>;
 };
 
 function assert(
@@ -773,3 +774,15 @@ Deno.test(
     );
   },
 );
+
+Deno.test("local UI CSS uses shared surface, overlay, and spacing tokens", async () => {
+  const css = await Deno.readTextFile(
+    new URL("./local-ui.css", import.meta.url),
+  );
+  assert(css.includes("background: var(--color-surface-2);"));
+  assert(css.includes("z-index: var(--layer-overlay);"));
+  assert(css.includes("gap: var(--space-1);"));
+  assert(!css.includes("var(--surface-2)"));
+  assert(!css.includes("z-index: 40;"));
+  assert(!css.includes("gap: 0;"));
+});

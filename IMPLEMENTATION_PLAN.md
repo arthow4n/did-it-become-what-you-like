@@ -537,6 +537,16 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
   an explicit `minmax(0, 1fr)` column, run the affected checks and diff check,
   commit and push the focused fix, update this checkpoint, and request a fresh
   read-only closure review before opening M8-005.
+- **Sixth-fix evidence:** The remaining gallery-track expansion is fixed and
+  pushed at `2806236`: `.ds-gallery__section` and `.ds-gallery__surface` now
+  explicitly use a shrinkable `minmax(0, 1fr)` grid column. The affected run
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  --changed=12f12c4` passed (113 tests, 0 failures); `deno task check`,
+  `deno task lint` (207 files), targeted `deno fmt --check
+  src/design-system/tokens.css`, `deno task a11y:gallery` (all three
+  viewports), `deno task build`, and `git diff --check` all passed. A fresh
+  closure reviewer is still required to confirm the exact three-viewport
+  browser width measurements before R-820 can close.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
@@ -813,11 +823,10 @@ evidence, and the next action is dependency-safe.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `447b8e9` (`docs(plan): record R-820 fifth fixes`); the latest closure review
-  has completed and found one remaining S2 gallery-track overflow at 320px;
-  this plan update is the only current uncommitted change. No M8 branch/worktree
-  or review agent is active. Historical non-M8 worktrees remain present and
-  were preserved untouched.
+  `2806236` (`fix(migration): constrain gallery grid tracks`); the gallery-track
+  fix and all local validation are pushed, and this plan update is the only
+  current uncommitted change. No M8 branch/worktree or review agent is active.
+  Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -836,11 +845,11 @@ evidence, and the next action is dependency-safe.
   R-810 was approved by the fresh read-only reviewer with no findings and is
   closed at `492d9c1`. M8-003 is complete and pushed at `18bac20`; M8-004 is
   complete and pushed at `eaa02d7`; the fifth R-820 fix is pushed at `5f765d1`
-  and its evidence is recorded above; the latest R-820 closure review is
-  complete at `447b8e9` with the single remaining gallery-track finding
-  recorded above; R-820 remains owned by the primary agent; no review agent,
-  migration branch, or M8 worktree is active; historical non-M8 worktrees were
-  preserved untouched.
+  and the gallery-track fix is pushed at `2806236`, with evidence recorded
+  above; the latest R-820 closure review is complete at `447b8e9` with the
+  single finding resolved by `2806236`; R-820 remains owned by the primary
+  agent; no review agent, migration branch, or M8 worktree is active;
+  historical non-M8 worktrees were preserved untouched.
 - **Exact next action:** invoke another fresh read-only R-820 closure reviewer,
   have it rerun the combined M8-003/M8-004 affected, gallery, build, and
   three-viewport browser matrix after the gallery-track fix, and record

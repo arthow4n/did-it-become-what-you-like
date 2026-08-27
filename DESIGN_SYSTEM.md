@@ -89,6 +89,13 @@ props, refs, callback signatures, and types remain library-neutral; library
 events are translated inside the facade. After Midnight semantic tokens remain
 the source of truth and are mapped into `MantineProvider` and facade defaults.
 
+`DesignSystemProvider` is the single runtime entry for Mantine. It forces the
+approved dark scheme and maps the semantic color, type, spacing, radius, focus,
+control-height, z-index, and motion contracts into Mantine's theme and CSS
+variables. The application and gallery import the facade-owned style entry so
+Mantine's layered CSS is loaded before `tokens.css`; screens do not import
+Mantine styles directly.
+
 Mantine `styles`, `classNames`, provider APIs, copied source, private imports,
 and raw palette indexes are confined to `src/design-system/**` and the
 facade-owned provider. XState remains authoritative for durable form/workflow
@@ -310,12 +317,14 @@ flexbox abuse, all components and screens must follow these rules:
      (`margin-bottom: var(--space-4)`).
 
 5. **Z-Index Layering & Overlay Hierarchy:**
-   - Content / Base: `z-index: 0`
-   - Sticky Action / Filter Bars: `z-index: 10`
-   - Fixed Mobile Bottom Navigation: `z-index: 20`
+   - Content / Base: `z-index: 0` (`--layer-content`)
+   - Sticky Action / Filter Bars: `z-index: 10` (`--layer-sticky`)
+   - Fixed Mobile Bottom Navigation: `z-index: 20` (`--layer-navigation`)
    - Modals, Drawers & Overlays (`.ds-modal-overlay`, `.local-ui-overlay`):
-     `z-index: 40` (ensuring overlays sit cleanly over bottom navigation)
+     `z-index: 40` (`--layer-overlay`, ensuring overlays sit cleanly over
+     bottom navigation)
    - Floating Toasts / Global Status Notifications: `z-index: 50`
+     (`--layer-toast`)
    - Ephemeral feedback (`Toast`) must render inside a dedicated fixed overlay
      container. Actions associated with notifications (Dismiss, Undo) must be
      colocated inside the floating notification container, never in regular

@@ -8,15 +8,22 @@ import { createElement } from "react";
 import { withComponentHarness } from "../test-support/component-harness.tsx";
 import {
   AdaptiveDialog,
+  Badge,
   Button,
+  Card,
   Checkbox,
+  Chip,
   ColorChoiceField,
+  ContentContainer,
   CurrencyPicker,
   DefinitionList,
   DeleteAndReassign,
+  Divider,
   ExpenseRow,
   FileField,
   formatMoney,
+  Heading,
+  Inline,
   MerchantPicker,
   MoneySummary,
   MoneyText,
@@ -25,9 +32,15 @@ import {
   PageHeader,
   PeriodPicker,
   Progress,
+  ResponsiveGrid,
+  Section,
   SegmentedControl,
+  Stack,
+  StatusDot,
+  Text,
   TextField,
 } from "./components.tsx";
+import { DesignSystemProvider } from "./provider.tsx";
 
 function assert(
   condition: unknown,
@@ -326,6 +339,122 @@ Deno.test("design-system selection and progress remain keyboard-addressable", as
   );
 });
 
+Deno.test("M8 provider maps semantic tokens and locks the dark scheme", async () => {
+  await withComponentHarness(({ window, renderBare }) =>
+    withAriaDomGlobals(window, () => {
+      const mounted = renderBare(
+        createElement(
+          DesignSystemProvider,
+          null,
+          createElement("span", null, "Provider content"),
+        ),
+      );
+      assertEqual(
+        document.documentElement.getAttribute("data-mantine-color-scheme"),
+        "dark",
+      );
+      const generatedStyles = Array.from(
+        document.querySelectorAll("style"),
+      ).map((style) => style.textContent ?? "").join("\n");
+      assert(generatedStyles.includes("--mantine-spacing-ds-4"));
+      assert(generatedStyles.includes("var(--space-4)"));
+      assert(generatedStyles.includes("--mantine-radius-sm"));
+      assert(generatedStyles.includes("var(--radius-control)"));
+      assert(generatedStyles.includes("--mantine-color-accent-0"));
+      assert(generatedStyles.includes("var(--color-accent)"));
+      assert(generatedStyles.includes("--mantine-control-height"));
+      assert(generatedStyles.includes("var(--layer-overlay)"));
+      assert(generatedStyles.includes("--mantine-motion-immediate"));
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("M8 structural facade wrappers retain semantic roots over Mantine", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaDomGlobals(window, () => {
+      const mounted = render(
+        createElement(
+          "div",
+          null,
+          createElement(Stack, {
+            as: "section",
+            gap: 4,
+            children: "Stack content",
+          }),
+          createElement(Inline, { children: "Inline content" }),
+          createElement(
+            ResponsiveGrid,
+            {
+              columns: 3,
+              children: createElement("span", null, "Grid content"),
+            },
+          ),
+          createElement(
+            ContentContainer,
+            {
+              size: "form",
+              children: createElement("span", null, "Container content"),
+            },
+          ),
+          createElement(Text, {
+            as: "time",
+            size: "caption",
+            children: "2026-08-24",
+          }),
+          createElement(Heading, {
+            level: 3,
+            size: "sm",
+            children: "Heading content",
+          }),
+          createElement(Card, null, "Card content"),
+          createElement(Section, null, "Section content"),
+          createElement(Divider, null),
+          createElement(Badge, {
+            tone: "positive",
+            children: "Badge content",
+          }),
+          createElement(Chip, { children: "Chip content" }),
+          createElement(StatusDot, {
+            tone: "warning",
+            children: "Status content",
+          }),
+        ),
+      );
+      const hasMantineRoot = (selector: string, className: string) => {
+        const element = document.querySelector(selector);
+        assert(element, `Missing ${selector}`);
+        assert(
+          element.classList.contains(className),
+          `${selector} is not Mantine-backed`,
+        );
+        return element;
+      };
+      hasMantineRoot("section.ds-stack", "mantine-Stack-root");
+      hasMantineRoot(".ds-inline", "mantine-Group-root");
+      const grid = hasMantineRoot(
+        ".ds-responsive-grid",
+        "mantine-SimpleGrid-root",
+      );
+      assertEqual(grid.getAttribute("data-columns"), "3");
+      hasMantineRoot(
+        ".ds-content-container[data-size='form']",
+        "mantine-Container-root",
+      );
+      const text = hasMantineRoot("time.ds-text", "mantine-Text-root");
+      assertEqual(text.getAttribute("data-size"), "caption");
+      hasMantineRoot("h3.ds-heading", "mantine-Title-root");
+      hasMantineRoot("article.ds-card", "mantine-Card-root");
+      hasMantineRoot("section.ds-section", "mantine-Paper-root");
+      hasMantineRoot("hr.ds-divider", "mantine-Divider-root");
+      hasMantineRoot("span.ds-badge", "mantine-Badge-root");
+      hasMantineRoot("span.ds-chip", "mantine-Pill-root");
+      hasMantineRoot("span.ds-status-dot", "mantine-Badge-root");
+      mounted.unmount();
+    })
+  );
+});
+
 Deno.test("design-system dialog uses a named overlay and returns a useful trigger", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaDomGlobals(window, () => {
@@ -369,6 +498,8 @@ Deno.test("design-system CSS locks semantic tokens, immediate motion, targets, a
   assert(css.includes("--color-canvas: #101315"));
   assert(css.includes("--color-accent: #78dcca"));
   assert(css.includes("--motion-immediate: 0ms"));
+  assert(css.includes("--layer-overlay: 40"));
+  assert(css.includes("z-index: var(--layer-toast)"));
   assert(css.includes("transition: none"));
   assert(css.includes("--target-min: 44px"));
   assert(css.includes("@media (max-width: 359px)"));

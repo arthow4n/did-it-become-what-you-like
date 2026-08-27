@@ -1,5 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { useState } from "react";
+import { DesignSystemProvider } from "./provider.tsx";
+import "./styles.ts";
 import {
   ActionCard,
   ActiveFilterChips,
@@ -76,7 +78,6 @@ import {
   Tooltip,
   WorkflowProgress,
 } from "./components.tsx";
-import "./tokens.css";
 import { AlertCircle, Check, Plus, Settings, X } from "lucide-react";
 
 const longLabel =
@@ -643,5 +644,9 @@ export function DesignSystemGallery() {
 }
 
 export function mountDesignSystemGallery(root: HTMLElement): void {
-  createRoot(root).render(<DesignSystemGallery />);
+  createRoot(root).render(
+    <DesignSystemProvider>
+      <DesignSystemGallery />
+    </DesignSystemProvider>,
+  );
 }

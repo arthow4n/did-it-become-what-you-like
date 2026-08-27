@@ -18,6 +18,19 @@ import {
   X,
 } from "lucide-react";
 import {
+  Badge as MantineBadge,
+  Card as MantineCard,
+  Container as MantineContainer,
+  Divider as MantineDivider,
+  Group as MantineGroup,
+  Paper as MantinePaper,
+  Pill as MantinePill,
+  SimpleGrid as MantineSimpleGrid,
+  Stack as MantineStack,
+  Text as MantineText,
+  Title as MantineTitle,
+} from "@mantine/core";
+import {
   Button as AriaButton,
   Checkbox as AriaCheckbox,
   ComboBox as AriaComboBox,
@@ -117,11 +130,11 @@ export function PageHeader({
     <Tag className="ds-page-header">
       <div className="ds-page-header__title">
         {leading}
-        <div className="ds-stack" style={gapStyle(1)}>
+        <Stack gap={1}>
           {eyebrow ? <Text size="label" tone="muted">{eyebrow}</Text> : null}
           <Heading level={headingLevel}>{title}</Heading>
           {description ? <Text tone="secondary">{description}</Text> : null}
-        </div>
+        </Stack>
       </div>
       <div className="ds-page-header__actions">
         {status}
@@ -136,21 +149,29 @@ export type StackProps = {
   gap?: Space;
   className?: string;
   as?: ElementType;
+  style?: CSSProperties;
 };
+
+function mantineSpacing(gap: Space): string {
+  return `ds-${gap}`;
+}
 
 export function Stack({
   children,
   gap = 4,
   className,
   as: Tag = "div",
+  style,
 }: StackProps) {
   return (
-    <Tag
+    <MantineStack
+      component={Tag as "div"}
+      gap={mantineSpacing(gap)}
       className={cx("ds-stack", className)}
-      style={{ gap: `var(--space-${gap})` }}
+      style={{ ...style, ...gapStyle(gap) }}
     >
       {children}
-    </Tag>
+    </MantineStack>
   );
 }
 
@@ -164,14 +185,21 @@ export function Inline({
   className,
   as: Tag = "div",
   justify,
+  style,
 }: InlineProps) {
   return (
-    <Tag
+    <MantineGroup
+      component={Tag as "div"}
+      gap={mantineSpacing(gap)}
+      justify={justify}
+      align="center"
+      wrap="wrap"
+      preventGrowOverflow={false}
       className={cx("ds-inline", className)}
-      style={{ gap: `var(--space-${gap})`, justifyContent: justify }}
+      style={{ ...style, ...gapStyle(gap) }}
     >
       {children}
-    </Tag>
+    </MantineGroup>
   );
 }
 
@@ -183,15 +211,19 @@ export function ResponsiveGrid({
   className,
   as: Tag = "div",
   columns = 2,
+  style,
 }: ResponsiveGridProps) {
   return (
-    <Tag
+    <MantineSimpleGrid
+      component={Tag as "div"}
+      cols={columns}
+      spacing={mantineSpacing(gap)}
       className={cx("ds-responsive-grid", className)}
       data-columns={columns}
-      style={{ gap: `var(--space-${gap})` }}
+      style={{ ...style, ...gapStyle(gap) }}
     >
       {children}
-    </Tag>
+    </MantineSimpleGrid>
   );
 }
 
@@ -199,17 +231,31 @@ export type ContentContainerProps = {
   children: ReactNode;
   size?: "content" | "form" | "readable" | "review";
   className?: string;
+  style?: CSSProperties;
 };
 
 export function ContentContainer({
   children,
   size = "content",
   className,
+  style,
 }: ContentContainerProps) {
+  const containerSize = {
+    content: "var(--content-max)",
+    form: "var(--form-max)",
+    readable: "var(--readable-max)",
+    review: "var(--review-max)",
+  }[size];
   return (
-    <div className={cx("ds-content-container", className)} data-size={size}>
+    <MantineContainer
+      component="div"
+      size={containerSize}
+      className={cx("ds-content-container", className)}
+      data-size={size}
+      style={style}
+    >
       {children}
-    </div>
+    </MantineContainer>
   );
 }
 
@@ -219,6 +265,7 @@ export type TextProps = {
   size?: "body" | "caption" | "label";
   as?: ElementType;
   className?: string;
+  style?: CSSProperties;
 };
 
 export function Text({
@@ -227,11 +274,24 @@ export function Text({
   size = "body",
   as: Tag = "p",
   className,
+  style,
 }: TextProps) {
+  const mantineSize = {
+    body: "md",
+    caption: "xs",
+    label: "sm",
+  }[size];
   return (
-    <Tag className={cx("ds-text", className)} data-tone={tone} data-size={size}>
+    <MantineText
+      component={Tag as "div"}
+      size={mantineSize}
+      className={cx("ds-text", className)}
+      data-tone={tone}
+      data-size={size}
+      style={style}
+    >
       {children}
-    </Tag>
+    </MantineText>
   );
 }
 
@@ -240,6 +300,7 @@ export type HeadingProps = {
   size?: "sm" | "md" | "lg";
   level?: 1 | 2 | 3 | 4 | 5 | 6;
   className?: string;
+  style?: CSSProperties;
 };
 
 export function Heading({
@@ -247,12 +308,24 @@ export function Heading({
   size = "md",
   level = 2,
   className,
+  style,
 }: HeadingProps) {
-  const Tag = `h${level}` as keyof HTMLElementTagNameMap;
+  const mantineSize = {
+    sm: "md",
+    md: "lg",
+    lg: "xl",
+  }[size];
   return (
-    <Tag className={cx("ds-heading", className)} data-size={size}>
+    <MantineTitle
+      component={`h${level}`}
+      order={level}
+      size={mantineSize}
+      className={cx("ds-heading", className)}
+      data-size={size}
+      style={style}
+    >
       {children}
-    </Tag>
+    </MantineTitle>
   );
 }
 
@@ -1058,11 +1131,18 @@ export type ChipProps = {
   children: ReactNode;
   onRemove?: () => void;
   className?: string;
+  style?: CSSProperties;
 };
 
-export function Chip({ children, onRemove, className }: ChipProps) {
+export function Chip({ children, onRemove, className, style }: ChipProps) {
   return (
-    <span className={cx("ds-chip", className)}>
+    <MantinePill
+      component="span"
+      size="md"
+      radius="xl"
+      className={cx("ds-chip", className)}
+      style={style}
+    >
       {children}
       {onRemove
         ? (
@@ -1074,7 +1154,7 @@ export function Chip({ children, onRemove, className }: ChipProps) {
           />
         )
         : null}
-    </span>
+    </MantinePill>
   );
 }
 
@@ -1082,25 +1162,57 @@ export type BadgeProps = {
   children: ReactNode;
   tone?: Tone;
   className?: string;
+  style?: CSSProperties;
 };
 
-export function Badge({ children, tone = "info", className }: BadgeProps) {
+const toneColors: Record<Tone, string> = {
+  neutral: "surface2",
+  positive: "positive",
+  warning: "warning",
+  danger: "danger",
+  info: "info",
+};
+
+export function Badge({
+  children,
+  tone = "info",
+  className,
+  style,
+}: BadgeProps) {
   return (
-    <span className={cx("ds-badge", className)} data-tone={tone}>
+    <MantineBadge
+      component="span"
+      color={toneColors[tone]}
+      variant="light"
+      size="md"
+      radius="xl"
+      className={cx("ds-badge", className)}
+      data-tone={tone}
+      style={style}
+    >
       {children}
-    </span>
+    </MantineBadge>
   );
 }
 
 export type StatusDotProps = BadgeProps;
 
 export function StatusDot(
-  { children, tone = "info", className }: StatusDotProps,
+  { children, tone = "info", className, style }: StatusDotProps,
 ) {
   return (
-    <span className={cx("ds-status-dot", className)} data-tone={tone}>
+    <MantineBadge
+      component="span"
+      color={toneColors[tone]}
+      variant="light"
+      size="md"
+      radius="xl"
+      className={cx("ds-status-dot", className)}
+      data-tone={tone}
+      style={style}
+    >
       {children}
-    </span>
+    </MantineBadge>
   );
 }
 
@@ -1108,20 +1220,58 @@ export type CardProps = {
   children: ReactNode;
   className?: string;
   as?: ElementType;
+  style?: CSSProperties;
 };
 
-export function Card({ children, className, as: Tag = "article" }: CardProps) {
-  return <Tag className={cx("ds-card", className)}>{children}</Tag>;
+export function Card({
+  children,
+  className,
+  as: Tag = "article",
+  style,
+}: CardProps) {
+  return (
+    <MantineCard
+      component={Tag as "div"}
+      withBorder
+      padding="ds-4"
+      radius="md"
+      shadow="none"
+      className={cx("ds-card", className)}
+      style={style}
+    >
+      {children}
+    </MantineCard>
+  );
 }
 
 export function Section(
-  { children, className, as: Tag = "section" }: CardProps,
+  { children, className, as: Tag = "section", style }: CardProps,
 ) {
-  return <Tag className={cx("ds-section", className)}>{children}</Tag>;
+  return (
+    <MantinePaper
+      component={Tag as "div"}
+      withBorder
+      radius="md"
+      shadow="none"
+      className={cx("ds-section", className)}
+      style={style}
+    >
+      {children}
+    </MantinePaper>
+  );
 }
 
-export function Divider({ className }: { className?: string }) {
-  return <hr className={cx("ds-divider", className)} />;
+export function Divider({
+  className,
+  style,
+}: { className?: string; style?: CSSProperties }) {
+  return (
+    <MantineDivider
+      component="hr"
+      className={cx("ds-divider", className)}
+      style={style}
+    />
+  );
 }
 
 export type DisclosureProps =

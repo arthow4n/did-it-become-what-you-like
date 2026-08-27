@@ -107,6 +107,11 @@
     --shadow-overlay: 0 18px 48px rgb(0 0 0 / 36%);
     --motion-immediate: 0ms;
     --motion-functional: 900ms;
+    --layer-content: 0;
+    --layer-sticky: 10;
+    --layer-navigation: 20;
+    --layer-overlay: 40;
+    --layer-toast: 50;
     --content-max: 1200px;
     --form-max: 640px;
     --readable-max: 760px;
@@ -188,12 +193,14 @@
   .ds-stack {
     display: flex;
     flex-direction: column;
+    gap: var(--ds-gap);
   }
 
   .ds-inline {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    gap: var(--ds-gap);
   }
 
   .ds-color-choice-group {
@@ -241,6 +248,7 @@
     grid-template-columns: minmax(0, 1fr);
     align-content: start;
     align-items: start;
+    gap: var(--ds-gap);
   }
 
   .ds-heading,
@@ -668,6 +676,7 @@
   .ds-badge,
   .ds-status-dot {
     display: inline-flex;
+    height: auto;
     min-height: 32px;
     align-items: center;
     gap: var(--space-1);
@@ -800,7 +809,7 @@
 
   .ds-overlay-backdrop {
     position: fixed;
-    z-index: 40;
+    z-index: var(--layer-overlay);
     inset: 0;
     display: grid;
     place-items: end center;
@@ -888,7 +897,7 @@
 
   .ds-toast {
     position: fixed;
-    z-index: 30;
+    z-index: var(--layer-toast);
     right: var(--space-4);
     bottom: max(var(--space-4), calc(var(--control-height) + var(--space-4)));
     display: inline-flex;
@@ -968,7 +977,7 @@
 
   .ds-sticky-action-bar {
     position: sticky;
-    z-index: 5;
+    z-index: var(--layer-sticky);
     bottom: 0;
     display: flex;
     flex-wrap: wrap;
@@ -987,7 +996,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 20;
+    z-index: var(--layer-navigation);
     display: flex;
     gap: var(--space-1);
     justify-content: space-around;

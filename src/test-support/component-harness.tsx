@@ -1,8 +1,11 @@
 import { Window } from "happy-dom";
+import { createElement } from "react";
+import { DesignSystemProvider } from "../design-system/provider.tsx";
 
 export type ComponentHarness = {
   window: Window;
   render: typeof import("@testing-library/react").render;
+  renderBare: typeof import("@testing-library/react").render;
   screen: typeof import("@testing-library/react").screen;
   fireEvent: typeof import("@testing-library/react").fireEvent;
   waitFor: typeof import("@testing-library/react").waitFor;
@@ -33,9 +36,19 @@ export async function withComponentHarness<T>(
     const { fireEvent, render, screen, waitFor } = await import(
       "@testing-library/react"
     );
+    const renderWithProvider = ((
+      ui: Parameters<typeof render>[0],
+      options?: Parameters<typeof render>[1],
+    ) =>
+      render(ui, {
+        ...(options ?? {}),
+        wrapper: ({ children }) =>
+          createElement(DesignSystemProvider, null, children),
+      })) as typeof render;
     return await callback({
       window: testWindow,
-      render,
+      render: renderWithProvider,
+      renderBare: render,
       screen,
       fireEvent,
       waitFor,

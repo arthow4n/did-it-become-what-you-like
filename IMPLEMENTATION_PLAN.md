@@ -1115,6 +1115,33 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 #### R-850 — Final independent Mantine migration review
 
 - **Status/dependencies:** `IN_PROGRESS`; depends on `M8-010`.
+- **Initial review evidence (2026-08-27):** Fresh read-only reviewer Hooke
+  (`01a04265-fa88-7273-ba37-0497183358a8`) audited pushed `HEAD 41c6586` and
+  returned `BLOCK` with two substantive findings and one stale-checkpoint
+  finding. The severity-2 contract finding was that `SelectField` discarded
+  `isOpen`/`onOpenChange` and the shared controls discarded
+  `validationBehavior`; the severity-3 boundary finding was that the verifier
+  inspected only barrel text and not the star-exported declaration source; the
+  remaining severity-3 finding was that the checkpoint contradicted the
+  already-complete M8-010 section. Its risk-selected matrix otherwise passed:
+  40 focused design-system/Mantine/API tests, TypeScript, lint, format,
+  frozen audit, Mantine compatibility/prod builds, gallery/axe at three
+  viewports, browser tooling, 11 Playwright journeys, app/browser checks, and
+  a clean aligned Git state. The completed reviewer was closed after its
+  report.
+- **Primary remediation evidence (2026-08-27):** Pushed `171d700` translates
+  facade validation behavior to native `required` or `aria-required`, wires
+  Select open state and callbacks to Mantine's dropdown API, preserves
+  composite validation semantics, adds focused Select/native/ARIA regressions,
+  and makes the boundary verifier inspect exported declaration slices behind
+  the public star barrel. The affected selector passed with 113 tests;
+  `deno task check`, `deno task lint`, boundary verification across 167 source
+  files, and diff checks passed. Pushed `d792cd1` gives only the known
+  conflict-resolution journey an explicit 60-second timeout after repeated
+  full-suite timing pressure; the complete E2E suite passed all 11 journeys.
+  The first post-remediation canonical run reached 362 Deno tests but had the
+  same conflict journey timeout; its isolated rerun passed 1/1, so the
+  timeout remediation is included in the next complete gate.
 - [ ] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and
@@ -1212,7 +1239,8 @@ evidence, and the next action is dependency-safe.
 - **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`,
   `R-810`, `M8-003`, `M8-004`, `R-820`, `M8-005`, `M8-006`, and `R-830` are
   `COMPLETE`; `M8-007`, `M8-008`, and `R-840` are `COMPLETE`; `M8-009` is
-  `COMPLETE`; `M8-010` is `IN_PROGRESS` and `R-850` remains `PENDING`.
+  `COMPLETE`; `M8-010` is `COMPLETE`; `R-850` is `IN_PROGRESS` with primary
+  remediation complete and fresh closure review pending.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
@@ -1220,9 +1248,10 @@ evidence, and the next action is dependency-safe.
   pushed checkpoint, with the implementation batch, R-830 remediations,
   R-840 closure fixes, and M8-009 cleanup pushed; R-830, R-840, and M8-009 are
   complete. R-820 is approved and closed, and M8-005 and M8-006 are complete.
-  No M8 branch/worktree or review agent is active; M8-010 is now owned by the
-  primary agent. Historical non-M8 worktrees remain present and were preserved
-  untouched.
+  The initial R-850 reviewer is closed; no migration branch or M8 worktree is
+  active; historical non-M8 worktrees remain present and were preserved
+  untouched. R-840 and M8-010 are complete, and the primary agent has finished
+  the initial R-850 remediation on pushed `d792cd1`.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -1258,14 +1287,14 @@ evidence, and the next action is dependency-safe.
   `Sartre`, `Faraday`, and `Peirce` are closed with R-830 approved and all
   severity-1–3 findings resolved; M8-007 is complete at `e41ee4b`; M8-009 is
   complete with the React Aria dependency removal, dead-selector cleanup,
-  boundary task, and documentation evidence above; no review
-  agent, migration branch, or M8 worktree is active; historical non-M8
-  worktrees were preserved untouched. R-840 is complete and the primary agent
-  owns M8-010.
-- **Exact next action:** from the clean pushed checkpoint, run the single
-  canonical `deno task verify` gate for M8-010, then perform its named gallery,
-  accessibility, browser, bundle, and documentation review before requesting
-  fresh R-850 independent review.
+  boundary task, and documentation evidence above; the initial R-850 reviewer
+  is closed and the primary agent owns its remediation; no migration branch or
+  M8 worktree is active; historical non-M8 worktrees were preserved untouched.
+  R-840 and M8-010 are complete. The post-review canonical gate remains
+  pending on pushed `d792cd1`.
+- **Exact next action:** from clean pushed `d792cd1`, run the single canonical
+  `deno task verify` gate, then request a fresh independent R-850 closure
+  review. Do not reuse Hooke for closure approval.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

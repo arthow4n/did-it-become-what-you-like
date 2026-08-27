@@ -98,7 +98,10 @@ Deno.test("design-system barrel preserves representative public contracts", () =
       TextField,
     ]
   ) {
-    if (typeof component !== "function") {
+    if (
+      typeof component !== "function" &&
+      (typeof component !== "object" || component === null)
+    ) {
       throw new Error("Design-system barrel export is not callable");
     }
   }

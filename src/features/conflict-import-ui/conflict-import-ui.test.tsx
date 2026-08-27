@@ -467,8 +467,8 @@ Deno.test("import preview exposes schema, migration, counts, warnings, and block
 });
 
 Deno.test("import merge selection and JSON file selection dispatch controlled callbacks", async () => {
-  await withComponentHarness(async ({ render, fireEvent }) => {
-    await withAriaGlobals(() => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    await withAriaGlobals(async () => {
       let selectedFile: File | undefined;
       let selectedMode: string | undefined;
       let committed = false;
@@ -500,7 +500,9 @@ Deno.test("import merge selection and JSON file selection dispatch controlled ca
           target: { files: [file] },
         },
       );
-      assert(selectedFile?.name === "long-backup-name.json");
+      await waitFor(() =>
+        assert(selectedFile?.name === "long-backup-name.json")
+      );
       rerender(
         <ImportPanel
           viewModel={importModel({ mode: "replace" })}

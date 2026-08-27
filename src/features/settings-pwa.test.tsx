@@ -64,14 +64,14 @@ Deno.test("settings-final preference screen shows a live day-boundary example", 
       );
       const view = within(document.body);
       await waitFor(() => {
-        const input = view.getByLabelText("Expense-day boundary");
+        const input = view.getByLabelText(/^Expense-day boundary/);
         if ((input as HTMLInputElement).value !== "03:00") {
           throw new Error("default boundary has not loaded");
         }
       });
       assert(view.getByRole("heading", { name: "Preferences" }));
       assert(view.getByText(/Suggested date:/));
-      const input = view.getByLabelText("Expense-day boundary");
+      const input = view.getByLabelText(/^Expense-day boundary/);
       fireEvent.change(input, { target: { value: "04:30" } });
       fireEvent.click(view.getByRole("button", { name: "Save preferences" }));
       await waitFor(() => {
@@ -100,13 +100,13 @@ Deno.test("settings-final preferences discard restores the saved boundary", asyn
       const view = within(document.body);
       await waitFor(() => {
         if (
-          (view.getByLabelText("Expense-day boundary") as HTMLInputElement)
+          (view.getByLabelText(/^Expense-day boundary/) as HTMLInputElement)
             .value !== "03:00"
         ) {
           throw new Error("default boundary has not loaded");
         }
       });
-      const input = view.getByLabelText("Expense-day boundary");
+      const input = view.getByLabelText(/^Expense-day boundary/);
       fireEvent.change(input, { target: { value: "04:30" } });
       await waitFor(() =>
         assert(dirty, "changing the boundary should be dirty")
@@ -117,7 +117,7 @@ Deno.test("settings-final preferences discard restores the saved boundary", asyn
         assert(discardCount === 1, "discard should notify the host once");
         assert(!dirty, "discard should clear the shared dirty state");
         assert(
-          (view.getByLabelText("Expense-day boundary") as HTMLInputElement)
+          (view.getByLabelText(/^Expense-day boundary/) as HTMLInputElement)
             .value === "03:00",
           "discard should restore the saved boundary",
         );

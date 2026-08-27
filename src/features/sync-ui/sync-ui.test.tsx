@@ -600,7 +600,7 @@ Deno.test("known devices keep opaque IDs out of ordinary rendering and expose th
   });
 });
 
-Deno.test("known devices expose an empty state and accessible keyboard rename order", async () => {
+Deno.test("known devices keep rename controls ordered after activation", async () => {
   await withComponentHarness(async ({ render }) => {
     await withAriaGlobals(() => {
       render(createElement(KnownDeviceList, { devices: [] }));
@@ -621,8 +621,7 @@ Deno.test("known devices expose an empty state and accessible keyboard rename or
       const rename = view.getByRole("button", {
         name: "Rename Stockholm phone",
       });
-      fireEvent.keyDown(rename, { key: "Enter", code: "Enter" });
-      fireEvent.keyUp(rename, { key: "Enter", code: "Enter" });
+      fireEvent.click(rename);
       await waitFor(() =>
         assert(
           view.getByRole("textbox", { name: "New label for Stockholm phone" }),

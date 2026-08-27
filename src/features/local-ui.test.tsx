@@ -726,7 +726,7 @@ Deno.test("local UI category deletion exposes replacement selection and affected
       );
       assert(dialog.textContent?.includes("0 expenses"));
       assert(
-        within(dialog).getByRole("button", { name: /Replacement category/ }),
+        within(dialog).getByRole("combobox", { name: /Replacement category/ }),
       );
       assert(commits() === 0);
       fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));

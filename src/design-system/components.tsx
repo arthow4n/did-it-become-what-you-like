@@ -1,5 +1,6 @@
 import { forwardRef, isValidElement, useId, useState } from "react";
 import type {
+  ChangeEvent,
   ComponentProps,
   CSSProperties,
   ElementType,
@@ -8,39 +9,50 @@ import type {
   ReactNode,
 } from "react";
 import {
-  Check,
   ChevronDown,
   ChevronRight,
   CircleAlert,
   CircleCheck,
-  Eye,
-  EyeOff,
   Plus,
   X,
 } from "lucide-react";
 import {
+  ActionIcon as MantineActionIcon,
   Badge as MantineBadge,
   Button as MantineButton,
   Card as MantineCard,
+  Checkbox as MantineCheckbox,
   Container as MantineContainer,
   Divider as MantineDivider,
   Group as MantineGroup,
+  Input as MantineInput,
   Paper as MantinePaper,
+  PasswordInput as MantinePasswordInput,
   Pill as MantinePill,
+  Radio as MantineRadio,
+  RadioGroup as MantineRadioGroup,
+  SegmentedControl as MantineSegmentedControl,
+  Select as MantineSelect,
   SimpleGrid as MantineSimpleGrid,
   Stack as MantineStack,
+  Switch as MantineSwitch,
   Text as MantineText,
+  Textarea as MantineTextarea,
+  TextInput as MantineTextInput,
   Title as MantineTitle,
 } from "@mantine/core";
 import {
+  DateInput as MantineDateInput,
+  TimeInput as MantineTimeInput,
+} from "@mantine/dates";
+import { Dropzone as MantineDropzone } from "@mantine/dropzone";
+import {
   Button as AriaButton,
-  Checkbox as AriaCheckbox,
   ComboBox as AriaComboBox,
   Dialog as AriaDialog,
   DialogTrigger as AriaDialogTrigger,
   Disclosure as AriaDisclosure,
   DisclosurePanel as AriaDisclosurePanel,
-  FieldError as AriaFieldError,
   Input as AriaInput,
   Label as AriaLabel,
   ListBox as AriaListBox,
@@ -53,15 +65,6 @@ import {
   Popover as AriaPopover,
   Pressable,
   ProgressBar as AriaProgressBar,
-  Radio as AriaRadio,
-  RadioGroup as AriaRadioGroup,
-  SearchField as AriaSearchField,
-  Select as AriaSelect,
-  SelectValue as AriaSelectValue,
-  Switch as AriaSwitch,
-  Text as AriaText,
-  TextArea as AriaTextArea,
-  TextField as AriaTextField,
   Tooltip as AriaTooltip,
   TooltipTrigger as AriaTooltipTrigger,
 } from "react-aria-components";
@@ -498,19 +501,51 @@ export type IconButtonProps = Omit<ButtonProps, "children"> & {
   "aria-label": string;
 };
 
-export function IconButton(
-  { icon, className, variant = "quiet", ...props }: IconButtonProps,
-) {
-  return (
-    <Button
-      {...props}
-      variant={variant}
-      className={cx("ds-icon-button", className)}
-    >
-      <Icon>{icon}</Icon>
-    </Button>
-  );
-}
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
+  function IconButton(
+    {
+      icon,
+      className,
+      variant = "quiet",
+      pending = false,
+      onPress,
+      isDisabled,
+      isPending,
+      slot,
+      ...props
+    },
+    ref,
+  ) {
+    const isBusy = pending || Boolean(isPending);
+    const injectedOnClick = (props as IconButtonProps & InjectedClickProps)
+      .onClick;
+    return (
+      <MantineActionIcon
+        {...props}
+        ref={ref}
+        variant={variant === "secondary"
+          ? "outline"
+          : variant === "danger"
+          ? "light"
+          : mantineButtonVariants[variant]}
+        color={variant === "danger" ? "negative" : "accent"}
+        disabled={isDisabled}
+        loading={isBusy}
+        slot={slot ?? undefined}
+        onClick={(event) => {
+          injectedOnClick?.(event);
+          invokePress(onPress, event);
+        }}
+        className={cx("ds-icon-button", className)}
+        data-variant={variant}
+        data-pending={isBusy ? "true" : undefined}
+        aria-busy={isBusy ? "true" : undefined}
+      >
+        {icon}
+      </MantineActionIcon>
+    );
+  },
+);
 
 export type LinkButtonProps = Omit<ComponentProps<"a">, "className"> & {
   children: ReactNode;
@@ -599,25 +634,19 @@ export function Field(
   { label, children, description, error, required, controlId, className }:
     FieldProps,
 ) {
-  const fieldLabel = (
-    <span className="ds-field__label">
-      {label} {required ? <span className="ds-field__required">*</span> : null}
-    </span>
-  );
   return (
-    <div
+    <MantineInput.Wrapper
+      id={controlId}
+      label={label}
+      description={description}
+      error={error}
+      required={required}
+      labelElement={controlId ? "label" : "div"}
       className={cx("ds-field", className)}
       data-invalid={error ? "true" : undefined}
     >
-      {controlId ? <label htmlFor={controlId}>{fieldLabel}</label> : fieldLabel}
       {children}
-      {description
-        ? <span className="ds-field__description">{description}</span>
-        : null}
-      {error
-        ? <span className="ds-field__error" role="alert">{error}</span>
-        : null}
-    </div>
+    </MantineInput.Wrapper>
   );
 }
 
@@ -637,39 +666,34 @@ export function TextField({
   description,
   error,
   className,
+  onChange,
+  isDisabled,
+  isReadOnly,
+  isRequired,
   isInvalid,
+  validationBehavior: _validationBehavior,
+  slot,
   ...props
 }: SharedTextFieldProps) {
+  const mantineProps = props as unknown as ComponentProps<
+    typeof MantineTextInput
+  >;
   return (
-    <AriaTextField
-      {...props}
-      isInvalid={Boolean(error) || isInvalid}
+    <MantineTextInput
+      {...mantineProps}
+      label={label}
+      placeholder={placeholder}
+      description={description}
+      error={error}
+      required={isRequired}
+      disabled={isDisabled}
+      readOnly={isReadOnly}
+      slot={slot ?? undefined}
+      aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
+      onChange={(event) => onChange?.(event.currentTarget.value)}
       className={cx("ds-field", className)}
-    >
-      <AriaLabel className="ds-field__label">
-        {label}
-        {props.isRequired
-          ? <span className="ds-field__required" aria-hidden="true">*</span>
-          : null}
-      </AriaLabel>
-      <AriaInput className="ds-field-control" placeholder={placeholder} />
-      {description
-        ? (
-          <AriaText slot="description" className="ds-field__description">
-            {description}
-          </AriaText>
-        )
-        : null}
-      {error
-        ? (
-          <span role="alert">
-            <AriaFieldError className="ds-field__error">
-              {error}
-            </AriaFieldError>
-          </span>
-        )
-        : null}
-    </AriaTextField>
+      classNames={{ input: "ds-field-control" }}
+    />
   );
 }
 
@@ -684,39 +708,41 @@ export type TextAreaProps =
   };
 
 export function TextArea(
-  { label, placeholder, description, error, className, ...props }:
-    TextAreaProps,
+  {
+    label,
+    placeholder,
+    description,
+    error,
+    className,
+    onChange,
+    isDisabled,
+    isReadOnly,
+    isRequired,
+    isInvalid,
+    validationBehavior: _validationBehavior,
+    slot,
+    ...props
+  }: TextAreaProps,
 ) {
+  const mantineProps = props as unknown as ComponentProps<
+    typeof MantineTextarea
+  >;
   return (
-    <AriaTextField
-      {...props}
-      isInvalid={Boolean(error) || props.isInvalid}
+    <MantineTextarea
+      {...mantineProps}
+      label={label}
+      placeholder={placeholder}
+      description={description}
+      error={error}
+      required={isRequired}
+      disabled={isDisabled}
+      readOnly={isReadOnly}
+      slot={slot ?? undefined}
+      aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
+      onChange={(event) => onChange?.(event.currentTarget.value)}
       className={cx("ds-field", className)}
-    >
-      <AriaLabel className="ds-field__label">
-        {label}
-        {props.isRequired
-          ? <span className="ds-field__required" aria-hidden="true">*</span>
-          : null}
-      </AriaLabel>
-      <AriaTextArea className="ds-field-control" placeholder={placeholder} />
-      {description
-        ? (
-          <AriaText slot="description" className="ds-field__description">
-            {description}
-          </AriaText>
-        )
-        : null}
-      {error
-        ? (
-          <span role="alert">
-            <AriaFieldError className="ds-field__error">
-              {error}
-            </AriaFieldError>
-          </span>
-        )
-        : null}
-    </AriaTextField>
+      classNames={{ input: "ds-field-control" }}
+    />
   );
 }
 
@@ -731,39 +757,61 @@ export type SearchFieldProps =
   };
 
 export function SearchField(
-  { label, placeholder, description, className, onValueChange, ...props }:
-    SearchFieldProps,
+  {
+    label,
+    placeholder,
+    description,
+    className,
+    onValueChange,
+    onChange,
+    isDisabled,
+    isReadOnly,
+    isRequired,
+    isInvalid,
+    validationBehavior: _validationBehavior,
+    slot,
+    ...props
+  }: SearchFieldProps,
 ) {
+  const mantineProps = props as unknown as ComponentProps<
+    typeof MantineTextInput
+  >;
+  const handleValueChange = (value: string) => {
+    onChange?.(value);
+    onValueChange?.(value);
+  };
   return (
-    <AriaSearchField
-      {...props}
+    <MantineTextInput
+      {...mantineProps}
+      type="search"
+      label={label}
+      placeholder={placeholder}
+      description={description}
+      required={isRequired}
+      disabled={isDisabled}
+      readOnly={isReadOnly}
+      aria-invalid={isInvalid ? "true" : undefined}
       className={cx("ds-field", "ds-search-field", className)}
-      onChange={onValueChange}
-    >
-      <AriaLabel className="ds-field__label">{label}</AriaLabel>
-      <div className="ds-field-control-wrap">
-        <AriaInput
-          className="ds-field-control ds-search-field__input"
-          placeholder={placeholder}
-        />
-        <AriaButton
+      classNames={{ input: "ds-field-control ds-search-field__input" }}
+      slot={slot ?? undefined}
+      onChange={(event) => handleValueChange(event.currentTarget.value)}
+      rightSectionPointerEvents="all"
+      rightSection={
+        <MantineActionIcon
+          type="button"
+          variant="subtle"
+          color="accent"
+          size="input-sm"
           className="ds-search-field__clear"
           aria-label="Clear search"
-          onPress={() => onValueChange?.("")}
+          onClick={() => handleValueChange("")}
         >
           <Icon>
             <X />
           </Icon>
-        </AriaButton>
-      </div>
-      {description
-        ? (
-          <AriaText slot="description" className="ds-field__description">
-            {description}
-          </AriaText>
-        )
-        : null}
-    </AriaSearchField>
+        </MantineActionIcon>
+      }
+    />
   );
 }
 
@@ -779,55 +827,41 @@ export function SecretField(
     error,
     className,
     revealLabel = "Show value",
+    onChange,
+    isDisabled,
+    isReadOnly,
+    isRequired,
+    isInvalid,
+    validationBehavior: _validationBehavior,
+    slot,
     ...props
   }: SecretFieldProps,
 ) {
   const [revealed, setRevealed] = useState(false);
+  const mantineProps = props as unknown as ComponentProps<
+    typeof MantinePasswordInput
+  >;
   return (
-    <AriaTextField
-      {...props}
-      type={revealed ? "text" : "password"}
-      isInvalid={Boolean(error) || props.isInvalid}
+    <MantinePasswordInput
+      {...mantineProps}
+      label={label}
+      placeholder={placeholder}
+      description={description}
+      error={error}
+      required={isRequired}
+      disabled={isDisabled}
+      readOnly={isReadOnly}
+      visible={revealed}
+      onVisibilityChange={setRevealed}
+      visibilityToggleButtonProps={{
+        "aria-label": revealed ? "Hide value" : revealLabel,
+      }}
+      aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
+      onChange={(event) => onChange?.(event.currentTarget.value)}
       className={cx("ds-field", "ds-secret-field", className)}
-    >
-      <AriaLabel className="ds-field__label">
-        {label}
-        {props.isRequired
-          ? <span className="ds-field__required" aria-hidden="true">*</span>
-          : null}
-      </AriaLabel>
-      <div className="ds-field-control-wrap">
-        <AriaInput
-          className="ds-field-control ds-secret-field__input"
-          placeholder={placeholder}
-        />
-        <AriaButton
-          className="ds-secret-field__toggle"
-          aria-label={revealed ? "Hide value" : revealLabel}
-          onPress={() => setRevealed((current) => !current)}
-        >
-          <Icon size={16}>
-            {revealed ? <EyeOff /> : <Eye />}
-          </Icon>
-        </AriaButton>
-      </div>
-      {description
-        ? (
-          <AriaText slot="description" className="ds-field__description">
-            {description}
-          </AriaText>
-        )
-        : null}
-      {error
-        ? (
-          <span role="alert">
-            <AriaFieldError className="ds-field__error">
-              {error}
-            </AriaFieldError>
-          </span>
-        )
-        : null}
-    </AriaTextField>
+      classNames={{ input: "ds-field-control ds-secret-field__input" }}
+      slot={slot ?? undefined}
+    />
   );
 }
 
@@ -856,6 +890,67 @@ export function MoneyField(
   );
 }
 
+function inputValue(
+  value: ComponentProps<"input">["value"],
+): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (Array.isArray(value)) return value[0];
+  return String(value);
+}
+
+function emitInputChange(
+  onChange: ComponentProps<"input">["onChange"],
+  value: string,
+): void {
+  const input = { value };
+  onChange?.(
+    { currentTarget: input, target: input } as ChangeEvent<HTMLInputElement>,
+  );
+}
+
+function emitFileChange(
+  onChange: ComponentProps<"input">["onChange"],
+  files: readonly File[],
+): void {
+  const fileList = files as unknown as FileList;
+  onChange?.({
+    currentTarget: { files: fileList },
+    target: { files: fileList },
+  } as ChangeEvent<HTMLInputElement>);
+}
+
+const fileExtensionMimeTypes: Record<string, string> = {
+  ".csv": "text/csv",
+  ".gif": "image/gif",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+  ".json": "application/json",
+  ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".webp": "image/webp",
+};
+
+function dropzoneAcceptFor(
+  accept: string | undefined,
+): Record<string, string[]> | undefined {
+  if (!accept) return undefined;
+  const result: Record<string, string[]> = {};
+  for (const entry of accept.split(",").map((value) => value.trim())) {
+    if (!entry) continue;
+    if (entry.includes("/")) {
+      result[entry] ??= [];
+      continue;
+    }
+    if (entry.startsWith(".")) {
+      const mimeType = fileExtensionMimeTypes[entry.toLowerCase()] ??
+        "application/octet-stream";
+      result[mimeType] ??= [];
+      result[mimeType].push(entry);
+    }
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 export type NativeDateFieldProps =
   & Omit<ComponentProps<"input">, "type" | "className">
   & {
@@ -866,25 +961,37 @@ export type NativeDateFieldProps =
   };
 
 export function NativeDateField(
-  { label, description, error, className, ...props }: NativeDateFieldProps,
+  {
+    label,
+    description,
+    error,
+    className,
+    id,
+    value,
+    defaultValue,
+    onChange,
+    ...props
+  }: NativeDateFieldProps,
 ) {
   const generatedId = useId();
-  const controlId = props.id ?? generatedId;
+  const controlId = id ?? generatedId;
+  const dateValue = inputValue(value);
+  const dateDefaultValue = inputValue(defaultValue);
   return (
-    <Field
+    <MantineDateInput
       label={label}
       description={description}
       error={error}
-      controlId={controlId}
-      className={className}
-    >
-      <input
-        {...props}
-        id={controlId}
-        type="date"
-        className="ds-field-control"
-      />
-    </Field>
+      required={props.required}
+      id={controlId}
+      value={dateValue ?? null}
+      defaultValue={dateDefaultValue}
+      onChange={(nextValue) => emitInputChange(onChange, nextValue ?? "")}
+      valueFormat="YYYY-MM-DD"
+      className={cx("ds-field", className)}
+      classNames={{ input: "ds-field-control" }}
+      {...(props as unknown as ComponentProps<typeof MantineDateInput>)}
+    />
   );
 }
 
@@ -898,25 +1005,36 @@ export type NativeTimeFieldProps =
   };
 
 export function NativeTimeField(
-  { label, description, error, className, ...props }: NativeTimeFieldProps,
+  {
+    label,
+    description,
+    error,
+    className,
+    id,
+    value,
+    defaultValue,
+    onChange,
+    ...props
+  }: NativeTimeFieldProps,
 ) {
   const generatedId = useId();
-  const controlId = props.id ?? generatedId;
+  const controlId = id ?? generatedId;
+  const timeValue = inputValue(value);
+  const timeDefaultValue = inputValue(defaultValue);
   return (
-    <Field
+    <MantineTimeInput
       label={label}
       description={description}
       error={error}
-      controlId={controlId}
-      className={className}
-    >
-      <input
-        {...props}
-        id={controlId}
-        type="time"
-        className="ds-field-control"
-      />
-    </Field>
+      required={props.required}
+      id={controlId}
+      value={timeValue}
+      defaultValue={timeDefaultValue}
+      onChange={onChange}
+      className={cx("ds-field", className)}
+      classNames={{ input: "ds-field-control" }}
+      {...(props as unknown as ComponentProps<typeof MantineTimeInput>)}
+    />
   );
 }
 
@@ -929,10 +1047,22 @@ export type FileFieldProps =
   };
 
 export function FileField(
-  { label, description, className, ...props }: FileFieldProps,
+  {
+    label,
+    description,
+    className,
+    id,
+    onChange,
+    accept,
+    capture,
+    multiple,
+    disabled,
+    ...props
+  }: FileFieldProps,
 ) {
   const generatedId = useId();
-  const controlId = props.id ?? generatedId;
+  const controlId = id ?? generatedId;
+  const dropzoneAccept = dropzoneAcceptFor(accept);
   return (
     <Field
       label={label}
@@ -940,12 +1070,38 @@ export function FileField(
       controlId={controlId}
       className={className}
     >
-      <input
-        {...props}
-        id={controlId}
-        type="file"
-        className="ds-field-control"
-      />
+      <MantineDropzone
+        accept={dropzoneAccept}
+        multiple={multiple}
+        disabled={disabled}
+        onDrop={(files) => emitFileChange(onChange, files)}
+        onReject={() => undefined}
+        className="ds-file-dropzone"
+        inputProps={{
+          ...props,
+          id: controlId,
+          accept,
+          capture,
+          multiple,
+          disabled,
+        }}
+      >
+        <MantineDropzone.Accept>
+          <span className="ds-dropzone__prompt">
+            Release to choose this file
+          </span>
+        </MantineDropzone.Accept>
+        <MantineDropzone.Reject>
+          <span className="ds-dropzone__prompt">
+            That file type is not accepted
+          </span>
+        </MantineDropzone.Reject>
+        <MantineDropzone.Idle>
+          <span className="ds-dropzone__prompt">
+            Choose a file or drop it here
+          </span>
+        </MantineDropzone.Idle>
+      </MantineDropzone>
     </Field>
   );
 }
@@ -961,6 +1117,7 @@ export type SelectFieldProps =
     onValueChange?: (value: string) => void;
     description?: ReactNode;
     error?: ReactNode;
+    isReadOnly?: boolean;
     className?: string;
   };
 
@@ -972,56 +1129,51 @@ export function SelectField({
   description,
   error,
   className,
+  selectedKey,
+  defaultSelectedKey,
+  onSelectionChange,
+  isDisabled,
+  isReadOnly,
+  isRequired,
+  isInvalid,
+  validationBehavior: _validationBehavior,
+  slot,
   ...props
 }: SelectFieldProps) {
+  const mantineProps = props as unknown as ComponentProps<typeof MantineSelect>;
+  const selectedValue = value ??
+    (selectedKey == null ? undefined : String(selectedKey));
+  const defaultValue = defaultSelectedKey == null
+    ? undefined
+    : String(defaultSelectedKey);
   return (
-    <AriaSelect
-      {...props}
-      selectedKey={value}
-      onSelectionChange={(next) => {
-        if (next !== null) onValueChange?.(String(next));
+    <MantineSelect
+      {...mantineProps}
+      label={label}
+      data={options.map((option) => ({
+        value: option.id,
+        label: option.label,
+        disabled: option.disabled,
+      }))}
+      value={selectedValue}
+      defaultValue={defaultValue}
+      onChange={(nextValue) => {
+        if (nextValue !== null) {
+          onValueChange?.(String(nextValue));
+          onSelectionChange?.(String(nextValue));
+        }
       }}
-      isInvalid={Boolean(error) || props.isInvalid}
+      description={description}
+      error={error}
+      disabled={isDisabled}
+      readOnly={isReadOnly}
+      required={isRequired}
+      aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
+      slot={slot ?? undefined}
+      comboboxProps={{ withinPortal: false }}
       className={cx("ds-field", className)}
-    >
-      <AriaLabel className="ds-field__label">{label}</AriaLabel>
-      <AriaButton className="ds-select-trigger">
-        <AriaSelectValue />
-        <Icon>
-          <ChevronDown />
-        </Icon>
-      </AriaButton>
-      <AriaPopover className="ds-popover">
-        <AriaListBox>
-          {options.map((option) => (
-            <AriaListBoxItem
-              key={option.id}
-              id={option.id}
-              textValue={option.label}
-              isDisabled={option.disabled}
-            >
-              {option.label}
-            </AriaListBoxItem>
-          ))}
-        </AriaListBox>
-      </AriaPopover>
-      {description
-        ? (
-          <AriaText slot="description" className="ds-field__description">
-            {description}
-          </AriaText>
-        )
-        : null}
-      {error
-        ? (
-          <span role="alert">
-            <AriaFieldError className="ds-field__error">
-              {error}
-            </AriaFieldError>
-          </span>
-        )
-        : null}
-    </AriaSelect>
+      classNames={{ input: "ds-field-control ds-select-trigger" }}
+    />
   );
 }
 
@@ -1088,18 +1240,39 @@ export type CheckboxProps =
     className?: string;
   };
 
-export function Checkbox({ children, className, ...props }: CheckboxProps) {
+export function Checkbox({
+  children,
+  className,
+  isSelected,
+  defaultSelected,
+  isIndeterminate,
+  onChange,
+  isDisabled,
+  isReadOnly,
+  isRequired,
+  isInvalid,
+  validationBehavior: _validationBehavior,
+  slot,
+  ...props
+}: CheckboxProps) {
+  const mantineProps = props as unknown as ComponentProps<
+    typeof MantineCheckbox
+  >;
   return (
-    <AriaCheckbox {...props} className={cx("ds-checkbox", className)}>
-      {({ isSelected }) => (
-        <>
-          <span className="ds-checkbox__indicator" aria-hidden="true">
-            {isSelected ? <Check size={16} /> : null}
-          </span>
-          <span>{children}</span>
-        </>
-      )}
-    </AriaCheckbox>
+    <MantineCheckbox
+      {...mantineProps}
+      label={children}
+      checked={isSelected}
+      defaultChecked={defaultSelected}
+      indeterminate={isIndeterminate}
+      onChange={(event) => onChange?.(event.currentTarget.checked)}
+      disabled={isDisabled}
+      readOnly={isReadOnly}
+      required={isRequired}
+      aria-invalid={isInvalid ? "true" : undefined}
+      slot={slot ?? undefined}
+      className={cx("ds-checkbox", className)}
+    />
   );
 }
 
@@ -1108,46 +1281,58 @@ export type RadioGroupProps =
   & {
     label: ReactNode;
     options: SelectOption[];
+    description?: ReactNode;
+    error?: ReactNode;
     className?: string;
   };
 
 export function RadioGroup(
-  { label, options, className, ...props }: RadioGroupProps,
+  {
+    label,
+    options,
+    description,
+    error,
+    className,
+    value,
+    defaultValue,
+    onChange,
+    isDisabled,
+    isReadOnly,
+    isRequired,
+    isInvalid,
+    validationBehavior: _validationBehavior,
+    name,
+    slot,
+    ...props
+  }: RadioGroupProps,
 ) {
   return (
-    <AriaRadioGroup {...props} className={cx("ds-field", className)}>
-      <AriaLabel className="ds-field__label">{label}</AriaLabel>
-      <div className="ds-stack" style={{ gap: "var(--space-1)" }}>
-        {options.map((option) => (
-          <AriaRadio
-            key={option.id}
-            value={option.id}
-            isDisabled={option.disabled}
-            className="ds-radio"
-          >
-            {({ isSelected }) => (
-              <>
-                <span className="ds-radio__indicator" aria-hidden="true">
-                  {isSelected
-                    ? (
-                      <span
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: "50%",
-                          background: "currentColor",
-                        }}
-                      />
-                    )
-                    : null}
-                </span>
-                <span>{option.label}</span>
-              </>
-            )}
-          </AriaRadio>
-        ))}
-      </div>
-    </AriaRadioGroup>
+    <MantineRadioGroup
+      {...(props as unknown as ComponentProps<typeof MantineRadioGroup>)}
+      label={label}
+      description={description}
+      error={error}
+      value={value ?? undefined}
+      defaultValue={defaultValue ?? undefined}
+      onChange={onChange}
+      disabled={isDisabled}
+      readOnly={isReadOnly}
+      required={isRequired}
+      aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
+      name={name}
+      slot={slot ?? undefined}
+      className={cx("ds-field", className)}
+    >
+      {options.map((option) => (
+        <MantineRadio
+          key={option.id}
+          value={option.id}
+          label={option.label}
+          disabled={option.disabled}
+          className="ds-radio"
+        />
+      ))}
+    </MantineRadioGroup>
   );
 }
 
@@ -1156,18 +1341,30 @@ export type SwitchProps = Omit<AriaSwitchProps, "children" | "className"> & {
   className?: string;
 };
 
-export function Switch({ children, className, ...props }: SwitchProps) {
+export function Switch({
+  children,
+  className,
+  isSelected,
+  defaultSelected,
+  onChange,
+  isDisabled,
+  isReadOnly,
+  slot,
+  ...props
+}: SwitchProps) {
+  const mantineProps = props as unknown as ComponentProps<typeof MantineSwitch>;
   return (
-    <AriaSwitch {...props} className={cx("ds-switch", className)}>
-      {() => (
-        <>
-          <span className="ds-switch__indicator" aria-hidden="true">
-            <span className="ds-switch__thumb" />
-          </span>
-          <span>{children}</span>
-        </>
-      )}
-    </AriaSwitch>
+    <MantineSwitch
+      {...mantineProps}
+      label={children}
+      checked={isSelected}
+      defaultChecked={defaultSelected}
+      onChange={(event) => onChange?.(event.currentTarget.checked)}
+      disabled={isDisabled}
+      readOnly={isReadOnly}
+      slot={slot ?? undefined}
+      className={cx("ds-switch", className)}
+    />
   );
 }
 
@@ -1183,25 +1380,42 @@ export type SegmentedControlProps =
   };
 
 export function SegmentedControl(
-  { label, options, fullWidth, className, ...props }: SegmentedControlProps,
+  {
+    label,
+    options,
+    fullWidth,
+    className,
+    value,
+    defaultValue,
+    onChange,
+    isDisabled,
+    isReadOnly,
+    name,
+    slot,
+    validationBehavior: _validationBehavior,
+    ...props
+  }: SegmentedControlProps,
 ) {
   return (
-    <AriaRadioGroup
-      {...props}
+    <MantineSegmentedControl
+      {...(props as unknown as ComponentProps<typeof MantineSegmentedControl>)}
+      data={options.map((option) => ({
+        value: option.id,
+        label: option.label,
+        disabled: option.disabled,
+      }))}
+      value={value ?? undefined}
+      defaultValue={defaultValue ?? undefined}
+      onChange={onChange}
+      disabled={isDisabled}
+      readOnly={isReadOnly}
+      name={name}
+      fullWidth={fullWidth}
       aria-label={label}
-      data-full-width={fullWidth ? "true" : undefined}
+      slot={slot ?? undefined}
       className={cx("ds-segmented-control", className)}
-    >
-      {options.map((option) => (
-        <AriaRadio
-          key={option.id}
-          value={option.id}
-          isDisabled={option.disabled}
-        >
-          {option.label}
-        </AriaRadio>
-      ))}
-    </AriaRadioGroup>
+      data-full-width={fullWidth ? "true" : undefined}
+    />
   );
 }
 

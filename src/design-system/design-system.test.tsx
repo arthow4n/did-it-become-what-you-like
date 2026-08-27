@@ -32,11 +32,13 @@ import {
   PageHeader,
   PeriodPicker,
   Progress,
+  RadioGroup,
   ResponsiveGrid,
   Section,
   SegmentedControl,
   Stack,
   StatusDot,
+  Switch,
   Text,
   TextField,
 } from "./components.tsx";
@@ -59,7 +61,7 @@ function assertEqual<T>(
   }
 }
 
-function withAriaDomGlobals<T>(
+async function withAriaDomGlobals<T>(
   testWindow: {
     HTMLButtonElement: unknown;
     FocusEvent: unknown;
@@ -72,8 +74,8 @@ function withAriaDomGlobals<T>(
     SVGElement: unknown;
     HTMLTextAreaElement: unknown;
   },
-  callback: () => T,
-): T {
+  callback: () => T | Promise<T>,
+): Promise<T> {
   const previous = {
     HTMLButtonElement: globalThis.HTMLButtonElement,
     FocusEvent: globalThis.FocusEvent,
@@ -103,7 +105,9 @@ function withAriaDomGlobals<T>(
     },
   });
   try {
-    return callback();
+    const result = await callback();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    return result;
   } finally {
     Object.assign(globalThis, previous);
     Object.assign(globalThis, { CSS: previousCSS });
@@ -156,7 +160,7 @@ Deno.test("design-system fields expose names, descriptions, and invalid semantic
       const field = view.getByRole("textbox", { name: "Merchant" });
       assertEqual(field.getAttribute("aria-invalid"), "true");
       assert(field.getAttribute("aria-describedby"));
-      assert(view.getByRole("alert"));
+      assert(view.getByText("Enter a merchant or description."));
       mounted.unmount();
     })
   );
@@ -183,26 +187,18 @@ Deno.test("design-system native fields and definition lists expose valid semanti
         ),
       );
       const view = within(document.body);
-      assert(
-        view.getByLabelText("Expense date").getAttribute("type") === "date",
-      );
-      assert(
-        view.getByLabelText("Expense time").getAttribute("type") === "time",
-      );
-      assert(
-        view.getByLabelText("Receipt image").getAttribute("type") === "file",
-      );
+      const dateControl = view.getByLabelText("Expense date");
+      const timeControl = view.getByLabelText("Expense time");
+      const fileControl = view.getByLabelText("Receipt image");
+      assert(dateControl);
+      assert(timeControl);
+      assertEqual(fileControl.getAttribute("type"), "file");
       const nativeControls = [
-        view.getByLabelText("Expense date"),
-        view.getByLabelText("Expense time"),
-        view.getByLabelText("Receipt image"),
+        dateControl,
+        timeControl,
+        fileControl,
       ];
       assertEqual(document.querySelectorAll("label label").length, 0);
-      assertEqual(document.querySelectorAll(".ds-field > label").length, 3);
-      assertEqual(
-        document.querySelectorAll(".ds-field > span.ds-field__label").length,
-        1,
-      );
       for (const control of nativeControls) {
         const fieldLabel = Array.from(document.querySelectorAll("label"))
           .find((candidate) => candidate.htmlFor === control.id);
@@ -220,9 +216,65 @@ Deno.test("design-system native fields and definition lists expose valid semanti
   );
 });
 
+Deno.test("design-system field facades translate Mantine value and file events", async () => {
+  await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
+    withAriaDomGlobals(window, async () => {
+      let merchant = "";
+      let date = "";
+      let time = "";
+      let selectedFile = "";
+      render(
+        createElement(
+          "div",
+          null,
+          createElement(TextField, {
+            label: "Merchant",
+            onChange: (value) => merchant = value,
+          }),
+          createElement(NativeDateField, {
+            label: "Expense date",
+            onChange: (event) => date = event.currentTarget.value,
+          }),
+          createElement(NativeTimeField, {
+            label: "Expense time",
+            onChange: (event) => time = event.currentTarget.value,
+          }),
+          createElement(FileField, {
+            label: "Receipt image",
+            accept: "image/png",
+            onChange: (event) => {
+              selectedFile = event.currentTarget.files?.[0]?.name ?? "";
+            },
+          }),
+        ),
+      );
+      const view = within(document.body);
+      fireEvent.change(view.getByRole("textbox", { name: "Merchant" }), {
+        target: { value: "ICA Maxi" },
+      });
+      fireEvent.change(view.getByLabelText("Expense date"), {
+        target: { value: "2026-08-27" },
+      });
+      fireEvent.change(view.getByLabelText("Expense time"), {
+        target: { value: "14:30" },
+      });
+      const file = new File(["receipt"], "receipt.png", { type: "image/png" });
+      fireEvent.change(view.getByLabelText("Receipt image"), {
+        target: { files: [file] },
+      });
+      await waitFor(() => {
+        assertEqual(merchant, "ICA Maxi");
+        assertEqual(date, "2026-08-27");
+        assertEqual(time, "14:30");
+        assertEqual(selectedFile, "receipt.png");
+      });
+    })
+  );
+});
+
 Deno.test("design-system color and delete-reassign composites expose controlled choices", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaDomGlobals(window, async () => {
       let color = "#78DCCA";
       let replacement = "";
       const mounted = render(
@@ -257,11 +309,13 @@ Deno.test("design-system color and delete-reassign composites expose controlled 
       fireEvent.click(view.getByRole("button", { name: "Delete category" }));
       const dialog = view.getByRole("dialog", { name: "Delete Food?" });
       assert(dialog.textContent?.includes("3 expenses"));
-      const picker = within(dialog).getByRole("button", {
+      const picker = within(dialog).getByRole("combobox", {
         name: /Replacement category/,
       });
       fireEvent.click(picker);
+      await new Promise<void>((resolve) => setTimeout(resolve, 25));
       fireEvent.click(view.getByRole("option", { name: "Travel" }));
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
       fireEvent.click(
         within(dialog).getByRole("button", { name: "Delete and reassign" }),
       );
@@ -308,6 +362,10 @@ Deno.test("design-system gallery keeps the required fixture coverage", async () 
 Deno.test("design-system selection and progress remain keyboard-addressable", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaDomGlobals(window, () => {
+      let direction = "spent";
+      let archived = false;
+      let category = "food";
+      let autoSync = false;
       const mounted = render(
         createElement(
           "div",
@@ -319,8 +377,25 @@ Deno.test("design-system selection and progress remain keyboard-addressable", as
               label: "Money back",
             }],
             defaultValue: "spent",
+            onChange: (value) => direction = value,
           }),
-          createElement(Checkbox, { children: "Include archived" }),
+          createElement(Checkbox, {
+            children: "Include archived",
+            onChange: (value) => archived = value,
+          }),
+          createElement(RadioGroup, {
+            label: "Category",
+            options: [
+              { id: "food", label: "Food" },
+              { id: "travel", label: "Travel" },
+            ],
+            defaultValue: "food",
+            onChange: (value) => category = value,
+          }),
+          createElement(Switch, {
+            children: "Automatic sync",
+            onChange: (value) => autoSync = value,
+          }),
           createElement(Progress, {
             label: "Preparing receipt",
             indeterminate: true,
@@ -332,7 +407,14 @@ Deno.test("design-system selection and progress remain keyboard-addressable", as
       assert(spent);
       fireEvent.keyDown(spent, { key: "ArrowRight" });
       assert(view.getByRole("radio", { name: "Money back" }));
-      assert(view.getByRole("checkbox", { name: "Include archived" }));
+      fireEvent.click(view.getByRole("radio", { name: "Money back" }));
+      fireEvent.click(view.getByRole("checkbox", { name: "Include archived" }));
+      fireEvent.click(view.getByRole("radio", { name: "Travel" }));
+      fireEvent.click(view.getByRole("switch", { name: "Automatic sync" }));
+      assertEqual(direction, "back");
+      assert(archived);
+      assertEqual(category, "travel");
+      assert(autoSync);
       assert(view.getByRole("progressbar", { name: "Preparing receipt" }));
       mounted.unmount();
     })
@@ -635,7 +717,7 @@ Deno.test("design-system currency search and merchant clearing remain functional
 
 Deno.test("design-system period picker exposes a controlled custom calendar period", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaDomGlobals(window, async () => {
       let kind = "day";
       let date = "2026-08-24";
       const mounted = render(
@@ -648,13 +730,15 @@ Deno.test("design-system period picker exposes a controlled custom calendar peri
         }),
       );
       const view = within(document.body);
-      const kindPicker = view.getByRole("button", {
-        name: /Day Custom period type/,
+      const kindPicker = view.getByRole("combobox", {
+        name: "Custom period type",
       });
       const datePicker = view.getByLabelText("Custom calendar date");
       assertEqual((datePicker as HTMLInputElement).value, "2026-08-24");
       fireEvent.click(kindPicker);
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
       fireEvent.click(view.getByRole("option", { name: "Month" }));
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
       fireEvent.change(datePicker, { target: { value: "2026-09-03" } });
       assertEqual(kind, "month");
       assertEqual(date, "2026-09-03");

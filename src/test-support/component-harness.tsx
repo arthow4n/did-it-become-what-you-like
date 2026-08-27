@@ -20,11 +20,21 @@ export async function withComponentHarness<T>(
     window: testWindow,
     document: testWindow.document,
     navigator: testWindow.navigator,
+    Document: testWindow.Document,
+    Element: testWindow.Element,
+    File: testWindow.File,
     HTMLElement: testWindow.HTMLElement,
+    MutationObserver: testWindow.MutationObserver,
     Node: testWindow.Node,
+    NodeFilter: testWindow.NodeFilter,
+    ResizeObserver: testWindow.ResizeObserver,
+    ShadowRoot: testWindow.ShadowRoot,
+    SVGElement: testWindow.SVGElement,
     Event: testWindow.Event,
     MouseEvent: testWindow.MouseEvent,
     KeyboardEvent: testWindow.KeyboardEvent,
+    requestAnimationFrame: testWindow.requestAnimationFrame,
+    cancelAnimationFrame: testWindow.cancelAnimationFrame,
     getComputedStyle: testWindow.getComputedStyle.bind(testWindow),
   };
   for (const [key, value] of Object.entries(globals)) {
@@ -45,7 +55,7 @@ export async function withComponentHarness<T>(
         wrapper: ({ children }) =>
           createElement(DesignSystemProvider, null, children),
       })) as typeof render;
-    return await callback({
+    const result = await callback({
       window: testWindow,
       render: renderWithProvider,
       renderBare: render,
@@ -53,6 +63,8 @@ export async function withComponentHarness<T>(
       fireEvent,
       waitFor,
     });
+    await new Promise<void>((resolve) => setTimeout(resolve, 25));
+    return result;
   } finally {
     for (const [key, value] of previous) {
       Object.assign(globalThis, { [key]: value });

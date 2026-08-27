@@ -186,7 +186,7 @@ Deno.test("receipt-ui Gemini quick setup masks the key and keeps validation visi
       const input = view.getByLabelText("API key");
       assert(input.getAttribute("type") === "password");
       assert(view.getByText("The key could not be validated."));
-      fireEvent.click(view.getByRole("button", { name: "Show value" }));
+      fireEvent.mouseDown(view.getByRole("button", { name: "Show value" }));
       assert(input.getAttribute("type") === "text");
       fireEvent.click(view.getByRole("button", { name: "Save and continue" }));
       assert(saved);

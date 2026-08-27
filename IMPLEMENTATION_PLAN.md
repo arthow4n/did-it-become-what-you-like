@@ -81,16 +81,10 @@ true:
    repository-scoped service worker, offline relaunch, explicit update reload,
    and clean IndexedDB persistence across page reloads.
 
-## Active Dependency Graph
+### Active Dependency Graph
 
 ```text
-M9-001 -> M9-002 -> R-910
-                      |
-M9-003 -> M9-004 -> R-920
-                      |
-M9-005 -> M9-006 -> R-930
-                      |
-M9-007 -> M9-008 -> R-940 -> M9-FINAL
+M9-001 -> M9-002 -> M9-003 -> M9-004 -> M9-005 -> R-910 -> M9-FINAL
 ```
 
 ---
@@ -123,8 +117,8 @@ features/app -> actors -> domain + adapter ports
 
 - One primary coding agent performs all planning reconciliation, edits, tests,
   fixes, commits, pushes, and checkpoint updates sequentially on `master`.
-- Independent read-only reviewer subagents are used exclusively at named review
-  gates (`R-910`, `R-920`, `R-930`, `R-940`).
+- One independent read-only reviewer subagent is used at the consolidated review
+  gate `R-910`.
 - Context compaction or session restarts require following the recovery
   checklist before editing.
 
@@ -154,13 +148,13 @@ features/app -> actors -> domain + adapter ports
 
 ### Tasks & Review Gates
 
-#### M9-001 — Manual Expense Form Mobile Field Ergonomics & Pairing
+#### M9-001 — Manual Expense Form Mobile Field Ergonomics & Action Spanning
 
 - **Status/dependencies:** `READY`; depends on baseline M8.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`.
 - **Scope/non-goals:**
   - Audit reference: `mobile-06-manual-expense-populated.png`,
-    `narrow-06-manual-expense-populated.png`.
+    `narrow-06-manual-expense-populated.png`, `mobile-10-expense-edit.png`.
   - Refactor `ExpenseForm` layout on mobile (`< 720px`) so that `Amount` and
     `Currency` are paired side-by-side in a single responsive row
     (`min-width: 0`), with Amount taking flexible space and Currency taking
@@ -168,34 +162,20 @@ features/app -> actors -> domain + adapter ports
   - Pair `Date` (~60%) and `Time (optional)` (~40%) side-by-side in a single
     responsive row on mobile viewports instead of stacking as separate full-page
     rows.
+  - Ensure the `Delete this expense` button in `ManualExpenseScreen` spans 100%
+    full width on mobile inside its confirmation container rather than floating
+    with natural width.
+  - Ensure `Save expense` and `Save and add another` buttons maintain full-width
+    spanning with clear vertical hierarchy.
+  - Fix Cancel action handler in `ProjectManager` and `CategoryManager` to call
+    `setEditor(null)` so canceling editing returns to the list view without
+    requiring the back button.
   - Non-goals: Do not alter expense validation rules or XState actor state
     machine.
 - **Outputs/acceptance:**
   - Amount and Currency form fields sit side-by-side cleanly without horizontal
     overflow on 390px and 320px viewports.
   - Date and Time form fields sit side-by-side cleanly on mobile viewports.
-- **Tests:** `src/features/local-ui.test.tsx`, `e2e/local-first-manual.spec.ts`.
-- **Verification:**
-  `deno fmt src/features/local-ui.tsx src/features/local-ui.css`,
-  `deno lint src/features/local-ui.tsx`, `deno task test:affected`,
-  `git diff --check`.
-
-#### M9-002 — Expense Action Spanning & Manager Exit Fix
-
-- **Status/dependencies:** `PENDING`; depends on `M9-001`.
-- **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`.
-- **Scope/non-goals:**
-  - Audit reference: `mobile-10-expense-edit.png`,
-    `mobile-07-saved-expense-completion.png`.
-  - Ensure the `Delete this expense` button in `ManualExpenseScreen` spans 100%
-    full width on mobile inside its confirmation container rather than floating
-    with natural width.
-  - Ensure `Save expense` and `Save and add another` buttons maintain full-width
-    spanning with clear visual hierarchy.
-  - Fix Cancel action handler in `ProjectManager` and `CategoryManager` to call
-    `setEditor(null)` so canceling editing returns to the list view without
-    requiring the back button.
-- **Outputs/acceptance:**
   - `Delete this expense` is a full-width danger action on mobile.
   - Cancel button in project/category editors correctly exits editing mode.
 - **Tests:** `src/features/local-ui.test.tsx`, `e2e/local-first-manual.spec.ts`.
@@ -204,22 +184,11 @@ features/app -> actors -> domain + adapter ports
   `deno lint src/features/local-ui.tsx`, `deno task test:affected`,
   `git diff --check`.
 
-#### R-910 — Review Gate: Manual Expense Form Ergonomics & Actions
+#### M9-002 — Expenses Screen Header, FilterBar, ListRow Word-Wrap & Project Badge
 
-- **Status/dependencies:** `PENDING`; depends on `M9-002`.
-- **Reviewer role:** Fresh read-only subagent reviewer (`Confucius`).
-- **Audit scope:** Diffs from `M9-001` and `M9-002`, component tests, responsive
-  field pairing on mobile/narrow viewports, and action button spanning.
-- **Remediation loop:** Primary agent fixes all severity 1–3 findings in bounded
-  commits, records resolutions, and secures approval before opening Batch 2.
-
----
-
-#### M9-003 — ListRow Word-Wrapping & Text Resiliency on Mobile
-
-- **Status/dependencies:** `PENDING`; depends on `R-910`.
-- **Ownership:** `src/design-system/tokens.css`,
-  `src/design-system/components.tsx`, `src/features/local-ui.tsx`.
+- **Status/dependencies:** `PENDING`; depends on `M9-001`.
+- **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`,
+  `src/design-system/tokens.css`, `src/design-system/components.tsx`.
 - **Scope/non-goals:**
   - Audit reference: `mobile-08-expenses-populated.png`,
     `narrow-08-expenses-populated.png`, `mobile-12-manage-projects.png`.
@@ -230,22 +199,6 @@ features/app -> actors -> domain + adapter ports
     list row text containers.
   - Fix badge sizing and container constraints to prevent truncating `"CURRENT"`
     to `"CURR..."` on mobile project cards.
-- **Outputs/acceptance:**
-  - Category breakdown rows wrap full words without character fragmentation.
-  - Project status badge displays `"CURRENT"` cleanly without truncation.
-- **Tests:** `src/design-system/components.test.tsx`,
-  `src/features/local-ui.test.tsx`.
-- **Verification:** `deno fmt src/design-system/ src/features/`, `deno lint`,
-  `deno task test:affected`, `git diff --check`.
-
-#### M9-004 — Expenses Screen Header, FilterBar & Period Picker Polish
-
-- **Status/dependencies:** `PENDING`; depends on `M9-003`.
-- **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`,
-  `src/design-system/tokens.css`.
-- **Scope/non-goals:**
-  - Audit reference: `mobile-08-expenses-populated.png`,
-    `narrow-08-expenses-populated.png`, `mobile-09-expenses-filters-dialog.png`.
   - On mobile (`< 720px`), format `[ + Add expense ]` as a prominent full-width
     action or seamlessly integrated header action.
   - Make the Period Segmented Control scrollable horizontally
@@ -255,27 +208,19 @@ features/app -> actors -> domain + adapter ports
     is not floating as an isolated natural-width button with trailing
     whitespace.
 - **Outputs/acceptance:**
+  - Category breakdown rows wrap full words without character fragmentation.
+  - Project status badge displays `"CURRENT"` cleanly without truncation.
   - Period segmented control scrolls smoothly without clipping on 320px screens.
   - Filter bar controls form a balanced, compact responsive grid on mobile.
 - **Tests:** `src/features/local-ui.test.tsx`,
-  `src/features/local-ui-filters.test.tsx`.
+  `src/features/local-ui-filters.test.tsx`,
+  `src/design-system/components.test.tsx`.
 - **Verification:** `deno fmt src/features/ src/design-system/`, `deno lint`,
   `deno task test:affected`, `git diff --check`.
 
-#### R-920 — Review Gate: Expenses Hub, FilterBar & ListRow Polish
+#### M9-003 — Project & Category Manager Mobile Cards & Header Actions
 
-- **Status/dependencies:** `PENDING`; depends on `M9-004`.
-- **Reviewer role:** Fresh read-only subagent reviewer (`Darwin`).
-- **Audit scope:** Diffs from `M9-003` and `M9-004`, text-wrapping resiliency on
-  320px, FilterBar layout, and category breakdown rendering.
-- **Remediation loop:** Primary agent fixes all severity 1–3 findings, records
-  resolutions, and secures approval before opening Batch 3.
-
----
-
-#### M9-005 — Project & Category Manager Mobile Card & Header Actions
-
-- **Status/dependencies:** `PENDING`; depends on `R-920`.
+- **Status/dependencies:** `PENDING`; depends on `M9-002`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`.
 - **Scope/non-goals:**
   - Audit reference: `mobile-12-manage-projects.png`,
@@ -296,13 +241,16 @@ features/app -> actors -> domain + adapter ports
   `deno lint src/features/local-ui.tsx`, `deno task test:affected`,
   `git diff --check`.
 
-#### M9-006 — Receipt Flow Action Spanning & Line Item Polish
+#### M9-004 — Receipt Flow Action Spanning, Clearance & Dialog Action Hierarchy
 
-- **Status/dependencies:** `PENDING`; depends on `M9-005`.
-- **Ownership:** `src/features/receipt-ui.tsx`, `src/design-system/tokens.css`.
+- **Status/dependencies:** `PENDING`; depends on `M9-003`.
+- **Ownership:** `src/features/receipt-ui.tsx`, `src/design-system/tokens.css`,
+  `src/design-system/components.tsx`, `src/features/destruction-ui.tsx`,
+  `src/features/settings-pwa.tsx`.
 - **Scope/non-goals:**
   - Audit reference: `mobile-18-receipt-scan-options.png`,
-    `mobile-20d-receipt-review.png`, `mobile-20f-receipt-line-editor.png`.
+    `mobile-20d-receipt-review.png`, `mobile-24-settings-privacy.png`,
+    `mobile-22-settings-preferences.png`.
   - In `.ds-sticky-action-bar` on mobile (`< 720px`), primary actions
     (`[ Scan with AI ]`, `[ Save selected entries ]`) span 100% full width
     instead of sitting right-aligned with natural width.
@@ -310,36 +258,6 @@ features/app -> actors -> domain + adapter ports
     mobile.
   - Structure receipt image pickers (`Take photo`, `Choose image`, `Remove`) in
     a balanced responsive row on mobile.
-- **Outputs/acceptance:**
-  - Sticky bottom action bars in receipt scan and review span 100% full width on
-    mobile.
-  - Receipt image selection and missing line actions have full touch targets.
-- **Tests:** `src/features/receipt-ui.test.tsx`, `e2e/receipt-review.spec.ts`.
-- **Verification:**
-  `deno fmt src/features/receipt-ui.tsx src/design-system/tokens.css`,
-  `deno lint src/features/receipt-ui.tsx`, `deno task test:affected`,
-  `git diff --check`.
-
-#### R-930 — Review Gate: Manager Cards & Receipt Workflow Polish
-
-- **Status/dependencies:** `PENDING`; depends on `M9-006`.
-- **Reviewer role:** Fresh read-only subagent reviewer (`Aristotle`).
-- **Audit scope:** Diffs from `M9-005` and `M9-006`, manager card structure,
-  receipt action bar full-width behavior, and touch target sizing.
-- **Remediation loop:** Primary agent fixes all severity 1–3 findings, records
-  resolutions, and secures approval before opening Batch 4.
-
----
-
-#### M9-007 — App Frame Bottom Clearance & Dialog Action Hierarchy
-
-- **Status/dependencies:** `PENDING`; depends on `R-930`.
-- **Ownership:** `src/design-system/tokens.css`,
-  `src/design-system/components.tsx`, `src/features/destruction-ui.tsx`,
-  `src/features/settings-pwa.tsx`.
-- **Scope/non-goals:**
-  - Audit reference: `mobile-24-settings-privacy.png`,
-    `mobile-22-settings-preferences.png`, `mobile-25-local-erase-dialog.png`.
   - Update `.ds-app-frame__main` bottom padding calculation to ensure all
     content and action buttons (such as "Delete everywhere" on
     `DataPrivacyScreen`) fully clear the fixed bottom navigation bar plus safe
@@ -348,18 +266,21 @@ features/app -> actors -> domain + adapter ports
     Primary action on TOP, Secondary/Cancel action on BOTTOM, preventing
     inverted button layouts in dialogs and preferences.
 - **Outputs/acceptance:**
+  - Sticky bottom action bars in receipt scan and review span 100% full width on
+    mobile.
   - Bottom navigation bar never obscures content or action buttons on any
     screen.
   - All dialogs and forms display Primary action on top and Cancel/Secondary
     below on mobile.
-- **Tests:** `src/design-system/components.test.tsx`,
-  `src/features/destruction-ui.test.tsx`, `src/features/settings-pwa.test.tsx`.
-- **Verification:** `deno fmt src/design-system/ src/features/`, `deno lint`,
+- **Tests:** `src/features/receipt-ui.test.tsx`,
+  `src/features/destruction-ui.test.tsx`, `src/features/settings-pwa.test.tsx`,
+  `src/design-system/components.test.tsx`.
+- **Verification:** `deno fmt src/features/ src/design-system/`, `deno lint`,
   `deno task test:affected`, `git diff --check`.
 
-#### M9-008 — Canonical Visual Verification Suite & Visual Audit Gate
+#### M9-005 — Canonical Visual Verification Suite & Visual Audit Gate
 
-- **Status/dependencies:** `PENDING`; depends on `M9-007`.
+- **Status/dependencies:** `PENDING`; depends on `M9-004`.
 - **Ownership:** `e2e/ui-audit-capture.spec.ts`.
 - **Scope/non-goals:**
   - Execute full Playwright visual capture suite across Desktop (`1280x800`),
@@ -374,21 +295,21 @@ features/app -> actors -> domain + adapter ports
 - **Tests:** `deno task verify`, `deno task test:e2e`.
 - **Verification:** `deno task verify`, `git diff --check`.
 
-#### R-940 — Final Milestone Review Gate: M9 Form Ergonomics & Polish
+#### R-910 — Comprehensive Milestone Review Gate: M9 Form Ergonomics & Polish
 
-- **Status/dependencies:** `PENDING`; depends on `M9-008`.
+- **Status/dependencies:** `PENDING`; depends on `M9-005`.
 - **Reviewer role:** Fresh read-only subagent reviewer (`Socrates`).
-- **Audit scope:** Comprehensive audit of all M9 commits, full verification
-  logs, visual artifacts across all 3 viewports, and compliance with
-  `DESIGN_SYSTEM.md` and `AGENTS.md`.
+- **Audit scope:** Comprehensive independent audit of all M9 commits (`M9-001`
+  through `M9-005`), verification logs, visual artifacts across all 3 viewports,
+  and compliance with `DESIGN_SYSTEM.md` and `AGENTS.md`.
 - **Remediation loop:** Primary agent fixes all severity 1–3 findings and
-  secures final approval.
+  secures final approval before archiving.
 
 ---
 
 #### M9-FINAL — Milestone Closure & Ledger Archiving
 
-- **Status/dependencies:** `PENDING`; depends on `R-940`.
+- **Status/dependencies:** `PENDING`; depends on `R-910`.
 - **Ownership:** `IMPLEMENTATION_PLAN.md`.
 - **Scope/non-goals:**
   - Prune completed M9 task details into the Released Baseline.

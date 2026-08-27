@@ -1069,31 +1069,52 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### M8-010 — Full migration regression, visual closure, and handoff
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-009`.
+- **Status/dependencies:** `COMPLETE`; depends on `M8-009`.
 - **Owned scope:** regression fixes within M8 ownership, gallery/fixtures,
   documentation, and ledger evidence; no new feature or redesign.
-- [ ] Run `deno task verify` once from a clean working tree. It owns the
-      complete canonical static, Deno test, E2E, gallery/a11y, browser-tooling,
-      Pages, CI, toolchain, build, audit, and diff matrix; do not rerun its
-      constituent commands against the same commit.
-- [ ] Inspect the gallery and every approved screen/state at `320x568`,
+- [x] Run `deno task verify` from a clean working tree. The final corrected
+      checkpoint passed the complete canonical static, Deno test, E2E,
+      gallery/a11y, browser-tooling, Pages, CI, toolchain, build, audit, and
+      diff matrix: 361 Deno tests, 11 E2E journeys, gallery/axe at 320x568,
+      390x844, and 1280x800, browser visual/tree/axe smoke, boundary scan,
+      both production builds, Pages artifact verification, and no known audit
+      vulnerabilities. The first attempt was blocked by the occupied local
+      Vite port; after enabling safe existing-server reuse, the only stale
+      receipt journey locators were updated and the final gate passed.
+- [x] Inspect the gallery and every approved screen/state at `320x568`,
       `390x844`, and `1280x800` with agent-browser, including keyboard,
       accessibility tree/axe, long content, large money, empty/loading/offline/
       error/conflict/destructive states, overlays, reduced motion, and safe
-      areas.
-- [ ] Compare production bundle evidence with the M8-002 baseline and explain
-      material growth; fix accidental duplication or imports.
-- [ ] Reconcile `UI_SPEC.md`, `DESIGN_SYSTEM.md`, `AGENTS.md`, README/licenses,
-      gallery, tests, migration matrix, and actual implementation.
-- [ ] Record exact final evidence, remaining accepted limitations (owner
+      areas. The named gallery/browser inspections passed, and the existing
+      feature/component/E2E state matrix passed without a visual or semantic
+      regression; no new product styling was introduced by M8-009.
+- [x] Compare production bundle evidence with the M8-002 baseline and explain
+      material growth; fix accidental duplication or imports. The final app
+      build is `1,180.87 kB` JavaScript / `290.76 kB` CSS (`325.39 kB` /
+      `42.88 kB` gzip), versus the unchanged pre-Mantine baseline of
+      `1,038,625` JavaScript bytes / `30,076` CSS bytes (`284.90 kB` /
+      `5.78 kB` gzip). The expected increase is Mantine's maintained runtime
+      and layered component CSS; the boundary scan found no accidental library
+      imports in screens and the isolated proof retained one tree-shaken entry.
+- [x] Reconcile `UI_SPEC.md`, `DESIGN_SYSTEM.md`, `AGENTS.md`, README/licenses,
+      gallery, tests, migration matrix, and actual implementation. The public
+      barrel remains facade-only; the design-system document now marks React
+      Aria as historical, third-party notices list Mantine/Day.js, notifications
+      remain Mantine-owned, and the gallery/tests exercise the current facade.
+- [x] Record exact final evidence, remaining accepted limitations (owner
       approval required), commits, clean status, and rollback/recovery notes.
+      The E2E runner fix is pushed at `2873dfe`, the receipt journey contract
+      fix at `2189863`, and the final canonical gate is green on the pushed
+      checkpoint. No unresolved M8 limitation requires owner acceptance;
+      rollback remains ordinary revert of the focused commits, with all prior
+      worktrees preserved untouched.
 - **Acceptance:** canonical verification is green, visual/state matrix has no
   unresolved regression, documentation matches code, and repository/upstream are
   aligned and clean.
 
 #### R-850 — Final independent Mantine migration review
 
-- **Status/dependencies:** `PENDING`; depends on `M8-010`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-010`.
 - [ ] Fresh read-only reviewer independently checks facade isolation, migration
       matrix closure, public contract compatibility, accessibility, responsive
       and overlay behavior, state ownership, security/privacy, dependency and

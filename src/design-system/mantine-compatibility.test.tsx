@@ -320,9 +320,9 @@ Deno.test("Mantine Dropzone preserves keyboard, camera, and drop outcomes", asyn
 });
 
 Deno.test("Mantine notifications render through the public store API", async () => {
-  await withComponentHarness(({ window, render, waitFor }) =>
+  await withComponentHarness(({ window, renderBare, waitFor }) =>
     withMantineDomGlobals(window, () => {
-      const mounted = render(
+      const mounted = renderBare(
         <Provider>
           <Notifications transitionDuration={0} autoClose={false} />
         </Provider>,

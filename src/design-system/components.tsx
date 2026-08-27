@@ -2,7 +2,9 @@ import {
   cloneElement,
   forwardRef,
   isValidElement,
+  useEffect,
   useId,
+  useRef,
   useState,
 } from "react";
 import type {
@@ -26,6 +28,7 @@ import {
 import {
   Accordion as MantineAccordion,
   ActionIcon as MantineActionIcon,
+  Alert as MantineAlert,
   Badge as MantineBadge,
   Button as MantineButton,
   Card as MantineCard,
@@ -60,6 +63,7 @@ import {
 } from "@mantine/dates";
 import { Dropzone as MantineDropzone } from "@mantine/dropzone";
 import { useMediaQuery } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import {
   Button as AriaButton,
   ComboBox as AriaComboBox,
@@ -2164,17 +2168,49 @@ function NoticeContent({ children }: { children: ReactNode }) {
     : <Text as="div">{children}</Text>;
 }
 
+function NoticeAlert(
+  {
+    children,
+    tone,
+    title,
+    action,
+    className,
+    role,
+    live,
+  }: BannerProps & { role: "alert" | "status"; live?: "polite" },
+) {
+  return (
+    <MantineAlert
+      className={className}
+      color={toneColors[tone ?? "info"]}
+      variant="light"
+      radius="md"
+      title={title}
+      data-tone={tone}
+      role={role}
+      aria-live={live}
+    >
+      <Stack gap={2}>
+        <NoticeContent>{children}</NoticeContent>
+        {action}
+      </Stack>
+    </MantineAlert>
+  );
+}
+
 export function Banner(
   { children, tone = "info", title, action, className }: BannerProps,
 ) {
   return (
-    <div className={cx("ds-banner", className)} data-tone={tone} role="status">
-      <Stack gap={2}>
-        {title ? <strong>{title}</strong> : null}
-        <NoticeContent>{children}</NoticeContent>
-        {action}
-      </Stack>
-    </div>
+    <NoticeAlert
+      className={cx("ds-banner", className)}
+      tone={tone}
+      title={title}
+      action={action}
+      role="status"
+    >
+      {children}
+    </NoticeAlert>
   );
 }
 
@@ -2182,17 +2218,15 @@ export function InlineNotice(
   { children, tone = "info", title, action, className }: BannerProps,
 ) {
   return (
-    <div
+    <NoticeAlert
       className={cx("ds-inline-notice", className)}
-      data-tone={tone}
       role={tone === "danger" ? "alert" : "status"}
+      tone={tone}
+      title={title}
+      action={action}
     >
-      <Stack gap={2}>
-        {title ? <strong>{title}</strong> : null}
-        <NoticeContent>{children}</NoticeContent>
-        {action}
-      </Stack>
-    </div>
+      {children}
+    </NoticeAlert>
   );
 }
 
@@ -2203,44 +2237,60 @@ export type ToastProps = Omit<BannerProps, "title" | "action"> & {
 export function Toast(
   { children, tone = "positive", onDismiss, className }: ToastProps,
 ) {
-  return (
-    <div
-      className={cx("ds-toast", "ds-status-message", className)}
-      data-tone={tone}
-      role="status"
-      aria-live="polite"
-    >
-      <div className="ds-toast__content">{children}</div>
-      {onDismiss
-        ? (
-          <button
-            type="button"
-            className="ds-toast__dismiss"
-            aria-label="Dismiss notification"
-            onClick={onDismiss}
-          >
-            <Icon size={16}>
-              <X />
-            </Icon>
-          </button>
-        )
-        : null}
-    </div>
-  );
+  const id = `ds-toast-${useId().replaceAll(":", "")}`;
+  const dismissRef = useRef(onDismiss);
+  const mountedRef = useRef(false);
+  dismissRef.current = onDismiss;
+
+  useEffect(() => {
+    const data = {
+      id,
+      message: children,
+      color: toneColors[tone],
+      role: "status" as const,
+      "aria-live": "polite" as const,
+      allowClose: Boolean(onDismiss),
+      withCloseButton: Boolean(onDismiss),
+      closeButtonProps: { "aria-label": "Dismiss notification" },
+      className: cx("ds-toast", "ds-status-message", className),
+      classNames: {
+        body: "ds-toast__content",
+        closeButton: "ds-toast__dismiss",
+      },
+      "data-tone": tone,
+      onClose: () => {
+        if (mountedRef.current) dismissRef.current?.();
+      },
+    };
+    if (mountedRef.current) notifications.update(data);
+    else {
+      notifications.show(data);
+      mountedRef.current = true;
+    }
+  }, [children, className, id, onDismiss, tone]);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      notifications.hide(id);
+    };
+  }, [id]);
+
+  return null;
 }
 
 export function StatusMessage(
   { children, tone = "info", className }: Omit<BannerProps, "title" | "action">,
 ) {
   return (
-    <div
+    <NoticeAlert
       className={cx("ds-status-message", className)}
-      data-tone={tone}
+      tone={tone}
       role="status"
-      aria-live="polite"
+      live="polite"
     >
       {children}
-    </div>
+    </NoticeAlert>
   );
 }
 

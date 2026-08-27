@@ -1,4 +1,5 @@
 import { createTheme, MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import type { ReactNode } from "react";
 
 type ColorTuple = readonly [
@@ -226,6 +227,13 @@ export function DesignSystemProvider(
       deduplicateCssVariables
     >
       {children}
+      <Notifications
+        position="bottom-right"
+        autoClose={false}
+        transitionDuration={0}
+        zIndex="var(--layer-toast)"
+        classNames={{ root: "ds-notifications" }}
+      />
     </MantineProvider>
   );
 }

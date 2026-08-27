@@ -955,24 +955,38 @@
   }
 
   .ds-banner[data-tone="positive"],
-  .ds-inline-notice[data-tone="positive"] {
+  .ds-inline-notice[data-tone="positive"],
+  .ds-status-message[data-tone="positive"] {
     background: var(--color-positive-surface);
     color: var(--color-positive);
   }
 
-  .ds-status-message[role="status"] {
+  .ds-status-message[data-tone="warning"] {
+    background: var(--color-warning-surface);
+    color: var(--color-warning);
+  }
+
+  .ds-status-message[data-tone="danger"] {
+    background: var(--color-danger-surface);
+    color: var(--color-danger);
+  }
+
+  .ds-status-message[data-tone="neutral"],
+  .ds-status-message[data-tone="info"] {
     background: var(--color-info-surface);
   }
 
-  .ds-toast {
-    position: fixed;
+  .ds-notifications[data-position="bottom-right"] {
     z-index: var(--layer-toast);
-    right: var(--space-4);
-    bottom: max(var(--space-4), calc(var(--control-height) + var(--space-4)));
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
+    right: max(var(--space-4), env(safe-area-inset-right));
+    bottom: max(
+      var(--space-4),
+      calc(var(--control-height) + var(--space-4) + env(safe-area-inset-bottom))
+    );
+  }
+
+  .ds-toast {
+    width: 100%;
     max-width: min(90vw, 420px);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-card);

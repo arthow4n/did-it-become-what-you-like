@@ -9,6 +9,7 @@ import { withComponentHarness } from "../test-support/component-harness.tsx";
 import {
   AdaptiveDialog,
   Badge,
+  Banner,
   Button,
   Card,
   Checkbox,
@@ -25,6 +26,7 @@ import {
   formatMoney,
   Heading,
   Inline,
+  InlineNotice,
   Menu,
   MerchantPicker,
   MoneySummary,
@@ -43,9 +45,11 @@ import {
   SegmentedControl,
   Stack,
   StatusDot,
+  StatusMessage,
   Switch,
   Text,
   TextField,
+  Toast,
   Tooltip,
 } from "./components.tsx";
 import { DesignSystemProvider } from "./provider.tsx";
@@ -713,6 +717,71 @@ Deno.test("M8 overlay facades preserve disclosure and menu contracts", async () 
       assertEqual(action, "edit");
       fireEvent.click(view.getByRole("button", { name: "Open help" }));
       await waitFor(() => view.getByText("Helpful details"));
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("M8 feedback facades preserve live regions and notification dismissal", async () => {
+  await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
+    withAriaDomGlobals(window, async () => {
+      let dismissed = 0;
+      const mounted = render(
+        createElement(
+          "div",
+          null,
+          createElement(Banner, {
+            title: "Offline",
+            children: "Working locally",
+          }),
+          createElement(InlineNotice, {
+            tone: "danger",
+            title: "Cannot save",
+            children: "Try again later",
+          }),
+          createElement(StatusMessage, {
+            tone: "positive",
+            children: "Saved locally",
+          }),
+          createElement(Toast, {
+            children: "Expense saved",
+            onDismiss: () => dismissed++,
+          }),
+        ),
+      );
+      const view = within(document.body);
+      assert(
+        document.querySelector(
+          '.ds-notifications[data-position="bottom-right"]',
+        ),
+      );
+      assertEqual(
+        view.getByText("Working locally").closest("[role]")?.getAttribute(
+          "role",
+        ),
+        "status",
+      );
+      assertEqual(
+        view.getByText("Try again later").closest("[role]")?.getAttribute(
+          "role",
+        ),
+        "alert",
+      );
+      assertEqual(
+        view.getByText("Saved locally").closest("[role]")?.getAttribute(
+          "data-tone",
+        ),
+        "positive",
+      );
+      await waitFor(() => view.getByText("Expense saved"));
+      const dismiss = view.getByRole("button", {
+        name: "Dismiss notification",
+      });
+      fireEvent.click(dismiss);
+      await waitFor(() => {
+        assertEqual(dismissed, 1);
+        assert(!view.queryByText("Expense saved"));
+      });
       mounted.unmount();
     })
   );

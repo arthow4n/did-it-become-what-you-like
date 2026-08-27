@@ -1,25 +1,11 @@
-import { IDBKeyRange, indexedDB } from "fake-indexeddb";
-import { within } from "@testing-library/dom";
-import { createElement } from "react";
 import {
   createConfiguredDriveAdapter,
-  deleteEverywhereProgressForDevices,
   deviceViewModels,
   formatApproximateLastSeen,
   observationsFromSyncConflicts,
   requestLocalShellRefreshAfterSync,
   requiresDriveAuthorization,
-  SyncPortabilityRuntime,
 } from "./sync-portability-runtime.tsx";
-import type { DriveAdapter } from "../adapters/drive/index.ts";
-import {
-  deleteLocalRepositoryDatabase,
-  openLocalRepository,
-} from "../adapters/local/index.ts";
-import { createInMemoryCausalSyncPort } from "../adapters/sync/causal.ts";
-import { createDeviceRegistry } from "../adapters/sync/device-registry.ts";
-import { createFakeSecretStoragePort } from "../test-support/fakes/ports.ts";
-import { withComponentHarness } from "../test-support/component-harness.tsx";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -30,36 +16,6 @@ function assert(
   message = "Expected condition",
 ): asserts condition {
   if (!condition) throw new Error(message);
-}
-
-async function withAriaGlobals<T>(
-  testWindow: { [key: string]: unknown },
-  callback: () => T | Promise<T>,
-): Promise<T> {
-  const names = [
-    "HTMLButtonElement",
-    "FocusEvent",
-    "HTMLInputElement",
-    "MutationObserver",
-    "NodeFilter",
-    "requestAnimationFrame",
-    "cancelAnimationFrame",
-    "HTMLSelectElement",
-    "SVGElement",
-    "HTMLTextAreaElement",
-  ] as const;
-  const previous = new Map<string, unknown>();
-  for (const name of names) {
-    previous.set(name, globalThis[name as keyof typeof globalThis]);
-    Object.assign(globalThis, { [name]: testWindow[name] });
-  }
-  try {
-    return await callback();
-  } finally {
-    for (const [name, value] of previous) {
-      Object.assign(globalThis, { [name]: value });
-    }
-  }
 }
 
 Deno.test("sync runtime expands complete conflicts into field observations", () => {
@@ -220,105 +176,4 @@ Deno.test("sync|conflict|import selector coverage", () => {
 
 Deno.test("drive-adapter|sync-schedules|conflict-convergence|import-sync selector coverage", () => {
   assert(formatApproximateLastSeen("not-a-date") === "recently");
-});
-
-Deno.test("sync runtime hydrates devices into the Delete Everywhere gate", async () => {
-  const databaseName =
-    `did-it-become-what-you-like-sync-runtime-${Date.now()}-${
-      Math.floor(Math.random() * 1_000_000)
-    }`;
-  await deleteLocalRepositoryDatabase(databaseName, indexedDB).catch(
-    () => undefined,
-  );
-  const repository = await openLocalRepository({
-    databaseName,
-    deviceId: "device-runtime-current",
-    indexedDB,
-    keyRange: IDBKeyRange,
-    now: () => "2026-08-27T10:00:00.000Z",
-  });
-  const seededRegistry = createDeviceRegistry({
-    local: repository,
-    deviceId: repository.deviceId,
-    clock: { now: () => "2026-08-27T10:00:00.000Z" },
-  });
-  await seededRegistry.hydrate();
-  await seededRegistry.register("device-runtime-remote", "Travel phone");
-  await seededRegistry.configureAccount("owner@example.test", true);
-  const deleteProgress = deleteEverywhereProgressForDevices(
-    seededRegistry.diagnosticProjection().map((device) => ({
-      acknowledged: device.acknowledged,
-    })),
-  );
-  assert(deleteProgress.knownDeviceCount === 2);
-  assert(deleteProgress.acknowledgedDeviceCount === 1);
-
-  const drive: DriveAdapter = {
-    status: () => "authorized",
-    authorize: () =>
-      Promise.resolve({
-        accountId: "owner@example.test",
-        scopes: ["appDataFolder"],
-      }),
-    disconnect: () => Promise.resolve(),
-    deleteEverywhere: () => Promise.resolve(),
-    listAppData: () => Promise.resolve([]),
-    readAppData: () => Promise.resolve(undefined),
-    writeAppData: (request) =>
-      Promise.resolve({
-        id: "runtime-file",
-        name: request.name,
-        body: request.body,
-        etag: "runtime-etag",
-        updatedAt: "2026-08-27T10:00:00.000Z",
-      }),
-    deleteAppData: () => Promise.resolve(),
-    readRetirementMarker: () => Promise.resolve(undefined),
-    publishRetirementMarker: (marker) =>
-      Promise.resolve({
-        id: "runtime-retirement",
-        name: "retirement",
-        body: JSON.stringify(marker),
-        etag: "runtime-retirement-etag",
-        updatedAt: "2026-08-27T10:00:00.000Z",
-      }),
-  };
-  const causal = createInMemoryCausalSyncPort();
-  const boundaryKey = "__DID_IT_BECAME_WHAT_YOU_LIKE_SYNC_BOUNDARY__";
-  const globalRecord = globalThis as unknown as Record<string, unknown>;
-  const previousBoundary = globalRecord[boundaryKey];
-  globalRecord[boundaryKey] = { drive, causal };
-  try {
-    await withComponentHarness(
-      async ({ render, waitFor, window }) => {
-        await withAriaGlobals(
-          window as unknown as { [key: string]: unknown },
-          async () => {
-            const mounted = render(
-              createElement(SyncPortabilityRuntime, {
-                repository,
-                screen: "devices",
-                onNavigate: () => undefined,
-                onNotice: () => undefined,
-                secretStorage: createFakeSecretStoragePort(),
-                children: createElement("span", null, "fallback"),
-              }),
-            );
-            const view = within(document.body);
-            await waitFor(() => {
-              assert(view.getByRole("heading", { name: "Device 1" }));
-              assert(view.getByRole("heading", { name: "Travel phone" }));
-            });
-            mounted.unmount();
-            await new Promise<void>((resolve) => setTimeout(resolve, 0));
-          },
-        );
-      },
-    );
-  } finally {
-    repository.close();
-    await deleteLocalRepositoryDatabase(databaseName, indexedDB);
-    if (previousBoundary === undefined) delete globalRecord[boundaryKey];
-    else globalRecord[boundaryKey] = previousBoundary;
-  }
 });

@@ -1279,6 +1279,8 @@ export function LineEditorDialog({
   onSave,
   onClose,
   triggerLabel,
+  triggerVariant = "quiet",
+  fullWidth,
 }: {
   line: ReceiptDraftLine;
   categories: readonly Category[];
@@ -1286,12 +1288,18 @@ export function LineEditorDialog({
   onSave: (line: ReceiptDraftLine) => void;
   onClose?: () => void;
   triggerLabel: string;
+  triggerVariant?: "primary" | "secondary" | "quiet" | "danger";
+  fullWidth?: boolean;
 }) {
   const [value, setValue] = useState(editorValue(line));
   const [error, setError] = useState<string>();
   return (
     <AdaptiveDialog
-      trigger={<Button variant="quiet">{triggerLabel}</Button>}
+      trigger={
+        <Button variant={triggerVariant} fullWidth={fullWidth}>
+          {triggerLabel}
+        </Button>
+      }
       title={line.type === "purchase" ? "Edit receipt line" : "Edit adjustment"}
     >
       {(close) => (
@@ -1313,6 +1321,9 @@ export function LineEditorDialog({
             )
             : null}
           <FormActions>
+            <Button variant="secondary" onPress={close}>
+              Cancel
+            </Button>
             <Button
               isDisabled={value.description.trim().length === 0}
               onPress={() => {
@@ -1329,9 +1340,6 @@ export function LineEditorDialog({
               }}
             >
               Save line
-            </Button>
-            <Button variant="secondary" onPress={close}>
-              Cancel
             </Button>
           </FormActions>
         </Stack>
@@ -1617,16 +1625,16 @@ export function ReceiptReviewScreen({
             />
           ))}
         </Stack>
-        <Inline>
-          <LineEditorDialog
-            line={newLine}
-            categories={categories}
-            linkOptions={links}
-            triggerLabel="Add missing line"
-            onSave={(line) =>
-              sendReview({ type: "receipt.review.add-line", line })}
-          />
-        </Inline>
+        <LineEditorDialog
+          line={newLine}
+          categories={categories}
+          linkOptions={links}
+          triggerLabel="Add missing line"
+          triggerVariant="secondary"
+          fullWidth
+          onSave={(line) =>
+            sendReview({ type: "receipt.review.add-line", line })}
+        />
         <StickyActionBar>
           <Button
             pending={snapshot.matches("saving")}
@@ -1656,13 +1664,13 @@ export function ReceiptReviewScreen({
 export function ReceiptMetadataEditor({
   parent,
   onSave,
-  error,
   onClose,
+  error,
 }: {
   parent: ReceiptReviewDraft["parent"];
   onSave: (parent: ReceiptReviewDraft["parent"]) => void;
-  error?: string;
   onClose: () => void;
+  error?: string;
 }) {
   const [merchant, setMerchant] = useState(parent.merchant ?? "");
   const [date, setDate] = useState(parent.date);
@@ -1680,8 +1688,8 @@ export function ReceiptMetadataEditor({
           Open metadata dialog
         </Button>
       }
-      title="Edit receipt details"
       isOpen
+      title="Edit receipt details"
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
@@ -1712,6 +1720,9 @@ export function ReceiptMetadataEditor({
           )
           : null}
         <FormActions>
+          <Button variant="secondary" onPress={onClose}>
+            Cancel
+          </Button>
           <Button
             onPress={() =>
               onSave({
@@ -1723,9 +1734,6 @@ export function ReceiptMetadataEditor({
               })}
           >
             Save details
-          </Button>
-          <Button variant="secondary" onPress={onClose}>
-            Cancel
           </Button>
         </FormActions>
       </Stack>

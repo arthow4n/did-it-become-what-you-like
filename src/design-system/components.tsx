@@ -3214,15 +3214,17 @@ export function ReceiptSourcePicker(
             Choose an image or take a photo to preview it before sending.
           </EmptyState>
         )}
-      <Inline>
-        <Button variant="secondary" onPress={onTakePhoto}>Take photo</Button>
-        <Button variant="secondary" onPress={onChooseImage}>
-          Choose image
-        </Button>
+      <div className="ds-receipt-source-picker__actions">
+        <div className="ds-receipt-source-picker__primary-actions">
+          <Button variant="secondary" onPress={onTakePhoto}>Take photo</Button>
+          <Button variant="secondary" onPress={onChooseImage}>
+            Choose image
+          </Button>
+        </div>
         {preview
           ? <Button variant="quiet" onPress={onRemove}>Remove</Button>
           : null}
-      </Inline>
+      </div>
     </Stack>
   );
 }

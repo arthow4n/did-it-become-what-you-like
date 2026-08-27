@@ -339,13 +339,13 @@ export function PwaRuntime({
             Keep After Midnight available from your home screen. Installation is
             optional and does not change local data.
             <FormActions>
-              <Button onPress={controller.install}>Install app</Button>
-              <Button variant="quiet" onPress={controller.laterInstall}>
-                Later
-              </Button>
               <Button variant="quiet" onPress={controller.dismissInstall}>
                 Dismiss
               </Button>
+              <Button variant="quiet" onPress={controller.laterInstall}>
+                Later
+              </Button>
+              <Button onPress={controller.install}>Install app</Button>
             </FormActions>
           </InlineNotice>
         )
@@ -529,17 +529,17 @@ export function PreferencesScreen({
               : null}
             <FormActions>
               <Button
-                onPress={() => send({ type: "preferences.save" })}
-                isDisabled={!dirty || snapshot.hasTag("saving")}
-              >
-                Save preferences
-              </Button>
-              <Button
                 variant="quiet"
                 onPress={onClose}
                 isDisabled={snapshot.hasTag("saving")}
               >
                 Close
+              </Button>
+              <Button
+                onPress={() => send({ type: "preferences.save" })}
+                isDisabled={!dirty || snapshot.hasTag("saving")}
+              >
+                Save preferences
               </Button>
             </FormActions>
           </Stack>

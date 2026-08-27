@@ -363,12 +363,6 @@ export function DataPrivacyScreen({
                         Create a complete JSON safety export before continuing.
                       </Text>
                       <FormActions>
-                        <Button variant="secondary" onPress={onSafetyExport}>
-                          Export complete safety copy
-                        </Button>
-                        <Button variant="quiet" onPress={onDeclineSafetyExport}>
-                          Decline safety export
-                        </Button>
                         <Button
                           variant="quiet"
                           onPress={() => {
@@ -377,6 +371,12 @@ export function DataPrivacyScreen({
                           }}
                         >
                           Cancel
+                        </Button>
+                        <Button variant="quiet" onPress={onDeclineSafetyExport}>
+                          Decline safety export
+                        </Button>
+                        <Button variant="secondary" onPress={onSafetyExport}>
+                          Export complete safety copy
                         </Button>
                       </FormActions>
                     </Stack>
@@ -393,14 +393,14 @@ export function DataPrivacyScreen({
                         confirmation is required for permanent deletion.
                       </InlineNotice>
                       <FormActions>
-                        <Button variant="danger" onPress={onConfirmDecline}>
-                          Confirm intentional permanent deletion
-                        </Button>
                         <Button
                           variant="quiet"
                           onPress={onCancelDeleteEverywhere}
                         >
                           Cancel
+                        </Button>
+                        <Button variant="danger" onPress={onConfirmDecline}>
+                          Confirm intentional permanent deletion
                         </Button>
                       </FormActions>
                     </Stack>
@@ -416,16 +416,16 @@ export function DataPrivacyScreen({
                       </Text>
                       <FormActions>
                         <Button
-                          variant="danger"
-                          onPress={onConfirmDeleteEverywhere}
-                        >
-                          Delete everywhere
-                        </Button>
-                        <Button
                           variant="quiet"
                           onPress={onCancelDeleteEverywhere}
                         >
                           Cancel
+                        </Button>
+                        <Button
+                          variant="danger"
+                          onPress={onConfirmDeleteEverywhere}
+                        >
+                          Delete everywhere
                         </Button>
                       </FormActions>
                     </Stack>
@@ -486,16 +486,16 @@ export function DataPrivacyScreen({
                       </InlineNotice>
                       <FormActions>
                         <Button
-                          variant="danger"
-                          onPress={onConfirmDeleteEverywhere}
-                        >
-                          Confirm forced finalization
-                        </Button>
-                        <Button
                           variant="quiet"
                           onPress={onCancelDeleteEverywhere}
                         >
                           Cancel
+                        </Button>
+                        <Button
+                          variant="danger"
+                          onPress={onConfirmDeleteEverywhere}
+                        >
+                          Confirm forced finalization
                         </Button>
                       </FormActions>
                     </Stack>
@@ -511,16 +511,16 @@ export function DataPrivacyScreen({
                         "The destructive workflow failed before completion."}
                       <FormActions>
                         <Button
-                          variant="secondary"
-                          onPress={onRetryDeleteEverywhere}
-                        >
-                          Retry workflow
-                        </Button>
-                        <Button
                           variant="quiet"
                           onPress={onCancelDeleteEverywhere}
                         >
                           Cancel
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onPress={onRetryDeleteEverywhere}
+                        >
+                          Retry workflow
                         </Button>
                       </FormActions>
                     </InlineNotice>

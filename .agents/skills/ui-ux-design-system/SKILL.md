@@ -34,18 +34,28 @@ Midnight**.
 
 ## 2. Layout, Sizing & Flexbox Discipline
 
-### A. Natural Widths vs Full-Width Controls
+### A. Natural Widths vs Full-Width Controls & Mobile Spanning
 
 - **Full-Width (Block) Controls:** `TextField`, `TextArea`, search bars, and
   `ActionCard` containers expand to the container width (up to
   `--form-max: 640px` or `--content-max: 1200px`).
-- **Compact (Natural) Controls:** `Button`, `IconButton`, `SelectField`,
-  `SegmentedControl`, `ColorChoiceField`, `NativeDateField`, `NativeTimeField`,
-  `Badge`, `Chip`, and `StatusDot` must maintain their natural intrinsic width
-  or compact footprint.
-- **NEVER** apply `width: 100%` or `flex: 1` indiscriminately to small controls
-  (e.g. date inputs or currency dropdowns) unless creating a balanced
-  multi-column grid row.
+- **Desktop Action Buttons (Natural Width):** On desktop (`>= 720px`), `Button`,
+  `IconButton`, `SelectField`, `SegmentedControl`, `ColorChoiceField`,
+  `NativeDateField`, `NativeTimeField`, `Badge`, `Chip`, and `StatusDot`
+  maintain their natural intrinsic width (e.g. right-aligned in forms).
+- **Mobile Action Buttons (100% Full-Width Spanning):** On mobile viewports
+  (`< 720px`), primary form actions, bottom sticky action bar CTAs
+  (`[ Scan with AI ]`, `[ Save entries ]`), standalone page action triggers
+  (`[ + Add expense ]`, `[ + Create project ]`, `[ + Create category ]`), and
+  danger confirmation buttons (`[ Delete this expense ]`) **MUST expand to
+  `width: 100%`**.
+- **Antipattern:** NEVER leave a mobile primary action floating with natural
+  width (~150px) on the left or right with 60% empty whitespace.
+- **Mobile Field Pairing:** Small selectors (like a 3-letter currency dropdown)
+  must NEVER sit isolated on a full-width row under a number field. Pair
+  `[Amount (flex 1) + Currency (compact ~96px)]` and
+  `[Date (~60%) + Time (~40%)]` side-by-side in responsive 2-column rows
+  (`min-width: 0`) across all mobile viewports.
 
 ### B. CSS Grid & Asymmetric Stretch Prevention
 
@@ -176,6 +186,37 @@ breathing room from neighboring elements.
   secondary Cancel button.
 - **Right:** Pair destructive/primary actions with a secondary `Cancel` button
   for accessible keyboard/touch safety.
+
+### 11. Isolated Mobile Currency / Date Stacking
+
+- **Wrong:** Placing `Amount` on one row and an isolated full-width `Currency`
+  dropdown on the next row, or stacking `Date` and `Time` into two separate
+  full-page rows on mobile.
+- **Right:** Pair `[Amount (flexible) + Currency (compact ~96px)]` and
+  `[Date (~60%) + Time (~40%)]` in responsive 2-column rows (`min-width: 0`).
+
+### 12. Mobile Natural-Width Button Float Antipattern
+
+- **Wrong:** Rendering primary CTAs on mobile (e.g. `[ Scan with AI ]`,
+  `[ Save selected entries ]`, `[ Add expense ]`, `[ Delete this expense ]`)
+  with natural width (~150px) floating to one side with 60% blank empty space.
+- **Right:** On mobile (`< 720px`), primary form actions and sticky bottom bar
+  buttons must span `width: 100%`.
+
+### 13. Inverted Vertical Form Action Stacks
+
+- **Wrong:** Placing the secondary/cancel button above the primary submit button
+  in mobile vertical button stacks.
+- **Right:** Always place the primary action on **TOP** and secondary/cancel on
+  the **BOTTOM** in mobile vertical stacks.
+
+### 14. Cluttered Multi-Action List Cards
+
+- **Wrong:** Packing 5–6 unorganized wrapping inline buttons (`Use`, `Edit`,
+  `Move up`, `Move down`, `Archive`, `Delete empty`) onto raw text lines inside
+  list cards.
+- **Right:** Use a structured 2-tier card layout: primary action on top,
+  followed by a compact secondary action grid.
 
 ---
 

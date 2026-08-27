@@ -61,22 +61,37 @@ When evaluating screens and components, audit against these 5 pillars:
   `padding-bottom: calc(var(--control-height) + var(--space-8) + env(safe-area-inset-bottom, 0px))`
   so scrolled content is never clipped behind the fixed navigation bar.
 
-### B. Form Ergonomics & Control Anchoring
+### B. Form Ergonomics, Mobile Action Spanning & Control Anchoring
 
 - **Embedded Icons & Dropdown Chevrons:** Search clear buttons, dropdown
   chevrons (`CurrencyPicker`), and reveal toggles (`SecretField`) must be
   enclosed within `.ds-field-control-wrap` with `position: relative` so icons
   anchor neatly inside the right edge of the input box.
-- **Desktop 2-Column Pairing:** Pair tightly coupled fields
-  (`[Amount + Currency]`, `[Date + Time]`) into responsive horizontal 2-column
-  rows on desktop (`@media (min-width: 720px)`), collapsing into single column
-  on mobile.
-- **Natural Width vs 600px Stretching:** Action buttons in cards or settings
-  views on desktop must maintain their natural intrinsic width (right-aligned)
-  rather than stretching 600px wide.
-- **Mobile Form Actions:** On mobile (`< 720px`), form action buttons must
-  expand to `width: 100%` and stack vertically
-  (`flex-direction: column-reverse`) with the primary submit button on top.
+- **Mobile Field Pairing (Amount + Currency, Date + Time):** On mobile
+  (`< 720px`), tightly coupled fields must NOT stack into giant full-page
+  scrolls where a small picker (e.g. a 3-letter currency dropdown) occupies an
+  isolated 100%-wide row.
+  - Pair `[Amount + Currency]` side-by-side in a responsive 2-column row
+    (`min-width: 0`), giving Amount flexible space and Currency a compact fixed
+    width (~96px).
+  - Pair `[Date + Time]` side-by-side (~60% / ~40%) on mobile viewports.
+- **Mobile Button Spanning (Full-Width vs. Natural Width Antipatterns):**
+  - On mobile (`< 720px`), primary form actions, sticky bottom bar CTAs
+    (`[ Scan with AI ]`, `[ Save selected entries ]`), standalone trigger
+    buttons (`[ + Add expense ]`, `[ + Create project ]`,
+    `[ + Create category ]`), and danger confirmation buttons
+    (`[ Delete this expense ]`) must span **100% full width (`width: 100%`)**.
+  - **Antipattern to Avoid:** Do NOT render primary actions with natural width
+    (~150px) floating lopsided on the left or right of a mobile screen leaving
+    60% blank space.
+- **Form Action Button Vertical Hierarchy:** In mobile vertical button stacks,
+  the primary submit/confirm action must ALWAYS be on **TOP**, and
+  secondary/cancel actions on the **BOTTOM**. Never invert this order.
+- **Structured Multi-Action List Cards:** Management list cards (e.g. projects,
+  categories) must NOT cram 5–6 raw wrapping inline buttons (`Use`, `Edit`,
+  `Move up`, `Move down`, `Archive`, `Delete empty`) onto erratic lines. Use a
+  structured 2-tier layout: primary status/switch action on top, followed by a
+  compact secondary action grid.
 
 ### C. Financial Metrics & Header Alignment
 
@@ -89,6 +104,10 @@ When evaluating screens and components, audit against these 5 pillars:
   cards squashed beside action buttons.
 - **Baseline Alignment:** Filter bars combining labeled dropdowns and unlabeled
   buttons must align to a common baseline (`align-items: flex-end`).
+- **Period Picker Viewport Resiliency:** Segmented control period pickers
+  (`[ Today | This month | This year | Custom ]`) must support smooth horizontal
+  scrolling or clean wrapping on narrow (`320px`) screens so segments are never
+  clipped off-screen.
 
 ### D. Dialog, Section & State Hygiene
 
@@ -96,16 +115,28 @@ When evaluating screens and components, audit against these 5 pillars:
   must maintain standard internal spacing (`<Stack gap={3}>` or
   `display: grid; gap: var(--space-3);`).
 - **Secondary Cancel Action:** Every modal, editor, or confirmation dialog must
-  provide a secondary `Cancel` button alongside the primary action.
+  provide a secondary `Cancel` button alongside the primary action, and
+  canceling an editor must cleanly exit editing mode (`setEditor(null)`).
 - **Pristine Form Warnings:** Inline `DraftStatus` or "Unsaved changes" warning
   banners must remain hidden until the user actually enters meaningful dirty
   values.
 - **Shell Status Banner Margin:** Global sync/authz banners
   (`.sync-ui-shell-status`) must maintain a `--space-4` bottom margin above page
   content.
+- **Bottom Navigation Clearance:** Main content containers must maintain
+  adequate bottom padding to ensure scrolled content and danger action buttons
+  (e.g. "Delete everywhere") are never obscured behind fixed bottom navigation
+  bars.
 
-### E. Typographic Hierarchy & Data Alignment
+### E. Typographic Hierarchy, Word-Wrapping & Data Alignment
 
+- **ListRow Word-Wrapping Discipline:** List rows and category breakdown items
+  must specify `min-width: 0`, `word-break: normal`, and
+  `overflow-wrap: anywhere` to prevent awkward character-by-character word
+  breaks (e.g. `"Uncat / egori / zed"` or `"Uncategorize / d"`).
+- **Badge Sizing & Overflow:** Status badges (e.g. `"CURRENT"` project) must
+  have sufficient min-width and compact padding so text is never truncated to
+  `"CURR..."`.
 - **Subdued Helper Text:** `.ds-field__description` must be visually subordinate
   (`color: var(--color-text-secondary); font-size: var(--font-size-caption); line-height: var(--line-height-tight);`).
 - **Required Asterisks:** Asterisks (`*`) must be nested directly inside the
@@ -222,9 +253,15 @@ When conducting an audit, follow this standard journey order:
 3. **User Direction & Planning Decision:**
    - Ask the user whether to convert the audit report into an executable
      milestone in `IMPLEMENTATION_PLAN.md` using the `implementation-planning`
-     skill (with batched workstreams, formal review gates, and lifecycle
-     archiving) or to proceed directly with the transient checklist loop in
-     Phase 3 below.
+     skill (with batched workstreams, a single comprehensive milestone review
+     gate, and lifecycle archiving) or to proceed directly with the transient
+     checklist loop in Phase 3 below.
+   - **Batched Review Recommendation:** For UI/UX audit remediations, always
+     prefer batching the review into a **single consolidated milestone review
+     gate at the end** (after the visual re-capture and test verification task).
+     Interconnected CSS, layout, and component adjustments are best audited
+     holistically against the complete multi-viewport screenshot matrix in one
+     pass, avoiding unnecessary subagent latency at intermediate steps.
 
 ### Phase 3: Step-by-Step Remediation Protocol
 

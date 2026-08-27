@@ -95,7 +95,7 @@ XState durability, transition 0ms constraints, zero business-rule drift.>
       `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
 - [ ] Verify test and working tree clean state before continuing.
 
-````
+`````
 ---
 
 ### B. Dependency Graph (DAG)
@@ -108,7 +108,15 @@ M<N>-001 -> M<N>-002 -> R-<N>10
 M<N>-003 -> M<N>-004 -> R-<N>20
                            |
 M<N>-005 -> M<N>-006 -> R-<N>30
-````
+```
+
+> [!TIP]
+> **UI/UX Audit Batched Review Exception:** When planning a UI/UX or visual audit
+> remediation milestone, consolidate review gates into a **single comprehensive
+> milestone review gate at the end** (e.g. `M<N>-001 -> ... -> M<N>-005 -> R-<N>10 -> M<N>-FINAL`).
+> Interconnected CSS, layout, and component adjustments are best audited holistically
+> against the complete multi-viewport screenshot matrix in one pass, avoiding
+> unnecessary subagent latency at intermediate steps.`
 
 ---
 
@@ -175,7 +183,7 @@ interrupted task:
 ```text
 Act as the single primary coding agent for M<N>...
 ```
-````
+`````
 
 ````
 ---

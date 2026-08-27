@@ -1437,17 +1437,19 @@ export function ProjectManager({
                       <strong>{project.name}</strong>
                       <Text tone="secondary">{project.defaultCurrency}</Text>
                     </Stack>
-                    <Inline>
-                      <Button
-                        variant="secondary"
-                        onPress={() =>
-                          send({
-                            type: "project.command",
-                            command: { type: "select", projectId: project.id },
-                          })}
-                      >
-                        Use
-                      </Button>
+                  </Inline>
+                  <div className="local-ui-card-actions--primary-stack">
+                    <Button
+                      variant="secondary"
+                      onPress={() =>
+                        send({
+                          type: "project.command",
+                          command: { type: "select", projectId: project.id },
+                        })}
+                    >
+                      Use
+                    </Button>
+                    <div className="local-ui-card-actions--grid">
                       <Button
                         variant="quiet"
                         onPress={() =>
@@ -1455,79 +1457,77 @@ export function ProjectManager({
                       >
                         Edit
                       </Button>
-                    </Inline>
-                  </Inline>
-                  <Inline>
-                    <Button
-                      variant="quiet"
-                      isDisabled={index === 0 || snapshot.hasTag("saving")}
-                      onPress={() => moveOther(project.id, -1)}
-                    >
-                      Move up
-                    </Button>
-                    <Button
-                      variant="quiet"
-                      isDisabled={index === activeOthers.length - 1 ||
-                        snapshot.hasTag("saving")}
-                      onPress={() => moveOther(project.id, 1)}
-                    >
-                      Move down
-                    </Button>
-                    <ConfirmDialog
-                      trigger={
-                        <Button
-                          variant="quiet"
-                          isDisabled={snapshot.hasTag("saving")}
-                        >
-                          Archive
-                        </Button>
-                      }
-                      title={`Archive ${project.name}?`}
-                      description="The project and its expenses stay on this device and can be restored later."
-                      confirmLabel="Archive project"
-                      onConfirm={() =>
-                        send({
-                          type: "project.command",
-                          command: { type: "archive", projectId: project.id },
-                        })}
-                    />
-                    {isProjectEmpty(state, project.id)
-                      ? (
-                        <ConfirmDialog
-                          trigger={
-                            <Button variant="danger">Delete empty</Button>
-                          }
-                          title={`Delete ${project.name}?`}
-                          description="This empty project will be removed locally. This action cannot be undone from the project list."
-                          confirmLabel="Delete project"
-                          confirmVariant="danger"
-                          onConfirm={() =>
-                            send({
-                              type: "project.command",
-                              command: {
-                                type: "delete-empty",
-                                projectId: project.id,
-                              },
-                            })}
-                        />
-                      )
-                      : repository
-                      ? (
-                        <ProjectDeletionReview
-                          repository={repository}
-                          state={state}
-                          project={project}
-                          onDeleted={() => {
-                            void service.getState().then(onStateChange);
-                          }}
-                        />
-                      )
-                      : (
-                        <Text size="caption" tone="muted">
-                          Deletion unavailable.
-                        </Text>
-                      )}
-                  </Inline>
+                      <Button
+                        variant="quiet"
+                        isDisabled={index === 0 || snapshot.hasTag("saving")}
+                        onPress={() => moveOther(project.id, -1)}
+                      >
+                        Move up
+                      </Button>
+                      <Button
+                        variant="quiet"
+                        isDisabled={index === activeOthers.length - 1 ||
+                          snapshot.hasTag("saving")}
+                        onPress={() => moveOther(project.id, 1)}
+                      >
+                        Move down
+                      </Button>
+                      <ConfirmDialog
+                        trigger={
+                          <Button
+                            variant="quiet"
+                            isDisabled={snapshot.hasTag("saving")}
+                          >
+                            Archive
+                          </Button>
+                        }
+                        title={`Archive ${project.name}?`}
+                        description="The project and its expenses stay on this device and can be restored later."
+                        confirmLabel="Archive project"
+                        onConfirm={() =>
+                          send({
+                            type: "project.command",
+                            command: { type: "archive", projectId: project.id },
+                          })}
+                      />
+                      {isProjectEmpty(state, project.id)
+                        ? (
+                          <ConfirmDialog
+                            trigger={
+                              <Button variant="danger">Delete empty</Button>
+                            }
+                            title={`Delete ${project.name}?`}
+                            description="This empty project will be removed locally. This action cannot be undone from the project list."
+                            confirmLabel="Delete project"
+                            confirmVariant="danger"
+                            onConfirm={() =>
+                              send({
+                                type: "project.command",
+                                command: {
+                                  type: "delete-empty",
+                                  projectId: project.id,
+                                },
+                              })}
+                          />
+                        )
+                        : repository
+                        ? (
+                          <ProjectDeletionReview
+                            repository={repository}
+                            state={state}
+                            project={project}
+                            onDeleted={() => {
+                              void service.getState().then(onStateChange);
+                            }}
+                          />
+                        )
+                        : (
+                          <Text size="caption" tone="muted">
+                            Deletion unavailable.
+                          </Text>
+                        )}
+                    </div>
+                  </div>
                 </Stack>
               </ListRow>
             ))}
@@ -2028,7 +2028,7 @@ export function CategoryManager({
                     Edit
                   </Button>
                 </Inline>
-                <Inline>
+                <div className="local-ui-card-actions--grid">
                   <Button
                     variant="quiet"
                     isDisabled={index === 0 || snapshot.hasTag("saving")}
@@ -2081,7 +2081,7 @@ export function CategoryManager({
                         },
                       })}
                   />
-                </Inline>
+                </div>
               </Stack>
             </ListRow>
           ))}

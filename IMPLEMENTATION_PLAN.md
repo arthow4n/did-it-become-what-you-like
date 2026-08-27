@@ -574,6 +574,19 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 - **Exact next action:** make the gallery scroller labeled and keyboard
   focusable, rerun the affected tests, gallery accessibility, formatting, and
   diff checks, then commit/push the correction and update this checkpoint.
+- **Correction evidence:** The gallery scroller is now labeled and keyboard
+  focusable, preserving the full `MoneyText` value and its product `nowrap`
+  contract while keeping horizontal overflow local. The correction is pushed
+  at `c1907d5`. `deno test --allow-read --allow-write --allow-run --allow-env
+  --changed=12f12c4` passed (113 tests, 0 failures); `deno task check`,
+  `deno task lint` (207 files), targeted `deno fmt --check
+  src/design-system/gallery.tsx src/design-system/tokens.css`,
+  `deno task a11y:gallery` (all three viewports), and `git diff --check` all
+  passed. A fresh closure reviewer must still confirm the exact browser width
+  measurements and combined R-820 gate before M8-005 can start.
+- **Exact next action:** invoke a fresh read-only R-820 closure reviewer at the
+  pushed `c1907d5` checkpoint and record approval or any remaining severity
+  1–3 finding before opening M8-005.
 - **Gate acceptance:** no unresolved severity 1–3 finding.
 
 #### M8-005 — Migrate overlays, disclosure, menus, and feedback
@@ -850,12 +863,11 @@ evidence, and the next action is dependency-safe.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is aligned with `origin/master` at pushed commit
-  `a56d3ba` (`docs(plan): record R-820 gallery track fix`); the latest closure
-  review has completed with one standalone MoneyText gallery overflow finding;
-  the bounded scroller is currently uncommitted and its first accessibility
-  run exposed the focusability issue recorded above. This plan update is also
-  uncommitted. No M8 branch/worktree or review agent is active. Historical
-  non-M8 worktrees remain present and were preserved untouched.
+  `c1907d5` (`fix(migration): contain large gallery money example`); the
+  standalone MoneyText overflow and the follow-up scroller accessibility issue
+  are fixed and locally validated, and this plan update is the only current
+  uncommitted change. No M8 branch/worktree or review agent is active.
+  Historical non-M8 worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
   gallery/axe at three viewports, browser/toolchain checks, one build, Pages
@@ -877,10 +889,11 @@ evidence, and the next action is dependency-safe.
   and the gallery-track fix is pushed at `2806236`, with evidence recorded
   above; the latest R-820 closure review is complete at `447b8e9` with the
   single finding resolved by `2806236`; R-820 remains owned by the primary
-  agent; the latest closure review is complete at `a56d3ba` with its remaining
-  MoneyText fixture finding recorded above; the current gallery correction is
-  uncommitted pending its focused checks; no review agent, migration branch, or
-  M8 worktree is active; historical non-M8 worktrees were preserved untouched.
+  agent; the latest closure review is complete at `a56d3ba` with its MoneyText
+  fixture finding and follow-up validation recorded above; the correction is
+  pushed at `c1907d5`, and R-820 remains open pending a fresh closure review;
+  no review agent, migration branch, or M8 worktree is active; historical
+  non-M8 worktrees were preserved untouched.
 - **Exact next action:** invoke another fresh read-only R-820 closure reviewer,
   have it rerun the combined M8-003/M8-004 affected, gallery, build, and
   three-viewport browser matrix after the gallery-track fix, and record

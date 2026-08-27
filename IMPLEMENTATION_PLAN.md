@@ -308,22 +308,29 @@ Apply this checklist to `M8-001` through `M8-010` without exception:
 
 #### R-810 — Governance and compatibility review checkpoint
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M8-001`, `M8-002`.
-- **Assigned reviewer:** `01a0408a-8fb5-7c31-8f3d-9f6824436a65` (`Linnaeus`),
-  fresh read-only review of pushed HEAD `27771ff`; the primary agent is
-  waiting/polling and will not begin `M8-003` before an explicit approval.
-- [ ] Fresh read-only reviewer checks the inventory, locked facade, dependency
+- **Status/dependencies:** `COMPLETE`; depends on `M8-001`, `M8-002`.
+- **Reviewer:** `01a0408a-8fb5-7c31-8f3d-9f6824436a65` (`Linnaeus`) completed
+  the fresh read-only review of M8-002 at pushed HEAD `27771ff` and returned
+  `APPROVE`; the plan-only descendant `cc292db` is clean and aligned.
+- [x] Fresh read-only reviewer checks the inventory, locked facade, dependency
       choices, Deno/Vite/React compatibility, focused facade-boundary proof,
       styling strategy, bundle evidence, and absence of premature production
       changes. The reviewer must distinguish repository wiring/contract checks
       from Mantine's upstream accessibility coverage and must not require a
       duplicate upstream primitive test suite.
-- [ ] Reviewer reports `APPROVE` or `BLOCK`, severity, file/line evidence, exact
-      commands/results, and minimal corrections.
-- [ ] Primary agent resolves every severity 1–3 finding and reruns only checks
-      affected by those fixes. Repeat the complete checkpoint matrix only when
-      shared or cross-cutting code changed; then commit, push, and record
+- [x] Reviewer reports `APPROVE`, no findings at severities 1–4, and exact
+      commands/results. The report confirmed `deno test ...
+      mantine-compatibility.test.tsx` (8 passed), `deno task check`, `deno task
+      lint` (205 files), `deno task fmt:check` (221 files), compatibility
+      artifact verification (513,589 JS bytes and 281,376 CSS bytes),
+      `git diff --check`, Chromium behavior proof, no feature-layer Mantine or
+      React Aria import leakage, and no `@mantine/form` dependency.
+- [x] Primary agent resolved every severity 1–3 finding (none were reported),
+      reran the recorded compatibility matrix, committed, pushed, and recorded
       closure before `M8-003`.
+- [x] Review evidence explicitly treats the compatibility checks as focused
+      repository/facade integration smokes and leaves generic Mantine
+      accessibility and primitive behavior to Mantine's upstream test suite.
 - **Gate acceptance:** no unresolved severity 1–3 finding and full compatibility
   proof is green.
 
@@ -656,14 +663,14 @@ evidence, and the next action is dependency-safe.
 
 ## Current Checkpoint
 
-- **Plan state:** Released baseline through `R-700`, `M8-001`, and `M8-002`
-  are `COMPLETE`. `R-810` is `IN_PROGRESS`; `M8-003` through `M8-010`, and `R-820` through
+- **Plan state:** Released baseline through `R-700`, `M8-001`, `M8-002`, and
+  `R-810` are `COMPLETE`; `M8-003` through `M8-010`, and `R-820` through
   `R-850` remain `PENDING`.
 - **Reconciled branch/upstream:** `master` is aligned with `origin/master`.
 - **Owner authorization:** The owner approved Mantine as the migration target
   and explicitly authorized autonomous implementation of all M8 tasks.
 - **Worktree state:** `master` is clean and aligned with `origin/master` at
-  pushed commit `27771ff`; no M8 branch/worktree exists. Historical non-M8
+  the pending R-810-closure commit; no M8 branch/worktree exists. Historical non-M8
   worktrees remain present and were preserved untouched.
 - **Verification status:** The released baseline's revised non-duplicating
   `deno task verify` passed at commit `ee9f4fd` (331 Deno tests, 11 E2E tests,
@@ -675,13 +682,13 @@ evidence, and the next action is dependency-safe.
   app still uses the pre-M8 React Aria facade; no production provider or facade
   conversion has occurred.
 - **M8 active/interrupted work:** M8-002 is complete and pushed at `12f12c4`;
-  the primary agent owns the `R-810` gate while reviewer
-  `01a0408a-8fb5-7c31-8f3d-9f6824436a65` (`Linnaeus`) reviews read-only. No
-  migration branch/worktree exists, and historical non-M8 worktrees were
-  preserved untouched.
-- **Exact next action:** wait/poll the assigned reviewer until it reports
-  `APPROVE` or `BLOCK`; do not begin `M8-003` until `R-810` is explicitly
-  approved, and keep the reviewer running during a long review.
+  R-810 was approved by the fresh read-only reviewer with no findings and is
+  recorded for closure. No review agent remains active, no migration
+  branch/worktree exists, and historical non-M8 worktrees were preserved
+  untouched.
+- **Exact next action:** commit and push this R-810 closure, then begin
+  `M8-003` by reconciling the provider, theme, token, and structural primitive
+  contracts before editing production UI.
 
 Every checkpoint update records task status, HEAD/upstream and unpushed commits,
 exact validation evidence, active or preserved work/reviewers, blockers or

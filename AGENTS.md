@@ -98,17 +98,19 @@
   otherwise identical command to be repeated without a stated risk reason.
 - When running background commands or long test suites (such as `test:e2e` or
   full verification runs), expect them to take time. Never poll or loop on
-  status or schedule rapid/short wakeup timers, which wastes massive amounts of
-  tokens and context. The reactive system notifies the agent upon command
-  completion; simply stop calling tools to end the turn and wait for the system
-  notification. If a fallback timer is ever required, use a substantial duration
-  or exponential backoff rather than fast intervals.
+  status synchronously without a timer or schedule rapid/short wakeup timers,
+  which wastes massive amounts of tokens and context. The reactive system
+  notifies the agent upon command completion; simply stop calling tools to end
+  the turn and wait for the system notification. If a fallback timer is ever
+  required, schedule a proper timer using a substantial duration or progressive
+  backoff rather than continuous polling or fast fixed intervals.
 - Trust subagents (such as code review or research agents) to complete their
   delegated work. Reviewers and researchers often perform extensive read-only
   analysis across many files, which naturally takes time. Never poll subagents
-  frequently or send rapid status check messages. The messaging system wakes the
-  orchestrator automatically when a subagent reports back. If a liveness timer
-  is ever needed, use a long backoff duration rather than frequent pings.
+  frequently in tight loops or send rapid status check messages. The messaging
+  system wakes the orchestrator automatically when a subagent reports back. If a
+  liveness check or reminder is required, schedule a proper timer with a long,
+  backed-off interval instead of continuously polling.
 - Keep E2E coverage deliberately small and limited to critical journeys and
   browser-integration seams which unit, actor, and component tests cannot prove.
   Do not duplicate the same state-transition assertions at every test layer.

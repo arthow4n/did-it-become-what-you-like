@@ -74,10 +74,9 @@ ledger.
 ## Current Checkpoint
 
 - **Active task / gate:** None (Milestone 10 complete and archived)
-- **Pushed commit / HEAD:** `b19563c`
-- **Verification status:** Full test suite (366 tests), design system boundary,
-  accessibility gallery audit, production build, and Round 2 visual capture all
-  passed.
+- **Pushed commit / HEAD:** `2c3038d`
+- **Verification status:** Standard test suite, consolidated release provenance,
+  and formatting/syntax checks all passing.
 - **Active / preserved work:** Working tree clean on `master`.
 - **Exact next action:** Await next user instructions or feature milestone.
 

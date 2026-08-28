@@ -96,15 +96,19 @@
 - Record exact commands and results. An unsupported summary such as “tests pass”
   is not sufficient evidence, but evidence collection must not cause an
   otherwise identical command to be repeated without a stated risk reason.
-- When running background commands or long test suites, never poll or loop on
-  status or schedule rapid/short wakeup timers. The reactive system notifies the
-  agent upon command completion; simply stop calling tools to end the turn and
-  wait for the system notification.
-- Trust subagents to complete their delegated work and keep waiting. Never poll
-  subagents frequently or send rapid status check messages. The messaging system
-  wakes the orchestrator automatically when a subagent reports back. If a
-  liveness timer is ever required, use a longer duration rather than frequent
-  checks.
+- When running background commands or long test suites (such as `test:e2e` or
+  full verification runs), expect them to take time. Never poll or loop on
+  status or schedule rapid/short wakeup timers, which wastes massive amounts of
+  tokens and context. The reactive system notifies the agent upon command
+  completion; simply stop calling tools to end the turn and wait for the system
+  notification. If a fallback timer is ever required, use a substantial duration
+  or exponential backoff rather than fast intervals.
+- Trust subagents (such as code review or research agents) to complete their
+  delegated work. Reviewers and researchers often perform extensive read-only
+  analysis across many files, which naturally takes time. Never poll subagents
+  frequently or send rapid status check messages. The messaging system wakes the
+  orchestrator automatically when a subagent reports back. If a liveness timer
+  is ever needed, use a long backoff duration rather than frequent pings.
 - Keep E2E coverage deliberately small and limited to critical journeys and
   browser-integration seams which unit, actor, and component tests cannot prove.
   Do not duplicate the same state-transition assertions at every test layer.

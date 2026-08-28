@@ -205,13 +205,24 @@ For example:
 #### M<N>-FINAL — Milestone closure and ledger archiving
 
 - **Status/dependencies:** `PENDING`; depends on final review gate `R-<N>XX`.
-- **Ownership:** `IMPLEMENTATION_PLAN.md`.
+- **Ownership:** `IMPLEMENTATION_PLAN.md` (and any associated audit report such as
+  `UI_UX_AUDIT_REPORT_*.md`).
 - **Scope/non-goals:** Prune completed milestone task details into the Released
-  Baseline; record the preserved Git commit hash; reset active DAG for upcoming work.
+  Baseline; record the preserved Git commit hash; archive (remove from working
+  tree) any associated transient UI/UX audit reports or remediation documents;
+  reset active DAG for upcoming work.
 - **Outputs/acceptance:** Clean, compact `IMPLEMENTATION_PLAN.md` preserving all
-  essential sections.
+  essential sections; workspace freed of transient audit report documents.
 - **Commit:** Committed with `[archive]` in the commit message per `AGENTS.md`.
-````
+```
+
+> [!IMPORTANT]
+> **UI/UX Audit Report Archiving:** When the milestone was created to remediate a
+> UI/UX audit report (e.g. `UI_UX_AUDIT_REPORT_YYYY_MM_DD.md` or `ROUND_N_UI_AUDIT_REPORT.md`),
+> the final `M<N>-FINAL` step **must also archive (delete/prune from the working tree)**
+> that audit report document alongside `IMPLEMENTATION_PLAN.md`. All audit findings,
+> wireframes, before/after evidence, and verification screenshots remain permanently
+> preserved in Git history at the recorded pre-pruning commit hash.
 
 ### How to Structure the Archived Baseline
 
@@ -226,9 +237,9 @@ When executing the archival step, preserve these essential core sections:
 
    M0 through M<N> and all review gates through `R-<N>XX` are `COMPLETE`. The
    released application baseline includes the approved domain, actors, adapters,
-   responsive UI, design system, accessibility, PWA, tests, and operational
-   safeguards described by `SPEC.md`, `UI_SPEC.md`, `DESIGN_SYSTEM.md`, and
-   `AGENTS.md`.
+   responsive UI, design system, accessibility, PWA, tests, operational
+   safeguards, and the remediated mobile ergonomics and viewport polish
+   described by `SPEC.md`, `UI_SPEC.md`, `DESIGN_SYSTEM.md`, and `AGENTS.md`.
 
    Detailed task, review, validation, worktree, deployment, and recovery history is
    preserved in Git at commit `<PRE_PRUNING_COMMIT_HASH>`, the last complete
@@ -277,3 +288,4 @@ implementation plan:
 8. **Checkpoint & Wait for Authorization:** Set initial checkpoint to `READY` on
    the first task, present the plan summary to the user, and wait for explicit
    owner authorization before writing application code.
+````

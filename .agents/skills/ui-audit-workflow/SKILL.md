@@ -321,12 +321,15 @@ Once all checklist items are checked off:
 2. Inspect key screenshots to confirm visual perfection across all breakpoints.
 3. **Artifact Cleanup (Preserved in Git History):** After visual verification is
    confirmed, remove the audit directory, screenshots, and report files from the
-   working tree (`git rm -r ui-audit-YYYY-MM-DD/`). All visual before/after
-   states and audit histories remain permanently queryable in Git history,
-   keeping the repository workspace lean.
-4. **Commit & Push Cleanup:**
+   working tree (`git rm UI_UX_AUDIT_REPORT_*.md` and remove local screenshot
+   dirs). When an implementation plan was created for the audit, this cleanup is
+   executed as part of the plan's final `M<N>-FINAL` archiving task. All visual
+   before/after states, audit findings, and verification histories remain
+   permanently queryable in Git history, keeping the repository workspace lean.
+4. **Commit & Push Cleanup:** Per `AGENTS.md`, any document deletion/archiving
+   must include `[archive]` in the commit message:
    ```bash
-   git commit -am "chore(audit): clean up audit reports and screenshots after completed remediation" && git push origin master
+   git rm UI_UX_AUDIT_REPORT_YYYY_MM_DD.md && git commit -am "docs(audit): [archive] prune completed UI/UX audit report" && git push origin master
    ```
 5. **Final Reporting Standard:**
    - Present a clear, concise markdown summary of the fixed items.

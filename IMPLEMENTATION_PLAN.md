@@ -177,21 +177,22 @@ M10-001 -> M10-002 -> M10-003 -> M10-004 -> M10-005 -> M10-006 -> R-1010 -> M10-
 
 #### M10-005 — Period picker scroll resiliency & modal scrim polish (FIX-05)
 
-- **Status/dependencies:** `READY`; depends on `M10-004`.
+- **Status/dependencies:** `COMPLETE`; depends on `M10-004`.
 - **Ownership:** `src/features/local-ui.css`, `src/design-system/tokens.css`
 - **Scope/non-goals:** Ensure segmented control period picker tabs on 320px
   screens scroll smoothly without clipping (`overflow-x: auto; scrollbar-width: none;`).
-  Enhance `.local-ui-overlay` with backdrop scrim opacity `rgb(0 0 0 / 75%)` and
-  `backdrop-filter: blur(4px)`.
-- **Outputs/acceptance:** No segmented tab clipping on 320px viewports; modals
-  have clean backdrop scrim separation.
-- **Tests:** `src/features/local-ui.test.tsx`
+  Update modal backdrop scrim styling with `rgb(0 0 0 / 75%)` and `backdrop-filter: blur(4px)`.
+- **Outputs/acceptance:** Period picker tabs remain fully scrollable on narrow screens;
+  modal overlays have uniform blur and scrim depth.
+- **Tests:** `src/design-system/design-system.test.tsx`,
+  `src/features/local-ui.test.tsx` (52 passing tests)
 - **Verification:** `deno fmt src/features/local-ui.css src/design-system/tokens.css`,
-  `deno task test:affected`, `git diff --check`.
+  `deno test src/design-system/design-system.test.tsx src/features/local-ui.test.tsx`,
+  `git diff --check`.
 
-#### M10-006 — Visual re-capture, regression testing & multi-viewport proof (FIX-06)
+#### M10-006 — Gallery fixture URL & visual re-capture validation (FIX-06)
 
-- **Status/dependencies:** `PENDING`; depends on `M10-005`.
+- **Status/dependencies:** `READY`; depends on `M10-005`.
 - **Ownership:** `e2e/ui-audit-capture.spec.ts`
 - **Scope/non-goals:** Update gallery navigation path in
   `e2e/ui-audit-capture.spec.ts`. Re-run visual capture script across Desktop,
@@ -234,11 +235,11 @@ M10-001 -> M10-002 -> M10-003 -> M10-004 -> M10-005 -> M10-006 -> R-1010 -> M10-
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M10-005` (`READY`)
-- **Pushed commit / HEAD:** In progress (`M10-004` completed)
-- **Verification status:** `M10-004` passed (`deno fmt`, `deno lint`, `deno test src/features/receipt-ui.test.tsx src/features/settings-pwa.test.tsx src/features/destruction-ui.test.tsx` 28/28 passed, `git diff --check`).
+- **Active task / gate:** `M10-006` (`READY`)
+- **Pushed commit / HEAD:** In progress (`M10-005` completed)
+- **Verification status:** `M10-005` passed (`deno fmt`, `deno test src/design-system/design-system.test.tsx src/features/local-ui.test.tsx` 52/52 passed, `git diff --check`).
 - **Active / preserved work:** Working tree on `master`.
-- **Exact next action:** Implement `M10-005` (Period picker scroll resiliency & modal scrim polish).
+- **Exact next action:** Implement `M10-006` (Gallery fixture URL & visual re-capture validation).
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -612,6 +612,9 @@
   .ds-segmented-control[data-full-width="true"] {
     display: flex;
     width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .ds-segmented-control[data-full-width="true"] > * {
@@ -839,7 +842,9 @@
     place-items: end center;
     overflow-y: auto;
     padding: var(--space-3);
-    background: rgb(0 0 0 / 70%);
+    background: rgb(0 0 0 / 75%);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   .ds-dialog,

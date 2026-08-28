@@ -186,7 +186,9 @@
     display: grid;
     align-items: end;
     padding: var(--space-4);
-    background: rgb(0 0 0 / 58%);
+    background: rgb(0 0 0 / 75%);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   .local-ui-add-choice {

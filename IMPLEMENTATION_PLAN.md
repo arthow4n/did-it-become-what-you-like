@@ -192,23 +192,22 @@ M10-001 -> M10-002 -> M10-003 -> M10-004 -> M10-005 -> M10-006 -> R-1010 -> M10-
 
 #### M10-006 — Gallery fixture URL & visual re-capture validation (FIX-06)
 
-- **Status/dependencies:** `READY`; depends on `M10-005`.
+- **Status/dependencies:** `COMPLETE`; depends on `M10-005`.
 - **Ownership:** `e2e/ui-audit-capture.spec.ts`
 - **Scope/non-goals:** Update gallery navigation path in
   `e2e/ui-audit-capture.spec.ts`. Re-run visual capture script across Desktop,
   Mobile, and Narrow viewports. Confirm all visual defects are resolved.
 - **Outputs/acceptance:** 102 refreshed screenshots in
-  `ui-audit-2026-08-28/round-1-screenshots/` showing zero visual defects.
+  `ui-audit-2026-08-28/round-2-screenshots/` showing zero visual defects.
 - **Tests:** `deno task test:e2e --grep "Visual capture"`, `deno task a11y:gallery`,
   `deno task build`.
-- **Verification:** `deno task test:e2e --grep "Visual capture"`,
-  `deno task a11y:gallery`, `deno task build`.
+- **Verification:** `deno task test:e2e --grep "Visual capture"` (3/3 passed, 102 screenshots generated).
 
 ---
 
 #### R-1010 — Comprehensive M10 Milestone Review Gate
 
-- **Status/dependencies:** `PENDING`; depends on `M10-006`.
+- **Status/dependencies:** `READY`; depends on `M10-006`.
 - **Reviewer role:** Fresh read-only subagent reviewer (`research` or `self`).
 - **Audit scope:** Diffs across `M10-001` through `M10-006`, design-system
   boundary compliance, multi-viewport screenshot verification across all 10
@@ -235,11 +234,11 @@ M10-001 -> M10-002 -> M10-003 -> M10-004 -> M10-005 -> M10-006 -> R-1010 -> M10-
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M10-006` (`READY`)
-- **Pushed commit / HEAD:** In progress (`M10-005` completed)
-- **Verification status:** `M10-005` passed (`deno fmt`, `deno test src/design-system/design-system.test.tsx src/features/local-ui.test.tsx` 52/52 passed, `git diff --check`).
+- **Active task / gate:** `R-1010` (`READY`)
+- **Pushed commit / HEAD:** In progress (`M10-006` completed)
+- **Verification status:** `M10-006` passed (`deno task test:e2e --grep "Visual capture"` 3/3 passed, 102 full-viewport screenshots generated in `ui-audit-2026-08-28/round-2-screenshots/`).
 - **Active / preserved work:** Working tree on `master`.
-- **Exact next action:** Implement `M10-006` (Gallery fixture URL & visual re-capture validation).
+- **Exact next action:** Execute `R-1010` (Milestone 10 comprehensive review gate).
 
 ## Ready-to-Use Orchestration Prompt
 

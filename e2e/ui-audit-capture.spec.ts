@@ -11,7 +11,7 @@ const ONE_PIXEL_PNG = Buffer.from(
 const AUDIT_DIR = join(
   Deno.cwd(),
   "ui-audit-2026-08-28",
-  "round-1-screenshots",
+  "round-2-screenshots",
 );
 mkdirSync(AUDIT_DIR, { recursive: true });
 
@@ -331,7 +331,8 @@ for (const vp of VIEWPORTS) {
       await snap("27-settings-gemini");
 
       // 28. Gallery
-      await page.goto("/src/design-system/gallery.html");
+      await page.goto("src/design-system/gallery.html");
+      await page.waitForLoadState("networkidle");
       await snap("28-design-system-gallery");
     });
   });

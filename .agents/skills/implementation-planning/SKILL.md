@@ -199,20 +199,26 @@ fully completed, verified, and approved:
 - The detailed historical records remain permanently queryable in Git history.
 
 ### The Archival Task in the Plan
-**Every milestone plan must include a final task / step for lifecycle archiving.**
+**Every milestone plan must include a final task / step for lifecycle archiving and repository hygiene pruning.**
 For example:
 ```markdown
-#### M<N>-FINAL — Milestone closure and ledger archiving
+#### M<N>-FINAL — Milestone closure, ledger archiving, and repo hygiene pruning
 
 - **Status/dependencies:** `PENDING`; depends on final review gate `R-<N>XX`.
-- **Ownership:** `IMPLEMENTATION_PLAN.md` (and any associated audit report such as
-  `UI_UX_AUDIT_REPORT_*.md`).
-- **Scope/non-goals:** Prune completed milestone task details into the Released
-  Baseline; record the preserved Git commit hash; archive (remove from working
-  tree) any associated transient UI/UX audit reports or remediation documents;
-  reset active DAG for upcoming work.
+- **Ownership:** `IMPLEMENTATION_PLAN.md`, `DESIGN_SYSTEM.md`, `SPEC.md` (and any
+  associated audit report such as `UI_UX_AUDIT_REPORT_*.md`).
+- **Scope/non-goals:**
+  1. Prune completed milestone task details into the Released Baseline; record
+     the preserved Git commit hash.
+  2. Archive (remove from working tree) any associated transient UI/UX audit
+     reports or remediation documents.
+  3. Execute the `repo-hygiene-pruning` skill (`.agents/skills/repo-hygiene-pruning/SKILL.md`)
+     to clean up obsolete spikes, stale mapping tables/migration matrices, ghost
+     `.md` links, and verify environment-scoped tasks.
+  4. Reset active DAG for upcoming work.
 - **Outputs/acceptance:** Clean, compact `IMPLEMENTATION_PLAN.md` preserving all
-  essential sections; workspace freed of transient audit report documents.
+  essential sections; workspace freed of transient audit report documents and
+  code-mirroring markdown tables.
 - **Commit:** Committed with `[archive]` in the commit message per `AGENTS.md`.
 ```
 
@@ -223,6 +229,24 @@ For example:
 > that audit report document alongside `IMPLEMENTATION_PLAN.md`. All audit findings,
 > wireframes, before/after evidence, and verification screenshots remain permanently
 > preserved in Git history at the recorded pre-pruning commit hash.
+
+### Post-Archival Repository Hygiene & Pruning Run
+
+Immediately after completing the milestone archive in `IMPLEMENTATION_PLAN.md`,
+run the `repo-hygiene-pruning` skill (`.agents/skills/repo-hygiene-pruning/SKILL.md`):
+
+1. **Prune Code-Mirroring & Stale Ledgers:** Remove temporary migration
+   matrices, screen-to-component mapping tables, or pre-migration notes from
+   `DESIGN_SYSTEM.md` and `SPEC.md`.
+2. **Prune Temporary Spikes & Obsolete Scripts:** Delete any one-off spikes,
+   dummy verification scripts, or temporary test suites created during the
+   milestone.
+3. **Audit Cross-References:** Verify zero dangling `.md` links across the entire
+   codebase.
+4. **Environment-Scoped Verification:** Run only syntax, typecheck, lint, and
+   formatting validation (`deno task check`, `deno task fmt:check`,
+   `deno task lint`, `git diff --check`). Do not launch heavy browser tests or
+   long test suites during doc pruning.
 
 ### How to Structure the Archived Baseline
 
@@ -261,7 +285,7 @@ Per `AGENTS.md`, any document deletion or planning ledger archiving must include
 `[archive]` in the commit message:
 
 ```bash
-git commit -am "docs(plan): [archive] prune completed M<N> implementation history" && git push origin master
+git commit -am "docs(plan): [archive] prune completed M<N> implementation history and run repo hygiene" && git push origin master
 ```
 
 ---
@@ -281,8 +305,9 @@ implementation plan:
    a fresh read-only subagent review.
 5. **Author 6-Part Task Specs:** Fill out Status, Ownership, Scope/non-goals,
    Outputs, Tests, and Verification for each task.
-6. **Add Milestone Archival Step:** Include the final `M<N>-FINAL` archiving
-   task.
+6. **Add Milestone Archival & Hygiene Pruning Step:** Include the final
+   `M<N>-FINAL` task which archives the completed milestone into the Released
+   Baseline and executes the `repo-hygiene-pruning` skill.
 7. **Write to `IMPLEMENTATION_PLAN.md`:** Replace or append to the ledger
    without scattering plans across other files.
 8. **Checkpoint & Wait for Authorization:** Set initial checkpoint to `READY` on

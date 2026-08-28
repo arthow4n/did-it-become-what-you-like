@@ -4,14 +4,11 @@
 
 **Status: approved design foundation.** The repo owner delegated detailed
 component and token decisions to the coding agent's best judgment based on all
-approved screens in `UI_SPEC.md`.
+approved screens in `SPEC.md` and this design system.
 
-This document is a design and component contract, not blanket authorization to
-begin implementation. Exact token tuning may occur through the required visual
-gallery review without changing the semantic roles or component
-responsibilities. The M8 migration ledger in `IMPLEMENTATION_PLAN.md` orders
-implementation; the owner must explicitly start migration implementation before
-runtime, dependency, generated-asset, or styling changes are made.
+This document is a living design and component contract. Exact token tuning may
+occur through visual gallery and multi-viewport review without changing semantic
+roles or component responsibilities.
 
 The system is named **After Midnight**: a calm, comfortable dark interface for
 quick expense entry and trustworthy later review. It should feel native and
@@ -24,10 +21,10 @@ quiet rather than like a dense financial dashboard.
   to actors through `@xstate/react`.
 - **Accessible behavior:** the repository-owned facade is the only application
   UI boundary. During M8, maintained Mantine components provide applicable
-  low-level behavior through public APIs; the facade translates their events
-  and preserves product-oriented contracts. The migration matrix below records
-  the pre-M8 implementation and the selected Mantine replacement for each
-  facade contract.
+  low-level behavior through public APIs; the facade translates their events and
+  preserves product-oriented contracts. The migration matrix below records the
+  pre-M8 implementation and the selected Mantine replacement for each facade
+  contract.
 - **Styling:** semantic After Midnight CSS custom properties remain the visual
   source of truth. Mantine provider values and component defaults map to those
   roles; library-specific customization stays inside `src/design-system/**`.
@@ -38,15 +35,15 @@ quiet rather than like a dense financial dashboard.
   [`lucide-react`](https://lucide.dev/guide/react) icons. Text labels remain the
   default; icons never carry essential meaning alone.
 - **Date, time, and file controls:** prefer Mantine's documented `DateInput`,
-  `TimeInput`, and `Dropzone`/`FileInput` behind the facade when they preserve the
-  product's string values, keyboard behavior, accessibility, and file/camera
-  capture. Keep a native control as the explicit fallback when a Mantine
-  wrapper cannot preserve useful platform behavior.
+  `TimeInput`, and `Dropzone`/`FileInput` behind the facade when they preserve
+  the product's string values, keyboard behavior, accessibility, and file/camera
+  capture. Keep a native control as the explicit fallback when a Mantine wrapper
+  cannot preserve useful platform behavior.
 - **Dependencies:** declare and pin browser dependencies through the Deno 2
   dependency configuration. M8-002 must prove the selected stable Mantine
-  packages, React 19.2, Lucide, XState, TypeScript 7, Deno npm resolution,
-  Vite, happy-dom, and Chromium work together before production facade
-  conversion starts. No `@mantine/form` dependency is planned.
+  packages, React 19.2, Lucide, XState, TypeScript 7, Deno npm resolution, Vite,
+  happy-dom, and Chromium work together before production facade conversion
+  starts. No `@mantine/form` dependency is planned.
 
 Mantine provides maintained low-level behavior, not the product's semantic
 appearance or workflow state. Application screens must import repository-owned
@@ -83,10 +80,11 @@ semantic tokens
 ## Mantine migration boundary
 
 The migration preserves the public `src/design-system/index.ts` facade. Feature
-and app files never import Mantine or another component library directly. Public design-system
-props, refs, callback signatures, and types remain library-neutral; library
-events are translated inside the facade. After Midnight semantic tokens remain
-the source of truth and are mapped into `MantineProvider` and facade defaults.
+and app files never import Mantine or another component library directly. Public
+design-system props, refs, callback signatures, and types remain
+library-neutral; library events are translated inside the facade. After Midnight
+semantic tokens remain the source of truth and are mapped into `MantineProvider`
+and facade defaults.
 
 `DesignSystemProvider` is the single runtime entry for Mantine. It forces the
 approved dark scheme and maps the semantic color, type, spacing, radius, focus,
@@ -100,21 +98,20 @@ and raw palette indexes are confined to `src/design-system/**` and the
 facade-owned provider. XState remains authoritative for durable form/workflow
 state, date/time/file/camera controls remain behind the facade (prefer Mantine
 wrappers with a native fallback), and domain composites remain repository-owned
-compositions. Ordinary interaction
-and layout changes remain immediate (`0ms`); only approved functional progress
-motion may move, with a reduced-motion equivalent.
+compositions. Ordinary interaction and layout changes remain immediate (`0ms`);
+only approved functional progress motion may move, with a reduced-motion
+equivalent.
 
 ### Mantine compatibility proof
 
 M8-002 pins `@mantine/core`, `@mantine/hooks`, `@mantine/notifications`,
-`@mantine/dates`, and `@mantine/dropzone` to `9.5.0`, the current stable
-release selected for the migration. Their required `dayjs` and dropzone
-transitives are lockfile-resolved, while React `19.2.8`, TypeScript `7.0.2`,
-Vite `8.2.2`, and the existing Deno npm resolution remain pinned. The isolated
-proof lives in
+`@mantine/dates`, and `@mantine/dropzone` to `9.5.0`, the current stable release
+selected for the migration. Their required `dayjs` and dropzone transitives are
+lockfile-resolved, while React `19.2.8`, TypeScript `7.0.2`, Vite `8.2.2`, and
+the existing Deno npm resolution remain pinned. The isolated proof lives in
 `src/design-system/mantine-compatibility-proof.tsx` and is built by
-`vite.mantine-compatibility.config.ts`; it is not imported by the application
-or public facade.
+`vite.mantine-compatibility.config.ts`; it is not imported by the application or
+public facade.
 
 The proof uses only public Mantine APIs and covers the provider's dark scheme,
 controlled input, date/time/file value adaptation, Dropzone keyboard activation,
@@ -132,17 +129,16 @@ The owner has expanded the input direction: M8-002 must also evaluate the
 documented [`DateInput`](https://mantine.dev/dates/date-input/),
 [`TimeInput`](https://mantine.dev/dates/time-input/), and
 [`Dropzone`](https://mantine.dev/x/dropzone/) APIs, with core
-[`FileInput`](https://mantine.dev/core/file-input/) as the simpler fallback.
-The facade must preserve the existing ISO/time/file callbacks, keyboard access,
+[`FileInput`](https://mantine.dev/core/file-input/) as the simpler fallback. The
+facade must preserve the existing ISO/time/file callbacks, keyboard access,
 accepted/rejected-file feedback, and mobile camera capture; native controls
 remain the explicit fallback if a candidate fails one of those contracts.
 
 The unchanged application build measured `1,038,625` JavaScript bytes and
 `30,076` CSS bytes (`284.90 kB` and `5.78 kB` gzip). The extended isolated
 Mantine proof measured `513,589` JavaScript bytes and `281,376` CSS bytes
-(`154.11 kB` and `41.48 kB` gzip). These measurements are compatibility
-evidence only; they do not authorize private imports or production facade
-conversion.
+(`154.11 kB` and `41.48 kB` gzip). These measurements are compatibility evidence
+only; they do not authorize private imports or production facade conversion.
 
 The facade is intentionally divided into four migration classes:
 
@@ -321,8 +317,8 @@ flexbox abuse, all components and screens must follow these rules:
    - Sticky Action / Filter Bars: `z-index: 10` (`--layer-sticky`)
    - Fixed Mobile Bottom Navigation: `z-index: 20` (`--layer-navigation`)
    - Modals, Drawers & Overlays (`.ds-modal-overlay`, `.local-ui-overlay`):
-     `z-index: 40` (`--layer-overlay`, ensuring overlays sit cleanly over
-     bottom navigation)
+     `z-index: 40` (`--layer-overlay`, ensuring overlays sit cleanly over bottom
+     navigation)
    - Floating Toasts / Global Status Notifications: `z-index: 50`
      (`--layer-toast`)
    - Ephemeral feedback (`Toast`) must render inside a dedicated fixed overlay
@@ -384,169 +380,6 @@ Every interactive primitive supports the applicable default, hover, pressed,
 focus-visible, selected, disabled, pending, invalid, and read-only states. A
 pending control keeps its label or an equally descriptive accessible name.
 
-## M8-001 facade inventory and migration matrix
-
-The public barrel is `src/design-system/index.ts`; it currently re-exports all
-public symbols from `src/design-system/components.tsx` and
-`src/design-system/provider.tsx`. The components module has 151 public
-declarations and the provider module adds its two documented provider exports.
-The matrix below is the contract inventory for M8-001. A row may group a
-component with its publicly exported prop/view type, but every public symbol is
-named. The target column names only public Mantine or browser primitives; it
-does not authorize their implementation before the ordered task and review
-gate.
-
-| Public exports | Class | Pre-M8 backing | M8 target primitive/composition |
-| --- | --- | --- | --- |
-| `Space` | facade type | CSS token scale | semantic CSS tokens mapped to Mantine spacing |
-| `AppFrameProps`, `AppFrame` | small facade composition | semantic `aside`/`main` and CSS | Mantine `Box` plus semantic landmarks; retain facade-owned shell layout |
-| `PageHeaderProps`, `PageHeader` | small facade composition | semantic heading/text and CSS | Mantine `Group`, `Title`, `Text`, and `Box` |
-| `StackProps`, `Stack` | direct Mantine wrapper | CSS flex column | Mantine `Stack` with token gap |
-| `InlineProps`, `Inline` | direct Mantine wrapper | CSS flex row | Mantine `Group` with token gap and justification |
-| `ResponsiveGridProps`, `ResponsiveGrid` | direct Mantine wrapper | CSS grid | Mantine `SimpleGrid`/`Grid` with `align-content` and `align-items: start` |
-| `ContentContainerProps`, `ContentContainer` | direct Mantine wrapper | bounded semantic `div` | Mantine `Container` with semantic size tokens |
-| `TextProps`, `Text` | direct Mantine wrapper | semantic element and CSS | Mantine `Text`, preserving `as`, tone, and size |
-| `HeadingProps`, `Heading` | direct Mantine wrapper | semantic `h1`–`h6` and CSS | Mantine `Title` or semantic heading with token size/level |
-| `MoneyTextProps`, `formatMoney`, `MoneyText` | small facade composition | string-preserving formatter and `span` | Mantine `Text` plus facade-owned money formatting/nowrap |
-| `DateTextProps`, `DateText` | small facade composition | semantic `time` | semantic `time` with Mantine typography defaults |
-| `IconProps`, `Icon` | approved retained icon wrapper | Lucide SVG in semantic `span` | Lucide plus browser `span`; no replacement by a library icon system |
-| `Tone`, `ButtonVariant`, `ButtonProps`, `Button` | direct Mantine wrapper | React Aria `Button` | Mantine `Button`, with facade variants and translated events |
-| `IconButtonProps`, `IconButton` | direct Mantine wrapper | facade `Button` with Lucide icon | Mantine `ActionIcon`, with facade label/target contract |
-| `LinkButtonProps`, `LinkButton` | direct Mantine wrapper | semantic anchor and CSS | Mantine `Anchor` with facade variant styling |
-| `ActionCardProps`, `ActionCard` | small facade composition | React Aria `Button` with semantic content | Mantine `UnstyledButton`/`Card` composition |
-| `FieldProps`, `Field` | small facade composition | semantic label/description/error wrapper | Mantine `Input.Wrapper`, `Input.Label`, `Input.Description`, and `Input.Error` |
-| `DesignSystemProviderProps`, `DesignSystemProvider` | provider boundary | no pre-M8 provider contract | Mantine `MantineProvider` plus notification host, semantic theme mapping, and dark-scheme lock |
-| `TextField`, `TextAreaProps`, `TextArea` | direct Mantine wrapper | React Aria text field/input primitives | Mantine `TextInput` and `Textarea` behind the shared field contract |
-| `SearchFieldProps`, `SearchField` | small facade composition | React Aria search field, input, and clear button | Mantine `TextInput`/`Autocomplete` plus facade clear action |
-| `SecretFieldProps`, `SecretField` | direct Mantine wrapper | React Aria text field/input plus local reveal state | Mantine `PasswordInput`, preserving the reveal contract |
-| `DecimalFieldProps`, `DecimalField` | direct Mantine wrapper | text input with decimal input mode | Mantine `TextInput` with string-preserving decimal semantics |
-| `MoneyFieldProps`, `MoneyField` | small facade composition | `TextField` plus product guidance | Mantine `TextInput` and shared `Field` contract; direction remains outside |
-| `NativeDateFieldProps`, `NativeDateField` | direct Mantine wrapper with native fallback | browser `input[type=date]` plus `Field` | Mantine `DateInput` behind the facade, preserving ISO strings and a native fallback |
-| `NativeTimeFieldProps`, `NativeTimeField` | direct Mantine wrapper with native fallback | browser `input[type=time]` plus `Field` | Mantine `TimeInput` behind the facade, preserving time strings and a native fallback |
-| `FileFieldProps`, `FileField` | small facade composition with native fallback | browser `input[type=file]` plus `Field` | Mantine `Dropzone` preferred, `FileInput` fallback, preserving file/camera capture and rejection semantics |
-| `SelectOption`, `SelectFieldProps`, `SelectField` | direct Mantine wrapper | React Aria select/list box/popover primitives | Mantine `Select`/public combobox primitives with translated selection |
-| `ColorChoiceFieldProps`, `ColorChoiceField` | approved native control | native color input plus facade preset buttons | native `input[type=color]` plus Mantine layout/controls; preserve presets |
-| `CheckboxProps`, `Checkbox` | direct Mantine wrapper | React Aria checkbox | Mantine `Checkbox` |
-| `RadioGroupProps`, `RadioGroup` | direct Mantine wrapper | React Aria radio group/radios | Mantine `Radio.Group` and `Radio` |
-| `SwitchProps`, `Switch` | direct Mantine wrapper | React Aria switch | Mantine `Switch` |
-| `SegmentedOption`, `SegmentedControlProps`, `SegmentedControl` | direct Mantine wrapper | React Aria radio group/radios | Mantine `SegmentedControl`, preserving controlled values and overflow rules |
-| `ChipProps`, `Chip` | small facade composition | semantic `span` plus facade remove button | Mantine `Pill`/`Badge` plus facade `ActionIcon` removal |
-| `BadgeProps`, `Badge` | direct Mantine wrapper | semantic `span` and tone data attribute | Mantine `Badge` with semantic tone mapping |
-| `StatusDotProps`, `StatusDot` | small facade composition | semantic status span and tone data attribute | Mantine `Badge`/`ThemeIcon` composition; status text remains required |
-| `CardProps`, `Card`, `Section` | direct Mantine wrapper | semantic element and CSS surface | Mantine `Card`/`Paper`, preserving semantic `as` and surface roles |
-| `Divider` | direct Mantine wrapper | browser `hr` and CSS | Mantine `Divider` |
-| `DisclosureProps`, `Disclosure` | direct Mantine wrapper | React Aria disclosure/panel/button | Mantine `Accordion`/`Collapse` public APIs, preserving immediate expansion |
-| `ListProps`, `List` | small facade composition | semantic `ul` | Mantine `List` or semantic `ul` with facade list contract |
-| `ListRowProps`, `ListRow` | small facade composition | semantic `li` with flex slots | Mantine `Box`/`Group` plus semantic `li`; preserve nowrap trailing slots |
-| `DefinitionListProps`, `DefinitionList` | small facade composition | semantic `dl`/`dt`/`dd` | semantic definition list plus Mantine layout primitives |
-| `AdaptiveDialogProps`, `AdaptiveDialog` | direct Mantine wrapper | React Aria trigger/modal/overlay/dialog | Mantine `Drawer` on compact screens and `Modal` on wide screens |
-| `ConfirmDialogProps`, `ConfirmDialog` | domain composite | `AdaptiveDialog` plus confirmation action | migrated `AdaptiveDialog` and facade `Button`; cancel remains required |
-| `DeleteAndReassignProps`, `DeleteAndReassign` | domain composite | `AdaptiveDialog`, controlled replacement, local ephemeral choice | migrated facade dialog/select primitives; actor still owns command |
-| `DangerDialogProps`, `DangerDialog` | domain composite | `AdaptiveDialog`, typed phrase, danger/cancel actions | migrated facade dialog/field/button primitives; no Mantine workflow state |
-| `PopoverProps`, `Popover` | direct Mantine wrapper | React Aria trigger/popover/dialog | Mantine `Popover` |
-| `MenuItem`, `Menu` | direct Mantine wrapper | React Aria menu trigger/popover/menu items | Mantine `Menu` and `Menu.Item`, translated action IDs |
-| `Tooltip` | direct Mantine wrapper | React Aria tooltip trigger/tooltip | Mantine `Tooltip`, preserving accessible labels |
-| `BannerProps`, `Banner`, `InlineNotice` | small facade composition | semantic status containers and CSS | Mantine `Alert` plus facade live-region/placement semantics |
-| `ToastProps`, `Toast` | small facade composition | fixed semantic live-region toast and native dismiss button | Mantine `Notification` in a facade-owned fixed host |
-| `StatusMessage` | small facade composition | semantic polite live-region container | Mantine `Alert`/`Text` with facade announcement semantics |
-| `ProgressProps`, `Progress` | direct Mantine wrapper | React Aria progress bar and CSS track | Mantine `Progress`, preserving label/value and approved motion |
-| `Skeleton` | direct Mantine wrapper | semantic `div` and CSS | Mantine `Skeleton` |
-| `EmptyState`, `ErrorState` | small facade composition | semantic headings/text/action layout | Mantine `Stack`, `Text`, and `Alert` composition |
-| `StickyActionBar` | small facade composition | semantic fixed/sticky container and CSS | Mantine `Box` plus facade safe-area/layering styles |
-| `NavigationItem`, `AppNavigation` | small facade composition | semantic `nav` plus React Aria buttons | Mantine `NavLink`/`UnstyledButton` composition; shell remains facade-owned |
-| `GlobalStatusProps`, `GlobalStatus` | reusable pattern | status mapping plus `StatusPanel` | existing facade `StatusPanel` backed by migrated primitives |
-| `FormLayout`, `FormActions`, `ErrorSummary`, `DraftStatus` | reusable patterns | semantic wrappers and `StatusPanel` | migrated facade layout/status primitives; XState remains state authority |
-| `FilterBar`, `ActiveFilterChips`, `FilterSheet` | reusable patterns | facade layout, `Chip`, and `AdaptiveDialog` | migrated facade layout/chip/dialog primitives |
-| `StatusPanel`, `WorkflowProgress` | reusable patterns | facade layout, `Progress`, and `Badge` | migrated facade layout/progress/badge primitives |
-| `PeriodPicker`, `ProjectPicker`, `CurrencyPicker`, `MerchantPicker` | domain composites | facade selectors and date field | migrated facade `SegmentedControl`, select/combobox, and Mantine `DateInput` with a native fallback |
-| `MoneySummaryItem`, `MoneySummary`, `CategoryTotal`, `CategoryBreakdown` | domain composites | `MoneyText`, `List`, and semantic sections | migrated facade typography/layout/list primitives; signed totals stay domain-owned |
-| `ExpenseViewModel`, `ExpenseRow`, `ExpenseList`, `ReceiptGroupProps`, `ReceiptGroup` | domain composites | facade list/disclosure/money primitives | migrated facade list/disclosure/money primitives; view models remain repository types |
-| `ReceiptReconciliation`, `ReceiptSourcePicker`, `ReceiptMetadataViewModel`, `ReceiptMetadata` | domain composites | facade card/field/notice/file capture primitives | migrated facade card/field/notice primitives plus Mantine Dropzone/FileInput capture with a native fallback |
-| `ReceiptLineViewModel`, `ReceiptLineCard`, `ReceiptLineEditorValue`, `ReceiptLineEditor` | domain composites | facade card, checkbox, field, and select primitives | migrated facade card/field/choice primitives; controlled editor values remain stable |
-| `GeminiModelViewModel`, `ModelPicker` | domain composite | React Aria combo box/list box/popover | facade combobox/select primitives; compatibility and secret policy remain outside |
-| `GeminiQuickSetup`, `GeminiConfigurationTest` | domain composites | facade card, secret field, notice, form, and status patterns | migrated facade primitives; no Mantine Form or duplicated durable state |
-| `ExpenseForm`, `AppNavigationIconSet`, `DefaultNavigation` | reusable/domain composition | `FormLayout`, `FormActions`, and `AppNavigation` | migrated facade patterns; navigation/action semantics remain unchanged |
-
-### Direct facade consumers
-
-There are twelve direct imports from the public barrel: ten production feature
-modules, one feature test, and the public API contract test. The gallery and
-component behavior test intentionally import `components.tsx` directly as
-owned facade fixtures. The application root intentionally imports the
-facade-owned provider from `provider.tsx` and the facade style entry; it does
-not import Mantine or a library-specific styling API. Symbols not named in a
-consumer are still public API surface and are covered by the export matrix
-above.
-
-| Consumer | Imported facade symbols |
-| --- | --- |
-| `src/features/conflict-import-ui/conflict-import-ui.tsx` | `Badge`, `Banner`, `Button`, `Card`, `Checkbox`, `ContentContainer`, `DefinitionList`, `Divider`, `EmptyState`, `ErrorState`, `FileField`, `Heading`, `Inline`, `InlineNotice`, `List`, `ListRow`, `PageHeader`, `Progress`, `RadioGroup`, `Section`, `Stack`, `StatusMessage`, `Text`, `TextArea`, `WorkflowProgress` |
-| `src/features/destruction-ui.tsx` | `AdaptiveDialog`, `Badge`, `Button`, `Checkbox`, `ContentContainer`, `DefinitionList`, `FormActions`, `Heading`, `Inline`, `InlineNotice`, `List`, `ListRow`, `PageHeader`, `Stack`, `Text`, `WorkflowProgress` |
-| `src/features/local-ui.tsx` | `ActionCard`, `ActiveFilterChips`, `AdaptiveDialog`, `AppFrame`, `Badge`, `Banner`, `Button`, `Card`, `CategoryBreakdown`, `ColorChoiceField`, `ConfirmDialog`, `ContentContainer`, `CurrencyPicker`, `DefaultNavigation`, `DefinitionList`, `DeleteAndReassign`, `Disclosure`, `DraftStatus`, `EmptyState`, `ErrorSummary`, `ExpenseForm`, `ExpenseList`, `FilterBar`, `FilterSheet`, `FormActions`, `Heading`, `Icon`, `IconButton`, `Inline`, `InlineNotice`, `List`, `ListRow`, `MerchantPicker`, `MoneyField`, `MoneySummary`, `NativeDateField`, `NativeTimeField`, `PageHeader`, `PeriodPicker`, `ProjectPicker`, `ReceiptGroup`, `SearchField`, `SegmentedControl`, `SelectField`, `Skeleton`, `Stack`, `Text`, `TextArea`, `TextField`, `Toast` |
-| `src/features/sync-portability-runtime.tsx` | `Stack` |
-| `src/features/receipt-ui.tsx` | `AdaptiveDialog`, `Button`, `Card`, `ContentContainer`, `ErrorState`, `GeminiConfigurationTest`, `GeminiQuickSetup`, `Heading`, `Inline`, `InlineNotice`, `ModelPicker`, `NativeDateField`, `PageHeader`, `ReceiptLineCard`, `ReceiptLineEditor`, `ReceiptMetadata`, `ReceiptReconciliation`, `ReceiptSourcePicker`, `Stack`, `StatusPanel`, `StickyActionBar`, `Switch`, `Text`, `TextField`, `WorkflowProgress` |
-| `src/features/settings-pwa.tsx` | `Button`, `Card`, `ContentContainer`, `DefinitionList`, `FormActions`, `Heading`, `InlineNotice`, `LinkButton`, `List`, `ListRow`, `NativeTimeField`, `PageHeader`, `Stack`, `StatusMessage`, `Text` |
-| `src/features/sync-ui/global-status.tsx` | `Button`, `Inline`, `StatusDot`, `Text` |
-| `src/features/sync-ui/known-device-list.tsx` | `Badge`, `Button`, `ContentContainer`, `Disclosure`, `EmptyState`, `Heading`, `Icon`, `Inline`, `List`, `ListRow`, `PageHeader`, `Section`, `Stack`, `StatusMessage`, `Text`, `TextField` |
-| `src/features/sync-ui/sync-account-panel.tsx` | `Button`, `Card`, `ConfirmDialog`, `ContentContainer`, `DefinitionList`, `ErrorState`, `Heading`, `Icon`, `Inline`, `InlineNotice`, `PageHeader`, `Progress`, `Section`, `Stack`, `StatusDot`, `StatusPanel`, `Switch`, `Text` |
-| `src/features/sync-ui/sync-status.ts` | type `Tone` |
-| `src/features/receipt-ui.test.tsx` | `GeminiQuickSetup`, `ModelPicker`, `ReceiptLineCard`, `ReceiptSourcePicker` |
-| `src/design-system/public-api.test.ts` | Public barrel representative type and value exports |
-| `src/app/main.tsx` | `DesignSystemProvider` and facade style entry; application-root provider boundary |
-| `src/test-support/component-harness.tsx` | `DesignSystemProvider`; isolated facade test provider boundary |
-| `src/design-system/gallery.tsx` | Gallery fixtures import the primitive, pattern, and composite symbols needed to exercise the visual contract; see its import block for the exhaustive fixture list. |
-| `src/design-system/design-system.test.tsx` | `AdaptiveDialog`, `Button`, `Checkbox`, `ColorChoiceField`, `CurrencyPicker`, `DefinitionList`, `DeleteAndReassign`, `ExpenseRow`, `FileField`, `formatMoney`, `MerchantPicker`, `MoneySummary`, `MoneyText`, `NativeDateField`, `NativeTimeField`, `PageHeader`, `PeriodPicker`, `Progress`, `SegmentedControl`, `TextField` |
-
-### Historical React Aria inventory and impact register
-
-Before M8, every React Aria value primitive is imported only by
-`src/design-system/components.tsx`. The wrapped inventory is:
-
-| React Aria primitive | Facade users | M8 replacement boundary |
-| --- | --- | --- |
-| `Button` | `Button`, `ActionCard`, select/search/model/disclosure/navigation triggers, chip/toast dismiss actions | Mantine `Button`, `ActionIcon`, `UnstyledButton`, or facade-owned semantic action |
-| `Checkbox` | `Checkbox` | Mantine `Checkbox` |
-| `ComboBox` | `ModelPicker` | Mantine public combobox/autocomplete primitive |
-| `Dialog` | `AdaptiveDialog`, `Popover` | Mantine `Modal`/`Drawer`/`Popover` content behind facade |
-| `DialogTrigger` | `AdaptiveDialog`, `Popover` | Mantine overlay trigger state behind facade |
-| `Disclosure`, `DisclosurePanel` | `Disclosure` | Mantine `Accordion`/`Collapse` |
-| `FieldError` | text, textarea, secret, select error rendering | Mantine `Input.Error` behind facade |
-| `Input` | text, textarea/search/secret/select/model fields | Mantine `TextInput`/`Textarea`/public combobox primitives |
-| `Label` | text, textarea, search, secret, select, radio, model fields | Mantine `Input.Label`/component labels behind facade |
-| `ListBox`, `ListBoxItem` | select and model picker options | Mantine `Select`/combobox option primitives |
-| `Menu`, `MenuItem`, `MenuTrigger` | `Menu` | Mantine `Menu`, `Menu.Item`, and trigger |
-| `Modal`, `ModalOverlay` | `AdaptiveDialog` | Mantine `Modal`/`Drawer` |
-| `Popover` | select, model picker, `Popover`, `Menu` | Mantine `Popover` and component-owned dropdowns |
-| `ProgressBar` | `Progress` | Mantine `Progress` |
-| `Radio`, `RadioGroup` | `RadioGroup`, `SegmentedControl` | Mantine `Radio.Group`/`Radio` and `SegmentedControl` |
-| `SearchField` | `SearchField` | Mantine `TextInput`/public search composition |
-| `Select`, `SelectValue` | `SelectField` | Mantine `Select` or documented public combobox API |
-| `Switch` | `Switch` | Mantine `Switch` |
-| `Text`, `TextArea`, `TextField` | text, textarea, search, secret, decimal, money, model fields | Mantine typography/input primitives behind facade |
-| `Tooltip`, `TooltipTrigger` | `Tooltip` | Mantine `Tooltip` |
-
-The pre-M8 public prop aliases `AriaButtonProps`, `AriaCheckboxProps`,
-`AriaDisclosureProps`, `AriaProgressBarProps`, `AriaRadioGroupProps`,
-`AriaSearchFieldProps`, `AriaSelectProps`, `AriaSwitchProps`, and
-`AriaTextFieldProps` were implementation-derived dependencies of the pre-M8
-facade types. M8 translated those contracts to browser and product-owned
-types; none of these aliases is exported by the current public barrel.
-
-| Impact ID | Frozen baseline and affected consumers | Migration decision |
-| --- | --- | --- |
-| `M8-API-001` | Pre-M8 `Button`, `Checkbox`, `Disclosure`, `Progress`, `RadioGroup`, `SearchField`, `SelectField`, `Switch`, `TextField`, `TextArea`, and `SecretField` public types derived part of their shape from React Aria types. Application call sites relied on `onPress`, `onChange`, `isDisabled`, `isSelected`, `value`, and related controlled props. | Complete: application-facing behavior is preserved with facade-owned types. No Mantine type appears in the public barrel. |
-| `M8-API-002` | Pre-M8 selection callbacks translated React Aria keys/events in `SelectField`, `SegmentedControl`, `RadioGroup`, `ModelPicker`, and pickers. | Complete: product callbacks (`onValueChange`, `onChange`) remain stable and Mantine events are translated internally. |
-| `M8-API-003` | Current components do not consistently forward DOM refs; native field prop aliases inherit browser input props, while custom facade controls expose no documented ref contract. | Treat ref support as an explicit contract decision in M8-003/M8-004. Do not silently add or remove ref behavior; if forwarding is required, inventory all consumers and test focus/imperative use. |
-| `M8-API-004` | Controlled text, decimal, money, date/time, select, segmented, switch, checkbox, and picker values are bound to actors in feature files. | Preserve string values and immediate callback behavior. Mantine Form is not introduced; XState actors remain durable state authority. |
-| `M8-API-005` | Feature files pass facade `className` hooks for product layout, but no feature file imports a library-specific styling API. | Preserve approved facade class hooks where needed for product CSS; all Mantine `styles`, `classNames`, selectors, and provider configuration stay inside the facade/provider. |
-| `M8-API-006` | `src/design-system/gallery.tsx` and `src/design-system/design-system.test.tsx` are the shared visual/behavior contract fixtures; `src/features/receipt-ui.test.tsx` is the feature-facing component regression surface. | Extend the cheapest affected fixture in each migration task and defer the complete gallery/browser matrix to the named review gate. |
-| `M8-API-007` | `NativeDateField`, `NativeTimeField`, and `FileField` exposed native controls and product-facing string/file callbacks before M8. | Complete: Mantine `DateInput`, `TimeInput`, and Dropzone now sit behind the facade, preserving ISO/time/file callbacks, keyboard access, accepted/rejected-file feedback, and mobile camera capture. The native behavior remains the explicit platform fallback boundary where applicable. |
-
-No facade contract change is proposed by M8-001. The only planned changes are
-the internal library backing and the removal of implementation-derived public
-types recorded above; application imports and screen markup remain frozen until
-an approved task and review gate say otherwise.
-
 ### Reusable patterns
 
 | Pattern                                                    | Responsibility                                                 |
@@ -592,28 +425,28 @@ an approved task and review gate say otherwise.
 
 ## Screen-to-Component Mapping
 
-| Screen/workflow               | Primary design-system composition                                                                                                                        |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| First use                     | `AppFrame`, `ContentContainer`, `ActionCard`, `InlineNotice`                                                                                             |
-| 1 Expenses                    | `PageHeader`, `ProjectPicker`, `GlobalStatus`, `Banner`, `PeriodPicker`, `FilterBar`, `MoneySummary`, `CategoryBreakdown`, `ExpenseList`, `ReceiptGroup` |
-| 2 Add Choice                  | `AdaptiveDialog`, two `ActionCard`s, `InlineNotice`                                                                                                      |
+| Screen/workflow               | Primary design-system composition                                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| First use                     | `AppFrame`, `ContentContainer`, `ActionCard`, `InlineNotice`                                                                                                  |
+| 1 Expenses                    | `PageHeader`, `ProjectPicker`, `GlobalStatus`, `Banner`, `PeriodPicker`, `FilterBar`, `MoneySummary`, `CategoryBreakdown`, `ExpenseList`, `ReceiptGroup`      |
+| 2 Add Choice                  | `AdaptiveDialog`, two `ActionCard`s, `InlineNotice`                                                                                                           |
 | 3 Manual/Create/Edit          | `PageHeader`, `FormLayout`, `SegmentedControl`, `MoneyField`, `MerchantPicker`, `SelectField`, date/time facade fields, `DraftStatus`, `FormActions`, `Toast` |
-| 4 Scan Receipt                | `PageHeader`, `ReceiptSourcePicker`, `StatusPanel`, `InlineNotice`, `GeminiQuickSetup`, `WorkflowProgress`, `StickyActionBar`                            |
-| 5 Receipt Review              | `PageHeader`, `ReceiptMetadata`, `ReceiptReconciliation`, `ReceiptLineCard`, `ReceiptLineEditor`, `InlineNotice`, `StickyActionBar`                      |
-| 6 Organize                    | `PageHeader`, `Section`, `ActionCard`, preview `ListRow`s                                                                                                |
-| 7 Projects                    | `PageHeader`, `ManagementList`, `ReorderControls`, `ProjectEditor`, `ConfirmDialog`, `ProjectDeletionReview`                                             |
-| 7A Populated project deletion | `ProjectDeletionReview`, `SafetyExportStep`, `DangerDialog`, `WorkflowProgress`                                                                          |
-| 8 Categories                  | `PageHeader`, `ManagementList`, `SearchField`, `ReorderControls`, `CategoryEditor`, `DeleteAndReassign`                                                  |
-| 9 Settings                    | `PageHeader`, `SettingsList`, `SettingsRow`                                                                                                              |
-| 10 Google Drive               | `PageHeader`, `SyncAccountPanel`, `StatusPanel`, `SettingsList`, `InlineNotice`, `Button` variants                                                       |
-| 10A Conflicts                 | `PageHeader`, `MasterDetail`, `Progress`, `ConflictResolver`, `RadioGroup`, `InlineNotice`                                                               |
-| 10B Devices                   | `PageHeader`, `KnownDeviceList`, inline rename `TextField`, `StatusMessage`                                                                              |
-| 11 Gemini Settings            | `PageHeader`, `SecretField`, `ModelPicker`, `Switch`, `GeminiConfigurationTest`, `ErrorState`                                                            |
-| 12 Import/Export              | `PageHeader`, `FileField`, `ImportPreview`, `ImportModeChoice`, `SafetyExportStep`, `WorkflowProgress`, `DangerDialog`                                   |
-| 13 Preferences                | `PageHeader`, `NativeTimeField`, `PreferenceExample`                                                                                                     |
-| 14 Data and Privacy           | `PageHeader`, `DefinitionList`, `SettingsList`, `DeletionScopePicker`, `SafetyExportStep`, `DeletionProgress`, `DangerDialog`                            |
-| 15 About                      | `PageHeader`, `AboutSummary`, `UpdatePrompt`, `DefinitionList`, link actions                                                                             |
-| Cross-cutting drafts/saves    | `DraftStatus`, `StatusMessage`, `ConfirmDialog`, `ErrorSummary`, `Toast`                                                                                 |
+| 4 Scan Receipt                | `PageHeader`, `ReceiptSourcePicker`, `StatusPanel`, `InlineNotice`, `GeminiQuickSetup`, `WorkflowProgress`, `StickyActionBar`                                 |
+| 5 Receipt Review              | `PageHeader`, `ReceiptMetadata`, `ReceiptReconciliation`, `ReceiptLineCard`, `ReceiptLineEditor`, `InlineNotice`, `StickyActionBar`                           |
+| 6 Organize                    | `PageHeader`, `Section`, `ActionCard`, preview `ListRow`s                                                                                                     |
+| 7 Projects                    | `PageHeader`, `ManagementList`, `ReorderControls`, `ProjectEditor`, `ConfirmDialog`, `ProjectDeletionReview`                                                  |
+| 7A Populated project deletion | `ProjectDeletionReview`, `SafetyExportStep`, `DangerDialog`, `WorkflowProgress`                                                                               |
+| 8 Categories                  | `PageHeader`, `ManagementList`, `SearchField`, `ReorderControls`, `CategoryEditor`, `DeleteAndReassign`                                                       |
+| 9 Settings                    | `PageHeader`, `SettingsList`, `SettingsRow`                                                                                                                   |
+| 10 Google Drive               | `PageHeader`, `SyncAccountPanel`, `StatusPanel`, `SettingsList`, `InlineNotice`, `Button` variants                                                            |
+| 10A Conflicts                 | `PageHeader`, `MasterDetail`, `Progress`, `ConflictResolver`, `RadioGroup`, `InlineNotice`                                                                    |
+| 10B Devices                   | `PageHeader`, `KnownDeviceList`, inline rename `TextField`, `StatusMessage`                                                                                   |
+| 11 Gemini Settings            | `PageHeader`, `SecretField`, `ModelPicker`, `Switch`, `GeminiConfigurationTest`, `ErrorState`                                                                 |
+| 12 Import/Export              | `PageHeader`, `FileField`, `ImportPreview`, `ImportModeChoice`, `SafetyExportStep`, `WorkflowProgress`, `DangerDialog`                                        |
+| 13 Preferences                | `PageHeader`, `NativeTimeField`, `PreferenceExample`                                                                                                          |
+| 14 Data and Privacy           | `PageHeader`, `DefinitionList`, `SettingsList`, `DeletionScopePicker`, `SafetyExportStep`, `DeletionProgress`, `DangerDialog`                                 |
+| 15 About                      | `PageHeader`, `AboutSummary`, `UpdatePrompt`, `DefinitionList`, link actions                                                                                  |
+| Cross-cutting drafts/saves    | `DraftStatus`, `StatusMessage`, `ConfirmDialog`, `ErrorSummary`, `Toast`                                                                                      |
 
 This mapping is a reuse requirement, not a mandate that every listed component
 live in a separate file. Components should be split when they have a stable

@@ -5,13 +5,11 @@
 This is the single source of truth for implementation sequencing, ownership,
 verification, review, and resumable progress.
 
-Product behavior remains authoritative in `SPEC.md`; screen behavior and
-cross-cutting UI states remain authoritative in
-`UI_UX_AUDIT_REPORT_2026_08_28.md`; shared visual and interaction rules remain
-authoritative in `DESIGN_SYSTEM.md`; agent conduct remains authoritative in
-`AGENTS.md`. This plan orders that approved work and must not silently
-reinterpret those documents. A discovered contradiction is a blocked
-specification issue, not permission to choose whichever text is easier.
+Product behavior remains authoritative in `SPEC.md`; shared visual and
+interaction rules remain authoritative in `DESIGN_SYSTEM.md`; agent conduct
+remains authoritative in `AGENTS.md`. This plan orders that approved work and
+must not silently reinterpret those documents. A discovered contradiction is a
+blocked specification issue, not permission to choose whichever text is easier.
 
 ### Status vocabulary
 
@@ -76,7 +74,7 @@ ledger.
 ## Current Checkpoint
 
 - **Active task / gate:** None (Milestone 10 complete and archived)
-- **Pushed commit / HEAD:** `987ab83`
+- **Pushed commit / HEAD:** `3cfa2da`
 - **Verification status:** Full test suite (366 tests), design system boundary,
   accessibility gallery audit, production build, and Round 2 visual capture all
   passed.

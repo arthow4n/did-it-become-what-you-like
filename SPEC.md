@@ -179,12 +179,12 @@ and multi-device synchronization according to the agreed sync design.
 - Project archival is reversible and preserves every related record while hiding
   the project from ordinary switching. Deleting an empty project removes only
   that project after confirmation, and at least one active project must remain.
-- Deleting a populated project follows the approved `UI_SPEC.md` Screen 7A
-  workflow: offer a complete JSON safety export, require strong confirmation,
-  and atomically create synchronized tombstones for the project and every
-  expense, receipt parent, receipt line, adjustment, and derived index entry
-  belonging to it. Global categories, other projects, their records, the Gemini
-  key, and unrelated settings remain unchanged.
+- Deleting a populated project follows the approved Screen 7A workflow: offer a
+  complete JSON safety export, require strong confirmation, and atomically
+  create synchronized tombstones for the project and every expense, receipt
+  parent, receipt line, adjustment, and derived index entry belonging to it.
+  Global categories, other projects, their records, the Gemini key, and
+  unrelated settings remain unchanged.
 - Populated-project deletion is logical synchronized deletion, not physical
   privacy erasure from Automerge history. Physical destruction of the complete
   dataset generation and history remains exclusive to Delete Everywhere.
@@ -550,9 +550,10 @@ and multi-device synchronization according to the agreed sync design.
 
 ## User Experience
 
-- [`UI_SPEC.md`](UI_SPEC.md) contains the approved navigation tree, ASCII
-  wireframes, responsive composition, accessibility rules, and cross-cutting
-  workflow states. Its agreed screen decisions are product requirements.
+- Approved navigation, responsive composition, accessibility rules, and
+  cross-cutting workflow states are specified in this document and
+  [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md). Agreed screen decisions are product
+  requirements.
 - [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) defines the shared accessible React
   foundation, semantic dark-theme tokens, reusable component responsibilities,
   responsive rules, and screen-to-component mapping. Screens must reuse it
@@ -958,7 +959,8 @@ These questions must be resolved incrementally before implementation.
 ### 2. Project Behavior
 
 - There are no remaining MVP UI decisions in this section. Project switching,
-  organization, and deletion are specified in `UI_SPEC.md`.
+  organization, and deletion are specified in this document and
+  `DESIGN_SYSTEM.md`.
 
 ### 3. Currency Behavior — Deferred Beyond MVP
 
@@ -988,7 +990,7 @@ These questions must be resolved incrementally before implementation.
 
 - There are no remaining MVP interaction decisions in this section. Calendar
   periods, combinable project-scoped filters, search, sorting, and
-  multi-currency totals are specified above and in `UI_SPEC.md`.
+  multi-currency totals are specified above and in `DESIGN_SYSTEM.md`.
 - Comparisons, trends, and charts remain post-MVP possibilities. Stable IDs,
   original signed decimal amounts and currencies, immutable transaction dates,
   and preserved historical records provide their initial data foundation.

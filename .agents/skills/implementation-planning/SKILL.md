@@ -239,7 +239,7 @@ When executing the archival step, preserve these essential core sections:
    released application baseline includes the approved domain, actors, adapters,
    responsive UI, design system, accessibility, PWA, tests, operational
    safeguards, and the remediated mobile ergonomics and viewport polish
-   described by `SPEC.md`, `UI_SPEC.md`, `DESIGN_SYSTEM.md`, and `AGENTS.md`.
+   described by `SPEC.md`, `DESIGN_SYSTEM.md`, and `AGENTS.md`.
 
    Detailed task, review, validation, worktree, deployment, and recovery history is
    preserved in Git at commit `<PRE_PRUNING_COMMIT_HASH>`, the last complete

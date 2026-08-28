@@ -36,7 +36,7 @@
   planning do not imply implementation approval.
 - Finish and obtain approval for the relevant product requirements, screens,
   workflows, and cross-cutting states before selecting detailed UI styling.
-- Before implementing or changing application UI, read `UI_SPEC.md` and
+- Before implementing or changing application UI, read `SPEC.md` and
   `DESIGN_SYSTEM.md`, then inspect the implemented shared components. Reuse its
   tokens, primitives, interaction patterns, and responsive rules instead of
   creating parallel one-off UI.
@@ -151,5 +151,5 @@ For the approved Mantine migration and all later design-system work:
    functional progress motion is allowed, with equivalent reduced-motion
    feedback.
 10. A facade contract may change only after an impact inventory identifies all
-    consumers and tests, the change is recorded in `IMPLEMENTATION_PLAN.md`,
-    and the preceding or immediately following review gate approves it.
+    consumers and tests, the change is recorded in `IMPLEMENTATION_PLAN.md`, and
+    the preceding or immediately following review gate approves it.

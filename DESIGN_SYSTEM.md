@@ -102,45 +102,7 @@ compositions. Ordinary interaction and layout changes remain immediate (`0ms`);
 only approved functional progress motion may move, with a reduced-motion
 equivalent.
 
-### Mantine compatibility proof
-
-M8-002 pins `@mantine/core`, `@mantine/hooks`, `@mantine/notifications`,
-`@mantine/dates`, and `@mantine/dropzone` to `9.5.0`, the current stable release
-selected for the migration. Their required `dayjs` and dropzone transitives are
-lockfile-resolved, while React `19.2.8`, TypeScript `7.0.2`, Vite `8.2.2`, and
-the existing Deno npm resolution remain pinned. The isolated proof lives in
-`src/design-system/mantine-compatibility-proof.tsx` and is built by
-`vite.mantine-compatibility.config.ts`; it is not imported by the application or
-public facade.
-
-The proof uses only public Mantine APIs and covers the provider's dark scheme,
-controlled input, date/time/file value adaptation, Dropzone keyboard activation,
-camera capture attributes, accepted/rejected drops, modal portal and focus
-return, keyboard selection, notifications, reduced motion, and layered CSS. It
-imports `@mantine/core/styles.layer.css` before the dates, dropzone, and
-notifications layers, with repository tokens after all package layers.
-`scripts/verify-mantine-compatibility.ts` requires one JS and one CSS proof
-asset, checks the layer output, and rejects unused component sentinels from the
-tree-shaken bundle. These are small integration smokes for the pinned packages
-and repository wiring, not a duplicate of Mantine's upstream accessibility or
-primitive-state test suite.
-
-The owner has expanded the input direction: M8-002 must also evaluate the
-documented [`DateInput`](https://mantine.dev/dates/date-input/),
-[`TimeInput`](https://mantine.dev/dates/time-input/), and
-[`Dropzone`](https://mantine.dev/x/dropzone/) APIs, with core
-[`FileInput`](https://mantine.dev/core/file-input/) as the simpler fallback. The
-facade must preserve the existing ISO/time/file callbacks, keyboard access,
-accepted/rejected-file feedback, and mobile camera capture; native controls
-remain the explicit fallback if a candidate fails one of those contracts.
-
-The unchanged application build measured `1,038,625` JavaScript bytes and
-`30,076` CSS bytes (`284.90 kB` and `5.78 kB` gzip). The extended isolated
-Mantine proof measured `513,589` JavaScript bytes and `281,376` CSS bytes
-(`154.11 kB` and `41.48 kB` gzip). These measurements are compatibility evidence
-only; they do not authorize private imports or production facade conversion.
-
-The facade is intentionally divided into four migration classes:
+### Facade implementation classes
 
 - **Direct Mantine wrapper:** one maintained Mantine primitive owns the
   applicable low-level behavior, while facade props and semantic tokens are

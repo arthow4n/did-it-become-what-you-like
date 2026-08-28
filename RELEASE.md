@@ -55,7 +55,7 @@ deno task test:domain
 deno task test:actor
 deno task test:e2e --grep local
 deno task a11y:gallery
-deno task browser:verify
+deno task verify:production-browser
 deno task verify:pages
 deno task build
 deno task release:verify

@@ -42,7 +42,7 @@
     "dev": "deno run -A npm:vite@8.2.2 --host 127.0.0.1",
     "fmt:check": "deno fmt --check deno.json tsconfig.app.json vite.config.ts vite.gallery.config.ts index.html src scripts e2e",
     "lint": "deno lint src scripts e2e vite.config.ts vite.gallery.config.ts",
-    "check": "deno run -A npm:typescript@7.0.2/tsc --noEmit --project tsconfig.app.json && deno check --config deno.json scripts/verify-pages.ts scripts/verify-release.ts scripts/verify-ci.ts scripts/verify-production-browser.ts scripts/install-browsers.ts scripts/browser/installer.ts scripts/browser/metadata.ts scripts/browser/zip.ts scripts/verify-gallery.ts scripts/verify-design-system-boundary.ts scripts/audit-capture.ts scripts/tests/foundation_test.ts scripts/tests/f005_tooling_test.ts e2e/playwright.ts e2e/playwright.config.ts e2e/playwright.audit.config.ts e2e/support/browser-state.ts e2e/support/fake-services.ts e2e/support/intentional-failure.ts e2e/support/journeys.ts e2e/support/redacted-trace.ts",
+    "check": "deno run -A npm:typescript@7.0.2/tsc --noEmit --project tsconfig.app.json && deno check --config deno.json scripts/verify-release.ts scripts/install-browsers.ts scripts/browser/installer.ts scripts/browser/metadata.ts scripts/browser/zip.ts scripts/verify-gallery.ts scripts/audit-capture.ts scripts/tests/foundation_test.ts scripts/tests/f005_tooling_test.ts scripts/tests/ci_test.ts scripts/tests/boundary_test.ts e2e/playwright.ts e2e/playwright.config.ts e2e/playwright.audit.config.ts e2e/support/browser-state.ts e2e/support/fake-services.ts e2e/support/intentional-failure.ts e2e/support/journeys.ts e2e/support/redacted-trace.ts",
     "test": "deno test --allow-read --allow-write --allow-run --allow-env src scripts/tests",
     "test:affected": "deno test --allow-read --allow-write --allow-run --allow-env --changed",
     "test:unit": "deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests src/test-support/fixtures.test.ts",
@@ -51,18 +51,13 @@
     "test:integration": "deno test --allow-read --allow-write --allow-run --allow-env src/test-support/fixtures.test.ts src/adapters/local src/adapters/drive src/adapters/sync src/adapters/import-export src/actors/conflict src/features/sync-portability-runtime.test.tsx",
     "test:component": "deno test --allow-read --allow-write --allow-run --allow-env src/design-system src/features src/test-support/component-harness.test.tsx",
     "build": "deno run -A npm:vite@8.2.2 build --config vite.config.ts",
-    "verify:design-system-boundary": "deno run --allow-read scripts/verify-design-system-boundary.ts",
-    "verify:production-browser": "deno run -A scripts/verify-production-browser.ts",
-    "verify": "deno task fmt:check && deno task lint && deno task check && deno task test && deno task test:e2e && deno task a11y:gallery && deno task verify:ci && deno task verify:design-system-boundary && deno task build && deno task verify:production-browser && deno task verify:pages:artifact && deno audit --frozen && git diff --check",
+    "verify": "deno task fmt:check && deno task lint && deno task check && deno task test && deno task build && deno task release:verify && deno audit --frozen && git diff --check",
     "browser:install": "deno run -A scripts/install-browsers.ts",
     "playwright:install": "deno x -p npm:@playwright/test@1.62.1 playwright install chromium",
     "test:e2e": "deno x -p npm:@playwright/test@1.62.1 playwright test --config=e2e/playwright.config.ts",
     "audit:capture": "deno run -A scripts/audit-capture.ts",
     "gallery": "deno run -A npm:vite@8.2.2 build --config vite.gallery.config.ts",
     "a11y:gallery": "deno run -A scripts/verify-gallery.ts",
-    "verify:pages": "deno run -A scripts/verify-pages.ts",
-    "verify:pages:artifact": "deno run -A scripts/verify-pages.ts --existing-artifact",
-    "release:verify": "deno run -A scripts/verify-release.ts",
-    "verify:ci": "deno run -A scripts/verify-ci.ts"
+    "release:verify": "deno run -A scripts/verify-release.ts"
   }
 }

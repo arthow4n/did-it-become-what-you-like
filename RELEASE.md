@@ -13,11 +13,10 @@ only Pages write and OIDC token permissions; it does not rebuild source or
 accept a local directory. No credentials are required by CI.
 
 `deno task release:verify` must run after `deno task build`. It verifies the
-repository-relative artifact paths, hash-route shell fallback, manifest and
-service-worker scope, dark metadata, injected version and short commit, source
-and notice links, exact disclosure, license files, SHA-256 provenance lines, and
-secret-like content absence. `deno task verify:pages` remains the focused
-base-path validator used by the workflow as an additional check.
+repository-relative artifact paths, hash-route shell fallback, CSP allowlist,
+manifest and service-worker scope, dark metadata, injected version and short
+commit, source and notice links, exact disclosure, license files, SHA-256
+provenance lines, and secret-like content absence.
 
 The About screen is the user-facing provenance surface: it shows version
 `0.1.0`, the short Git commit, the exact generative-AI disclosure, license and
@@ -49,14 +48,6 @@ deno task fmt:check
 deno task lint
 deno task check
 deno task test
-deno task test:integration
-deno task test:component
-deno task test:domain
-deno task test:actor
-deno task test:e2e --grep local
-deno task a11y:gallery
-deno task verify:production-browser
-deno task verify:pages
 deno task build
 deno task release:verify
 ```

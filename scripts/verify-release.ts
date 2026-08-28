@@ -12,6 +12,67 @@ const SECRET_PATTERNS = [
   /(?:client_secret|GEMINI_API_KEY|GOOGLE_APPLICATION_CREDENTIALS)\s*[:=]\s*["'][^"']+/i,
 ];
 
+export const CSP_DIRECTIVES = {
+  "base-uri": ["'none'"],
+  "connect-src": [
+    "'self'",
+    "https://accounts.google.com",
+    "https://www.googleapis.com",
+    "https://generativelanguage.googleapis.com",
+  ],
+  "default-src": ["'self'"],
+  "font-src": ["'self'"],
+  "frame-src": ["https://accounts.google.com/gsi/"],
+  "img-src": ["'self'", "blob:", "data:"],
+  "manifest-src": ["'self'"],
+  "object-src": ["'none'"],
+  "script-src": [
+    "'self'",
+    "'wasm-unsafe-eval'",
+    "https://accounts.google.com/gsi/client",
+  ],
+  // MantineProvider emits nonce-less runtime variable/class style blocks in
+  // this static Pages deployment. Keep the allowance scoped to styles; the
+  // script policy remains free of unsafe execution sources.
+  "style-src": ["'self'", "'unsafe-inline'"],
+  "worker-src": ["'self'"],
+} as const;
+
+export function contentSecurityPolicy(): string {
+  return Object.entries(CSP_DIRECTIVES)
+    .map(([directive, sources]) => `${directive} ${sources.join(" ")}`)
+    .join("; ");
+}
+
+export function assertRestrictiveCsp(csp: string): void {
+  const expected = contentSecurityPolicy();
+  if (csp !== expected) {
+    throw new Error("CSP changed from the locked allowlist");
+  }
+  if (csp.includes("https:") && !csp.includes("https://accounts.google.com")) {
+    throw new Error("CSP has an unreviewed broad HTTPS source");
+  }
+  const scriptDirective =
+    csp.split(";").find((directive) =>
+      directive.trimStart().startsWith("script-src")
+    ) ?? "";
+  if (
+    scriptDirective.includes("'unsafe-inline'") ||
+    scriptDirective.includes("'unsafe-eval'")
+  ) {
+    throw new Error("CSP permits unsafe script execution");
+  }
+}
+
+function extractCsp(html: string, source: string): string {
+  const metaTag = html.match(/<meta\b[^>]*>/gi)?.find((tag) =>
+    /\bhttp-equiv=["']Content-Security-Policy["']/i.test(tag)
+  );
+  const csp = metaTag?.match(/\bcontent=(["'])(.*?)\1/i)?.[2];
+  assert(csp, `${source} must contain a Content-Security-Policy meta tag`);
+  return csp;
+}
+
 type ArtifactFile = {
   readonly path: string;
   readonly bytes: Uint8Array;
@@ -100,13 +161,18 @@ async function sha256(bytes: Uint8Array): Promise<string> {
 const buildInfo = await readText("src/app/build-info.ts");
 const version = sourceConstant(buildInfo, "APP_VERSION");
 const commit = await gitCommit();
+const sourceIndex = await readText("index.html");
 const index = await readText(`${DIST}/index.html`);
 const manifest = JSON.parse(await readText(`${DIST}/manifest.webmanifest`)) as {
   readonly start_url?: string;
   readonly scope?: string;
   readonly background_color?: string;
   readonly theme_color?: string;
-  readonly icons?: readonly { readonly src?: string }[];
+  readonly icons?: readonly {
+    readonly src?: string;
+    readonly type?: string;
+    readonly sizes?: string;
+  }[];
 };
 const serviceWorker = await readText(`${DIST}/sw.js`);
 const artifacts = await collectArtifacts(DIST);
@@ -149,6 +215,10 @@ assert(
   !index.includes('src="/assets/') && !index.includes('href="/assets/'),
   "The deployed index must not contain origin-root asset URLs.",
 );
+
+assertRestrictiveCsp(extractCsp(sourceIndex, "source index.html"));
+assertRestrictiveCsp(extractCsp(index, "built dist/index.html"));
+
 assert(
   manifest.start_url === BASE_PATH && manifest.scope === BASE_PATH,
   "The manifest start_url and scope must be the repository base path.",
@@ -162,6 +232,9 @@ assert(
     manifest.icons.every((icon) => icon.src?.startsWith(BASE_PATH)),
   "Manifest icons must be present and repository-relative.",
 );
+for (const icon of manifest.icons ?? []) {
+  assert(icon.type === "image/svg+xml", "manifest icon type must be SVG");
+}
 assert(
   serviceWorker.includes("precacheAndRoute") &&
     serviceWorker.includes(`${BASE_PATH}index.html`) &&

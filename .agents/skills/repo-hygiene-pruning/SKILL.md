@@ -125,11 +125,15 @@ against these 8 pillars:
   - **Compiler version checkers:** Scripts running `tsc --version` or checking
     intentional syntax error fixtures when `deno task check` already typechecks
     the real codebase.
-  - **Duplicate test commands:** Tasks running a single test file that is
-    already included in `deno task test`.
+  - **Duplicate test commands / Standalone verify scripts:** Standalone CLI
+    scripts that can be standard Deno tests (e.g. design system boundary or CI
+    workflow policy tests).
+  - **Overlapping build validators:** Multiple scripts inspecting `dist/`
+    separately when one consolidated `release:verify` suffices.
 - **Remediation:**
-  - Remove the unhelpful script from `scripts/` or `spikes/`.
-  - Remove its task entry and `deno check` reference in `deno.json`.
+  - Consolidate post-build artifact checks into `scripts/verify-release.ts`.
+  - Convert static/boundary verifications into standard unit tests
+    (`src/design-system/boundary.test.ts`, `scripts/tests/ci_test.ts`).
   - Streamline `deno task verify` to run only meaningful, high-signal checks.
 
 ### Dimension F: Inaccurate & Misleading Task Definitions
@@ -174,10 +178,8 @@ against these 8 pillars:
 - **What to look for:**
   - Running full test suites or browser captures during doc pruning, hygiene
     audits, or formatting passes where no runtime code changed.
-  - Calling release provenance checks (`release:verify`) or Pages routing checks
-    (`verify:pages`) during local component iterations.
-  - Running CI workflow assertions (`verify:ci`) on local feature work where no
-    `.github/workflows/` files were touched.
+  - Calling release provenance checks (`release:verify`) during local component
+    iterations.
   - Mechanically running the composite `verify` task and immediately rerunning
     its constituent suites against the same commit without a stated risk reason.
 - **Remediation & Scope Boundaries:**
@@ -187,12 +189,10 @@ against these 8 pillars:
   - **Fast Dev / Component Loop:** Run `deno test --changed` and targeted
     lint/format.
   - **Pre-Commit / Integration Gate:** Run affected
-    actor/domain/adapter/component suites and `verify:design-system-boundary`.
-  - **UI / Accessibility Checkpoint:** Run `verify:production-browser` and
-    `a11y:gallery` after visual changes.
-  - **Release / CI Gate:** Run `release:verify`, `verify:pages:artifact`, and
-    `verify:ci` only at deployment boundary or when workflow/release files
-    change.
+    actor/domain/adapter/component suites (`deno task test`).
+  - **UI / Accessibility Checkpoint:** Run `a11y:gallery` after visual changes.
+  - **Release / CI Gate:** Run `release:verify` after `build` at deployment
+    boundary or release verification.
   - **On-Demand Audits:** Run `audit:capture` separately on demand.
 
 ---

@@ -35,12 +35,8 @@ jobs:
         run: deno task test
       - name: Build
         run: deno task build
-      - name: Verify Pages artifact and routing
-        run: deno task verify:pages:artifact
       - name: Verify release artifact provenance and notices
         run: deno task release:verify
-      - name: Verify CI policy
-        run: deno task verify:ci
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:

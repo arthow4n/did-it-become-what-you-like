@@ -74,7 +74,7 @@ ledger.
 ## Current Checkpoint
 
 - **Active task / gate:** None (Milestone 10 complete and archived)
-- **Pushed commit / HEAD:** `3cfa2da`
+- **Pushed commit / HEAD:** `b19563c`
 - **Verification status:** Full test suite (366 tests), design system boundary,
   accessibility gallery audit, production build, and Round 2 visual capture all
   passed.

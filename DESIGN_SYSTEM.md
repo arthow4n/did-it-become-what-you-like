@@ -20,11 +20,9 @@ quiet rather than like a dense financial dashboard.
 - **Application state:** XState v5 remains the workflow authority; React binds
   to actors through `@xstate/react`.
 - **Accessible behavior:** the repository-owned facade is the only application
-  UI boundary. During M8, maintained Mantine components provide applicable
-  low-level behavior through public APIs; the facade translates their events and
-  preserves product-oriented contracts. The migration matrix below records the
-  pre-M8 implementation and the selected Mantine replacement for each facade
-  contract.
+  UI boundary. Maintained Mantine components provide applicable low-level
+  behavior through public APIs; the facade translates their events and preserves
+  product-oriented contracts.
 - **Styling:** semantic After Midnight CSS custom properties remain the visual
   source of truth. Mantine provider values and component defaults map to those
   roles; library-specific customization stays inside `src/design-system/**`.
@@ -40,10 +38,10 @@ quiet rather than like a dense financial dashboard.
   capture. Keep a native control as the explicit fallback when a Mantine wrapper
   cannot preserve useful platform behavior.
 - **Dependencies:** declare and pin browser dependencies through the Deno 2
-  dependency configuration. M8-002 must prove the selected stable Mantine
-  packages, React 19.2, Lucide, XState, TypeScript 7, Deno npm resolution, Vite,
-  happy-dom, and Chromium work together before production facade conversion
-  starts. No `@mantine/form` dependency is planned.
+  dependency configuration. The selected stable Mantine packages, React 19.2,
+  Lucide, XState, TypeScript 7, Deno npm resolution, Vite, happy-dom, and
+  Chromium work together across the repository facade. No `@mantine/form`
+  dependency is used.
 
 Mantine provides maintained low-level behavior, not the product's semantic
 appearance or workflow state. Application screens must import repository-owned

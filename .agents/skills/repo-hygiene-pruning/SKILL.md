@@ -42,13 +42,23 @@ definitions.
 5. **Mandatory `[archive]` Commit Tagging:**
    - Per `AGENTS.md`, any document, spike, or ledger deletion must be committed
      with `[archive]` in the commit message.
+6. **Environment-Scoped & Risk-Bounded Verification:**
+   - Never execute broad or heavy verification commands in environments or
+     phases where they are irrelevant (e.g. running full test suites or browser
+     visual captures during docs or hygiene pruning; running release provenance
+     checks during local dev loops; executing heavy Playwright tests when only
+     pure unit code changed).
+   - Match checks to their required environment and impact boundary. During
+     hygiene and doc pruning audits, run only syntax, typecheck, lint, and
+     format checks (`deno task check`, `deno task fmt:check`, `deno task lint`,
+     `git diff --check`). Do not run tests or long-running browser tasks.
 
 ---
 
-## 2. Seven Audit Dimensions
+## 2. Eight Audit Dimensions
 
 When conducting a repository hygiene and pruning audit, systematically evaluate
-against these 7 pillars:
+against these 8 pillars:
 
 ### Dimension A: Dangling References & Ghost Documents
 
@@ -94,10 +104,12 @@ against these 7 pillars:
   - Standalone spike build configs (`vite.*.config.ts`), dummy `index.html`, or
     custom `tsconfig.json`.
   - Proof entries (`*-compatibility-proof.tsx`, `*-entry.tsx`, `*.html`).
-  - Standalone spike test suites testing temporary proof themes or dummy counters.
+  - Standalone spike test suites testing temporary proof themes or dummy
+    counters.
 - **Remediation:**
   - Once the library/feature is integrated in production with real component,
-    boundary, and browser tests, completely delete the `spikes/` directory with `git rm -r`.
+    boundary, and browser tests, completely delete the `spikes/` directory with
+    `git rm -r`.
   - Clean up `deno.json` (`build`, `check`, `test`, `lint`, `fmt:check`),
     `tsconfig.app.json`, `e2e/playwright.config.ts`, and boundary scripts
     (`scripts/verify-design-system-boundary.ts`) referencing the deleted spikes.
@@ -134,11 +146,11 @@ against these 7 pillars:
 ### Dimension G: E2E Test Suite Separation & Transient Visual Capture Isolation
 
 - **What to look for:**
-  - **Visual audit exploration tests placed in standard E2E directories:** Screenshot
-    scripts (e.g. `ui-audit-capture.spec.ts`) placed in `e2e/` where Playwright's
-    default glob (`e2e/**/*.spec.ts`) executes them on every `deno task test:e2e`
-    or `deno task verify`. This creates unwanted screenshot folders on every dev
-    run and adds 30–60s of test latency.
+  - **Visual audit exploration tests placed in standard E2E directories:**
+    Screenshot scripts (e.g. `ui-audit-capture.spec.ts`) placed in `e2e/` where
+    Playwright's default glob (`e2e/**/*.spec.ts`) executes them on every
+    `deno task test:e2e` or `deno task verify`. This creates unwanted screenshot
+    folders on every dev run and adds 30–60s of test latency.
   - **Hardcoded past audit dates:** Screenshot scripts hardcoding output folders
     like `ui-audit-2026-08-28/round-2-screenshots/`.
   - **Heavy browser tests for trivial assertions:** Playwright tests (e.g.
@@ -151,10 +163,37 @@ against these 7 pillars:
     `e2e/playwright.audit.config.ts`) and test directory (`e2e/audit/`).
   - Exclude audit capture specs from the standard E2E configuration using
     `testIgnore: ["e2e/audit/**"]`.
-  - Expose a dedicated on-demand task in `deno.json`: `"audit:capture": "deno run -A scripts/audit-capture.ts"`
-    that accepts a dynamic target directory (or defaults to current date).
+  - Expose a dedicated on-demand task in `deno.json`:
+    `"audit:capture": "deno run -A scripts/audit-capture.ts"` that accepts a
+    dynamic target directory (or defaults to current date).
   - Prune browser-based array counting tests in favor of pure unit/module
     assertions.
+
+### Dimension H: Environment-Irrelevant and Unbounded Verification Tasks
+
+- **What to look for:**
+  - Running full test suites or browser captures during doc pruning, hygiene
+    audits, or formatting passes where no runtime code changed.
+  - Calling release provenance checks (`release:verify`) or Pages routing checks
+    (`verify:pages`) during local component iterations.
+  - Running CI workflow assertions (`verify:ci`) on local feature work where no
+    `.github/workflows/` files were touched.
+  - Mechanically running the composite `verify` task and immediately rerunning
+    its constituent suites against the same commit without a stated risk reason.
+- **Remediation & Scope Boundaries:**
+  - **Hygiene & Doc Pruning:** Run only syntax, typecheck, lint, and formatting
+    validation (`deno task check`, `deno task fmt:check`, `deno task lint`,
+    `git diff --check`). Do not run tests or launch browser tasks.
+  - **Fast Dev / Component Loop:** Run `deno test --changed` and targeted
+    lint/format.
+  - **Pre-Commit / Integration Gate:** Run affected
+    actor/domain/adapter/component suites and `verify:design-system-boundary`.
+  - **UI / Accessibility Checkpoint:** Run `verify:production-browser` and
+    `a11y:gallery` after visual changes.
+  - **Release / CI Gate:** Run `release:verify`, `verify:pages:artifact`, and
+    `verify:ci` only at deployment boundary or when workflow/release files
+    change.
+  - **On-Demand Audits:** Run `audit:capture` separately on demand.
 
 ---
 
@@ -191,13 +230,14 @@ against these 7 pillars:
 
 ### Phase 2: Redundancy & Value Classification
 
-Categorize candidates using the 6 dimensions:
+Categorize candidates using the 8 dimensions:
 
 - **Code-mirroring doc:** Archive/Delete.
 - **Stale migration ledger in living doc:** Prune.
 - **Obsolete spike / compatibility proof:** Archive/Delete.
 - **Redundant verify script / dummy test:** Prune script and task.
 - **Misleading task definition:** Fix target path.
+- **Unbounded / irrelevant verify command:** Re-scope to appropriate phase.
 
 ### Phase 3: Coordinated File Removal & Script Pruning
 
@@ -224,9 +264,12 @@ Categorize candidates using the 6 dimensions:
 
 ### Phase 5: Format, Diff Verification, Commit & Push
 
-1. Format and check syntax on changed files:
+1. Format and check syntax on changed files (do NOT run heavy test suites for
+   hygiene changes):
    ```bash
-   deno fmt <changed-files>
+   deno task fmt:check
+   deno task lint
+   deno task check
    git diff --check
    ```
 2. Review staged changes:
@@ -256,4 +299,7 @@ Before closing a pruning audit, confirm:
       `src/**`.
 - [ ] Visual audit screenshot capture scripts are isolated in `e2e/audit/` /
       `scripts/audit-capture.ts` and excluded from regular `test:e2e`.
+- [ ] No unrelated verify commands or heavy test suites are executed in
+      irrelevant environments or phases (e.g. test suites during hygiene/doc
+      pruning).
 - [ ] All deleted files were committed with `[archive]` in the commit message.

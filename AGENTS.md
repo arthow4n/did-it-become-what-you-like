@@ -96,6 +96,10 @@
 - Record exact commands and results. An unsupported summary such as “tests pass”
   is not sufficient evidence, but evidence collection must not cause an
   otherwise identical command to be repeated without a stated risk reason.
+- When running background commands or long test suites, never poll or loop on
+  status or schedule rapid/short wakeup timers. The reactive system notifies the
+  agent upon command completion; simply stop calling tools to end the turn and
+  wait for the system notification.
 - Keep E2E coverage deliberately small and limited to critical journeys and
   browser-integration seams which unit, actor, and component tests cannot prove.
   Do not duplicate the same state-transition assertions at every test layer.

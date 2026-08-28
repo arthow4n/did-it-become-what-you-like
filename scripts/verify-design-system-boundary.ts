@@ -1,6 +1,6 @@
 /// <reference path="./deno.d.ts" />
 
-const sourceRoots = ["src", "spikes/toolchain/src"];
+const sourceRoots = ["src"];
 const approvedLibraryRoot = "src/design-system/";
 const mantineSpecifier = /^@mantine\//;
 const reactAriaSpecifier = "react-aria-components";

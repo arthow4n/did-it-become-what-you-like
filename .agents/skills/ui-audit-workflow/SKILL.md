@@ -231,14 +231,14 @@ When conducting an audit, follow this standard journey order:
 
 ### Phase 1: Automated Interactive Visual Capture
 
-1. Create a versioned or dated audit directory:
-   `ui-audit-YYYY-MM-DD/round-N-screenshots/`.
-2. Write/run a Playwright exploration script navigating the 10 canonical
-   journeys.
-3. Capture high-resolution screenshots across Desktop (`1280×800`), Mobile
-   (`390×844`), and Narrow (`320×568`).
-4. Ensure mid-step captures are taken (e.g., opened AddChoice bottom sheet,
-   populated expense draft, open category editor).
+1. Execute the dedicated visual capture command to explore the 10 canonical
+   journeys across Desktop (`1280×800`), Mobile (`390×844`), and Narrow
+   (`320×568`):
+   ```bash
+   deno task audit:capture ui-audit-YYYY-MM-DD/round-1-screenshots
+   ```
+2. The capture script automatically navigates through first-use, modal/drawer
+   states, filled drafts, receipt scans, review dialogs, and settings screens.
 
 ### Phase 2: Multi-Dimensional Audit & Checklist Generation
 
@@ -316,8 +316,10 @@ Once all checklist items are checked off:
 
 ### Phase 5: Post-Fix Visual Re-Capture, Cleanup & Clean Reporting
 
-1. Re-run the automated screenshot script to refresh the screenshot suite in
-   `ui-audit-YYYY-MM-DD/round-N-screenshots/`.
+1. Re-run visual capture into the post-fix round directory:
+   ```bash
+   deno task audit:capture ui-audit-YYYY-MM-DD/round-2-screenshots
+   ```
 2. Inspect key screenshots to confirm visual perfection across all breakpoints.
 3. **Artifact Cleanup (Preserved in Git History):** After visual verification is
    confirmed, remove the audit directory, screenshots, and report files from the

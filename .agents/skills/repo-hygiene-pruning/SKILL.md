@@ -45,10 +45,10 @@ definitions.
 
 ---
 
-## 2. Six Audit Dimensions
+## 2. Seven Audit Dimensions
 
 When conducting a repository hygiene and pruning audit, systematically evaluate
-against these 6 pillars:
+against these 7 pillars:
 
 ### Dimension A: Dangling References & Ghost Documents
 
@@ -90,15 +90,17 @@ against these 6 pillars:
 ### Dimension D: Obsolete Spikes & Temporary Proof Artifacts
 
 - **What to look for:**
-  - Standalone spike configs (`vite.*.config.ts`, `spikes/toolchain/`).
+  - Standalone spike directories (e.g. `spikes/toolchain/`, `spikes/m8-proof/`).
+  - Standalone spike build configs (`vite.*.config.ts`), dummy `index.html`, or
+    custom `tsconfig.json`.
   - Proof entries (`*-compatibility-proof.tsx`, `*-entry.tsx`, `*.html`).
-  - Standalone spike test suites testing temporary proof themes.
+  - Standalone spike test suites testing temporary proof themes or dummy counters.
 - **Remediation:**
   - Once the library/feature is integrated in production with real component,
-    boundary, and browser tests, remove the isolated spike configs and proof
-    files.
-  - Clean up `tsconfig.json` and `deno.json` entries referencing the deleted
-    spikes.
+    boundary, and browser tests, completely delete the `spikes/` directory with `git rm -r`.
+  - Clean up `deno.json` (`build`, `check`, `test`, `lint`, `fmt:check`),
+    `tsconfig.app.json`, `e2e/playwright.config.ts`, and boundary scripts
+    (`scripts/verify-design-system-boundary.ts`) referencing the deleted spikes.
 
 ### Dimension E: Redundant & Low-Value Verification Scripts
 
@@ -128,6 +130,31 @@ against these 6 pillars:
 - **Remediation:**
   - Repoint the task to the real source directory (e.g.
     `"test:actor": "deno test ... src/actors"`).
+
+### Dimension G: E2E Test Suite Separation & Transient Visual Capture Isolation
+
+- **What to look for:**
+  - **Visual audit exploration tests placed in standard E2E directories:** Screenshot
+    scripts (e.g. `ui-audit-capture.spec.ts`) placed in `e2e/` where Playwright's
+    default glob (`e2e/**/*.spec.ts`) executes them on every `deno task test:e2e`
+    or `deno task verify`. This creates unwanted screenshot folders on every dev
+    run and adds 30–60s of test latency.
+  - **Hardcoded past audit dates:** Screenshot scripts hardcoding output folders
+    like `ui-audit-2026-08-28/round-2-screenshots/`.
+  - **Heavy browser tests for trivial assertions:** Playwright tests (e.g.
+    `journey-boundaries.spec.ts`) booting a full headless browser just to count
+    the length of an in-memory TypeScript array that already has a module-load
+    assertion.
+- **Remediation:**
+  - Move on-demand visual audit captures to a dedicated CLI runner (e.g.
+    `scripts/audit-capture.ts`) with a dedicated Playwright configuration (e.g.
+    `e2e/playwright.audit.config.ts`) and test directory (`e2e/audit/`).
+  - Exclude audit capture specs from the standard E2E configuration using
+    `testIgnore: ["e2e/audit/**"]`.
+  - Expose a dedicated on-demand task in `deno.json`: `"audit:capture": "deno run -A scripts/audit-capture.ts"`
+    that accepts a dynamic target directory (or defaults to current date).
+  - Prune browser-based array counting tests in favor of pure unit/module
+    assertions.
 
 ---
 
@@ -227,4 +254,6 @@ Before closing a pruning audit, confirm:
 - [ ] No verify scripts test arbitrary text substrings in markdown.
 - [ ] `test:actor` (and similar domain test tasks) run real application code in
       `src/**`.
+- [ ] Visual audit screenshot capture scripts are isolated in `e2e/audit/` /
+      `scripts/audit-capture.ts` and excluded from regular `test:e2e`.
 - [ ] All deleted files were committed with `[archive]` in the commit message.

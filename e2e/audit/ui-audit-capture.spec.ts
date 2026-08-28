@@ -1,18 +1,16 @@
 import { Buffer } from "node:buffer";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test } from "./playwright.ts";
+import process from "node:process";
+import { expect, test } from "../playwright.ts";
 
 const ONE_PIXEL_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
   "base64",
 );
 
-const AUDIT_DIR = join(
-  Deno.cwd(),
-  "ui-audit-2026-08-28",
-  "round-2-screenshots",
-);
+const AUDIT_DIR = process.env.AUDIT_OUTPUT_DIR ||
+  join(Deno.cwd(), "ui-audit", "screenshots");
 mkdirSync(AUDIT_DIR, { recursive: true });
 
 const VIEWPORTS = [

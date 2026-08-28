@@ -257,8 +257,8 @@
     }
 
     .local-ui-card-actions--grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      display: flex;
+      flex-wrap: wrap;
       gap: var(--space-2);
       width: 100%;
     }
@@ -266,9 +266,11 @@
     .local-ui-card-actions--grid > .ds-button,
     .local-ui-card-actions--grid > button,
     .local-ui-card-actions--grid > * {
-      width: 100%;
+      flex: 1 1 auto;
+      min-width: fit-content;
       justify-content: center;
       text-align: center;
+      white-space: nowrap;
     }
   }
 

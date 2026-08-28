@@ -100,6 +100,11 @@
   status or schedule rapid/short wakeup timers. The reactive system notifies the
   agent upon command completion; simply stop calling tools to end the turn and
   wait for the system notification.
+- Trust subagents to complete their delegated work and keep waiting. Never poll
+  subagents frequently or send rapid status check messages. The messaging system
+  wakes the orchestrator automatically when a subagent reports back. If a
+  liveness timer is ever required, use a longer duration rather than frequent
+  checks.
 - Keep E2E coverage deliberately small and limited to critical journeys and
   browser-integration seams which unit, actor, and component tests cannot prove.
   Do not duplicate the same state-transition assertions at every test layer.

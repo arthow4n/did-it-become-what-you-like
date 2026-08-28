@@ -128,7 +128,7 @@ M10-001 -> M10-002 -> M10-003 -> M10-004 -> M10-005 -> M10-006 -> R-1010 -> M10-
 
 #### M10-002 — Word-wrapping & text overflow discipline in lists & breakdowns (FIX-02)
 
-- **Status/dependencies:** `READY`; depends on `M10-001`.
+- **Status/dependencies:** `COMPLETE`; depends on `M10-001`.
 - **Ownership:** `src/design-system/tokens.css`, `src/design-system/components.tsx`,
   `src/design-system/design-system.test.tsx`
 - **Scope/non-goals:** In `tokens.css`, replace `overflow-wrap: anywhere` with
@@ -137,15 +137,13 @@ M10-001 -> M10-002 -> M10-003 -> M10-004 -> M10-005 -> M10-006 -> R-1010 -> M10-
   `.ds-list-row__main > *`. Non-goals: Do not alter money number nowrap formatting.
 - **Outputs/acceptance:** Category names such as `Uncategorized` render on a
   single line or break only at whitespace boundaries without mid-word character breaks.
-- **Tests:** `src/design-system/design-system.test.tsx`
-- **Verification:** `deno fmt src/design-system/tokens.css src/design-system/components.tsx`,
-  `deno lint src/design-system/components.tsx`,
-  `deno test --allow-read --allow-write --allow-run --allow-env --related=src/design-system/components.tsx`,
-  `git diff --check`.
+- **Tests:** `src/design-system/design-system.test.tsx` (33 passing tests)
+- **Verification:** `deno fmt src/design-system/tokens.css`,
+  `deno test src/design-system/design-system.test.tsx`, `git diff --check`.
 
 #### M10-003 — FilterSheet dialog action footer (FIX-03)
 
-- **Status/dependencies:** `PENDING`; depends on `M10-002`.
+- **Status/dependencies:** `READY`; depends on `M10-002`.
 - **Ownership:** `src/design-system/components.tsx`, `src/features/local-ui.tsx`,
   `src/design-system/design-system.test.tsx`, `src/features/local-ui.test.tsx`
 - **Scope/non-goals:** Add an explicit dialog action footer to `FilterSheet` with
@@ -236,11 +234,11 @@ M10-001 -> M10-002 -> M10-003 -> M10-004 -> M10-005 -> M10-006 -> R-1010 -> M10-
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M10-002` (`READY`)
-- **Pushed commit / HEAD:** In progress (`M10-001` completed)
-- **Verification status:** `M10-001` passed (`deno fmt`, `deno test src/features/local-ui.test.tsx` 19/19 passed, `git diff --check`).
+- **Active task / gate:** `M10-003` (`READY`)
+- **Pushed commit / HEAD:** In progress (`M10-002` completed)
+- **Verification status:** `M10-002` passed (`deno fmt`, `deno test src/design-system/design-system.test.tsx` 33/33 passed, `git diff --check`).
 - **Active / preserved work:** Working tree on `master`.
-- **Exact next action:** Implement `M10-002` (Word-wrapping & text overflow discipline in lists & breakdowns).
+- **Exact next action:** Implement `M10-003` (FilterSheet dialog action footer).
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -777,7 +777,7 @@
     flex: 1 1 auto;
     min-width: 0;
     word-break: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .ds-list-row__main > .ds-button {
@@ -804,7 +804,7 @@
     max-width: 100%;
     overflow: visible;
     word-break: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     text-align: start;
     white-space: normal;
   }
@@ -812,7 +812,7 @@
   .ds-list-row__main > * {
     min-width: 0;
     word-break: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .ds-definition-list {

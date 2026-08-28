@@ -284,6 +284,7 @@ export function DesignSystemGallery() {
               />
               <FilterSheet
                 trigger={<Button variant="secondary">More filters</Button>}
+                onReset={() => undefined}
               >
                 <Stack gap={4}>
                   <MerchantPicker
@@ -291,7 +292,6 @@ export function DesignSystemGallery() {
                     value="ICA"
                   />
                   <MoneyField label="Maximum amount" currency="SEK" />
-                  <Button>Apply filters</Button>
                 </Stack>
               </FilterSheet>
             </FilterBar>

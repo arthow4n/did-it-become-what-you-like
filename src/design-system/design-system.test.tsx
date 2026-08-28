@@ -34,6 +34,7 @@ import {
   ExpenseRow,
   FileField,
   FilterBar,
+  FilterSheet,
   FormActions,
   formatMoney,
   FormLayout,
@@ -1141,9 +1142,11 @@ Deno.test("M8 list and form facades preserve native structures", async () => {
 });
 
 Deno.test("M8 filter and status facades preserve grouping and workflow state", async () => {
-  await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+  await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
+    withAriaDomGlobals(window, async () => {
       let removed = 0;
+      let applied = 0;
+      let reset = 0;
       const mounted = render(
         createElement(
           "div",
@@ -1158,6 +1161,18 @@ Deno.test("M8 filter and status facades preserve grouping and workflow state", a
                 onRemove: () => removed++,
               }],
             }),
+            createElement(
+              FilterSheet,
+              {
+                trigger: createElement(Button, null, "Open filters"),
+                onApply: () => applied++,
+                onReset: () => reset++,
+                children: createElement(TextField, {
+                  label: "Query",
+                  value: "",
+                }),
+              },
+            ),
           ),
           createElement(DraftStatus, {
             state: "saving",
@@ -1188,6 +1203,30 @@ Deno.test("M8 filter and status facades preserve grouping and workflow state", a
       assert(view.getByRole("progressbar", { name: "Deletion progress" }));
       assert(view.getByRole("list", { name: "Workflow steps" }));
       assertEqual(view.getAllByRole("listitem").length, 2);
+
+      const trigger = view.getByRole("button", { name: "Open filters" });
+      fireEvent.click(trigger);
+      await waitFor(() =>
+        assert(view.getByRole("dialog", { name: "Filters" }))
+      );
+      const resetBtn = view.getByRole("button", { name: "Reset filters" });
+      fireEvent.click(resetBtn);
+      assertEqual(reset, 1);
+      await waitFor(() =>
+        assert(!view.queryByRole("dialog", { name: "Filters" }))
+      );
+
+      fireEvent.click(trigger);
+      await waitFor(() =>
+        assert(view.getByRole("dialog", { name: "Filters" }))
+      );
+      const applyBtn = view.getByRole("button", { name: "Apply filters" });
+      fireEvent.click(applyBtn);
+      assertEqual(applied, 1);
+      await waitFor(() =>
+        assert(!view.queryByRole("dialog", { name: "Filters" }))
+      );
+
       mounted.unmount();
     })
   );

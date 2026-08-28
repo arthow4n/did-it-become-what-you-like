@@ -719,6 +719,12 @@ export function ExpensesScreen({
                   Filters
                 </Button>
               }
+              onReset={() => {
+                setCurrency("");
+                setMinimum("");
+                setMaximum("");
+                setSort("newest");
+              }}
             >
               <Stack gap={4}>
                 <CurrencyPicker

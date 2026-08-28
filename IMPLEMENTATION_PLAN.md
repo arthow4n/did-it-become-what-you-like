@@ -74,7 +74,7 @@ ledger.
 ## Current Checkpoint
 
 - **Active task / gate:** None (Milestone 10 complete and archived)
-- **Pushed commit / HEAD:** `b838bcd`
+- **Pushed commit / HEAD:** `c8c5898`
 - **Verification status:** Standard test suite, consolidated release provenance,
   and formatting/syntax checks all passing.
 - **Active / preserved work:** Working tree clean on `master`.

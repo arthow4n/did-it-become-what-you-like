@@ -31,15 +31,16 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ### Released Baseline
 
-M0 through M9 and all review gates through `R-910` are `COMPLETE`. The released
-application baseline includes the approved domain, actors, adapters, responsive
-UI, After Midnight design system backed by Mantine behind the repository facade,
-accessibility, PWA, tests, GitHub Pages pipeline, operational safeguards, and
-the baseline mobile ergonomics described by `SPEC.md`, `DESIGN_SYSTEM.md`,
+M0 through M10 and all review gates through `R-1010` are `COMPLETE`. The
+released application baseline includes the approved domain, actors, adapters,
+responsive UI, After Midnight design system backed by Mantine behind the
+repository facade, accessibility, PWA, tests, GitHub Pages pipeline, operational
+safeguards, multi-viewport UI/UX polish across desktop/mobile/narrow viewports,
+and the baseline mobile ergonomics described by `SPEC.md`, `DESIGN_SYSTEM.md`,
 `AGENTS.md`, and previous milestones.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
-preserved in Git at commit `7b39023`, the last complete pre-pruning ledger. That
+preserved in Git at commit `987ab83`, the last complete pre-pruning ledger. That
 history is evidence, not active instructions, and agents must not reconstruct it
 in this live plan.
 
@@ -53,33 +54,12 @@ features/app -> actors -> domain + adapter ports
 
 ---
 
-## M10 — UI/UX Audit Remediation & Multi-Viewport Polish
+## Active Milestone
 
-### M10 authority, outcome, and non-goals
-
-This milestone remediates all critical and major visual, typographic, dialog,
-and responsive ergonomics defects discovered during the multi-viewport visual
-audit across Desktop (`1280×800`), Mobile (`390×844`), and Narrow (`320×568`).
-
-Target dependency flow:
-
-```text
-features/app -> src/design-system public contracts -> Mantine
-                                                `-> small owned compositions
-features/app -> actors -> domain + adapter ports
-```
-
-**Non-goals:** No changes to underlying Automerge data models, XState workflow
-machines, Drive sync protocols, or Gemini schema extraction contracts.
-
-### Mandatory single-agent execution rule
-
-- One primary coding agent performs all planning reconciliation, edits, tests,
-  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
-- Independent read-only reviewer subagents are used exclusively at named review
-  gates.
-- Context compaction or session restarts require following the recovery
-  checklist before editing.
+No active milestone is currently open. When the repo owner specifies the next
+product milestone or refactor epic, follow the Standard Planning Procedure in
+`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
+ledger.
 
 ### Locked boundary / design-system rules
 
@@ -91,157 +71,20 @@ machines, Drive sync protocols, or Gemini schema extraction contracts.
 4. Multi-viewport verification across Desktop (`1280×800`), Mobile (`390×844`),
    and Narrow (`320×568`) is required.
 
-### Restart and compaction recovery checklist
-
-- [ ] Read `AGENTS.md`, this milestone section, and Current Checkpoint.
-- [ ] Run `git status --short --branch`, `git log -n 20 --oneline`,
-      `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
-- [ ] Verify test and working tree clean state before continuing.
-
----
-
-### Dependency Graph (DAG)
-
-```text
-M10-001 -> M10-002 -> M10-003 -> M10-004 -> M10-005 -> M10-006 -> R-1010 -> M10-FINAL
-```
-
----
-
-### M10 Task Specs
-
-#### M10-001 — Resilient project & category card secondary actions layout (FIX-01)
-
-- **Status/dependencies:** `COMPLETE`; depends on baseline.
-- **Ownership:** `src/features/local-ui.css`, `src/features/local-ui.tsx`,
-  `src/features/local-ui.test.tsx`
-- **Scope/non-goals:** Update `.local-ui-card-actions--grid` so that secondary
-  action buttons wrap cleanly with dynamic minmax/flex wrap, preventing label
-  truncation (`Move down` -> `Move dowr`, `Delete empty` -> `elete emp1`) on
-  mobile (`390px`) and narrow (`320px`) viewports. Non-goals: Do not change card
-  data bindings or actor actions.
-- **Outputs/acceptance:** Project and category card action buttons never
-  truncate, squash, or clip labels across all viewports.
-- **Tests:** `src/features/local-ui.test.tsx` (19 passing tests)
-- **Verification:** `deno fmt src/features/local-ui.css`,
-  `deno test src/features/local-ui.test.tsx`, `git diff --check`.
-
-#### M10-002 — Word-wrapping & text overflow discipline in lists & breakdowns (FIX-02)
-
-- **Status/dependencies:** `COMPLETE`; depends on `M10-001`.
-- **Ownership:** `src/design-system/tokens.css`, `src/design-system/components.tsx`,
-  `src/design-system/design-system.test.tsx`
-- **Scope/non-goals:** In `tokens.css`, replace `overflow-wrap: anywhere` with
-  `overflow-wrap: break-word; word-break: normal;` on `.ds-list-row__main`,
-  `.ds-list-row__main > .ds-button .mantine-Button-label`, and
-  `.ds-list-row__main > *`. Non-goals: Do not alter money number nowrap formatting.
-- **Outputs/acceptance:** Category names such as `Uncategorized` render on a
-  single line or break only at whitespace boundaries without mid-word character breaks.
-- **Tests:** `src/design-system/design-system.test.tsx` (33 passing tests)
-- **Verification:** `deno fmt src/design-system/tokens.css`,
-  `deno test src/design-system/design-system.test.tsx`, `git diff --check`.
-
-#### M10-003 — FilterSheet dialog action footer (FIX-03)
-
-- **Status/dependencies:** `COMPLETE`; depends on `M10-002`.
-- **Ownership:** `src/design-system/components.tsx`, `src/features/local-ui.tsx`,
-  `src/design-system/design-system.test.tsx`, `src/features/local-ui.test.tsx`
-- **Scope/non-goals:** Add an explicit dialog action footer to `FilterSheet` with
-  primary `[ Apply filters ]` (or `[ Done ]`) and quiet `[ Reset filters ]`
-  buttons for accessible dialog closing and filter application.
-- **Outputs/acceptance:** Filters dialog renders clear, accessible bottom action
-  buttons across mobile and desktop viewports.
-- **Tests:** `src/design-system/design-system.test.tsx`,
-  `src/features/local-ui.test.tsx` (52 passing tests)
-- **Verification:** `deno fmt src/design-system/components.tsx src/features/local-ui.tsx src/design-system/gallery.tsx src/design-system/design-system.test.tsx`,
-  `deno test src/design-system/design-system.test.tsx src/features/local-ui.test.tsx`,
-  `git diff --check`.
-
-#### M10-004 — Standardized PageHeader leading navigation affordances (FIX-04)
-
-- **Status/dependencies:** `COMPLETE`; depends on `M10-003`.
-- **Ownership:** `src/features/receipt-ui.tsx`, `src/features/settings-pwa.tsx`,
-  `src/features/destruction-ui.tsx`, `src/features/receipt-ui.test.tsx`,
-  `src/features/settings-pwa.test.tsx`, `src/features/destruction-ui.test.tsx`
-- **Scope/non-goals:** Replace unstyled text back/close triggers on receipt and
-  settings subpages with accessible `IconButton` providing minimum 44px hit
-  targets and standard icon visuals (`X`, `ArrowLeft`). Non-goals: Do not alter
-  route structures or navigation state machines.
-- **Outputs/acceptance:** All subpages render consistent, touch-friendly 44px
-  navigation buttons in `PageHeader`.
-- **Tests:** `src/features/receipt-ui.test.tsx`, `src/features/settings-pwa.test.tsx`,
-  `src/features/destruction-ui.test.tsx` (28 passing tests)
-- **Verification:** `deno fmt src/features/receipt-ui.tsx src/features/settings-pwa.tsx src/features/destruction-ui.tsx`,
-  `deno test src/features/receipt-ui.test.tsx src/features/settings-pwa.test.tsx src/features/destruction-ui.test.tsx`,
-  `git diff --check`.
-
-#### M10-005 — Period picker scroll resiliency & modal scrim polish (FIX-05)
-
-- **Status/dependencies:** `COMPLETE`; depends on `M10-004`.
-- **Ownership:** `src/features/local-ui.css`, `src/design-system/tokens.css`
-- **Scope/non-goals:** Ensure segmented control period picker tabs on 320px
-  screens scroll smoothly without clipping (`overflow-x: auto; scrollbar-width: none;`).
-  Update modal backdrop scrim styling with `rgb(0 0 0 / 75%)` and `backdrop-filter: blur(4px)`.
-- **Outputs/acceptance:** Period picker tabs remain fully scrollable on narrow screens;
-  modal overlays have uniform blur and scrim depth.
-- **Tests:** `src/design-system/design-system.test.tsx`,
-  `src/features/local-ui.test.tsx` (52 passing tests)
-- **Verification:** `deno fmt src/features/local-ui.css src/design-system/tokens.css`,
-  `deno test src/design-system/design-system.test.tsx src/features/local-ui.test.tsx`,
-  `git diff --check`.
-
-#### M10-006 — Gallery fixture URL & visual re-capture validation (FIX-06)
-
-- **Status/dependencies:** `COMPLETE`; depends on `M10-005`.
-- **Ownership:** `e2e/ui-audit-capture.spec.ts`
-- **Scope/non-goals:** Update gallery navigation path in
-  `e2e/ui-audit-capture.spec.ts`. Re-run visual capture script across Desktop,
-  Mobile, and Narrow viewports. Confirm all visual defects are resolved.
-- **Outputs/acceptance:** 102 refreshed screenshots in
-  `ui-audit-2026-08-28/round-2-screenshots/` showing zero visual defects.
-- **Tests:** `deno task test:e2e --grep "Visual capture"`, `deno task a11y:gallery`,
-  `deno task build`.
-- **Verification:** `deno task test:e2e --grep "Visual capture"` (3/3 passed, 102 screenshots generated).
-
----
-
-#### R-1010 — Comprehensive M10 Milestone Review Gate
-
-- **Status/dependencies:** `READY`; depends on `M10-006`.
-- **Reviewer role:** Fresh read-only subagent reviewer (`research` or `self`).
-- **Audit scope:** Diffs across `M10-001` through `M10-006`, design-system
-  boundary compliance, multi-viewport screenshot verification across all 10
-  journeys, passing test suites, and compliance with `AGENTS.md` and `DESIGN_SYSTEM.md`.
-- **Remediation loop:** Primary agent fixes all severity 1–3 findings in bounded
-  remediation commits (`fix(...): ...`), logs resolutions in the ledger, and
-  requests closure approval before opening `M10-FINAL`.
-
----
-
-#### M10-FINAL — Milestone closure and ledger archiving
-
-- **Status/dependencies:** `PENDING`; depends on final review gate `R-1010`.
-- **Ownership:** `IMPLEMENTATION_PLAN.md`, `UI_UX_AUDIT_REPORT_2026_08_28.md`
-- **Scope/non-goals:** Prune completed milestone task details into the Released
-  Baseline; record the preserved Git commit hash; archive (remove from working tree)
-  transient audit report `UI_UX_AUDIT_REPORT_2026_08_28.md` and local screenshot
-  directories; reset active DAG for upcoming work.
-- **Outputs/acceptance:** Clean, compact `IMPLEMENTATION_PLAN.md` preserving all
-  essential sections; workspace freed of transient audit documents.
-- **Commit:** Committed with `[archive]` in the commit message per `AGENTS.md`.
-
 ---
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-1010` (`READY`)
-- **Pushed commit / HEAD:** In progress (`M10-006` completed)
-- **Verification status:** `M10-006` passed (`deno task test:e2e --grep "Visual capture"` 3/3 passed, 102 full-viewport screenshots generated in `ui-audit-2026-08-28/round-2-screenshots/`).
-- **Active / preserved work:** Working tree on `master`.
-- **Exact next action:** Execute `R-1010` (Milestone 10 comprehensive review gate).
+- **Active task / gate:** None (Milestone 10 complete and archived)
+- **Pushed commit / HEAD:** `987ab83`
+- **Verification status:** Full test suite (366 tests), design system boundary,
+  accessibility gallery audit, production build, and Round 2 visual capture all
+  passed.
+- **Active / preserved work:** Working tree clean on `master`.
+- **Exact next action:** Await next user instructions or feature milestone.
 
 ## Ready-to-Use Orchestration Prompt
 
 ```text
-Act as the single primary coding agent for M10. Implement M10-001 through M10-006, run R-1010 review gate, and perform M10-FINAL archiving per AGENTS.md.
+Read AGENTS.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Confirm working tree status on master, author the next milestone plan per .agents/skills/implementation-planning/SKILL.md, obtain approval, and proceed with implementation.
 ```

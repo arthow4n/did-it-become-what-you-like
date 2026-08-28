@@ -383,35 +383,9 @@ pending control keeps its label or an equally descriptive accessible name.
 | `PreferenceExample`                                       | Live expense-day boundary example with concrete dates         |
 | `AboutSummary`                                            | Version/build, disclosure, privacy, licenses, source, updates |
 
-## Screen-to-Component Mapping
-
-| Screen/workflow               | Primary design-system composition                                                                                                                             |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| First use                     | `AppFrame`, `ContentContainer`, `ActionCard`, `InlineNotice`                                                                                                  |
-| 1 Expenses                    | `PageHeader`, `ProjectPicker`, `GlobalStatus`, `Banner`, `PeriodPicker`, `FilterBar`, `MoneySummary`, `CategoryBreakdown`, `ExpenseList`, `ReceiptGroup`      |
-| 2 Add Choice                  | `AdaptiveDialog`, two `ActionCard`s, `InlineNotice`                                                                                                           |
-| 3 Manual/Create/Edit          | `PageHeader`, `FormLayout`, `SegmentedControl`, `MoneyField`, `MerchantPicker`, `SelectField`, date/time facade fields, `DraftStatus`, `FormActions`, `Toast` |
-| 4 Scan Receipt                | `PageHeader`, `ReceiptSourcePicker`, `StatusPanel`, `InlineNotice`, `GeminiQuickSetup`, `WorkflowProgress`, `StickyActionBar`                                 |
-| 5 Receipt Review              | `PageHeader`, `ReceiptMetadata`, `ReceiptReconciliation`, `ReceiptLineCard`, `ReceiptLineEditor`, `InlineNotice`, `StickyActionBar`                           |
-| 6 Organize                    | `PageHeader`, `Section`, `ActionCard`, preview `ListRow`s                                                                                                     |
-| 7 Projects                    | `PageHeader`, `ManagementList`, `ReorderControls`, `ProjectEditor`, `ConfirmDialog`, `ProjectDeletionReview`                                                  |
-| 7A Populated project deletion | `ProjectDeletionReview`, `SafetyExportStep`, `DangerDialog`, `WorkflowProgress`                                                                               |
-| 8 Categories                  | `PageHeader`, `ManagementList`, `SearchField`, `ReorderControls`, `CategoryEditor`, `DeleteAndReassign`                                                       |
-| 9 Settings                    | `PageHeader`, `SettingsList`, `SettingsRow`                                                                                                                   |
-| 10 Google Drive               | `PageHeader`, `SyncAccountPanel`, `StatusPanel`, `SettingsList`, `InlineNotice`, `Button` variants                                                            |
-| 10A Conflicts                 | `PageHeader`, `MasterDetail`, `Progress`, `ConflictResolver`, `RadioGroup`, `InlineNotice`                                                                    |
-| 10B Devices                   | `PageHeader`, `KnownDeviceList`, inline rename `TextField`, `StatusMessage`                                                                                   |
-| 11 Gemini Settings            | `PageHeader`, `SecretField`, `ModelPicker`, `Switch`, `GeminiConfigurationTest`, `ErrorState`                                                                 |
-| 12 Import/Export              | `PageHeader`, `FileField`, `ImportPreview`, `ImportModeChoice`, `SafetyExportStep`, `WorkflowProgress`, `DangerDialog`                                        |
-| 13 Preferences                | `PageHeader`, `NativeTimeField`, `PreferenceExample`                                                                                                          |
-| 14 Data and Privacy           | `PageHeader`, `DefinitionList`, `SettingsList`, `DeletionScopePicker`, `SafetyExportStep`, `DeletionProgress`, `DangerDialog`                                 |
-| 15 About                      | `PageHeader`, `AboutSummary`, `UpdatePrompt`, `DefinitionList`, link actions                                                                                  |
-| Cross-cutting drafts/saves    | `DraftStatus`, `StatusMessage`, `ConfirmDialog`, `ErrorSummary`, `Toast`                                                                                      |
-
-This mapping is a reuse requirement, not a mandate that every listed component
-live in a separate file. Components should be split when they have a stable
-responsibility, independent variants/tests, or multiple consumers; tiny private
-layout helpers may remain colocated.
+Components should be split when they have a stable responsibility, independent
+variants/tests, or multiple consumers; tiny private layout helpers may remain
+colocated.
 
 ## Interaction and Content Rules
 

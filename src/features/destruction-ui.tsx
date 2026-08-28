@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import {
   AdaptiveDialog,
   Badge,
@@ -7,6 +8,7 @@ import {
   DefinitionList,
   FormActions,
   Heading,
+  IconButton,
   Inline,
   InlineNotice,
   List,
@@ -200,7 +202,14 @@ export function DataPrivacyScreen({
         <PageHeader
           title="Data and privacy"
           headingLevel={1}
-          leading={<Button variant="quiet" onPress={onBack}>Settings</Button>}
+          leading={
+            <IconButton
+              icon={<ArrowLeft />}
+              aria-label="Back"
+              variant="quiet"
+              onPress={onBack}
+            />
+          }
         />
         <DefinitionList
           items={[

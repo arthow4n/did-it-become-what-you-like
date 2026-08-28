@@ -159,24 +159,25 @@ M10-001 -> M10-002 -> M10-003 -> M10-004 -> M10-005 -> M10-006 -> R-1010 -> M10-
 
 #### M10-004 — Standardized PageHeader leading navigation affordances (FIX-04)
 
-- **Status/dependencies:** `READY`; depends on `M10-003`.
+- **Status/dependencies:** `COMPLETE`; depends on `M10-003`.
 - **Ownership:** `src/features/receipt-ui.tsx`, `src/features/settings-pwa.tsx`,
-  `src/features/receipt-ui.test.tsx`, `src/features/settings-pwa.test.tsx`
+  `src/features/destruction-ui.tsx`, `src/features/receipt-ui.test.tsx`,
+  `src/features/settings-pwa.test.tsx`, `src/features/destruction-ui.test.tsx`
 - **Scope/non-goals:** Replace unstyled text back/close triggers on receipt and
-  settings subpages with accessible `IconButton` or styled navigation buttons
-  providing minimum 44px hit targets.
-- **Outputs/acceptance:** All header back/close controls use consistent icon
-  affordances and spacing from `<h1>`.
-- **Tests:** `src/features/receipt-ui.test.tsx`,
-  `src/features/settings-pwa.test.tsx`
-- **Verification:** `deno fmt src/features/receipt-ui.tsx src/features/settings-pwa.tsx`,
-  `deno lint src/features/receipt-ui.tsx src/features/settings-pwa.tsx`,
-  `deno test --allow-read --allow-write --allow-run --allow-env --related=src/features/receipt-ui.tsx`,
+  settings subpages with accessible `IconButton` providing minimum 44px hit
+  targets and standard icon visuals (`X`, `ArrowLeft`). Non-goals: Do not alter
+  route structures or navigation state machines.
+- **Outputs/acceptance:** All subpages render consistent, touch-friendly 44px
+  navigation buttons in `PageHeader`.
+- **Tests:** `src/features/receipt-ui.test.tsx`, `src/features/settings-pwa.test.tsx`,
+  `src/features/destruction-ui.test.tsx` (28 passing tests)
+- **Verification:** `deno fmt src/features/receipt-ui.tsx src/features/settings-pwa.tsx src/features/destruction-ui.tsx`,
+  `deno test src/features/receipt-ui.test.tsx src/features/settings-pwa.test.tsx src/features/destruction-ui.test.tsx`,
   `git diff --check`.
 
-#### M10-005 — Period picker resiliency & modal scrim polish (FIX-05)
+#### M10-005 — Period picker scroll resiliency & modal scrim polish (FIX-05)
 
-- **Status/dependencies:** `PENDING`; depends on `M10-004`.
+- **Status/dependencies:** `READY`; depends on `M10-004`.
 - **Ownership:** `src/features/local-ui.css`, `src/design-system/tokens.css`
 - **Scope/non-goals:** Ensure segmented control period picker tabs on 320px
   screens scroll smoothly without clipping (`overflow-x: auto; scrollbar-width: none;`).
@@ -233,11 +234,11 @@ M10-001 -> M10-002 -> M10-003 -> M10-004 -> M10-005 -> M10-006 -> R-1010 -> M10-
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M10-004` (`READY`)
-- **Pushed commit / HEAD:** In progress (`M10-003` completed)
-- **Verification status:** `M10-003` passed (`deno fmt`, `deno lint`, `deno test src/design-system/design-system.test.tsx src/features/local-ui.test.tsx` 52/52 passed, `git diff --check`).
+- **Active task / gate:** `M10-005` (`READY`)
+- **Pushed commit / HEAD:** In progress (`M10-004` completed)
+- **Verification status:** `M10-004` passed (`deno fmt`, `deno lint`, `deno test src/features/receipt-ui.test.tsx src/features/settings-pwa.test.tsx src/features/destruction-ui.test.tsx` 28/28 passed, `git diff --check`).
 - **Active / preserved work:** Working tree on `master`.
-- **Exact next action:** Implement `M10-004` (Standardized PageHeader leading navigation affordances).
+- **Exact next action:** Implement `M10-005` (Period picker scroll resiliency & modal scrim polish).
 
 ## Ready-to-Use Orchestration Prompt
 

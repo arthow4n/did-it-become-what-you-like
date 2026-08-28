@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { ArrowLeft } from "lucide-react";
 import {
   Button,
   Card,
@@ -16,6 +17,7 @@ import {
   DefinitionList,
   FormActions,
   Heading,
+  IconButton,
   InlineNotice,
   LinkButton,
   List,
@@ -489,7 +491,14 @@ export function PreferencesScreen({
         <PageHeader
           title="Preferences"
           headingLevel={1}
-          leading={<Button variant="quiet" onPress={onClose}>Settings</Button>}
+          leading={
+            <IconButton
+              icon={<ArrowLeft />}
+              aria-label="Back"
+              variant="quiet"
+              onPress={onClose}
+            />
+          }
         />
         <Card as="section">
           <Stack gap={4}>
@@ -584,7 +593,14 @@ export function AboutScreen({
         <PageHeader
           title="About"
           headingLevel={1}
-          leading={<Button variant="quiet" onPress={onClose}>Settings</Button>}
+          leading={
+            <IconButton
+              icon={<ArrowLeft />}
+              aria-label="Back"
+              variant="quiet"
+              onPress={onClose}
+            />
+          }
         />
         <Card as="section">
           <Stack gap={3}>

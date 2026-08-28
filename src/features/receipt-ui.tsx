@@ -46,6 +46,7 @@ import {
   type ReceiptScanMachineDependencies,
 } from "../actors/receipt.ts";
 import type { ReceiptImageRef } from "../actors/contracts/index.ts";
+import { ArrowLeft, X } from "lucide-react";
 import {
   AdaptiveDialog,
   Button,
@@ -57,6 +58,7 @@ import {
   GeminiConfigurationTest,
   GeminiQuickSetup,
   Heading,
+  IconButton,
   Inline,
   InlineNotice,
   List,
@@ -955,7 +957,14 @@ export function ReceiptScanScreen({
         <PageHeader
           title="Scan receipt"
           headingLevel={1}
-          leading={<Button variant="quiet" onPress={onClose}>Close</Button>}
+          leading={
+            <IconButton
+              icon={<X />}
+              aria-label="Close"
+              variant="quiet"
+              onPress={onClose}
+            />
+          }
         />
         <ReceiptDisclosure
           onAccept={() => {
@@ -974,7 +983,14 @@ export function ReceiptScanScreen({
         <PageHeader
           title="Scan receipt"
           headingLevel={1}
-          leading={<Button variant="quiet" onPress={onClose}>Close</Button>}
+          leading={
+            <IconButton
+              icon={<X />}
+              aria-label="Close"
+              variant="quiet"
+              onPress={onClose}
+            />
+          }
         />
         <InlineNotice tone="warning" title="Scanning is unavailable offline">
           Connect to the internet to send a receipt to Gemini. The selected
@@ -1009,7 +1025,14 @@ export function ReceiptScanScreen({
         <PageHeader
           title="Scan receipt"
           headingLevel={1}
-          leading={<Button variant="quiet" onPress={onClose}>Close</Button>}
+          leading={
+            <IconButton
+              icon={<X />}
+              aria-label="Close"
+              variant="quiet"
+              onPress={onClose}
+            />
+          }
         />
         <ReceiptSourcePicker
           preview={selectedImage
@@ -1507,7 +1530,13 @@ export function ReceiptReviewScreen({
           leading={changed
             ? (
               <AdaptiveDialog
-                trigger={<Button variant="quiet">Close</Button>}
+                trigger={
+                  <IconButton
+                    icon={<X />}
+                    aria-label="Close"
+                    variant="quiet"
+                  />
+                }
                 title="Discard receipt review?"
               >
                 {(close) => (
@@ -1531,7 +1560,14 @@ export function ReceiptReviewScreen({
                 )}
               </AdaptiveDialog>
             )
-            : <Button variant="quiet" onPress={onClose}>Close</Button>}
+            : (
+              <IconButton
+                icon={<X />}
+                aria-label="Close"
+                variant="quiet"
+                onPress={onClose}
+              />
+            )}
         />
         <ReceiptMetadata
           metadata={review.parent}
@@ -1860,7 +1896,14 @@ export function GeminiSettingsScreen({
         <PageHeader
           title="Gemini receipt scanning"
           headingLevel={1}
-          leading={<Button variant="quiet" onPress={onClose}>Settings</Button>}
+          leading={
+            <IconButton
+              icon={<ArrowLeft />}
+              aria-label="Back"
+              variant="quiet"
+              onPress={onClose}
+            />
+          }
         />
         {hasKey
           ? (

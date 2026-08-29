@@ -79,38 +79,164 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-No active milestone is currently open. M22 was completed in implementation
-commits `e16b899`, `bedbb7b`, and `e2ceb80`, checkpointed in `569039e`, and
-reviewed with no severity 1–2 findings. Its detailed task ledger remains
-available in Git history.
+## M23 — Add Choice Bottom Sheet & Modal Header UI/UX Remediation
+
+### M23 authority, outcome, and non-goals
+
+Remediate visual, responsive, and ergonomic defects in the Add Choice Sheet
+(`AddChoiceScreen`) and modal header actions across Desktop (`1280×800`), Mobile
+(`390×844`), and Narrow (`320×568`) viewports.
+
+Specifically:
+1. Simplify Add Choice actions from verbose, multi-line `ActionCard` descriptions
+   into clean, prominent full-width action buttons with clear leading icons
+   (`Plus` for "Add manually", `Search` for "Scan receipt with AI").
+2. Fix modal/drawer/sheet header alignment on mobile: prevent generic
+   `.ds-page-header__actions > button { width: 100% }` from forcing `IconButton`
+   close triggers (`X`) to wrap below titles onto a centered line; pin the close
+   icon button to the top-right inline with the title.
+3. Ensure `.local-ui-overlay` covers the bottom navigation cleanly on mobile with
+   `z-index: var(--layer-overlay)` (40), top rounded corners, backdrop blur, and
+   proper bottom safe-area insets.
+
+**Non-goals:**
+- No changes to underlying business logic, state machines, or domain data
+  contracts.
+- No changes to offline scan guard behavior.
+- No changes to manual expense form fields or validation.
+
+### Mandatory single-agent execution rule
+
+- One primary coding agent performs all planning reconciliation, edits, tests,
+  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
+- Independent read-only reviewer subagents are used exclusively at named review
+  gates.
+- Context compaction or session restarts require following the recovery
+  checklist before editing.
+
+### Locked boundary / design-system rules
+
+1. Files under `src/features/**` import only the design-system facade.
+2. Semantic After Midnight tokens remain the visual source of truth.
+3. All interactive touch targets must remain at least 44px.
+4. Transitions remain `0ms` by default.
+5. All checklist steps are executed sequentially with fast pre-commit gates,
+   committed, and pushed to remote.
+
+### Restart and compaction recovery checklist
+
+- [ ] Read `AGENTS.md`, this milestone section, and Current Checkpoint.
+- [ ] Run `git status --short --branch`, `git log -n 20 --oneline`,
+      `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
+- [ ] Verify test and working tree clean state before continuing.
+
+### Dependency Graph (DAG)
+
+```text
+M23-001 (Design system token & header action pinning)
+   │
+   ▼
+M23-002 (AddChoiceScreen component & stylesheet remediation)
+   │
+   ▼
+M23-003 (Visual re-capture & comprehensive multi-viewport verification)
+   │
+   ▼
+R-2310 (Consolidated milestone review gate)
+   │
+   ▼
+M23-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
+```
+
+---
+
+### M23 Task Definitions
+
+#### M23-001 — Design system token & modal header action pinning
+
+- **Status/dependencies:** `READY`; depends on baseline.
+- **Ownership:** `src/design-system/tokens.css`, `src/design-system/styles.css`
+- **Scope/non-goals:** Update mobile `.ds-page-header__actions` rules in
+  `tokens.css` to exempt `.ds-icon-button` from `width: 100%` full-width
+  stretching and ensure header actions containing only icon buttons preserve
+  compact inline width. Ensure `.ds-button .mantine-Button-label` provides
+  balanced inline alignment for leading icons and text.
+- **Outputs/acceptance:** `.ds-icon-button` retains its standard touch size
+  (`var(--control-height)`) and does not stretch or wrap across header rows on
+  mobile viewports.
+- **Tests:** Affected design system and component tests pass.
+- **Verification:** `deno fmt src/design-system/tokens.css`,
+  `deno task test:affected`, `git diff --check`.
+
+#### M23-002 — AddChoiceScreen component & stylesheet remediation
+
+- **Status/dependencies:** `PENDING`; depends on `M23-001`.
+- **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`
+- **Scope/non-goals:** Refactor `AddChoiceScreen` to replace verbose `ActionCard`
+  elements with clean, prominent, full-width `Button` primitives (`variant="primary"`
+  for "Add manually" with `Plus` icon, and `variant="secondary"` for "Scan receipt with AI"
+  with `Search` icon). Add dedicated header styling to `.local-ui-add-choice` to
+  guarantee single-row title and close button alignment. Ensure bottom sheet
+  overlay sits at `z-index: var(--layer-overlay)` with safe-area padding at the
+  bottom.
+- **Outputs/acceptance:** Clean, unbloated Add Choice bottom sheet across
+  Desktop, Mobile, and Narrow viewports. Close button pinned to top-right.
+  Prominent full-width action buttons with clear icons.
+- **Tests:** `deno test --related=src/features/local-ui.tsx` passes (including
+  offline guard, focus trap, and keyboard navigation tests).
+- **Verification:** `deno fmt src/features/local-ui.tsx src/features/local-ui.css`,
+  `deno lint src/features/local-ui.tsx`, `deno task test:affected`,
+  `git diff --check`.
+
+#### M23-003 — Visual re-capture & comprehensive multi-viewport verification
+
+- **Status/dependencies:** `PENDING`; depends on `M23-002`.
+- **Ownership:** `scripts/audit-capture.ts`, `e2e/audit/ui-audit-capture.spec.ts`
+- **Scope/non-goals:** Run full visual capture across Desktop (`1280×800`), Mobile
+  (`390×844`), and Narrow (`320×568`) viewports into `ui-audit-round-2/screenshots`.
+  Inspect `04-add-choice-sheet` and all modal/dialog screens to confirm visual
+  fidelity. Run affected unit, component, a11y, build, and E2E suites.
+- **Outputs/acceptance:** All 3 capture viewports pass with clean visual
+  evidence. All test suites pass.
+- **Tests:** `deno task test:affected`, `deno task a11y:gallery`, `deno task build`,
+  `deno task test:e2e`.
+- **Verification:** `deno task audit:capture ui-audit-round-2/screenshots`.
+
+#### R-2310 — Consolidated milestone review gate
+
+- **Status/dependencies:** `PENDING`; depends on `M23-003`.
+- **Reviewer role:** Fresh read-only subagent reviewer.
+- **Audit scope:** Diffs across M23-001 through M23-003, token usage, facade
+  boundary, multi-viewport screenshot matrix, and test evidence.
+- **Remediation loop:** Primary agent fixes all severity 1–3 findings before
+  closing the milestone.
+
+#### M23-FINAL — Milestone closure, ledger archiving, and repo hygiene pruning
+
+- **Status/dependencies:** `PENDING`; depends on `R-2310`.
+- **Ownership:** `IMPLEMENTATION_PLAN.md`, `DESIGN_SYSTEM.md`, `SPEC.md`
+- **Scope/non-goals:** Prune completed M23 task details into the Released
+  Baseline; record the preserved Git commit hash. Clean up transient audit
+  directories and run `repo-hygiene-pruning` skill to verify repository hygiene.
+- **Outputs/acceptance:** Clean, compact `IMPLEMENTATION_PLAN.md` with updated
+  Released Baseline; zero dead markdown links; clean working tree.
+- **Commit:** Committed with `[archive]` in the commit message per `AGENTS.md`.
 
 ---
 
 ## Current Checkpoint
 
-- **Active task / gate:** None (M22 complete and archived)
-- **Pushed commit / HEAD:** `origin/master` (M22 implementation and plan archive
-  are pushed; branch is clean)
-- **Verification status:** M22 focused domain tests pass 9/9 and focused adapter
-  tests pass 17/17; affected tests pass 288/288; format, lint, and type checks
-  pass. Fresh R-2210 review found no severity 1–2 findings. M21 focused
-  adapter/actor/UI tests pass 77/77 and affected tests pass 279/279; check,
-  format, lint, diff checks, build, and receipt-review Playwright pass. Fresh
-  R-2100 review found no severity 1–3 findings. M19 focused actor/UI tests pass
-  20/20 and affected tests pass 128/128; check, format, lint, build, diff
-  checks, and receipt-review Playwright pass 1/1. Fresh R-1900 review found no
-  severity 1–3 findings. M18 affected tests pass 337/337, focused domain/client
-  tests pass 8/8, and its final review found no severity 1–3 findings.
-- **Active / preserved work:** Single primary agent on `master`; no worktree or
-  delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Author the next approved milestone plan before making
-  further application changes.
+- **Active task / gate:** `M23-001` (`READY`)
+- **Pushed commit / HEAD:** `41cdc40`
+- **Verification status:** Skill updates and audit capture spec fixes committed
+  and pushed. Visual capture runs successfully across all 3 viewports.
+- **Active / preserved work:** Single primary agent on `master`.
+- **Exact next action:** Execute `M23-001` (Design system token & modal header action pinning).
 
 ## Ready-to-Use Orchestration Prompt
 
 ```text
-Read AGENTS.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Confirm working
-tree status on master, author the next milestone plan per
-.agents/skills/implementation-planning/SKILL.md, obtain approval, and proceed
-with implementation.
+Read AGENTS.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Proceed sequentially
+with M23-001 on master, run fast pre-commit verification, commit, push, and update
+the checkpoint ledger.
 ```

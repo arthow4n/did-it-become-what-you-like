@@ -29,7 +29,7 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ### Released Baseline
 
-M0 through M14 and all review gates through `R-1410` are `COMPLETE`. The
+M0 through M15 and all review gates through `R-1510` are `COMPLETE`. The
 released application baseline includes the approved domain, actors, adapters,
 responsive UI, After Midnight design system backed by Mantine behind the
 repository facade, accessibility, PWA, tests, GitHub Pages pipeline, operational
@@ -38,11 +38,13 @@ baseline mobile ergonomics, and a provider-valid privacy-safe Gemini
 compatibility probe backed by the official Google Gen AI SDK and a provider-
 neutral receipt AI port, plus a user-gesture-safe native receipt source picker
 for camera capture and existing-image selection, described by `SPEC.md`,
-`DESIGN_SYSTEM.md`, and `AGENTS.md`. Receipt scan failures also retain a safe
-error taxonomy and bounded operation diagnostic for reportable recovery.
+`DESIGN_SYSTEM.md`, and `AGENTS.md`. Receipt scan failures retain a safe
+taxonomy and phase-specific operation diagnostics across image lifecycle,
+provider, and normalization boundaries; cleanup cannot mask the primary
+failure.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
-preserved in Git at commit `14dd741`, the last complete pre-pruning ledger. That
+preserved in Git at commit `7007904`, the last complete pre-pruning ledger. That
 history is evidence, not active instructions, and agents must not reconstruct it
 in this live plan.
 
@@ -58,23 +60,10 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-### M15 — Phase-safe receipt scan failures
-
-Owner-approved outcome: remove the remaining `unknown · receipt.scan` blind
-spot by making image resolution and cleanup errors cross the receipt actor
-boundary as safe, phase-specific failures. A cleanup failure must not mask the
-actual extraction error, and no raw platform/provider text may reach the UI.
-
-| Task | Status | Dependency | Acceptance / evidence |
-| --- | --- | --- | --- |
-| M15-001 Type raw image lifecycle failures and preserve primary errors | COMPLETE | M14 | Resolver, preparation, extraction, and normalization failures are converted to safe phase operations; cleanup cannot replace an earlier scan failure. |
-| M15-002 Regression coverage and targeted verification | COMPLETE | M15-001 | Actor regression covers a raw resolver failure and cleanup masking a typed provider failure; affected tests 37/37, checks, format, lint, build, diff check, and receipt E2E 1/1 pass. |
-| R-1510 Fresh read-only review | COMPLETE | M15-002 | Fresh read-only review found no severity 1–3 findings; focused actor/contract/UI tests pass 39/39. Follow-up observations were resolved by using provider-neutral `receipt.ai.extract` and preserving domain validation codes. |
-| M15-FINAL Archive and hygiene | IN_PROGRESS | R-1510 | Record exact evidence, run repository-hygiene pruning, archive completed M15 history, commit, and push. |
-
-The implementation owner must update this ledger after each task and review
-gate. The M15-FINAL archive is the only point at which completed milestone
-history may be pruned from this live plan.
+No active milestone is currently open. When the repo owner specifies the next
+product milestone or refactor epic, follow the Standard Planning Procedure in
+`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
+ledger.
 
 ### Locked boundary / design-system rules
 
@@ -90,19 +79,18 @@ history may be pruned from this live plan.
 
 ## Current Checkpoint
 
-- **Active task / gate:** M15-FINAL (archive and hygiene; `/root` is
-  integration owner)
-- **Pushed commit / HEAD:** `3a085a5` (M15 implementation and review
-  checkpoint; follow-up fixes are being committed)
+- **Active task / gate:** None (M15 complete and archived)
+- **Pushed commit / HEAD:** `7007904` (M15 implementation and review-complete
+  pre-pruning ledger)
 - **Verification status:** M15 actor regression passes 6/6, affected tests pass
   37/37, the fresh review suite passes 39/39, receipt-review Playwright passes
   1/1, and `deno task check`, `deno task fmt:check`, `deno task lint`, `deno
-  task build`, and `git diff --check` pass.
-- **Active / preserved work:** Single primary agent on `master`; R-1510 is
-  complete with no severity 1–3 findings, and no transient hygiene artifacts
-  exist.
-- **Exact next action:** Commit and push the review follow-ups, then run the
-  repository-hygiene audit and archive M15.
+  task build`, and `git diff --check` pass. Final hygiene checks are recorded
+  in the archive commit.
+- **Active / preserved work:** Single primary agent on `master`; no delegated
+  workers, uncommitted implementation changes, or transient hygiene artifacts.
+- **Exact next action:** Run the final environment-scoped hygiene checks, then
+  commit and push this archived ledger.
 
 ## Ready-to-Use Orchestration Prompt
 

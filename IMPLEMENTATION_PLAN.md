@@ -96,15 +96,17 @@ history may be pruned from this live plan.
 
 - **Active task / gate:** R-1610 (fresh read-only review pending; `/root` is
   integration owner)
-- **Pushed commit / HEAD:** `c640a41` (M15 archive; M16 implementation pending)
+- **Pushed commit / HEAD:** `96e837f` (M16 implementation and targeted
+  verification; R-1610 review pending)
 - **Verification status:** M15 evidence remains valid. M16 domain sign tests
-  pass 3/3 and the affected suite passes 274/274; final M16 check, format,
-  lint, build, diff, and receipt E2E evidence is pending.
+  pass 3/3, affected tests pass 274/274, receipt-review Playwright passes 1/1,
+  and `deno task check`, `deno task fmt:check`, `deno task lint`, `deno task
+  build`, and `git diff --check` pass.
 - **Active / preserved work:** Single primary agent on `master`; M16 planning is
   reconciled before implementation, with no delegated workers or transient
   hygiene artifacts.
-- **Exact next action:** Run final M16 checks and receipt E2E, then commit and
-  push the implementation before completing R-1610.
+- **Exact next action:** Complete the fresh read-only R-1610 review, resolve any
+  severity 1–3 findings, then archive M16.
 
 ## Ready-to-Use Orchestration Prompt
 

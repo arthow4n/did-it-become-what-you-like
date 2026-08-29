@@ -228,7 +228,8 @@ function safeReason(value: unknown): string | undefined {
   return reason.length === 0 ? undefined : reason;
 }
 
-function ensurePurchaseSign(value: CanonicalDecimal): CanonicalDecimal {
+/** Receipt purchases and their parent total are outgoing amounts. */
+function ensureOutflowSign(value: CanonicalDecimal): CanonicalDecimal {
   return moneyCompare(value, "0") > 0 ? moneySubtract("0", value) : value;
 }
 
@@ -247,7 +248,7 @@ export function receiptMismatchDifference(
 ): CanonicalDecimal {
   return moneySubtract(
     receiptSelectedTotal(review),
-    review.parent.printedTotal,
+    ensureOutflowSign(review.parent.printedTotal),
   );
 }
 
@@ -309,7 +310,7 @@ function normalizedDraft(
       return {
         ...line,
         description,
-        lineTotal: ensurePurchaseSign(line.lineTotal),
+        lineTotal: ensureOutflowSign(line.lineTotal),
         ...(line.selectionReason === undefined
           ? {}
           : { selectionReason: line.selectionReason.trim() }),
@@ -323,17 +324,17 @@ function normalizedDraft(
         : { selectionReason: line.selectionReason.trim() }),
     };
   });
-  const mismatch = mismatchFields(
-    review.parent,
-    lines,
-    review.mismatchExplanation,
-  );
+  const parent = {
+    ...review.parent,
+    printedTotal: ensureOutflowSign(review.parent.printedTotal),
+  };
+  const mismatch = mismatchFields(parent, lines, review.mismatchExplanation);
   return {
     parent: {
-      ...review.parent,
-      ...(review.parent.merchant === undefined
+      ...parent,
+      ...(parent.merchant === undefined
         ? {}
-        : { merchant: review.parent.merchant.trim() }),
+        : { merchant: parent.merchant.trim() }),
     },
     lines,
     uncertainty: review.uncertainty.map((item) => item.trim()),
@@ -447,7 +448,7 @@ export function normalizeReceiptExtractionDraft(
         id,
         description,
         categoryId,
-        lineTotal: ensurePurchaseSign(amount ?? "0"),
+        lineTotal: ensureOutflowSign(amount ?? "0"),
         selected,
         uncertain,
         ...(selectionReason === undefined ? {} : { selectionReason }),
@@ -666,7 +667,7 @@ export function createReceiptCommitService(
               ...(line.unitPrice === undefined
                 ? {}
                 : { unitPrice: line.unitPrice }),
-              lineTotal: ensurePurchaseSign(line.lineTotal),
+              lineTotal: ensureOutflowSign(line.lineTotal),
             }));
           } else {
             if (

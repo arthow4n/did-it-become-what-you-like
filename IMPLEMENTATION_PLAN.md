@@ -60,10 +60,25 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-No active milestone is currently open. When the repo owner specifies the next
-product milestone or refactor epic, follow the Standard Planning Procedure in
-`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
-ledger.
+### M16 — Signed receipt-total reconciliation
+
+Owner-approved outcome: keep receipt parent totals and purchase lines in the
+same signed monetary direction so reconciliation compares like with like. A
+printed receipt total representing an outflow is normalized to a negative
+canonical decimal at extraction and review-edit boundaries; positive signed
+adjustments remain positive. The fix must preserve arbitrary-precision
+arithmetic and must not alter generic expense or adjustment semantics.
+
+| Task | Status | Dependency | Acceptance / evidence |
+| --- | --- | --- | --- |
+| M16-001 Normalize receipt parent outflow totals | COMPLETE | M15 | Extracted and edited receipt totals use the purchase/outflow sign convention before mismatch arithmetic. |
+| M16-002 Regression coverage and targeted verification | COMPLETE | M16-001 | Domain sign regression passes 3/3; affected tests pass 274/274. Final type, format, lint, build, diff, and receipt E2E evidence follows. |
+| R-1610 Fresh read-only review | IN_PROGRESS | M16-002 | Fresh read-only review is required before archival. |
+| M16-FINAL Archive and hygiene | PENDING | R-1610 | Record exact evidence, run repository-hygiene pruning, archive completed M16 history, commit, and push. |
+
+The implementation owner must update this ledger after each task and review
+gate. The M16-FINAL archive is the only point at which completed milestone
+history may be pruned from this live plan.
 
 ### Locked boundary / design-system rules
 
@@ -79,18 +94,17 @@ ledger.
 
 ## Current Checkpoint
 
-- **Active task / gate:** None (M15 complete and archived)
-- **Pushed commit / HEAD:** `7007904` (M15 implementation and review-complete
-  pre-pruning ledger)
-- **Verification status:** M15 actor regression passes 6/6, affected tests pass
-  37/37, the fresh review suite passes 39/39, receipt-review Playwright passes
-  1/1, and `deno task check`, `deno task fmt:check`, `deno task lint`, `deno
-  task build`, and `git diff --check` pass. Final hygiene checks are recorded
-  in the archive commit.
-- **Active / preserved work:** Single primary agent on `master`; no delegated
-  workers, uncommitted implementation changes, or transient hygiene artifacts.
-- **Exact next action:** Run the final environment-scoped hygiene checks, then
-  commit and push this archived ledger.
+- **Active task / gate:** R-1610 (fresh read-only review pending; `/root` is
+  integration owner)
+- **Pushed commit / HEAD:** `c640a41` (M15 archive; M16 implementation pending)
+- **Verification status:** M15 evidence remains valid. M16 domain sign tests
+  pass 3/3 and the affected suite passes 274/274; final M16 check, format,
+  lint, build, diff, and receipt E2E evidence is pending.
+- **Active / preserved work:** Single primary agent on `master`; M16 planning is
+  reconciled before implementation, with no delegated workers or transient
+  hygiene artifacts.
+- **Exact next action:** Run final M16 checks and receipt E2E, then commit and
+  push the implementation before completing R-1610.
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -114,6 +114,41 @@ Deno.test("receipt-actor domain: signs, totals, selection, editing, adding, and 
   assertEquals(removeReceiptLine(edited, "line-refund").lines.length, 1);
 });
 
+Deno.test("receipt-actor domain: receipt totals use the outflow sign", () => {
+  const normalized = normalizeReceiptExtractionDraft({
+    merchant: "Shop",
+    currency: "SEK",
+    date: "2026-08-24",
+    printedTotal: "8",
+    uncertainty: [],
+    mismatches: [],
+    lines: [{
+      description: "Coffee",
+      amount: "8",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "purchase",
+      selected: true,
+    }],
+  }, {
+    projectId: "project-receipt-domain",
+    currency: "SEK",
+    categoryCatalogue: [{
+      id: UNCATEGORIZED_CATEGORY_ID,
+      name: "Uncategorized",
+    }],
+    nextId: () => "line-positive-total",
+  });
+  assertEquals(normalized.parent.printedTotal, "-8");
+  assertEquals(receiptSelectedTotal(normalized), "-8");
+  assertEquals(receiptMismatchDifference(normalized), "0");
+
+  const edited = validateReceiptReviewDraft(review({
+    parent: { ...review().parent, printedTotal: "8" },
+  }));
+  assertEquals(edited.parent.printedTotal, "-8");
+  assertEquals(receiptMismatchDifference(edited), "0");
+});
+
 Deno.test("receipt-actor domain: hostile extraction remains reviewable but invalid lines start unselected", () => {
   let sequence = 0;
   const normalized = normalizeReceiptExtractionDraft({

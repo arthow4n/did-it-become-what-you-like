@@ -185,6 +185,8 @@
   .ds-stack {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
+    width: 100%;
     gap: var(--ds-gap);
   }
 
@@ -369,6 +371,7 @@
   .ds-button[data-full-width="true"],
   .ds-link-button[data-full-width="true"] {
     width: 100%;
+    display: flex;
   }
 
   .ds-button[data-variant="primary"],

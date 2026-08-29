@@ -176,6 +176,7 @@ export function Stack({
       aria-label={ariaLabel}
       aria-hidden={ariaHidden}
       data-pane={dataPane}
+      align="stretch"
       gap={mantineSpacing(gap)}
       className={cx("ds-stack", className)}
       style={{ ...style, ...gapStyle(gap) }}

@@ -156,21 +156,21 @@ M24-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 #### M24-001 — Design system Stack stretch & fullWidth button expansion
 
-- **Status/dependencies:** `READY`; depends on baseline.
+- **Status/dependencies:** `COMPLETE`; depends on baseline.
 - **Ownership:** `src/design-system/components.tsx`, `src/design-system/tokens.css`
 - **Scope/non-goals:** Set `align="stretch"` on `MantineStack` inside `Stack`
   component and configure `.ds-stack` with `align-items: stretch; width: 100%;`.
   Ensure `.ds-button[data-full-width="true"]` has `width: 100%; display: flex;`.
 - **Outputs/acceptance:** Stacks stretch their full-width children by default
   unless overridden. Buttons with `fullWidth` fill their parent container width.
-- **Tests:** Affected design system and component tests pass.
+- **Tests:** 118 affected design system and component tests pass.
 - **Verification:** `deno fmt src/design-system/components.tsx src/design-system/tokens.css`,
   `deno lint src/design-system/components.tsx`, `deno task test:affected`,
   `git diff --check`.
 
 #### M24-002 — AddChoiceScreen full-span CSS & OrganizeScreen all-categories fix
 
-- **Status/dependencies:** `PENDING`; depends on `M24-001`.
+- **Status/dependencies:** `READY`; depends on `M24-001`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`, `src/features/local-ui.test.tsx`
 - **Scope/non-goals:** In `local-ui.css`, ensure `.local-ui-add-choice__actions`
   and `.local-ui-add-choice__button` have explicit `width: 100%; display: flex;`.
@@ -224,11 +224,11 @@ M24-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M24-001` (`READY`)
+- **Active task / gate:** `M24-002` (`READY`)
 - **Pushed commit / HEAD:** `0fa3115`
-- **Verification status:** Baseline clean and verified on master.
+- **Verification status:** M24-001 design system Stack stretch and full-width button styles pass 118 component tests.
 - **Active / preserved work:** Single primary agent on `master`.
-- **Exact next action:** Execute `M24-001` (Design system Stack stretch & fullWidth button expansion).
+- **Exact next action:** Execute `M24-002` (AddChoiceScreen full-span CSS & OrganizeScreen all-categories fix).
 
 ## Ready-to-Use Orchestration Prompt
 

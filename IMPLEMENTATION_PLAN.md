@@ -198,9 +198,9 @@ M22-001 -> M22-002 -> R-2210 -> M22-FINAL
 ## Current Checkpoint
 
 - **Active task / gate:** `R-2210` (`READY`)
-- **Pushed commit / HEAD:** `bedbb7b` (M22 implementation and instruction
+- **Pushed commit / HEAD:** `e2ceb80` (M22 implementation and instruction
   versioning; fresh review is pending)
-- **Verification status:** M22-001 focused domain tests pass 8/8 and focused
+- **Verification status:** M22-001 focused domain tests pass 9/9 and focused
   adapter tests pass 17/17; format, lint, and type checks pass. M21 focused
   adapter/actor/UI tests pass 77/77 and affected tests pass 279/279; check,
   format, lint, diff checks, build, and receipt-review Playwright pass. Fresh

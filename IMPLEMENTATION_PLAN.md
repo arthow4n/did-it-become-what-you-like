@@ -97,7 +97,8 @@ history may be pruned from this live plan.
 
 - **Active task / gate:** R-1710 (fresh read-only review pending; `/root` is
   integration owner)
-- **Pushed commit / HEAD:** `108b8ec` (M16 archive; M17 implementation pending)
+- **Pushed commit / HEAD:** `ce57447` (M17 implementation and targeted
+  verification; R-1710 review pending)
 - **Verification status:** M16 evidence remains valid. M17 adapter prompt tests
   pass 10/10, affected tests pass 48/48, receipt-review Playwright passes 1/1,
   and check, format, lint, build, and diff checks pass.

@@ -29,7 +29,7 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ### Released Baseline
 
-M0 through M16 and all review gates through `R-1610` are `COMPLETE`. The
+M0 through M17 and all review gates through `R-1710` are `COMPLETE`. The
 released application baseline includes the approved domain, actors, adapters,
 responsive UI, After Midnight design system backed by Mantine behind the
 repository facade, accessibility, PWA, tests, GitHub Pages pipeline, operational
@@ -43,9 +43,11 @@ taxonomy and phase-specific operation diagnostics across image lifecycle,
 provider, and normalization boundaries; cleanup cannot mask the primary
 failure. Receipt reconciliation also aligns printed totals with the signed
 direction of selected lines while preserving positive adjustment-only inflows.
+Gemini receipt extraction instructions explicitly encode these signed amount
+rules, exclude non-line totals, and require an arithmetic self-check.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
-preserved in Git at commit `00ec387`, the last complete pre-pruning ledger. That
+preserved in Git at commit `d7c6a22`, the last complete pre-pruning ledger. That
 history is evidence, not active instructions, and agents must not reconstruct it
 in this live plan.
 
@@ -61,25 +63,10 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-### M17 — Signed adjustment extraction guidance
-
-Owner-approved outcome: reduce receipt mismatches caused by the model assigning
-the wrong sign to discounts and other adjustments. The Gemini prompt will state
-the application’s signed-money rules, exclude non-line totals and quantity
-rows, and require an arithmetic self-check before returning structured output.
-The versioned provider-neutral receipt port remains unchanged; no post-hoc
-heuristic may silently rewrite an ambiguous adjustment.
-
-| Task | Status | Dependency | Acceptance / evidence |
-| --- | --- | --- | --- |
-| M17-001 Strengthen signed extraction instructions | COMPLETE | M16 | Versioned Gemini instructions explicitly distinguish purchases, credits, discounts, surcharges, tips, and payment totals, with a signed line-sum self-check. |
-| M17-002 Prompt regression and targeted verification | COMPLETE | M17-001 | Adapter prompt and signed-discount fixture tests pass 11/11; affected tests pass 48/48; type, format, lint, build, diff, and receipt E2E checks pass. |
-| R-1710 Fresh read-only review | COMPLETE | M17-002 | Fresh read-only review found no severity 1–3 findings; the concrete positive-discount fixture and arbitrary-precision reconciliation coverage are now included. |
-| M17-FINAL Archive and hygiene | IN_PROGRESS | R-1710 | Record exact evidence, run repository-hygiene pruning, archive completed M17 history, commit, and push. |
-
-The implementation owner must update this ledger after each task and review
-gate. The M17-FINAL archive is the only point at which completed milestone
-history may be pruned from this live plan.
+No active milestone is currently open. When the repo owner specifies the next
+product milestone or refactor epic, follow the Standard Planning Procedure in
+`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
+ledger.
 
 ### Locked boundary / design-system rules
 
@@ -95,10 +82,9 @@ history may be pruned from this live plan.
 
 ## Current Checkpoint
 
-- **Active task / gate:** M17-FINAL (archive and hygiene; `/root` is
-  integration owner)
-- **Pushed commit / HEAD:** `ce57447` (M17 implementation; signed-discount
-  fixture follow-up is being committed)
+- **Active task / gate:** None (M17 complete and archived)
+- **Pushed commit / HEAD:** `d7c6a22` (M17 implementation and review-complete
+  pre-pruning ledger)
 - **Verification status:** M16 evidence remains valid. M17 adapter prompt and
   signed-discount fixture tests pass 11/11, affected tests pass 48/48,
   receipt-review Playwright passes 1/1, and check, format, lint, build, and diff
@@ -106,8 +92,8 @@ history may be pruned from this live plan.
 - **Active / preserved work:** Single primary agent on `master`; M17 planning is
   reconciled before implementation, with no delegated workers or transient
   hygiene artifacts.
-- **Exact next action:** Commit and push the signed-discount fixture, then run
-  the repository-hygiene audit and archive M17.
+- **Exact next action:** Run the final environment-scoped hygiene checks, then
+  commit and push this archived ledger.
 
 ## Ready-to-Use Orchestration Prompt
 

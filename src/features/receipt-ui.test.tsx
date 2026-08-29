@@ -8,6 +8,7 @@ import {
   ReceiptImageStore,
   ReceiptMetadataEditor,
   ReceiptReviewScreen,
+  ReceiptScanFailureNotice,
 } from "./receipt-ui.tsx";
 import {
   GeminiQuickSetup,
@@ -16,6 +17,7 @@ import {
   ReceiptSourcePicker,
 } from "../design-system/index.ts";
 import { DeviceLocalSettingsSchema } from "../domain/index.ts";
+import type { ContractFailure } from "../actors/contracts/index.ts";
 import { withComponentHarness } from "../test-support/component-harness.tsx";
 import { createFakeLocalPort } from "../test-support/fakes/ports.ts";
 
@@ -90,6 +92,41 @@ Deno.test("receipt-ui disclosure states the exact permitted and excluded data", 
     fireEvent.click(continueButton);
     fireEvent.click(view.getByRole("button", { name: "Cancel" }));
     assert(accepted && declined);
+  });
+});
+
+Deno.test("receipt-ui scan failure notice exposes a safe reportable code", async () => {
+  await withComponentHarness(({ render, fireEvent }) => {
+    const failure: ContractFailure = {
+      code: "invalid-request",
+      message: "The request was invalid.",
+      retryable: false,
+      operation: "gemini.extract",
+    };
+    let retried = false;
+    let choseAnother = false;
+    let usedManualEntry = false;
+    render(
+      createElement(ReceiptScanFailureNotice, {
+        failure,
+        canRetry: true,
+        onRetry: () => retried = true,
+        onChooseAnotherImage: () => choseAnother = true,
+        onUseManualEntry: () => usedManualEntry = true,
+      }),
+    );
+    const view = within(document.body);
+    const alert = view.getByRole("alert");
+    assert(alert.textContent?.includes("The request was invalid."));
+    assert(alert.textContent?.includes("Error code: invalid-request"));
+    assert(alert.textContent?.includes("Operation: gemini.extract"));
+    assert(!alert.textContent?.includes("provider secret"));
+    fireEvent.click(view.getByRole("button", { name: "Retry" }));
+    fireEvent.click(
+      view.getByRole("button", { name: "Choose another image" }),
+    );
+    fireEvent.click(view.getByRole("button", { name: "Use manual entry" }));
+    assert(retried && choseAnother && usedManualEntry);
   });
 });
 

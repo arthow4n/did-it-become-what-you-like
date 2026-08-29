@@ -41,7 +41,10 @@ import {
   type ReceiptReviewActorEvent,
   type ReceiptScanMachineDependencies,
 } from "../actors/receipt.ts";
-import type { ReceiptImageRef } from "../actors/contracts/index.ts";
+import type {
+  ContractFailure,
+  ReceiptImageRef,
+} from "../actors/contracts/index.ts";
 import { ArrowLeft, X } from "lucide-react";
 import {
   AdaptiveDialog,
@@ -419,6 +422,51 @@ export function ReceiptDisclosure({ onAccept, onDecline }: {
         <Button onPress={onAccept}>Continue to scan</Button>
       </StickyActionBar>
     </>
+  );
+}
+
+export type ReceiptScanFailureNoticeProps = {
+  readonly failure: ContractFailure;
+  readonly canRetry: boolean;
+  readonly onRetry: () => void;
+  readonly onChooseAnotherImage: () => void;
+  readonly onUseManualEntry: () => void;
+};
+
+/**
+ * Keep scan failures useful without allowing provider text into the screen.
+ * The actor supplies the allowlisted message, code, and bounded operation.
+ */
+export function ReceiptScanFailureNotice({
+  failure,
+  canRetry,
+  onRetry,
+  onChooseAnotherImage,
+  onUseManualEntry,
+}: ReceiptScanFailureNoticeProps) {
+  return (
+    <InlineNotice tone="danger" title="Receipt scan failed">
+      {failure.message}
+      <Text size="caption" tone="secondary">
+        Error code: {failure.code}
+        {failure.operation ? ` · Operation: ${failure.operation}` : ""}
+      </Text>
+      <Inline>
+        <Button
+          variant="secondary"
+          isDisabled={!canRetry}
+          onPress={onRetry}
+        >
+          Retry
+        </Button>
+        <Button variant="quiet" onPress={onChooseAnotherImage}>
+          Choose another image
+        </Button>
+        <Button variant="quiet" onPress={onUseManualEntry}>
+          Use manual entry
+        </Button>
+      </Inline>
+    </InlineNotice>
   );
 }
 
@@ -800,7 +848,7 @@ export function ReceiptScanScreen({
     );
   };
 
-  const actorError = snapshot.context.error?.message;
+  const actorFailure = snapshot.context.error;
   const scanBusy = snapshot.matches("preparing") ||
     snapshot.matches("requesting") ||
     snapshot.matches("validating");
@@ -1024,29 +1072,15 @@ export function ReceiptScanScreen({
             </InlineNotice>
           )
           : null}
-        {actorError
+        {actorFailure
           ? (
-            <InlineNotice tone="danger" title="Receipt scan failed">
-              {actorError}
-              <Inline>
-                <Button
-                  variant="secondary"
-                  isDisabled={!selectedImage}
-                  onPress={() => scan()}
-                >
-                  Retry
-                </Button>
-                <Button variant="quiet" onPress={() => startFilePicker(false)}>
-                  Choose another image
-                </Button>
-                <Button
-                  variant="quiet"
-                  onPress={() => send({ type: "receipt.use-manual" })}
-                >
-                  Use manual entry
-                </Button>
-              </Inline>
-            </InlineNotice>
+            <ReceiptScanFailureNotice
+              failure={actorFailure}
+              canRetry={Boolean(selectedImage)}
+              onRetry={scan}
+              onChooseAnotherImage={() => startFilePicker(false)}
+              onUseManualEntry={() => send({ type: "receipt.use-manual" })}
+            />
           )
           : null}
         {scanBusy

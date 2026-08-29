@@ -514,9 +514,110 @@ Deno.test("actor-contract: receipt scan preserves typed quota failures", async (
     code: "quota",
     message: "Storage or service quota was exceeded.",
     retryable: true,
+    operation: "receipt.scan",
   });
   actor.stop();
 });
+
+Deno.test(
+  "actor-contract: receipt scan exposes safe typed and unknown diagnostics",
+  async () => {
+    const scanInput: ReceiptScanInput = {
+      image: {
+        ephemeralId: "image-diagnostics",
+        mediaType: "image/jpeg",
+        byteLength: 12,
+      },
+      projectId: "project-sweden",
+      currency: "SEK",
+      locale: "en-SE",
+      categoryCatalogue: [],
+      model: "gemini-test",
+      prepareImage: false,
+    };
+
+    const typed = receiptScanMachine.provide({
+      actors: {
+        scanReceipt: fromPromise(({ input }: { input: ReceiptScanInput }) => {
+          void input;
+          return Promise.reject({
+            code: "invalid-request",
+            message: "provider secret must not cross the actor boundary",
+            operation: "gemini.extract",
+          });
+        }),
+      },
+    });
+    const typedActor = createActor(typed).start();
+    typedActor.send({ type: "receipt.open" });
+    typedActor.send({ type: "receipt.image-selected" });
+    typedActor.send({ type: "receipt.scan", input: scanInput });
+    await settle();
+    assertEquals(typedActor.getSnapshot().context.error, {
+      code: "invalid-request",
+      message: "The request was invalid.",
+      retryable: false,
+      operation: "gemini.extract",
+    });
+    typedActor.stop();
+
+    const validationSecret = "gemini-provider-secret-validation";
+    const validating = receiptScanMachine.provide({
+      actors: {
+        scanReceipt: fromPromise(({ input }: { input: ReceiptScanInput }) => {
+          void input;
+          return Promise.resolve({ review });
+        }),
+        validateReceipt: fromPromise(
+          ({ input }: { input: ReceiptReviewDraft }) => {
+            void input;
+            return Promise.reject(new Error(validationSecret));
+          },
+        ),
+      },
+    });
+    const validatingActor = createActor(validating).start();
+    validatingActor.send({ type: "receipt.open" });
+    validatingActor.send({ type: "receipt.image-selected" });
+    validatingActor.send({ type: "receipt.scan", input: scanInput });
+    await settle();
+    assertEquals(validatingActor.getSnapshot().context.error, {
+      code: "invalid",
+      message: "Receipt output needs review or retry.",
+      retryable: false,
+      operation: "receipt.validate",
+    });
+    const validationFailure = validatingActor.getSnapshot().context.error;
+    assert(validationFailure !== null);
+    assert(!JSON.stringify(validationFailure).includes(validationSecret));
+    validatingActor.stop();
+
+    const secret = "gemini-provider-secret-diagnostics";
+    const unknown = receiptScanMachine.provide({
+      actors: {
+        scanReceipt: fromPromise(({ input }: { input: ReceiptScanInput }) => {
+          void input;
+          return Promise.reject(new Error(secret));
+        }),
+      },
+    });
+    const unknownActor = createActor(unknown).start();
+    unknownActor.send({ type: "receipt.open" });
+    unknownActor.send({ type: "receipt.image-selected" });
+    unknownActor.send({ type: "receipt.scan", input: scanInput });
+    await settle();
+    assertEquals(unknownActor.getSnapshot().context.error, {
+      code: "unknown",
+      message: "Receipt extraction failed.",
+      retryable: true,
+      operation: "receipt.scan",
+    });
+    const failure = unknownActor.getSnapshot().context.error;
+    assert(failure !== null);
+    assert(!JSON.stringify(failure).includes(secret));
+    unknownActor.stop();
+  },
+);
 
 Deno.test("actor-contract: expense commit preserves unauthorized failures", async () => {
   const expenseWithFailure = expenseFormMachine.provide({

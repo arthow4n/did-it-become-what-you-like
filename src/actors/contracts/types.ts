@@ -115,10 +115,13 @@ export function contractFailureFromError(
   // code's safe retry policy (especially `unauthorized` and `retired`).
   const retryable = RETRYABLE_PORT_ERRORS.has(error.code);
 
-  const operation = options.preserveOperation === true &&
-      typeof error.operation === "string" &&
-      SAFE_OPERATION.test(error.operation)
+  const operationCandidate = typeof error.operation === "string"
     ? error.operation
+    : fallback.operation;
+  const operation = options.preserveOperation === true &&
+      typeof operationCandidate === "string" &&
+      SAFE_OPERATION.test(operationCandidate)
+    ? operationCandidate
     : undefined;
 
   return {

@@ -57,10 +57,25 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-No active milestone is currently open. When the repo owner specifies the next
-product milestone or refactor epic, follow the Standard Planning Procedure in
-`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
-ledger.
+### M14 — Diagnosable receipt scan failures
+
+Owner-approved outcome: keep the provider-neutral structured-output scan flow,
+but preserve its safe failure taxonomy through the receipt actor and show a
+shareable code (and bounded operation when available) beside the recovery
+actions. Unknown failures must no longer collapse into an untraceable generic
+banner, and no provider message, credential, image data, or prompt content may
+cross into the UI or durable state.
+
+| Task | Status | Dependency | Acceptance / evidence |
+| --- | --- | --- | --- |
+| M14-001 Trace and expose safe receipt failure diagnostics | COMPLETE | M13 | Receipt scan/validation fallbacks now retain safe operations, typed adapter codes are preserved, and the failure notice renders code plus operation without raw provider text. |
+| M14-002 Regression coverage and targeted verification | IN_PROGRESS | M14-001 | Actor/component tests pass 33/33; affected tests pass 150/150; receipt-review Playwright passes 1/1; check, format, lint, build, and diff checks pass. Focused implementation commit is pending push. |
+| R-1410 Fresh read-only review | PENDING | M14-002 | A fresh reviewer reports no severity 1–3 findings, or all findings are fixed and re-verified. |
+| M14-FINAL Archive and hygiene | PENDING | R-1410 | Record exact evidence, archive completed M14 history, run the repository-hygiene procedure and its required final checks, commit, and push. |
+
+The implementation owner must update this ledger after each task and review
+gate. The M14-FINAL archive is the only point at which completed milestone
+history may be pruned from this live plan.
 
 ### Locked boundary / design-system rules
 
@@ -76,16 +91,18 @@ ledger.
 
 ## Current Checkpoint
 
-- **Active task / gate:** None (Milestone 13 complete and archived)
-- **Pushed commit / HEAD:** `ad79574` (M13 archival ledger; implementation and
+- **Active task / gate:** M14-002 (primary implementation owner: `/root`)
+- **Pushed commit / HEAD:** `f41f81a` (M13 archival ledger; implementation and
   review-complete history is preserved at `4aa0ada`)
-- **Verification status:** Focused related tests pass 30/30; affected tests pass
-  30/30; the receipt-review Playwright journey passes 1/1 with both native
-  source actions; `deno task check`, `deno task fmt:check`, `deno task lint`,
+- **Verification status:** M13 evidence remains valid. M14 focused actor/UI
+  tests pass 33/33, affected tests pass 150/150, receipt-review Playwright
+  passes 1/1, and `deno task check`, `deno task fmt:check`, `deno task lint`,
   `deno task build`, and `git diff --check` pass.
-- **Active / preserved work:** Working tree is clean on `master`; no delegated
-  implementation or transient hygiene artifacts were found.
-- **Exact next action:** Await the next owner instruction or feature milestone.
+- **Active / preserved work:** M14 implementation and regression changes are
+  uncommitted on `master`; no delegated implementation or transient hygiene
+  artifacts were found.
+- **Exact next action:** Commit and push the verified M14 implementation, then
+  request the fresh read-only R-1410 review.
 
 ## Ready-to-Use Orchestration Prompt
 

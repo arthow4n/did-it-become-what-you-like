@@ -153,6 +153,8 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
   await page.getByRole("option", { name: /Fake Gemini Compatible/ }).click();
   await page.getByRole("button", { name: "Test configuration" }).click();
   await expect(page.getByText(/quota was exceeded/)).toBeVisible();
+  await expect(page.getByText("Error code: quota")).toBeVisible();
+  await expect(page.getByText("Operation: gemini.extract")).toBeVisible();
   await expect(page.getByText("provider-only-secret")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Retry" })).toBeEnabled();
   await expect.poll(() =>

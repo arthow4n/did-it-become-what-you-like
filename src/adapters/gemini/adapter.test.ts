@@ -382,11 +382,25 @@ Deno.test("A-301 key storage is namespaced, removable, and opaque", async () => 
 });
 
 Deno.test("A-301 models retain Needs test entries and synthetic validation promotes only tested models", async () => {
-  const { adapter } = createStorageAndAdapter((requests) =>
+  const { adapter, requests } = createStorageAndAdapter((requests) =>
     clientWithModels(
       [MODEL_NEEDS_TEST],
       { text: RECEIPT_OUTPUT },
-      (request) => requests.push(request),
+      (request) => {
+        requests.push(request);
+        const media = request.contents.find((part) => "inlineData" in part);
+        if (media === undefined || !("inlineData" in media)) {
+          throw { status: 400 };
+        }
+        const validOnePixelPng =
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+        if (
+          media.inlineData.mimeType !== "image/png" ||
+          media.inlineData.data !== validOnePixelPng
+        ) {
+          throw { status: 400 };
+        }
+      },
     )
   );
   await adapter.setApiKey("AIza.synthetic-model-test");
@@ -404,6 +418,7 @@ Deno.test("A-301 models retain Needs test entries and synthetic validation promo
     requiredCapabilities: REQUIRED_GEMINI_CAPABILITIES,
   });
   assertEquals(result.status, "compatible");
+  assertEquals(requests.length, 1);
   if (result.status === "compatible") {
     assertEquals(
       geminiModelCapabilityLabel(result.model, {

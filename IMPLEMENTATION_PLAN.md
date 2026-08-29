@@ -54,10 +54,66 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-No active milestone is currently open. When the repo owner specifies the next
-product milestone or refactor epic, follow the Standard Planning Procedure in
-`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
-ledger.
+## M11 — Gemini compatibility probe correctness
+
+### M11 authority, outcome, and non-goals
+
+The owner explicitly authorized investigation and repair of Gemini models being
+incorrectly rejected by **Test configuration**. M11 makes the synthetic probe
+send a real privacy-safe image matching its declared MIME type and preserves the
+existing key, quota, schema, model-lifecycle, and capability semantics.
+
+**Non-goals:** changing receipt extraction prompts or schemas, hard-coding a
+model allowlist, weakening structured-output validation, or changing UI styling.
+
+### Dependency graph
+
+```text
+M11-001 -> R-1110 -> M11-FINAL
+```
+
+#### M11-001 — Repair and regress Gemini synthetic image validation
+
+- **Status/dependencies:** `COMPLETE`; no dependencies.
+- **Ownership:** `src/adapters/gemini/adapter.ts`,
+  `src/adapters/gemini/adapter.test.ts`, `IMPLEMENTATION_PLAN.md`.
+- **Scope/non-goals:** Replace the invalid text-as-JPEG probe with minimal valid
+  image bytes and add a provider-faithful regression test. Do not relax the
+  required image, content-generation, or structured-output capability gate.
+- **Outputs/acceptance:** Models whose metadata is incomplete can pass the
+  synthetic configuration test when they accept real image input and the receipt
+  schema; malformed synthetic media cannot regress silently.
+- **Tests:** Gemini adapter unit regression that decodes and validates the
+  probe's inline media before returning a valid structured response.
+- **Verification:**
+  `deno fmt src/adapters/gemini/adapter.ts
+  src/adapters/gemini/adapter.test.ts IMPLEMENTATION_PLAN.md`,
+  `deno lint src/adapters/gemini/adapter.ts
+  src/adapters/gemini/adapter.test.ts`,
+  `deno test --related=src/adapters/gemini/adapter.ts`,
+  `deno task test:affected`, `git diff --check`.
+
+#### R-1110 — Gemini probe repair review gate
+
+- **Status/dependencies:** `COMPLETE`; depends on `M11-001`.
+- **Reviewer role:** Fresh read-only reviewer subagent.
+- **Audit scope:** M11 adapter/test diff, exact validation evidence, provider
+  payload correctness, error taxonomy, secret and real-receipt privacy.
+- **Remediation loop:** The primary agent fixes all severity 1–3 findings and
+  reruns only affected validation before closing the gate.
+
+#### M11-FINAL — Milestone closure and ledger archiving
+
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-1110`.
+- **Ownership:** `IMPLEMENTATION_PLAN.md` and repository hygiene documents only.
+- **Scope/non-goals:** Preserve the completed M11 history in Git, compact the
+  live ledger, and run the repository-hygiene workflow. No application changes.
+- **Outputs/acceptance:** M11 is summarized in Released Baseline and transient
+  task detail is pruned without dangling documentation references.
+- **Tests:** Documentation formatting and reference checks from the hygiene
+  workflow.
+- **Verification:** Commands required by the repository-hygiene workflow and
+  `git diff --check`.
 
 ### Locked boundary / design-system rules
 
@@ -73,15 +129,20 @@ ledger.
 
 ## Current Checkpoint
 
-- **Active task / gate:** None (Milestone 10 complete and archived)
-- **Pushed commit / HEAD:** `c8c5898`
-- **Verification status:** Standard test suite, consolidated release provenance,
-  and formatting/syntax checks all passing.
-- **Active / preserved work:** Working tree clean on `master`.
-- **Exact next action:** Await next user instructions or feature milestone.
+- **Active task / gate:** `M11-FINAL` (`IN_PROGRESS`)
+- **Pushed commit / HEAD:** `c8c5898` (pre-M11 baseline)
+- **Verification status:** M11-001 passes fmt/lint, direct related tests (40),
+  affected tests (40), and `git diff --check`. R-1110's sole severity-3 test
+  finding was remediated by matching the full reviewed valid PNG fixture; no
+  severity 1–2 findings.
+- **Active / preserved work:** Single primary agent on `master`; no worktrees or
+  delegated implementation.
+- **Exact next action:** Commit and push M11-001, then execute M11-FINAL ledger
+  archiving and repository hygiene.
 
 ## Ready-to-Use Orchestration Prompt
 
 ```text
-Read AGENTS.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Confirm working tree status on master, author the next milestone plan per .agents/skills/implementation-planning/SKILL.md, obtain approval, and proceed with implementation.
+Read AGENTS.md and IMPLEMENTATION_PLAN.md. Reconcile M11's checkpoint with Git,
+then resume the next dependency-ready M11 task as the single primary agent.
 ```

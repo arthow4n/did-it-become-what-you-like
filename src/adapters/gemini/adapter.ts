@@ -352,9 +352,14 @@ function promptFor(request: ReceiptExtractionRequest): string {
 }
 
 function syntheticImage(): PreparedImage {
+  // A real 1x1 opaque PNG. The compatibility probe must exercise multimodal
+  // decoding without sending owner data; arbitrary text labelled as an image
+  // is rejected by Gemini before model capabilities can be tested.
+  const base64 =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
   return {
-    bytes: new TextEncoder().encode("synthetic-image"),
-    mimeType: "image/jpeg",
+    bytes: Uint8Array.from(atob(base64), (value) => value.charCodeAt(0)),
+    mimeType: "image/png",
     width: 1,
     height: 1,
     metadataSanitized: true,

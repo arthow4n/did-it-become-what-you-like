@@ -1,4 +1,9 @@
 import { assign, fromPromise, setup } from "xstate";
+import {
+  adapterError,
+  type AdapterErrorCode,
+  isAdapterError,
+} from "../adapters/ports/index.ts";
 import type {
   ImageInput,
   ImagePreparationPort,
@@ -64,36 +69,85 @@ function defaultLineId(): StableId {
   return `receipt-line-${value}`;
 }
 
+function scanStepError(
+  error: unknown,
+  code: AdapterErrorCode,
+  operation: string,
+): Error {
+  return isAdapterError(error) ? error : adapterError(code, operation);
+}
+
 async function extractReview(
   dependencies: ReceiptScanMachineDependencies,
   input: ReceiptScanInput,
   signal: AbortSignal,
 ): Promise<ReceiptScanOutput> {
+  let output: ReceiptScanOutput | undefined;
+  let failure: unknown;
+  let failed = false;
   try {
-    const image = await dependencies.resolveImage(input.image, signal);
-    const prepared = await dependencies.imagePreparation.prepare(image, {
-      enabled: input.prepareImage,
-      signal,
-    });
-    const draft = await dependencies.ai.extractReceipt({
-      modelId: input.model,
-      image: prepared,
-      schemaVersion: RECEIPT_SCHEMA_VERSION_NUMBER,
-      instructionVersion: RECEIPT_INSTRUCTION_VERSION,
-      categories: input.categoryCatalogue,
-      locale: input.locale,
-      currency: input.currency,
-    }, { signal });
-    const review = normalizeReceiptExtractionDraft(draft, {
-      projectId: input.projectId,
-      currency: input.currency,
-      categoryCatalogue: input.categoryCatalogue,
-      nextId: dependencies.nextLineId ?? defaultLineId,
-    });
-    return { review };
-  } finally {
-    await dependencies.releaseImage?.(input.image);
+    let image: ImageInput;
+    try {
+      image = await dependencies.resolveImage(input.image, signal);
+    } catch (error) {
+      throw scanStepError(error, "not-found", "receipt.image.resolve");
+    }
+
+    let prepared: Awaited<ReturnType<ImagePreparationPort["prepare"]>>;
+    try {
+      prepared = await dependencies.imagePreparation.prepare(image, {
+        enabled: input.prepareImage,
+        signal,
+      });
+    } catch (error) {
+      throw scanStepError(error, "invalid-request", "image.prepare");
+    }
+
+    let draft: Awaited<ReturnType<ReceiptAiPort["extractReceipt"]>>;
+    try {
+      draft = await dependencies.ai.extractReceipt({
+        modelId: input.model,
+        image: prepared,
+        schemaVersion: RECEIPT_SCHEMA_VERSION_NUMBER,
+        instructionVersion: RECEIPT_INSTRUCTION_VERSION,
+        categories: input.categoryCatalogue,
+        locale: input.locale,
+        currency: input.currency,
+      }, { signal });
+    } catch (error) {
+      throw scanStepError(error, "unknown", "gemini.extract");
+    }
+
+    let review: ReceiptReviewDraft;
+    try {
+      review = normalizeReceiptExtractionDraft(draft, {
+        projectId: input.projectId,
+        currency: input.currency,
+        categoryCatalogue: input.categoryCatalogue,
+        nextId: dependencies.nextLineId ?? defaultLineId,
+      });
+    } catch (error) {
+      throw scanStepError(error, "invalid-request", "receipt.normalize");
+    }
+    output = { review };
+  } catch (error) {
+    failed = true;
+    failure = error;
   }
+
+  try {
+    await dependencies.releaseImage?.(input.image);
+  } catch (error) {
+    // A best-effort cleanup failure must never hide the actionable failure
+    // from image resolution, preparation, extraction, or normalization.
+    if (!failed) {
+      failed = true;
+      failure = scanStepError(error, "unknown", "receipt.image.release");
+    }
+  }
+
+  if (failed) throw failure;
+  return output!;
 }
 
 /**

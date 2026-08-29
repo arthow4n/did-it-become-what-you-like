@@ -213,6 +213,57 @@ Deno.test("receipt-actor scan: offline/model loss failure can retry without reta
   modelLoss.stop();
 });
 
+Deno.test(
+  "receipt-actor scan: resolver failures are typed and cleanup cannot mask extraction errors",
+  async () => {
+    const preparation = createFakeImagePreparationPort();
+    const missingImage = createActor(createReceiptScanMachine({
+      ai: createFakeGeminiPort(extractionDraft()),
+      imagePreparation: preparation,
+      resolveImage: () => Promise.reject(new Error("image entry was lost")),
+    })).start();
+    missingImage.send({ type: "receipt.open" });
+    missingImage.send({ type: "receipt.image-selected" });
+    missingImage.send({ type: "receipt.scan", input: scanInput });
+    await waitForValue(missingImage, "failed");
+    assertEquals(missingImage.getSnapshot().context.error, {
+      code: "not-found",
+      message: "The requested resource was not found.",
+      retryable: false,
+      operation: "receipt.image.resolve",
+    });
+    missingImage.stop();
+
+    const gemini = createFakeGeminiPort(extractionDraft());
+    gemini.failNext("quota");
+    const cleanupFailure = createActor(createReceiptScanMachine({
+      ai: gemini,
+      imagePreparation: preparation,
+      resolveImage: () =>
+        Promise.resolve({
+          bytes: new Uint8Array([1, 2, 3]),
+          mimeType: "image/jpeg",
+          width: 100,
+          height: 100,
+        }),
+      releaseImage: () => {
+        throw new Error("cleanup details must not replace the provider error");
+      },
+    })).start();
+    cleanupFailure.send({ type: "receipt.open" });
+    cleanupFailure.send({ type: "receipt.image-selected" });
+    cleanupFailure.send({ type: "receipt.scan", input: scanInput });
+    await waitForValue(cleanupFailure, "failed");
+    assertEquals(cleanupFailure.getSnapshot().context.error, {
+      code: "quota",
+      message: "Storage or service quota was exceeded.",
+      retryable: true,
+      operation: "gemini",
+    });
+    cleanupFailure.stop();
+  },
+);
+
 Deno.test("receipt-actor scan: cancellation aborts the request and releases the image", async () => {
   const gemini = createFakeGeminiPort(extractionDraft());
   const preparation = createFakeImagePreparationPort();

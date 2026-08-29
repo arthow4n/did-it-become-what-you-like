@@ -58,10 +58,23 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-No active milestone is currently open. When the repo owner specifies the next
-product milestone or refactor epic, follow the Standard Planning Procedure in
-`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
-ledger.
+### M15 — Phase-safe receipt scan failures
+
+Owner-approved outcome: remove the remaining `unknown · receipt.scan` blind
+spot by making image resolution and cleanup errors cross the receipt actor
+boundary as safe, phase-specific failures. A cleanup failure must not mask the
+actual extraction error, and no raw platform/provider text may reach the UI.
+
+| Task | Status | Dependency | Acceptance / evidence |
+| --- | --- | --- | --- |
+| M15-001 Type raw image lifecycle failures and preserve primary errors | COMPLETE | M14 | Resolver, preparation, extraction, and normalization failures are converted to safe phase operations; cleanup cannot replace an earlier scan failure. |
+| M15-002 Regression coverage and targeted verification | COMPLETE | M15-001 | Actor regression covers a raw resolver failure and cleanup masking a typed provider failure; affected tests 37/37, checks, format, lint, build, diff check, and receipt E2E 1/1 pass. |
+| R-1510 Fresh read-only review | IN_PROGRESS | M15-002 | Fresh read-only review is required before archival. |
+| M15-FINAL Archive and hygiene | PENDING | R-1510 | Record exact evidence, run repository-hygiene pruning, archive completed M15 history, commit, and push. |
+
+The implementation owner must update this ledger after each task and review
+gate. The M15-FINAL archive is the only point at which completed milestone
+history may be pruned from this live plan.
 
 ### Locked boundary / design-system rules
 
@@ -77,17 +90,17 @@ ledger.
 
 ## Current Checkpoint
 
-- **Active task / gate:** None (M14 complete and archived)
-- **Pushed commit / HEAD:** `14dd741` (M14 implementation and review-complete
-  pre-pruning ledger)
-- **Verification status:** M14 focused actor/UI tests pass 33/33, affected tests
-  pass 150/150, receipt-review Playwright passes 1/1, and `deno task check`,
-  `deno task fmt:check`, `deno task lint`, `deno task build`, and `git diff
-  --check` pass. Final hygiene checks are recorded in the archive commit.
-- **Active / preserved work:** Single primary agent on `master`; no delegated
-  workers, uncommitted implementation changes, or transient hygiene artifacts.
-- **Exact next action:** Run the repository-hygiene audit and its final
-  environment-scoped checks, then commit and push this archived ledger.
+- **Active task / gate:** R-1510 (fresh read-only review pending; `/root` is
+  integration owner)
+- **Pushed commit / HEAD:** `9fb03c9` (M14 archive; M15 implementation pending)
+- **Verification status:** M15 actor regression passes 6/6, affected tests pass
+  37/37, receipt-review Playwright passes 1/1, and `deno task check`, `deno task
+  fmt:check`, `deno task lint`, `deno task build`, and `git diff --check` pass.
+- **Active / preserved work:** Single primary agent on `master`; M15 changes are
+  ready for fresh read-only review, with no delegated workers or transient
+  hygiene artifacts.
+- **Exact next action:** Commit and push the M15 implementation, then complete
+  R-1510 and archive the milestone after the review gate.
 
 ## Ready-to-Use Orchestration Prompt
 

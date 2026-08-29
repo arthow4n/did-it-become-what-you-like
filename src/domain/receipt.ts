@@ -514,7 +514,7 @@ export function normalizeReceiptExtractionDraft(
         id,
         description,
         categoryId,
-        lineTotal: normalizeExtractedAmount(amount ?? "0", direction),
+        lineTotal: normalizedAmount,
         selected,
         uncertain,
         ...(classificationReason === undefined ? {} : { classificationReason }),

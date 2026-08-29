@@ -227,7 +227,27 @@ for (const vp of VIEWPORTS) {
       await expect(page.getByRole("heading", { name: "Create category" }))
         .toBeVisible();
       await snap("16-category-editor");
-      await page.getByRole("button", { name: "Back" }).click();
+      await page.getByRole("textbox", { name: "Category name" }).fill(
+        "Groceries",
+      );
+      await page.getByRole("button", { name: "Save category" }).click();
+      await expect(page.getByRole("heading", { name: "Manage categories" }))
+        .toBeVisible();
+
+      for (const catName of ["Utilities", "Transport", "Entertainment"]) {
+        await page.getByRole("button", { name: "Create category" }).click();
+        await page.getByRole("textbox", { name: "Category name" }).fill(
+          catName,
+        );
+        await page.getByRole("button", { name: "Save category" }).click();
+        await expect(page.getByRole("heading", { name: "Manage categories" }))
+          .toBeVisible();
+      }
+
+      await page.goto("/#organize");
+      await expect(page.getByRole("heading", { name: "Organize" }))
+        .toBeVisible();
+      await snap("16b-organize-hub-multi-categories");
 
       // 17. Receipt Scan Initial Screen
       await page.goto("/#receipt/scan");

@@ -1165,6 +1165,7 @@ export function ProjectManager({
   const [currency, setCurrency] = useState("SEK");
   const [saveTarget, setSaveTarget] = useState<Project | null>(null);
   const handledInitialCreate = useRef(false);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     if (snapshot.matches("closed")) {
@@ -1225,9 +1226,12 @@ export function ProjectManager({
 
   useEffect(() => {
     if (
-      editor?.kind === "create" && snapshot.context.result &&
+      editor?.kind === "create" &&
+      isSubmittingRef.current &&
+      snapshot.context.result &&
       snapshot.matches("ready")
     ) {
+      isSubmittingRef.current = false;
       setEditor(null);
       onComplete?.();
     }
@@ -1238,6 +1242,7 @@ export function ProjectManager({
   const submitEditor = () => {
     if (!name.trim() || !snapshot.matches("ready")) return;
     if (editor?.kind === "create") {
+      isSubmittingRef.current = true;
       send({
         type: "project.command",
         command: {
@@ -1817,6 +1822,7 @@ export function CategoryManager({
   const [color, setColor] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState("");
   const handledInitialCreate = useRef(false);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     if (snapshot.matches("closed")) send({ type: "category.open", state });
@@ -1846,6 +1852,7 @@ export function CategoryManager({
 
   const submitEditor = () => {
     if (!name.trim() || !snapshot.matches("ready")) return;
+    isSubmittingRef.current = true;
     if (editor?.kind === "create") {
       send({
         type: "category.command",
@@ -1876,7 +1883,13 @@ export function CategoryManager({
   };
 
   useEffect(() => {
-    if (editor && snapshot.context.result && snapshot.matches("ready")) {
+    if (
+      editor &&
+      isSubmittingRef.current &&
+      snapshot.context.result &&
+      snapshot.matches("ready")
+    ) {
+      isSubmittingRef.current = false;
       setEditor(null);
       onComplete?.();
     }

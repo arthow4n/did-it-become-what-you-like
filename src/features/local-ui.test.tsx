@@ -555,6 +555,63 @@ Deno.test("local UI organize and settings screens expose labeled destinations", 
   });
 });
 
+Deno.test("local UI organize screen displays all active categories and projects without truncation", async () => {
+  await withComponentHarness(({ render }) => {
+    const p1 = {
+      ...project,
+      id: "p1",
+      name: "Project 1",
+      defaultCurrency: "SEK",
+    };
+    const p2 = {
+      ...project,
+      id: "p2",
+      name: "Project 2",
+      defaultCurrency: "USD",
+    };
+    const p3 = {
+      ...project,
+      id: "p3",
+      name: "Project 3",
+      defaultCurrency: "EUR",
+    };
+    const p4 = {
+      ...project,
+      id: "p4",
+      name: "Project 4",
+      defaultCurrency: "GBP",
+    };
+    const c1 = { ...category, id: "c1", name: "Groceries", system: false };
+    const c2 = { ...category, id: "c2", name: "Utilities", system: false };
+    const c3 = { ...category, id: "c3", name: "Transport", system: false };
+    const c4 = { ...category, id: "c4", name: "Entertainment", system: false };
+    const multiCategoryState: ProjectCategoryState = {
+      ...state,
+      projects: [p1, p2, p3, p4],
+      categories: [category, c1, c2, c3, c4],
+    };
+    render(
+      createElement(OrganizeScreen, {
+        state: multiCategoryState,
+        onProjects: () => undefined,
+        onCategories: () => undefined,
+        onNewProject: () => undefined,
+        onNewCategory: () => undefined,
+      }),
+    );
+    const view = within(document.body);
+    assert(view.getByText("Project 1"));
+    assert(view.getByText("Project 2"));
+    assert(view.getByText("Project 3"));
+    assert(view.getByText("Project 4"));
+    assert(view.getByText("Uncategorized"));
+    assert(view.getByText("Groceries"));
+    assert(view.getByText("Utilities"));
+    assert(view.getByText("Transport"));
+    assert(view.getByText("Entertainment"));
+  });
+});
+
 Deno.test("local UI project editor and manager expose safe ordering and confirmations", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service, commits } = createTestService(organizedState);

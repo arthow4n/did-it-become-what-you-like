@@ -1620,12 +1620,8 @@ export function OrganizeScreen({
   onNewProject: () => void;
   onNewCategory: () => void;
 }) {
-  const projects = state.projects.filter((project) => !project.archived).slice(
-    0,
-    3,
-  );
-  const categories = state.categories.filter((category) => !category.archived)
-    .slice(0, 3);
+  const projects = state.projects.filter((project) => !project.archived);
+  const categories = state.categories.filter((category) => !category.archived);
   return (
     <ContentContainer>
       <Stack gap={6}>

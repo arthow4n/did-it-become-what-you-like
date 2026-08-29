@@ -170,7 +170,7 @@ M24-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 #### M24-002 — AddChoiceScreen full-span CSS & OrganizeScreen all-categories fix
 
-- **Status/dependencies:** `READY`; depends on `M24-001`.
+- **Status/dependencies:** `COMPLETE`; depends on `M24-001`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`, `src/features/local-ui.test.tsx`
 - **Scope/non-goals:** In `local-ui.css`, ensure `.local-ui-add-choice__actions`
   and `.local-ui-add-choice__button` have explicit `width: 100%; display: flex;`.
@@ -180,15 +180,15 @@ M24-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 - **Outputs/acceptance:** Add choice action buttons stretch to full container
   width. Organize Hub displays all active categories and projects without
   truncation.
-- **Tests:** `deno test --related=src/features/local-ui.tsx` passes with new
-  all-categories test assertions.
+- **Tests:** 20 related `local-ui.test.tsx` tests pass (including new
+  all-categories test assertions).
 - **Verification:** `deno fmt src/features/local-ui.tsx src/features/local-ui.css src/features/local-ui.test.tsx`,
   `deno lint src/features/local-ui.tsx src/features/local-ui.test.tsx`,
   `deno task test:affected`, `git diff --check`.
 
 #### M24-003 — Visual re-capture & comprehensive multi-viewport verification
 
-- **Status/dependencies:** `PENDING`; depends on `M24-002`.
+- **Status/dependencies:** `READY`; depends on `M24-002`.
 - **Ownership:** `scripts/audit-capture.ts`, `e2e/audit/ui-audit-capture.spec.ts`
 - **Scope/non-goals:** Run full visual capture across Desktop (`1280×800`), Mobile
   (`390×844`), and Narrow (`320×568`) viewports. Inspect `04-add-choice-sheet`
@@ -224,11 +224,11 @@ M24-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M24-002` (`READY`)
-- **Pushed commit / HEAD:** `0fa3115`
-- **Verification status:** M24-001 design system Stack stretch and full-width button styles pass 118 component tests.
+- **Active task / gate:** `M24-003` (`READY`)
+- **Pushed commit / HEAD:** `88aa65e`
+- **Verification status:** M24-002 complete; all 20 local-ui tests pass.
 - **Active / preserved work:** Single primary agent on `master`.
-- **Exact next action:** Execute `M24-002` (AddChoiceScreen full-span CSS & OrganizeScreen all-categories fix).
+- **Exact next action:** Execute `M24-003` (Visual re-capture & comprehensive multi-viewport verification).
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -29,7 +29,7 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ### Released Baseline
 
-M0 through M13 and all review gates through `R-1310` are `COMPLETE`. The
+M0 through M14 and all review gates through `R-1410` are `COMPLETE`. The
 released application baseline includes the approved domain, actors, adapters,
 responsive UI, After Midnight design system backed by Mantine behind the
 repository facade, accessibility, PWA, tests, GitHub Pages pipeline, operational
@@ -38,10 +38,11 @@ baseline mobile ergonomics, and a provider-valid privacy-safe Gemini
 compatibility probe backed by the official Google Gen AI SDK and a provider-
 neutral receipt AI port, plus a user-gesture-safe native receipt source picker
 for camera capture and existing-image selection, described by `SPEC.md`,
-`DESIGN_SYSTEM.md`, `AGENTS.md`, and previous milestones.
+`DESIGN_SYSTEM.md`, and `AGENTS.md`. Receipt scan failures also retain a safe
+error taxonomy and bounded operation diagnostic for reportable recovery.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
-preserved in Git at commit `4aa0ada`, the last complete pre-pruning ledger. That
+preserved in Git at commit `14dd741`, the last complete pre-pruning ledger. That
 history is evidence, not active instructions, and agents must not reconstruct it
 in this live plan.
 
@@ -57,25 +58,10 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-### M14 — Diagnosable receipt scan failures
-
-Owner-approved outcome: keep the provider-neutral structured-output scan flow,
-but preserve its safe failure taxonomy through the receipt actor and show a
-shareable code (and bounded operation when available) beside the recovery
-actions. Unknown failures must no longer collapse into an untraceable generic
-banner, and no provider message, credential, image data, or prompt content may
-cross into the UI or durable state.
-
-| Task | Status | Dependency | Acceptance / evidence |
-| --- | --- | --- | --- |
-| M14-001 Trace and expose safe receipt failure diagnostics | COMPLETE | M13 | Receipt scan/validation fallbacks now retain safe operations, typed adapter codes are preserved, and the failure notice renders code plus operation without raw provider text. |
-| M14-002 Regression coverage and targeted verification | COMPLETE | M14-001 | Actor/component tests pass 33/33; affected tests pass 150/150; receipt-review Playwright passes 1/1; check, format, lint, build, and diff checks pass. Pushed in `83fbff9`. |
-| R-1410 Fresh read-only review | IN_PROGRESS | M14-002 | A fresh reviewer reports no severity 1–3 findings, or all findings are fixed and re-verified. |
-| M14-FINAL Archive and hygiene | PENDING | R-1410 | Record exact evidence, archive completed M14 history, run the repository-hygiene procedure and its required final checks, commit, and push. |
-
-The implementation owner must update this ledger after each task and review
-gate. The M14-FINAL archive is the only point at which completed milestone
-history may be pruned from this live plan.
+No active milestone is currently open. When the repo owner specifies the next
+product milestone or refactor epic, follow the Standard Planning Procedure in
+`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
+ledger.
 
 ### Locked boundary / design-system rules
 
@@ -91,18 +77,17 @@ history may be pruned from this live plan.
 
 ## Current Checkpoint
 
-- **Active task / gate:** R-1410 (primary implementation owner: `/root`)
-- **Pushed commit / HEAD:** `83fbff9` (M14 diagnostic implementation; M13
-  review-complete history is preserved at `4aa0ada`)
-- **Verification status:** M13 evidence remains valid. M14 focused actor/UI
-  tests pass 33/33, affected tests pass 150/150, receipt-review Playwright
-  passes 1/1, and `deno task check`, `deno task fmt:check`, `deno task lint`,
-  `deno task build`, and `git diff --check` pass.
-- **Active / preserved work:** M14 implementation and regression changes are
-  pushed on `master`; the fresh read-only review is active and no transient
-  hygiene artifacts were found.
-- **Exact next action:** Complete the fresh read-only R-1410 review, resolve any
-  severity 1–3 findings, and re-verify before archiving M14.
+- **Active task / gate:** None (M14 complete and archived)
+- **Pushed commit / HEAD:** `14dd741` (M14 implementation and review-complete
+  pre-pruning ledger)
+- **Verification status:** M14 focused actor/UI tests pass 33/33, affected tests
+  pass 150/150, receipt-review Playwright passes 1/1, and `deno task check`,
+  `deno task fmt:check`, `deno task lint`, `deno task build`, and `git diff
+  --check` pass. Final hygiene checks are recorded in the archive commit.
+- **Active / preserved work:** Single primary agent on `master`; no delegated
+  workers, uncommitted implementation changes, or transient hygiene artifacts.
+- **Exact next action:** Run the repository-hygiene audit and its final
+  environment-scoped checks, then commit and push this archived ledger.
 
 ## Ready-to-Use Orchestration Prompt
 

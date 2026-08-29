@@ -2,7 +2,7 @@ export * from "./common.ts";
 export * from "./drive.ts";
 export * from "./errors.ts";
 export * from "./file-share.ts";
-export * from "./gemini.ts";
+export * from "./receipt-ai.ts";
 export * from "./image.ts";
 export * from "./local.ts";
 export * from "./online.ts";

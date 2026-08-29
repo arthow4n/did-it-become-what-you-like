@@ -9,7 +9,7 @@ import {
 import type {
   ReceiptExtractionDraft,
   ReceiptExtractionRequest,
-} from "../ports/gemini.ts";
+} from "../ports/receipt-ai.ts";
 
 export const RECEIPT_SCHEMA_VERSION = "receipt.v1" as const;
 export const RECEIPT_SCHEMA_VERSION_NUMBER = 1 as const;
@@ -49,13 +49,75 @@ export type ReceiptLineOutput = z.infer<typeof ReceiptLineOutputSchema>;
 
 export type GeminiJsonSchema = Readonly<Record<string, unknown>>;
 
+function isSchemaRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+const GOOGLE_JSON_SCHEMA_KEYWORDS = new Set([
+  "type",
+  "properties",
+  "required",
+  "additionalProperties",
+  "enum",
+  "format",
+  "items",
+  "prefixItems",
+  "minItems",
+  "maxItems",
+  "minimum",
+  "maximum",
+  "title",
+  "description",
+]);
+
+/** Reduce generated JSON Schema to Google's documented structured-output subset. */
+function toGoogleJsonSchema(value: unknown): unknown {
+  if (!isSchemaRecord(value)) return value;
+
+  const alternatives = Array.isArray(value.anyOf) ? value.anyOf : undefined;
+  if (alternatives?.length === 2) {
+    const nullIndex = alternatives.findIndex((candidate) =>
+      isSchemaRecord(candidate) && candidate.type === "null"
+    );
+    if (nullIndex !== -1) {
+      const nonNull = toGoogleJsonSchema(alternatives[1 - nullIndex]);
+      if (isSchemaRecord(nonNull) && typeof nonNull.type === "string") {
+        return { ...nonNull, type: [nonNull.type, "null"] };
+      }
+    }
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (key === "const") {
+      result.enum = [entry];
+    } else if (key === "properties" && isSchemaRecord(entry)) {
+      result.properties = Object.fromEntries(
+        Object.entries(entry).map(([name, schema]) => [
+          name,
+          toGoogleJsonSchema(schema),
+        ]),
+      );
+    } else if (key === "items") {
+      result.items = toGoogleJsonSchema(entry);
+    } else if (key === "prefixItems" && Array.isArray(entry)) {
+      result.prefixItems = entry.map(toGoogleJsonSchema);
+    } else if (key === "additionalProperties" && isSchemaRecord(entry)) {
+      result.additionalProperties = toGoogleJsonSchema(entry);
+    } else if (GOOGLE_JSON_SCHEMA_KEYWORDS.has(key)) {
+      result[key] = entry;
+    }
+  }
+  return result;
+}
+
 /**
- * Gemini receives the JSON Schema generated from the same Zod object that
- * validates the browser response. The extra `$schema` declaration is harmless
- * to Gemini and documents the generated dialect for test/fake clients.
+ * Google receives its documented JSON Schema subset derived from the same Zod
+ * object that performs strict browser validation. Provider-unsupported lexical
+ * constraints remain enforced locally after generation.
  */
 export const RECEIPT_JSON_SCHEMA: GeminiJsonSchema = Object.freeze(
-  z.toJSONSchema(ReceiptOutputSchema) as GeminiJsonSchema,
+  toGoogleJsonSchema(z.toJSONSchema(ReceiptOutputSchema)) as GeminiJsonSchema,
 );
 
 function assertOutputSemantics(output: ReceiptOutput): ReceiptOutput {

@@ -1,9 +1,9 @@
 import { assign, fromPromise, setup } from "xstate";
 import type {
-  GeminiModelAndExtractionPort,
   ImageInput,
   ImagePreparationPort,
   LocalPort,
+  ReceiptAiPort,
 } from "../adapters/ports/index.ts";
 import {
   RECEIPT_INSTRUCTION_VERSION,
@@ -46,7 +46,7 @@ export type ReceiptImageResolver = (
 ) => Promise<ImageInput>;
 
 export type ReceiptScanMachineDependencies = {
-  readonly gemini: GeminiModelAndExtractionPort;
+  readonly ai: ReceiptAiPort;
   readonly imagePreparation: ImagePreparationPort;
   readonly resolveImage: ReceiptImageResolver;
   /**
@@ -75,7 +75,7 @@ async function extractReview(
       enabled: input.prepareImage,
       signal,
     });
-    const draft = await dependencies.gemini.extractReceipt({
+    const draft = await dependencies.ai.extractReceipt({
       modelId: input.model,
       image: prepared,
       schemaVersion: RECEIPT_SCHEMA_VERSION_NUMBER,

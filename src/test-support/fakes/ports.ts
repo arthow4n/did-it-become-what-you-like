@@ -20,9 +20,6 @@ import {
   type FilePayload,
   type FileSelectionPort,
   type FileSharePort,
-  type GeminiModel,
-  type GeminiModelAndExtractionPort,
-  type GeminiModelQuery,
   type IdKind,
   type IdPort,
   type ImageInput,
@@ -39,6 +36,9 @@ import {
   type OnlineStatusListener,
   type OnlineStatusPort,
   type OperationOptions,
+  type ReceiptAiModel,
+  type ReceiptAiModelQuery,
+  type ReceiptAiPort,
   type ReceiptExtractionDraft,
   type ReceiptExtractionRequest,
   type SecretName,
@@ -465,13 +465,13 @@ export type GeminiRequestObservation = {
   readonly imageByteLength: number;
 };
 
-export type FakeGeminiPort = GeminiModelAndExtractionPort & FakeControls & {
+export type FakeGeminiPort = ReceiptAiPort & FakeControls & {
   readonly requests: readonly GeminiRequestObservation[];
   pauseNext(): void;
   releasePaused(): void;
 };
 
-const FAKE_MODELS: readonly GeminiModel[] = [
+const FAKE_MODELS: readonly ReceiptAiModel[] = [
   {
     id: "fake-gemini-compatible",
     displayName: "Fake Gemini Compatible",
@@ -532,7 +532,7 @@ export function createFakeGeminiPort(
     });
   };
   const api: FakeGeminiPort = {
-    listModels: async (query: GeminiModelQuery, options) => {
+    listModels: async (query: ReceiptAiModelQuery, options) => {
       controls.check(options);
       return FAKE_MODELS.filter((model) =>
         query.requiredCapabilities.every((capability) =>

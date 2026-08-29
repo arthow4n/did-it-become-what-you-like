@@ -5,7 +5,7 @@ import {
   type GeminiGenerateResponse,
   geminiModelCapabilityLabel,
   type GeminiRawModel,
-  REQUIRED_GEMINI_CAPABILITIES,
+  REQUIRED_RECEIPT_AI_CAPABILITIES,
 } from "./adapter.ts";
 import {
   createEphemeralObjectUrl,
@@ -283,14 +283,14 @@ const MODEL_NEEDS_TEST: GeminiRawModel = {
   baseModelId: "gemini-needs-test",
   displayName: "Needs test model",
   name: "models/gemini-needs-test",
-  supportedGenerationMethods: ["generateContent"],
+  supportedActions: ["generateContent"],
 };
 
 const MODEL_TEXT_ONLY: GeminiRawModel = {
   baseModelId: "gemini-text-only",
   displayName: "Text only model",
   name: "models/gemini-text-only",
-  supportedGenerationMethods: ["countTokens"],
+  supportedActions: ["countTokens"],
 };
 
 function createStorageAndAdapter(
@@ -405,24 +405,24 @@ Deno.test("A-301 models retain Needs test entries and synthetic validation promo
   );
   await adapter.setApiKey("AIza.synthetic-model-test");
   const models = await adapter.listModels({
-    requiredCapabilities: REQUIRED_GEMINI_CAPABILITIES,
+    requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
   });
   assertEquals(models.length, 1);
   assertEquals(
     geminiModelCapabilityLabel(models[0], {
-      requiredCapabilities: REQUIRED_GEMINI_CAPABILITIES,
+      requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
     }),
     "Needs test",
   );
   const result = await adapter.testConfiguration("gemini-needs-test", {
-    requiredCapabilities: REQUIRED_GEMINI_CAPABILITIES,
+    requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
   });
   assertEquals(result.status, "compatible");
   assertEquals(requests.length, 1);
   if (result.status === "compatible") {
     assertEquals(
       geminiModelCapabilityLabel(result.model, {
-        requiredCapabilities: REQUIRED_GEMINI_CAPABILITIES,
+        requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
       }),
       "Compatible",
     );
@@ -440,11 +440,11 @@ Deno.test("A-301 explicit text-only and retired models are incompatible", async 
   );
   await adapter.setApiKey("AIza.synthetic-lifecycle-test");
   const textOnly = await adapter.testConfiguration("gemini-text-only", {
-    requiredCapabilities: REQUIRED_GEMINI_CAPABILITIES,
+    requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
   });
   assertEquals(textOnly.status, "incompatible");
   const deprecated = await adapter.testConfiguration("gemini-retired", {
-    requiredCapabilities: REQUIRED_GEMINI_CAPABILITIES,
+    requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
   });
   assertEquals(deprecated.status, "incompatible");
 });
@@ -476,7 +476,7 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
   assert(!requestText.includes("Drive"));
   assert(!requestText.includes("AIza.synthetic-request-test"));
   assertEquals(requests[0].config.responseMimeType, "application/json");
-  assertEquals(requests[0].config.responseSchema, RECEIPT_JSON_SCHEMA);
+  assertEquals(requests[0].config.responseJsonSchema, RECEIPT_JSON_SCHEMA);
 });
 
 Deno.test("A-301 malformed or hostile model output is rejected and redacted", async () => {
@@ -566,9 +566,49 @@ Deno.test("A-301 schema source rejects hostile extra fields and preserves schema
   const schema = RECEIPT_JSON_SCHEMA as {
     readonly required?: readonly string[];
     readonly additionalProperties?: boolean;
+    readonly properties?: Readonly<Record<string, Record<string, unknown>>>;
   };
   assertEquals(schema.additionalProperties, false);
   assert(schema.required?.includes("lines"));
+  const properties = schema.properties;
+  assert(properties !== undefined);
+  assertEquals(properties.schemaVersion.enum, [RECEIPT_SCHEMA_VERSION]);
+  assertEquals(properties.mismatch.type, ["object", "null"]);
+
+  const supportedKeywords = new Set([
+    "type",
+    "properties",
+    "required",
+    "additionalProperties",
+    "enum",
+    "format",
+    "items",
+    "prefixItems",
+    "minItems",
+    "maxItems",
+    "minimum",
+    "maximum",
+    "title",
+    "description",
+  ]);
+  const assertSupportedSchema = (value: unknown): void => {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      return;
+    }
+    for (const [key, entry] of Object.entries(value)) {
+      assert(supportedKeywords.has(key), `Unsupported schema keyword: ${key}`);
+      if (key === "properties") {
+        for (const child of Object.values(entry as Record<string, unknown>)) {
+          assertSupportedSchema(child);
+        }
+      } else if (key === "items" || key === "additionalProperties") {
+        assertSupportedSchema(entry);
+      } else if (key === "prefixItems" && Array.isArray(entry)) {
+        entry.forEach(assertSupportedSchema);
+      }
+    }
+  };
+  assertSupportedSchema(schema);
   assertRejects(() =>
     Promise.resolve(
       parseReceiptOutput(`${RECEIPT_OUTPUT.slice(0, -1)},"hostile":"x"}`),

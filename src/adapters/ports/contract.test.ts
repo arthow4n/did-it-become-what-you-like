@@ -6,12 +6,12 @@ import {
   type DriveTransportPort,
   type FileSelectionPort,
   type FileSharePort,
-  type GeminiModelAndExtractionPort,
   type ImagePreparationPort,
   isAdapterErrorCode,
   type LocalPort,
   mapAdapterError,
   type OnlineStatusPort,
+  type ReceiptAiPort,
   RETIRED_DATASET_ERROR_ALIASES,
   RETRY_BY_ERROR_CODE,
   type SecretStoragePort,
@@ -55,7 +55,7 @@ Deno.test("adapter-contract ports expose browser-neutral typed boundaries", () =
     causal: CausalSyncPort;
     driveAuth: DriveAuthorizationPort;
     driveTransport: DriveTransportPort;
-    gemini: GeminiModelAndExtractionPort;
+    receiptAi: ReceiptAiPort;
     image: ImagePreparationPort;
     online: OnlineStatusPort;
     fileSelection: FileSelectionPort;
@@ -67,7 +67,7 @@ Deno.test("adapter-contract ports expose browser-neutral typed boundaries", () =
     causal: createFakeCausalSyncPort(),
     driveAuth: createFakeDrivePorts(),
     driveTransport: createFakeDrivePorts(),
-    gemini: createFakeGeminiPort(),
+    receiptAi: createFakeGeminiPort(),
     image: createFakeImagePreparationPort(),
     online: createFakeOnlineStatusPort(),
     fileSelection: createFakeFileSharePort(),

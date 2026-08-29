@@ -1,7 +1,7 @@
 import { createActor } from "xstate";
 import {
-  type GeminiModelAndExtractionPort,
   type ImagePreparationPort,
+  type ReceiptAiPort,
   type ReceiptExtractionDraft,
 } from "../../adapters/ports/index.ts";
 import {
@@ -109,12 +109,12 @@ function extractionDraft(
 }
 
 function createScanMachine(
-  gemini: GeminiModelAndExtractionPort,
+  ai: ReceiptAiPort,
   imagePreparation: ImagePreparationPort,
   released: string[],
 ) {
   return createReceiptScanMachine({
-    gemini,
+    ai,
     imagePreparation,
     resolveImage: () =>
       Promise.resolve({

@@ -2,23 +2,19 @@ import { useActor } from "@xstate/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createGeminiAdapter,
+  createGoogleGenAiClient,
   createImagePreparationPort,
-  type GeminiBrowserClient,
-  type GeminiGenerateRequest,
   geminiModelCapabilityLabel,
-  type GeminiRawModel,
-  REQUIRED_GEMINI_CAPABILITIES,
+  REQUIRED_RECEIPT_AI_CAPABILITIES,
 } from "../adapters/gemini/index.ts";
 import {
-  type GeminiModel,
   type ImageInput,
+  type ReceiptAiModel,
+  type ReceiptAiPort,
   type SecretStoragePort,
 } from "../adapters/ports/index.ts";
 import { createLocalStorageSecretStorage } from "../adapters/gemini/secrets.ts";
-import type {
-  GeminiModelAndExtractionPort,
-  GeminiModelQuery,
-} from "../adapters/ports/gemini.ts";
+import type { ReceiptAiModelQuery } from "../adapters/ports/receipt-ai.ts";
 import type { LocalPort } from "../adapters/ports/local.ts";
 import type { JsonValue } from "../adapters/ports/common.ts";
 import {
@@ -81,13 +77,13 @@ import {
 } from "../design-system/index.ts";
 
 const DEVICE_SETTINGS_KEY = "settings-device-local";
-const DEFAULT_MODEL_QUERY: GeminiModelQuery = {
-  requiredCapabilities: REQUIRED_GEMINI_CAPABILITIES,
+const DEFAULT_MODEL_QUERY: ReceiptAiModelQuery = {
+  requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
 };
 const GEMINI_COMPATIBILITY_EVIDENCE_VERSION = "receipt-compatibility.v1";
 const LEGACY_GEMINI_KEY_REVISION = "legacy-key";
 
-type ReceiptGeminiPort = GeminiModelAndExtractionPort & {
+type ReceiptGeminiPort = ReceiptAiPort & {
   getApiKey(options?: { signal?: AbortSignal }): Promise<
     {
       reveal(): string;
@@ -98,6 +94,7 @@ type ReceiptGeminiPort = GeminiModelAndExtractionPort & {
 };
 
 export type ReceiptUiDependencies = ReceiptScanMachineDependencies & {
+  readonly ai: ReceiptAiPort;
   readonly gemini: ReceiptGeminiPort;
 };
 
@@ -107,11 +104,11 @@ type ReceiptImageEntry = {
   bytes?: Uint8Array;
 };
 
-function modelFingerprint(model: GeminiModel): string {
+function modelFingerprint(model: ReceiptAiModel): string {
   return [
     model.id,
     model.lifecycle,
-    ...REQUIRED_GEMINI_CAPABILITIES.map((capability) =>
+    ...REQUIRED_RECEIPT_AI_CAPABILITIES.map((capability) =>
       model.capabilities[capability] ? "1" : "0"
     ),
   ].join("|");
@@ -123,7 +120,7 @@ function geminiKeyRevision(settings: DeviceLocalSettings): string {
 
 function compatibilityEvidenceFor(
   settings: DeviceLocalSettings,
-  model: GeminiModel,
+  model: ReceiptAiModel,
 ): DeviceLocalGeminiCompatibility | undefined {
   return settings.geminiCompatibilityEvidence?.find((evidence) =>
     evidence.modelId === model.id &&
@@ -135,7 +132,7 @@ function compatibilityEvidenceFor(
 
 function recordCompatibilityEvidence(
   settings: DeviceLocalSettings,
-  model: GeminiModel,
+  model: ReceiptAiModel,
   status: DeviceLocalGeminiCompatibility["status"],
   keyRevision = geminiKeyRevision(settings),
 ): DeviceLocalSettings {
@@ -298,112 +295,13 @@ export async function writeDeviceLocalSettings(
   );
 }
 
-async function responseJson(
-  response: Response,
-): Promise<Record<string, unknown>> {
-  if (!response.ok) {
-    throw new GeminiHttpError(response.status);
-  }
-  let value: unknown;
-  try {
-    value = await response.json();
-  } catch {
-    value = {};
-  }
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : {};
-}
-
-class GeminiHttpError extends Error {
-  readonly status: number;
-
-  constructor(status: number) {
-    super(`Gemini request failed (${status}).`);
-    this.name = "GeminiHttpError";
-    this.status = status;
-  }
-}
-
-function createBrowserGeminiClient(apiKey: string): GeminiBrowserClient {
-  const endpoint = "https://generativelanguage.googleapis.com/v1beta";
-  return {
-    models: {
-      list: async (request) => {
-        const query = new URLSearchParams({
-          pageSize: String(request?.pageSize ?? 1_000),
-          key: apiKey,
-          ...(request?.pageToken ? { pageToken: request.pageToken } : {}),
-        });
-        const value = await responseJson(
-          await fetch(`${endpoint}/models?${query.toString()}`),
-        );
-        return {
-          models: Array.isArray(value.models)
-            ? value.models as GeminiRawModel[]
-            : [],
-          ...(typeof value.nextPageToken === "string"
-            ? { nextPageToken: value.nextPageToken }
-            : {}),
-        };
-      },
-      generateContent: async (request: GeminiGenerateRequest, options) => {
-        const query = new URLSearchParams({ key: apiKey });
-        const value = await responseJson(
-          await fetch(
-            `${endpoint}/models/${
-              encodeURIComponent(request.model)
-            }:generateContent?${query.toString()}`,
-            {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({
-                contents: request.contents,
-                generationConfig: {
-                  responseMimeType: request.config.responseMimeType,
-                  responseSchema: request.config.responseSchema,
-                },
-                systemInstruction: {
-                  parts: [{ text: request.config.systemInstruction }],
-                },
-              }),
-              signal: options?.signal,
-            },
-          ),
-        );
-        const candidates = Array.isArray(value.candidates)
-          ? value.candidates
-          : [];
-        const first = candidates[0];
-        const content = first !== null && typeof first === "object"
-          ? (first as Record<string, unknown>).content
-          : undefined;
-        const parts = content !== null && typeof content === "object"
-          ? (content as Record<string, unknown>).parts
-          : undefined;
-        const part = Array.isArray(parts)
-          ? parts.find((candidate) =>
-            candidate !== null && typeof candidate === "object" &&
-            typeof (candidate as Record<string, unknown>).text === "string"
-          )
-          : undefined;
-        return {
-          text: part !== undefined && typeof part === "object"
-            ? (part as Record<string, unknown>).text
-            : undefined,
-        };
-      },
-    },
-  };
-}
-
 export function createDefaultReceiptUiDependencies(
   imageStore: ReceiptImageStore,
 ): { dependencies: ReceiptUiDependencies; secretStorage: SecretStoragePort } {
   const secretStorage = createLocalStorageSecretStorage();
   const gemini = createGeminiAdapter({
     secretStorage,
-    createClient: (apiKey) => createBrowserGeminiClient(apiKey),
+    createClient: createGoogleGenAiClient,
   });
   const imagePreparation = createImagePreparationPort();
   const resolveImage: ReceiptImageResolver = (image) =>
@@ -411,6 +309,7 @@ export function createDefaultReceiptUiDependencies(
   return {
     secretStorage,
     dependencies: {
+      ai: gemini,
       gemini,
       imagePreparation,
       resolveImage,
@@ -420,7 +319,7 @@ export function createDefaultReceiptUiDependencies(
 }
 
 export function modelOptions(
-  models: readonly GeminiModel[],
+  models: readonly ReceiptAiModel[],
   settings: DeviceLocalSettings,
 ): Array<{
   id: string;
@@ -565,7 +464,7 @@ export function ReceiptScanScreen({
   const [apiKey, setApiKey] = useState("");
   const [keyError, setKeyError] = useState<string>();
   const [keyBusy, setKeyBusy] = useState(false);
-  const [models, setModels] = useState<readonly GeminiModel[]>([]);
+  const [models, setModels] = useState<readonly ReceiptAiModel[]>([]);
   const [modelError, setModelError] = useState<string>();
   const [modelsLoading, setModelsLoading] = useState(false);
   const [hasKey, setHasKey] = useState(false);
@@ -652,11 +551,11 @@ export function ReceiptScanScreen({
     };
   }, [secretStorage]);
 
-  const refreshModels = async (): Promise<readonly GeminiModel[]> => {
+  const refreshModels = async (): Promise<readonly ReceiptAiModel[]> => {
     setModelsLoading(true);
     setModelError(undefined);
     try {
-      const next = await dependencies.gemini.listModels(DEFAULT_MODEL_QUERY);
+      const next = await dependencies.ai.listModels(DEFAULT_MODEL_QUERY);
       setModels(next);
       return next;
     } catch (error) {
@@ -835,7 +734,7 @@ export function ReceiptScanScreen({
     setTestState("testing");
     setModelError(undefined);
     try {
-      const result = await dependencies.gemini.testConfiguration(
+      const result = await dependencies.ai.testConfiguration(
         selectedId,
         DEFAULT_MODEL_QUERY,
       );
@@ -1791,7 +1690,7 @@ export function GeminiSettingsScreen({
   const [hasKey, setHasKey] = useState(false);
   const [maskedKey, setMaskedKey] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [models, setModels] = useState<readonly GeminiModel[]>([]);
+  const [models, setModels] = useState<readonly ReceiptAiModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [testState, setTestState] = useState<

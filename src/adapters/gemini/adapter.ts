@@ -8,14 +8,14 @@ import {
   throwIfAborted,
 } from "../ports/index.ts";
 import type {
-  GeminiCapability,
-  GeminiConfigurationResult,
-  GeminiModel,
-  GeminiModelAndExtractionPort,
-  GeminiModelQuery,
+  ReceiptAiCapability,
+  ReceiptAiConfigurationResult,
+  ReceiptAiModel,
+  ReceiptAiModelQuery,
+  ReceiptAiPort,
   ReceiptExtractionDraft,
   ReceiptExtractionRequest,
-} from "../ports/gemini.ts";
+} from "../ports/receipt-ai.ts";
 import type { PreparedImage } from "../ports/image.ts";
 import {
   type GeminiJsonSchema,
@@ -29,11 +29,12 @@ import {
 } from "./schema.ts";
 import { withEphemeralImage } from "./image.ts";
 
-export const REQUIRED_GEMINI_CAPABILITIES: readonly GeminiCapability[] = [
-  "image-input",
-  "content-generation",
-  "structured-output",
-];
+export const REQUIRED_RECEIPT_AI_CAPABILITIES: readonly ReceiptAiCapability[] =
+  [
+    "image-input",
+    "content-generation",
+    "structured-output",
+  ];
 
 export type GeminiModelCapabilityLabel =
   | "Compatible"
@@ -46,6 +47,7 @@ export type GeminiRawModel = {
   readonly displayName?: unknown;
   readonly lifecycle?: unknown;
   readonly supportedGenerationMethods?: unknown;
+  readonly supportedActions?: unknown;
   readonly inputModalities?: unknown;
   readonly outputModalities?: unknown;
   readonly supportedResponseFormats?: unknown;
@@ -55,6 +57,7 @@ export type GeminiRawModel = {
 export type GeminiListRequest = {
   readonly pageSize?: number;
   readonly pageToken?: string;
+  readonly signal?: AbortSignal;
 };
 
 export type GeminiListPage = {
@@ -77,7 +80,7 @@ export type GeminiGenerateRequest = {
   readonly contents: readonly GeminiContent[];
   readonly config: {
     readonly responseMimeType: "application/json";
-    readonly responseSchema: GeminiJsonSchema;
+    readonly responseJsonSchema: GeminiJsonSchema;
     readonly systemInstruction: string;
   };
 };
@@ -122,7 +125,7 @@ function stringArray(value: unknown): readonly string[] | undefined {
 
 function capabilityEvidence(
   raw: GeminiRawModel,
-  capability: GeminiCapability,
+  capability: ReceiptAiCapability,
 ): boolean | undefined {
   if (isRecord(raw.capabilities)) {
     const value = raw.capabilities[capability];
@@ -130,7 +133,9 @@ function capabilityEvidence(
   }
 
   if (capability === "content-generation") {
-    const methods = stringArray(raw.supportedGenerationMethods);
+    const methods = stringArray(
+      raw.supportedActions ?? raw.supportedGenerationMethods,
+    );
     return methods === undefined
       ? undefined
       : methods.includes("generateContent");
@@ -164,13 +169,13 @@ function modelIdOf(raw: GeminiRawModel): string | undefined {
     : undefined;
 }
 
-function modelLifecycle(raw: GeminiRawModel): GeminiModel["lifecycle"] {
+function modelLifecycle(raw: GeminiRawModel): ReceiptAiModel["lifecycle"] {
   return raw.lifecycle === "deprecated" || raw.lifecycle === "unavailable"
     ? raw.lifecycle
     : "active";
 }
 
-function toModel(raw: GeminiRawModel): GeminiModel | undefined {
+function toModel(raw: GeminiRawModel): ReceiptAiModel | undefined {
   const id = modelIdOf(raw);
   if (id === undefined) return undefined;
   return {
@@ -192,7 +197,7 @@ function toModel(raw: GeminiRawModel): GeminiModel | undefined {
 
 function hasExplicitUnsupportedCapability(
   raw: GeminiRawModel,
-  capabilities: readonly GeminiCapability[],
+  capabilities: readonly ReceiptAiCapability[],
 ): boolean {
   return capabilities.some((capability) =>
     capabilityEvidence(raw, capability) === false
@@ -200,24 +205,24 @@ function hasExplicitUnsupportedCapability(
 }
 
 function requiredCapabilities(
-  query: GeminiModelQuery,
-): readonly GeminiCapability[] {
+  query: ReceiptAiModelQuery,
+): readonly ReceiptAiCapability[] {
   const requested = query.requiredCapabilities.length === 0
-    ? REQUIRED_GEMINI_CAPABILITIES
+    ? REQUIRED_RECEIPT_AI_CAPABILITIES
     : query.requiredCapabilities;
   return [...new Set(requested)];
 }
 
 function missingCapabilities(
-  model: GeminiModel,
-  required: readonly GeminiCapability[],
-): readonly GeminiCapability[] {
+  model: ReceiptAiModel,
+  required: readonly ReceiptAiCapability[],
+): readonly ReceiptAiCapability[] {
   return required.filter((capability) => !model.capabilities[capability]);
 }
 
 export function geminiModelCapabilityLabel(
-  model: GeminiModel,
-  query: GeminiModelQuery,
+  model: ReceiptAiModel,
+  query: ReceiptAiModelQuery,
 ): GeminiModelCapabilityLabel {
   if (model.lifecycle !== "active") return "Incompatible";
   return missingCapabilities(model, requiredCapabilities(query)).length === 0
@@ -387,7 +392,7 @@ async function resolveListResult(
   return result;
 }
 
-export class GeminiAdapter implements GeminiModelAndExtractionPort {
+export class GeminiAdapter implements ReceiptAiPort {
   readonly #secretStorage: SecretStoragePort;
   readonly #createClient: GeminiClientFactory;
   readonly #isOnline: () => boolean;
@@ -429,13 +434,13 @@ export class GeminiAdapter implements GeminiModelAndExtractionPort {
   }
 
   async listModels(
-    query: GeminiModelQuery,
+    query: ReceiptAiModelQuery,
     options?: OperationOptions,
-  ): Promise<readonly GeminiModel[]> {
+  ): Promise<readonly ReceiptAiModel[]> {
     const client = await this.#client(options, "gemini.listModels");
     const rawModels = await this.#listRawModels(client, options);
     this.#rawModels.clear();
-    const models: GeminiModel[] = [];
+    const models: ReceiptAiModel[] = [];
     for (const raw of rawModels) {
       const model = toModel(raw);
       if (model === undefined) continue;
@@ -450,9 +455,9 @@ export class GeminiAdapter implements GeminiModelAndExtractionPort {
 
   async testConfiguration(
     modelId: string,
-    query: GeminiModelQuery,
+    query: ReceiptAiModelQuery,
     options?: OperationOptions,
-  ): Promise<GeminiConfigurationResult> {
+  ): Promise<ReceiptAiConfigurationResult> {
     const required = requiredCapabilities(query);
     const client = await this.#client(options, "gemini.testConfiguration");
     const rawModels = await this.#listRawModels(client, options);
@@ -493,7 +498,7 @@ export class GeminiAdapter implements GeminiModelAndExtractionPort {
     } else {
       await this.#syntheticConfiguration(client, model.id, options);
     }
-    const compatible: GeminiModel = {
+    const compatible: ReceiptAiModel = {
       ...model,
       capabilities: Object.freeze({
         "image-input": true,
@@ -529,7 +534,7 @@ export class GeminiAdapter implements GeminiModelAndExtractionPort {
           ],
           config: {
             responseMimeType: "application/json",
-            responseSchema: RECEIPT_JSON_SCHEMA,
+            responseJsonSchema: RECEIPT_JSON_SCHEMA,
             systemInstruction: prompt,
           },
         }, options);
@@ -582,6 +587,7 @@ export class GeminiAdapter implements GeminiModelAndExtractionPort {
         await client.models.list({
           pageSize: 1_000,
           ...(pageToken === undefined ? {} : { pageToken }),
+          ...(options?.signal === undefined ? {} : { signal: options.signal }),
         }),
       );
       models.push(...page.models);
@@ -625,7 +631,7 @@ export class GeminiAdapter implements GeminiModelAndExtractionPort {
         ],
         config: {
           responseMimeType: "application/json",
-          responseSchema: RECEIPT_JSON_SCHEMA,
+          responseJsonSchema: RECEIPT_JSON_SCHEMA,
           systemInstruction: prompt,
         },
       }, options);

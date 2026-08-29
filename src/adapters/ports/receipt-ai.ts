@@ -6,30 +6,30 @@ import type {
 import type { OperationOptions } from "./common.ts";
 import type { PreparedImage } from "./image.ts";
 
-export type GeminiCapability =
+export type ReceiptAiCapability =
   | "image-input"
   | "content-generation"
   | "structured-output";
 
-export type GeminiModelLifecycle = "active" | "deprecated" | "unavailable";
+export type ReceiptAiModelLifecycle = "active" | "deprecated" | "unavailable";
 
-export type GeminiModel = {
+export type ReceiptAiModel = {
   readonly id: string;
   readonly displayName: string;
-  readonly lifecycle: GeminiModelLifecycle;
-  readonly capabilities: Readonly<Record<GeminiCapability, boolean>>;
+  readonly lifecycle: ReceiptAiModelLifecycle;
+  readonly capabilities: Readonly<Record<ReceiptAiCapability, boolean>>;
 };
 
-export type GeminiConfigurationResult =
-  | { readonly status: "compatible"; readonly model: GeminiModel }
+export type ReceiptAiConfigurationResult =
+  | { readonly status: "compatible"; readonly model: ReceiptAiModel }
   | {
     readonly status: "needs-test" | "incompatible";
-    readonly model?: GeminiModel;
-    readonly missingCapabilities: readonly GeminiCapability[];
+    readonly model?: ReceiptAiModel;
+    readonly missingCapabilities: readonly ReceiptAiCapability[];
   };
 
-export type GeminiModelQuery = {
-  readonly requiredCapabilities: readonly GeminiCapability[];
+export type ReceiptAiModelQuery = {
+  readonly requiredCapabilities: readonly ReceiptAiCapability[];
 };
 
 export type ReceiptExtractionRequest = {
@@ -59,16 +59,17 @@ export type ReceiptExtractionDraft = {
   readonly mismatches: readonly string[];
 };
 
-export interface GeminiModelAndExtractionPort {
+/** Provider-neutral receipt inference boundary implemented at the app edge. */
+export interface ReceiptAiPort {
   listModels(
-    query: GeminiModelQuery,
+    query: ReceiptAiModelQuery,
     options?: OperationOptions,
-  ): Promise<readonly GeminiModel[]>;
+  ): Promise<readonly ReceiptAiModel[]>;
   testConfiguration(
     modelId: string,
-    query: GeminiModelQuery,
+    query: ReceiptAiModelQuery,
     options?: OperationOptions,
-  ): Promise<GeminiConfigurationResult>;
+  ): Promise<ReceiptAiConfigurationResult>;
   extractReceipt(
     request: ReceiptExtractionRequest,
     options?: OperationOptions,

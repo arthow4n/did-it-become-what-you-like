@@ -73,9 +73,9 @@ heuristic may silently rewrite an ambiguous adjustment.
 | Task | Status | Dependency | Acceptance / evidence |
 | --- | --- | --- | --- |
 | M17-001 Strengthen signed extraction instructions | COMPLETE | M16 | Versioned Gemini instructions explicitly distinguish purchases, credits, discounts, surcharges, tips, and payment totals, with a signed line-sum self-check. |
-| M17-002 Prompt regression and targeted verification | COMPLETE | M17-001 | Adapter prompt assertions pass; affected tests pass 48/48; type, format, lint, build, diff, and receipt E2E checks pass. |
-| R-1710 Fresh read-only review | IN_PROGRESS | M17-002 | Fresh read-only review is required before archival. |
-| M17-FINAL Archive and hygiene | PENDING | R-1710 | Record exact evidence, run repository-hygiene pruning, archive completed M17 history, commit, and push. |
+| M17-002 Prompt regression and targeted verification | COMPLETE | M17-001 | Adapter prompt and signed-discount fixture tests pass 11/11; affected tests pass 48/48; type, format, lint, build, diff, and receipt E2E checks pass. |
+| R-1710 Fresh read-only review | COMPLETE | M17-002 | Fresh read-only review found no severity 1–3 findings; the concrete positive-discount fixture and arbitrary-precision reconciliation coverage are now included. |
+| M17-FINAL Archive and hygiene | IN_PROGRESS | R-1710 | Record exact evidence, run repository-hygiene pruning, archive completed M17 history, commit, and push. |
 
 The implementation owner must update this ledger after each task and review
 gate. The M17-FINAL archive is the only point at which completed milestone
@@ -95,18 +95,19 @@ history may be pruned from this live plan.
 
 ## Current Checkpoint
 
-- **Active task / gate:** R-1710 (fresh read-only review pending; `/root` is
+- **Active task / gate:** M17-FINAL (archive and hygiene; `/root` is
   integration owner)
-- **Pushed commit / HEAD:** `ce57447` (M17 implementation and targeted
-  verification; R-1710 review pending)
-- **Verification status:** M16 evidence remains valid. M17 adapter prompt tests
-  pass 10/10, affected tests pass 48/48, receipt-review Playwright passes 1/1,
-  and check, format, lint, build, and diff checks pass.
+- **Pushed commit / HEAD:** `ce57447` (M17 implementation; signed-discount
+  fixture follow-up is being committed)
+- **Verification status:** M16 evidence remains valid. M17 adapter prompt and
+  signed-discount fixture tests pass 11/11, affected tests pass 48/48,
+  receipt-review Playwright passes 1/1, and check, format, lint, build, and diff
+  checks pass. R-1710 found no severity 1–3 findings.
 - **Active / preserved work:** Single primary agent on `master`; M17 planning is
   reconciled before implementation, with no delegated workers or transient
   hygiene artifacts.
-- **Exact next action:** Commit and push the M17 implementation, then complete
-  R-1710 and archive M17.
+- **Exact next action:** Commit and push the signed-discount fixture, then run
+  the repository-hygiene audit and archive M17.
 
 ## Ready-to-Use Orchestration Prompt
 

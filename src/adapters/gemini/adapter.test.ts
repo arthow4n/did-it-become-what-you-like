@@ -33,6 +33,7 @@ import {
   type ReceiptExtractionRequest,
   SecretValue,
 } from "../ports/index.ts";
+import { moneyAdd } from "../../domain/money/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -279,6 +280,29 @@ const RECEIPT_OUTPUT = JSON.stringify({
   uncertainty: [],
 });
 
+const RECEIPT_DISCOUNT_OUTPUT = JSON.stringify({
+  currency: "SEK",
+  date: "2026-08-29",
+  lines: [{
+    amount: "-341.54",
+    categoryId: "category-groceries",
+    description: "Receipt purchases",
+    kind: "purchase",
+    selected: true,
+  }, {
+    amount: "15.76",
+    categoryId: "category-groceries",
+    description: "Discount",
+    kind: "adjustment",
+    selected: true,
+  }],
+  merchant: "Coop",
+  mismatch: null,
+  printedTotal: "-325.78",
+  schemaVersion: RECEIPT_SCHEMA_VERSION,
+  uncertainty: [],
+});
+
 const MODEL_NEEDS_TEST: GeminiRawModel = {
   baseModelId: "gemini-needs-test",
   displayName: "Needs test model",
@@ -492,6 +516,23 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
   );
   assertEquals(requests[0].config.responseMimeType, "application/json");
   assertEquals(requests[0].config.responseJsonSchema, RECEIPT_JSON_SCHEMA);
+});
+
+Deno.test("A-301 signed receipt fixture reconciles a discount adjustment", async () => {
+  const { adapter } = createStorageAndAdapter(() =>
+    clientWithModels([MODEL_NEEDS_TEST], { text: RECEIPT_DISCOUNT_OUTPUT })
+  );
+  await adapter.setApiKey("AIza.synthetic-discount-test");
+  const draft = await adapter.extractReceipt(extractionRequest());
+  assertEquals(draft.printedTotal, "-325.78");
+  assertEquals(draft.lines[0]?.amount, "-341.54");
+  assertEquals(draft.lines[0]?.kind, "purchase");
+  assertEquals(draft.lines[1]?.amount, "15.76");
+  assertEquals(draft.lines[1]?.kind, "adjustment");
+  assertEquals(
+    draft.lines.reduce((total, line) => moneyAdd(total, line.amount), "0"),
+    "-325.78",
+  );
 });
 
 Deno.test("A-301 malformed or hostile model output is rejected and redacted", async () => {

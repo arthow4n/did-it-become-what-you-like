@@ -198,8 +198,8 @@ M22-001 -> M22-002 -> R-2210 -> M22-FINAL
 ## Current Checkpoint
 
 - **Active task / gate:** `R-2210` (`READY`)
-- **Pushed commit / HEAD:** `f820729` (M21 implementation; M22 changes are
-  uncommitted and must be committed after validation)
+- **Pushed commit / HEAD:** `bedbb7b` (M22 implementation and instruction
+  versioning; fresh review is pending)
 - **Verification status:** M22-001 focused domain tests pass 8/8 and focused
   adapter tests pass 17/17; format, lint, and type checks pass. M21 focused
   adapter/actor/UI tests pass 77/77 and affected tests pass 279/279; check,
@@ -213,8 +213,8 @@ M22-001 -> M22-002 -> R-2210 -> M22-FINAL
   final review found no severity 1–3 findings.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Commit and push M22 implementation, then request the
-  R-2210 read-only review.
+- **Exact next action:** Complete the R-2210 read-only review, remediate any
+  severity 1–3 findings, then archive M22.
 
 ## Ready-to-Use Orchestration Prompt
 

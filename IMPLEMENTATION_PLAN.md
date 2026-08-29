@@ -170,7 +170,7 @@ M23-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 #### M23-002 — AddChoiceScreen component & stylesheet remediation
 
-- **Status/dependencies:** `READY`; depends on `M23-001`.
+- **Status/dependencies:** `COMPLETE`; depends on `M23-001`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`
 - **Scope/non-goals:** Refactor `AddChoiceScreen` to replace verbose `ActionCard`
   elements with clean, prominent, full-width `Button` primitives (`variant="primary"`
@@ -182,15 +182,15 @@ M23-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 - **Outputs/acceptance:** Clean, unbloated Add Choice bottom sheet across
   Desktop, Mobile, and Narrow viewports. Close button pinned to top-right.
   Prominent full-width action buttons with clear icons.
-- **Tests:** `deno test --related=src/features/local-ui.tsx` passes (including
-  offline guard, focus trap, and keyboard navigation tests).
+- **Tests:** 19 related `local-ui.test.tsx` tests pass (including offline guard,
+  focus trap, and keyboard navigation tests).
 - **Verification:** `deno fmt src/features/local-ui.tsx src/features/local-ui.css`,
   `deno lint src/features/local-ui.tsx`, `deno task test:affected`,
   `git diff --check`.
 
 #### M23-003 — Visual re-capture & comprehensive multi-viewport verification
 
-- **Status/dependencies:** `PENDING`; depends on `M23-002`.
+- **Status/dependencies:** `READY`; depends on `M23-002`.
 - **Ownership:** `scripts/audit-capture.ts`, `e2e/audit/ui-audit-capture.spec.ts`
 - **Scope/non-goals:** Run full visual capture across Desktop (`1280×800`), Mobile
   (`390×844`), and Narrow (`320×568`) viewports into `ui-audit-round-2/screenshots`.
@@ -226,11 +226,11 @@ M23-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M23-002` (`READY`)
-- **Pushed commit / HEAD:** `41cdc40`
-- **Verification status:** M23-001 tokens updated; 118 related component tests pass.
+- **Active task / gate:** `M23-003` (`READY`)
+- **Pushed commit / HEAD:** `73f17ef`
+- **Verification status:** M23-002 component and styles refactored; all 19 local-ui tests pass.
 - **Active / preserved work:** Single primary agent on `master`.
-- **Exact next action:** Execute `M23-002` (AddChoiceScreen component & stylesheet remediation).
+- **Exact next action:** Execute `M23-003` (Visual re-capture & comprehensive multi-viewport verification).
 
 ## Ready-to-Use Orchestration Prompt
 

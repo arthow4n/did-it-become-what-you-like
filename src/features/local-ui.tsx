@@ -510,28 +510,41 @@ export function AddChoiceScreen({
           headingLevel={2}
           title="Add an expense"
           actions={
-            <IconButton aria-label="Close" icon={<X />} onPress={onClose} />
+            <IconButton
+              aria-label="Close"
+              icon={<X />}
+              variant="quiet"
+              onPress={onClose}
+            />
           }
         />
-        <Stack gap={3}>
-          <ActionCard
-            title="Add manually"
-            description="Enter the details locally."
-            icon={<Plus />}
+        <Stack gap={3} className="local-ui-add-choice__actions">
+          <Button
+            variant="primary"
+            fullWidth
+            className="local-ui-add-choice__button"
             onPress={leaveForManualEntry}
-          />
-          <ActionCard
-            title="Scan receipt with AI"
-            description={offline
-              ? "Connect to the internet to scan with AI."
-              : "Use a camera or image. The receipt is sent to Gemini."}
-            icon={<Search />}
+          >
+            <Icon>
+              <Plus />
+            </Icon>
+            <span>Add manually</span>
+          </Button>
+          <Button
+            variant="secondary"
+            fullWidth
             isDisabled={offline}
+            className="local-ui-add-choice__button"
             onPress={() => {
               skipRestoreRef.current = true;
               onScan?.();
             }}
-          />
+          >
+            <Icon>
+              <Search />
+            </Icon>
+            <span>Scan receipt with AI</span>
+          </Button>
         </Stack>
       </Card>
     </div>

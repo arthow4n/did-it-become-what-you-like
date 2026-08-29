@@ -234,7 +234,25 @@ function ensureOutflowSign(value: CanonicalDecimal): CanonicalDecimal {
 }
 
 function lineTotal(line: ReceiptDraftLine): CanonicalDecimal {
-  return line.type === "purchase" ? line.lineTotal : line.amount;
+  return line.type === "purchase"
+    ? ensureOutflowSign(line.lineTotal)
+    : line.amount;
+}
+
+function receiptTotalWithLineDirection(
+  printedTotal: CanonicalDecimal,
+  lines: readonly ReceiptDraftLine[],
+): CanonicalDecimal {
+  const selectedTotal = moneySum(
+    lines.filter((line) => line.selected).map(lineTotal),
+  );
+  const selectedDirection = moneyCompare(selectedTotal, "0");
+  if (selectedDirection === 0 || moneyCompare(printedTotal, "0") === 0) {
+    return printedTotal;
+  }
+  return moneyCompare(printedTotal, "0") === selectedDirection
+    ? printedTotal
+    : moneySubtract("0", printedTotal);
 }
 
 export function receiptSelectedTotal(
@@ -248,7 +266,7 @@ export function receiptMismatchDifference(
 ): CanonicalDecimal {
   return moneySubtract(
     receiptSelectedTotal(review),
-    ensureOutflowSign(review.parent.printedTotal),
+    receiptTotalWithLineDirection(review.parent.printedTotal, review.lines),
   );
 }
 
@@ -326,7 +344,10 @@ function normalizedDraft(
   });
   const parent = {
     ...review.parent,
-    printedTotal: ensureOutflowSign(review.parent.printedTotal),
+    printedTotal: receiptTotalWithLineDirection(
+      review.parent.printedTotal,
+      lines,
+    ),
   };
   const mismatch = mismatchFields(parent, lines, review.mismatchExplanation);
   return {

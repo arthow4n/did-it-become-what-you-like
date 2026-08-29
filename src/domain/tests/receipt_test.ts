@@ -114,7 +114,7 @@ Deno.test("receipt-actor domain: signs, totals, selection, editing, adding, and 
   assertEquals(removeReceiptLine(edited, "line-refund").lines.length, 1);
 });
 
-Deno.test("receipt-actor domain: receipt totals use the outflow sign", () => {
+Deno.test("receipt-actor domain: receipt totals follow selected line direction", () => {
   const normalized = normalizeReceiptExtractionDraft({
     merchant: "Shop",
     currency: "SEK",
@@ -147,6 +147,37 @@ Deno.test("receipt-actor domain: receipt totals use the outflow sign", () => {
   }));
   assertEquals(edited.parent.printedTotal, "-8");
   assertEquals(receiptMismatchDifference(edited), "0");
+
+  const adjustmentOnly = validateReceiptReviewDraft(review({
+    parent: { ...review().parent, printedTotal: "5" },
+    lines: [{
+      type: "adjustment",
+      id: "line-refund-only",
+      description: "Refund",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      amount: "5",
+      selected: true,
+      uncertain: false,
+    }],
+  }));
+  assertEquals(adjustmentOnly.parent.printedTotal, "5");
+  assertEquals(receiptSelectedTotal(adjustmentOnly), "5");
+  assertEquals(receiptMismatchDifference(adjustmentOnly), "0");
+
+  const rawPositivePurchase = review({
+    parent: { ...review().parent, printedTotal: "8" },
+    lines: [{
+      type: "purchase",
+      id: "line-raw-positive",
+      description: "Coffee",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      lineTotal: "8",
+      selected: true,
+      uncertain: false,
+    }],
+  });
+  assertEquals(receiptSelectedTotal(rawPositivePurchase), "-8");
+  assertEquals(receiptMismatchDifference(rawPositivePurchase), "0");
 });
 
 Deno.test("receipt-actor domain: hostile extraction remains reviewable but invalid lines start unselected", () => {

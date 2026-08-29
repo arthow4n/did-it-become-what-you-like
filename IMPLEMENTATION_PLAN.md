@@ -62,18 +62,18 @@ features/app -> actors -> domain + adapter ports
 
 ### M16 — Signed receipt-total reconciliation
 
-Owner-approved outcome: keep receipt parent totals and purchase lines in the
-same signed monetary direction so reconciliation compares like with like. A
-printed receipt total representing an outflow is normalized to a negative
-canonical decimal at extraction and review-edit boundaries; positive signed
-adjustments remain positive. The fix must preserve arbitrary-precision
-arithmetic and must not alter generic expense or adjustment semantics.
+Owner-approved outcome: keep receipt parent totals and signed lines in the same
+monetary direction so reconciliation compares like with like. A printed receipt
+total is normalized to the direction implied by its selected lines: purchase
+outflows become negative while adjustment-only/inflow receipts remain positive.
+The fix must preserve arbitrary-precision arithmetic and must not alter generic
+expense or adjustment semantics.
 
 | Task | Status | Dependency | Acceptance / evidence |
 | --- | --- | --- | --- |
-| M16-001 Normalize receipt parent outflow totals | COMPLETE | M15 | Extracted and edited receipt totals use the purchase/outflow sign convention before mismatch arithmetic. |
-| M16-002 Regression coverage and targeted verification | COMPLETE | M16-001 | Domain sign regression passes 3/3; affected tests pass 274/274. Final type, format, lint, build, diff, and receipt E2E evidence follows. |
-| R-1610 Fresh read-only review | IN_PROGRESS | M16-002 | Fresh read-only review is required before archival. |
+| M16-001 Normalize receipt parent totals by line direction | COMPLETE | M15 | Extracted and edited totals align with selected purchase or adjustment direction before mismatch arithmetic; raw purchase totals are handled consistently by total helpers. |
+| M16-002 Regression coverage and targeted verification | COMPLETE | M16-001 | Domain sign regression passes 3/3; affected tests pass 274/274; type, format, lint, build, diff, and receipt E2E checks pass. |
+| R-1610 Fresh read-only review | IN_PROGRESS | M16-002 | Initial review finding on adjustment-only inflows was fixed; a fresh read-only re-review is required before archival. |
 | M16-FINAL Archive and hygiene | PENDING | R-1610 | Record exact evidence, run repository-hygiene pruning, archive completed M16 history, commit, and push. |
 
 The implementation owner must update this ledger after each task and review
@@ -94,19 +94,18 @@ history may be pruned from this live plan.
 
 ## Current Checkpoint
 
-- **Active task / gate:** R-1610 (fresh read-only review pending; `/root` is
+- **Active task / gate:** R-1610 (fresh read-only re-review pending; `/root` is
   integration owner)
-- **Pushed commit / HEAD:** `96e837f` (M16 implementation and targeted
-  verification; R-1610 review pending)
+- **Pushed commit / HEAD:** `9f4e108` (M16 planning checkpoint; sign-direction
+  remediation pending)
 - **Verification status:** M15 evidence remains valid. M16 domain sign tests
   pass 3/3, affected tests pass 274/274, receipt-review Playwright passes 1/1,
-  and `deno task check`, `deno task fmt:check`, `deno task lint`, `deno task
-  build`, and `git diff --check` pass.
+  and check, format, lint, build, and diff checks pass.
 - **Active / preserved work:** Single primary agent on `master`; M16 planning is
   reconciled before implementation, with no delegated workers or transient
   hygiene artifacts.
-- **Exact next action:** Complete the fresh read-only R-1610 review, resolve any
-  severity 1–3 findings, then archive M16.
+- **Exact next action:** Commit and push the sign-direction remediation, then
+  complete the fresh R-1610 re-review before archiving M16.
 
 ## Ready-to-Use Orchestration Prompt
 

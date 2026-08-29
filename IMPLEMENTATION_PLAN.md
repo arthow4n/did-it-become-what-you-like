@@ -29,18 +29,19 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ### Released Baseline
 
-M0 through M12 and all review gates through `R-1210` are `COMPLETE`. The
+M0 through M13 and all review gates through `R-1310` are `COMPLETE`. The
 released application baseline includes the approved domain, actors, adapters,
 responsive UI, After Midnight design system backed by Mantine behind the
 repository facade, accessibility, PWA, tests, GitHub Pages pipeline, operational
 safeguards, multi-viewport UI/UX polish across desktop/mobile/narrow viewports,
 baseline mobile ergonomics, and a provider-valid privacy-safe Gemini
 compatibility probe backed by the official Google Gen AI SDK and a provider-
-neutral receipt AI port described by `SPEC.md`, `DESIGN_SYSTEM.md`, `AGENTS.md`,
-and previous milestones.
+neutral receipt AI port, plus a user-gesture-safe native receipt source picker
+for camera capture and existing-image selection, described by `SPEC.md`,
+`DESIGN_SYSTEM.md`, `AGENTS.md`, and previous milestones.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
-preserved in Git at commit `652bde9`, the last complete pre-pruning ledger. That
+preserved in Git at commit `4aa0ada`, the last complete pre-pruning ledger. That
 history is evidence, not active instructions, and agents must not reconstruct it
 in this live plan.
 
@@ -56,129 +57,10 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-## M13 — Restore receipt source-picker actions
-
-### M13 authority, outcome, and non-goals
-
-This milestone restores the approved receipt-capture workflow so the **Take
-photo** and **Choose image** actions on the Scan with AI screen open the shared
-native file/camera control and deliver the selected image to the receipt actor.
-The fix must preserve the repository design-system facade and the existing
-provider-neutral AI boundary.
-
-Target dependency flow:
-
-```text
-features/receipt-ui -> src/design-system public FileField/ReceiptSourcePicker contracts
-                     -> browser native file/camera input
-features/receipt-ui -> receipt actor -> domain + adapter ports
-```
-
-**Non-goals:** no AI provider changes, model capability changes, receipt schema
-changes, image persistence, visual redesign, or function/tool calling.
-
-### Mandatory single-agent execution rule
-
-- One primary coding agent performs all planning reconciliation, edits, tests,
-  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
-- Independent read-only reviewer subagents are used exclusively at the named
-  review gate.
-- Context compaction or session restarts require the recovery checklist below
-  before editing.
-
-### Locked boundary / design-system rules
-
-1. `src/features/**` and `src/app/**` import only the repository design-system
-   facade; library-specific refs and events stay inside `src/design-system/**`.
-2. `FileField` must expose a library-neutral native-input contract that keeps
-   keyboard, focus, file selection, and camera capture behavior intact.
-3. `ReceiptSourcePicker` remains a presentation composite; actor state and image
-   lifecycle decisions remain in the receipt workflow.
-4. Camera mode must set the native `capture` hint before the input is clicked;
-   choosing an existing image must clear that hint.
-5. Selected images remain ephemeral and are handed to the actor only through the
-   existing typed event path.
-6. Existing semantic tokens, hit targets, labels, and immediate interaction
-   behavior remain unchanged.
-
-### Restart and compaction recovery checklist
-
-- [ ] Read `AGENTS.md`, this milestone section, and Current Checkpoint.
-- [ ] Run `git status --short --branch`, `git log -n 20 --oneline`,
-      `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
-- [ ] Verify test and working tree state before continuing.
-
-### Dependency graph
-
-```text
-M13-001 -> M13-002 -> R-1310 -> M13-FINAL
-```
-
-#### M13-001 — Trace and repair native source-input wiring
-
-- **Status/dependencies:** `COMPLETE`; depends on the archived M12 baseline.
-- **Ownership:** `src/features/receipt-ui.tsx`,
-  `src/design-system/components.tsx`, `src/design-system/index.ts`, and affected
-  receipt/design-system tests.
-- **Scope/non-goals:** Trace the source-picker callbacks, native input ref,
-  capture-mode timing, and file-change event. Repair only the smallest
-  facade/screen contract needed for both actions; do not alter AI adapters,
-  receipt parsing, persistence, or styling unrelated to the interaction.
-- **Outputs/acceptance:** Camera and image-selection buttons invoke the native
-  input, camera mode applies `capture="environment"` before activation,
-  selection mode removes the camera hint, and a selected file follows the
-  existing actor event path. The input remains accessible and ephemeral.
-- **Tests:** Focused component coverage now invokes both source-picker callback
-  paths; the browser journey exercises native chooser activation, capture mode,
-  and selected-file dispatch.
-- **Verification:** `deno fmt` and `deno lint` pass for the changed files;
-  `deno test --allow-read --allow-write --allow-run --allow-env --related=src/features/receipt-ui.tsx`
-  passes 30/30; `deno task test:affected` passes 30/30; `git diff --check`
-  remains pending at the final gate.
-
-#### M13-002 — Integrate regression coverage and verification evidence
-
-- **Status/dependencies:** `COMPLETE`; depends on `M13-001`.
-- **Ownership:** affected receipt UI/design-system test files and this ledger.
-- **Scope/non-goals:** Exercise the repaired actions through the closest
-  existing receipt-screen harness and browser journey, because the component
-  harness cannot observe user-gesture-gated native activation. Do not change
-  unrelated workflow behavior.
-- **Outputs/acceptance:** Regression tests fail before the fix and pass after
-  it, with no contract violations or unrelated snapshots.
-- **Tests:** Focused related tests plus the repository affected-test suite;
-  include the narrowest typecheck/build check required by shared component
-  changes.
-- **Verification:** `deno task test:affected` passes 30/30; the receipt-review
-  Playwright journey passes 1/1; `deno task check`, `deno task fmt:check`,
-  `deno task lint`, `deno task build`, and `git diff --check` pass. Build emits
-  only the existing large-chunk advisory.
-
-#### R-1310 — Receipt source-picker review gate
-
-- **Status/dependencies:** `COMPLETE`; depends on `M13-002`.
-- **Reviewer role:** Fresh read-only subagent reviewer (`m13_review`).
-- **Audit scope:** Diff since M12, native input/ref contract, both action paths,
-  accessibility semantics, actor event wiring, tests, and compliance with
-  `AGENTS.md`, `SPEC.md`, and `DESIGN_SYSTEM.md`.
-- **Remediation loop:** The primary agent fixes all severity 1–3 findings in
-  bounded `fix(...)` commits, records resolutions here, and requests closure
-  approval before archiving. The reviewer found no severity 1–3 findings; the
-  native chooser and capture-mode evidence are recorded under M13-002.
-
-#### M13-FINAL — Milestone closure, ledger archiving, and repo hygiene pruning
-
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-1310`.
-- **Ownership:** `IMPLEMENTATION_PLAN.md` and any transient files introduced by
-  this milestone.
-- **Scope/non-goals:** Prune completed M13 details into the Released Baseline,
-  preserve the pre-pruning commit hash, execute the `repo-hygiene-pruning`
-  skill, and reset the active DAG. Do not remove product source or tests.
-- **Outputs/acceptance:** Compact ledger, no stale cross-references or temporary
-  artifacts, and a clean pushed repository.
-- **Tests:** Environment-scoped hygiene checks required by the pruning skill.
-- **Verification:** `deno task check`, `deno task fmt:check`, `deno task lint`,
-  and `git diff --check`.
+No active milestone is currently open. When the repo owner specifies the next
+product milestone or refactor epic, follow the Standard Planning Procedure in
+`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
+ledger.
 
 ### Locked boundary / design-system rules
 
@@ -194,25 +76,22 @@ M13-001 -> M13-002 -> R-1310 -> M13-FINAL
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M13-002` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `d572554` (M12 archival baseline)
+- **Active task / gate:** None (Milestone 13 complete and archived)
+- **Pushed commit / HEAD:** `4aa0ada` (M13 implementation and review-complete
+  pre-pruning ledger)
 - **Verification status:** Focused related tests pass 30/30; affected tests pass
   30/30; the receipt-review Playwright journey passes 1/1 with both native
-  source actions; typecheck, formatting, lint, build, and diff checks pass.
-- **Review status:** `R-1310` is complete; the fresh read-only reviewer found no
-  severity 1–3 findings.
-- **Active / preserved work:** Single primary agent on `master`; source-picker
-  fix and regression tests are uncommitted; no worktrees or delegated
-  implementation.
-- **Exact next action:** Commit and push the reviewed implementation, then run
-  the repo-hygiene pruning checks and archive M13 with `[archive]`.
+  source actions; `deno task check`, `deno task fmt:check`, `deno task lint`,
+  `deno task build`, and `git diff --check` pass.
+- **Active / preserved work:** Working tree is clean on `master`; no delegated
+  implementation or transient hygiene artifacts were found.
+- **Exact next action:** Await the next owner instruction or feature milestone.
 
 ## Ready-to-Use Orchestration Prompt
 
 ```text
 Read AGENTS.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Confirm working
-tree status on master, reconcile M13-001, repair the native receipt source
-picker without crossing the facade boundary, add focused regression tests,
-pass the exact verification gates, obtain the read-only R-1310 review, archive
-M13 with `[archive]`, and push the completed changes.
+tree status on master, author the next milestone plan per
+.agents/skills/implementation-planning/SKILL.md, obtain approval, and proceed
+with implementation.
 ```

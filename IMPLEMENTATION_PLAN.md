@@ -56,7 +56,11 @@ while preserving reviewable category uncertainty. M21 additionally distinguishes
 provider-output failures from persisted-data corruption and preserves
 phase-specific Gemini diagnostics through the actor. Unusable provider responses
 now use the dedicated `invalid-output` code, with bounded JSON, schema,
-response, and mapping operation identifiers.
+response, and mapping operation identifiers. M22 additionally distinguishes
+positive bottle-deposit charges from explicit returns/refunds in Gemini
+instructions and applies a narrow domain correction for misclassified
+`PANT BURK` charges, keeping Coop receipt totals reconciled. The correction is
+covered by focused domain/adapter tests and the affected suite.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
 preserved in Git at commit `d7c6a22`, the last complete pre-pruning ledger. That
@@ -73,148 +77,34 @@ features/app -> actors -> domain + adapter ports
 
 ---
 
-## M22 — Receipt deposit-charge direction correction
+## Active Milestone
 
-### M22 authority, outcome, and non-goals
-
-Correct receipt reconciliation when a model mistakes a positive bottle-deposit
-charge (for example, Swedish `PANT BURK 2,00`) for a refund. The provider prompt
-will distinguish charges from explicit returns, and the domain boundary will
-apply the same narrow, deterministic correction before ledger signs and totals
-are computed. This milestone does not change the provider-neutral port, add tool
-calling, infer arbitrary model output, or alter ordinary purchase, discount, or
-refund behavior.
-
-Target dependency flow:
-
-```text
-features/app -> actors -> domain + adapter ports
-                          `-> Gemini prompt guidance
-```
-
-### Mandatory single-agent execution rule
-
-- One primary coding agent performs all planning reconciliation, edits, tests,
-  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
-- Independent read-only reviewer subagents are used exclusively at the named
-  review gate.
-- Context compaction or session restarts require following the recovery
-  checklist before editing.
-
-### Locked boundary / design-system rules
-
-1. Receipt amounts remain canonical decimal strings and all arithmetic continues
-   to use the arbitrary-precision money helpers.
-2. Product rows remain ledger outflows; explicit returns/refunds remain inflows.
-3. A positive `PANT BURK`/bottle-deposit charge is an adjustment outflow; only
-   explicit return/refund evidence or a printed negative amount is an inflow.
-4. The provider boundary remains provider-neutral and structured-output only.
-5. Existing rationale and uncertainty fields remain reviewable and bounded.
-6. No feature or design-system UI imports or visual behavior change in M22.
-
-### Restart and compaction recovery checklist
-
-- [ ] Read `AGENTS.md`, this milestone section, and Current Checkpoint.
-- [ ] Run `git status --short --branch`, `git log -n 20 --oneline`,
-      `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
-- [ ] Verify test and working tree clean state before continuing.
-
-### Dependency graph
-
-```text
-M22-001 -> M22-002 -> R-2210 -> M22-FINAL
-```
-
-#### M22-001 — Encode bottle-deposit charge semantics at the provider boundary
-
-- **Status/dependencies:** `COMPLETE`; depends on M21.
-- **Ownership:** `src/adapters/gemini/adapter.ts`,
-  `src/adapters/gemini/schema.ts`, `src/domain/receipt.ts`, `SPEC.md`,
-  `src/adapters/gemini/adapter.test.ts`.
-- **Scope/non-goals:** Clarify Gemini instructions for positive bottle-deposit
-  charges versus explicit returns/refunds. Add a narrow domain correction when
-  an otherwise valid adjustment named `PANT BURK` is incorrectly marked as an
-  inflow despite a non-negative printed amount, and replace its rationale with
-  the corrected receipt evidence. Do not reinterpret generic adjustments or
-  override an explicit return/refund/negative deposit.
-- **Outputs/acceptance:** The photographed Coop receipt's two `PANT BURK` rows
-  normalize to `-2` each and reconcile with the `-325.78` printed total; genuine
-  refund/return adjustments retain positive signs.
-- **Tests:** Domain unit tests for the correction and its exclusions; adapter
-  prompt regression assertion.
-- **Verification:** `deno fmt <changed>`, `deno lint <changed>`,
-  `deno test --related=src/domain/receipt.ts`,
-  `deno test --related=src/adapters/gemini/adapter.ts`, `git diff --check`.
-
-#### M22-002 — Run affected receipt regression validation
-
-- **Status/dependencies:** `COMPLETE`; depends on M22-001.
-- **Ownership:** Test and verification outputs only; no production ownership.
-- **Scope/non-goals:** Run the focused and affected suites and inspect the
-  resulting reconciliation behavior. Do not broaden the milestone into UI
-  redesign or provider migration.
-- **Outputs/acceptance:** Focused domain/adapter tests and the repository's
-  affected test selection pass with no new failures.
-- **Tests:** `deno task test:affected` plus the focused commands from M22-001.
-- **Verification:** `deno task fmt:check`, `deno task lint`, `deno task check`,
-  `deno task test:affected`, `git diff --check`.
-
-#### R-2210 — Fresh read-only receipt-sign review
-
-- **Status/dependencies:** `READY`; depends on M22-002.
-- **Reviewer role:** Fresh read-only subagent reviewer.
-- **Audit scope:** Review the M22 diff, prompt/domain contract, correction
-  exclusions, tests, and compliance with `AGENTS.md` and `SPEC.md`.
-- **Remediation loop:** The primary agent fixes all severity 1–3 findings in
-  bounded remediation commits and requests closure before archiving.
-
-#### M22-FINAL — Milestone closure, ledger archiving, and repo hygiene pruning
-
-- **Status/dependencies:** `PENDING`; depends on R-2210.
-- **Ownership:** `IMPLEMENTATION_PLAN.md`, `SPEC.md`, and any M22 code/tests.
-- **Scope/non-goals:** Record the pushed implementation and review evidence in
-  Released Baseline, prune this detailed milestone, run the required
-  `repo-hygiene-pruning` skill, and reset the active DAG. Do not delete product
-  specifications or unrelated historical records.
-- **Outputs/acceptance:** Compact plan, clean workspace, no dangling markdown
-  links, and archive commit marked `[archive]`.
-- **Tests:** Plan-pruning environment checks only after implementation tests
-  have passed.
-- **Verification:** `deno task check`, `deno task fmt:check`, `deno task lint`,
-  `git diff --check`.
-
-### Locked boundary / design-system rules
-
-1. Design-system facade boundary remains strictly enforced: `src/features/**`
-   and `src/app/**` import only from `src/design-system`.
-2. After Midnight semantic tokens in `tokens.css` remain the sole visual source
-   of truth.
-3. Ordinary transitions remain `0ms`.
-4. Multi-viewport verification across Desktop (`1280×800`), Mobile (`390×844`),
-   and Narrow (`320×568`) is required.
+No active milestone is currently open. M22 was completed in implementation
+commits `e16b899`, `bedbb7b`, and `e2ceb80`, checkpointed in `569039e`, and
+reviewed with no severity 1–2 findings. Its detailed task ledger remains
+available in Git history.
 
 ---
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-2210` (`READY`)
-- **Pushed commit / HEAD:** `e2ceb80` (M22 implementation and instruction
-  versioning; fresh review is pending)
-- **Verification status:** M22-001 focused domain tests pass 9/9 and focused
-  adapter tests pass 17/17; format, lint, and type checks pass. M21 focused
+- **Active task / gate:** None (M22 complete and archived)
+- **Pushed commit / HEAD:** `569039e` (last M22 implementation checkpoint; this
+  archive update follows)
+- **Verification status:** M22 focused domain tests pass 9/9 and focused adapter
+  tests pass 17/17; affected tests pass 288/288; format, lint, and type checks
+  pass. Fresh R-2210 review found no severity 1–2 findings. M21 focused
   adapter/actor/UI tests pass 77/77 and affected tests pass 279/279; check,
   format, lint, diff checks, build, and receipt-review Playwright pass. Fresh
-  R-2100 review found no severity 1–3 findings. M22 focused tests pass 8/8
-  domain and 17/17 adapter; affected tests pass 288/288; format, lint, and type
-  checks pass. M19 focused actor/UI tests pass 20/20 and affected tests pass
-  128/128; check, format, lint, build, diff checks, and receipt-review
-  Playwright pass 1/1. Fresh R-1900 review found no severity 1–3 findings. M18
-  affected tests pass 337/337, focused domain/client tests pass 8/8, and its
-  final review found no severity 1–3 findings.
+  R-2100 review found no severity 1–3 findings. M19 focused actor/UI tests pass
+  20/20 and affected tests pass 128/128; check, format, lint, build, diff
+  checks, and receipt-review Playwright pass 1/1. Fresh R-1900 review found no
+  severity 1–3 findings. M18 affected tests pass 337/337, focused domain/client
+  tests pass 8/8, and its final review found no severity 1–3 findings.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Complete the R-2210 read-only review, remediate any
-  severity 1–3 findings, then archive M22.
+- **Exact next action:** Author the next approved milestone plan before making
+  further application changes.
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -27,7 +27,10 @@ import type {
   ReceiptExtractionDraft,
 } from "../adapters/ports/index.ts";
 import { SecretValue } from "../adapters/ports/index.ts";
-import type { ContractFailure } from "../actors/contracts/index.ts";
+import type {
+  ContractFailure,
+  ReceiptImageRef,
+} from "../actors/contracts/index.ts";
 import { withComponentHarness } from "../test-support/component-harness.tsx";
 import {
   createFakeImagePreparationPort,
@@ -388,6 +391,7 @@ Deno.test(
         };
         let abortCount = 0;
         let resolveExtraction: (() => void) | undefined;
+        let lastImageRef: ReceiptImageRef | undefined;
         const ai: ReceiptAiPort = {
           listModels: () => Promise.resolve([model]),
           testConfiguration: () =>
@@ -420,7 +424,10 @@ Deno.test(
           ai,
           gemini,
           imagePreparation: createFakeImagePreparationPort(),
-          resolveImage: (ref) => imageStore.resolve(ref),
+          resolveImage: (ref) => {
+            lastImageRef = ref;
+            return imageStore.resolve(ref);
+          },
           releaseImage: (ref) => imageStore.releaseForRetry(ref),
         };
         const project = {
@@ -515,6 +522,62 @@ Deno.test(
         assert(!reviewed);
         assert(!view.queryByRole("alert")?.textContent?.includes("not-found"));
         rendered.unmount();
+
+        // A route change or hot update can tear down the screen without the
+        // visible Close action. The unmount cleanup must abort the invocation
+        // and release the source just as the explicit cancellation path does.
+        const remounted = render(
+          createElement(ReceiptScanScreen, {
+            dependencies,
+            secretStorage,
+            imageStore,
+            state,
+            settings,
+            offline: false,
+            onSettingsChange: () => undefined,
+            onDirtyChange: () => undefined,
+            onReview: () => reviewed = true,
+            onClose: () => closed += 1,
+            onOpenSettings: () => undefined,
+          }),
+        );
+        const remountedView = within(document.body);
+        await waitFor(() =>
+          assert(
+            remountedView.getByRole("button", { name: "Continue to scan" }),
+          )
+        );
+        fireEvent.click(
+          remountedView.getByRole("button", { name: "Continue to scan" }),
+        );
+        const remountedFile = new Blob([new Uint8Array([4, 5, 6])], {
+          type: "image/png",
+        }) as unknown as File;
+        fireEvent.change(remountedView.getByLabelText("Receipt image file"), {
+          target: { files: [remountedFile] },
+        });
+        await waitFor(() => {
+          const button = remountedView.getByRole("button", {
+            name: "Scan with AI",
+          });
+          assert(!button.hasAttribute("disabled"));
+        });
+        fireEvent.click(
+          remountedView.getByRole("button", { name: "Scan with AI" }),
+        );
+        await waitFor(() =>
+          assert(remountedView.getByRole("button", { name: "Cancel scan" }))
+        );
+        remounted.unmount();
+        await waitFor(() => assert(abortCount === 2));
+        assert(lastImageRef !== undefined);
+        let imageReleased = false;
+        try {
+          await imageStore.resolve(lastImageRef);
+        } catch {
+          imageReleased = true;
+        }
+        assert(imageReleased, "Unmount cleanup should release the image");
       });
     });
   },

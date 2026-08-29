@@ -3197,6 +3197,12 @@ export type ReceiptGroupProps = {
 export function ReceiptGroup(
   { merchant, date, lines, total, onSelectLine }: ReceiptGroupProps,
 ) {
+  // Receipt groups already identify the merchant in their heading. Each
+  // expanded line should therefore lead with its item description; retain a
+  // merchant fallback for incomplete legacy/gallery rows.
+  const lineExpenses = lines.map((line) =>
+    line.description?.trim() ? { ...line, merchant: undefined } : line
+  );
   return (
     <Disclosure
       title={
@@ -3208,7 +3214,7 @@ export function ReceiptGroup(
     >
       <Stack gap={3}>
         <MoneyText {...total} />
-        <ExpenseList expenses={lines} onSelect={onSelectLine} />
+        <ExpenseList expenses={lineExpenses} onSelect={onSelectLine} />
       </Stack>
     </Disclosure>
   );

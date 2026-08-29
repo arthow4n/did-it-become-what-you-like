@@ -54,6 +54,7 @@ import {
   Popover,
   Progress,
   RadioGroup,
+  ReceiptGroup,
   ResponsiveGrid,
   SearchField,
   SecretField,
@@ -1423,6 +1424,40 @@ Deno.test("design-system positive money rows always expose an explicit plus", as
       assertEqual(
         within(document.body).getAllByText("SEK +24.00").length,
         2,
+      );
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system receipt groups show line descriptions", async () => {
+  await withComponentHarness(({ window, render, fireEvent }) =>
+    withAriaDomGlobals(window, () => {
+      const mounted = render(
+        createElement(ReceiptGroup, {
+          merchant: "Stora Coop Backaplan",
+          date: "2026-08-29",
+          lines: [{
+            id: "receipt-line-broccoli",
+            merchant: "Stora Coop Backaplan",
+            description: "BROCCOLI",
+            category: "Mat",
+            amount: "-33.98",
+            currency: "SEK",
+            date: "2026-08-29",
+          }],
+          total: { amount: "-33.98", currency: "SEK" },
+        }),
+      );
+      const view = within(document.body);
+      fireEvent.click(
+        view.getByRole("button", { name: /Stora Coop Backaplan/ }),
+      );
+      assert(view.getByText("BROCCOLI"));
+      assertEqual(
+        view.getAllByText("Stora Coop Backaplan").length,
+        1,
+        "The receipt merchant should appear only in the group heading",
       );
       mounted.unmount();
     })

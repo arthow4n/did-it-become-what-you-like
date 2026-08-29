@@ -53,13 +53,20 @@ When evaluating screens and components, audit against these 5 pillars:
   - Fixed Mobile Bottom Navigation: `20`
   - Modals, Drawers & Overlays (`.ds-modal-overlay`, `.local-ui-overlay`): `40`
   - Floating Toasts / Global Status Notifications: `50`
-- **Zero Covered Elements:** Bottom sheets (e.g. `AddChoiceScreen`) must sit on
-  top of the bottom navigation bar (`z-index: 40`) and include bottom safe-area
-  clearance
+- **Zero Covered Elements & Full Bottom Sheet Masking:** Bottom sheets (e.g.
+  `AddChoiceScreen`) must sit on top of the bottom navigation bar (`z-index: 40`),
+  cover bottom navigation cleanly with their backdrop, and include bottom
+  safe-area clearance
   (`padding-bottom: max(var(--space-5), env(safe-area-inset-bottom))`).
 - **Body Clearance:** The scrollable `<main>` container must have
   `padding-bottom: calc(var(--control-height) + var(--space-8) + env(safe-area-inset-bottom, 0px))`
   so scrolled content is never clipped behind the fixed navigation bar.
+- **Header Action Pinning in Modals & Drawers:** Header close buttons (`IconButton`
+  with `X` or back arrow) inside dialogs, modals, drawers, and bottom sheets must
+  ALWAYS remain inline on the single top header row pinned to the right edge
+  (`display: flex; justify-content: space-between; align-items: center;`), and
+  must NEVER wrap below the title or expand into full-width centered elements on
+  mobile viewports.
 
 ### B. Form Ergonomics, Mobile Action Spanning & Control Anchoring
 
@@ -84,6 +91,11 @@ When evaluating screens and components, audit against these 5 pillars:
   - **Antipattern to Avoid:** Do NOT render primary actions with natural width
     (~150px) floating lopsided on the left or right of a mobile screen leaving
     60% blank space.
+- **Choice Sheet & Intermediate Overlay Ergonomics:** Intermediate selection
+  dialogs and bottom sheets (e.g. `AddChoiceScreen`) must use clean, prominent,
+  full-width action buttons with clear leading icons (`Plus`, `Search`/`Scan`) and
+  concise labels. Avoid noisy, multi-line card descriptions and nested borders
+  when a clean button choice is faster and clearer for the user.
 - **Form Action Button Vertical Hierarchy:** In mobile vertical button stacks,
   the primary submit/confirm action must ALWAYS be on **TOP**, and
   secondary/cancel actions on the **BOTTOM**. Never invert this order.
@@ -127,6 +139,11 @@ When evaluating screens and components, audit against these 5 pillars:
   adequate bottom padding to ensure scrolled content and danger action buttons
   (e.g. "Delete everywhere") are never obscured behind fixed bottom navigation
   bars.
+- **Mid-State & Transient Overlay Auditing:** All intermediate/transient/overlay
+  states (bottom sheets, modals, editors, popovers, confirm dialogs, setup
+  prompts, and line-item sheets) must be captured and reviewed across Desktop,
+  Mobile, and Narrow viewports. Audits must not be restricted to top-level
+  screens.
 
 ### E. Typographic Hierarchy, Word-Wrapping & Data Alignment
 

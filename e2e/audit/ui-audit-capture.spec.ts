@@ -265,9 +265,10 @@ for (const vp of VIEWPORTS) {
       await snap("20b-gemini-quick-setup-filled");
       await page.getByRole("button", { name: "Save and continue" }).click();
 
-      // Select model (auto-triggers pending scan)
+      // Select model
       await page.getByRole("combobox", { name: "Model" }).click();
       await page.getByRole("option", { name: /Gemini 2.5 Flash/ }).click();
+      await page.getByRole("button", { name: "Scan with AI" }).click();
 
       // 20d. Receipt Review Screen
       await expect(page.getByRole("heading", { name: "Review receipt" }))

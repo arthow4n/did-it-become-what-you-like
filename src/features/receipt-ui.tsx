@@ -549,9 +549,13 @@ export function ReceiptScanScreen({
   }, [selectedImage]);
 
   useEffect(() => () => {
+    // Stop the invoked scan before its in-memory image reference is removed.
+    // This also covers route changes and component teardown that bypass the
+    // visible close button.
+    send({ type: "receipt.cancel" });
     if (selectedImageRef.current) imageStore.remove(selectedImageRef.current);
     imageStore.clear();
-  }, [imageStore]);
+  }, [imageStore, send]);
 
   useEffect(() => {
     if (openSent.current) return;
@@ -909,7 +913,7 @@ export function ReceiptScanScreen({
               icon={<X />}
               aria-label="Close"
               variant="quiet"
-              onPress={onClose}
+              onPress={() => send({ type: "receipt.cancel" })}
             />
           }
         />
@@ -935,7 +939,7 @@ export function ReceiptScanScreen({
               icon={<X />}
               aria-label="Close"
               variant="quiet"
-              onPress={onClose}
+              onPress={() => send({ type: "receipt.cancel" })}
             />
           }
         />
@@ -976,7 +980,7 @@ export function ReceiptScanScreen({
               icon={<X />}
               aria-label="Close"
               variant="quiet"
-              onPress={onClose}
+              onPress={() => send({ type: "receipt.cancel" })}
             />
           }
         />
@@ -1062,7 +1066,13 @@ export function ReceiptScanScreen({
                   >
                     Prepare image before sending (resize and compress)
                   </Switch>
-                  <Button variant="quiet" onPress={onOpenSettings}>
+                  <Button
+                    variant="quiet"
+                    onPress={() => {
+                      send({ type: "receipt.cancel" });
+                      onOpenSettings();
+                    }}
+                  >
                     Open Gemini settings
                   </Button>
                 </Stack>

@@ -9,6 +9,8 @@ import {
   ReceiptMetadataEditor,
   ReceiptReviewScreen,
   ReceiptScanFailureNotice,
+  ReceiptScanScreen,
+  type ReceiptUiDependencies,
 } from "./receipt-ui.tsx";
 import {
   GeminiQuickSetup,
@@ -16,10 +18,21 @@ import {
   ReceiptLineCard,
   ReceiptSourcePicker,
 } from "../design-system/index.ts";
-import { DeviceLocalSettingsSchema } from "../domain/index.ts";
+import {
+  DeviceLocalSettingsSchema,
+  type ProjectCategoryState,
+} from "../domain/index.ts";
+import type {
+  ReceiptAiPort,
+  ReceiptExtractionDraft,
+} from "../adapters/ports/index.ts";
+import { SecretValue } from "../adapters/ports/index.ts";
 import type { ContractFailure } from "../actors/contracts/index.ts";
 import { withComponentHarness } from "../test-support/component-harness.tsx";
-import { createFakeLocalPort } from "../test-support/fakes/ports.ts";
+import {
+  createFakeImagePreparationPort,
+  createFakeLocalPort,
+} from "../test-support/fakes/ports.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -339,6 +352,173 @@ Deno.test("receipt-ui retains an ephemeral source for an in-session retry", asyn
   assert(retried.bytes.length === file.size);
   store.release(image);
 });
+
+Deno.test(
+  "receipt-ui cancels an active scan before close cleanup removes its image",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(async () => {
+        const imageStore = new ReceiptImageStore();
+        const model = {
+          id: "fake-gemini-compatible",
+          displayName: "Fake Gemini Compatible",
+          lifecycle: "active" as const,
+          capabilities: {
+            "image-input": true,
+            "content-generation": true,
+            "structured-output": true,
+          },
+        };
+        const draft: ReceiptExtractionDraft = {
+          merchant: "Fake Merchant",
+          currency: "SEK",
+          date: "2026-08-29",
+          printedTotal: "-1",
+          lines: [{
+            description: "Receipt item",
+            amount: "1",
+            categoryId: "category-uncategorized",
+            kind: "purchase",
+            direction: "outflow",
+            selected: true,
+            rationale: "The receipt lists this purchased product line.",
+          }],
+          uncertainty: [],
+          mismatches: [],
+        };
+        let abortCount = 0;
+        let resolveExtraction: (() => void) | undefined;
+        const ai: ReceiptAiPort = {
+          listModels: () => Promise.resolve([model]),
+          testConfiguration: () =>
+            Promise.resolve({
+              status: "compatible",
+              model,
+            }),
+          extractReceipt: (_request, options) =>
+            new Promise((resolve, reject) => {
+              const signal = options?.signal;
+              const onAbort = () => {
+                abortCount += 1;
+                signal?.removeEventListener("abort", onAbort);
+                reject(new Error("scan aborted"));
+              };
+              signal?.addEventListener("abort", onAbort, { once: true });
+              resolveExtraction = () => {
+                signal?.removeEventListener("abort", onAbort);
+                resolve(draft);
+              };
+            }),
+        };
+        const gemini = {
+          ...ai,
+          getApiKey: () => Promise.resolve(SecretValue.from("AIza.test")),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+        };
+        const dependencies: ReceiptUiDependencies = {
+          ai,
+          gemini,
+          imagePreparation: createFakeImagePreparationPort(),
+          resolveImage: (ref) => imageStore.resolve(ref),
+          releaseImage: (ref) => imageStore.releaseForRetry(ref),
+        };
+        const project = {
+          schemaVersion: 1 as const,
+          type: "project" as const,
+          id: "project-receipt-ui",
+          name: "Receipt UI project",
+          defaultCurrency: "SEK" as const,
+          archived: false,
+        };
+        const category = {
+          schemaVersion: 1 as const,
+          type: "category" as const,
+          id: "category-uncategorized" as const,
+          name: "Uncategorized",
+          sortOrder: 0,
+          archived: false,
+          system: true,
+        };
+        const state: ProjectCategoryState = {
+          projects: [project],
+          categories: [category],
+          expenses: [],
+          receipts: [],
+          receiptPurchaseLines: [],
+          receiptAdjustments: [],
+          tombstones: [],
+          projectOrder: [project.id],
+          selectedProjectId: project.id,
+          firstProjectId: project.id,
+          defaultProjectId: project.id,
+        };
+        const settings = DeviceLocalSettingsSchema.parse({
+          imagePreparationEnabled: true,
+          selectedGeminiModel: model.id,
+          geminiKeyRevision: "legacy-key",
+          geminiCompatibilityEvidence: [{
+            modelId: model.id,
+            modelFingerprint: `${model.id}|active|1|1|1`,
+            keyRevision: "legacy-key",
+            evidenceVersion: "receipt-compatibility.v1",
+            status: "compatible",
+          }],
+        });
+        const secretStorage = {
+          get: () => Promise.resolve(SecretValue.from("AIza.test")),
+          set: () => Promise.resolve(),
+          remove: () => Promise.resolve(),
+        };
+        let closed = 0;
+        let reviewed = false;
+        const rendered = render(
+          createElement(ReceiptScanScreen, {
+            dependencies,
+            secretStorage,
+            imageStore,
+            state,
+            settings,
+            offline: false,
+            onSettingsChange: () => undefined,
+            onDirtyChange: () => undefined,
+            onReview: () => reviewed = true,
+            onClose: () => closed += 1,
+            onOpenSettings: () => undefined,
+          }),
+        );
+        const view = within(document.body);
+        await waitFor(() =>
+          assert(view.getByRole("button", { name: "Continue to scan" }))
+        );
+        fireEvent.click(view.getByRole("button", { name: "Continue to scan" }));
+        // Use the runtime Blob so the Deno URL implementation accepts it
+        // while the component harness swaps the DOM File constructor.
+        const file = new Blob([new Uint8Array([1, 2, 3])], {
+          type: "image/png",
+        }) as unknown as File;
+        fireEvent.change(view.getByLabelText("Receipt image file"), {
+          target: { files: [file] },
+        });
+        await waitFor(() => {
+          const button = view.getByRole("button", { name: "Scan with AI" });
+          assert(!button.hasAttribute("disabled"));
+        });
+        fireEvent.click(view.getByRole("button", { name: "Scan with AI" }));
+        await waitFor(() =>
+          assert(view.getByRole("button", { name: "Cancel scan" }))
+        );
+        fireEvent.click(view.getByRole("button", { name: "Close" }));
+        await waitFor(() => assert(closed === 1));
+        resolveExtraction?.();
+        await waitFor(() => assert(abortCount === 1));
+        assert(!reviewed);
+        assert(!view.queryByRole("alert")?.textContent?.includes("not-found"));
+        rendered.unmount();
+      });
+    });
+  },
+);
 
 Deno.test("receipt-ui keeps Needs test models selectable and evidence device-local", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {

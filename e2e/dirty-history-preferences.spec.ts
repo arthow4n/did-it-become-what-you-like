@@ -74,7 +74,7 @@ test("dirty Preferences uses the shared bottom-navigation decision and preserves
     .getByRole("button", { name: "Open" }).click();
   const input = page.getByLabel("Expense-day boundary");
   await expect(input).toHaveValue("03:00");
-  await page.getByRole("main").getByRole("button", { name: "Settings" })
+  await page.getByRole("navigation").getByRole("button", { name: "Settings" })
     .click();
   await expect(page.getByRole("heading", { name: "Settings", exact: true }))
     .toBeVisible();

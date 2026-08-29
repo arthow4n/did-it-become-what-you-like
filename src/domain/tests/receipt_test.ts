@@ -236,6 +236,37 @@ Deno.test(
       "a tombstone collision must leave the aggregate unchanged",
     );
 
+    const inScopeCollision = await managementHarness([
+      {
+        schemaVersion: 1,
+        type: "project",
+        id: savedReceipt.projectId,
+        name: "Receipt project",
+        defaultCurrency: "SEK",
+        archived: false,
+      },
+      {
+        schemaVersion: 1,
+        type: "category",
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+        sortOrder: 0,
+        archived: false,
+        system: true,
+      },
+      savedReceipt,
+      savedPurchase,
+      savedAdjustment,
+      {
+        ...savedPurchase,
+        id: collisionId,
+      },
+    ]);
+    await rejectsAsync(
+      () => inScopeCollision.service.deleteReceipt(savedReceipt.id),
+      "conflict",
+    );
+
     const maxReceiptId = `r${"x".repeat(127)}`;
     const maxLineId = `l${"y".repeat(127)}`;
     const maximum = await managementHarness([

@@ -333,6 +333,13 @@ M27-001 -> M27-002 -> R-2710
   archived categories are rejected for new receipt lines; domain and adapter
   receipt round-trip fixtures are added; focused remediation tests currently
   pass (36 passed, 0 failed).
+- **Closure review follow-up:** Carver’s fresh closure review confirmed the
+  other six remediation areas and found one remaining severity 2 edge case:
+  tombstone preflight still permitted collision with another record in the same
+  deletion set, which could overwrite a previously written tombstone. The
+  checkpoint was also stale. The preflight is now strict for every existing
+  generated ID, and the checkpoint is being corrected with the next remediation
+  commit.
 
 #### M27-003 — Model the saved-receipt detail actor
 
@@ -488,8 +495,8 @@ M27-001 -> M27-002 -> R-2710
 
 - **Active task / gate:** `R-2710` (`IN_PROGRESS`; remediation of seven severity
   1–3 findings from Anscombe’s independent review)
-- **Pushed commit / HEAD:** `4606c94` with uncommitted bounded remediation
-  changes
+- **Pushed commit / HEAD:** `80959c7` with uncommitted final R-2710 remediation
+  and checkpoint changes
 - **Verification status:** Initial M27-002 evidence remains `deno task check`,
   focused receipt suites (18 passed, 0 failed), `deno task test:affected` (298
   passed, 0 failed), and `git diff --check`; remediation-focused domain,
@@ -497,10 +504,10 @@ M27-001 -> M27-002 -> R-2710
 - **Active / preserved work:** Single primary agent on `master`; no M27 worker
   or worktree. The M27-002 implementation and review checkpoint are being
   preserved on the primary branch.
-- **Exact next action:** Run remediation lint/check/affected verification,
-  commit and push the bounded fixes with this checkpoint, then dispatch a fresh
-  read-only reviewer for R-2710 and remediate any remaining severity 1–3
-  findings before starting M27-003.
+- **Exact next action:** Run final R-2710 remediation lint/check/affected
+  verification, commit and push the strict collision fix with this checkpoint,
+  then dispatch a fresh read-only reviewer for R-2710 and remediate any
+  remaining severity 1–3 findings before starting M27-003.
 
 ## Ready-to-Use Orchestration Prompt
 

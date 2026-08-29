@@ -1071,7 +1071,6 @@ function ensureTombstoneIdsAvailable(
     readonly id: StableId;
   }[],
 ): void {
-  const targetIds = new Set(targets.map((target) => target.id));
   const generatedIds = new Set<string>();
   for (const target of targets) {
     const tombstoneId = receiptTombstoneId(target.type, target.id);
@@ -1079,7 +1078,7 @@ function ensureTombstoneIdsAvailable(
       throw new ReceiptDomainError("conflict");
     }
     generatedIds.add(tombstoneId);
-    if (records.ids.has(tombstoneId) && !targetIds.has(tombstoneId)) {
+    if (records.ids.has(tombstoneId)) {
       throw new ReceiptDomainError("conflict");
     }
   }

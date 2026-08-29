@@ -531,7 +531,12 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
   );
   assert(
     requests[0].config.systemInstruction.includes(
-      "Discounts, refunds, cashback, bottle-deposit returns",
+      "Discounts, refunds, cashback, and explicit bottle-deposit returns",
+    ),
+  );
+  assert(
+    requests[0].config.systemInstruction.includes(
+      "A positive PANT BURK/PANT bottle-deposit line",
     ),
   );
   assert(

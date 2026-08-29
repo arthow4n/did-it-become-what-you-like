@@ -241,6 +241,83 @@ Deno.test("receipt-actor domain: raw printed signs normalize by direction", () =
   assertEquals(receiptMismatchDifference(normalized), "0");
 });
 
+Deno.test(
+  "receipt-actor domain: positive bottle-deposit charges are outflows while returns remain inflows",
+  () => {
+    let sequence = 0;
+    const normalized = normalizeReceiptExtractionDraft({
+      merchant: "Coop",
+      currency: "SEK",
+      date: "2026-08-29",
+      printedTotal: "2",
+      uncertainty: [],
+      mismatches: [],
+      lines: [{
+        description: "PANT BURK",
+        amount: "2",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        kind: "adjustment",
+        direction: "inflow",
+        selected: true,
+        rationale: "The model incorrectly called this deposit a return.",
+      }, {
+        description: "PANT BURK RETUR",
+        amount: "2",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        kind: "adjustment",
+        direction: "inflow",
+        selected: true,
+        rationale: "The receipt explicitly marks this deposit as a return.",
+      }, {
+        description: "PANT BURK",
+        amount: "-2",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        kind: "adjustment",
+        direction: "inflow",
+        selected: true,
+        rationale: "The printed negative amount is a deposit credit.",
+      }],
+    }, {
+      projectId: "project-receipt-domain",
+      currency: "SEK",
+      categoryCatalogue: [{
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+      }],
+      nextId: () => `line-bottle-deposit-${++sequence}`,
+    });
+    assertEquals(normalized.lines[0]?.type, "adjustment");
+    assertEquals(
+      normalized.lines[0]?.type === "adjustment"
+        ? normalized.lines[0].amount
+        : undefined,
+      "-2",
+    );
+    assertEquals(
+      normalized.lines[0]?.classificationReason,
+      "The PANT BURK line is a bottle-deposit charge listed with the purchased goods, so it increases the amount owed.",
+    );
+    assertEquals(
+      normalized.lines[1]?.type === "adjustment"
+        ? normalized.lines[1].amount
+        : undefined,
+      "2",
+    );
+    assertEquals(
+      normalized.lines[1]?.classificationReason,
+      "The receipt explicitly marks this deposit as a return.",
+    );
+    assertEquals(
+      normalized.lines[2]?.type === "adjustment"
+        ? normalized.lines[2].amount
+        : undefined,
+      "2",
+    );
+    assertEquals(receiptSelectedTotal(normalized), "2");
+    assertEquals(receiptMismatchDifference(normalized), "0");
+  },
+);
+
 Deno.test("receipt-actor domain: contradictory purchase direction fails closed", () => {
   const normalized = normalizeReceiptExtractionDraft({
     merchant: "Shop",

@@ -256,6 +256,42 @@ function normalizeExtractedAmount(
   return value;
 }
 
+const BOTTLE_DEPOSIT_CHARGE_PATTERN =
+  /\b(?:pant(?:\s+burk)?|bottle\s+deposit)\b/i;
+const BOTTLE_DEPOSIT_RETURN_PATTERN =
+  /\b(?:retur|åter|återbetalning|refund|return)\b/i;
+
+/**
+ * A positive deposit printed with purchased goods is a charge, not a refund.
+ * Keep this correction deliberately narrow: explicit return/refund evidence or
+ * a printed negative amount remains an inflow.
+ */
+function normalizeBottleDepositDirection(
+  description: string,
+  kind: "purchase" | "adjustment" | undefined,
+  amount: CanonicalDecimal | undefined,
+  direction: "outflow" | "inflow" | undefined,
+): {
+  readonly direction: "outflow" | "inflow" | undefined;
+  readonly classificationReason?: string;
+} {
+  if (
+    kind !== "adjustment" ||
+    direction !== "inflow" ||
+    amount === undefined ||
+    moneyCompare(amount, "0") < 0 ||
+    !BOTTLE_DEPOSIT_CHARGE_PATTERN.test(description) ||
+    BOTTLE_DEPOSIT_RETURN_PATTERN.test(description)
+  ) {
+    return { direction };
+  }
+  return {
+    direction: "outflow",
+    classificationReason:
+      "The PANT BURK line is a bottle-deposit charge listed with the purchased goods, so it increases the amount owed.",
+  };
+}
+
 function lineTotal(line: ReceiptDraftLine): CanonicalDecimal {
   return line.type === "purchase"
     ? ensureOutflowSign(line.lineTotal)
@@ -468,13 +504,24 @@ export function normalizeReceiptExtractionDraft(
       categoryCandidate !== UNCATEGORIZED_CATEGORY_ID;
     const description = safeText(rawLine.description);
     const modelReason = safeReason(rawLine.uncertainty);
-    const classificationReason = safeClassificationReason(rawLine.rationale);
+    const modelClassificationReason = safeClassificationReason(
+      rawLine.rationale,
+    );
     const amount = parseDecimal(rawLine.amount);
-    const direction = rawLine.direction === "inflow"
+    const modelDirection = rawLine.direction === "inflow"
       ? "inflow"
       : rawLine.direction === "outflow"
       ? "outflow"
       : undefined;
+    const normalizedDeposit = normalizeBottleDepositDirection(
+      description,
+      kind,
+      amount,
+      modelDirection,
+    );
+    const direction = normalizedDeposit.direction;
+    const classificationReason = normalizedDeposit.classificationReason ??
+      modelClassificationReason;
     const directionMismatch = kind === "purchase" && direction !== "outflow";
     // Purchases are always ledger outflows even if an untrusted boundary
     // contradicts the contract; keep the line safe while marking it invalid.

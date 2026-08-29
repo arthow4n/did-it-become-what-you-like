@@ -354,7 +354,7 @@ function promptFor(request: ReceiptExtractionRequest): string {
     }.`,
     "Amount transcription rules: copy each numeric amount exactly as printed, including a printed minus sign; use a period as the decimal separator and omit digit-grouping separators; do not convert it to the owner's ledger sign.",
     "Every product or purchase line has direction outflow, even when the receipt prints no minus sign. Set kind to purchase.",
-    "Discounts, refunds, cashback, bottle-deposit returns, and other credits have direction inflow and kind adjustment because they reduce the amount owed.",
+    "Discounts, refunds, cashback, and explicit bottle-deposit returns have direction inflow and kind adjustment because they reduce the amount owed. A positive PANT BURK/PANT bottle-deposit line printed beside purchased goods is a deposit charge, not a return: keep its printed amount and set direction outflow. Use inflow for a deposit only when the receipt explicitly says return/refund/återbetalning or prints a negative amount.",
     "Tips, fees, surcharges, and other extra charges have direction outflow and kind adjustment because they increase the amount owed.",
     "For every line, provide a concise rationale (one short sentence) naming the receipt evidence used for its category and direction. This is evidence, not hidden chain-of-thought.",
     "Do not return payment/tender amounts, subtotals, tax summaries, receipt totals, or quantity-only rows as line items; do not duplicate a product line for its quantity.",

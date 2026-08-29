@@ -105,9 +105,12 @@ and multi-device synchronization according to the agreed sync design.
   is stable and must not change when the device enters another timezone.
 - Monetary amounts follow their natural direction from the owner's perspective:
   purchases and other outflows are negative, while discounts, refunds, cashback,
-  bottle-deposit returns, and other inflows are positive. This sign convention
-  must also support possible future income records without a data migration that
-  reverses existing meanings.
+  bottle-deposit returns, and other inflows are positive. A bottle-deposit
+  charge printed beside purchased goods (for example, `PANT BURK 2,00`) is an
+  adjustment outflow and is negative; only an explicit return/refund or a
+  printed negative deposit is an inflow. This sign convention must also support
+  possible future income records without a data migration that reverses
+  existing meanings.
 - Monetary amounts, quantities, and unit prices must be persisted as canonical
   decimal strings, never as JavaScript `Number` values or implicit integer minor
   units. Examples include `"-10.99"` for an outflow and `"1.25"` for a quantity.
@@ -213,8 +216,10 @@ and multi-device synchronization according to the agreed sync design.
 - A scanned receipt or invoice must produce a separate draft entry for every
   purchased line item rather than only one entry for the receipt total.
 - Extracted discounts, refunds, cashback, bottle-deposit returns, and similar
-  credits must be retained when present. They must not be discarded or forced
-  into the same semantics as an ordinary expense.
+  credits must be retained when present. Bottle-deposit charges must also be
+  retained as signed adjustment outflows when they appear on the receipt. These
+  adjustments must not be discarded or forced into the same semantics as an
+  ordinary expense.
 - The owner's previous application required folding discounts into an item's
   final price. This was a tool limitation rather than a preferred model. A
   receipt instead contains purchase lines and signed adjustment lines which sum

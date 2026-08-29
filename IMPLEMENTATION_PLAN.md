@@ -29,7 +29,7 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ### Released Baseline
 
-M0 through M24 and all review gates through `R-2410` are `COMPLETE`. The
+M0 through M25 and all review gates through `R-2510` are `COMPLETE`. The
 released application baseline includes the approved domain, actors, adapters,
 responsive UI, After Midnight design system backed by Mantine behind the
 repository facade, accessibility, PWA, tests, GitHub Pages pipeline, operational
@@ -76,6 +76,13 @@ limit is removed, displaying all active projects and categories in full. Project
 and category organization machines are also guarded with an explicit submission
 flag (`isSubmittingRef`) to prevent stale actor results from closing editors
 prematurely.
+M25 additionally makes receipt scan close and component teardown
+cancellation-safe: the actor is canceled before the ephemeral image store is
+cleared, preventing stale `receipt.image.resolve` references during route
+changes, discard, reload, and active image replacement. Gemini settings
+navigation retains its destination while teardown performs the cancellation.
+Regression coverage exercises both the visible Close path and direct
+active-scan unmount, including abort and image release verification.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
 preserved in Git at commit `e10f111`, the last complete pre-pruning ledger. That
@@ -92,142 +99,29 @@ features/app -> actors -> domain + adapter ports
 
 ---
 
-## M25 — Receipt image lifecycle cleanup
+## Active Milestone
 
-### M25 authority, outcome, and non-goals
+No active milestone is currently open. M25 was completed in implementation
+commits `59c93bb`, `e342bff`, and `2aa0bcb`, reviewed with no Sev1/2 findings in
+`R-2510`, and archived in this checkpoint. Its detailed task ledger remains
+available in Git history.
 
-Ensure an ephemeral receipt image is never removed while the scan actor can
-still resolve it. Closing the scan, replacing an image, discard navigation, and
-component teardown must cancel active invocations before clearing the in-memory
-store. A remounted scan starts with no stale image or failure context. This
-milestone does not persist receipt images, change Gemini extraction semantics,
-or redesign the receipt UI.
-
-Target dependency flow:
-
-```text
-features/app -> receipt actor lifecycle -> ephemeral image store
-```
-
-### Mandatory single-agent execution rule
-
-- One primary coding agent performs all planning reconciliation, edits, tests,
-  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
-- Independent read-only reviewer subagents are used exclusively at the named
-  review gate.
-- Context compaction or session restarts require following the recovery
-  checklist before editing.
-
-### Locked boundary / design-system rules
-
-1. Image bytes and object URLs remain memory-only and are released on terminal
-   cleanup.
-2. Active scan invokes are canceled before their image refs are removed.
-3. Retry retains only the current in-session source; remounts never restore it.
-4. The scan actor remains the authority for cancellation and finite workflow
-   state; UI code must not invent a parallel scan state machine.
-5. Provider-neutral ports and typed `receipt.image.resolve` diagnostics remain
-   unchanged.
-6. No visual tokens, layout, or navigation styling changes in M25.
-
-### Restart and compaction recovery checklist
-
-- [ ] Read `AGENTS.md`, this milestone section, and Current Checkpoint.
-- [ ] Run `git status --short --branch`, `git log -n 20 --oneline`,
-      `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
-- [ ] Verify test and working tree clean state before continuing.
-
-### Dependency graph
-
-```text
-M25-001 -> M25-002 -> R-2510 -> M25-FINAL
-```
-
-#### M25-001 — Make scan teardown cancellation-safe
-
-- **Status/dependencies:** `READY`; depends on M24.
-- **Ownership:** `src/features/receipt-ui.tsx`,
-  `src/actors/contracts/receipt.ts`.
-- **Scope/non-goals:** Cancel the receipt scan actor before the parent close
-  path clears the image store, and centralize the screen's terminal cleanup so
-  close, discard, and unmount cannot race an image resolver. Preserve existing
-  replacement/retry behavior and do not persist image refs.
-- **Outputs/acceptance:** Closing or discarding during preparing/requesting/
-  validating cannot surface `receipt.image.resolve not-found`; a new scan after
-  remount starts cleanly.
-- **Tests:** Actor cancellation/teardown tests and a receipt scan screen test
-  for close/discard ordering.
-- **Verification:** `deno fmt <changed>`, `deno lint <changed>`,
-  `deno test --related=src/features/receipt-ui.tsx`,
-  `deno test --related=src/actors/contracts/receipt.ts`, `git diff --check`.
-
-#### M25-002 — Cover stale-reference regressions
-
-- **Status/dependencies:** `PENDING`; depends on M25-001.
-- **Ownership:** `src/features/receipt-ui.test.tsx`,
-  `src/actors/contracts/receipt-actor.test.ts`.
-- **Scope/non-goals:** Exercise the exact failed-scan, choose-another-image,
-  retry, discard, and remount sequences. Do not add browser-only timing hacks or
-  broaden error taxonomy.
-- **Outputs/acceptance:** Tests prove old refs are not resolved after cleanup,
-  replacement uses the new ref, and retry only works with a retained source.
-- **Tests:** Focused actor/UI suites and the repository affected selection.
-- **Verification:** `deno task test:affected`, `deno task fmt:check`,
-  `deno task lint`, `deno task check`, `git diff --check`.
-
-#### R-2510 — Fresh read-only image lifecycle review
-
-- **Status/dependencies:** `PENDING`; depends on M25-002.
-- **Reviewer role:** Fresh read-only subagent reviewer.
-- **Audit scope:** Review cancellation ordering, cleanup idempotence, remount
-  behavior, stale-ref tests, and compliance with `AGENTS.md` and
-  `DESIGN_SYSTEM.md`.
-- **Remediation loop:** The primary agent fixes all severity 1–3 findings in
-  bounded remediation commits and requests closure before archiving.
-
-#### M25-FINAL — Milestone closure, ledger archiving, and repo hygiene pruning
-
-- **Status/dependencies:** `PENDING`; depends on R-2510.
-- **Ownership:** `IMPLEMENTATION_PLAN.md` and M25 code/tests.
-- **Scope/non-goals:** Record the pushed implementation and review evidence in
-  Released Baseline, prune this detailed milestone, run the required
-  `repo-hygiene-pruning` skill, and reset the active DAG. Do not remove living
-  product specifications or unrelated historical records.
-- **Outputs/acceptance:** Compact plan, clean workspace, no dangling markdown
-  links, and archive commit marked `[archive]`.
-- **Tests:** Plan-pruning environment checks only after implementation tests
-  have passed.
-- **Verification:** `deno task check`, `deno task fmt:check`, `deno task lint`,
-  `git diff --check`.
-
-### Locked boundary / design-system rules
-
-1. Design-system facade boundary remains strictly enforced: `src/features/**`
-   and `src/app/**` import only from `src/design-system`.
-2. After Midnight semantic tokens in `tokens.css` remain the sole visual source
-   of truth.
-3. Ordinary transitions remain `0ms`.
-4. Multi-viewport verification across Desktop (`1280×800`), Mobile (`390×844`),
-   and Narrow (`320×568`) is required.
-
----
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M25-001` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `776e42a` (M24 implementation, review, and plan
-  archive; M25 changes are uncommitted)
-- **Verification status:** M24 full button span and complete Organize hub
-  categories display verified across desktop (`1280×800`), mobile (`390×844`),
-  and narrow (`320×568`) viewports in `ui-audit-round-3/screenshots`. 118
-  design-system/component tests pass; 20 `local-ui.test.tsx` tests pass; gallery
-  a11y checks pass 3/3; production build succeeds; full Playwright E2E suite
-  passes 9/9. Independent review `R-2410` approved with zero findings. M25
-  investigation is pending implementation.
+- **Active task / gate:** None (M25 complete and archived)
+- **Pushed commit / HEAD:** `origin/master` (M25 implementation, review, and
+  plan archive are pushed; branch is clean)
+- **Verification status:** M25 implementation passes the receipt/local UI
+  suites (33/33), the receipt actor suite (8/8), and the focused receipt UI
+  suite (13/13). `deno task check`, `deno task lint`, `deno task fmt:check`,
+  and `git diff --check` pass on the pushed source and tests. Fresh review
+  `R-2510` found no Sev1/2 defects; its Sev3 direct-unmount coverage gap was
+  closed by `2aa0bcb`.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Reconcile the image teardown path, then implement and
-  test cancellation-safe cleanup.
+- **Exact next action:** Author the next approved milestone plan before making
+  further application changes.
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -69,8 +69,8 @@ cross into the UI or durable state.
 | Task | Status | Dependency | Acceptance / evidence |
 | --- | --- | --- | --- |
 | M14-001 Trace and expose safe receipt failure diagnostics | COMPLETE | M13 | Receipt scan/validation fallbacks now retain safe operations, typed adapter codes are preserved, and the failure notice renders code plus operation without raw provider text. |
-| M14-002 Regression coverage and targeted verification | IN_PROGRESS | M14-001 | Actor/component tests pass 33/33; affected tests pass 150/150; receipt-review Playwright passes 1/1; check, format, lint, build, and diff checks pass. Focused implementation commit is pending push. |
-| R-1410 Fresh read-only review | PENDING | M14-002 | A fresh reviewer reports no severity 1–3 findings, or all findings are fixed and re-verified. |
+| M14-002 Regression coverage and targeted verification | COMPLETE | M14-001 | Actor/component tests pass 33/33; affected tests pass 150/150; receipt-review Playwright passes 1/1; check, format, lint, build, and diff checks pass. Pushed in `83fbff9`. |
+| R-1410 Fresh read-only review | IN_PROGRESS | M14-002 | A fresh reviewer reports no severity 1–3 findings, or all findings are fixed and re-verified. |
 | M14-FINAL Archive and hygiene | PENDING | R-1410 | Record exact evidence, archive completed M14 history, run the repository-hygiene procedure and its required final checks, commit, and push. |
 
 The implementation owner must update this ledger after each task and review
@@ -91,18 +91,18 @@ history may be pruned from this live plan.
 
 ## Current Checkpoint
 
-- **Active task / gate:** M14-002 (primary implementation owner: `/root`)
-- **Pushed commit / HEAD:** `f41f81a` (M13 archival ledger; implementation and
+- **Active task / gate:** R-1410 (primary implementation owner: `/root`)
+- **Pushed commit / HEAD:** `83fbff9` (M14 diagnostic implementation; M13
   review-complete history is preserved at `4aa0ada`)
 - **Verification status:** M13 evidence remains valid. M14 focused actor/UI
   tests pass 33/33, affected tests pass 150/150, receipt-review Playwright
   passes 1/1, and `deno task check`, `deno task fmt:check`, `deno task lint`,
   `deno task build`, and `git diff --check` pass.
 - **Active / preserved work:** M14 implementation and regression changes are
-  uncommitted on `master`; no delegated implementation or transient hygiene
-  artifacts were found.
-- **Exact next action:** Commit and push the verified M14 implementation, then
-  request the fresh read-only R-1410 review.
+  pushed on `master`; the fresh read-only review is active and no transient
+  hygiene artifacts were found.
+- **Exact next action:** Complete the fresh read-only R-1410 review, resolve any
+  severity 1–3 findings, and re-verify before archiving M14.
 
 ## Ready-to-Use Orchestration Prompt
 

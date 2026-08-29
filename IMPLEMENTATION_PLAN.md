@@ -29,7 +29,7 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ### Released Baseline
 
-M0 through M15 and all review gates through `R-1510` are `COMPLETE`. The
+M0 through M16 and all review gates through `R-1610` are `COMPLETE`. The
 released application baseline includes the approved domain, actors, adapters,
 responsive UI, After Midnight design system backed by Mantine behind the
 repository facade, accessibility, PWA, tests, GitHub Pages pipeline, operational
@@ -41,10 +41,11 @@ for camera capture and existing-image selection, described by `SPEC.md`,
 `DESIGN_SYSTEM.md`, and `AGENTS.md`. Receipt scan failures retain a safe
 taxonomy and phase-specific operation diagnostics across image lifecycle,
 provider, and normalization boundaries; cleanup cannot mask the primary
-failure.
+failure. Receipt reconciliation also aligns printed totals with the signed
+direction of selected lines while preserving positive adjustment-only inflows.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
-preserved in Git at commit `7007904`, the last complete pre-pruning ledger. That
+preserved in Git at commit `00ec387`, the last complete pre-pruning ledger. That
 history is evidence, not active instructions, and agents must not reconstruct it
 in this live plan.
 
@@ -60,25 +61,10 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-### M16 — Signed receipt-total reconciliation
-
-Owner-approved outcome: keep receipt parent totals and signed lines in the same
-monetary direction so reconciliation compares like with like. A printed receipt
-total is normalized to the direction implied by its selected lines: purchase
-outflows become negative while adjustment-only/inflow receipts remain positive.
-The fix must preserve arbitrary-precision arithmetic and must not alter generic
-expense or adjustment semantics.
-
-| Task | Status | Dependency | Acceptance / evidence |
-| --- | --- | --- | --- |
-| M16-001 Normalize receipt parent totals by line direction | COMPLETE | M15 | Extracted and edited totals align with selected purchase or adjustment direction before mismatch arithmetic; raw purchase totals are handled consistently by total helpers. |
-| M16-002 Regression coverage and targeted verification | COMPLETE | M16-001 | Domain sign regression passes 3/3; affected tests pass 274/274; type, format, lint, build, diff, and receipt E2E checks pass. |
-| R-1610 Fresh read-only review | IN_PROGRESS | M16-002 | Initial review finding on adjustment-only inflows was fixed; a fresh read-only re-review is required before archival. |
-| M16-FINAL Archive and hygiene | PENDING | R-1610 | Record exact evidence, run repository-hygiene pruning, archive completed M16 history, commit, and push. |
-
-The implementation owner must update this ledger after each task and review
-gate. The M16-FINAL archive is the only point at which completed milestone
-history may be pruned from this live plan.
+No active milestone is currently open. When the repo owner specifies the next
+product milestone or refactor epic, follow the Standard Planning Procedure in
+`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
+ledger.
 
 ### Locked boundary / design-system rules
 
@@ -94,18 +80,18 @@ history may be pruned from this live plan.
 
 ## Current Checkpoint
 
-- **Active task / gate:** R-1610 (fresh read-only re-review pending; `/root` is
-  integration owner)
-- **Pushed commit / HEAD:** `9f4e108` (M16 planning checkpoint; sign-direction
-  remediation pending)
-- **Verification status:** M15 evidence remains valid. M16 domain sign tests
-  pass 3/3, affected tests pass 274/274, receipt-review Playwright passes 1/1,
-  and check, format, lint, build, and diff checks pass.
-- **Active / preserved work:** Single primary agent on `master`; M16 planning is
-  reconciled before implementation, with no delegated workers or transient
-  hygiene artifacts.
-- **Exact next action:** Commit and push the sign-direction remediation, then
-  complete the fresh R-1610 re-review before archiving M16.
+- **Active task / gate:** None (M16 complete and archived)
+- **Pushed commit / HEAD:** `00ec387` (M16 implementation and review-complete
+  pre-pruning ledger)
+- **Verification status:** M16 domain sign tests pass 3/3, affected tests pass
+  274/274, receipt-review Playwright passes 1/1, the fresh review suite passes
+  14/14, and `deno task check`, `deno task fmt:check`, `deno task lint`, `deno
+  task build`, and `git diff --check` pass. Final hygiene checks are recorded
+  in the archive commit.
+- **Active / preserved work:** Single primary agent on `master`; no delegated
+  workers, uncommitted implementation changes, or transient hygiene artifacts.
+- **Exact next action:** Run the final environment-scoped hygiene checks, then
+  commit and push this archived ledger.
 
 ## Ready-to-Use Orchestration Prompt
 

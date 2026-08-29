@@ -129,8 +129,8 @@ M26-001 -> M26-002 -> R-2610 -> M26-FINAL
 
 #### M26-001 — Prefer line descriptions inside receipt groups
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on M25.
-- **Ownership:** `src/features/local-ui.tsx`, `src/design-system/components.tsx`.
+- **Status/dependencies:** `COMPLETE`; depends on M25.
+- **Ownership:** `src/design-system/components.tsx`.
 - **Scope/non-goals:** Map grouped receipt lines so `ExpenseRow` renders each
   saved line description while the surrounding group retains the merchant.
   Preserve merchant-first titles for ordinary manual expense rows and do not
@@ -144,9 +144,8 @@ M26-001 -> M26-002 -> R-2610 -> M26-FINAL
 
 #### M26-002 — Verify import-to-list mapping
 
-- **Status/dependencies:** `PENDING`; depends on M26-001.
-- **Ownership:** `src/features/local-ui.test.tsx`,
-  `src/design-system/design-system.test.tsx`.
+- **Status/dependencies:** `COMPLETE`; depends on M26-001.
+- **Ownership:** `src/design-system/design-system.test.tsx`.
 - **Scope/non-goals:** Exercise the imported receipt review shape through the
   list presentation and guard manual merchant fallback. Do not duplicate
   receipt extraction or persistence tests.
@@ -158,7 +157,7 @@ M26-001 -> M26-002 -> R-2610 -> M26-FINAL
 
 #### R-2610 — Fresh read-only receipt-list review
 
-- **Status/dependencies:** `PENDING`; depends on M26-002.
+- **Status/dependencies:** `IN_PROGRESS`; depends on M26-002.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Review title precedence, receipt grouping semantics, manual
   fallback behavior, tests, and compliance with `AGENTS.md` and
@@ -180,18 +179,19 @@ M26-001 -> M26-002 -> R-2610 -> M26-FINAL
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M26-001` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `origin/master` (M25 archive is pushed; M26 plan
-  is currently uncommitted and implementation has not started)
-- **Verification status:** M25 implementation remains verified by the receipt/
-  local UI suites (33/33), receipt actor suite (8/8), focused receipt UI suite
-  (13/13), type check, lint, formatting, and diff checks. M26 investigation
-  confirms persisted receipt-line descriptions are preserved by the domain query;
-  the defect is in receipt-group title presentation.
+- **Active task / gate:** `R-2610` (`IN_PROGRESS`)
+- **Pushed commit / HEAD:** `77e7808` (M26 implementation and component
+  regression are pushed; independent review is pending)
+- **Verification status:** M26 design-system suite passes 34/34 and the affected
+  test selection passes 121/121. The focused receipt/local UI suites remain
+  33/33, the receipt actor suite remains 8/8, and type check, lint, formatting,
+  and diff checks pass. Investigation confirms persisted receipt-line
+  descriptions are preserved by the domain query; the defect was receipt-group
+  title presentation.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Implement the receipt-group title mapping, add its
-  component regression, then run the M26-002 affected verification.
+- **Exact next action:** Complete the fresh R-2610 review, remediate any Sev1–3
+  findings, then archive M26.
 
 ## Ready-to-Use Orchestration Prompt
 

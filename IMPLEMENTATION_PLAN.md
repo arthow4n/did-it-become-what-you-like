@@ -87,34 +87,153 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-No active milestone is currently open. M23 was completed in implementation
-commits `41cdc40`, `73f17ef`, `5bda649`, and `ebcef8e`, checkpointed in `de0793f`,
-and reviewed with no severity 1–3 findings in `R-2310`. Its detailed task ledger
-remains available in Git history.
+## M24 — Full-Span Choice Buttons & Organize All-Categories Hub Remediation
+
+### M24 authority, outcome, and non-goals
+
+Remediate two confirmed UI/UX defects:
+1. **Full-Span Choice Buttons:** Ensure choice buttons on `AddChoiceScreen`
+   ("Add manually" and "Scan receipt with AI") stretch to 100% full span across
+   the bottom sheet / modal card rather than shrinking to fit-content width, by
+   enforcing `align="stretch"` in design-system `Stack` and `width: 100%; display: flex;`
+   on `data-full-width="true"` buttons and overlay actions.
+2. **Organize Hub Complete Category & Project Display:** In `OrganizeScreen`,
+   remove the hardcoded `.slice(0, 3)` limitation so that all active categories
+   (e.g., 4 custom categories plus Uncategorized = 5 total) and all active
+   projects are fully displayed in the Organize Hub.
+
+**Non-goals:**
+- No changes to underlying business logic, state machines, or domain data
+  contracts.
+- No changes to category deletion, reassignment, or project switching rules.
+
+### Mandatory single-agent execution rule
+
+- One primary coding agent performs all planning reconciliation, edits, tests,
+  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
+- Independent read-only reviewer subagents are used exclusively at named review
+  gates.
+- Context compaction or session restarts require following the recovery
+  checklist before editing.
+
+### Locked boundary / design-system rules
+
+1. Files under `src/features/**` import only the design-system facade.
+2. Semantic After Midnight tokens remain the visual source of truth.
+3. All interactive touch targets must remain at least 44px.
+4. Transitions remain `0ms` by default.
+5. All checklist steps are executed sequentially with fast pre-commit gates,
+   committed, and pushed to remote.
+
+### Restart and compaction recovery checklist
+
+- [ ] Read `AGENTS.md`, this milestone section, and Current Checkpoint.
+- [ ] Run `git status --short --branch`, `git log -n 20 --oneline`,
+      `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
+- [ ] Verify test and working tree clean state before continuing.
+
+### Dependency Graph (DAG)
+
+```text
+M24-001 (Design system Stack stretch & fullWidth button expansion)
+   │
+   ▼
+M24-002 (AddChoiceScreen full-span CSS & OrganizeScreen all-categories fix)
+   │
+   ▼
+M24-003 (Visual re-capture & comprehensive multi-viewport verification)
+   │
+   ▼
+R-2410 (Consolidated milestone review gate)
+   │
+   ▼
+M24-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
+```
+
+---
+
+### M24 Task Definitions
+
+#### M24-001 — Design system Stack stretch & fullWidth button expansion
+
+- **Status/dependencies:** `READY`; depends on baseline.
+- **Ownership:** `src/design-system/components.tsx`, `src/design-system/tokens.css`
+- **Scope/non-goals:** Set `align="stretch"` on `MantineStack` inside `Stack`
+  component and configure `.ds-stack` with `align-items: stretch; width: 100%;`.
+  Ensure `.ds-button[data-full-width="true"]` has `width: 100%; display: flex;`.
+- **Outputs/acceptance:** Stacks stretch their full-width children by default
+  unless overridden. Buttons with `fullWidth` fill their parent container width.
+- **Tests:** Affected design system and component tests pass.
+- **Verification:** `deno fmt src/design-system/components.tsx src/design-system/tokens.css`,
+  `deno lint src/design-system/components.tsx`, `deno task test:affected`,
+  `git diff --check`.
+
+#### M24-002 — AddChoiceScreen full-span CSS & OrganizeScreen all-categories fix
+
+- **Status/dependencies:** `PENDING`; depends on `M24-001`.
+- **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`, `src/features/local-ui.test.tsx`
+- **Scope/non-goals:** In `local-ui.css`, ensure `.local-ui-add-choice__actions`
+  and `.local-ui-add-choice__button` have explicit `width: 100%; display: flex;`.
+  In `local-ui.tsx`, remove the arbitrary `.slice(0, 3)` limit in `OrganizeScreen`
+  for both `projects` and `categories`. Add component tests verifying that all 5
+  categories render in the Organize Hub.
+- **Outputs/acceptance:** Add choice action buttons stretch to full container
+  width. Organize Hub displays all active categories and projects without
+  truncation.
+- **Tests:** `deno test --related=src/features/local-ui.tsx` passes with new
+  all-categories test assertions.
+- **Verification:** `deno fmt src/features/local-ui.tsx src/features/local-ui.css src/features/local-ui.test.tsx`,
+  `deno lint src/features/local-ui.tsx src/features/local-ui.test.tsx`,
+  `deno task test:affected`, `git diff --check`.
+
+#### M24-003 — Visual re-capture & comprehensive multi-viewport verification
+
+- **Status/dependencies:** `PENDING`; depends on `M24-002`.
+- **Ownership:** `scripts/audit-capture.ts`, `e2e/audit/ui-audit-capture.spec.ts`
+- **Scope/non-goals:** Run full visual capture across Desktop (`1280×800`), Mobile
+  (`390×844`), and Narrow (`320×568`) viewports. Inspect `04-add-choice-sheet`
+  and `11-organize-hub` to confirm full button span and complete category list.
+  Run affected unit, component, a11y, build, and E2E suites.
+- **Outputs/acceptance:** All 3 capture viewports pass with clean visual
+  evidence. All test suites pass.
+- **Tests:** `deno task test:affected`, `deno task a11y:gallery`, `deno task build`,
+  `deno task test:e2e`.
+- **Verification:** `deno task audit:capture ui-audit-round-3/screenshots`.
+
+#### R-2410 — Consolidated milestone review gate
+
+- **Status/dependencies:** `PENDING`; depends on `M24-003`.
+- **Reviewer role:** Fresh read-only subagent reviewer.
+- **Audit scope:** Diffs across M24-001 through M24-003, token usage, facade
+  boundary, multi-viewport screenshot matrix, and test evidence.
+- **Remediation loop:** Primary agent fixes all severity 1–3 findings before
+  closing the milestone.
+
+#### M24-FINAL — Milestone closure, ledger archiving, and repo hygiene pruning
+
+- **Status/dependencies:** `PENDING`; depends on `R-2410`.
+- **Ownership:** `IMPLEMENTATION_PLAN.md`, `DESIGN_SYSTEM.md`, `SPEC.md`
+- **Scope/non-goals:** Prune completed M24 task details into the Released
+  Baseline; record the preserved Git commit hash. Clean up transient audit
+  directories and run `repo-hygiene-pruning` skill to verify repository hygiene.
+- **Outputs/acceptance:** Clean, compact `IMPLEMENTATION_PLAN.md` with updated
+  Released Baseline; zero dead markdown links; clean working tree.
+- **Commit:** Committed with `[archive]` in the commit message per `AGENTS.md`.
 
 ---
 
 ## Current Checkpoint
 
-- **Active task / gate:** None (M23 complete and archived)
-- **Pushed commit / HEAD:** `origin/master` (M23 implementation, review, and plan archive
-  are pushed; branch is clean)
-- **Verification status:** M23 component and stylesheet changes verified across
-  desktop (`1280×800`), mobile (`390×844`), and narrow (`320×568`) viewports in
-  `ui-audit-round-2/screenshots`. 118 design-system/component tests pass; 19
-  `local-ui.test.tsx` tests pass; gallery a11y checks pass 3/3; production build
-  succeeds; full Playwright E2E suite passes 9/9. Independent review `R-2310`
-  approved with zero findings.
-- **Active / preserved work:** Single primary agent on `master`; no worktree or
-  delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Author the next approved milestone plan before making
-  further application changes.
+- **Active task / gate:** `M24-001` (`READY`)
+- **Pushed commit / HEAD:** `0fa3115`
+- **Verification status:** Baseline clean and verified on master.
+- **Active / preserved work:** Single primary agent on `master`.
+- **Exact next action:** Execute `M24-001` (Design system Stack stretch & fullWidth button expansion).
 
 ## Ready-to-Use Orchestration Prompt
 
 ```text
-Read AGENTS.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Confirm working
-tree status on master, author the next milestone plan per
-.agents/skills/implementation-planning/SKILL.md, obtain approval, and proceed
-with implementation.
+Read AGENTS.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Proceed sequentially
+with M24-001 on master, run fast pre-commit verification, commit, push, and update
+the checkpoint ledger.
 ```

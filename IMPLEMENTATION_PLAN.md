@@ -216,8 +216,9 @@ M27-001 -> M27-002 -> R-2710
 
 #### M27-001 — Approve the saved-receipt product and interaction contract
 
-- **Status/dependencies:** `READY`; depends only on the released M26 baseline.
-  This plan/spec decision task does not authorize application implementation.
+- **Status/dependencies:** `COMPLETE`; depends only on the released M26
+  baseline. Owner authorization to implement M27 is recorded by the repository
+  owner instruction to implement the current milestone according to this plan.
 - **Ownership:** `SPEC.md`, `DESIGN_SYSTEM.md`, `IMPLEMENTATION_PLAN.md`.
 - **Scope/non-goals:** Specify the receipt-detail entry points, screen states,
   edit surfaces, confirmation copy and scope, completion destinations, error
@@ -233,9 +234,24 @@ M27-001 -> M27-002 -> R-2710
   workflow and all cross-cutting loading, empty, mismatch, saving, deletion,
   failure, offline, dirty/discard, reload, focus, and authorization states. The
   impact inventory amends exact downstream ownership and verification commands.
+  The inventory is: `src/features/local-ui.tsx` owns hash paths, shell routing,
+  state refresh, dirty navigation, and receipt-group entry;
+  `src/domain/receipt.ts` owns receipt aggregate validation and mutations;
+  `src/domain/organization.ts` and `src/domain/schema/**` expose parsed
+  aggregate state and record contracts; `src/adapters/local/**` owns atomic
+  IndexedDB transactions and local tombstones; `src/adapters/sync/causal.ts`,
+  `src/adapters/sync/coordinator.ts`, and conflict-domain tests prove causal
+  replay and delete-versus-edit behavior; `src/domain/import-export/**` and
+  `src/adapters/import-export/**` preserve portable receipt references;
+  `src/actors/contracts/saved-receipt.ts` and `src/actors/saved-receipt.ts` own
+  the detail lifecycle; and `src/design-system/components.tsx`,
+  `src/features/receipt-ui.tsx`, `src/features/receipt-detail-ui.tsx`, and their
+  tests own the facade-backed management composition.
+  `src/domain/queries/expenses.ts` remains the single receipt-list projection
+  and `e2e/receipt-review.spec.ts` is the only added critical browser journey.
   The plan records every decision above without ambiguity, including the sync
-  semantics and tests required if undo is approved, and implementation remains
-  paused until the owner explicitly approves it.
+  semantics and the explicit no-undo contract. The approved contract is recorded
+  in `SPEC.md` and `DESIGN_SYSTEM.md`.
 - **Tests:** Documentation cross-reference and terminology inspection; no
   application tests.
 - **Verification:** `deno fmt SPEC.md DESIGN_SYSTEM.md IMPLEMENTATION_PLAN.md`,
@@ -244,8 +260,8 @@ M27-001 -> M27-002 -> R-2710
 
 #### M27-002 — Add atomic saved-receipt mutation contracts
 
-- **Status/dependencies:** `PENDING`; depends on approved `M27-001` and explicit
-  implementation authorization.
+- **Status/dependencies:** `PENDING`; depends on approved `M27-001` and the
+  owner authorization recorded above.
 - **Ownership:** `src/domain/receipt.ts`, `src/domain/organization.ts`,
   `src/domain/index.ts`, `src/domain/schema/**`, `src/domain/tests/**`,
   `src/adapters/local/receipt-atomic.integration.test.ts`,
@@ -453,18 +469,20 @@ M27-001 -> M27-002 -> R-2710
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M27-001` (`READY`; awaiting owner authorization and
-  product-decision approval before any application implementation)
-- **Pushed commit / HEAD:** `origin/master` (M27 plan-only commit; no
-  application implementation)
-- **Verification status:** M27 is planned only. No M27 application code or test
-  result exists. `deno fmt IMPLEMENTATION_PLAN.md` and `git diff --check` pass.
-- **Active / preserved work:** Single primary planning agent on `master`; no
-  implementation worker or worktree. Application files remain untouched.
-- **Exact next action:** Obtain owner authorization to execute the plan-only
-  `M27-001` product-contract task. Before `M27-002`, obtain separate explicit
-  implementation authorization and approval of metadata, dirty-state,
-  final-line, linked-adjustment, conflict, and deletion/undo semantics.
+- **Active task / gate:** `M27-002` (`READY`; M27-001 product contract and
+  implementation authorization are complete)
+- **Pushed commit / HEAD:** `origin/master` (M27-001 contract documentation is
+  currently uncommitted in the primary worktree)
+- **Verification status:**
+  `deno fmt SPEC.md DESIGN_SYSTEM.md
+  IMPLEMENTATION_PLAN.md`, the M27
+  terminology inspection, and `git diff --check` pass. No M27 application code
+  or test result exists.
+- **Active / preserved work:** Single primary agent on `master`; no M27 worker
+  or worktree. The contract documentation changes are the only uncommitted work.
+- **Exact next action:** Commit and push the completed M27-001 contract, then
+  mark M27-002 `IN_PROGRESS` and implement the atomic saved-receipt mutation
+  services and regression tests.
 
 ## Ready-to-Use Orchestration Prompt
 

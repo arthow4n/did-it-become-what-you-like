@@ -109,8 +109,8 @@ and multi-device synchronization according to the agreed sync design.
   charge printed beside purchased goods (for example, `PANT BURK 2,00`) is an
   adjustment outflow and is negative; only an explicit return/refund or a
   printed negative deposit is an inflow. This sign convention must also support
-  possible future income records without a data migration that reverses
-  existing meanings.
+  possible future income records without a data migration that reverses existing
+  meanings.
 - Monetary amounts, quantities, and unit prices must be persisted as canonical
   decimal strings, never as JavaScript `Number` values or implicit integer minor
   units. Examples include `"-10.99"` for an outflow and `"1.25"` for a quantity.
@@ -345,6 +345,39 @@ and multi-device synchronization according to the agreed sync design.
   preferences. The implementation-plan compatibility task must derive them from
   then-current official Gemini limits and verify them with representative
   receipt-legibility tests before the scanning feature is accepted.
+
+### Saved Receipt Management
+
+- A saved receipt can be reopened from its receipt group with a clear **View
+  receipt** action. Activating an individual saved line may open the same detail
+  view with that line focused; it never opens the manual-expense editor.
+- Receipt detail shows the merchant, occurred-at date and optional time,
+  currency, printed total, selected-line total, difference, purchase lines, and
+  adjustments before edit or destructive actions are offered.
+- The editable metadata allowlist is merchant, calendar date, optional time, and
+  printed total. Currency and project assignment are read-only in this
+  milestone; changing either would require a separate conversion or aggregate
+  reassignment contract.
+- Metadata and line edits are staged in their focused editor and commit only
+  after an explicit **Save changes** action. Input changes do not mutate the
+  saved aggregate. A dirty editor offers **Keep editing** and **Discard
+  changes** on close, Back, or in-app navigation. The browser's native
+  unsaved-change warning is used for page close/reload where supported; a hard
+  reload intentionally resets an uncommitted saved-receipt draft.
+- Deleting a purchase line requires confirmation and immediately recomputes the
+  receipt reconciliation. Deleting the final purchase line removes the now-empty
+  receipt parent, all owned adjustments, and all receipt-linked derived records
+  as one deletion. An adjustment whose purchase line is removed is retained and
+  becomes receipt-wide by clearing its link.
+- Whole-receipt deletion requires confirmation, has no undo after commit, and
+  tombstones the parent, owned lines, adjustments, and receipt-linked derived
+  records together. The completed deletion returns to the project expense list
+  with a concise status message. A failed save or deletion keeps the detail view
+  and its entered values available for retry.
+- Receipt mutations remain local-first and atomic while offline. Existing causal
+  synchronization rules apply: stale replay cannot resurrect deleted records,
+  while a genuinely concurrent edit versus deletion remains a reviewable
+  conflict.
 
 ### Local Data, Export, and Google Drive
 

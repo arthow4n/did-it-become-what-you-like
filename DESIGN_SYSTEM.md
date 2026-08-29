@@ -359,29 +359,30 @@ pending control keeps its label or an equally descriptive accessible name.
 
 ### Domain composites
 
-| Composite                                                 | Responsibility                                                |
-| --------------------------------------------------------- | ------------------------------------------------------------- |
-| `ProjectPicker`                                           | Current project selection and stable-ID values                |
-| `PeriodPicker`                                            | Today/month/year/custom calendar selection                    |
-| `CurrencyPicker`, `MerchantPicker`                        | Searchable ISO currency and local merchant suggestions        |
-| `MoneySummary`                                            | Net spent, outflows, and money back for identical filters     |
-| `CategoryBreakdown`                                       | Ranked category totals and filter activation                  |
-| `ExpenseList`, `ExpenseRow`, `ReceiptGroup`               | Date grouping, records, expandable receipt parent/lines       |
-| `ExpenseForm`                                             | Shared create/edit fields and snapshot-derived save actions   |
-| `ReceiptSourcePicker`                                     | Native camera/file input, ephemeral preview, replace/remove   |
-| `GeminiQuickSetup`                                        | Inline key entry, warning, validation, resume action          |
-| `ReceiptMetadata`, `ReceiptLineCard`, `ReceiptLineEditor` | Review/edit extracted parent and line values                  |
-| `ReceiptReconciliation`                                   | Printed, selected, and difference totals plus warning         |
-| `ProjectEditor`, `CategoryEditor`                         | Stable-ID entity create/edit forms                            |
-| `DeleteAndReassign`                                       | Category replacement preview and atomic confirmation          |
-| `ProjectDeletionReview`                                   | Project scope summary, safety export, typed confirmation      |
-| `SyncAccountPanel`, `KnownDeviceList`                     | Drive identity/status and recognizable devices                |
-| `ConflictResolver`                                        | Record/field progress, candidates, custom value, delete/edit  |
-| `ModelPicker`, `GeminiConfigurationTest`                  | Searchable compatible models and explicit test states         |
-| `ImportPreview`, `ImportModeChoice`                       | Schema/count validation and merge/dangerous replace           |
-| `DeletionScopePicker`, `DeletionProgress`                 | Local/disconnect/everywhere scope and device acknowledgements |
-| `PreferenceExample`                                       | Live expense-day boundary example with concrete dates         |
-| `AboutSummary`                                            | Version/build, disclosure, privacy, licenses, source, updates |
+| Composite                                                 | Responsibility                                                                 |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `ProjectPicker`                                           | Current project selection and stable-ID values                                 |
+| `PeriodPicker`                                            | Today/month/year/custom calendar selection                                     |
+| `CurrencyPicker`, `MerchantPicker`                        | Searchable ISO currency and local merchant suggestions                         |
+| `MoneySummary`                                            | Net spent, outflows, and money back for identical filters                      |
+| `CategoryBreakdown`                                       | Ranked category totals and filter activation                                   |
+| `ExpenseList`, `ExpenseRow`, `ReceiptGroup`               | Date grouping, records, expandable receipt parent/lines                        |
+| `ExpenseForm`                                             | Shared create/edit fields and snapshot-derived save actions                    |
+| `ReceiptSourcePicker`                                     | Native camera/file input, ephemeral preview, replace/remove                    |
+| `GeminiQuickSetup`                                        | Inline key entry, warning, validation, resume action                           |
+| `ReceiptMetadata`, `ReceiptLineCard`, `ReceiptLineEditor` | Review/edit extracted parent and line values                                   |
+| `ReceiptDetail`                                           | Saved receipt metadata, reconciliation, line hierarchy, and management actions |
+| `ReceiptReconciliation`                                   | Printed, selected, and difference totals plus warning                          |
+| `ProjectEditor`, `CategoryEditor`                         | Stable-ID entity create/edit forms                                             |
+| `DeleteAndReassign`                                       | Category replacement preview and atomic confirmation                           |
+| `ProjectDeletionReview`                                   | Project scope summary, safety export, typed confirmation                       |
+| `SyncAccountPanel`, `KnownDeviceList`                     | Drive identity/status and recognizable devices                                 |
+| `ConflictResolver`                                        | Record/field progress, candidates, custom value, delete/edit                   |
+| `ModelPicker`, `GeminiConfigurationTest`                  | Searchable compatible models and explicit test states                          |
+| `ImportPreview`, `ImportModeChoice`                       | Schema/count validation and merge/dangerous replace                            |
+| `DeletionScopePicker`, `DeletionProgress`                 | Local/disconnect/everywhere scope and device acknowledgements                  |
+| `PreferenceExample`                                       | Live expense-day boundary example with concrete dates                          |
+| `AboutSummary`                                            | Version/build, disclosure, privacy, licenses, source, updates                  |
 
 Components should be split when they have a stable responsibility, independent
 variants/tests, or multiple consumers; tiny private layout helpers may remain
@@ -409,6 +410,17 @@ colocated.
   spinner with no explanation for any operation that may take noticeable time.
 - Lists use stable IDs as keys. Reordering always has keyboard controls in
   addition to drag interaction.
+- Saved receipt detail uses a clear `View receipt` entry point from a receipt
+  group and keeps line activation within the receipt-detail workflow. The detail
+  hierarchy must show metadata and reconciliation before destructive actions,
+  and must distinguish purchase lines from adjustments without relying on color.
+- Receipt metadata and line editors use the shared Field, FormActions,
+  DraftStatus, and AdaptiveDialog contracts. Dirty staged values are owned by
+  the XState actor; in-app exits offer Keep editing and Discard changes, and
+  successful destructive actions restore focus to the expense-list entry point.
+- Receipt management remains usable at compact, medium, and wide widths. On
+  compact screens detail becomes a focused sequence with safe-area-aware
+  actions; on wider screens it may use the approved MasterDetail composition.
 
 ## Component Verification Contract
 

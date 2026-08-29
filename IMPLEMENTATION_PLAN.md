@@ -69,9 +69,17 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-No active milestone is currently open. M19 was completed and archived in the
-focused implementation commit `e9812cd`; its detailed task ledger and review
-evidence remain available in Git history.
+### M20 — Make Gemini receipt retries tolerate localized structured output
+
+**Outcome:** Gemini receipt extraction accepts safe locale-specific decimal
+transcription and a harmless JSON code fence while preserving strict schema
+validation. Retries no longer fail solely because a Swedish/European receipt
+uses comma decimals; malformed or hostile output remains rejected.
+
+| Task | Status | Dependency | Acceptance / evidence |
+| --- | --- | --- | --- |
+| M20-001 Normalize safe provider output before strict receipt validation | COMPLETED | — | Canonicalize unambiguous comma/grouped decimals, accept fenced JSON, clarify prompt formatting, preserve strict rejection of invalid/extra fields |
+| M20-002 Verify retry/output contract and archive checkpoint R-2000 | COMPLETED | M20-001 | Adapter tests pass 16/16; affected tests pass 56/56; check/format/lint/diff, build, receipt-review Playwright, and fresh review all pass |
 
 ### Locked boundary / design-system rules
 
@@ -87,18 +95,21 @@ evidence remain available in Git history.
 
 ## Current Checkpoint
 
-- **Active task / gate:** None (M19 complete and archived)
-- **Pushed commit / HEAD:** `e9812cd` (M19 implementation; final plan archive
-  follows this checkpoint)
-- **Verification status:** M19 focused actor/UI tests pass 20/20 and affected
+- **Active task / gate:** M20-002 — verify retry/output contract and archive
+  R-2000
+- **Pushed commit / HEAD:** `571459d` (M19 implementation and archived plan)
+- **Verification status:** M20 adapter tests pass 16/16 and affected tests pass
+  56/56; check, format, lint, diff checks, build, and receipt-review Playwright
+  pass. Fresh R-2000 review found no severity 1–3 findings.
+  M19 focused actor/UI tests pass 20/20 and affected
   tests pass 128/128; check, format, lint, build, diff checks, and receipt-review
   Playwright pass 1/1. Fresh R-1900 review found no severity 1–3 findings.
   M18 affected tests pass 337/337, focused domain/client tests pass 8/8, and
   its final review found no severity 1–3 findings.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Author the next approved milestone plan before making
-  further application changes.
+- **Exact next action:** Commit and push M20, then archive the completed ledger
+  at R-2000.
 
 ## Ready-to-Use Orchestration Prompt
 

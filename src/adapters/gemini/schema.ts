@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import {
   CalendarDateSchema,
+  canonicalDecimal,
   CurrencyCodeSchema,
   type StableId,
   StableIdSchema,
@@ -53,6 +54,57 @@ export type GeminiJsonSchema = Readonly<Record<string, unknown>>;
 
 function isSchemaRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Models commonly transcribe locale-specific receipt decimals (for example
+ * `33,08` or `1.234,56`) even though the transport contract uses canonical
+ * decimal strings. Normalize only unambiguous decimal/grouping forms; all
+ * other values remain untouched and are rejected by the strict schema below.
+ */
+function normalizeDecimalText(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim().replace(/\u00a0/g, " ");
+  const candidate = /^-?\d+(?:\.\d+)?$/.test(trimmed)
+    ? trimmed
+    : /^-?\d+,\d+$/.test(trimmed)
+    ? trimmed.replace(",", ".")
+    : /^-?\d{1,3}(?:[ .]\d{3})+,\d+$/.test(trimmed)
+    ? trimmed.replace(/[ .]/g, "").replace(",", ".")
+    : /^-?\d{1,3}(?:[ ,]\d{3})+\.\d+$/.test(trimmed)
+    ? trimmed.replace(/[ ,]/g, "")
+    : /^-?\d{1,3}(?: \d{3})+$/.test(trimmed)
+    ? trimmed.replace(/ /g, "")
+    : undefined;
+  if (candidate === undefined) return value;
+  try {
+    return canonicalDecimal(candidate);
+  } catch {
+    return value;
+  }
+}
+
+function normalizeOutputDecimals(value: unknown): unknown {
+  if (!isSchemaRecord(value)) return value;
+  const lines = Array.isArray(value.lines)
+    ? value.lines.map((line) =>
+      isSchemaRecord(line)
+        ? { ...line, amount: normalizeDecimalText(line.amount) }
+        : line
+    )
+    : value.lines;
+  const mismatch = isSchemaRecord(value.mismatch)
+    ? {
+      ...value.mismatch,
+      difference: normalizeDecimalText(value.mismatch.difference),
+    }
+    : value.mismatch;
+  return {
+    ...value,
+    printedTotal: normalizeDecimalText(value.printedTotal),
+    lines,
+    mismatch,
+  };
 }
 
 const GOOGLE_JSON_SCHEMA_KEYWORDS = new Set([
@@ -146,9 +198,17 @@ export function parseReceiptOutput(text: string): ReceiptOutput {
   try {
     value = JSON.parse(text) as unknown;
   } catch {
-    throw new Error("receipt output was not valid JSON");
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)?.[1];
+    if (fenced === undefined) {
+      throw new Error("receipt output was not valid JSON");
+    }
+    try {
+      value = JSON.parse(fenced) as unknown;
+    } catch {
+      throw new Error("receipt output was not valid JSON");
+    }
   }
-  return validateReceiptOutput(value);
+  return validateReceiptOutput(normalizeOutputDecimals(value));
 }
 
 function mismatchText(output: ReceiptOutput): readonly string[] {
@@ -159,8 +219,9 @@ function mismatchText(output: ReceiptOutput): readonly string[] {
 
 /**
  * Convert the complete validated response to the stable adapter port shape.
- * Receipt actor-specific fields remain owned by A-302; no model field is
- * allowed to create a category or cross the port as an unvalidated value.
+ * Receipt actor-specific fields remain owned by A-302. An unknown category
+ * suggestion stays an untrusted stable ID here; the domain boundary routes it
+ * to the built-in fallback and marks it uncertain for the user to review.
  */
 export function mapReceiptOutputToDraft(
   output: ReceiptOutput,
@@ -169,29 +230,29 @@ export function mapReceiptOutputToDraft(
   const categories = new Set<StableId>(
     request.categories.map((category) => category.id),
   );
-  for (const line of output.lines) {
-    if (!categories.has(line.categoryId)) {
-      throw new Error("receipt output referenced an unknown category");
-    }
-  }
 
   return {
     merchant: output.merchant,
     currency: output.currency,
     date: output.date,
     printedTotal: output.printedTotal,
-    lines: output.lines.map((line) => ({
-      description: line.description,
-      amount: line.amount,
-      categoryId: line.categoryId,
-      kind: line.kind,
-      direction: line.direction,
-      selected: line.selected,
-      rationale: line.rationale,
-      ...(line.uncertainty === undefined
-        ? {}
-        : { uncertainty: line.uncertainty }),
-    })),
+    lines: output.lines.map((line) => {
+      const categoryAvailable = categories.has(line.categoryId);
+      const uncertainty = categoryAvailable ? line.uncertainty : [
+        line.uncertainty,
+        "The suggested category is unavailable; review the category.",
+      ].filter((item): item is string => item !== undefined).join(" ");
+      return {
+        description: line.description,
+        amount: line.amount,
+        categoryId: line.categoryId,
+        kind: line.kind,
+        direction: line.direction,
+        selected: line.selected,
+        rationale: line.rationale,
+        ...(uncertainty === undefined ? {} : { uncertainty }),
+      };
+    }),
     uncertainty: output.uncertainty,
     mismatches: mismatchText(output),
   };

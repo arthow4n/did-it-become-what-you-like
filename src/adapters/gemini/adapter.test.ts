@@ -460,6 +460,19 @@ Deno.test("A-301 models retain Needs test entries and synthetic validation promo
   }
 });
 
+Deno.test("A-301 compatibility probe accepts the same fenced structured output as extraction", async () => {
+  const { adapter } = createStorageAndAdapter(() =>
+    clientWithModels([MODEL_NEEDS_TEST], {
+      text: `\`\`\`json\n${RECEIPT_OUTPUT}\n\`\`\``,
+    })
+  );
+  await adapter.setApiKey("AIza.synthetic-fenced-probe");
+  const result = await adapter.testConfiguration("gemini-needs-test", {
+    requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
+  });
+  assertEquals(result.status, "compatible");
+});
+
 Deno.test("A-301 explicit text-only and retired models are incompatible", async () => {
   const retired: GeminiRawModel = {
     ...MODEL_NEEDS_TEST,
@@ -550,6 +563,85 @@ Deno.test("A-301 signed receipt fixture reconciles a discount adjustment", async
   assertEquals(
     draft.lines.reduce((total, line) => moneyAdd(total, line.amount), "0"),
     "325.78",
+  );
+});
+
+Deno.test("A-301 localized receipt decimals are canonicalized before validation", async () => {
+  const localized = JSON.stringify({
+    currency: "SEK",
+    date: "2026-08-29",
+    lines: [{
+      amount: "341,54",
+      categoryId: "category-groceries",
+      description: "Receipt purchases",
+      direction: "outflow",
+      kind: "purchase",
+      rationale: "Product rows are listed in the receipt body.",
+      selected: true,
+    }, {
+      amount: "-15,76",
+      categoryId: "category-groceries",
+      description: "Discount",
+      direction: "inflow",
+      kind: "adjustment",
+      rationale: "The discount is shown in the receipt discount section.",
+      selected: true,
+    }],
+    merchant: "Coop",
+    mismatch: null,
+    printedTotal: "325,78",
+    schemaVersion: RECEIPT_SCHEMA_VERSION,
+    uncertainty: [],
+  });
+  const { adapter } = createStorageAndAdapter(() =>
+    clientWithModels([MODEL_NEEDS_TEST], { text: localized })
+  );
+  await adapter.setApiKey("AIza.synthetic-localized-decimals");
+  const draft = await adapter.extractReceipt(extractionRequest());
+  assertEquals(draft.printedTotal, "325.78");
+  assertEquals(draft.lines[0]?.amount, "341.54");
+  assertEquals(draft.lines[1]?.amount, "-15.76");
+});
+
+Deno.test("A-301 unavailable model categories remain reviewable", async () => {
+  const unknownCategory = RECEIPT_OUTPUT.replace(
+    "category-groceries",
+    "category-not-in-catalogue",
+  );
+  const { adapter } = createStorageAndAdapter(() =>
+    clientWithModels([MODEL_NEEDS_TEST], { text: unknownCategory })
+  );
+  await adapter.setApiKey("AIza.synthetic-unknown-category");
+  const draft = await adapter.extractReceipt(extractionRequest());
+  assertEquals(draft.lines[0]?.categoryId, "category-not-in-catalogue");
+  assert(
+    draft.lines[0]?.uncertainty?.includes(
+      "The suggested category is unavailable",
+    ),
+  );
+});
+
+Deno.test("A-301 fenced JSON output is accepted only after strict parsing", async () => {
+  const { adapter } = createStorageAndAdapter(() =>
+    clientWithModels([MODEL_NEEDS_TEST], {
+      text: `Here is the receipt:\n\`\`\`json\n${RECEIPT_OUTPUT}\n\`\`\``,
+    })
+  );
+  await adapter.setApiKey("AIza.synthetic-fenced-output");
+  const draft = await adapter.extractReceipt(extractionRequest());
+  assertEquals(draft.lines[0]?.amount, "10");
+});
+
+Deno.test("A-301 malformed decimal grouping remains rejected", async () => {
+  const { adapter } = createStorageAndAdapter(() =>
+    clientWithModels([MODEL_NEEDS_TEST], {
+      text: RECEIPT_OUTPUT.replace('"10"', '"1 2"'),
+    })
+  );
+  await adapter.setApiKey("AIza.synthetic-invalid-grouping");
+  assertEquals(
+    await errorCode(adapter.extractReceipt(extractionRequest())),
+    "corrupt-data",
   );
 });
 

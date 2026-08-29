@@ -25,7 +25,6 @@ import {
   RECEIPT_JSON_SCHEMA,
   RECEIPT_SCHEMA_VERSION,
   RECEIPT_SCHEMA_VERSION_NUMBER,
-  validateReceiptOutput,
 } from "./schema.ts";
 import { withEphemeralImage } from "./image.ts";
 
@@ -352,7 +351,7 @@ function promptFor(request: ReceiptExtractionRequest): string {
     `Active category catalogue (use an existing id only; never create a category): ${
       JSON.stringify(categories)
     }.`,
-    "Amount transcription rules: copy each numeric amount exactly as printed, including a printed minus sign; do not convert it to the owner's ledger sign.",
+    "Amount transcription rules: copy each numeric amount exactly as printed, including a printed minus sign; use a period as the decimal separator and omit digit-grouping separators; do not convert it to the owner's ledger sign.",
     "Every product or purchase line has direction outflow, even when the receipt prints no minus sign. Set kind to purchase.",
     "Discounts, refunds, cashback, bottle-deposit returns, and other credits have direction inflow and kind adjustment because they reduce the amount owed.",
     "Tips, fees, surcharges, and other extra charges have direction outflow and kind adjustment because they increase the amount owed.",
@@ -642,7 +641,7 @@ export class GeminiAdapter implements ReceiptAiPort {
           systemInstruction: prompt,
         },
       }, options);
-      validateReceiptOutput(JSON.parse(responseText(response)) as unknown);
+      parseReceiptOutput(responseText(response));
     } finally {
       image.bytes.fill(0);
     }

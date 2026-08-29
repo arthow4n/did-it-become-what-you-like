@@ -48,7 +48,9 @@ rules, exclude non-line totals, and require an arithmetic self-check. Receipt
 extraction now transcribes printed signs at the provider boundary, carries an
 explicit economic direction and bounded classification rationale, and applies
 ledger signs deterministically in the domain before displaying that rationale
-during review.
+during review. M19 additionally makes receipt image replacement/removal and
+workflow discard cancel active scans before ephemeral image cleanup, clearing
+stale scan failure context.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
 preserved in Git at commit `d7c6a22`, the last complete pre-pruning ledger. That
@@ -67,18 +69,9 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-### M19 — Clear receipt scan failure state on image lifecycle reset
-
-**Outcome:** A receipt image-resolution or scan failure remains visible only
-until the owner replaces/removes the image or discards the scan workflow. The
-scan actor clears its transient failure context at those lifecycle boundaries;
-durable receipt review snapshots are unchanged. Returning to image selection
-cannot resurrect an obsolete `receipt.image.resolve` diagnostic.
-
-| Task | Status | Dependency | Acceptance / evidence |
-| --- | --- | --- | --- |
-| M19-001 Reset transient scan error when image selection or discard restarts the workflow | COMPLETED | — | Failed → replace-image → select clears `context.error`; active preparation replacement cancels before source removal; explicit reset returns to idle and cancels active invokes; normal scan errors and retry behavior remain intact |
-| M19-002 Verify discard/replacement lifecycle and archive checkpoint R-1900 | IN_PROGRESS | M19-001 | Actor/UI regression coverage, affected tests, check/format/lint/diff, fresh review, commit and push |
+No active milestone is currently open. M19 was completed and archived in the
+focused implementation commit `e9812cd`; its detailed task ledger and review
+evidence remain available in Git history.
 
 ### Locked boundary / design-system rules
 
@@ -94,20 +87,18 @@ cannot resurrect an obsolete `receipt.image.resolve` diagnostic.
 
 ## Current Checkpoint
 
-- **Active task / gate:** M19-002 — verify lifecycle and archive R-1900
-- **Pushed commit / HEAD:** `c60c5ee` (M18 implementation, defensive
-  normalization correction, and archived plan)
-- **Verification status:** M19 focused actor/UI tests pass 20/20 and affected tests
-  pass 128/128; check, format, lint, build, diff checks, and receipt-review
+- **Active task / gate:** None (M19 complete and archived)
+- **Pushed commit / HEAD:** `e9812cd` (M19 implementation; final plan archive
+  follows this checkpoint)
+- **Verification status:** M19 focused actor/UI tests pass 20/20 and affected
+  tests pass 128/128; check, format, lint, build, diff checks, and receipt-review
   Playwright pass 1/1. Fresh R-1900 review found no severity 1–3 findings.
-  M18 affected tests pass 337/337, focused domain/client
-  tests pass 8/8, receipt-review Playwright passes 1/1, and check, format, lint,
-  build, and diff checks pass. Fresh R-1800 review found no severity 1–3
-  findings.
+  M18 affected tests pass 337/337, focused domain/client tests pass 8/8, and
+  its final review found no severity 1–3 findings.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Commit and push M19 implementation, then archive the
-  completed M19 ledger at R-1900.
+- **Exact next action:** Author the next approved milestone plan before making
+  further application changes.
 
 ## Ready-to-Use Orchestration Prompt
 

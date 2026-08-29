@@ -308,7 +308,7 @@ M27-001 -> M27-002 -> R-2710
 
 #### R-2710 — Product contract and domain-boundary review
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M27-002`.
+- **Status/dependencies:** `COMPLETE`; depends on `M27-002`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Approved product decisions, aggregate ownership, atomicity,
   stable-ID handling, adjustment and derived-`Expense` semantics, tombstone
@@ -340,10 +340,16 @@ M27-001 -> M27-002 -> R-2710
   checkpoint was also stale. The preflight is now strict for every existing
   generated ID, and the checkpoint is being corrected with the next remediation
   commit.
+- **Closure evidence:** Pasteur’s final fresh read-only review at `a2bfd90`
+  found no functional severity 1–3 findings; the only remaining observation was
+  stale checkpoint text, corrected below. The exact risk-selected gate passed
+  with `deno task check`, the focused receipt/domain/local/import-export suites
+  (36 passed, 0 failed), formatting, lint, and `git diff --check`. `R-2710` is
+  closed.
 
 #### M27-003 — Model the saved-receipt detail actor
 
-- **Status/dependencies:** `PENDING`; depends on closed `R-2710`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on closed `R-2710`.
 - **Ownership:** `src/actors/saved-receipt.ts`,
   `src/actors/contracts/saved-receipt.ts`, `src/actors/contracts/index.ts`,
   `src/actors/contracts/ports.ts`, `src/actors/contracts/types.ts`,
@@ -493,21 +499,20 @@ M27-001 -> M27-002 -> R-2710
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-2710` (`IN_PROGRESS`; remediation of seven severity
-  1–3 findings from Anscombe’s independent review)
-- **Pushed commit / HEAD:** `80959c7` with uncommitted final R-2710 remediation
-  and checkpoint changes
-- **Verification status:** Initial M27-002 evidence remains `deno task check`,
-  focused receipt suites (18 passed, 0 failed), `deno task test:affected` (298
-  passed, 0 failed), and `git diff --check`; remediation-focused domain,
-  import/export, and local suites pass (36 passed, 0 failed).
+- **Active task / gate:** `M27-003` (`IN_PROGRESS`; R-2710 is closed)
+- **Pushed implementation baseline:** `a2bfd90`; the current plan-only
+  checkpoint commit records the active actor task and the clean repository
+  state.
+- **Verification status:** R-2710 closure evidence is `deno task check`, focused
+  receipt/domain/local/import-export suites (36 passed, 0 failed), formatting,
+  lint, and `git diff --check`; the pre-remediation M27-002 affected suite
+  remains 306 passed, 0 failed.
 - **Active / preserved work:** Single primary agent on `master`; no M27 worker
   or worktree. The M27-002 implementation and review checkpoint are being
   preserved on the primary branch.
-- **Exact next action:** Run final R-2710 remediation lint/check/affected
-  verification, commit and push the strict collision fix with this checkpoint,
-  then dispatch a fresh read-only reviewer for R-2710 and remediate any
-  remaining severity 1–3 findings before starting M27-003.
+- **Exact next action:** Implement the dependency-ready M27-003 actor and
+  contract, add its focused transition tests, run the named actor and affected
+  verification, then commit and push before opening M27-004.
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -190,7 +190,7 @@ M23-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 #### M23-003 — Visual re-capture & comprehensive multi-viewport verification
 
-- **Status/dependencies:** `READY`; depends on `M23-002`.
+- **Status/dependencies:** `COMPLETE`; depends on `M23-002`.
 - **Ownership:** `scripts/audit-capture.ts`, `e2e/audit/ui-audit-capture.spec.ts`
 - **Scope/non-goals:** Run full visual capture across Desktop (`1280×800`), Mobile
   (`390×844`), and Narrow (`320×568`) viewports into `ui-audit-round-2/screenshots`.
@@ -198,13 +198,13 @@ M23-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
   fidelity. Run affected unit, component, a11y, build, and E2E suites.
 - **Outputs/acceptance:** All 3 capture viewports pass with clean visual
   evidence. All test suites pass.
-- **Tests:** `deno task test:affected`, `deno task a11y:gallery`, `deno task build`,
-  `deno task test:e2e`.
+- **Tests:** Gallery a11y passes 3/3 viewports, production build succeeds,
+  affected tests pass, E2E suite passes 9/9.
 - **Verification:** `deno task audit:capture ui-audit-round-2/screenshots`.
 
 #### R-2310 — Consolidated milestone review gate
 
-- **Status/dependencies:** `PENDING`; depends on `M23-003`.
+- **Status/dependencies:** `READY`; depends on `M23-003`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Diffs across M23-001 through M23-003, token usage, facade
   boundary, multi-viewport screenshot matrix, and test evidence.
@@ -226,11 +226,11 @@ M23-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M23-003` (`READY`)
-- **Pushed commit / HEAD:** `73f17ef`
-- **Verification status:** M23-002 component and styles refactored; all 19 local-ui tests pass.
+- **Active task / gate:** `R-2310` (`READY`)
+- **Pushed commit / HEAD:** `ebcef8e`
+- **Verification status:** Visual re-capture passes 3/3 viewports; gallery a11y passes; build passes; E2E suite passes 9/9.
 - **Active / preserved work:** Single primary agent on `master`.
-- **Exact next action:** Execute `M23-003` (Visual re-capture & comprehensive multi-viewport verification).
+- **Exact next action:** Invoke read-only reviewer for `R-2310`.
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -29,7 +29,7 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ### Released Baseline
 
-M0 through M25 and all review gates through `R-2510` are `COMPLETE`. The
+M0 through M26 and all review gates through `R-2610` are `COMPLETE`. The
 released application baseline includes the approved domain, actors, adapters,
 responsive UI, After Midnight design system backed by Mantine behind the
 repository facade, accessibility, PWA, tests, GitHub Pages pipeline, operational
@@ -83,6 +83,9 @@ changes, discard, reload, and active image replacement. Gemini settings
 navigation retains its destination while teardown performs the cancellation.
 Regression coverage exercises both the visible Close path and direct
 active-scan unmount, including abort and image release verification.
+M26 additionally keeps receipt-line descriptions visible in expanded expense
+groups while retaining the receipt merchant as the group heading and the
+merchant-first fallback for ordinary manual or incomplete legacy rows.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
 preserved in Git at commit `e10f111`, the last complete pre-pruning ledger. That
@@ -99,99 +102,28 @@ features/app -> actors -> domain + adapter ports
 
 ---
 
-## M26 — Preserve receipt line descriptions in expense lists
+## Active Milestone
 
-### M26 authority, outcome, and non-goals
-
-Receipt review and persisted receipt lines already contain the correct item
-descriptions. This milestone ensures the expense-list presentation keeps those
-line descriptions visible instead of using the receipt merchant as every line's
-title. Plain manual expenses continue to prefer their merchant. No receipt
-schema, extraction prompt, sign handling, or migration changes are in scope.
-
-Target dependency flow:
-
-```text
-receipt query view model -> receipt-group presentation -> expense row title
-```
-
-### Mandatory single-agent execution rule
-
-- One primary coding agent performs planning reconciliation, edits, tests,
-  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
-- A fresh read-only reviewer is used at the named review gate.
-
-### Dependency graph
-
-```text
-M26-001 -> M26-002 -> R-2610 -> M26-FINAL
-```
-
-#### M26-001 — Prefer line descriptions inside receipt groups
-
-- **Status/dependencies:** `COMPLETE`; depends on M25.
-- **Ownership:** `src/design-system/components.tsx`.
-- **Scope/non-goals:** Map grouped receipt lines so `ExpenseRow` renders each
-  saved line description while the surrounding group retains the merchant.
-  Preserve merchant-first titles for ordinary manual expense rows and do not
-  alter persisted records or query semantics.
-- **Outputs/acceptance:** A receipt group headed by its merchant displays each
-  line's description (for example, `BROCCOLI`), with no merchant duplication.
-- **Tests:** Component regression for receipt-group title precedence; existing
-  expense-row rendering remains covered.
-- **Verification:** `deno fmt <changed>`, `deno lint <changed>`,
-  `deno test --related=src/features/local-ui.tsx`, `git diff --check`.
-
-#### M26-002 — Verify import-to-list mapping
-
-- **Status/dependencies:** `COMPLETE`; depends on M26-001.
-- **Ownership:** `src/design-system/design-system.test.tsx`.
-- **Scope/non-goals:** Exercise the imported receipt review shape through the
-  list presentation and guard manual merchant fallback. Do not duplicate
-  receipt extraction or persistence tests.
-- **Outputs/acceptance:** Tests fail if line descriptions are replaced by the
-  receipt merchant, while manual expense presentation remains unchanged.
-- **Tests:** Focused component suites and repository affected selection.
-- **Verification:** `deno task test:affected`, `deno task fmt:check`,
-  `deno task lint`, `deno task check`, `git diff --check`.
-
-#### R-2610 — Fresh read-only receipt-list review
-
-- **Status/dependencies:** `IN_PROGRESS`; depends on M26-002.
-- **Reviewer role:** Fresh read-only subagent reviewer.
-- **Audit scope:** Review title precedence, receipt grouping semantics, manual
-  fallback behavior, tests, and compliance with `AGENTS.md` and
-  `DESIGN_SYSTEM.md`.
-- **Remediation loop:** The primary agent fixes all severity 1–3 findings in
-  bounded commits and requests closure before archiving.
-
-#### M26-FINAL — Milestone closure, ledger archiving, and repo hygiene pruning
-
-- **Status/dependencies:** `PENDING`; depends on R-2610.
-- **Ownership:** `IMPLEMENTATION_PLAN.md` and M26 code/tests.
-- **Scope/non-goals:** Record the pushed implementation and review evidence in
-  Released Baseline, prune this detailed milestone, run repo-hygiene checks,
-  and reset the active DAG. Do not remove living product specifications.
-- **Outputs/acceptance:** Compact plan, clean workspace, and `[archive]` commit.
-- **Tests:** Plan-pruning environment checks after implementation tests pass.
-- **Verification:** `deno task check`, `deno task fmt:check`, `deno task lint`,
-  `git diff --check`.
+No active milestone is currently open. M26 was completed in implementation
+commit `77e7808`, reviewed with no Sev1–3 findings in `R-2610`, and archived in
+this checkpoint. Its detailed task ledger remains available in Git history.
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-2610` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `77e7808` (M26 implementation and component
-  regression are pushed; independent review is pending)
+- **Active task / gate:** None (M26 complete and archived)
+- **Pushed commit / HEAD:** `origin/master` (M26 implementation, review, and
+  plan archive are pushed; branch is clean)
 - **Verification status:** M26 design-system suite passes 34/34 and the affected
   test selection passes 121/121. The focused receipt/local UI suites remain
   33/33, the receipt actor suite remains 8/8, and type check, lint, formatting,
-  and diff checks pass. Investigation confirms persisted receipt-line
-  descriptions are preserved by the domain query; the defect was receipt-group
-  title presentation.
+  and diff checks pass. Fresh review `R-2610` found no Sev1–3 findings and
+  approved closure. Investigation confirms persisted receipt-line descriptions
+  are preserved by the domain query; the defect was receipt-group title
+  presentation.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Complete the fresh R-2610 review, remediate any Sev1–3
-  findings, then archive M26.
+- **Exact next action:** Author the next approved milestone plan before making
+  further application changes.
 
 ## Ready-to-Use Orchestration Prompt
 

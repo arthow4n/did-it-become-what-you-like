@@ -40,23 +40,23 @@ neutral receipt AI port, plus a user-gesture-safe native receipt source picker
 for camera capture and existing-image selection, described by `SPEC.md`,
 `DESIGN_SYSTEM.md`, and `AGENTS.md`. Receipt scan failures retain a safe
 taxonomy and phase-specific operation diagnostics across image lifecycle,
-provider, and normalization boundaries; cleanup cannot mask the primary
-failure. Receipt reconciliation also aligns printed totals with the signed
-direction of selected lines while preserving positive adjustment-only inflows.
-Gemini receipt extraction instructions explicitly encode these signed amount
-rules, exclude non-line totals, and require an arithmetic self-check. Receipt
-extraction now transcribes printed signs at the provider boundary, carries an
-explicit economic direction and bounded classification rationale, and applies
-ledger signs deterministically in the domain before displaying that rationale
-during review. M19 additionally makes receipt image replacement/removal and
-workflow discard cancel active scans before ephemeral image cleanup, clearing
-stale scan failure context. M20 additionally canonicalizes safe localized
-decimal transcription and accepts harmless JSON fences before strict Gemini
-receipt-output validation, while preserving reviewable category uncertainty.
-M21 additionally distinguishes provider-output failures from persisted-data
-corruption and preserves phase-specific Gemini diagnostics through the actor.
-Unusable provider responses now use the dedicated `invalid-output` code, with
-bounded JSON, schema, response, and mapping operation identifiers.
+provider, and normalization boundaries; cleanup cannot mask the primary failure.
+Receipt reconciliation also aligns printed totals with the signed direction of
+selected lines while preserving positive adjustment-only inflows. Gemini receipt
+extraction instructions explicitly encode these signed amount rules, exclude
+non-line totals, and require an arithmetic self-check. Receipt extraction now
+transcribes printed signs at the provider boundary, carries an explicit economic
+direction and bounded classification rationale, and applies ledger signs
+deterministically in the domain before displaying that rationale during review.
+M19 additionally makes receipt image replacement/removal and workflow discard
+cancel active scans before ephemeral image cleanup, clearing stale scan failure
+context. M20 additionally canonicalizes safe localized decimal transcription and
+accepts harmless JSON fences before strict Gemini receipt-output validation,
+while preserving reviewable category uncertainty. M21 additionally distinguishes
+provider-output failures from persisted-data corruption and preserves
+phase-specific Gemini diagnostics through the actor. Unusable provider responses
+now use the dedicated `invalid-output` code, with bounded JSON, schema,
+response, and mapping operation identifiers.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
 preserved in Git at commit `d7c6a22`, the last complete pre-pruning ledger. That
@@ -81,9 +81,9 @@ Correct receipt reconciliation when a model mistakes a positive bottle-deposit
 charge (for example, Swedish `PANT BURK 2,00`) for a refund. The provider prompt
 will distinguish charges from explicit returns, and the domain boundary will
 apply the same narrow, deterministic correction before ledger signs and totals
-are computed. This milestone does not change the provider-neutral port, add
-tool calling, infer arbitrary model output, or alter ordinary purchase,
-discount, or refund behavior.
+are computed. This milestone does not change the provider-neutral port, add tool
+calling, infer arbitrary model output, or alter ordinary purchase, discount, or
+refund behavior.
 
 Target dependency flow:
 
@@ -128,17 +128,18 @@ M22-001 -> M22-002 -> R-2210 -> M22-FINAL
 #### M22-001 — Encode bottle-deposit charge semantics at the provider boundary
 
 - **Status/dependencies:** `COMPLETE`; depends on M21.
-- **Ownership:** `src/adapters/gemini/adapter.ts`, `src/domain/receipt.ts`,
-  `SPEC.md`, `src/adapters/gemini/adapter.test.ts`.
+- **Ownership:** `src/adapters/gemini/adapter.ts`,
+  `src/adapters/gemini/schema.ts`, `src/domain/receipt.ts`, `SPEC.md`,
+  `src/adapters/gemini/adapter.test.ts`.
 - **Scope/non-goals:** Clarify Gemini instructions for positive bottle-deposit
   charges versus explicit returns/refunds. Add a narrow domain correction when
   an otherwise valid adjustment named `PANT BURK` is incorrectly marked as an
   inflow despite a non-negative printed amount, and replace its rationale with
   the corrected receipt evidence. Do not reinterpret generic adjustments or
   override an explicit return/refund/negative deposit.
-- **Outputs/acceptance:** The photographed Coop receipt's two `PANT BURK`
-  rows normalize to `-2` each and reconcile with the `-325.78` printed total;
-  genuine refund/return adjustments retain positive signs.
+- **Outputs/acceptance:** The photographed Coop receipt's two `PANT BURK` rows
+  normalize to `-2` each and reconcile with the `-325.78` printed total; genuine
+  refund/return adjustments retain positive signs.
 - **Tests:** Domain unit tests for the correction and its exclusions; adapter
   prompt regression assertion.
 - **Verification:** `deno fmt <changed>`, `deno lint <changed>`,
@@ -201,16 +202,15 @@ M22-001 -> M22-002 -> R-2210 -> M22-FINAL
   uncommitted and must be committed after validation)
 - **Verification status:** M22-001 focused domain tests pass 8/8 and focused
   adapter tests pass 17/17; format, lint, and type checks pass. M21 focused
-  adapter/actor/UI tests pass 77/77 and
-  affected tests pass 279/279; check, format, lint, diff checks, build, and
-  receipt-review Playwright pass. Fresh R-2100 review found no severity 1–3
-  findings. M22 focused tests pass 8/8 domain and 17/17 adapter; affected
-  tests pass 288/288; format, lint, and type checks pass.
-  M19 focused actor/UI tests pass 20/20 and affected
-  tests pass 128/128; check, format, lint, build, diff checks, and receipt-review
-  Playwright pass 1/1. Fresh R-1900 review found no severity 1–3 findings.
-  M18 affected tests pass 337/337, focused domain/client tests pass 8/8, and
-  its final review found no severity 1–3 findings.
+  adapter/actor/UI tests pass 77/77 and affected tests pass 279/279; check,
+  format, lint, diff checks, build, and receipt-review Playwright pass. Fresh
+  R-2100 review found no severity 1–3 findings. M22 focused tests pass 8/8
+  domain and 17/17 adapter; affected tests pass 288/288; format, lint, and type
+  checks pass. M19 focused actor/UI tests pass 20/20 and affected tests pass
+  128/128; check, format, lint, build, diff checks, and receipt-review
+  Playwright pass 1/1. Fresh R-1900 review found no severity 1–3 findings. M18
+  affected tests pass 337/337, focused domain/client tests pass 8/8, and its
+  final review found no severity 1–3 findings.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
 - **Exact next action:** Commit and push M22 implementation, then request the

@@ -155,18 +155,23 @@ application code changes begin.
    difference, purchase lines, and adjustments before destructive actions are
    offered.
 4. Receipt, line, and adjustment mutations are local-first and atomic. The
-   expense list must never observe a half-updated aggregate.
-5. Deleting a receipt tombstones the parent and every owned purchase line and
-   adjustment in one domain operation; sync replay must not resurrect any part
-   of the deleted aggregate.
+   expense list must never observe a half-updated aggregate. Receipt-linked
+   legacy or projection `Expense` records identified by `receiptId` or
+   `receiptLineId` are part of that aggregate for mutation and validation.
+5. Deleting a receipt tombstones the parent, every owned purchase line and
+   adjustment, and every receipt-linked derived `Expense` record in one domain
+   operation. A stale replay must not resurrect deleted records; a genuinely
+   concurrent edit follows the existing conflict-review contract instead of
+   being silently discarded.
 6. Deleting or editing one line immediately recomputes reconciliation. A
    mismatch is reviewable and does not silently rewrite the printed total.
 7. Final-line deletion, linked-adjustment handling, and undo behavior remain
    explicit owner decisions in `M27-001`; downstream tasks may not invent
    defaults. The current recommendation is: confirm and remove the empty parent
    when its final line is deleted, unlink but preserve independently meaningful
-   adjustments when their purchase line is removed, and offer a bounded undo
-   after whole-receipt deletion.
+   adjustments when their purchase line is removed, and provide no undo after a
+   committed synchronized deletion. Undo may be approved only with an explicit
+   delayed-tombstone or tombstone-supersession contract and cross-device tests.
 8. XState owns finite workflow modes and async mutation lifecycles. Components
    derive availability from actor state and do not duplicate `loading`,
    `saving`, `confirming`, or failure flags.
@@ -176,6 +181,16 @@ application code changes begin.
 10. Ordinary navigation, dialogs, expansion, and layout changes remain `0ms`;
     focus restoration, keyboard semantics, narrow/mobile layouts, and static
     reduced-motion feedback remain required.
+11. `M27-001` must decide whether edits are staged or immediately committed and
+    define dirty-state ownership, discard confirmation, reload restoration, and
+    browser/back navigation behavior. Actor and UI tasks implement that single
+    approved model rather than mixing both.
+12. Editable receipt metadata is an allowlist approved in `M27-001`. Project
+    reassignment is read-only unless the approved contract moves every child and
+    derived record atomically. An existing archived category may remain during
+    an unrelated line edit; a changed category must resolve to `Uncategorized`
+    or an active existing category. Adjustment links must resolve within their
+    allowed receipt scope.
 
 ### Restart and compaction recovery checklist
 
@@ -201,24 +216,30 @@ M27-001 -> M27-002 -> R-2710
 
 #### M27-001 — Approve the saved-receipt product and interaction contract
 
-- **Status/dependencies:** `READY`; depends on the released M26 baseline and
-  explicit owner authorization to begin M27 planning execution.
+- **Status/dependencies:** `READY`; depends only on the released M26 baseline.
+  This plan/spec decision task does not authorize application implementation.
 - **Ownership:** `SPEC.md`, `DESIGN_SYSTEM.md`, `IMPLEMENTATION_PLAN.md`.
 - **Scope/non-goals:** Specify the receipt-detail entry points, screen states,
   edit surfaces, confirmation copy and scope, completion destinations, error
-  recovery, and narrow/mobile behavior. Obtain explicit owner decisions for
-  final-line deletion, adjustments linked to a deleted purchase line, and
-  bounded undo after whole-receipt deletion. Do not change application code,
-  choose new styling, or broaden manual-expense behavior.
+  recovery, and narrow/mobile behavior. Inventory the actual route/shell, domain
+  export, actor contract, sync, import/export, receipt-card, and design-system
+  consumers before locking exact downstream ownership. Obtain explicit owner
+  decisions for the editable metadata allowlist and project reassignment; staged
+  versus immediate editing and dirty discard/reload/back behavior; final-line
+  deletion; adjustments linked to a deleted purchase line; and whether deletion
+  has no undo, delayed tombstones, or superseding tombstones. Do not change
+  application code, choose new styling, or broaden manual-expense behavior.
 - **Outputs/acceptance:** `SPEC.md` and `DESIGN_SYSTEM.md` describe one approved
   workflow and all cross-cutting loading, empty, mismatch, saving, deletion,
-  failure, offline, focus, and authorization states. The plan records the three
-  owner decisions without ambiguity, and implementation remains paused until the
-  owner explicitly approves it.
+  failure, offline, dirty/discard, reload, focus, and authorization states. The
+  impact inventory amends exact downstream ownership and verification commands.
+  The plan records every decision above without ambiguity, including the sync
+  semantics and tests required if undo is approved, and implementation remains
+  paused until the owner explicitly approves it.
 - **Tests:** Documentation cross-reference and terminology inspection; no
   application tests.
 - **Verification:** `deno fmt SPEC.md DESIGN_SYSTEM.md IMPLEMENTATION_PLAN.md`,
-  `rg -n "saved receipt|receipt detail|final line|linked adjustment|undo" SPEC.md DESIGN_SYSTEM.md IMPLEMENTATION_PLAN.md`,
+  `rg -n "saved receipt|receipt detail|final line|linked adjustment|undo|dirty|project reassignment|tombstone" SPEC.md DESIGN_SYSTEM.md IMPLEMENTATION_PLAN.md`,
   `git diff --check`.
 
 #### M27-002 — Add atomic saved-receipt mutation contracts
@@ -226,29 +247,45 @@ M27-001 -> M27-002 -> R-2710
 - **Status/dependencies:** `PENDING`; depends on approved `M27-001` and explicit
   implementation authorization.
 - **Ownership:** `src/domain/receipt.ts`, `src/domain/organization.ts`,
-  `src/domain/schema/**`,
+  `src/domain/index.ts`, `src/domain/schema/**`, `src/domain/tests/**`,
   `src/adapters/local/receipt-atomic.integration.test.ts`,
-  `src/domain/tests/receipt_test.ts`.
+  `src/adapters/local/receipt-deletion-sync.integration.test.ts`,
+  `src/adapters/import-export/import-export.integration.test.ts`.
 - **Scope/non-goals:** Add ID-based receipt aggregate lookup and narrowly scoped
   metadata update, line update, line deletion, and whole-receipt deletion
-  services. Implement the approved final-line and linked-adjustment rules with
-  one atomic local transaction and synchronized tombstones. Preserve record
-  schema compatibility and current receipt-list projection rules. Do not put UI
-  state in domain records, retain source images, or alter Gemini extraction.
+  services. Implement the approved final-line, linked-adjustment, metadata,
+  project, and deletion/undo rules with one atomic local transaction. Include
+  receipt-linked derived `Expense` records in line and aggregate operations;
+  keep retained projections coherent after edits. Preserve record schema and
+  import/export compatibility. Distinguish stale replay from concurrent
+  delete-versus-edit conflict, including child edits racing whole-receipt
+  deletion. Do not put UI state in domain records, retain source images, alter
+  Gemini extraction, or change general synchronization policy.
 - **Outputs/acceptance:** Every operation either commits the complete aggregate
   mutation or leaves it unchanged; stable IDs survive edits; tombstones cover
-  the approved deletion scope; expense-list projections immediately show saved
-  line descriptions and updated amounts; reconciliation is derived from the
-  resulting records rather than persisted as duplicated state.
+  the approved parent, child, adjustment, and linked-derived-record scope;
+  expense-list projections immediately show saved descriptions and updated
+  amounts; validation permits an unchanged archived category but requires a
+  changed assignment to be active/existing or `Uncategorized`, and rejects
+  cross-receipt adjustment links; reconciliation is derived rather than
+  duplicated. Stale replay remains deleted while a genuine concurrent edit
+  produces the existing reviewable conflict. If undo is approved, its expiry,
+  reload, synchronization, and cross-device result are defined and proven;
+  otherwise no restore action is exposed after commit.
 - **Tests:** Pure domain tests for metadata/line edits, individual and
   final-line deletion, mismatch recomputation, linked adjustments, missing/stale
-  IDs, and whole-receipt deletion; local-adapter integration tests for atomic
-  rollback, tombstones, and no partial resurrection on replay.
+  IDs, derived `Expense` cleanup/coherence, validation failures, and
+  whole-receipt deletion; local-adapter integration tests for atomic rollback
+  and tombstones; causal sync tests separating stale replay from concurrent
+  parent/child edits; import/export and schema validation tests for zero
+  dangling receipt references. Add the approved undo matrix only if undo
+  survives `M27-001`.
 - **Verification:**
-  `deno fmt src/domain/receipt.ts src/domain/organization.ts src/domain/schema src/adapters/local/receipt-atomic.integration.test.ts src/domain/tests/receipt_test.ts`,
-  `deno lint src/domain/receipt.ts src/domain/organization.ts src/domain/schema src/adapters/local/receipt-atomic.integration.test.ts src/domain/tests/receipt_test.ts`,
+  `deno fmt src/domain/receipt.ts src/domain/organization.ts src/domain/index.ts src/domain/schema src/domain/tests src/adapters/local/receipt-atomic.integration.test.ts src/adapters/local/receipt-deletion-sync.integration.test.ts src/adapters/import-export/import-export.integration.test.ts`,
+  `deno lint src/domain/receipt.ts src/domain/organization.ts src/domain/index.ts src/domain/schema src/domain/tests src/adapters/local/receipt-atomic.integration.test.ts src/adapters/local/receipt-deletion-sync.integration.test.ts src/adapters/import-export/import-export.integration.test.ts`,
   `deno test --related=src/domain/receipt.ts`,
   `deno test --related=src/adapters/local/receipt-atomic.integration.test.ts`,
+  `deno test src/adapters/local/receipt-deletion-sync.integration.test.ts src/adapters/import-export/import-export.integration.test.ts`,
   `deno task test:affected`, `git diff --check`.
 
 #### R-2710 — Product contract and domain-boundary review
@@ -256,8 +293,10 @@ M27-001 -> M27-002 -> R-2710
 - **Status/dependencies:** `PENDING`; depends on `M27-002`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Approved product decisions, aggregate ownership, atomicity,
-  stable-ID handling, adjustment semantics, tombstone completeness, sync replay
-  safety, schema compatibility, and exact domain/adapter test evidence.
+  stable-ID handling, adjustment and derived-`Expense` semantics, tombstone
+  completeness, stale replay versus concurrent-edit conflict behavior,
+  schema/import-export compatibility, approved undo semantics or explicit
+  absence, and exact domain/adapter test evidence.
 - **Remediation loop:** The primary agent fixes every severity 1–3 finding in
   bounded commits, reruns risk-selected affected verification, records exact
   evidence, and obtains review closure before opening `M27-003`.
@@ -267,27 +306,32 @@ M27-001 -> M27-002 -> R-2710
 - **Status/dependencies:** `PENDING`; depends on closed `R-2710`.
 - **Ownership:** `src/actors/saved-receipt.ts`,
   `src/actors/contracts/saved-receipt.ts`, `src/actors/contracts/index.ts`,
-  `src/actors/contracts/ports.ts`,
+  `src/actors/contracts/ports.ts`, `src/actors/contracts/types.ts`,
   `src/actors/contracts/saved-receipt-actor.test.ts`.
 - **Scope/non-goals:** Add a focused XState v5 actor for loading one saved
   receipt and coordinating edit, confirmation, mutation, retry, and completion
   lifecycles through domain/adapter ports. Keep finite modes in states, durable
   receipt data in context, derived reconciliation outside duplicated booleans,
-  and one-request/one-result mutations in named promise actors. Do not expand
-  the existing receipt-scan actor or introduce a second persistence layer.
+  and one-request/one-result mutations in named promise actors. Model the
+  approved staged/immediate editing contract, dirty/discard/reload/back guards,
+  and deletion completion semantics explicitly. Do not expand the existing
+  receipt-scan actor or introduce a second persistence layer.
 - **Outputs/acceptance:** The machine has explicit loading, ready/editing,
   confirming-line-delete, confirming-receipt-delete, mutating, failure, and
   completed outcomes (nested states may consolidate equivalent modes). Domain
   events carry record IDs and edited values directly. Cancellation prevents a
   late mutation result from reopening a closed screen, errors preserve a safe
   retry target, and UI consumers can rely on `matches`, tags, and `can` rather
-  than manual flags.
+  than manual flags. Dirty state is owned once, navigation cannot silently lose
+  staged edits, and reload behavior matches the approved persistence contract.
 - **Tests:** Actor tests cover load success/not-found, metadata and line edit,
   both deletion confirmations, cancellation, retryable failure, stale IDs,
-  final-line outcome, and emitted completion/navigation intent.
+  final-line outcome, dirty edit/discard confirmation, back/browser navigation,
+  reload restoration or intentional reset, and emitted completion/navigation
+  intent.
 - **Verification:**
-  `deno fmt src/actors/saved-receipt.ts src/actors/contracts/saved-receipt.ts src/actors/contracts/index.ts src/actors/contracts/ports.ts src/actors/contracts/saved-receipt-actor.test.ts`,
-  `deno lint src/actors/saved-receipt.ts src/actors/contracts/saved-receipt.ts src/actors/contracts/index.ts src/actors/contracts/ports.ts src/actors/contracts/saved-receipt-actor.test.ts`,
+  `deno fmt src/actors/saved-receipt.ts src/actors/contracts/saved-receipt.ts src/actors/contracts/index.ts src/actors/contracts/ports.ts src/actors/contracts/types.ts src/actors/contracts/saved-receipt-actor.test.ts`,
+  `deno lint src/actors/saved-receipt.ts src/actors/contracts/saved-receipt.ts src/actors/contracts/index.ts src/actors/contracts/ports.ts src/actors/contracts/types.ts src/actors/contracts/saved-receipt-actor.test.ts`,
   `deno test src/actors/contracts/saved-receipt-actor.test.ts`,
   `deno task test:affected`, `git diff --check`.
 
@@ -295,15 +339,24 @@ M27-001 -> M27-002 -> R-2710
 
 - **Status/dependencies:** `PENDING`; depends on `M27-003`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`,
-  `src/features/local-ui.test.tsx`, `src/features/receipt-detail-ui.tsx`,
-  `src/features/receipt-detail-ui.test.tsx`.
+  `src/features/local-ui.test.tsx`, `src/features/receipt-ui.tsx`,
+  `src/features/receipt-ui.test.tsx`, `src/features/receipt-detail-ui.tsx`,
+  `src/features/receipt-detail-ui.test.tsx`,
+  `src/actors/contracts/root-shell.ts`,
+  `src/actors/contracts/shell-actor.test.ts`, and, only if approved by the
+  `M27-001` impact inventory, `src/design-system/components.tsx`,
+  `src/design-system/design-system.test.tsx`,
+  `src/design-system/public-api.test.ts`.
 - **Scope/non-goals:** Wire receipt groups and saved lines to the dedicated
   detail workflow, render the approved metadata/reconciliation/line hierarchy,
   and expose edit and destructive actions with approved confirmations, progress,
-  failure recovery, completion navigation, and undo affordance. Reuse repository
-  facade primitives. Do not make the whole expanded group an ambiguous click
-  target, route receipt lines through manual-expense UI, or redesign unrelated
-  expense cards.
+  failure recovery, dirty/discard/back behavior, completion navigation, and the
+  approved post-deletion behavior. Reuse repository facade primitives; if the
+  review-oriented `ReceiptLineCard` cannot represent saved management without a
+  misleading selection checkbox, add the smallest product-oriented facade
+  variant after the required impact inventory. Do not make the whole expanded
+  group an ambiguous click target, route receipt lines through manual-expense
+  UI, or redesign unrelated expense cards.
 - **Outputs/acceptance:** `View receipt` is discoverable by pointer and
   keyboard; line activation can focus the matching detail row; back/close
   restores a sensible focus target; destructive controls state their exact
@@ -314,11 +367,13 @@ M27-001 -> M27-002 -> R-2710
 - **Tests:** Component tests for group/line entry, focused-line routing,
   accessible headings and action names, metadata/line editing, both deletion
   dialogs, focus restoration, disabled/in-flight behavior, mismatch updates,
-  error retry, undo, and manual-expense regression.
+  error retry, dirty discard/back/reload behavior, approved post-deletion
+  behavior, and manual-expense regression. If a facade contract changes, cover
+  its public API and review-versus-management variants.
 - **Verification:**
-  `deno fmt src/features/local-ui.tsx src/features/local-ui.css src/features/local-ui.test.tsx src/features/receipt-detail-ui.tsx src/features/receipt-detail-ui.test.tsx`,
-  `deno lint src/features/local-ui.tsx src/features/local-ui.test.tsx src/features/receipt-detail-ui.tsx src/features/receipt-detail-ui.test.tsx`,
-  `deno test src/features/local-ui.test.tsx src/features/receipt-detail-ui.test.tsx`,
+  `deno fmt src/features/local-ui.tsx src/features/local-ui.css src/features/local-ui.test.tsx src/features/receipt-ui.tsx src/features/receipt-ui.test.tsx src/features/receipt-detail-ui.tsx src/features/receipt-detail-ui.test.tsx src/actors/contracts/root-shell.ts src/actors/contracts/shell-actor.test.ts`,
+  `deno lint src/features/local-ui.tsx src/features/local-ui.test.tsx src/features/receipt-ui.tsx src/features/receipt-ui.test.tsx src/features/receipt-detail-ui.tsx src/features/receipt-detail-ui.test.tsx src/actors/contracts/root-shell.ts src/actors/contracts/shell-actor.test.ts`,
+  `deno test src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx src/features/receipt-detail-ui.test.tsx src/actors/contracts/shell-actor.test.ts`,
   `deno task test:affected`, `git diff --check`.
 
 #### R-2720 — Actor, UI, accessibility, and responsive review
@@ -327,7 +382,8 @@ M27-001 -> M27-002 -> R-2710
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** XState v5 lifecycle correctness, facade-boundary compliance,
   route/event wiring, destructive scope clarity, focus and keyboard semantics,
-  failure/retry/undo behavior, receipt/manual-expense separation, and targeted
+  failure/retry, dirty/discard/reload/back behavior, approved deletion/undo
+  semantics, receipt/manual-expense separation, any facade impact, and targeted
   desktop/mobile/narrow visual evidence.
 - **Remediation loop:** The primary agent fixes every severity 1–3 finding in
   bounded commits, reruns affected actor/component checks and only the visual
@@ -343,13 +399,15 @@ M27-001 -> M27-002 -> R-2710
   `IMPLEMENTATION_PLAN.md`.
 - **Scope/non-goals:** Extend the existing critical receipt journey only far
   enough to prove save, reopen, line edit/delete, list projection, and
-  whole-receipt deletion/undo across the browser-to-actor-to-adapter seams.
-  Record a focused desktop/mobile/narrow review matrix. Do not duplicate domain
-  transition combinations already covered below E2E or turn fake Drive into a
-  claim about live Google Drive behavior.
+  whole-receipt deletion and its approved completion behavior across the
+  browser-to-actor-to-adapter seams. Record a focused desktop/mobile/narrow
+  review matrix. Do not duplicate domain transition combinations already covered
+  below E2E or turn fake Drive into a claim about live Google Drive behavior.
 - **Outputs/acceptance:** One bounded E2E journey proves that a saved receipt is
-  manageable after leaving review and that deleted aggregates do not reappear
-  after reload in the fake synchronized path. Exact commands, counts,
+  manageable after leaving review and that committed deletion is reflected after
+  reload in the fake synchronized path. Causal stale-replay versus
+  concurrent-edit combinations remain in sync adapter integration tests rather
+  than becoming a second E2E synchronization journey. Exact commands, counts,
   screenshots where needed, and any environment limitation are recorded in the
   ledger.
 - **Tests:** Critical Playwright journey plus receipt-domain, actor, component,
@@ -403,9 +461,10 @@ M27-001 -> M27-002 -> R-2710
   result exists. `deno fmt IMPLEMENTATION_PLAN.md` and `git diff --check` pass.
 - **Active / preserved work:** Single primary planning agent on `master`; no
   implementation worker or worktree. Application files remain untouched.
-- **Exact next action:** Present M27 for owner review. Before starting
-  `M27-001`, obtain explicit authorization and confirm or revise the recommended
-  final-line, linked-adjustment, and receipt-deletion undo behaviors.
+- **Exact next action:** Obtain owner authorization to execute the plan-only
+  `M27-001` product-contract task. Before `M27-002`, obtain separate explicit
+  implementation authorization and approval of metadata, dirty-state,
+  final-line, linked-adjustment, conflict, and deletion/undo semantics.
 
 ## Ready-to-Use Orchestration Prompt
 

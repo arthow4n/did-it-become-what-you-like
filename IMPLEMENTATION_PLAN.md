@@ -68,8 +68,8 @@ features/app -> actors -> domain + adapter ports
 ## Active Milestone
 
 No active milestone is currently open. M18 was completed and archived in the
-focused commit `c9cae50`; its detailed task ledger remains available in Git
-history.
+focused commits `c9cae50` and `5598424`; its detailed task ledger remains
+available in Git history.
 
 ### Locked boundary / design-system rules
 
@@ -86,8 +86,8 @@ history.
 ## Current Checkpoint
 
 - **Active task / gate:** None (M18 complete and archived)
-- **Pushed commit / HEAD:** `c9cae50` (M18 implementation and review-complete
-  focused change; final plan archive follows this checkpoint)
+- **Pushed commit / HEAD:** `5598424` (M18 implementation and defensive
+  normalization correction; final plan archive follows this checkpoint)
 - **Verification status:** M18 affected tests pass 337/337, focused domain/client
   tests pass 8/8, receipt-review Playwright passes 1/1, and check, format, lint,
   build, and diff checks pass. Fresh R-1800 review found no severity 1–3

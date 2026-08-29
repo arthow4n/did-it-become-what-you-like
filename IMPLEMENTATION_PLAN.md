@@ -319,8 +319,20 @@ M27-001 -> M27-002 -> R-2710
   bounded commits, reruns risk-selected affected verification, records exact
   evidence, and obtains review closure before opening `M27-003`.
 - **Implementation evidence before review:** `deno task check`, focused receipt
-  domain/local integration tests (18 passed), and `deno task test:affected`
-  (298 passed, 0 failed) pass at the M27-002 commit; `git diff --check` passes.
+  domain/local integration tests (18 passed), and `deno task test:affected` (298
+  passed, 0 failed) pass at the M27-002 commit; `git diff --check` passes.
+- **Initial review findings:** Anscombe’s fresh read-only review found seven
+  issues: tombstone ID collisions and overlong generated IDs, deleted-ID reuse,
+  incomplete linked-derived-`Expense` validation/projection, archived categories
+  accepted during new receipt commit, missing receipt-specific import/export
+  fixtures, and a stale/format-unclean checkpoint. The review also confirmed the
+  covered stale-replay/concurrent-child conflict behavior.
+- **Remediation:** In progress. Tombstone IDs now use bounded fingerprints with
+  transaction preflight collision checks; tombstoned IDs are reserved; derived
+  expense ownership/source and legacy line matching are validated and projected;
+  archived categories are rejected for new receipt lines; domain and adapter
+  receipt round-trip fixtures are added; focused remediation tests currently
+  pass (36 passed, 0 failed).
 
 #### M27-003 — Model the saved-receipt detail actor
 
@@ -474,18 +486,20 @@ M27-001 -> M27-002 -> R-2710
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-2710` (`IN_PROGRESS`; M27-002 implementation is
-  complete and awaiting independent read-only review)
-- **Pushed commit / HEAD:** `0d7c43c` plus the pending M27-002 implementation
-  commit
-- **Verification status:** `deno task check`; focused receipt suites (18 passed,
-  0 failed); `deno task test:affected` (298 passed, 0 failed); and
-  `git diff --check` pass for M27-002.
+- **Active task / gate:** `R-2710` (`IN_PROGRESS`; remediation of seven severity
+  1–3 findings from Anscombe’s independent review)
+- **Pushed commit / HEAD:** `4606c94` with uncommitted bounded remediation
+  changes
+- **Verification status:** Initial M27-002 evidence remains `deno task check`,
+  focused receipt suites (18 passed, 0 failed), `deno task test:affected` (298
+  passed, 0 failed), and `git diff --check`; remediation-focused domain,
+  import/export, and local suites pass (36 passed, 0 failed).
 - **Active / preserved work:** Single primary agent on `master`; no M27 worker
   or worktree. The M27-002 implementation and review checkpoint are being
   preserved on the primary branch.
-- **Exact next action:** Commit and push M27-002 with this checkpoint, then
-  dispatch a fresh read-only reviewer for R-2710 and remediate any severity 1–3
+- **Exact next action:** Run remediation lint/check/affected verification,
+  commit and push the bounded fixes with this checkpoint, then dispatch a fresh
+  read-only reviewer for R-2710 and remediate any remaining severity 1–3
   findings before starting M27-003.
 
 ## Ready-to-Use Orchestration Prompt

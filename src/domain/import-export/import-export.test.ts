@@ -12,6 +12,7 @@ import type { PortableDataset } from "../schema/index.ts";
 import {
   CURRENT_SCHEMA_VERSION,
   DATASET_FORMAT,
+  parseCurrentDataset,
   UNCATEGORIZED_CATEGORY_ID,
 } from "../schema/index.ts";
 
@@ -104,6 +105,68 @@ function change(id: string, amount = "-10"): {
   };
 }
 
+function receiptDataset(): PortableDataset {
+  const base = dataset();
+  return {
+    ...base,
+    expenses: [...base.expenses, {
+      schemaVersion: 1,
+      type: "expense",
+      id: "expense-receipt",
+      projectId: "project-main",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      date: "2026-08-24",
+      amount: "-10",
+      currency: "SEK",
+      merchant: "Receipt shop",
+      description: "Receipt coffee",
+      source: "receipt-line",
+      receiptId: "receipt-main",
+      receiptLineId: "line-coffee",
+    }],
+    receipts: [{
+      schemaVersion: 1,
+      type: "receipt",
+      id: "receipt-main",
+      projectId: "project-main",
+      date: "2026-08-24",
+      merchant: "Receipt shop",
+      currency: "SEK",
+      printedTotal: "-8",
+    }],
+    receiptPurchaseLines: [{
+      schemaVersion: 1,
+      type: "receipt-purchase-line",
+      id: "line-coffee",
+      receiptId: "receipt-main",
+      projectId: "project-main",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      description: "Coffee",
+      lineTotal: "-10",
+    }],
+    receiptAdjustments: [{
+      schemaVersion: 1,
+      type: "receipt-adjustment",
+      id: "line-discount",
+      receiptId: "receipt-main",
+      projectId: "project-main",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      description: "Discount",
+      amount: "2",
+      lineId: "line-coffee",
+    }],
+    tombstones: [{
+      schemaVersion: 1,
+      type: "tombstone",
+      id: "tombstone-receipt-removed",
+      targetType: "receipt",
+      targetId: "receipt-removed",
+      deletedAt: "2026-08-23T12:00:00.000Z",
+      deletedBy: "device-main",
+    }],
+  };
+}
+
 Deno.test(
   "import-export domain: canonical export restores exact dataset and history",
   () => {
@@ -120,6 +183,27 @@ Deno.test(
     assertEquals(second.dataset.expenses[0]?.amount, "-10.9");
     assertEquals(second.generation, 4);
     assertEquals(second.changes[0]?.id, "change-main");
+  },
+);
+
+Deno.test(
+  "import-export domain: receipt aggregates and deletion history round-trip without dangling references",
+  () => {
+    const document = createCanonicalExport({ dataset: receiptDataset() });
+    const restored = parseCanonicalExport(serializeCanonicalExport(document))
+      .document.dataset;
+    const validated = parseCurrentDataset(restored);
+    assertEquals(validated.receipts.map((receipt) => receipt.id), [
+      "receipt-main",
+    ]);
+    assertEquals(validated.receiptPurchaseLines.map((line) => line.id), [
+      "line-coffee",
+    ]);
+    assertEquals(validated.receiptAdjustments.map((line) => line.id), [
+      "line-discount",
+    ]);
+    assertEquals(validated.expenses.at(-1)?.receiptLineId, "line-coffee");
+    assertEquals(validated.tombstones[0]?.targetId, "receipt-removed");
   },
 );
 

@@ -1,5 +1,6 @@
 import {
   addReceiptLine,
+  createReceiptCommitService,
   createReceiptManagementService,
   editReceiptLine,
   normalizeReceiptExtractionDraft,
@@ -162,6 +163,195 @@ async function managementHarness(
   };
 }
 
+async function rejectsAsync(
+  operation: () => Promise<unknown>,
+  code?: string,
+): Promise<void> {
+  try {
+    await operation();
+  } catch (error) {
+    if (code !== undefined) {
+      assertEquals((error as { code?: string }).code, code);
+    }
+    return;
+  }
+  throw new Error("Expected operation to reject");
+}
+
+function tombstoneFingerprint(value: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+Deno.test(
+  "saved receipt management: tombstone IDs are bounded, collision-safe, and never reusable",
+  async () => {
+    const collisionId = `tombstone-receipt-${
+      tombstoneFingerprint(savedReceipt.id)
+    }`;
+    const collision = await managementHarness([
+      {
+        schemaVersion: 1,
+        type: "project",
+        id: savedReceipt.projectId,
+        name: "Receipt project",
+        defaultCurrency: "SEK",
+        archived: false,
+      },
+      {
+        schemaVersion: 1,
+        type: "category",
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+        sortOrder: 0,
+        archived: false,
+        system: true,
+      },
+      { ...savedReceipt },
+      { ...savedPurchase },
+      { ...savedAdjustment },
+      {
+        schemaVersion: 1,
+        type: "project",
+        id: collisionId,
+        name: "Collision project",
+        defaultCurrency: "SEK",
+        archived: false,
+      },
+    ]);
+    await rejectsAsync(
+      () => collision.service.deleteReceipt(savedReceipt.id),
+      "conflict",
+    );
+    assert(
+      (await collision.local.query("records", {
+        index: "id",
+        equals: savedReceipt.id,
+      }))
+        .length === 1,
+      "a tombstone collision must leave the aggregate unchanged",
+    );
+
+    const maxReceiptId = `r${"x".repeat(127)}`;
+    const maxLineId = `l${"y".repeat(127)}`;
+    const maximum = await managementHarness([
+      {
+        schemaVersion: 1,
+        type: "project",
+        id: savedReceipt.projectId,
+        name: "Receipt project",
+        defaultCurrency: "SEK",
+        archived: false,
+      },
+      {
+        schemaVersion: 1,
+        type: "category",
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+        sortOrder: 0,
+        archived: false,
+        system: true,
+      },
+      { ...savedReceipt, id: maxReceiptId },
+      {
+        ...savedPurchase,
+        id: maxLineId,
+        receiptId: maxReceiptId,
+      },
+      {
+        ...savedAdjustment,
+        receiptId: maxReceiptId,
+        lineId: maxLineId,
+      },
+    ]);
+    const deleted = await maximum.service.deleteReceipt(maxReceiptId);
+    assertEquals(deleted.deletedReceipt, true);
+
+    const tombstone = {
+      schemaVersion: 1,
+      type: "tombstone" as const,
+      id: "tombstone-reused-receipt",
+      targetType: "receipt" as const,
+      targetId: "receipt-reused",
+      deletedAt: "2026-08-30T12:00:00.000Z",
+      deletedBy: "device-receipt-domain",
+    };
+    const reuse = await managementHarness([
+      {
+        schemaVersion: 1,
+        type: "project",
+        id: savedReceipt.projectId,
+        name: "Receipt project",
+        defaultCurrency: "SEK",
+        archived: false,
+      },
+      {
+        schemaVersion: 1,
+        type: "category",
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+        sortOrder: 0,
+        archived: false,
+        system: true,
+      },
+      tombstone,
+      {
+        ...tombstone,
+        id: "tombstone-reused-line",
+        targetId: "line-reused",
+      },
+    ]);
+    const commit = createReceiptCommitService(reuse.local, {
+      nextId: (kind) => kind === "receipt" ? "receipt-reused" : "line-reused",
+    });
+    await rejectsAsync(
+      () =>
+        commit.commit({
+          review: review({
+            parent: { ...review().parent, printedTotal: "-1" },
+            lines: [{
+              type: "purchase",
+              id: "line-reused",
+              description: "Reused",
+              categoryId: UNCATEGORIZED_CATEGORY_ID,
+              lineTotal: "-1",
+              selected: true,
+              uncertain: false,
+            }],
+          }),
+          confirmMismatch: false,
+        }),
+      "conflict",
+    );
+    const lineCommit = createReceiptCommitService(reuse.local, {
+      nextId: (kind) => kind === "receipt" ? "receipt-fresh" : "line-reused",
+    });
+    await rejectsAsync(
+      () =>
+        lineCommit.commit({
+          review: review({
+            parent: { ...review().parent, printedTotal: "-1" },
+            lines: [{
+              type: "purchase",
+              id: "line-reused",
+              description: "Reused line",
+              categoryId: UNCATEGORIZED_CATEGORY_ID,
+              lineTotal: "-1",
+              selected: true,
+              uncertain: false,
+            }],
+          }),
+          confirmMismatch: false,
+        }),
+      "conflict",
+    );
+  },
+);
+
 Deno.test(
   "saved receipt management: metadata and line edits preserve IDs and projections",
   async () => {
@@ -180,6 +370,19 @@ Deno.test(
       source: "receipt-line" as const,
       receiptId: savedReceipt.id,
       receiptLineId: savedPurchase.id,
+    };
+    const legacyAdjustmentExpense = {
+      schemaVersion: 1 as const,
+      type: "expense" as const,
+      id: "derived-adjustment-legacy",
+      projectId: savedReceipt.projectId,
+      categoryId: savedAdjustment.categoryId,
+      date: savedReceipt.date,
+      amount: savedAdjustment.amount,
+      currency: savedReceipt.currency,
+      description: savedAdjustment.description,
+      source: "adjustment" as const,
+      receiptId: savedReceipt.id,
     };
     const { service } = await managementHarness([
       {
@@ -212,6 +415,7 @@ Deno.test(
       savedPurchase,
       savedAdjustment,
       derivedExpense,
+      legacyAdjustmentExpense,
     ]);
 
     const metadata = await service.updateMetadata(savedReceipt.id, {
@@ -244,6 +448,24 @@ Deno.test(
     assertEquals(edited.derivedExpenses[0]?.description, "Tea");
     assertEquals(edited.derivedExpenses[0]?.amount, "-7");
     assertEquals(edited.derivedExpenses[0]?.categoryId, "category-food");
+
+    const adjustment = await service.updateLine(
+      savedReceipt.id,
+      savedAdjustment.id,
+      {
+        type: "adjustment",
+        description: "Bottle return",
+        categoryId: "category-food",
+        amount: "3",
+        lineId: null,
+      },
+    );
+    const legacy = adjustment.derivedExpenses.find((expense) =>
+      expense.id === legacyAdjustmentExpense.id
+    );
+    assertEquals(legacy?.description, "Bottle return");
+    assertEquals(legacy?.amount, "3");
+    assertEquals(legacy?.categoryId, "category-food");
   },
 );
 
@@ -259,7 +481,7 @@ Deno.test(
       archived: true,
       system: false,
     };
-    const { service } = await managementHarness([
+    const { local, service } = await managementHarness([
       {
         schemaVersion: 1,
         type: "project",
@@ -297,22 +519,47 @@ Deno.test(
       },
     );
     assertEquals(unchanged.purchaseLines[0]?.categoryId, archived.id);
-    try {
-      await service.updateLine(
-        "receipt-archived-category",
-        "line-archived-category",
-        {
-          type: "purchase",
-          description: "New food",
-          categoryId: "category-missing",
-          lineTotal: "-10",
-        },
-      );
-    } catch (error) {
-      assertEquals((error as { code: string }).code, "not-found");
-      return;
-    }
-    throw new Error("Expected unavailable category assignment to fail");
+    await rejectsAsync(
+      () =>
+        service.updateLine(
+          "receipt-archived-category",
+          "line-archived-category",
+          {
+            type: "purchase",
+            description: "New food",
+            categoryId: "category-missing",
+            lineTotal: "-10",
+          },
+        ),
+      "not-found",
+    );
+    const commit = createReceiptCommitService(local, {
+      nextId: (kind) =>
+        kind === "receipt" ? "receipt-archived-new" : "line-archived-new",
+    });
+    await rejectsAsync(
+      () =>
+        commit.commit({
+          review: review({
+            parent: {
+              ...review().parent,
+              projectId: savedReceipt.projectId,
+              printedTotal: "-2",
+            },
+            lines: [{
+              type: "purchase",
+              id: "line-archived-new",
+              description: "New archived item",
+              categoryId: archived.id,
+              lineTotal: "-2",
+              selected: true,
+              uncertain: false,
+            }],
+          }),
+          confirmMismatch: false,
+        }),
+      "not-found",
+    );
   },
 );
 

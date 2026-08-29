@@ -102,6 +102,63 @@ function expenseDataset(amount: string): PortableDataset {
   };
 }
 
+function receiptDataset(): PortableDataset {
+  const base = expenseDataset("-10");
+  return {
+    ...base,
+    expenses: [{
+      ...base.expenses[0]!,
+      id: "expense-receipt",
+      amount: "-10",
+      merchant: "Receipt shop",
+      description: "Receipt coffee",
+      source: "receipt-line",
+      receiptId: "receipt-main",
+      receiptLineId: "line-coffee",
+    }],
+    receipts: [{
+      schemaVersion: 1,
+      type: "receipt",
+      id: "receipt-main",
+      projectId: "project-main",
+      date: "2026-08-24",
+      merchant: "Receipt shop",
+      currency: "SEK",
+      printedTotal: "-8",
+    }],
+    receiptPurchaseLines: [{
+      schemaVersion: 1,
+      type: "receipt-purchase-line",
+      id: "line-coffee",
+      receiptId: "receipt-main",
+      projectId: "project-main",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      description: "Coffee",
+      lineTotal: "-10",
+    }],
+    receiptAdjustments: [{
+      schemaVersion: 1,
+      type: "receipt-adjustment",
+      id: "line-discount",
+      receiptId: "receipt-main",
+      projectId: "project-main",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      description: "Discount",
+      amount: "2",
+      lineId: "line-coffee",
+    }],
+    tombstones: [{
+      schemaVersion: 1,
+      type: "tombstone",
+      id: "tombstone-receipt-removed",
+      targetType: "receipt",
+      targetId: "receipt-removed",
+      deletedAt: "2026-08-23T12:00:00.000Z",
+      deletedBy: "device-main",
+    }],
+  };
+}
+
 function dependencies(
   causal = createFakeCausalSyncPort(initialCausalSnapshot(emptyDataset())),
 ) {
@@ -147,6 +204,35 @@ Deno.test("import-export adapter: merge is causal and duplicate import is idempo
   });
   assertEquals(repeated.duplicateChangeCount, exported.document.changes.length);
 });
+
+Deno.test(
+  "import-export adapter: receipt aggregates and tombstones survive a local round trip",
+  async () => {
+    const source = dependencies();
+    await seed(source.local, receiptDataset());
+    const exported = await createImportExportAdapter(source).exportDocument();
+    const target = dependencies();
+    const adapter = createImportExportAdapter(target);
+    await adapter.commitImport({
+      document: exported.document,
+      mode: "merge",
+      driveConfigured: false,
+      online: false,
+    });
+    const restored = (await adapter.exportDocument()).document.dataset;
+    assertEquals(restored.receipts.map((receipt) => receipt.id), [
+      "receipt-main",
+    ]);
+    assertEquals(restored.receiptPurchaseLines.map((line) => line.id), [
+      "line-coffee",
+    ]);
+    assertEquals(restored.receiptAdjustments.map((line) => line.id), [
+      "line-discount",
+    ]);
+    assertEquals(restored.expenses[0]?.receiptLineId, "line-coffee");
+    assertEquals(restored.tombstones[0]?.targetId, "receipt-removed");
+  },
+);
 
 Deno.test("import-export adapter: merge reports same-record conflicts without overwriting local data", async () => {
   const deps = dependencies();

@@ -720,6 +720,7 @@ function parsedRecords(
   readonly adjustments: readonly ReceiptAdjustment[];
   readonly tombstones: readonly ReturnType<typeof TombstoneSchema.parse>[];
   readonly ids: ReadonlySet<string>;
+  readonly tombstonedIds: ReadonlySet<string>;
 } {
   const projects: Project[] = [];
   const categories: ReturnType<typeof CategorySchema.parse>[] = [];
@@ -729,6 +730,7 @@ function parsedRecords(
   const adjustments: ReceiptAdjustment[] = [];
   const tombstones: ReturnType<typeof TombstoneSchema.parse>[] = [];
   const ids = new Set<string>();
+  const tombstonedIds = new Set<string>();
   for (const entry of entries) {
     if (!isRecord(entry.value) || typeof entry.value.type !== "string") {
       continue;
@@ -775,7 +777,9 @@ function parsedRecords(
       }
     } else if (entry.value.type === "tombstone") {
       try {
-        tombstones.push(TombstoneSchema.parse(entry.value));
+        const tombstone = TombstoneSchema.parse(entry.value);
+        tombstones.push(tombstone);
+        tombstonedIds.add(tombstone.targetId);
       } catch {
         throw new ReceiptDomainError("corrupt-data");
       }
@@ -790,6 +794,7 @@ function parsedRecords(
     adjustments,
     tombstones,
     ids,
+    tombstonedIds,
   };
 }
 
@@ -855,6 +860,22 @@ function aggregateFromRecords(
     derivedExpenses.some((expense) => expense.projectId !== receipt.projectId)
   ) {
     throw new ReceiptDomainError("corrupt-data");
+  }
+  for (const expense of derivedExpenses) {
+    if (expense.receiptId !== receiptId || expense.source === "manual") {
+      throw new ReceiptDomainError("corrupt-data");
+    }
+    if (expense.receiptLineId === undefined) continue;
+    const line = [...purchaseLines, ...adjustments].find((candidate) =>
+      candidate.id === expense.receiptLineId
+    );
+    if (!line) throw new ReceiptDomainError("corrupt-data");
+    const expectedSource = line.type === "receipt-purchase-line"
+      ? "receipt-line"
+      : "adjustment";
+    if (expense.source !== expectedSource) {
+      throw new ReceiptDomainError("corrupt-data");
+    }
   }
   return { receipt, purchaseLines, adjustments, derivedExpenses };
 }
@@ -1005,11 +1026,63 @@ function expenseProjection(
   }
 }
 
+function lineForExpense(
+  expense: Expense,
+  aggregate: ReceiptAggregate,
+): ReceiptPurchaseLine | ReceiptAdjustment | undefined {
+  const lines = [...aggregate.purchaseLines, ...aggregate.adjustments];
+  if (expense.receiptLineId !== undefined) {
+    return lines.find((line) => line.id === expense.receiptLineId);
+  }
+  const matches = lines.filter((line) => {
+    const source = line.type === "receipt-purchase-line"
+      ? "receipt-line"
+      : "adjustment";
+    return expense.source === source &&
+      expense.categoryId === line.categoryId &&
+      expense.description === line.description &&
+      expense.amount === receiptLineAmount(line);
+  });
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+function tombstoneFingerprint(value: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 function receiptTombstoneId(
   targetType: ReturnType<typeof TombstoneSchema.parse>["targetType"],
   targetId: StableId,
 ): StableId {
-  return StableIdSchema.parse(`tombstone-${targetType}-${targetId}`);
+  return StableIdSchema.parse(
+    `tombstone-${targetType}-${tombstoneFingerprint(targetId)}`,
+  );
+}
+
+function ensureTombstoneIdsAvailable(
+  records: ReceiptParsedRecords,
+  targets: readonly {
+    readonly type: ReturnType<typeof TombstoneSchema.parse>["targetType"];
+    readonly id: StableId;
+  }[],
+): void {
+  const targetIds = new Set(targets.map((target) => target.id));
+  const generatedIds = new Set<string>();
+  for (const target of targets) {
+    const tombstoneId = receiptTombstoneId(target.type, target.id);
+    if (generatedIds.has(tombstoneId)) {
+      throw new ReceiptDomainError("conflict");
+    }
+    generatedIds.add(tombstoneId);
+    if (records.ids.has(tombstoneId) && !targetIds.has(tombstoneId)) {
+      throw new ReceiptDomainError("conflict");
+    }
+  }
 }
 
 function createReceiptTombstone(
@@ -1086,10 +1159,13 @@ function recordsForDeletion(
 async function deleteAggregate(
   transaction: OrganizationTransaction,
   aggregate: ReceiptAggregate,
+  records: ReceiptParsedRecords,
   deletedAt: string,
   deletedBy: StableId,
 ): Promise<void> {
-  for (const record of recordsForDeletion(aggregate)) {
+  const recordsToDelete = recordsForDeletion(aggregate);
+  ensureTombstoneIdsAvailable(records, recordsToDelete);
+  for (const record of recordsToDelete) {
     await deleteReceiptRecord(
       transaction,
       record.type,
@@ -1131,12 +1207,11 @@ export function createReceiptManagementService(
           ...aggregate.adjustments.map((line) => [line.id, line] as const),
         ]);
         for (const expense of aggregate.derivedExpenses) {
+          const linkedLine = lineForExpense(expense, aggregate);
           const projected = expenseProjection(
             expense,
             receipt,
-            expense.receiptLineId === undefined
-              ? undefined
-              : lines.get(expense.receiptLineId),
+            linkedLine === undefined ? undefined : lines.get(linkedLine.id),
           );
           await transaction.put(
             "records",
@@ -1253,12 +1328,13 @@ export function createReceiptManagementService(
         ]);
         receiptLines.set(updated.id, updated);
         for (const expense of aggregate.derivedExpenses) {
+          const linkedLine = lineForExpense(expense, aggregate);
           const projected = expenseProjection(
             expense,
             aggregate.receipt,
-            expense.receiptLineId === undefined
+            linkedLine === undefined
               ? undefined
-              : receiptLines.get(expense.receiptLineId),
+              : receiptLines.get(linkedLine.id),
           );
           await transaction.put(
             "records",
@@ -1285,12 +1361,27 @@ export function createReceiptManagementService(
         if (!purchase && !adjustment) throw new ReceiptDomainError("not-found");
         const deletedAt = now();
         if (purchase && aggregate.purchaseLines.length === 1) {
-          await deleteAggregate(transaction, aggregate, deletedAt, deviceId);
+          await deleteAggregate(
+            transaction,
+            aggregate,
+            records,
+            deletedAt,
+            deviceId,
+          );
           return { deletedReceipt: true, deletedLineId: lineId };
         }
         const targetType = purchase
           ? "receipt-purchase-line" as const
           : "receipt-adjustment" as const;
+        const recordsToDelete = [
+          { type: targetType, id: lineId },
+          ...aggregate.derivedExpenses
+            .filter((expense) =>
+              lineForExpense(expense, aggregate)?.id === lineId
+            )
+            .map((expense) => ({ type: "expense" as const, id: expense.id })),
+        ];
+        ensureTombstoneIdsAvailable(records, recordsToDelete);
         await deleteReceiptRecord(
           transaction,
           targetType,
@@ -1299,7 +1390,7 @@ export function createReceiptManagementService(
           deviceId,
         );
         for (const expense of aggregate.derivedExpenses) {
-          if (expense.receiptLineId === lineId) {
+          if (lineForExpense(expense, aggregate)?.id === lineId) {
             await deleteReceiptRecord(
               transaction,
               "expense",
@@ -1341,7 +1432,13 @@ export function createReceiptManagementService(
         const records = await readReceiptRecords(transaction);
         const aggregate = aggregateFromRecords(records, receiptId);
         if (!aggregate) throw new ReceiptDomainError("not-found");
-        await deleteAggregate(transaction, aggregate, now(), deviceId);
+        await deleteAggregate(
+          transaction,
+          aggregate,
+          records,
+          now(),
+          deviceId,
+        );
         return { deletedReceipt: true };
       });
     },
@@ -1383,16 +1480,21 @@ export function createReceiptCommitService(
         if (!project || project.archived) {
           throw new ReceiptDomainError("not-found");
         }
-        const categoryIds = new Set(
-          parsed.categories.map((category) => category.id),
-        );
         for (const line of selected) {
-          if (!categoryIds.has(line.categoryId)) {
+          const category = parsed.categories.find((candidate) =>
+            candidate.id === line.categoryId
+          );
+          if (
+            !category ||
+            (category?.archived && category.id !== UNCATEGORIZED_CATEGORY_ID)
+          ) {
             throw new ReceiptDomainError("not-found");
           }
         }
         const receiptId = nextId("receipt");
-        if (parsed.ids.has(receiptId)) throw new ReceiptDomainError("conflict");
+        if (parsed.ids.has(receiptId) || parsed.tombstonedIds.has(receiptId)) {
+          throw new ReceiptDomainError("conflict");
+        }
         const receipt = ReceiptParentSchema.parse({
           schemaVersion: CURRENT_SCHEMA_VERSION,
           type: "receipt",
@@ -1403,7 +1505,9 @@ export function createReceiptCommitService(
         const purchaseLines: ReceiptPurchaseLine[] = [];
         const adjustments: ReceiptAdjustment[] = [];
         for (const line of selected) {
-          if (used.has(line.id)) throw new ReceiptDomainError("conflict");
+          if (used.has(line.id) || parsed.tombstonedIds.has(line.id)) {
+            throw new ReceiptDomainError("conflict");
+          }
           used.add(line.id);
           if (!line.description.trim()) {
             throw new ReceiptDomainError(

@@ -188,21 +188,21 @@ M24-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 #### M24-003 — Visual re-capture & comprehensive multi-viewport verification
 
-- **Status/dependencies:** `READY`; depends on `M24-002`.
+- **Status/dependencies:** `COMPLETE`; depends on `M24-002`.
 - **Ownership:** `scripts/audit-capture.ts`, `e2e/audit/ui-audit-capture.spec.ts`
 - **Scope/non-goals:** Run full visual capture across Desktop (`1280×800`), Mobile
   (`390×844`), and Narrow (`320×568`) viewports. Inspect `04-add-choice-sheet`
-  and `11-organize-hub` to confirm full button span and complete category list.
+  and `16b-organize-hub-multi-categories` to confirm full button span and complete category list.
   Run affected unit, component, a11y, build, and E2E suites.
 - **Outputs/acceptance:** All 3 capture viewports pass with clean visual
   evidence. All test suites pass.
-- **Tests:** `deno task test:affected`, `deno task a11y:gallery`, `deno task build`,
-  `deno task test:e2e`.
+- **Tests:** Gallery a11y passes 3/3 viewports, production build succeeds,
+  affected tests pass (20/20 in `local-ui.test.tsx`), E2E suite passes 9/9.
 - **Verification:** `deno task audit:capture ui-audit-round-3/screenshots`.
 
 #### R-2410 — Consolidated milestone review gate
 
-- **Status/dependencies:** `PENDING`; depends on `M24-003`.
+- **Status/dependencies:** `READY`; depends on `M24-003`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Diffs across M24-001 through M24-003, token usage, facade
   boundary, multi-viewport screenshot matrix, and test evidence.
@@ -224,11 +224,11 @@ M24-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M24-003` (`READY`)
-- **Pushed commit / HEAD:** `88aa65e`
-- **Verification status:** M24-002 complete; all 20 local-ui tests pass.
+- **Active task / gate:** `R-2410` (`READY`)
+- **Pushed commit / HEAD:** `289f0d1`
+- **Verification status:** Full button span and complete Organize hub category list verified in visual capture round 3. Gallery a11y passes 3/3; build succeeds; 20 local-ui tests pass; full E2E passes 9/9.
 - **Active / preserved work:** Single primary agent on `master`.
-- **Exact next action:** Execute `M24-003` (Visual re-capture & comprehensive multi-viewport verification).
+- **Exact next action:** Invoke read-only reviewer for `R-2410`.
 
 ## Ready-to-Use Orchestration Prompt
 

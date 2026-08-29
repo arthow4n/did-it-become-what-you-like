@@ -20,6 +20,7 @@ export type ReceiptScanEvent =
   | { readonly type: "receipt.network.online" }
   | { readonly type: "receipt.disclosure.accept" }
   | { readonly type: "receipt.disclosure.decline" }
+  | { readonly type: "receipt.reset" }
   | { readonly type: "receipt.cancel" }
   | { readonly type: "receipt.use-manual" };
 
@@ -67,6 +68,12 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
   id: "receipt-scan",
   initial: "idle",
   context: { review: null, error: null },
+  on: {
+    "receipt.reset": {
+      target: ".idle",
+      actions: assign({ review: () => null, error: () => null }),
+    },
+  },
   states: {
     idle: {
       on: {
@@ -88,7 +95,10 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
     selecting: {
       tags: ["selecting"],
       on: {
-        "receipt.image-selected": "selected",
+        "receipt.image-selected": {
+          target: "selected",
+          actions: assign({ error: () => null }),
+        },
         "receipt.network.offline": "offline",
         "receipt.cancel": "cancelled",
       },
@@ -100,7 +110,10 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
           { target: "preparing", guard: "prepareImage" },
           "requesting",
         ],
-        "receipt.replace-image": "selecting",
+        "receipt.replace-image": {
+          target: "selecting",
+          actions: assign({ error: () => null }),
+        },
         "receipt.network.offline": "offline",
         "receipt.cancel": "cancelled",
       },
@@ -138,7 +151,13 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
           }),
         },
       },
-      on: { "receipt.cancel": "cancelled" },
+      on: {
+        "receipt.replace-image": {
+          target: "selecting",
+          actions: assign({ review: () => null, error: () => null }),
+        },
+        "receipt.cancel": "cancelled",
+      },
     },
     requesting: {
       tags: ["requesting"],
@@ -165,7 +184,13 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
           }),
         },
       },
-      on: { "receipt.cancel": "cancelled" },
+      on: {
+        "receipt.replace-image": {
+          target: "selecting",
+          actions: assign({ review: () => null, error: () => null }),
+        },
+        "receipt.cancel": "cancelled",
+      },
     },
     validating: {
       tags: ["validating"],
@@ -192,7 +217,13 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
           }),
         },
       },
-      on: { "receipt.cancel": "cancelled" },
+      on: {
+        "receipt.replace-image": {
+          target: "selecting",
+          actions: assign({ review: () => null, error: () => null }),
+        },
+        "receipt.cancel": "cancelled",
+      },
     },
     reviewReady: {
       tags: ["review-ready"],
@@ -226,7 +257,10 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
             actions: assign({ error: () => null }),
           },
         ],
-        "receipt.replace-image": "selecting",
+        "receipt.replace-image": {
+          target: "selecting",
+          actions: assign({ error: () => null }),
+        },
         "receipt.use-manual": "manualEntry",
         "receipt.cancel": "cancelled",
       },

@@ -643,15 +643,17 @@ export function ReceiptScanScreen({
       setModelError("Choose a JPEG, PNG, or WebP receipt image.");
       return;
     }
+    // The picker remains available while a scan is running. Cancel the
+    // current invocation before removing its ephemeral source so a resolver
+    // cannot report `receipt.image.resolve not-found` for the old image.
+    const needsSelectionReset = scanBusy || snapshot.matches("failed");
+    if (needsSelectionReset) send({ type: "receipt.replace-image" });
     if (selectedImage) imageStore.remove(selectedImage);
     const next = imageStore.add(file);
     setSelectedImage(next);
     selectedImageRef.current = next;
     reviewSent.current = false;
-    if (snapshot.matches("selecting")) {
-      send({ type: "receipt.image-selected" });
-    } else if (snapshot.matches("failed")) {
-      send({ type: "receipt.replace-image" });
+    if (needsSelectionReset || snapshot.matches("selecting")) {
       send({ type: "receipt.image-selected" });
     } else if (snapshot.matches("offline")) {
       setModelError(
@@ -860,7 +862,7 @@ export function ReceiptScanScreen({
       discardRequest === handledDiscardRequest.current
     ) return;
     handledDiscardRequest.current = discardRequest;
-    if (scanBusy) send({ type: "receipt.cancel" });
+    send({ type: "receipt.reset" });
     clearSelectedImage();
     imageStore.clear();
     setPendingScanState(false);
@@ -874,7 +876,6 @@ export function ReceiptScanScreen({
     imageStore,
     onDirtyChange,
     onDirtyDiscarded,
-    scanBusy,
     send,
   ]);
 
@@ -992,6 +993,9 @@ export function ReceiptScanScreen({
           onTakePhoto={() => startFilePicker(true)}
           onChooseImage={() => startFilePicker(false)}
           onRemove={() => {
+            if (scanBusy || snapshot.matches("failed")) {
+              send({ type: "receipt.replace-image" });
+            }
             clearSelectedImage();
             setPendingScanState(false);
             setModelError(undefined);

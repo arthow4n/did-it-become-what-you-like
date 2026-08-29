@@ -67,9 +67,18 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-No active milestone is currently open. M18 was completed and archived in the
-focused commits `c9cae50` and `5598424`; its detailed task ledger remains
-available in Git history.
+### M19 — Clear receipt scan failure state on image lifecycle reset
+
+**Outcome:** A receipt image-resolution or scan failure remains visible only
+until the owner replaces/removes the image or discards the scan workflow. The
+scan actor clears its transient failure context at those lifecycle boundaries;
+durable receipt review snapshots are unchanged. Returning to image selection
+cannot resurrect an obsolete `receipt.image.resolve` diagnostic.
+
+| Task | Status | Dependency | Acceptance / evidence |
+| --- | --- | --- | --- |
+| M19-001 Reset transient scan error when image selection or discard restarts the workflow | COMPLETED | — | Failed → replace-image → select clears `context.error`; active preparation replacement cancels before source removal; explicit reset returns to idle and cancels active invokes; normal scan errors and retry behavior remain intact |
+| M19-002 Verify discard/replacement lifecycle and archive checkpoint R-1900 | IN_PROGRESS | M19-001 | Actor/UI regression coverage, affected tests, check/format/lint/diff, fresh review, commit and push |
 
 ### Locked boundary / design-system rules
 
@@ -85,16 +94,20 @@ available in Git history.
 
 ## Current Checkpoint
 
-- **Active task / gate:** None (M18 complete and archived)
-- **Pushed commit / HEAD:** `5598424` (M18 implementation and defensive
-  normalization correction; final plan archive follows this checkpoint)
-- **Verification status:** M18 affected tests pass 337/337, focused domain/client
+- **Active task / gate:** M19-002 — verify lifecycle and archive R-1900
+- **Pushed commit / HEAD:** `c60c5ee` (M18 implementation, defensive
+  normalization correction, and archived plan)
+- **Verification status:** M19 focused actor/UI tests pass 20/20 and affected tests
+  pass 128/128; check, format, lint, build, diff checks, and receipt-review
+  Playwright pass 1/1. Fresh R-1900 review found no severity 1–3 findings.
+  M18 affected tests pass 337/337, focused domain/client
   tests pass 8/8, receipt-review Playwright passes 1/1, and check, format, lint,
   build, and diff checks pass. Fresh R-1800 review found no severity 1–3
   findings.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Commit and push this archived plan checkpoint.
+- **Exact next action:** Commit and push M19 implementation, then archive the
+  completed M19 ledger at R-1900.
 
 ## Ready-to-Use Orchestration Prompt
 

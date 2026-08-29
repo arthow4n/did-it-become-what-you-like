@@ -214,9 +214,29 @@ Deno.test("receipt-actor scan: offline/model loss failure can retry without reta
   modelLoss.send({ type: "receipt.scan", input: scanInput });
   await waitForValue(modelLoss, "failed");
   assertEquals(modelLoss.getSnapshot().context.error?.code, "not-found");
-  modelLoss.send({ type: "receipt.retry", input: scanInput });
+  modelLoss.send({ type: "receipt.replace-image" });
+  assertEquals(modelLoss.getSnapshot().value, "selecting");
+  assertEquals(modelLoss.getSnapshot().context.error, null);
+  modelLoss.send({ type: "receipt.image-selected" });
+  assertEquals(modelLoss.getSnapshot().value, "selected");
+  assertEquals(modelLoss.getSnapshot().context.error, null);
+  modelLoss.send({ type: "receipt.scan", input: scanInput });
   await waitForValue(modelLoss, "reviewReady");
   modelLoss.stop();
+
+  const resetFailure = createActor(createReceiptScanMachine({
+    ai: createFakeGeminiPort(extractionDraft()),
+    imagePreparation: preparation,
+    resolveImage: () => Promise.reject(new Error("image entry was lost")),
+  })).start();
+  resetFailure.send({ type: "receipt.open" });
+  resetFailure.send({ type: "receipt.image-selected" });
+  resetFailure.send({ type: "receipt.scan", input: scanInput });
+  await waitForValue(resetFailure, "failed");
+  resetFailure.send({ type: "receipt.reset" });
+  assertEquals(resetFailure.getSnapshot().value, "idle");
+  assertEquals(resetFailure.getSnapshot().context.error, null);
+  resetFailure.stop();
 });
 
 Deno.test(
@@ -324,6 +344,46 @@ Deno.test("receipt-actor scan: cancellation aborts the request and releases the 
   await waitForValue(actor, "preparing");
   actor.send({ type: "receipt.cancel" });
   await waitForValue(actor, "cancelled");
+  assertEquals(released, ["image-memory-only"]);
+  actor.stop();
+});
+
+Deno.test("receipt-actor scan: reset aborts an active attempt and clears transient failure state", async () => {
+  const gemini = createFakeGeminiPort(extractionDraft());
+  const preparation = createFakeImagePreparationPort();
+  const released: string[] = [];
+  gemini.pauseNext();
+  const actor = createActor(createScanMachine(gemini, preparation, released))
+    .start();
+  actor.send({ type: "receipt.open" });
+  actor.send({ type: "receipt.image-selected" });
+  actor.send({ type: "receipt.scan", input: scanInput });
+  await waitForValue(actor, "preparing");
+  actor.send({ type: "receipt.reset" });
+  assertEquals(actor.getSnapshot().value, "idle");
+  assertEquals(actor.getSnapshot().context.error, null);
+  await settle();
+  assertEquals(released, ["image-memory-only"]);
+  actor.stop();
+});
+
+Deno.test("receipt-actor scan: replacing an image cancels an active attempt before selection", async () => {
+  const gemini = createFakeGeminiPort(extractionDraft());
+  const preparation = createFakeImagePreparationPort();
+  const released: string[] = [];
+  gemini.pauseNext();
+  const actor = createActor(createScanMachine(gemini, preparation, released))
+    .start();
+  actor.send({ type: "receipt.open" });
+  actor.send({ type: "receipt.image-selected" });
+  actor.send({ type: "receipt.scan", input: scanInput });
+  await waitForValue(actor, "preparing");
+  actor.send({ type: "receipt.replace-image" });
+  assertEquals(actor.getSnapshot().value, "selecting");
+  assertEquals(actor.getSnapshot().context.error, null);
+  actor.send({ type: "receipt.image-selected" });
+  assertEquals(actor.getSnapshot().value, "selected");
+  await settle();
   assertEquals(released, ["image-memory-only"]);
   actor.stop();
 });

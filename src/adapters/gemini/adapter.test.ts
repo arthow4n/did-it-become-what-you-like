@@ -475,6 +475,21 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
   assert(!requestText.includes("expense history"));
   assert(!requestText.includes("Drive"));
   assert(!requestText.includes("AIza.synthetic-request-test"));
+  assert(
+    requests[0].config.systemInstruction.includes(
+      "Every purchase line is a negative outflow",
+    ),
+  );
+  assert(
+    requests[0].config.systemInstruction.includes(
+      "Discounts, refunds, cashback, bottle-deposit returns",
+    ),
+  );
+  assert(
+    requests[0].config.systemInstruction.includes(
+      "add every selected purchase and adjustment exactly once",
+    ),
+  );
   assertEquals(requests[0].config.responseMimeType, "application/json");
   assertEquals(requests[0].config.responseJsonSchema, RECEIPT_JSON_SCHEMA);
 });

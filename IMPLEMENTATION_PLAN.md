@@ -61,10 +61,25 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-No active milestone is currently open. When the repo owner specifies the next
-product milestone or refactor epic, follow the Standard Planning Procedure in
-`.agents/skills/implementation-planning/SKILL.md` to author the next milestone
-ledger.
+### M17 — Signed adjustment extraction guidance
+
+Owner-approved outcome: reduce receipt mismatches caused by the model assigning
+the wrong sign to discounts and other adjustments. The Gemini prompt will state
+the application’s signed-money rules, exclude non-line totals and quantity
+rows, and require an arithmetic self-check before returning structured output.
+The versioned provider-neutral receipt port remains unchanged; no post-hoc
+heuristic may silently rewrite an ambiguous adjustment.
+
+| Task | Status | Dependency | Acceptance / evidence |
+| --- | --- | --- | --- |
+| M17-001 Strengthen signed extraction instructions | COMPLETE | M16 | Versioned Gemini instructions explicitly distinguish purchases, credits, discounts, surcharges, tips, and payment totals, with a signed line-sum self-check. |
+| M17-002 Prompt regression and targeted verification | COMPLETE | M17-001 | Adapter prompt assertions pass; affected tests pass 48/48; type, format, lint, build, diff, and receipt E2E checks pass. |
+| R-1710 Fresh read-only review | IN_PROGRESS | M17-002 | Fresh read-only review is required before archival. |
+| M17-FINAL Archive and hygiene | PENDING | R-1710 | Record exact evidence, run repository-hygiene pruning, archive completed M17 history, commit, and push. |
+
+The implementation owner must update this ledger after each task and review
+gate. The M17-FINAL archive is the only point at which completed milestone
+history may be pruned from this live plan.
 
 ### Locked boundary / design-system rules
 
@@ -80,18 +95,17 @@ ledger.
 
 ## Current Checkpoint
 
-- **Active task / gate:** None (M16 complete and archived)
-- **Pushed commit / HEAD:** `00ec387` (M16 implementation and review-complete
-  pre-pruning ledger)
-- **Verification status:** M16 domain sign tests pass 3/3, affected tests pass
-  274/274, receipt-review Playwright passes 1/1, the fresh review suite passes
-  14/14, and `deno task check`, `deno task fmt:check`, `deno task lint`, `deno
-  task build`, and `git diff --check` pass. Final hygiene checks are recorded
-  in the archive commit.
-- **Active / preserved work:** Single primary agent on `master`; no delegated
-  workers, uncommitted implementation changes, or transient hygiene artifacts.
-- **Exact next action:** Run the final environment-scoped hygiene checks, then
-  commit and push this archived ledger.
+- **Active task / gate:** R-1710 (fresh read-only review pending; `/root` is
+  integration owner)
+- **Pushed commit / HEAD:** `108b8ec` (M16 archive; M17 implementation pending)
+- **Verification status:** M16 evidence remains valid. M17 adapter prompt tests
+  pass 10/10, affected tests pass 48/48, receipt-review Playwright passes 1/1,
+  and check, format, lint, build, and diff checks pass.
+- **Active / preserved work:** Single primary agent on `master`; M17 planning is
+  reconciled before implementation, with no delegated workers or transient
+  hygiene artifacts.
+- **Exact next action:** Commit and push the M17 implementation, then complete
+  R-1710 and archive M17.
 
 ## Ready-to-Use Orchestration Prompt
 

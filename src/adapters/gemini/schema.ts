@@ -13,7 +13,7 @@ import type {
 
 export const RECEIPT_SCHEMA_VERSION = "receipt.v1" as const;
 export const RECEIPT_SCHEMA_VERSION_NUMBER = 1 as const;
-export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v1" as const;
+export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v2" as const;
 
 const CanonicalDecimalTextSchema = z.string().regex(
   /^-?(0|[1-9]\d*)(\.\d+)?$/,

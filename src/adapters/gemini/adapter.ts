@@ -352,7 +352,14 @@ function promptFor(request: ReceiptExtractionRequest): string {
     `Active category catalogue (use an existing id only; never create a category): ${
       JSON.stringify(categories)
     }.`,
-    "Return JSON only. Preserve uncertainty and printed-total mismatches.",
+    "Signed amount rules: interpret every amount from the owner's perspective.",
+    "Every purchase line is a negative outflow, even when the receipt prints no minus sign.",
+    "Discounts, refunds, cashback, bottle-deposit returns, and other credits are positive adjustment amounts because they reduce the outgoing total.",
+    "Tips, fees, surcharges, and other extra charges are negative adjustment amounts.",
+    "For example, a printed discount of 15.76 or -15.76 must be returned as an adjustment amount of 15.76, not -15.76.",
+    "Do not return payment/tender amounts, subtotals, tax summaries, receipt totals, or quantity-only rows as line items; do not duplicate a product line for its quantity.",
+    "Set printedTotal to the signed total paid, and before returning JSON add every selected purchase and adjustment exactly once to verify the line sum matches it. Preserve a mismatch explanation when the image cannot be reconciled.",
+    "Return JSON only and preserve uncertainty.",
   ].join("\n");
 }
 

@@ -470,13 +470,11 @@ export function ReceiptScanScreen({
   const [hasKey, setHasKey] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState(false);
-  const [filePickerRequest, setFilePickerRequest] = useState(0);
   const [pendingScan, setPendingScan] = useState(false);
   const [testState, setTestState] = useState<
     "idle" | "testing" | "passed" | "failed"
   >("idle");
   const sourceInputRef = useRef<HTMLInputElement>(null);
-  const sourceOpenRef = useRef<() => void | undefined>(null);
   const openSent = useRef(false);
   const reviewSent = useRef(false);
   const selectedImageRef = useRef(selectedImage);
@@ -531,11 +529,6 @@ export function ReceiptScanScreen({
     ) return;
     optionsRef.current?.scrollIntoView?.({ block: "start", behavior: "auto" });
   }, [optionsOpen]);
-
-  useEffect(() => {
-    if (filePickerRequest === 0) return;
-    sourceOpenRef.current?.();
-  }, [filePickerRequest]);
 
   useEffect(() => {
     let active = true;
@@ -619,9 +612,14 @@ export function ReceiptScanScreen({
   };
 
   const startFilePicker = (capture: boolean) => {
-    if (sourceInputRef.current) sourceInputRef.current.value = "";
+    const input = sourceInputRef.current;
+    if (input) {
+      input.value = "";
+      if (capture) input.setAttribute("capture", "environment");
+      else input.removeAttribute("capture");
+    }
     setCaptureMode(capture);
-    setFilePickerRequest((request) => request + 1);
+    input?.click();
   };
 
   const saveAndContinue = async () => {
@@ -917,7 +915,6 @@ export function ReceiptScanScreen({
         multiple={false}
         className="receipt-ui-file-field"
         inputRef={sourceInputRef}
-        openRef={sourceOpenRef}
         onChange={(event) => void chooseFile(event.currentTarget.files?.[0])}
       />
       <Stack gap={5}>

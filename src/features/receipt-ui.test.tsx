@@ -123,21 +123,23 @@ Deno.test("receipt-ui empty review state keeps a level-one heading", async () =>
 Deno.test("receipt-ui source picker exposes native capture actions and ephemeral removal", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
+      let tookPhoto = false;
+      let choseImage = false;
       let removed = false;
       render(
         createElement(ReceiptSourcePicker, {
           preview: createElement("img", { alt: "Receipt preview" }),
-          onTakePhoto: () => undefined,
-          onChooseImage: () => undefined,
+          onTakePhoto: () => tookPhoto = true,
+          onChooseImage: () => choseImage = true,
           onRemove: () => removed = true,
         }),
       );
       const view = within(document.body);
-      assert(view.getByRole("button", { name: "Take photo" }));
-      assert(view.getByRole("button", { name: "Choose image" }));
+      fireEvent.click(view.getByRole("button", { name: "Take photo" }));
+      fireEvent.click(view.getByRole("button", { name: "Choose image" }));
       assert(view.getByRole("button", { name: "Remove" }));
       fireEvent.click(view.getByRole("button", { name: "Remove" }));
-      assert(removed);
+      assert(tookPhoto && choseImage && removed);
     });
   });
 });

@@ -40,10 +40,14 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
       }
       if (
         request.method() === "POST" &&
-        request.url().includes(":generateContent?")
+        request.url().includes(":generateContent")
       ) {
-        extractionAttempts++;
-        if (extractionAttempts === 1) {
+        const body = request.postData() ?? "";
+        const syntheticConfiguration = body.includes(
+          "Return one valid synthetic receipt.v1 object",
+        );
+        if (!syntheticConfiguration) extractionAttempts++;
+        if (!syntheticConfiguration && extractionAttempts === 1) {
           await route.fulfill({
             status: 429,
             contentType: "application/json",
@@ -102,7 +106,11 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
     page.getByRole("heading", { name: "Before sending this receipt" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Continue to scan" }).click();
-  await page.getByLabel("Receipt image file").setInputFiles({
+  const chooseImageDialog = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Choose image" }).click();
+  const chooseImage = await chooseImageDialog;
+  expect(await chooseImage.element().getAttribute("capture")).toBeNull();
+  await chooseImage.setFiles({
     name: "receipt.png",
     mimeType: "image/png",
     buffer: ONE_PIXEL_PNG,
@@ -116,7 +124,11 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
       fileCount: input.files?.length ?? 0,
     }))
   ).toEqual({ value: "", fileCount: 0 });
-  await page.getByLabel("Receipt image file").setInputFiles({
+  const cameraDialog = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Take photo" }).click();
+  const camera = await cameraDialog;
+  expect(await camera.element().getAttribute("capture")).toBe("environment");
+  await camera.setFiles({
     name: "receipt.png",
     mimeType: "image/png",
     buffer: ONE_PIXEL_PNG,
@@ -139,6 +151,7 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
     page.getByRole("option", { name: /Fake Gemini Compatible/ }),
   ).toBeVisible();
   await page.getByRole("option", { name: /Fake Gemini Compatible/ }).click();
+  await page.getByRole("button", { name: "Test configuration" }).click();
   await expect(page.getByText(/quota was exceeded/)).toBeVisible();
   await expect(page.getByText("provider-only-secret")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Retry" })).toBeEnabled();
@@ -185,11 +198,14 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
     ),
   ).toBe(true);
   const postRequests = requests.filter((request) => request.method === "POST");
-  expect(postRequests).toHaveLength(2);
+  expect(postRequests).toHaveLength(3);
   const requestBody = JSON.parse(
     postRequests[postRequests.length - 1].body ?? "null",
   ) as {
-    contents: Array<Record<string, unknown>>;
+    contents: Array<{
+      parts: Array<Record<string, unknown>>;
+      role: string;
+    }>;
     generationConfig: Record<string, unknown>;
     systemInstruction: { parts: Array<{ text: string }> };
   };
@@ -198,11 +214,15 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
     "generationConfig",
     "systemInstruction",
   ]);
-  expect(requestBody.contents).toHaveLength(2);
-  expect(Object.keys(requestBody.contents[0])).toEqual(["text"]);
-  expect(typeof requestBody.contents[0].text).toBe("string");
-  expect(Object.keys(requestBody.contents[1])).toEqual(["inlineData"]);
-  expect(requestBody.contents[1].inlineData).toEqual({
+  expect(requestBody.contents).toHaveLength(1);
+  expect(requestBody.contents[0].role).toBe("user");
+  expect(requestBody.contents[0].parts).toHaveLength(2);
+  expect(Object.keys(requestBody.contents[0].parts[0])).toEqual(["text"]);
+  expect(typeof requestBody.contents[0].parts[0].text).toBe("string");
+  expect(Object.keys(requestBody.contents[0].parts[1])).toEqual([
+    "inlineData",
+  ]);
+  expect(requestBody.contents[0].parts[1].inlineData).toEqual({
     data: expect.any(String),
     mimeType: "image/jpeg",
   });

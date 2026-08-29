@@ -50,7 +50,9 @@ explicit economic direction and bounded classification rationale, and applies
 ledger signs deterministically in the domain before displaying that rationale
 during review. M19 additionally makes receipt image replacement/removal and
 workflow discard cancel active scans before ephemeral image cleanup, clearing
-stale scan failure context.
+stale scan failure context. M20 additionally canonicalizes safe localized
+decimal transcription and accepts harmless JSON fences before strict Gemini
+receipt-output validation, while preserving reviewable category uncertainty.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
 preserved in Git at commit `d7c6a22`, the last complete pre-pruning ledger. That
@@ -69,17 +71,9 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-### M20 — Make Gemini receipt retries tolerate localized structured output
-
-**Outcome:** Gemini receipt extraction accepts safe locale-specific decimal
-transcription and a harmless JSON code fence while preserving strict schema
-validation. Retries no longer fail solely because a Swedish/European receipt
-uses comma decimals; malformed or hostile output remains rejected.
-
-| Task | Status | Dependency | Acceptance / evidence |
-| --- | --- | --- | --- |
-| M20-001 Normalize safe provider output before strict receipt validation | COMPLETED | — | Canonicalize unambiguous comma/grouped decimals, accept fenced JSON, clarify prompt formatting, preserve strict rejection of invalid/extra fields |
-| M20-002 Verify retry/output contract and archive checkpoint R-2000 | COMPLETED | M20-001 | Adapter tests pass 16/16; affected tests pass 56/56; check/format/lint/diff, build, receipt-review Playwright, and fresh review all pass |
+No active milestone is currently open. M20 was completed and archived in the
+focused implementation commit `64ca2aa`; its detailed task ledger and review
+evidence remain available in Git history. M19 remains archived in `e9812cd`.
 
 ### Locked boundary / design-system rules
 
@@ -95,9 +89,9 @@ uses comma decimals; malformed or hostile output remains rejected.
 
 ## Current Checkpoint
 
-- **Active task / gate:** M20-002 — verify retry/output contract and archive
-  R-2000
-- **Pushed commit / HEAD:** `571459d` (M19 implementation and archived plan)
+- **Active task / gate:** None (M20 complete and archived)
+- **Pushed commit / HEAD:** `64ca2aa` (M20 implementation; final plan archive
+  follows this checkpoint)
 - **Verification status:** M20 adapter tests pass 16/16 and affected tests pass
   56/56; check, format, lint, diff checks, build, and receipt-review Playwright
   pass. Fresh R-2000 review found no severity 1–3 findings.
@@ -108,8 +102,8 @@ uses comma decimals; malformed or hostile output remains rejected.
   its final review found no severity 1–3 findings.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Commit and push M20, then archive the completed ledger
-  at R-2000.
+- **Exact next action:** Author the next approved milestone plan before making
+  further application changes.
 
 ## Ready-to-Use Orchestration Prompt
 

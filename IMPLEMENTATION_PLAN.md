@@ -92,7 +92,8 @@ history may be pruned from this live plan.
 
 - **Active task / gate:** R-1510 (fresh read-only review pending; `/root` is
   integration owner)
-- **Pushed commit / HEAD:** `9fb03c9` (M14 archive; M15 implementation pending)
+- **Pushed commit / HEAD:** `7c854f5` (M15 implementation and regression
+  coverage; R-1510 review pending)
 - **Verification status:** M15 actor regression passes 6/6, affected tests pass
   37/37, receipt-review Playwright passes 1/1, and `deno task check`, `deno task
   fmt:check`, `deno task lint`, `deno task build`, and `git diff --check` pass.

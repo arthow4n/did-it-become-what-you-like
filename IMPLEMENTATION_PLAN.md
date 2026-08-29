@@ -44,7 +44,11 @@ provider, and normalization boundaries; cleanup cannot mask the primary
 failure. Receipt reconciliation also aligns printed totals with the signed
 direction of selected lines while preserving positive adjustment-only inflows.
 Gemini receipt extraction instructions explicitly encode these signed amount
-rules, exclude non-line totals, and require an arithmetic self-check.
+rules, exclude non-line totals, and require an arithmetic self-check. Receipt
+extraction now transcribes printed signs at the provider boundary, carries an
+explicit economic direction and bounded classification rationale, and applies
+ledger signs deterministically in the domain before displaying that rationale
+during review.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
 preserved in Git at commit `d7c6a22`, the last complete pre-pruning ledger. That
@@ -63,37 +67,9 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-### M18 — Raw receipt signs and classification rationale
-
-**Outcome:** Receipt providers transcribe numeric amounts with the sign shown
-on the receipt. The provider-neutral boundary also returns a bounded rationale
-and an explicit economic direction for each line. Domain normalization remains
-the single place that converts those raw values into the app's signed ledger
-convention, so a provider swap (for example, Gemini to OpenRouter) does not
-duplicate sign logic. Reviewers can see why a line's category and direction
-were inferred without exposing provider transport details.
-
-**Contract decisions:**
-
-- `amount` in `ReceiptExtractionDraft` and Gemini JSON is the canonical numeric
-  transcription as printed, including a printed minus sign when present.
-- `direction` is `outflow` or `inflow`; purchases must be outflows, while
-  credits such as discounts/refunds are inflows and fees/surcharges are
-  outflows.
-- `rationale` is required, concise, and bounded per line. It explains the
-  category and direction evidence; it is distinct from `uncertainty`, which
-  still controls whether a line starts selected.
-- The domain applies absolute-value sign normalization from `direction`, then
-  recomputes receipt totals and mismatch fields as before.
-
-| Task | Status | Dependency | Acceptance / evidence |
-| --- | --- | --- | --- |
-| M18-001 Update provider-neutral and Gemini structured contracts for raw amounts, direction, and rationale | COMPLETE | — | `ReceiptExtractionDraft` and Gemini `receipt.v2` require raw line direction/rationale; mapping remains provider-neutral; prompt and adapter fixtures assert the new contract |
-| M18-002 Normalize deterministic ledger signs and persist/display bounded rationale | COMPLETE | M18-001 | Domain applies absolute-value signs by direction, fails closed on missing/contradictory metadata, persists a bounded `classificationReason`, and the review line card displays it; domain and UI tests cover the path |
-| M18-003 Verification and review gate R-1800 | IN_PROGRESS | M18-001, M18-002 | Affected tests, formatter/lint/check/build, receipt review journey, diff check, fresh read-only review; archive plan and push |
-
-The integration owner is the primary agent on `master`; no worktree split is
-needed because the contract and domain/UI changes are intentionally sequenced.
+No active milestone is currently open. M18 was completed and archived in the
+focused commit `c9cae50`; its detailed task ledger remains available in Git
+history.
 
 ### Locked boundary / design-system rules
 
@@ -109,19 +85,16 @@ needed because the contract and domain/UI changes are intentionally sequenced.
 
 ## Current Checkpoint
 
-- **Active task / gate:** M18-003 / R-1800 verification and review
-- **Pushed commit / HEAD:** `69f0780` (M17 implementation and review-complete
-  archived ledger); M18 changes remain uncommitted on `master` until R-1800
-  closes.
+- **Active task / gate:** None (M18 complete and archived)
+- **Pushed commit / HEAD:** `c9cae50` (M18 implementation and review-complete
+  focused change; final plan archive follows this checkpoint)
 - **Verification status:** M18 affected tests pass 337/337, focused domain/client
   tests pass 8/8, receipt-review Playwright passes 1/1, and check, format, lint,
-  build, and diff checks pass. Fresh R-1800 review found only two S3 issues;
-  both were fixed by requiring classification rationale at normalization and
-  aligning its 500-character bound.
+  build, and diff checks pass. Fresh R-1800 review found no severity 1–3
+  findings.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Run final hygiene audit, commit the focused M18 change
-  with the archived plan, and push `master`.
+- **Exact next action:** Commit and push this archived plan checkpoint.
 
 ## Ready-to-Use Orchestration Prompt
 

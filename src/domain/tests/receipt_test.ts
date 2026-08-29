@@ -318,6 +318,84 @@ Deno.test(
   },
 );
 
+Deno.test(
+  "receipt-actor domain: Coop bottle deposits reconcile the printed total",
+  () => {
+    let sequence = 0;
+    const purchase = (description: string, amount: string) => ({
+      description,
+      amount,
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "purchase" as const,
+      direction: "outflow" as const,
+      selected: true,
+      rationale: "The receipt lists this purchased product line.",
+    });
+    const deposit = () => ({
+      description: "PANT BURK",
+      amount: "2",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "adjustment" as const,
+      direction: "inflow" as const,
+      selected: true,
+      rationale: "The model incorrectly called this deposit a return.",
+    });
+    const normalized = normalizeReceiptExtractionDraft({
+      merchant: "Stora Coop Backaplan",
+      currency: "SEK",
+      date: "2026-08-29",
+      printedTotal: "325.78",
+      uncertainty: [],
+      mismatches: [],
+      lines: [
+        purchase("BLÄCKFISKRING PAN", "33.08"),
+        purchase("BROCCOLI", "33.98"),
+        purchase("DOMINO ORIGINAL", "23.19"),
+        purchase("DOMINO PINK KEX", "21.72"),
+        purchase("PANERADE RÄKOR MSC", "141.86"),
+        purchase("SARDINER PANERADE", "45.95"),
+        purchase("STRANDEN", "18.88"),
+        purchase("VINDEN", "18.88"),
+        deposit(),
+        deposit(),
+        {
+          description: "RABATTER LATITUDE 2 för 22kr",
+          amount: "-15.76",
+          categoryId: UNCATEGORIZED_CATEGORY_ID,
+          kind: "adjustment" as const,
+          direction: "inflow" as const,
+          selected: true,
+          rationale:
+            "The discount section shows a credit reducing the amount owed.",
+        },
+      ],
+    }, {
+      projectId: "project-receipt-domain",
+      currency: "SEK",
+      categoryCatalogue: [{
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+      }],
+      nextId: () => `line-coop-receipt-${++sequence}`,
+    });
+    assertEquals(normalized.parent.printedTotal, "-325.78");
+    assertEquals(
+      normalized.lines[8]?.type === "adjustment"
+        ? normalized.lines[8].amount
+        : undefined,
+      "-2",
+    );
+    assertEquals(
+      normalized.lines[9]?.type === "adjustment"
+        ? normalized.lines[9].amount
+        : undefined,
+      "-2",
+    );
+    assertEquals(receiptSelectedTotal(normalized), "-325.78");
+    assertEquals(receiptMismatchDifference(normalized), "0");
+  },
+);
+
 Deno.test("receipt-actor domain: contradictory purchase direction fails closed", () => {
   const normalized = normalizeReceiptExtractionDraft({
     merchant: "Shop",

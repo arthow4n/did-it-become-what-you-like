@@ -154,7 +154,7 @@ M23-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 #### M23-001 — Design system token & modal header action pinning
 
-- **Status/dependencies:** `READY`; depends on baseline.
+- **Status/dependencies:** `COMPLETE`; depends on baseline.
 - **Ownership:** `src/design-system/tokens.css`, `src/design-system/styles.css`
 - **Scope/non-goals:** Update mobile `.ds-page-header__actions` rules in
   `tokens.css` to exempt `.ds-icon-button` from `width: 100%` full-width
@@ -164,13 +164,13 @@ M23-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 - **Outputs/acceptance:** `.ds-icon-button` retains its standard touch size
   (`var(--control-height)`) and does not stretch or wrap across header rows on
   mobile viewports.
-- **Tests:** Affected design system and component tests pass.
+- **Tests:** 118 related component and design system tests pass.
 - **Verification:** `deno fmt src/design-system/tokens.css`,
   `deno task test:affected`, `git diff --check`.
 
 #### M23-002 — AddChoiceScreen component & stylesheet remediation
 
-- **Status/dependencies:** `PENDING`; depends on `M23-001`.
+- **Status/dependencies:** `READY`; depends on `M23-001`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`
 - **Scope/non-goals:** Refactor `AddChoiceScreen` to replace verbose `ActionCard`
   elements with clean, prominent, full-width `Button` primitives (`variant="primary"`
@@ -226,12 +226,11 @@ M23-FINAL (Milestone closure, ledger archiving, and repo hygiene pruning)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M23-001` (`READY`)
+- **Active task / gate:** `M23-002` (`READY`)
 - **Pushed commit / HEAD:** `41cdc40`
-- **Verification status:** Skill updates and audit capture spec fixes committed
-  and pushed. Visual capture runs successfully across all 3 viewports.
+- **Verification status:** M23-001 tokens updated; 118 related component tests pass.
 - **Active / preserved work:** Single primary agent on `master`.
-- **Exact next action:** Execute `M23-001` (Design system token & modal header action pinning).
+- **Exact next action:** Execute `M23-002` (AddChoiceScreen component & stylesheet remediation).
 
 ## Ready-to-Use Orchestration Prompt
 

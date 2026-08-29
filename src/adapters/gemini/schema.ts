@@ -11,9 +11,9 @@ import type {
   ReceiptExtractionRequest,
 } from "../ports/receipt-ai.ts";
 
-export const RECEIPT_SCHEMA_VERSION = "receipt.v1" as const;
-export const RECEIPT_SCHEMA_VERSION_NUMBER = 1 as const;
-export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v2" as const;
+export const RECEIPT_SCHEMA_VERSION = "receipt.v2" as const;
+export const RECEIPT_SCHEMA_VERSION_NUMBER = 2 as const;
+export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v3" as const;
 
 const CanonicalDecimalTextSchema = z.string().regex(
   /^-?(0|[1-9]\d*)(\.\d+)?$/,
@@ -24,7 +24,9 @@ const ReceiptLineOutputSchema = z.strictObject({
   amount: CanonicalDecimalTextSchema,
   categoryId: StableIdSchema,
   description: z.string().trim().min(1).max(500),
+  direction: z.enum(["outflow", "inflow"]),
   kind: z.enum(["purchase", "adjustment"]),
+  rationale: z.string().trim().min(1).max(500),
   selected: z.boolean(),
   uncertainty: z.string().trim().min(1).max(1_000).optional(),
 });
@@ -183,7 +185,9 @@ export function mapReceiptOutputToDraft(
       amount: line.amount,
       categoryId: line.categoryId,
       kind: line.kind,
+      direction: line.direction,
       selected: line.selected,
+      rationale: line.rationale,
       ...(line.uncertainty === undefined
         ? {}
         : { uncertainty: line.uncertainty }),

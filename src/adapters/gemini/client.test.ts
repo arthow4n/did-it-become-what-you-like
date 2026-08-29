@@ -44,7 +44,7 @@ Deno.test("Google Gen AI wrapper owns SDK request translation", async () => {
           "Expected generation AbortSignal forwarding",
         );
         observations.push({ operation: "generate", parameters });
-        return Promise.resolve({ text: '{"schemaVersion":"receipt.v1"}' });
+        return Promise.resolve({ text: '{"schemaVersion":"receipt.v2"}' });
       },
     },
   };
@@ -78,7 +78,7 @@ Deno.test("Google Gen AI wrapper owns SDK request translation", async () => {
     },
     { signal: controller.signal },
   );
-  assertEquals(response.text, '{"schemaVersion":"receipt.v1"}');
+  assertEquals(response.text, '{"schemaVersion":"receipt.v2"}');
   assertEquals(observations, [
     {
       operation: "list",

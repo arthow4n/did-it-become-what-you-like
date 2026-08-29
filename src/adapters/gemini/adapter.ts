@@ -352,13 +352,13 @@ function promptFor(request: ReceiptExtractionRequest): string {
     `Active category catalogue (use an existing id only; never create a category): ${
       JSON.stringify(categories)
     }.`,
-    "Signed amount rules: interpret every amount from the owner's perspective.",
-    "Every purchase line is a negative outflow, even when the receipt prints no minus sign.",
-    "Discounts, refunds, cashback, bottle-deposit returns, and other credits are positive adjustment amounts because they reduce the outgoing total.",
-    "Tips, fees, surcharges, and other extra charges are negative adjustment amounts.",
-    "For example, a printed discount of 15.76 or -15.76 must be returned as an adjustment amount of 15.76, not -15.76.",
+    "Amount transcription rules: copy each numeric amount exactly as printed, including a printed minus sign; do not convert it to the owner's ledger sign.",
+    "Every product or purchase line has direction outflow, even when the receipt prints no minus sign. Set kind to purchase.",
+    "Discounts, refunds, cashback, bottle-deposit returns, and other credits have direction inflow and kind adjustment because they reduce the amount owed.",
+    "Tips, fees, surcharges, and other extra charges have direction outflow and kind adjustment because they increase the amount owed.",
+    "For every line, provide a concise rationale (one short sentence) naming the receipt evidence used for its category and direction. This is evidence, not hidden chain-of-thought.",
     "Do not return payment/tender amounts, subtotals, tax summaries, receipt totals, or quantity-only rows as line items; do not duplicate a product line for its quantity.",
-    "Set printedTotal to the signed total paid, and before returning JSON add every selected purchase and adjustment exactly once to verify the line sum matches it. Preserve a mismatch explanation when the image cannot be reconciled.",
+    "Set printedTotal to the amount exactly as printed. Before returning JSON, use the direction field to verify every selected line contributes once to the owner's signed total; preserve a mismatch explanation when the image cannot be reconciled.",
     "Return JSON only and preserve uncertainty.",
   ].join("\n");
 }
@@ -627,7 +627,7 @@ export class GeminiAdapter implements ReceiptAiPort {
         contents: [
           {
             text:
-              "Return one valid synthetic receipt.v1 object; do not use a real receipt.",
+              `Return one valid synthetic ${RECEIPT_SCHEMA_VERSION} object; do not use a real receipt.`,
           },
           {
             inlineData: {

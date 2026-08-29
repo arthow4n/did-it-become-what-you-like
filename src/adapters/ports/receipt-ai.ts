@@ -46,13 +46,19 @@ export type ReceiptExtractionDraft = {
   readonly merchant?: string;
   readonly currency: CurrencyCode;
   readonly date: CalendarDate;
+  /** Canonical decimal transcription with the sign shown on the receipt. */
   readonly printedTotal?: string;
   readonly lines: readonly {
     readonly description: string;
+    /** Canonical decimal transcription with the sign shown on the receipt. */
     readonly amount: string;
     readonly categoryId: StableId;
     readonly kind: "purchase" | "adjustment";
+    /** Economic direction used by the domain to apply the ledger sign. */
+    readonly direction: "outflow" | "inflow";
     readonly selected: boolean;
+    /** Brief evidence for the category and direction classification. */
+    readonly rationale: string;
     readonly uncertainty?: string;
   }[];
   readonly uncertainty: readonly string[];

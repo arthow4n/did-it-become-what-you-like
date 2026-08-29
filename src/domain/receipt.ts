@@ -46,6 +46,7 @@ export type ReceiptDraftLine =
     readonly selected: boolean;
     readonly uncertain: boolean;
     readonly selectionReason?: string;
+    readonly classificationReason?: string;
   }
   | {
     readonly type: "adjustment";
@@ -57,6 +58,7 @@ export type ReceiptDraftLine =
     readonly selected: boolean;
     readonly uncertain: boolean;
     readonly selectionReason?: string;
+    readonly classificationReason?: string;
   };
 
 export type ReceiptReviewDraft = {
@@ -158,6 +160,7 @@ const DraftPurchaseLineSchema = z.strictObject({
   selected: z.boolean(),
   uncertain: z.boolean(),
   selectionReason: z.string().trim().min(1).max(1_000).optional(),
+  classificationReason: z.string().trim().min(1).max(500).optional(),
 });
 
 const DraftAdjustmentLineSchema = z.strictObject({
@@ -170,6 +173,7 @@ const DraftAdjustmentLineSchema = z.strictObject({
   selected: z.boolean(),
   uncertain: z.boolean(),
   selectionReason: z.string().trim().min(1).max(1_000).optional(),
+  classificationReason: z.string().trim().min(1).max(500).optional(),
 });
 
 export const ReceiptReviewDraftSchema = z.strictObject({
@@ -228,9 +232,28 @@ function safeReason(value: unknown): string | undefined {
   return reason.length === 0 ? undefined : reason;
 }
 
+function safeClassificationReason(value: unknown): string | undefined {
+  const reason = safeText(value, 500);
+  return reason.length === 0 ? undefined : reason;
+}
+
 /** Receipt purchases and their parent total are outgoing amounts. */
 function ensureOutflowSign(value: CanonicalDecimal): CanonicalDecimal {
   return moneyCompare(value, "0") > 0 ? moneySubtract("0", value) : value;
+}
+
+/** Receipt credits and other inflows are positive ledger amounts. */
+function ensureInflowSign(value: CanonicalDecimal): CanonicalDecimal {
+  return moneyCompare(value, "0") < 0 ? moneySubtract("0", value) : value;
+}
+
+function normalizeExtractedAmount(
+  value: CanonicalDecimal,
+  direction: "outflow" | "inflow" | undefined,
+): CanonicalDecimal {
+  if (direction === "inflow") return ensureInflowSign(value);
+  if (direction === "outflow") return ensureOutflowSign(value);
+  return value;
 }
 
 function lineTotal(line: ReceiptDraftLine): CanonicalDecimal {
@@ -332,6 +355,9 @@ function normalizedDraft(
         ...(line.selectionReason === undefined
           ? {}
           : { selectionReason: line.selectionReason.trim() }),
+        ...(line.classificationReason === undefined
+          ? {}
+          : { classificationReason: line.classificationReason.trim() }),
       };
     }
     return {
@@ -340,6 +366,9 @@ function normalizedDraft(
       ...(line.selectionReason === undefined
         ? {}
         : { selectionReason: line.selectionReason.trim() }),
+      ...(line.classificationReason === undefined
+        ? {}
+        : { classificationReason: line.classificationReason.trim() }),
     };
   });
   const parent = {
@@ -439,11 +468,23 @@ export function normalizeReceiptExtractionDraft(
       categoryCandidate !== UNCATEGORIZED_CATEGORY_ID;
     const description = safeText(rawLine.description);
     const modelReason = safeReason(rawLine.uncertainty);
+    const classificationReason = safeClassificationReason(rawLine.rationale);
     const amount = parseDecimal(rawLine.amount);
+    const direction = rawLine.direction === "inflow"
+      ? "inflow"
+      : rawLine.direction === "outflow"
+      ? "outflow"
+      : undefined;
+    const directionMismatch = kind === "purchase" && direction !== "outflow";
+    // Purchases are always ledger outflows even if an untrusted boundary
+    // contradicts the contract; keep the line safe while marking it invalid.
+    const normalizationDirection = kind === "purchase" ? "outflow" : direction;
     const reason = modelReason ??
       (categoryIssue ? "The category suggestion was unavailable." : undefined);
     const invalidLine = kind === undefined || amount === undefined ||
-      description.length === 0;
+      direction === undefined || directionMismatch ||
+      description.length === 0 ||
+      classificationReason === undefined;
     const selected = rawLine.selected === true && !invalidLine &&
       reason === undefined;
     const uncertain = Boolean(reason) || invalidLine;
@@ -451,6 +492,9 @@ export function normalizeReceiptExtractionDraft(
       (invalidLine
         ? "Correct this incomplete line before selecting it."
         : undefined);
+    const normalizedAmount = amount === undefined
+      ? "0"
+      : normalizeExtractedAmount(amount, normalizationDirection);
     const id = input.nextId();
     if (kind === "adjustment") {
       lines.push({
@@ -458,9 +502,10 @@ export function normalizeReceiptExtractionDraft(
         id,
         description,
         categoryId,
-        amount: amount ?? "0",
+        amount: normalizedAmount,
         selected,
         uncertain,
+        ...(classificationReason === undefined ? {} : { classificationReason }),
         ...(selectionReason === undefined ? {} : { selectionReason }),
       });
     } else {
@@ -469,9 +514,10 @@ export function normalizeReceiptExtractionDraft(
         id,
         description,
         categoryId,
-        lineTotal: ensureOutflowSign(amount ?? "0"),
+        lineTotal: normalizeExtractedAmount(amount ?? "0", direction),
         selected,
         uncertain,
+        ...(classificationReason === undefined ? {} : { classificationReason }),
         ...(selectionReason === undefined ? {} : { selectionReason }),
       });
     }

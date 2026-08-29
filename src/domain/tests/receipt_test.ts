@@ -127,7 +127,9 @@ Deno.test("receipt-actor domain: receipt totals follow selected line direction",
       amount: "8",
       categoryId: UNCATEGORIZED_CATEGORY_ID,
       kind: "purchase",
+      direction: "outflow",
       selected: true,
+      rationale: "Coffee is a purchased product line.",
     }],
   }, {
     projectId: "project-receipt-domain",
@@ -180,6 +182,168 @@ Deno.test("receipt-actor domain: receipt totals follow selected line direction",
   assertEquals(receiptMismatchDifference(rawPositivePurchase), "0");
 });
 
+Deno.test("receipt-actor domain: raw printed signs normalize by direction", () => {
+  let sequence = 0;
+  const normalized = normalizeReceiptExtractionDraft({
+    merchant: "Coop",
+    currency: "SEK",
+    date: "2026-08-29",
+    printedTotal: "325.78",
+    uncertainty: [],
+    mismatches: [],
+    lines: [{
+      description: "Receipt purchases",
+      amount: "341.54",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "purchase",
+      direction: "outflow",
+      selected: true,
+      rationale: "Product rows make up the printed pre-discount amount.",
+    }, {
+      description: "Discount",
+      amount: "-15.76",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "adjustment",
+      direction: "inflow",
+      selected: true,
+      rationale:
+        "The discount section shows a credit reducing the amount owed.",
+    }],
+  }, {
+    projectId: "project-receipt-domain",
+    currency: "SEK",
+    categoryCatalogue: [{
+      id: UNCATEGORIZED_CATEGORY_ID,
+      name: "Uncategorized",
+    }],
+    nextId: () => `line-raw-sign-${++sequence}`,
+  });
+  assertEquals(normalized.parent.printedTotal, "-325.78");
+  assertEquals(normalized.lines[0]?.type, "purchase");
+  assertEquals(
+    normalized.lines[0]?.type === "purchase"
+      ? normalized.lines[0].lineTotal
+      : undefined,
+    "-341.54",
+  );
+  assertEquals(normalized.lines[1]?.type, "adjustment");
+  assertEquals(
+    normalized.lines[1]?.type === "adjustment"
+      ? normalized.lines[1].amount
+      : undefined,
+    "15.76",
+  );
+  assertEquals(
+    normalized.lines[1]?.classificationReason,
+    "The discount section shows a credit reducing the amount owed.",
+  );
+  assertEquals(receiptSelectedTotal(normalized), "-325.78");
+  assertEquals(receiptMismatchDifference(normalized), "0");
+});
+
+Deno.test("receipt-actor domain: contradictory purchase direction fails closed", () => {
+  const normalized = normalizeReceiptExtractionDraft({
+    merchant: "Shop",
+    currency: "SEK",
+    date: "2026-08-29",
+    printedTotal: "4",
+    uncertainty: [],
+    mismatches: [],
+    lines: [{
+      description: "Coffee",
+      amount: "4",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "purchase",
+      direction: "inflow",
+      selected: true,
+      rationale: "The model classified this visible row as a purchase.",
+    }],
+  }, {
+    projectId: "project-receipt-domain",
+    currency: "SEK",
+    categoryCatalogue: [{
+      id: UNCATEGORIZED_CATEGORY_ID,
+      name: "Uncategorized",
+    }],
+    nextId: () => "line-contradictory-direction",
+  });
+  assertEquals(normalized.lines[0]?.selected, false);
+  assertEquals(normalized.lines[0]?.uncertain, true);
+  assertEquals(
+    normalized.lines[0]?.type === "purchase"
+      ? normalized.lines[0].lineTotal
+      : undefined,
+    "-4",
+  );
+});
+
+Deno.test("receipt-actor domain: missing classification rationale fails closed", () => {
+  const normalized = normalizeReceiptExtractionDraft({
+    merchant: "Shop",
+    currency: "SEK",
+    date: "2026-08-29",
+    printedTotal: "4",
+    uncertainty: [],
+    mismatches: [],
+    lines: [{
+      description: "Coffee",
+      amount: "4",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "purchase",
+      direction: "outflow",
+      selected: true,
+    }],
+  }, {
+    projectId: "project-receipt-domain",
+    currency: "SEK",
+    categoryCatalogue: [{
+      id: UNCATEGORIZED_CATEGORY_ID,
+      name: "Uncategorized",
+    }],
+    nextId: () => "line-missing-rationale",
+  });
+  assertEquals(normalized.lines[0]?.selected, false);
+  assertEquals(normalized.lines[0]?.uncertain, true);
+  assertEquals(normalized.lines[0]?.classificationReason, undefined);
+});
+
+Deno.test("receipt-actor domain: printed charges become negative adjustments", () => {
+  const normalized = normalizeReceiptExtractionDraft({
+    merchant: "Shop",
+    currency: "SEK",
+    date: "2026-08-29",
+    printedTotal: "2.5",
+    uncertainty: [],
+    mismatches: [],
+    lines: [{
+      description: "Service fee",
+      amount: "2.5",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "adjustment",
+      direction: "outflow",
+      selected: true,
+      rationale: "The fee line is an extra charge added to the receipt.",
+    }],
+  }, {
+    projectId: "project-receipt-domain",
+    currency: "SEK",
+    categoryCatalogue: [{
+      id: UNCATEGORIZED_CATEGORY_ID,
+      name: "Uncategorized",
+    }],
+    nextId: () => "line-printed-charge",
+  });
+  assertEquals(normalized.parent.printedTotal, "-2.5");
+  assertEquals(
+    normalized.lines[0]?.type === "adjustment"
+      ? normalized.lines[0].amount
+      : undefined,
+    "-2.5",
+  );
+  assertEquals(receiptSelectedTotal(normalized), "-2.5");
+  assertEquals(receiptMismatchDifference(normalized), "0");
+});
+
 Deno.test("receipt-actor domain: hostile extraction remains reviewable but invalid lines start unselected", () => {
   let sequence = 0;
   const normalized = normalizeReceiptExtractionDraft({
@@ -194,7 +358,9 @@ Deno.test("receipt-actor domain: hostile extraction remains reviewable but inval
       amount: "not-a-decimal",
       categoryId: "hostile-category",
       kind: "purchase",
+      direction: "outflow",
       selected: true,
+      rationale: "The product row is unreadable.",
     }],
   }, {
     projectId: "project-receipt-domain",

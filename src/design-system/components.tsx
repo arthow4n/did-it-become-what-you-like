@@ -3328,6 +3328,7 @@ export type ReceiptLineViewModel = {
   selected: boolean;
   uncertain: boolean;
   selectionReason?: string;
+  classificationReason?: string;
   quantity?: string;
   unitPrice?: string;
   linkedLineDescription?: string;
@@ -3392,6 +3393,13 @@ export function ReceiptLineCard(
             {line.selectionReason ??
               "The extraction was uncertain. Check the details before selecting it."}
           </InlineNotice>
+        )
+        : null}
+      {line.classificationReason
+        ? (
+          <Text size="label" tone="muted">
+            AI classification: {line.classificationReason}
+          </Text>
         )
         : null}
     </Card>

@@ -198,6 +198,8 @@ Deno.test("receipt-ui line card exposes uncertainty, selection, edit, and remove
             selected: false,
             uncertain: true,
             selectionReason: "The receipt text was partly hidden.",
+            classificationReason:
+              "The product row is visible under the grocery section.",
           },
           currency: "SEK",
           onSelectedChange: (value) => selected = value,
@@ -207,6 +209,11 @@ Deno.test("receipt-ui line card exposes uncertainty, selection, edit, and remove
       );
       const view = within(document.body);
       assert(view.getByText("The receipt text was partly hidden."));
+      assert(
+        view.getByText(
+          "AI classification: The product row is visible under the grocery section.",
+        ),
+      );
       fireEvent.click(view.getByRole("checkbox"));
       fireEvent.click(view.getByRole("button", { name: "Edit" }));
       fireEvent.click(view.getByRole("button", { name: "Remove" }));

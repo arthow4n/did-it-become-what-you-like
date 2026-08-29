@@ -387,6 +387,7 @@ function lineViewModel(
     selected: line.selected,
     uncertain: line.uncertain,
     selectionReason: line.selectionReason,
+    classificationReason: line.classificationReason,
     ...(line.type === "purchase"
       ? { quantity: line.quantity, unitPrice: line.unitPrice }
       : {}),

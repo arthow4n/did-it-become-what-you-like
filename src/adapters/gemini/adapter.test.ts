@@ -267,15 +267,17 @@ const RECEIPT_OUTPUT = JSON.stringify({
   currency: "SEK",
   date: "2026-08-24",
   lines: [{
-    amount: "-10",
+    amount: "10",
     categoryId: "category-groceries",
     description: "Synthetic item",
+    direction: "outflow",
     kind: "purchase",
+    rationale: "Synthetic product row; classified as a purchase outflow.",
     selected: true,
   }],
   merchant: "Synthetic shop",
   mismatch: null,
-  printedTotal: "-10",
+  printedTotal: "10",
   schemaVersion: RECEIPT_SCHEMA_VERSION,
   uncertainty: [],
 });
@@ -284,21 +286,26 @@ const RECEIPT_DISCOUNT_OUTPUT = JSON.stringify({
   currency: "SEK",
   date: "2026-08-29",
   lines: [{
-    amount: "-341.54",
+    amount: "341.54",
     categoryId: "category-groceries",
     description: "Receipt purchases",
+    direction: "outflow",
     kind: "purchase",
+    rationale: "Product rows sum to the printed pre-discount amount.",
     selected: true,
   }, {
-    amount: "15.76",
+    amount: "-15.76",
     categoryId: "category-groceries",
     description: "Discount",
+    direction: "inflow",
     kind: "adjustment",
+    rationale:
+      "The RABATTER section shows a discount reducing the amount owed.",
     selected: true,
   }],
   merchant: "Coop",
   mismatch: null,
-  printedTotal: "-325.78",
+  printedTotal: "325.78",
   schemaVersion: RECEIPT_SCHEMA_VERSION,
   uncertainty: [],
 });
@@ -486,8 +493,13 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
   const draft = await adapter.extractReceipt(extractionRequest(bytes));
   assertEquals(draft.date, "2026-08-24");
   assertEquals(draft.lines[0].categoryId, "category-groceries");
-  assertEquals(draft.lines[0].amount, "-10");
+  assertEquals(draft.lines[0].amount, "10");
   assertEquals(draft.lines[0].kind, "purchase");
+  assertEquals(draft.lines[0].direction, "outflow");
+  assertEquals(
+    draft.lines[0].rationale,
+    "Synthetic product row; classified as a purchase outflow.",
+  );
   assertEquals(draft.lines[0].selected, true);
   assertEquals(draft.uncertainty, []);
   assertEquals(bytes.every((byte) => byte === 0), true);
@@ -501,7 +513,7 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
   assert(!requestText.includes("AIza.synthetic-request-test"));
   assert(
     requests[0].config.systemInstruction.includes(
-      "Every purchase line is a negative outflow",
+      "copy each numeric amount exactly as printed",
     ),
   );
   assert(
@@ -511,7 +523,7 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
   );
   assert(
     requests[0].config.systemInstruction.includes(
-      "add every selected purchase and adjustment exactly once",
+      "provide a concise rationale",
     ),
   );
   assertEquals(requests[0].config.responseMimeType, "application/json");
@@ -524,14 +536,20 @@ Deno.test("A-301 signed receipt fixture reconciles a discount adjustment", async
   );
   await adapter.setApiKey("AIza.synthetic-discount-test");
   const draft = await adapter.extractReceipt(extractionRequest());
-  assertEquals(draft.printedTotal, "-325.78");
-  assertEquals(draft.lines[0]?.amount, "-341.54");
+  assertEquals(draft.printedTotal, "325.78");
+  assertEquals(draft.lines[0]?.amount, "341.54");
   assertEquals(draft.lines[0]?.kind, "purchase");
-  assertEquals(draft.lines[1]?.amount, "15.76");
+  assertEquals(draft.lines[0]?.direction, "outflow");
+  assertEquals(draft.lines[1]?.amount, "-15.76");
   assertEquals(draft.lines[1]?.kind, "adjustment");
+  assertEquals(draft.lines[1]?.direction, "inflow");
+  assertEquals(
+    draft.lines[1]?.rationale,
+    "The RABATTER section shows a discount reducing the amount owed.",
+  );
   assertEquals(
     draft.lines.reduce((total, line) => moneyAdd(total, line.amount), "0"),
-    "-325.78",
+    "325.78",
   );
 });
 
@@ -630,6 +648,11 @@ Deno.test("A-301 schema source rejects hostile extra fields and preserves schema
   assert(properties !== undefined);
   assertEquals(properties.schemaVersion.enum, [RECEIPT_SCHEMA_VERSION]);
   assertEquals(properties.mismatch.type, ["object", "null"]);
+  const lineItems = properties.lines.items as {
+    readonly required?: readonly string[];
+  };
+  assert(lineItems.required?.includes("direction"));
+  assert(lineItems.required?.includes("rationale"));
 
   const supportedKeywords = new Set([
     "type",

@@ -44,7 +44,7 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
       ) {
         const body = request.postData() ?? "";
         const syntheticConfiguration = body.includes(
-          "Return one valid synthetic receipt.v1 object",
+          "Return one valid synthetic receipt.v2 object",
         );
         if (!syntheticConfiguration) extractionAttempts++;
         if (!syntheticConfiguration && extractionAttempts === 1) {
@@ -71,16 +71,19 @@ test("receipt-review captures, scans with fake Gemini, and saves atomically", as
                     currency: "SEK",
                     date: "2026-08-24",
                     lines: [{
-                      amount: "-10",
+                      amount: "10",
                       categoryId: "category-uncategorized",
                       description: "Fake receipt item",
+                      direction: "outflow",
                       kind: "purchase",
+                      rationale:
+                        "The visible product row is a purchase outflow.",
                       selected: true,
                     }],
                     merchant: "Fake Receipt Market",
                     mismatch: null,
-                    printedTotal: "-10",
-                    schemaVersion: "receipt.v1",
+                    printedTotal: "10",
+                    schemaVersion: "receipt.v2",
                     uncertainty: [],
                   }),
                 }],

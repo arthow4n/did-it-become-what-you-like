@@ -69,8 +69,8 @@ actual extraction error, and no raw platform/provider text may reach the UI.
 | --- | --- | --- | --- |
 | M15-001 Type raw image lifecycle failures and preserve primary errors | COMPLETE | M14 | Resolver, preparation, extraction, and normalization failures are converted to safe phase operations; cleanup cannot replace an earlier scan failure. |
 | M15-002 Regression coverage and targeted verification | COMPLETE | M15-001 | Actor regression covers a raw resolver failure and cleanup masking a typed provider failure; affected tests 37/37, checks, format, lint, build, diff check, and receipt E2E 1/1 pass. |
-| R-1510 Fresh read-only review | IN_PROGRESS | M15-002 | Fresh read-only review is required before archival. |
-| M15-FINAL Archive and hygiene | PENDING | R-1510 | Record exact evidence, run repository-hygiene pruning, archive completed M15 history, commit, and push. |
+| R-1510 Fresh read-only review | COMPLETE | M15-002 | Fresh read-only review found no severity 1–3 findings; focused actor/contract/UI tests pass 39/39. Follow-up observations were resolved by using provider-neutral `receipt.ai.extract` and preserving domain validation codes. |
+| M15-FINAL Archive and hygiene | IN_PROGRESS | R-1510 | Record exact evidence, run repository-hygiene pruning, archive completed M15 history, commit, and push. |
 
 The implementation owner must update this ledger after each task and review
 gate. The M15-FINAL archive is the only point at which completed milestone
@@ -90,18 +90,19 @@ history may be pruned from this live plan.
 
 ## Current Checkpoint
 
-- **Active task / gate:** R-1510 (fresh read-only review pending; `/root` is
+- **Active task / gate:** M15-FINAL (archive and hygiene; `/root` is
   integration owner)
-- **Pushed commit / HEAD:** `7c854f5` (M15 implementation and regression
-  coverage; R-1510 review pending)
+- **Pushed commit / HEAD:** `3a085a5` (M15 implementation and review
+  checkpoint; follow-up fixes are being committed)
 - **Verification status:** M15 actor regression passes 6/6, affected tests pass
-  37/37, receipt-review Playwright passes 1/1, and `deno task check`, `deno task
-  fmt:check`, `deno task lint`, `deno task build`, and `git diff --check` pass.
-- **Active / preserved work:** Single primary agent on `master`; M15 changes are
-  ready for fresh read-only review, with no delegated workers or transient
-  hygiene artifacts.
-- **Exact next action:** Commit and push the M15 implementation, then complete
-  R-1510 and archive the milestone after the review gate.
+  37/37, the fresh review suite passes 39/39, receipt-review Playwright passes
+  1/1, and `deno task check`, `deno task fmt:check`, `deno task lint`, `deno
+  task build`, and `git diff --check` pass.
+- **Active / preserved work:** Single primary agent on `master`; R-1510 is
+  complete with no severity 1–3 findings, and no transient hygiene artifacts
+  exist.
+- **Exact next action:** Commit and push the review follow-ups, then run the
+  repository-hygiene audit and archive M15.
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -73,8 +73,15 @@ function scanStepError(
   error: unknown,
   code: AdapterErrorCode,
   operation: string,
-): Error {
-  return isAdapterError(error) ? error : adapterError(code, operation);
+): unknown {
+  if (isAdapterError(error)) return error;
+  if (isReceiptDomainError(error)) {
+    // Keep the domain taxonomy while assigning a bounded scan-phase
+    // operation. The contract boundary supplies the safe message and retry
+    // policy for this plain shape.
+    return { code: error.code, operation };
+  }
+  return adapterError(code, operation);
 }
 
 async function extractReview(
@@ -115,7 +122,7 @@ async function extractReview(
         currency: input.currency,
       }, { signal });
     } catch (error) {
-      throw scanStepError(error, "unknown", "gemini.extract");
+      throw scanStepError(error, "unknown", "receipt.ai.extract");
     }
 
     let review: ReceiptReviewDraft;

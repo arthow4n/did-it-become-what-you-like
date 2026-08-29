@@ -234,6 +234,47 @@ Deno.test(
     });
     missingImage.stop();
 
+    const invalidOutput = createActor(createScanMachine(
+      createFakeGeminiPort(extractionDraft({ printedTotal: "not-a-decimal" })),
+      preparation,
+      [],
+    )).start();
+    invalidOutput.send({ type: "receipt.open" });
+    invalidOutput.send({ type: "receipt.image-selected" });
+    invalidOutput.send({ type: "receipt.scan", input: scanInput });
+    await waitForValue(invalidOutput, "failed");
+    assertEquals(invalidOutput.getSnapshot().context.error, {
+      code: "invalid",
+      message: "The supplied data is invalid.",
+      retryable: false,
+      operation: "receipt.normalize",
+    });
+    invalidOutput.stop();
+
+    const rawProvider: ReceiptAiPort = {
+      listModels: () => Promise.resolve([]),
+      testConfiguration: () =>
+        Promise.resolve({ status: "needs-test", missingCapabilities: [] }),
+      extractReceipt: () =>
+        Promise.reject(new Error("provider details must not cross the actor")),
+    };
+    const rawProviderFailure = createActor(createScanMachine(
+      rawProvider,
+      preparation,
+      [],
+    )).start();
+    rawProviderFailure.send({ type: "receipt.open" });
+    rawProviderFailure.send({ type: "receipt.image-selected" });
+    rawProviderFailure.send({ type: "receipt.scan", input: scanInput });
+    await waitForValue(rawProviderFailure, "failed");
+    assertEquals(rawProviderFailure.getSnapshot().context.error, {
+      code: "unknown",
+      message: "The operation failed for an unknown reason.",
+      retryable: false,
+      operation: "receipt.ai.extract",
+    });
+    rawProviderFailure.stop();
+
     const gemini = createFakeGeminiPort(extractionDraft());
     gemini.failNext("quota");
     const cleanupFailure = createActor(createReceiptScanMachine({

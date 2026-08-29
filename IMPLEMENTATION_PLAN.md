@@ -77,8 +77,8 @@ ledger.
 ## Current Checkpoint
 
 - **Active task / gate:** None (Milestone 13 complete and archived)
-- **Pushed commit / HEAD:** `4aa0ada` (M13 implementation and review-complete
-  pre-pruning ledger)
+- **Pushed commit / HEAD:** `ad79574` (M13 archival ledger; implementation and
+  review-complete history is preserved at `4aa0ada`)
 - **Verification status:** Focused related tests pass 30/30; affected tests pass
   30/30; the receipt-review Playwright journey passes 1/1 with both native
   source actions; `deno task check`, `deno task fmt:check`, `deno task lint`,

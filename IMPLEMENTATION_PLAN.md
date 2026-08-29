@@ -89,8 +89,8 @@ available in Git history.
 ## Current Checkpoint
 
 - **Active task / gate:** None (M22 complete and archived)
-- **Pushed commit / HEAD:** `569039e` (last M22 implementation checkpoint; this
-  archive update follows)
+- **Pushed commit / HEAD:** `88e04d3` (M22 implementation and plan archive;
+  branch is clean)
 - **Verification status:** M22 focused domain tests pass 9/9 and focused adapter
   tests pass 17/17; affected tests pass 288/288; format, lint, and type checks
   pass. Fresh R-2210 review found no severity 1–2 findings. M21 focused

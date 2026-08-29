@@ -1068,10 +1068,7 @@ export function ReceiptScanScreen({
                   </Switch>
                   <Button
                     variant="quiet"
-                    onPress={() => {
-                      send({ type: "receipt.cancel" });
-                      onOpenSettings();
-                    }}
+                    onPress={onOpenSettings}
                   >
                     Open Gemini settings
                   </Button>

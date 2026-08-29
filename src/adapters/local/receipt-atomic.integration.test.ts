@@ -3,6 +3,7 @@ import { adapterError, isAdapterError } from "../ports/errors.ts";
 import { UNCATEGORIZED_CATEGORY_ID } from "../../domain/index.ts";
 import {
   createReceiptCommitService,
+  createReceiptManagementService,
   type ReceiptReviewDraft,
 } from "../../domain/receipt.ts";
 import { createProjectCategoryService } from "../../domain/organization.ts";
@@ -190,3 +191,57 @@ Deno.test("receipt-atomic integration: a write failure aborts the whole receipt 
     }
   });
 });
+
+Deno.test(
+  "receipt-atomic integration: management deletion rolls back parent and children together",
+  async () => {
+    let injectFailure = false;
+    await withRepository(async (repository, organization) => {
+      await organization.commitProject({ type: "create", project });
+      const commit = createReceiptCommitService(repository, {
+        nextId: (kind) =>
+          kind === "receipt"
+            ? "receipt-management-rollback"
+            : "receipt-management-line",
+      });
+      await commit.commit({ review, confirmMismatch: false });
+      const management = createReceiptManagementService(repository, {
+        deviceId: "device-receipt-integration",
+        now: () => "2026-08-24T12:00:00.000Z",
+      });
+      injectFailure = true;
+      try {
+        await management.deleteReceipt("receipt-management-rollback");
+      } catch (error) {
+        assert(isAdapterError(error));
+        assertEquals(error.code, "quota");
+      }
+      assertEquals(
+        (await repository.query("records", {
+          index: "type",
+          equals: "receipt",
+        }))
+          .length,
+        1,
+      );
+      assertEquals(
+        (await repository.query("records", {
+          index: "type",
+          equals: "receipt-purchase-line",
+        })).length,
+        1,
+      );
+      assertEquals(
+        (await repository.query("records", {
+          index: "type",
+          equals: "tombstone",
+        })).length,
+        0,
+      );
+    }, (operation) => {
+      if (injectFailure && operation === "local.tombstone.put") {
+        throw adapterError("quota", "receipt.management-rollback");
+      }
+    });
+  },
+);

@@ -1,5 +1,6 @@
 import {
   addReceiptLine,
+  createReceiptManagementService,
   editReceiptLine,
   normalizeReceiptExtractionDraft,
   receiptMismatchDifference,
@@ -9,7 +10,16 @@ import {
   setReceiptLineSelected,
   validateReceiptReviewDraft,
 } from "../receipt.ts";
-import { UNCATEGORIZED_CATEGORY_ID } from "../schema/index.ts";
+import {
+  type ReceiptAdjustment,
+  type ReceiptParent,
+  type ReceiptPurchaseLine,
+  UNCATEGORIZED_CATEGORY_ID,
+} from "../schema/index.ts";
+import {
+  createFakeLocalPort,
+  type FakeLocalPort,
+} from "../../test-support/fakes/ports.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -74,6 +84,339 @@ function review(
     ...overrides,
   };
 }
+
+const savedReceipt: ReceiptParent = {
+  schemaVersion: 1,
+  type: "receipt",
+  id: "saved-receipt-domain",
+  projectId: "project-receipt-domain",
+  date: "2026-08-24",
+  time: "18:30",
+  merchant: "Shop",
+  currency: "SEK",
+  printedTotal: "-8",
+};
+
+const savedPurchase: ReceiptPurchaseLine = {
+  schemaVersion: 1,
+  type: "receipt-purchase-line",
+  id: "saved-line-coffee",
+  receiptId: savedReceipt.id,
+  projectId: savedReceipt.projectId,
+  categoryId: UNCATEGORIZED_CATEGORY_ID,
+  description: "Coffee",
+  lineTotal: "-10",
+};
+
+const savedAdjustment: ReceiptAdjustment = {
+  schemaVersion: 1,
+  type: "receipt-adjustment",
+  id: "saved-line-discount",
+  receiptId: savedReceipt.id,
+  projectId: savedReceipt.projectId,
+  categoryId: UNCATEGORIZED_CATEGORY_ID,
+  description: "Discount",
+  amount: "2",
+  lineId: savedPurchase.id,
+};
+
+async function managementHarness(
+  records: readonly Record<string, unknown>[] = [
+    {
+      schemaVersion: 1,
+      type: "project",
+      id: savedReceipt.projectId,
+      name: "Receipt project",
+      defaultCurrency: "SEK",
+      archived: false,
+    },
+    {
+      schemaVersion: 1,
+      type: "category",
+      id: UNCATEGORIZED_CATEGORY_ID,
+      name: "Uncategorized",
+      sortOrder: 0,
+      archived: false,
+      system: true,
+    },
+    savedReceipt,
+    savedPurchase,
+    savedAdjustment,
+  ],
+): Promise<{
+  readonly local: FakeLocalPort;
+  readonly service: ReturnType<typeof createReceiptManagementService>;
+}> {
+  const local = createFakeLocalPort();
+  await local.transaction("readwrite", async (transaction) => {
+    for (const record of records) {
+      await transaction.put("records", String(record.id), record as never);
+    }
+  });
+  return {
+    local,
+    service: createReceiptManagementService(local, {
+      deviceId: "device-receipt-domain",
+      now: () => "2026-08-30T12:00:00.000Z",
+    }),
+  };
+}
+
+Deno.test(
+  "saved receipt management: metadata and line edits preserve IDs and projections",
+  async () => {
+    const derivedExpense = {
+      schemaVersion: 1 as const,
+      type: "expense" as const,
+      id: "derived-coffee-expense",
+      projectId: savedReceipt.projectId,
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      date: savedReceipt.date,
+      time: savedReceipt.time,
+      amount: savedPurchase.lineTotal,
+      currency: savedReceipt.currency,
+      merchant: savedReceipt.merchant,
+      description: savedPurchase.description,
+      source: "receipt-line" as const,
+      receiptId: savedReceipt.id,
+      receiptLineId: savedPurchase.id,
+    };
+    const { service } = await managementHarness([
+      {
+        schemaVersion: 1,
+        type: "project",
+        id: savedReceipt.projectId,
+        name: "Receipt project",
+        defaultCurrency: "SEK",
+        archived: false,
+      },
+      {
+        schemaVersion: 1,
+        type: "category",
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+        sortOrder: 0,
+        archived: false,
+        system: true,
+      },
+      {
+        schemaVersion: 1,
+        type: "category",
+        id: "category-food",
+        name: "Food",
+        sortOrder: 1,
+        archived: false,
+        system: false,
+      },
+      savedReceipt,
+      savedPurchase,
+      savedAdjustment,
+      derivedExpense,
+    ]);
+
+    const metadata = await service.updateMetadata(savedReceipt.id, {
+      merchant: "  New shop  ",
+      date: "2026-08-30",
+      time: null,
+      printedTotal: "-9.00",
+    });
+    assertEquals(metadata.receipt.id, savedReceipt.id);
+    assertEquals(metadata.receipt.merchant, "New shop");
+    assertEquals(metadata.receipt.date, "2026-08-30");
+    assertEquals(metadata.receipt.time, undefined);
+    assertEquals(metadata.receipt.printedTotal, "-9");
+    assertEquals(metadata.derivedExpenses[0]?.date, "2026-08-30");
+    assertEquals(metadata.derivedExpenses[0]?.time, undefined);
+    assertEquals(metadata.derivedExpenses[0]?.merchant, "New shop");
+
+    const edited = await service.updateLine(savedReceipt.id, savedPurchase.id, {
+      type: "purchase",
+      description: "Tea",
+      categoryId: "category-food",
+      quantity: "2.00",
+      unitPrice: "3.50",
+      lineTotal: "7",
+    });
+    assertEquals(edited.purchaseLines[0]?.id, savedPurchase.id);
+    assertEquals(edited.purchaseLines[0]?.description, "Tea");
+    assertEquals(edited.purchaseLines[0]?.lineTotal, "-7");
+    assertEquals(edited.purchaseLines[0]?.quantity, "2");
+    assertEquals(edited.derivedExpenses[0]?.description, "Tea");
+    assertEquals(edited.derivedExpenses[0]?.amount, "-7");
+    assertEquals(edited.derivedExpenses[0]?.categoryId, "category-food");
+  },
+);
+
+Deno.test(
+  "saved receipt management: archived categories remain valid but cannot be newly assigned",
+  async () => {
+    const archived = {
+      schemaVersion: 1 as const,
+      type: "category" as const,
+      id: "category-archived",
+      name: "Archived",
+      sortOrder: 1,
+      archived: true,
+      system: false,
+    };
+    const { service } = await managementHarness([
+      {
+        schemaVersion: 1,
+        type: "project",
+        id: savedReceipt.projectId,
+        name: "Receipt project",
+        defaultCurrency: "SEK",
+        archived: false,
+      },
+      {
+        schemaVersion: 1,
+        type: "category",
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+        sortOrder: 0,
+        archived: false,
+        system: true,
+      },
+      archived,
+      { ...savedReceipt, id: "receipt-archived-category" },
+      {
+        ...savedPurchase,
+        id: "line-archived-category",
+        receiptId: "receipt-archived-category",
+        categoryId: archived.id,
+      },
+    ]);
+    const unchanged = await service.updateLine(
+      "receipt-archived-category",
+      "line-archived-category",
+      {
+        type: "purchase",
+        description: "Archived food",
+        categoryId: archived.id,
+        lineTotal: "-10",
+      },
+    );
+    assertEquals(unchanged.purchaseLines[0]?.categoryId, archived.id);
+    try {
+      await service.updateLine(
+        "receipt-archived-category",
+        "line-archived-category",
+        {
+          type: "purchase",
+          description: "New food",
+          categoryId: "category-missing",
+          lineTotal: "-10",
+        },
+      );
+    } catch (error) {
+      assertEquals((error as { code: string }).code, "not-found");
+      return;
+    }
+    throw new Error("Expected unavailable category assignment to fail");
+  },
+);
+
+Deno.test(
+  "saved receipt management: line deletion unlinks adjustments and final-line deletion removes the aggregate",
+  async () => {
+    const secondPurchase = {
+      ...savedPurchase,
+      id: "saved-line-second",
+      description: "Bread",
+      lineTotal: "-4",
+    };
+    const firstDerived = {
+      schemaVersion: 1 as const,
+      type: "expense" as const,
+      id: "derived-first",
+      projectId: savedReceipt.projectId,
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      date: savedReceipt.date,
+      amount: savedPurchase.lineTotal,
+      currency: savedReceipt.currency,
+      description: savedPurchase.description,
+      source: "receipt-line" as const,
+      receiptId: savedReceipt.id,
+      receiptLineId: savedPurchase.id,
+    };
+    const secondDerived = {
+      ...firstDerived,
+      id: "derived-second",
+      amount: secondPurchase.lineTotal,
+      description: secondPurchase.description,
+      receiptLineId: secondPurchase.id,
+    };
+    const { local, service } = await managementHarness([
+      {
+        schemaVersion: 1,
+        type: "project",
+        id: savedReceipt.projectId,
+        name: "Receipt project",
+        defaultCurrency: "SEK",
+        archived: false,
+      },
+      {
+        schemaVersion: 1,
+        type: "category",
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+        sortOrder: 0,
+        archived: false,
+        system: true,
+      },
+      savedReceipt,
+      savedPurchase,
+      secondPurchase,
+      savedAdjustment,
+      firstDerived,
+      secondDerived,
+    ]);
+    const remaining = await service.deleteLine(
+      savedReceipt.id,
+      savedPurchase.id,
+    );
+    assertEquals(remaining.deletedReceipt, false);
+    assertEquals(remaining.aggregate?.purchaseLines.map((line) => line.id), [
+      secondPurchase.id,
+    ]);
+    assertEquals(remaining.aggregate?.adjustments[0]?.lineId, undefined);
+    assertEquals(
+      remaining.aggregate?.derivedExpenses.map((expense) => expense.id),
+      [
+        secondDerived.id,
+      ],
+    );
+    const firstTombstone = await local.query("records", {
+      index: "targetId",
+      equals: savedPurchase.id,
+    });
+    assertEquals(firstTombstone.length, 1);
+    assertEquals(
+      (await local.query("records", { index: "id", equals: firstDerived.id }))
+        .length,
+      0,
+    );
+
+    const deleted = await service.deleteLine(
+      savedReceipt.id,
+      secondPurchase.id,
+    );
+    assertEquals(deleted.deletedReceipt, true);
+    assertEquals(
+      (await local.query("records", { index: "id", equals: savedReceipt.id }))
+        .length,
+      0,
+    );
+    const tombstones = await local.query("records", {
+      index: "type",
+      equals: "tombstone",
+    });
+    assert(
+      tombstones.length >= 5,
+      "parent and all aggregate records are tombstoned",
+    );
+  },
+);
 
 Deno.test("receipt-actor domain: signs, totals, selection, editing, adding, and removing are deterministic", () => {
   const normalized = validateReceiptReviewDraft(review({

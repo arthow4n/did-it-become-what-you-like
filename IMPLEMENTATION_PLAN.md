@@ -260,8 +260,10 @@ M27-001 -> M27-002 -> R-2710
 
 #### M27-002 — Add atomic saved-receipt mutation contracts
 
-- **Status/dependencies:** `PENDING`; depends on approved `M27-001` and the
-  owner authorization recorded above.
+- **Status/dependencies:** `COMPLETE`; depends on approved `M27-001` and the
+  owner authorization recorded above. Atomic mutation services, derived
+  projection maintenance, rollback coverage, and causal deletion coverage are
+  implemented and pushed.
 - **Ownership:** `src/domain/receipt.ts`, `src/domain/organization.ts`,
   `src/domain/index.ts`, `src/domain/schema/**`, `src/domain/tests/**`,
   `src/adapters/local/receipt-atomic.integration.test.ts`,
@@ -306,7 +308,7 @@ M27-001 -> M27-002 -> R-2710
 
 #### R-2710 — Product contract and domain-boundary review
 
-- **Status/dependencies:** `PENDING`; depends on `M27-002`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M27-002`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Approved product decisions, aggregate ownership, atomicity,
   stable-ID handling, adjustment and derived-`Expense` semantics, tombstone
@@ -316,6 +318,9 @@ M27-001 -> M27-002 -> R-2710
 - **Remediation loop:** The primary agent fixes every severity 1–3 finding in
   bounded commits, reruns risk-selected affected verification, records exact
   evidence, and obtains review closure before opening `M27-003`.
+- **Implementation evidence before review:** `deno task check`, focused receipt
+  domain/local integration tests (18 passed), and `deno task test:affected`
+  (298 passed, 0 failed) pass at the M27-002 commit; `git diff --check` passes.
 
 #### M27-003 — Model the saved-receipt detail actor
 
@@ -469,20 +474,19 @@ M27-001 -> M27-002 -> R-2710
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M27-002` (`READY`; M27-001 product contract and
-  implementation authorization are complete)
-- **Pushed commit / HEAD:** `origin/master` (M27-001 contract documentation is
-  currently uncommitted in the primary worktree)
-- **Verification status:**
-  `deno fmt SPEC.md DESIGN_SYSTEM.md
-  IMPLEMENTATION_PLAN.md`, the M27
-  terminology inspection, and `git diff --check` pass. No M27 application code
-  or test result exists.
+- **Active task / gate:** `R-2710` (`IN_PROGRESS`; M27-002 implementation is
+  complete and awaiting independent read-only review)
+- **Pushed commit / HEAD:** `0d7c43c` plus the pending M27-002 implementation
+  commit
+- **Verification status:** `deno task check`; focused receipt suites (18 passed,
+  0 failed); `deno task test:affected` (298 passed, 0 failed); and
+  `git diff --check` pass for M27-002.
 - **Active / preserved work:** Single primary agent on `master`; no M27 worker
-  or worktree. The contract documentation changes are the only uncommitted work.
-- **Exact next action:** Commit and push the completed M27-001 contract, then
-  mark M27-002 `IN_PROGRESS` and implement the atomic saved-receipt mutation
-  services and regression tests.
+  or worktree. The M27-002 implementation and review checkpoint are being
+  preserved on the primary branch.
+- **Exact next action:** Commit and push M27-002 with this checkpoint, then
+  dispatch a fresh read-only reviewer for R-2710 and remediate any severity 1–3
+  findings before starting M27-003.
 
 ## Ready-to-Use Orchestration Prompt
 

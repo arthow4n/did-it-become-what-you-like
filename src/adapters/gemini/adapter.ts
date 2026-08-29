@@ -25,6 +25,7 @@ import {
   RECEIPT_JSON_SCHEMA,
   RECEIPT_SCHEMA_VERSION,
   RECEIPT_SCHEMA_VERSION_NUMBER,
+  ReceiptOutputError,
 } from "./schema.ts";
 import { withEphemeralImage } from "./image.ts";
 
@@ -248,7 +249,7 @@ export function mapGeminiError(
   operation: string,
 ): AdapterError {
   if (isAdapterError(error)) {
-    return adapterError(error.code, operation, error.details);
+    return adapterError(error.code, error.operation, error.details);
   }
   if (isRecord(error) && error.name === "AbortError") {
     return adapterError("aborted", operation);
@@ -545,15 +546,27 @@ export class GeminiAdapter implements ReceiptAiPort {
           },
         }, options);
         let output;
+        let text: string;
         try {
-          output = parseReceiptOutput(responseText(response));
+          text = responseText(response);
         } catch {
-          throw adapterError("corrupt-data", "gemini.extract");
+          throw adapterError("invalid-output", "gemini.extract.response");
+        }
+        try {
+          output = parseReceiptOutput(text);
+        } catch (error) {
+          const phase = error instanceof ReceiptOutputError
+            ? error.phase
+            : "schema";
+          throw adapterError(
+            "invalid-output",
+            `gemini.extract.output.${phase}`,
+          );
         }
         try {
           return mapReceiptOutputToDraft(output, request);
         } catch {
-          throw adapterError("corrupt-data", "gemini.extract");
+          throw adapterError("invalid-output", "gemini.extract.mapping");
         }
       });
     } catch (error) {
@@ -641,7 +654,20 @@ export class GeminiAdapter implements ReceiptAiPort {
           systemInstruction: prompt,
         },
       }, options);
-      parseReceiptOutput(responseText(response));
+      try {
+        parseReceiptOutput(responseText(response));
+      } catch (error) {
+        if (error instanceof ReceiptOutputError) {
+          throw adapterError(
+            "invalid-output",
+            `gemini.testConfiguration.output.${error.phase}`,
+          );
+        }
+        throw adapterError(
+          "invalid-output",
+          "gemini.testConfiguration.response",
+        );
+      }
     } finally {
       image.bytes.fill(0);
     }

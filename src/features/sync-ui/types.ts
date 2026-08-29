@@ -45,6 +45,7 @@ export type SyncConnectionViewModel =
       | "partial-transport"
       | "rate-limited"
       | "invalid-request"
+      | "invalid-output"
       | "invalid"
       | "unsupported"
       | "unavailable"

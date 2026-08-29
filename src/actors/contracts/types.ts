@@ -70,6 +70,7 @@ const PORT_ERROR_MESSAGES: Readonly<Record<PortErrorCode, string>> = {
   "partial-transport": "The transport completed only part of the operation.",
   "rate-limited": "The service requested that the operation be retried later.",
   "invalid-request": "The request was invalid.",
+  "invalid-output": "The AI response was not usable.",
   invalid: "The supplied data is invalid.",
   unsupported: "The requested operation is unsupported.",
   unavailable: "The service is temporarily unavailable.",
@@ -83,6 +84,7 @@ const RETRYABLE_PORT_ERRORS = new Set<PortErrorCode>([
   "partial-transport",
   "rate-limited",
   "unavailable",
+  "invalid-output",
 ]);
 
 const SAFE_OPERATION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$/;

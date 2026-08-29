@@ -53,6 +53,8 @@ workflow discard cancel active scans before ephemeral image cleanup, clearing
 stale scan failure context. M20 additionally canonicalizes safe localized
 decimal transcription and accepts harmless JSON fences before strict Gemini
 receipt-output validation, while preserving reviewable category uncertainty.
+M21 additionally distinguishes provider-output failures from persisted-data
+corruption and preserves phase-specific Gemini diagnostics through the actor.
 
 Detailed task, review, validation, worktree, deployment, and recovery history is
 preserved in Git at commit `d7c6a22`, the last complete pre-pruning ledger. That
@@ -71,9 +73,17 @@ features/app -> actors -> domain + adapter ports
 
 ## Active Milestone
 
-No active milestone is currently open. M20 was completed and archived in the
-focused implementation commit `64ca2aa`; its detailed task ledger and review
-evidence remain available in Git history. M19 remains archived in `e9812cd`.
+### M21 — Report distinct Gemini receipt-output failure phases
+
+**Outcome:** A failed receipt retry identifies whether Gemini returned no
+response, malformed JSON, schema-invalid data, or an unusable mapping. These
+provider-output failures use a dedicated `invalid-output` code and bounded
+operation names; persisted-data `corrupt-data` diagnostics remain unchanged.
+
+| Task | Status | Dependency | Acceptance / evidence |
+| --- | --- | --- | --- |
+| M21-001 Add dedicated invalid-output taxonomy and phase-preserving mapping | COMPLETED | — | Adapter/actor boundaries preserve `invalid-output` and phase-specific operations without exposing provider text |
+| M21-002 Verify retry diagnostics and archive checkpoint R-2100 | COMPLETED | M21-001 | Focused tests pass 77/77; affected suite passes 279/279; check/format/lint/diff, build, receipt-review Playwright, and fresh review all pass |
 
 ### Locked boundary / design-system rules
 
@@ -89,12 +99,12 @@ evidence remain available in Git history. M19 remains archived in `e9812cd`.
 
 ## Current Checkpoint
 
-- **Active task / gate:** None (M20 complete and archived)
-- **Pushed commit / HEAD:** `64ca2aa` (M20 implementation; final plan archive
-  follows this checkpoint)
-- **Verification status:** M20 adapter tests pass 16/16 and affected tests pass
-  56/56; check, format, lint, diff checks, build, and receipt-review Playwright
-  pass. Fresh R-2000 review found no severity 1–3 findings.
+- **Active task / gate:** M21-002 — verify retry diagnostics and archive R-2100
+- **Pushed commit / HEAD:** `b1503f1` (M20 implementation and archived plan)
+- **Verification status:** M21 focused adapter/actor/UI tests pass 77/77 and
+  affected tests pass 279/279; check, format, lint, diff checks, build, and
+  receipt-review Playwright pass. Fresh R-2100 review found no severity 1–3
+  findings.
   M19 focused actor/UI tests pass 20/20 and affected
   tests pass 128/128; check, format, lint, build, diff checks, and receipt-review
   Playwright pass 1/1. Fresh R-1900 review found no severity 1–3 findings.
@@ -102,8 +112,8 @@ evidence remain available in Git history. M19 remains archived in `e9812cd`.
   its final review found no severity 1–3 findings.
 - **Active / preserved work:** Single primary agent on `master`; no worktree or
   delegated implementation worker; review artifacts remain outside the repo.
-- **Exact next action:** Author the next approved milestone plan before making
-  further application changes.
+- **Exact next action:** Commit and push M21, then archive the completed ledger
+  at R-2100.
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -50,6 +50,16 @@ export const ReceiptOutputSchema = z.strictObject({
 export type ReceiptOutput = z.infer<typeof ReceiptOutputSchema>;
 export type ReceiptLineOutput = z.infer<typeof ReceiptLineOutputSchema>;
 
+export type ReceiptOutputFailurePhase = "json" | "schema";
+
+export class ReceiptOutputError extends Error {
+  override readonly name = "ReceiptOutputError";
+
+  constructor(readonly phase: ReceiptOutputFailurePhase) {
+    super("Receipt output could not be validated.");
+  }
+}
+
 export type GeminiJsonSchema = Readonly<Record<string, unknown>>;
 
 function isSchemaRecord(value: unknown): value is Record<string, unknown> {
@@ -189,8 +199,12 @@ function assertOutputSemantics(output: ReceiptOutput): ReceiptOutput {
 /** Validate untrusted model text without exposing the raw text in an error. */
 export function validateReceiptOutput(value: unknown): ReceiptOutput {
   const result = ReceiptOutputSchema.safeParse(value);
-  if (!result.success) throw new Error("receipt output failed validation");
-  return assertOutputSemantics(result.data);
+  if (!result.success) throw new ReceiptOutputError("schema");
+  try {
+    return assertOutputSemantics(result.data);
+  } catch {
+    throw new ReceiptOutputError("schema");
+  }
 }
 
 export function parseReceiptOutput(text: string): ReceiptOutput {
@@ -200,12 +214,12 @@ export function parseReceiptOutput(text: string): ReceiptOutput {
   } catch {
     const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)?.[1];
     if (fenced === undefined) {
-      throw new Error("receipt output was not valid JSON");
+      throw new ReceiptOutputError("json");
     }
     try {
       value = JSON.parse(fenced) as unknown;
     } catch {
-      throw new Error("receipt output was not valid JSON");
+      throw new ReceiptOutputError("json");
     }
   }
   return validateReceiptOutput(normalizeOutputDecimals(value));

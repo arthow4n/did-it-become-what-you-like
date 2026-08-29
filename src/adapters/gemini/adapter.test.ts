@@ -641,7 +641,7 @@ Deno.test("A-301 malformed decimal grouping remains rejected", async () => {
   await adapter.setApiKey("AIza.synthetic-invalid-grouping");
   assertEquals(
     await errorCode(adapter.extractReceipt(extractionRequest())),
-    "corrupt-data",
+    "invalid-output",
   );
 });
 
@@ -667,9 +667,23 @@ Deno.test("A-301 malformed or hostile model output is rejected and redacted", as
     adapter.extractReceipt(extractionRequest())
   );
   assert(isAdapterError(error));
-  assertEquals(error.code, "corrupt-data");
+  assertEquals(error.code, "invalid-output");
+  assertEquals(error.operation, "gemini.extract.output.schema");
   assert(!error.message.includes(hostile));
   assert(!JSON.stringify(error).includes(hostile));
+});
+
+Deno.test("A-301 malformed provider JSON reports the response parsing phase", async () => {
+  const { adapter } = createStorageAndAdapter(() =>
+    clientWithModels([MODEL_NEEDS_TEST], { text: "not-json" })
+  );
+  await adapter.setApiKey("AIza.synthetic-malformed-json");
+  const error = await assertRejects(() =>
+    adapter.extractReceipt(extractionRequest())
+  );
+  assert(isAdapterError(error));
+  assertEquals(error.code, "invalid-output");
+  assertEquals(error.operation, "gemini.extract.output.json");
 });
 
 Deno.test("A-301 maps invalid, quota, offline, and abort failures to typed redacted errors", async () => {

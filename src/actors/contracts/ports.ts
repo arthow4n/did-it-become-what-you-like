@@ -19,6 +19,7 @@ export type PortErrorCode =
   | "partial-transport"
   | "rate-limited"
   | "invalid-request"
+  | "invalid-output"
   | "invalid"
   | "unsupported"
   | "unavailable"

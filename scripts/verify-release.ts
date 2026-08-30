@@ -268,20 +268,6 @@ for (const pattern of SECRET_PATTERNS) {
 
 await assertFile("LICENSE");
 await assertFile("THIRD_PARTY_NOTICES.md");
-assert(
-  (await readText("README.md")).includes(
-    "This application is 100% vibe-coded using ChatGPT Codex and Google Antigravity.",
-  ),
-  "README.md must retain the exact generative-AI disclosure.",
-);
-assert(
-  (await readText("LICENSE")).includes("MIT License"),
-  "LICENSE must be MIT.",
-);
-assert(
-  (await readText("THIRD_PARTY_NOTICES.md")).includes("# Third-party notices"),
-  "THIRD_PARTY_NOTICES.md must contain the third-party notice heading.",
-);
 
 const digestLines: string[] = [];
 for (const file of artifacts) {

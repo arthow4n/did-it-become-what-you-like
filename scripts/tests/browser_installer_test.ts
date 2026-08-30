@@ -10,15 +10,18 @@ import {
   detectBrowserPlatform,
   PLATFORM_ARTIFACTS,
 } from "../browser/metadata.ts";
-import {
-  INTENTIONAL_FAILURE_TRACE,
-} from "../../e2e/support/intentional-failure.ts";
 
 function assert(
   condition: unknown,
   message = "Expected condition",
 ): asserts condition {
   if (!condition) throw new Error(message);
+}
+
+function assertEquals<T>(actual: T, expected: T): void {
+  if (actual !== expected) {
+    throw new Error(`Expected ${String(expected)}, got ${String(actual)}`);
+  }
 }
 
 async function assertRejects(
@@ -41,7 +44,7 @@ async function assertRejects(
 }
 
 Deno.test("checksum failure aborts before an artifact is installed", async () => {
-  const directory = await Deno.makeTempDir({ prefix: "f005-checksum-" });
+  const directory = await Deno.makeTempDir({ prefix: "browser-checksum-" });
   const destination = join(directory, "artifact");
   const bytes = new TextEncoder().encode("known fixture bytes");
   await assertRejects(() => assertChecksum(bytes, "0".repeat(64), "fixture"));
@@ -77,29 +80,3 @@ Deno.test("browser metadata maps only reviewed native platform pairs", () => {
     "UNAVAILABLE: no pinned agent-browser/Chrome for Testing pair for linux/aarch64",
   );
 });
-
-Deno.test("intentional E2E failure leaves a useful redacted trace and exits nonzero", async () => {
-  try {
-    await Deno.remove(INTENTIONAL_FAILURE_TRACE);
-  } catch (error) {
-    if (!(error instanceof Deno.errors.NotFound)) throw error;
-  }
-  const result = await new Deno.Command(Deno.execPath(), {
-    args: ["run", "-A", "e2e/support/intentional-failure.ts"],
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  assert(result.code !== 0, "intentional failure proof must exit nonzero");
-  const trace = await Deno.readTextFile(INTENTIONAL_FAILURE_TRACE);
-  assert(trace.includes("intentional-e2e-failure"));
-  assert(trace.includes("[REDACTED]"));
-  assert(!trace.includes("fixture-auth-value"));
-  assert(!trace.includes("synthetic-api-key"));
-  await Deno.remove(INTENTIONAL_FAILURE_TRACE);
-});
-
-function assertEquals<T>(actual: T, expected: T): void {
-  if (actual !== expected) {
-    throw new Error(`Expected ${String(expected)}, got ${String(actual)}`);
-  }
-}

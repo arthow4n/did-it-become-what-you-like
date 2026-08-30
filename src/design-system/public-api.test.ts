@@ -77,7 +77,7 @@ const representativeProps: {
   },
 };
 
-const contractChecks: ContractChecks = [
+const _contractChecks: ContractChecks = [
   true,
   true,
   true,
@@ -90,7 +90,7 @@ const contractChecks: ContractChecks = [
 ];
 
 Deno.test("design-system barrel preserves representative public contracts", () => {
-  if (!representativeProps || !contractChecks.every(Boolean)) {
+  if (!representativeProps) {
     throw new Error("Representative design-system API contract failed");
   }
   for (

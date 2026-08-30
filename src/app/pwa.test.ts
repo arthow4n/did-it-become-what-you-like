@@ -35,6 +35,23 @@ Deno.test("offline PWA paths remain inside the repository service-worker scope",
   }
 });
 
+Deno.test("unsafe asset paths are rejected", () => {
+  let threw = 0;
+  try {
+    repositoryAssetPath("/root.js");
+  } catch {
+    threw += 1;
+  }
+  try {
+    repositoryAssetPath("../root.js");
+  } catch {
+    threw += 1;
+  }
+  if (threw !== 2) {
+    throw new Error("unsafe asset paths must be rejected");
+  }
+});
+
 Deno.test("non-production browser update checks settle as unsupported and current", async () => {
   const port = createBrowserUpdateInstallPort();
   const result = await port.check();

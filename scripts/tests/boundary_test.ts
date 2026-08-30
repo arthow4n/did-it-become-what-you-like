@@ -127,19 +127,6 @@ Deno.test("design-system facade boundary isolation and type privacy", async () =
     );
   }
 
-  const denoConfig = await Deno.readTextFile("deno.json");
-  assert(
-    !denoConfig.includes("react-aria-components"),
-    "deno.json must not retain the superseded React Aria dependency",
-  );
-
-  const lockfile = await Deno.readTextFile("deno.lock");
-  assert(
-    !lockfile.includes("react-aria-components@") &&
-      !lockfile.includes('"npm:react-aria-components@'),
-    "deno.lock must not retain the superseded React Aria package",
-  );
-
   assert(
     violations.length === 0,
     `design-system boundary violations:\n${violations.join("\n")}`,

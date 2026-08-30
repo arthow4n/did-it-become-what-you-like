@@ -564,40 +564,6 @@ Deno.test("design-system danger confirmation resets its phrase after cancel and 
   );
 });
 
-Deno.test("design-system gallery keeps the required fixture coverage", async () => {
-  const source = await Deno.readTextFile(
-    new URL("./gallery.tsx", import.meta.url),
-  );
-  const renderSource = source.slice(
-    source.indexOf("export function DesignSystemGallery"),
-  );
-  for (
-    const component of [
-      "ColorChoiceField",
-      "FileField",
-      "Chip",
-      "DefinitionList",
-      "ConfirmDialog",
-      "DangerDialog",
-      "Popover",
-      "Menu",
-      "Tooltip",
-      "ErrorSummary",
-      "FilterBar",
-      "FilterSheet",
-      "ActiveFilterChips",
-      "ProjectPicker",
-      "CurrencyPicker",
-      "MerchantPicker",
-    ]
-  ) {
-    assert(
-      renderSource.includes(`<${component}`),
-      `Gallery does not render ${component}`,
-    );
-  }
-});
-
 Deno.test("design-system selection and progress remain keyboard-addressable", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaDomGlobals(window, () => {

@@ -471,6 +471,18 @@ export function ReceiptScanFailureNotice({
   );
 }
 
+function useDirtyBeforeUnload(dirty: boolean): void {
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    globalThis.addEventListener("beforeunload", onBeforeUnload);
+    return () => globalThis.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+}
+
 export function ReceiptScanScreen({
   dependencies,
   secretStorage,
@@ -480,6 +492,7 @@ export function ReceiptScanScreen({
   offline,
   onSettingsChange,
   onDirtyChange,
+  onDiscardDisabledChange,
   discardRequest,
   onDirtyDiscarded,
   onReview,
@@ -494,6 +507,7 @@ export function ReceiptScanScreen({
   offline: boolean;
   onSettingsChange: (settings: DeviceLocalSettings) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onDiscardDisabledChange?: (disabled: boolean) => void;
   discardRequest?: number;
   onDirtyDiscarded?: () => void;
   onReview: (review: ReceiptReviewDraft) => void;
@@ -876,6 +890,9 @@ export function ReceiptScanScreen({
   const scanBusy = snapshot.matches("preparing") ||
     snapshot.matches("requesting") ||
     snapshot.matches("validating");
+  const dirty = selectedImage !== null || scanBusy || quickSetupOpen ||
+    pendingScan;
+  useDirtyBeforeUnload(dirty);
 
   useEffect(() => {
     if (
@@ -901,16 +918,14 @@ export function ReceiptScanScreen({
   ]);
 
   useEffect(() => {
-    onDirtyChange?.(
-      selectedImage !== null || scanBusy || quickSetupOpen || pendingScan,
-    );
+    onDirtyChange?.(dirty);
   }, [
+    dirty,
     onDirtyChange,
-    pendingScan,
-    quickSetupOpen,
-    scanBusy,
-    selectedImage,
   ]);
+  useEffect(() => {
+    onDiscardDisabledChange?.(false);
+  }, [onDiscardDisabledChange]);
   if (snapshot.matches("disclosure")) {
     return (
       <ContentContainer size="form">
@@ -1322,6 +1337,7 @@ export function ReceiptReviewScreen({
   state,
   initialReview,
   onDirtyChange,
+  onDiscardDisabledChange,
   discardRequest,
   onClose,
 }: {
@@ -1329,6 +1345,7 @@ export function ReceiptReviewScreen({
   state: ProjectCategoryState;
   initialReview?: ReceiptReviewDraft;
   onDirtyChange?: (dirty: boolean) => void;
+  onDiscardDisabledChange?: (disabled: boolean) => void;
   discardRequest?: number;
   onClose: () => void;
 }) {
@@ -1370,8 +1387,10 @@ export function ReceiptReviewScreen({
   }, [initialReview, openSent, send]);
 
   useEffect(() => {
-    onDirtyChange?.(snapshot.hasTag("dirty"));
-  }, [onDirtyChange, snapshot]);
+    const dirty = snapshot.hasTag("dirty");
+    onDirtyChange?.(dirty);
+    onDiscardDisabledChange?.(snapshot.hasTag("saving"));
+  }, [onDiscardDisabledChange, onDirtyChange, snapshot]);
 
   useEffect(() => {
     if (
@@ -1379,8 +1398,9 @@ export function ReceiptReviewScreen({
       discardRequest === handledDiscardRequest.current
     ) return;
     handledDiscardRequest.current = discardRequest;
+    if (snapshot.hasTag("saving")) return;
     send({ type: "receipt.review.discard" });
-  }, [discardRequest, send]);
+  }, [discardRequest, send, snapshot]);
 
   useEffect(() => {
     if (doneRef.current) return;

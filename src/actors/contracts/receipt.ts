@@ -129,7 +129,10 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
     offline: {
       tags: ["offline"],
       on: {
-        "receipt.network.online": "selecting",
+        "receipt.network.online": {
+          target: "selecting",
+          actions: assign({ error: () => null }),
+        },
         "receipt.network.offline": {},
         "receipt.use-manual": "manualEntry",
         "receipt.cancel": "cancelled",
@@ -278,7 +281,10 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
           target: "selecting",
           actions: assign({ error: () => null }),
         },
-        "receipt.network.offline": "offline",
+        "receipt.network.offline": {
+          target: "offline",
+          actions: assign({ error: () => null }),
+        },
         "receipt.network.online": {},
         "receipt.use-manual": "manualEntry",
         "receipt.cancel": "cancelled",

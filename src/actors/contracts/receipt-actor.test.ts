@@ -219,6 +219,21 @@ Deno.test("receipt-actor scan: offline/model loss failure can retry without reta
   assertEquals(offlineActor.getSnapshot().value, "offline");
   offlineActor.stop();
 
+  const staleFailureGemini = createFakeGeminiPort(extractionDraft());
+  staleFailureGemini.failNext("quota");
+  const staleFailure = createActor(
+    createScanMachine(staleFailureGemini, createFakeImagePreparationPort(), []),
+  ).start();
+  staleFailure.send({ type: "receipt.open" });
+  staleFailure.send({ type: "receipt.image-selected" });
+  staleFailure.send({ type: "receipt.scan", input: scanInput });
+  await waitForActorState(staleFailure, "failed");
+  staleFailure.send({ type: "receipt.network.offline" });
+  staleFailure.send({ type: "receipt.network.online" });
+  assertEquals(staleFailure.getSnapshot().value, "selecting");
+  assertEquals(staleFailure.getSnapshot().context.error, null);
+  staleFailure.stop();
+
   const resetFailure = createActor(createReceiptScanMachine({
     ai: createFakeGeminiPort(extractionDraft()),
     imagePreparation: preparation,

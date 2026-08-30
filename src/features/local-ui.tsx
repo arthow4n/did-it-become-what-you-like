@@ -342,10 +342,12 @@ export function DirtyExitGuard({
   isOpen,
   onKeepEditing,
   onDiscard,
+  discardDisabled = false,
 }: {
   isOpen: boolean;
   onKeepEditing: () => void;
   onDiscard: () => void;
+  discardDisabled?: boolean;
 }) {
   const discardIntentRef = useRef(false);
   return (
@@ -390,13 +392,14 @@ export function DirtyExitGuard({
             </Button>
             <Button
               variant="danger"
+              isDisabled={discardDisabled}
               onPress={() => {
                 discardIntentRef.current = true;
                 onDiscard();
                 close();
               }}
             >
-              Discard changes
+              {discardDisabled ? "Finishing save…" : "Discard changes"}
             </Button>
           </FormActions>
         </Stack>
@@ -2822,6 +2825,7 @@ export function LocalUiRuntime(
   );
   const [dirtyExitOpen, setDirtyExitOpen] = useState(false);
   const [discardRequest, setDiscardRequest] = useState(0);
+  const [dirtyDiscardDisabled, setDirtyDiscardDisabled] = useState(false);
   const pendingNavigationRef = useRef<LocalUiPendingNavigation | null>(null);
   const currentHistoryRef = useRef<LocalUiHistoryEntry | null>(null);
   const historyTransitionRef = useRef<LocalUiHistoryTransition | null>(null);
@@ -2904,6 +2908,10 @@ export function LocalUiRuntime(
       globalThis.removeEventListener("online", onOnline);
     };
   }, [sendShell]);
+
+  useEffect(() => {
+    setDirtyDiscardDisabled(false);
+  }, [path]);
 
   useEffect(() => {
     const nextState = shellSnapshot.context.projectState;
@@ -3333,6 +3341,7 @@ export function LocalUiRuntime(
                   setWorkflowDirty(dirty);
                   setDirtyNavigationWorkflow(dirty);
                 }}
+                onDiscardDisabledChange={setDirtyDiscardDisabled}
                 discardRequest={discardRequest}
                 onDirtyDiscarded={() => finishDirtyNavigation("/expenses")}
                 onReview={(review) => {
@@ -3358,6 +3367,7 @@ export function LocalUiRuntime(
                   setWorkflowDirty(dirty);
                   setDirtyNavigationWorkflow(dirty);
                 }}
+                onDiscardDisabledChange={setDirtyDiscardDisabled}
                 discardRequest={discardRequest}
                 onClose={() => {
                   void organization.getState().then(setState);
@@ -3494,6 +3504,7 @@ export function LocalUiRuntime(
           : null}
         <DirtyExitGuard
           isOpen={dirtyExitOpen}
+          discardDisabled={dirtyDiscardDisabled}
           onKeepEditing={() => {
             pendingNavigationRef.current = null;
             historyTransitionRef.current = null;

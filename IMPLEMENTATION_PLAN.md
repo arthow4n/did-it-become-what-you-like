@@ -503,7 +503,8 @@ M34-001 -> M34-002 -> R-3410
 
 #### M34-003 — OpenRouter SDK adapter, model prefilter, endpoint metadata, and routing
 
-- **Status/dependencies:** `PENDING`; depends on `R-3410`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-3410`. Started after
+  R-3410 closure and the pinned SDK/reference audit at checkpoint `6522f2b`.
 - **Ownership:** `deno.json`, `deno.lock`, new
   `src/adapters/openrouter/{client,adapter,index}.ts` and focused tests; shared
   receipt module only for a proven provider-neutral defect.
@@ -676,7 +677,7 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M34-003` (`READY`).
+- **Active task / gate:** `M34-003` (`IN_PROGRESS`).
 - **Planning base:** M34-001, M34-002, R-3410, and remediation are integrated
   and pushed on remote `master`; the latest implementation is `e320493`.
 - **Verification status:** R-3410 closure audit approved with no residual
@@ -689,9 +690,15 @@ M34-001 -> M34-002 -> R-3410
 - **Active / preserved work:** no active M34 implementation worker. Existing
   unrelated worktrees contain preserved untracked progress files and are not
   touched.
-- **Exact next action:** read and verify all M34-003 OpenRouter references,
-  mark M34-003 `IN_PROGRESS`, and dispatch exactly one write-enabled worker for
-  that task. Do not begin M34-004 until M34-003 is integrated and verified.
+- **Reference checkpoint:** the required OpenRouter docs and the v1.2.82 pinned
+  SDK sources were read. The installed SDK confirms camelCase request types that
+  serialize to the required wire fields: `supportedParameters`,
+  `inputModalities`, `outputModalities`, `zdr`, `provider.requireParameters`,
+  `provider.dataCollection`, and `responseFormat.jsonSchema`; endpoint methods
+  are `endpoints.list({author, slug})` and `endpoints.listZdrEndpoints()`.
+- **Exact next action:** dispatch exactly one write-enabled worker for M34-003.
+  Do not begin M34-004 until M34-003 is integrated, verified, pushed, and
+  checkpointed.
 
 ## Ready-to-Use Orchestration Prompt
 

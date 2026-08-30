@@ -521,6 +521,11 @@ export function PreferencesScreen({
     month: "long",
     year: "numeric",
   }).format(boundaryDate);
+  const resetToDefault = () => {
+    if (snapshot.hasTag("saving") || boundary === "03:00") return;
+    send({ type: "preferences.change", expenseDayBoundary: "03:00" });
+    send({ type: "preferences.save" });
+  };
 
   return (
     <ContentContainer size="readable">
@@ -574,6 +579,13 @@ export function PreferencesScreen({
               ? <StatusMessage tone="positive">Preference saved.</StatusMessage>
               : null}
             <FormActions>
+              <Button
+                variant="quiet"
+                onPress={resetToDefault}
+                isDisabled={snapshot.hasTag("saving") || boundary === "03:00"}
+              >
+                Reset to default (03:00)
+              </Button>
               <Button
                 variant="quiet"
                 onPress={onClose}

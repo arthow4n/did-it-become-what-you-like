@@ -2045,6 +2045,9 @@ export function CategoryManager({
                 isRequired
                 value={name}
                 onChange={setName}
+                error={snapshot.context.error?.code === "conflict"
+                  ? snapshot.context.error.message
+                  : undefined}
               />
               <ColorChoiceField
                 label="Category color (optional)"

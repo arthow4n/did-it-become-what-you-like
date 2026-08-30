@@ -385,6 +385,16 @@
     .local-ui-delete-actions {
       gap: var(--space-3);
     }
+
+    .local-ui-card-actions--grid {
+      row-gap: var(--space-3);
+    }
+
+    .local-ui-card-actions--grid > .ds-button,
+    .local-ui-card-actions--grid > button,
+    .local-ui-card-actions--grid > * {
+      min-height: var(--control-height);
+    }
   }
 
   @media (min-width: 720px) {

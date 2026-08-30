@@ -131,6 +131,46 @@ Deno.test("settings-final preferences discard restores the saved boundary", asyn
   });
 });
 
+Deno.test("settings-final preferences reset CTA restores and saves 03:00", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      let savedBoundary = "";
+      render(
+        createElement(PreferencesScreen, {
+          local,
+          onClose: () => undefined,
+          onSaved: (boundary) => savedBoundary = boundary,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => {
+        if (
+          (view.getByLabelText(/^Expense-day boundary/) as HTMLInputElement)
+            .value !== "03:00"
+        ) throw new Error("default boundary has not loaded");
+      });
+      fireEvent.change(view.getByLabelText(/^Expense-day boundary/), {
+        target: { value: "04:30" },
+      });
+      await waitFor(() => {
+        assert(view.getByRole("button", { name: "Reset to default (03:00)" }));
+      });
+      fireEvent.click(
+        view.getByRole("button", { name: "Reset to default (03:00)" }),
+      );
+      await waitFor(() => {
+        assert(savedBoundary === "03:00", "default boundary was not saved");
+        assert(
+          (view.getByLabelText(/^Expense-day boundary/) as HTMLInputElement)
+            .value === "03:00",
+          "reset should restore the default boundary",
+        );
+      });
+    });
+  });
+});
+
 Deno.test("settings-final About exposes exact disclosure and build metadata", async () => {
   await withComponentHarness(({ render }) => {
     render(

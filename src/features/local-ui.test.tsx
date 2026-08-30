@@ -21,6 +21,7 @@ import type {
   ProjectCategoryService,
   ProjectCategoryState,
 } from "../domain/organization.ts";
+import { OrganizationError } from "../domain/organization.ts";
 import type { Expense } from "../domain/index.ts";
 import { createFakeLocalPort } from "../test-support/fakes/ports.ts";
 import {
@@ -1045,6 +1046,52 @@ Deno.test("local UI category editor keeps built-in Uncategorized protected", asy
   });
 });
 
+Deno.test("local UI category conflict is anchored to the category name field", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    const { service } = createTestService(categoryState);
+    const conflictService: ProjectCategoryService = {
+      ...service,
+      commitCategory: async () => {
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        throw new OrganizationError(
+          "conflict",
+          "Active category names must be unique.",
+        );
+      },
+    };
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(CategoryManager, {
+          service: conflictService,
+          state: categoryState,
+          initialCreate: true,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Create category" }))
+      );
+      const input = view.getByRole("textbox", { name: "Category name" });
+      fireEvent.change(input, { target: { value: "Food" } });
+      fireEvent.click(view.getByRole("button", { name: "Save category" }));
+      await new Promise<void>((resolve) => setTimeout(resolve, 100));
+      const currentInput = view.getByRole("textbox", {
+        name: "Category name",
+      });
+      assert(
+        currentInput.getAttribute("aria-invalid") === "true",
+        "conflict should mark the category name field invalid",
+      );
+      assert(
+        view.getAllByText("Active category names must be unique.").length === 2,
+        "the conflict should be exposed by both the field and summary",
+      );
+    });
+  });
+});
+
 Deno.test("local UI category manager exposes a level-one page heading", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     const { service } = createTestService(categoryState);
@@ -1255,6 +1302,8 @@ Deno.test("local UI CSS uses shared surface, overlay, and spacing tokens", async
   assert(css.includes("minmax(0, 1.45fr) minmax(16rem, 0.75fr)"));
   assert(css.includes("local-ui-delete-actions"));
   assert(css.includes("min-height: var(--control-height);"));
+  assert(css.includes("row-gap: var(--space-3);"));
+  assert(css.includes("@media (max-width: 359px)"));
   assert(!css.includes("var(--surface-2)"));
   assert(!css.includes("z-index: 40;"));
   assert(!css.includes("gap: 0;"));

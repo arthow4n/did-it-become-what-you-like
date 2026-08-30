@@ -3,7 +3,6 @@ import {
   type GeminiBrowserClient,
   type GeminiGenerateRequest,
   type GeminiGenerateResponse,
-  geminiModelCapabilityLabel,
   type GeminiRawModel,
   REQUIRED_RECEIPT_AI_CAPABILITIES,
 } from "./adapter.ts";
@@ -18,6 +17,7 @@ import {
   withEphemeralImage,
 } from "./image.ts";
 import {
+  buildReceiptPrompt,
   parseReceiptOutput,
   RECEIPT_INSTRUCTION_VERSION,
   RECEIPT_JSON_SCHEMA,
@@ -451,85 +451,29 @@ Deno.test("A-301 key storage is namespaced, removable, and opaque", async () => 
   assertEquals(memory.values.has(OPENROUTER_API_KEY_STORAGE_KEY), false);
 });
 
-Deno.test("A-301 models retain Needs test entries and synthetic validation promotes only tested models", async () => {
-  const { adapter, requests } = createStorageAndAdapter((requests) =>
+Deno.test("A-301 Gemini model refresh filters only explicit unsupported actions", async () => {
+  let generateCalls = 0;
+  const modelWithoutActions: GeminiRawModel = {
+    baseModelId: "gemini-metadata-unknown",
+    displayName: "Metadata incomplete model",
+    name: "models/gemini-metadata-unknown",
+  };
+  const { adapter } = createStorageAndAdapter(() =>
     clientWithModels(
-      [MODEL_NEEDS_TEST],
+      [MODEL_NEEDS_TEST, MODEL_TEXT_ONLY, modelWithoutActions],
       { text: RECEIPT_OUTPUT },
-      (request) => {
-        requests.push(request);
-        const media = request.contents.find((part) => "inlineData" in part);
-        if (media === undefined || !("inlineData" in media)) {
-          throw { status: 400 };
-        }
-        const validOnePixelPng =
-          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
-        if (
-          media.inlineData.mimeType !== "image/png" ||
-          media.inlineData.data !== validOnePixelPng
-        ) {
-          throw { status: 400 };
-        }
-      },
+      () => generateCalls++,
     )
   );
-  await adapter.setApiKey("AIza.synthetic-model-test");
+  await adapter.setApiKey("AIza.synthetic-model-list");
   const models = await adapter.listModels({
     requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
   });
-  assertEquals(models.length, 1);
   assertEquals(
-    geminiModelCapabilityLabel(models[0], {
-      requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
-    }),
-    "Needs test",
+    models.map((model) => model.id),
+    ["gemini-needs-test", "gemini-metadata-unknown"],
   );
-  const result = await adapter.testConfiguration("gemini-needs-test", {
-    requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
-  });
-  assertEquals(result.status, "compatible");
-  assertEquals(requests.length, 1);
-  if (result.status === "compatible") {
-    assertEquals(
-      geminiModelCapabilityLabel(result.model, {
-        requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
-      }),
-      "Compatible",
-    );
-  }
-});
-
-Deno.test("A-301 compatibility probe accepts the same fenced structured output as extraction", async () => {
-  const { adapter } = createStorageAndAdapter(() =>
-    clientWithModels([MODEL_NEEDS_TEST], {
-      text: `\`\`\`json\n${RECEIPT_OUTPUT}\n\`\`\``,
-    })
-  );
-  await adapter.setApiKey("AIza.synthetic-fenced-probe");
-  const result = await adapter.testConfiguration("gemini-needs-test", {
-    requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
-  });
-  assertEquals(result.status, "compatible");
-});
-
-Deno.test("A-301 explicit text-only and retired models are incompatible", async () => {
-  const retired: GeminiRawModel = {
-    ...MODEL_NEEDS_TEST,
-    baseModelId: "gemini-retired",
-    lifecycle: "deprecated",
-  };
-  const { adapter } = createStorageAndAdapter(() =>
-    clientWithModels([MODEL_TEXT_ONLY, retired])
-  );
-  await adapter.setApiKey("AIza.synthetic-lifecycle-test");
-  const textOnly = await adapter.testConfiguration("gemini-text-only", {
-    requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
-  });
-  assertEquals(textOnly.status, "incompatible");
-  const deprecated = await adapter.testConfiguration("gemini-retired", {
-    requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
-  });
-  assertEquals(deprecated.status, "incompatible");
+  assertEquals(generateCalls, 0);
 });
 
 Deno.test("A-301 extraction sends only permitted context, maps validated output, and clears bytes", async () => {
@@ -598,6 +542,13 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
       "payment/tender amounts, subtotals, tax summaries, receipt totals",
     ),
   );
+  assertEquals(
+    requests[0].config.systemInstruction,
+    buildReceiptPrompt(extractionRequest()),
+  );
+  assertEquals(requests[0].contents[0], {
+    text: buildReceiptPrompt(extractionRequest()),
+  });
   assertEquals(requests[0].config.responseMimeType, "application/json");
   assertEquals(requests[0].config.responseJsonSchema, RECEIPT_JSON_SCHEMA);
 });

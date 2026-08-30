@@ -13,7 +13,7 @@ import type {
 import {
   RECEIPT_INSTRUCTION_VERSION,
   RECEIPT_SCHEMA_VERSION_NUMBER,
-} from "../adapters/gemini/schema.ts";
+} from "../adapters/receipt-ai/schema.ts";
 import {
   addReceiptLine,
   createReceiptCommitService,

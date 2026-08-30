@@ -1,141 +1,11 @@
 import { z } from "zod";
 
 import {
-  CalendarDateSchema,
-  canonicalDecimal,
-  CurrencyCodeSchema,
-  type StableId,
-  StableIdSchema,
-} from "../../domain/schema/primitives.ts";
-import type {
-  ReceiptExtractionDraft,
-  ReceiptExtractionRequest,
-} from "../ports/receipt-ai.ts";
+  type ReceiptJsonSchema,
+  ReceiptOutputSchema,
+} from "../receipt-ai/schema.ts";
 
-export const RECEIPT_SCHEMA_VERSION = "receipt.v2" as const;
-export const RECEIPT_SCHEMA_VERSION_NUMBER = 2 as const;
-export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v6" as const;
-
-const CanonicalDecimalTextSchema = z.string().regex(
-  /^-?(0|[1-9]\d*)(\.\d+)?$/,
-  "must be a canonical decimal string",
-);
-
-const ReceiptLineOutputSchema = z.strictObject({
-  amount: CanonicalDecimalTextSchema,
-  categoryId: StableIdSchema,
-  description: z.string().trim().min(1).max(500),
-  direction: z.enum(["outflow", "inflow"]),
-  kind: z.enum(["purchase", "adjustment"]),
-  rationale: z.string().trim().min(1).max(500),
-  selected: z.boolean(),
-  quantity: CanonicalDecimalTextSchema.optional(),
-  unitPrice: CanonicalDecimalTextSchema.optional(),
-  uncertainty: z.string().trim().min(1).max(1_000).optional(),
-}).superRefine((line, context) => {
-  // Google's structured-schema subset cannot express this kind-specific
-  // relationship. Keep the provider boundary strict in local validation.
-  if (
-    line.kind === "adjustment" &&
-    (line.quantity !== undefined || line.unitPrice !== undefined)
-  ) {
-    context.addIssue({
-      code: "custom",
-      path: ["kind"],
-      message: "quantity and unitPrice are only valid for purchases",
-    });
-  }
-});
-
-/** The single runtime source of truth for Gemini's structured response. */
-export const ReceiptOutputSchema = z.strictObject({
-  currency: CurrencyCodeSchema,
-  date: CalendarDateSchema,
-  lines: z.array(ReceiptLineOutputSchema),
-  merchant: z.string().trim().min(1).max(500),
-  mismatch: z.strictObject({
-    difference: CanonicalDecimalTextSchema,
-    explanation: z.string().trim().min(1).max(1_000),
-  }).nullable(),
-  printedTotal: CanonicalDecimalTextSchema,
-  schemaVersion: z.literal(RECEIPT_SCHEMA_VERSION),
-  uncertainty: z.array(z.string().trim().min(1).max(1_000)),
-});
-
-export type ReceiptOutput = z.infer<typeof ReceiptOutputSchema>;
-export type ReceiptLineOutput = z.infer<typeof ReceiptLineOutputSchema>;
-
-export type ReceiptOutputFailurePhase = "json" | "schema";
-
-export class ReceiptOutputError extends Error {
-  override readonly name = "ReceiptOutputError";
-
-  constructor(readonly phase: ReceiptOutputFailurePhase) {
-    super("Receipt output could not be validated.");
-  }
-}
-
-export type GeminiJsonSchema = Readonly<Record<string, unknown>>;
-
-function isSchemaRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/**
- * Models commonly transcribe locale-specific receipt decimals (for example
- * `33,08` or `1.234,56`) even though the transport contract uses canonical
- * decimal strings. Normalize only unambiguous decimal/grouping forms; all
- * other values remain untouched and are rejected by the strict schema below.
- */
-function normalizeDecimalText(value: unknown): unknown {
-  if (typeof value !== "string") return value;
-  const trimmed = value.trim().replace(/\u00a0/g, " ");
-  const candidate = /^-?\d+(?:\.\d+)?$/.test(trimmed)
-    ? trimmed
-    : /^-?\d+,\d+$/.test(trimmed)
-    ? trimmed.replace(",", ".")
-    : /^-?\d{1,3}(?:[ .]\d{3})+,\d+$/.test(trimmed)
-    ? trimmed.replace(/[ .]/g, "").replace(",", ".")
-    : /^-?\d{1,3}(?:[ ,]\d{3})+\.\d+$/.test(trimmed)
-    ? trimmed.replace(/[ ,]/g, "")
-    : /^-?\d{1,3}(?: \d{3})+$/.test(trimmed)
-    ? trimmed.replace(/ /g, "")
-    : undefined;
-  if (candidate === undefined) return value;
-  try {
-    return canonicalDecimal(candidate);
-  } catch {
-    return value;
-  }
-}
-
-function normalizeOutputDecimals(value: unknown): unknown {
-  if (!isSchemaRecord(value)) return value;
-  const lines = Array.isArray(value.lines)
-    ? value.lines.map((line) =>
-      isSchemaRecord(line)
-        ? {
-          ...line,
-          amount: normalizeDecimalText(line.amount),
-          quantity: normalizeDecimalText(line.quantity),
-          unitPrice: normalizeDecimalText(line.unitPrice),
-        }
-        : line
-    )
-    : value.lines;
-  const mismatch = isSchemaRecord(value.mismatch)
-    ? {
-      ...value.mismatch,
-      difference: normalizeDecimalText(value.mismatch.difference),
-    }
-    : value.mismatch;
-  return {
-    ...value,
-    printedTotal: normalizeDecimalText(value.printedTotal),
-    lines,
-    mismatch,
-  };
-}
+export type GeminiJsonSchema = ReceiptJsonSchema;
 
 const GOOGLE_JSON_SCHEMA_KEYWORDS = new Set([
   "type",
@@ -153,6 +23,10 @@ const GOOGLE_JSON_SCHEMA_KEYWORDS = new Set([
   "title",
   "description",
 ]);
+
+function isSchemaRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 /** Reduce generated JSON Schema to Google's documented structured-output subset. */
 function toGoogleJsonSchema(value: unknown): unknown {
@@ -196,107 +70,32 @@ function toGoogleJsonSchema(value: unknown): unknown {
 }
 
 /**
- * Google receives its documented JSON Schema subset derived from the same Zod
- * object that performs strict browser validation. Provider-unsupported lexical
- * constraints remain enforced locally after generation.
+ * Google receives its documented JSON Schema subset derived from the same
+ * provider-neutral Zod object that performs strict browser validation.
  */
 export const RECEIPT_JSON_SCHEMA: GeminiJsonSchema = Object.freeze(
   toGoogleJsonSchema(z.toJSONSchema(ReceiptOutputSchema)) as GeminiJsonSchema,
 );
 
-function assertOutputSemantics(output: ReceiptOutput): ReceiptOutput {
-  // The generated schema covers shape and lexical forms. These explicit
-  // runtime checks keep the browser boundary strict if the validator changes.
-  if (!CurrencyCodeSchema.safeParse(output.currency).success) {
-    throw new Error("receipt output currency is invalid");
-  }
-  if (!CalendarDateSchema.safeParse(output.date).success) {
-    throw new Error("receipt output date is invalid");
-  }
-  return output;
-}
+/** Google-wire schema; semantic fields remain owned by the shared schema. */
+export const GEMINI_RECEIPT_JSON_SCHEMA = RECEIPT_JSON_SCHEMA;
 
-/** Validate untrusted model text without exposing the raw text in an error. */
-export function validateReceiptOutput(value: unknown): ReceiptOutput {
-  const result = ReceiptOutputSchema.safeParse(value);
-  if (!result.success) throw new ReceiptOutputError("schema");
-  try {
-    return assertOutputSemantics(result.data);
-  } catch {
-    throw new ReceiptOutputError("schema");
-  }
-}
-
-export function parseReceiptOutput(text: string): ReceiptOutput {
-  let value: unknown;
-  try {
-    value = JSON.parse(text) as unknown;
-  } catch {
-    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)?.[1];
-    if (fenced === undefined) {
-      throw new ReceiptOutputError("json");
-    }
-    try {
-      value = JSON.parse(fenced) as unknown;
-    } catch {
-      throw new ReceiptOutputError("json");
-    }
-  }
-  return validateReceiptOutput(normalizeOutputDecimals(value));
-}
-
-function mismatchText(output: ReceiptOutput): readonly string[] {
-  return output.mismatch === null
-    ? []
-    : [`${output.mismatch.difference}: ${output.mismatch.explanation}`];
-}
-
-/**
- * Convert the complete validated response to the stable adapter port shape.
- * Receipt actor-specific fields remain owned by A-302. An unknown category
- * suggestion stays an untrusted stable ID here; the domain boundary routes it
- * to the built-in fallback and marks it uncertain for the user to review.
- */
-export function mapReceiptOutputToDraft(
-  output: ReceiptOutput,
-  request: Pick<ReceiptExtractionRequest, "categories">,
-): ReceiptExtractionDraft {
-  const categories = new Set<StableId>(
-    request.categories.map((category) => category.id),
-  );
-
-  return {
-    merchant: output.merchant,
-    currency: output.currency,
-    date: output.date,
-    printedTotal: output.printedTotal,
-    lines: output.lines.map((line) => {
-      const categoryAvailable = categories.has(line.categoryId);
-      const uncertainty = categoryAvailable ? line.uncertainty : [
-        line.uncertainty,
-        "The suggested category is unavailable; review the category.",
-      ].filter((item): item is string => item !== undefined).join(" ");
-      const common = {
-        description: line.description,
-        amount: line.amount,
-        categoryId: line.categoryId,
-        direction: line.direction,
-        selected: line.selected,
-        rationale: line.rationale,
-        ...(uncertainty === undefined ? {} : { uncertainty }),
-      };
-      return line.kind === "purchase"
-        ? {
-          ...common,
-          kind: line.kind,
-          ...(line.quantity === undefined ? {} : { quantity: line.quantity }),
-          ...(line.unitPrice === undefined
-            ? {}
-            : { unitPrice: line.unitPrice }),
-        }
-        : { ...common, kind: line.kind };
-    }),
-    uncertainty: output.uncertainty,
-    mismatches: mismatchText(output),
-  };
-}
+// Keep the existing Gemini module surface as a re-export while the actual
+// prompt, validator, parser, normalizer, and mapper live above the provider
+// boundary.
+export {
+  buildReceiptPrompt,
+  mapReceiptOutputToDraft,
+  normalizeReceiptOutput,
+  parseReceiptOutput,
+  RECEIPT_INSTRUCTION_VERSION,
+  RECEIPT_SCHEMA_VERSION,
+  RECEIPT_SCHEMA_VERSION_NUMBER,
+  ReceiptOutputError,
+  validateReceiptOutput,
+} from "../receipt-ai/schema.ts";
+export type {
+  ReceiptLineOutput,
+  ReceiptOutput,
+  ReceiptOutputFailurePhase,
+} from "../receipt-ai/schema.ts";

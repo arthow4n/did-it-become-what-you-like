@@ -15,25 +15,19 @@ import type {
   ReceiptExtractionDraft,
   ReceiptExtractionRequest,
 } from "../ports/receipt-ai.ts";
-import type { PreparedImage } from "../ports/image.ts";
+import { GEMINI_RECEIPT_JSON_SCHEMA, type GeminiJsonSchema } from "./schema.ts";
 import {
-  type GeminiJsonSchema,
+  buildReceiptPrompt,
   mapReceiptOutputToDraft,
   parseReceiptOutput,
   RECEIPT_INSTRUCTION_VERSION,
-  RECEIPT_JSON_SCHEMA,
-  RECEIPT_SCHEMA_VERSION,
   RECEIPT_SCHEMA_VERSION_NUMBER,
   ReceiptOutputError,
-} from "./schema.ts";
+} from "../receipt-ai/schema.ts";
+import { REQUIRED_RECEIPT_AI_CAPABILITIES } from "../receipt-ai/capabilities.ts";
 import { withEphemeralImage } from "./image.ts";
 
-export const REQUIRED_RECEIPT_AI_CAPABILITIES: readonly ReceiptAiCapability[] =
-  [
-    "image-input",
-    "content-generation",
-    "structured-output",
-  ];
+export { REQUIRED_RECEIPT_AI_CAPABILITIES } from "../receipt-ai/capabilities.ts";
 
 export type GeminiModelCapabilityLabel =
   | "Compatible"
@@ -45,7 +39,6 @@ export type GeminiRawModel = {
   readonly baseModelId?: unknown;
   readonly displayName?: unknown;
   readonly lifecycle?: unknown;
-  readonly supportedGenerationMethods?: unknown;
   readonly supportedActions?: unknown;
   readonly inputModalities?: unknown;
   readonly outputModalities?: unknown;
@@ -132,9 +125,7 @@ function capabilityEvidence(
   }
 
   if (capability === "content-generation") {
-    const methods = stringArray(
-      raw.supportedActions ?? raw.supportedGenerationMethods,
-    );
+    const methods = stringArray(raw.supportedActions);
     return methods === undefined
       ? undefined
       : methods.includes("generateContent");
@@ -194,13 +185,9 @@ function toModel(raw: GeminiRawModel): ReceiptAiModel | undefined {
   };
 }
 
-function hasExplicitUnsupportedCapability(
-  raw: GeminiRawModel,
-  capabilities: readonly ReceiptAiCapability[],
-): boolean {
-  return capabilities.some((capability) =>
-    capabilityEvidence(raw, capability) === false
-  );
+function explicitlyLacksGenerateContent(raw: GeminiRawModel): boolean {
+  const methods = stringArray(raw.supportedActions);
+  return methods !== undefined && !methods.includes("generateContent");
 }
 
 function requiredCapabilities(
@@ -338,48 +325,6 @@ function validateRequest(request: ReceiptExtractionRequest): void {
   }
 }
 
-function promptFor(request: ReceiptExtractionRequest): string {
-  const categories = request.categories.map((category) => ({
-    id: category.id,
-    name: category.name,
-  }));
-  return [
-    `Extract the selected receipt image into exactly schema ${RECEIPT_SCHEMA_VERSION}.`,
-    `Instruction version: ${RECEIPT_INSTRUCTION_VERSION}.`,
-    `Device locale: ${request.locale}.`,
-    `Project default currency: ${request.currency}.`,
-    `Active category catalogue (use an existing id only; never create a category): ${
-      JSON.stringify(categories)
-    }.`,
-    "Amount transcription rules: copy each numeric amount exactly as printed, including a printed minus sign; use a period as the decimal separator and omit digit-grouping separators; do not convert it to the owner's ledger sign.",
-    "Product-description transcription rule: omit a leading asterisk only when the receipt uses it as a retailer marker for a discount, offer, or loyalty condition (for example, `*Ostringar Mild Jal` becomes `Ostringar Mild Jal`). Preserve an asterisk whenever it is actually part of the printed product description, including an asterisk within a name; never remove asterisks mechanically.",
-    "Every product or purchase line has direction outflow, even when the receipt prints no minus sign. Set kind to purchase.",
-    "Discounts, refunds, cashback, and explicit bottle-deposit returns have direction inflow and kind adjustment because they reduce the amount owed. A positive PANT BURK/PANT bottle-deposit line printed beside purchased goods is a deposit charge, not a return: keep its printed amount and set direction outflow. Use inflow for a deposit only when the receipt explicitly says return/refund/återbetalning or prints a negative amount.",
-    "Tips, fees, surcharges, and other extra charges have direction outflow and kind adjustment because they increase the amount owed.",
-    "For every line, provide a concise rationale (one short sentence) naming the receipt evidence used for its category and direction. This is evidence, not hidden chain-of-thought.",
-    "When a purchased line explicitly shows a quantity and unit price (for example, `2 st x 16,99`), populate quantity and unitPrice and set amount to the printed line total.",
-    "Do not return payment/tender amounts, subtotals, tax summaries, receipt totals, or quantity-only rows as line items; do not duplicate a product line for its quantity.",
-    "Set printedTotal to the amount exactly as printed. Before returning JSON, use the direction field to verify every selected line contributes once to the owner's signed total; preserve a mismatch explanation when the image cannot be reconciled.",
-    "Return JSON only and preserve uncertainty.",
-  ].join("\n");
-}
-
-function syntheticImage(): PreparedImage {
-  // A real 1x1 opaque PNG. The compatibility probe must exercise multimodal
-  // decoding without sending owner data; arbitrary text labelled as an image
-  // is rejected by Gemini before model capabilities can be tested.
-  const base64 =
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
-  return {
-    bytes: Uint8Array.from(atob(base64), (value) => value.charCodeAt(0)),
-    mimeType: "image/png",
-    width: 1,
-    height: 1,
-    metadataSanitized: true,
-    preparationApplied: false,
-  };
-}
-
 function responseText(response: GeminiGenerateResponse): string {
   if (!isRecord(response) || typeof response.text !== "string") {
     throw new Error("Gemini response text is missing");
@@ -404,18 +349,12 @@ export class GeminiAdapter implements ReceiptAiPort {
   readonly #secretStorage: SecretStoragePort;
   readonly #createClient: GeminiClientFactory;
   readonly #isOnline: () => boolean;
-  readonly #rawModels = new Map<string, GeminiRawModel>();
-  #compatibilityVersion = 0;
 
   constructor(options: GeminiAdapterOptions) {
     this.#secretStorage = options.secretStorage;
     this.#createClient = options.createClient;
     this.#isOnline = options.isOnline ??
       (() => typeof navigator === "undefined" || navigator.onLine !== false);
-  }
-
-  get compatibilityVersion(): number {
-    return this.#compatibilityVersion;
   }
 
   async getApiKey(
@@ -433,12 +372,10 @@ export class GeminiAdapter implements ReceiptAiPort {
       SecretValue.from(value),
       options,
     );
-    this.#invalidateCompatibility();
   }
 
   async removeApiKey(options?: OperationOptions): Promise<void> {
     await this.#secretStorage.remove("gemini-api-key", options);
-    this.#invalidateCompatibility();
   }
 
   async listModels(
@@ -447,81 +384,17 @@ export class GeminiAdapter implements ReceiptAiPort {
   ): Promise<readonly ReceiptAiModel[]> {
     const client = await this.#client(options, "gemini.listModels");
     const rawModels = await this.#listRawModels(client, options);
-    this.#rawModels.clear();
     const models: ReceiptAiModel[] = [];
     for (const raw of rawModels) {
+      if (explicitlyLacksGenerateContent(raw)) continue;
       const model = toModel(raw);
       if (model === undefined) continue;
       models.push(model);
-      this.#rawModels.set(model.id, raw);
     }
-    // `query` is intentionally used by the consumer's label calculation. A
-    // model list must retain Needs test entries instead of filtering them out.
+    // Capability query filtering remains the consumer's responsibility because
+    // incomplete Gemini metadata must retain an unproven candidate.
     void query;
     return models;
-  }
-
-  async testConfiguration(
-    modelId: string,
-    query: ReceiptAiModelQuery,
-    options?: OperationOptions,
-  ): Promise<
-    | { readonly status: "compatible"; readonly model: ReceiptAiModel }
-    | {
-      readonly status: "needs-test" | "incompatible";
-      readonly model?: ReceiptAiModel;
-      readonly missingCapabilities: readonly ReceiptAiCapability[];
-    }
-  > {
-    const required = requiredCapabilities(query);
-    const client = await this.#client(options, "gemini.testConfiguration");
-    const rawModels = await this.#listRawModels(client, options);
-    const raw = rawModels.find((candidate) => modelIdOf(candidate) === modelId);
-    const model = raw === undefined ? undefined : toModel(raw);
-    if (
-      raw === undefined || model === undefined || model.lifecycle !== "active"
-    ) {
-      return {
-        status: "incompatible",
-        ...(model === undefined ? {} : { model }),
-        missingCapabilities: required,
-      };
-    }
-    this.#rawModels.set(model.id, raw);
-    if (hasExplicitUnsupportedCapability(raw, required)) {
-      return {
-        status: "incompatible",
-        model,
-        missingCapabilities: missingCapabilities(model, required),
-      };
-    }
-    if (missingCapabilities(model, required).length > 0) {
-      // Metadata did not establish all required capabilities, so only the
-      // synthetic call can promote the model to compatible.
-      try {
-        await this.#syntheticConfiguration(client, model.id, options);
-      } catch (error) {
-        const mapped = mapGeminiError(error, "gemini.testConfiguration");
-        if (
-          ["aborted", "offline", "unauthorized", "quota", "unavailable"]
-            .includes(mapped.code)
-        ) {
-          throw mapped;
-        }
-        return { status: "incompatible", model, missingCapabilities: required };
-      }
-    } else {
-      await this.#syntheticConfiguration(client, model.id, options);
-    }
-    const compatible: ReceiptAiModel = {
-      ...model,
-      capabilities: Object.freeze({
-        "image-input": true,
-        "content-generation": true,
-        "structured-output": true,
-      }),
-    };
-    return { status: "compatible", model: compatible };
   }
 
   async extractReceipt(
@@ -531,7 +404,7 @@ export class GeminiAdapter implements ReceiptAiPort {
     validateRequest(request);
     if (!this.#isOnline()) throw adapterError("offline", "gemini.extract");
     throwIfAborted(options?.signal);
-    const prompt = promptFor(request);
+    const prompt = buildReceiptPrompt(request);
     try {
       return await withEphemeralImage(request.image.bytes, async () => {
         const client = await this.#client(options, "gemini.extract");
@@ -549,7 +422,7 @@ export class GeminiAdapter implements ReceiptAiPort {
           ],
           config: {
             responseMimeType: "application/json",
-            responseJsonSchema: RECEIPT_JSON_SCHEMA,
+            responseJsonSchema: GEMINI_RECEIPT_JSON_SCHEMA,
             systemInstruction: prompt,
           },
         }, options);
@@ -580,11 +453,6 @@ export class GeminiAdapter implements ReceiptAiPort {
     } catch (error) {
       throw mapGeminiError(error, "gemini.extract");
     }
-  }
-
-  #invalidateCompatibility(): void {
-    this.#rawModels.clear();
-    this.#compatibilityVersion += 1;
   }
 
   async #client(
@@ -623,62 +491,6 @@ export class GeminiAdapter implements ReceiptAiPort {
       pageToken = page.nextPageToken;
     } while (pageToken !== undefined);
     return models;
-  }
-
-  async #syntheticConfiguration(
-    client: GeminiBrowserClient,
-    modelIdValue: string,
-    options?: OperationOptions,
-  ): Promise<void> {
-    const image = syntheticImage();
-    const request: ReceiptExtractionRequest = {
-      modelId: modelIdValue,
-      image,
-      schemaVersion: RECEIPT_SCHEMA_VERSION_NUMBER,
-      instructionVersion: RECEIPT_INSTRUCTION_VERSION,
-      categories: [{ id: "category-uncategorized", name: "Uncategorized" }],
-      locale: "en-US",
-      currency: "USD",
-    };
-    const prompt = promptFor(request);
-    try {
-      const response = await client.models.generateContent({
-        model: modelIdValue,
-        contents: [
-          {
-            text:
-              `Return one valid synthetic ${RECEIPT_SCHEMA_VERSION} object; do not use a real receipt.`,
-          },
-          {
-            inlineData: {
-              data: bytesToBase64(image.bytes),
-              mimeType: image.mimeType,
-            },
-          },
-        ],
-        config: {
-          responseMimeType: "application/json",
-          responseJsonSchema: RECEIPT_JSON_SCHEMA,
-          systemInstruction: prompt,
-        },
-      }, options);
-      try {
-        parseReceiptOutput(responseText(response));
-      } catch (error) {
-        if (error instanceof ReceiptOutputError) {
-          throw adapterError(
-            "invalid-output",
-            `gemini.testConfiguration.output.${error.phase}`,
-          );
-        }
-        throw adapterError(
-          "invalid-output",
-          "gemini.testConfiguration.response",
-        );
-      }
-    } finally {
-      image.bytes.fill(0);
-    }
   }
 }
 

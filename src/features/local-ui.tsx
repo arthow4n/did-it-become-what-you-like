@@ -695,7 +695,11 @@ export function ExpensesScreen({
           title="Expenses"
           eyebrow={currentProject?.name ?? "Local project"}
           description="Review the selected project and calendar period."
-          actions={<Button onPress={onAdd}>Add expense</Button>}
+          actions={
+            <Button data-expenses-add="true" onPress={onAdd}>
+              Add expense
+            </Button>
+          }
         />
         {offline
           ? (
@@ -829,7 +833,11 @@ export function ExpensesScreen({
               title={search || categoryId
                 ? "No expenses match these filters"
                 : "No expenses in this period"}
-              action={<Button onPress={onAdd}>Add an expense</Button>}
+              action={
+                <Button data-expenses-add="true" onPress={onAdd}>
+                  Add an expense
+                </Button>
+              }
             >
               {search || categoryId
                 ? "Try removing a filter or choose another period."
@@ -2851,9 +2859,11 @@ export function LocalUiRuntime(
       ).find((element) => element.dataset.receiptGroupId === request.receiptId)
       : undefined;
     const target = request.kind === "expenses"
-      ? document.querySelector<HTMLElement>("[data-expenses-list-heading]")
+      ? document.querySelector<HTMLElement>("[data-expenses-list-heading]") ??
+        document.querySelector<HTMLElement>("[data-expenses-add]")
       : receiptGroup?.querySelector<HTMLElement>("button") ??
-        document.querySelector<HTMLElement>("[data-expenses-list-heading]");
+        document.querySelector<HTMLElement>("[data-expenses-list-heading]") ??
+        document.querySelector<HTMLElement>("[data-expenses-add]");
     if (!target) return;
     receiptReturnFocusRef.current = null;
     queueMicrotask(() => {

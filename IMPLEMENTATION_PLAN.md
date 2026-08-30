@@ -349,7 +349,7 @@ M27-001 -> M27-002 -> R-2710
 
 #### M27-003 — Model the saved-receipt detail actor
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on closed `R-2710`.
+- **Status/dependencies:** `COMPLETE`; depends on closed `R-2710`.
 - **Ownership:** `src/actors/saved-receipt.ts`,
   `src/actors/contracts/saved-receipt.ts`, `src/actors/contracts/index.ts`,
   `src/actors/contracts/ports.ts`, `src/actors/contracts/types.ts`,
@@ -381,9 +381,14 @@ M27-001 -> M27-002 -> R-2710
   `deno test src/actors/contracts/saved-receipt-actor.test.ts`,
   `deno task test:affected`, `git diff --check`.
 
+- **Closure evidence:** The focused actor suite passed with 5 passed and 0
+  failed. `deno task check`, targeted format/lint, and `git diff --check`
+  passed; `deno task test:affected` passed with 135 passed and 0 failed. The
+  actor implementation and tests were pushed in `2b38a96`.
+
 #### M27-004 — Add receipt-detail navigation and management UI
 
-- **Status/dependencies:** `PENDING`; depends on `M27-003`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on completed `M27-003`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`,
   `src/features/local-ui.test.tsx`, `src/features/receipt-ui.tsx`,
   `src/features/receipt-ui.test.tsx`, `src/features/receipt-detail-ui.tsx`,
@@ -499,10 +504,9 @@ M27-001 -> M27-002 -> R-2710
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M27-003` (`IN_PROGRESS`; R-2710 is closed)
-- **Pushed implementation baseline:** `a2bfd90`; the current plan-only
-  checkpoint commit records the active actor task and the clean repository
-  state.
+- **Active task / gate:** `M27-004` (`IN_PROGRESS`; R-2710 is closed)
+- **Pushed implementation baseline:** `2b38a96`; M27-003 is complete and the
+  detail UI is the next dependency-ready task.
 - **Verification status:** R-2710 closure evidence is `deno task check`, focused
   receipt/domain/local/import-export suites (36 passed, 0 failed), formatting,
   lint, and `git diff --check`; the pre-remediation M27-002 affected suite
@@ -510,9 +514,9 @@ M27-001 -> M27-002 -> R-2710
 - **Active / preserved work:** Single primary agent on `master`; no M27 worker
   or worktree. The M27-002 implementation and review checkpoint are being
   preserved on the primary branch.
-- **Exact next action:** Implement the dependency-ready M27-003 actor and
-  contract, add its focused transition tests, run the named actor and affected
-  verification, then commit and push before opening M27-004.
+- **Exact next action:** Read the approved UI contracts and inspect the shared
+  facade, then implement M27-004 receipt-detail routing, management UI, and
+  focused component tests before its visual/accessibility review gate.
 
 ## Ready-to-Use Orchestration Prompt
 

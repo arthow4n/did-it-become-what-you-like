@@ -24,15 +24,9 @@ import {
   RECEIPT_SCHEMA_VERSION_NUMBER,
   ReceiptOutputError,
 } from "../receipt-ai/schema.ts";
-import { REQUIRED_RECEIPT_AI_CAPABILITIES } from "../receipt-ai/capabilities.ts";
 import { withEphemeralImage } from "./image.ts";
 
 export { REQUIRED_RECEIPT_AI_CAPABILITIES } from "../receipt-ai/capabilities.ts";
-
-export type GeminiModelCapabilityLabel =
-  | "Compatible"
-  | "Incompatible"
-  | "Needs test";
 
 export type GeminiRawModel = {
   readonly name?: unknown;
@@ -176,11 +170,9 @@ function toModel(raw: GeminiRawModel): ReceiptAiModel | undefined {
         : id,
     lifecycle: modelLifecycle(raw),
     capabilities: Object.freeze({
-      "image-input": capabilityEvidence(raw, "image-input") === true,
-      "content-generation":
-        capabilityEvidence(raw, "content-generation") === true,
-      "structured-output":
-        capabilityEvidence(raw, "structured-output") === true,
+      "image-input": capabilityEvidence(raw, "image-input"),
+      "content-generation": capabilityEvidence(raw, "content-generation"),
+      "structured-output": capabilityEvidence(raw, "structured-output"),
     }),
   };
 }
@@ -188,32 +180,6 @@ function toModel(raw: GeminiRawModel): ReceiptAiModel | undefined {
 function explicitlyLacksGenerateContent(raw: GeminiRawModel): boolean {
   const methods = stringArray(raw.supportedActions);
   return methods !== undefined && !methods.includes("generateContent");
-}
-
-function requiredCapabilities(
-  query: ReceiptAiModelQuery,
-): readonly ReceiptAiCapability[] {
-  const requested = query.requiredCapabilities.length === 0
-    ? REQUIRED_RECEIPT_AI_CAPABILITIES
-    : query.requiredCapabilities;
-  return [...new Set(requested)];
-}
-
-function missingCapabilities(
-  model: ReceiptAiModel,
-  required: readonly ReceiptAiCapability[],
-): readonly ReceiptAiCapability[] {
-  return required.filter((capability) => !model.capabilities[capability]);
-}
-
-export function geminiModelCapabilityLabel(
-  model: ReceiptAiModel,
-  query: ReceiptAiModelQuery,
-): GeminiModelCapabilityLabel {
-  if (model.lifecycle !== "active") return "Incompatible";
-  return missingCapabilities(model, requiredCapabilities(query)).length === 0
-    ? "Compatible"
-    : "Needs test";
 }
 
 function numericStatus(error: unknown): number | undefined {

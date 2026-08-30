@@ -3553,14 +3553,13 @@ export function ReceiptLineEditor(
   );
 }
 
-export type GeminiModelViewModel = SelectOption & {
-  status: "Compatible" | "Incompatible" | "Needs test";
+export type ModelViewModel = SelectOption & {
   reason?: string;
 };
 
 export function ModelPicker(
   { options, value, onValueChange, disabled = false }: {
-    options: GeminiModelViewModel[];
+    options: ModelViewModel[];
     value?: string;
     onValueChange?: (value: string) => void;
     disabled?: boolean;
@@ -3572,7 +3571,7 @@ export function ModelPicker(
       options={options.map((option) => ({
         id: option.id,
         label: option.label,
-        disabled: option.disabled || option.status === "Incompatible",
+        disabled: option.disabled,
       }))}
       value={value}
       onValueChange={onValueChange}
@@ -3586,8 +3585,7 @@ export function ModelPicker(
           <Stack gap={1}>
             <span>{option.label}</span>
             <Text size="label" tone="secondary">
-              {model?.status ?? "Unknown"}
-              {model?.reason ? ` · ${model.reason}` : ""}
+              {model?.reason ?? ""}
             </Text>
           </Stack>
         );
@@ -3644,42 +3642,6 @@ export function GeminiQuickSetup(
         </FormActions>
       </Stack>
     </Card>
-  );
-}
-
-export function GeminiConfigurationTest(
-  { state, onTest }: {
-    state: "idle" | "testing" | "passed" | "failed";
-    onTest: () => void;
-  },
-) {
-  const copy = state === "passed"
-    ? "Configuration passed on this device."
-    : state === "failed"
-    ? "Configuration needs attention. Check the key and compatible model."
-    : state === "testing"
-    ? "Testing the key and selected model…"
-    : "Test the key and selected model without sending a real receipt.";
-  return (
-    <StatusPanel
-      title="Test configuration"
-      detail={copy}
-      tone={state === "passed"
-        ? "positive"
-        : state === "failed"
-        ? "danger"
-        : "info"}
-      action={
-        <Button
-          variant="secondary"
-          pending={state === "testing"}
-          isDisabled={state === "testing"}
-          onPress={onTest}
-        >
-          Test configuration
-        </Button>
-      }
-    />
   );
 }
 

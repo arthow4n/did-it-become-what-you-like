@@ -3641,6 +3641,8 @@ export function LocalUiRuntime(
                 onComplete={() => {
                   if (projectEditorOpen) {
                     setProjectEditorOpen(false);
+                    setWorkflowDirty(false);
+                    setDirtyNavigationWorkflow(false);
                     navigate("/expenses");
                   }
                 }}

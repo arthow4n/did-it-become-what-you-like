@@ -4,7 +4,6 @@ import {
   createGeminiAdapter,
   createGoogleGenAiClient,
   createImagePreparationPort,
-  geminiModelCapabilityLabel,
   REQUIRED_RECEIPT_AI_CAPABILITIES,
 } from "../adapters/gemini/index.ts";
 import {
@@ -54,7 +53,6 @@ import {
   ErrorState,
   FileField,
   FormActions,
-  GeminiConfigurationTest,
   GeminiQuickSetup,
   Heading,
   IconButton,
@@ -92,20 +90,6 @@ type ReceiptGeminiPort = ReceiptAiPort & {
   >;
   setApiKey(value: string, options?: { signal?: AbortSignal }): Promise<void>;
   removeApiKey(options?: { signal?: AbortSignal }): Promise<void>;
-  testConfiguration?: (
-    modelId: string,
-    query: ReceiptAiModelQuery,
-    options?: { signal?: AbortSignal },
-  ) => Promise<
-    {
-      readonly status: "compatible";
-      readonly model: ReceiptAiModel;
-    } | {
-      readonly status: "needs-test" | "incompatible";
-      readonly model?: ReceiptAiModel;
-      readonly missingCapabilities: readonly string[];
-    }
-  >;
 };
 
 export type ReceiptUiDependencies = ReceiptScanMachineDependencies & {
@@ -270,28 +254,20 @@ export function createDefaultReceiptUiDependencies(
 
 export function modelOptions(
   models: readonly ReceiptAiModel[],
-  _settings: DeviceLocalSettings,
 ): Array<{
   id: string;
   label: string;
-  status: "Compatible" | "Incompatible" | "Needs test";
   disabled?: boolean;
   reason?: string;
 }> {
   return models.map((model) => {
-    const label = model.lifecycle !== "active"
-      ? "Incompatible"
-      : geminiModelCapabilityLabel(model, DEFAULT_MODEL_QUERY);
     return {
       id: model.id,
-      label: `${model.displayName} · ${label}`,
-      status: label,
-      disabled: label === "Incompatible",
-      ...(label === "Incompatible"
+      label: model.displayName,
+      disabled: model.lifecycle !== "active",
+      ...(model.lifecycle !== "active"
         ? {
-          reason: model.lifecycle === "active"
-            ? "Missing receipt capabilities"
-            : model.lifecycle,
+          reason: model.lifecycle,
         }
         : {}),
     };
@@ -476,9 +452,6 @@ export function ReceiptScanScreen({
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState(false);
   const [pendingScan, setPendingScan] = useState(false);
-  const [testState, setTestState] = useState<
-    "idle" | "testing" | "passed" | "failed"
-  >("idle");
   const sourceInputRef = useRef<HTMLInputElement>(null);
   const openSent = useRef(false);
   const reviewSent = useRef(false);
@@ -656,11 +629,12 @@ export function ReceiptScanScreen({
       if (nextModels.length === 0) {
         throw new Error("The key did not return any Gemini models.");
       }
-      const nextModelOptions = modelOptions(nextModels, nextSettings);
+      const nextModelOptions = modelOptions(nextModels);
       const nextSelectedModel = settings.selectedGeminiModel &&
           nextModelOptions.find((option) =>
-              option.id === settings.selectedGeminiModel
-            )?.status !== "Incompatible"
+            option.id === settings.selectedGeminiModel &&
+            option.disabled !== true
+          )
         ? settings.selectedGeminiModel
         : undefined;
       setHasKey(true);
@@ -676,7 +650,7 @@ export function ReceiptScanScreen({
       } else {
         setPendingScanState(true);
         setModelError(
-          "Select a compatible Gemini model to continue this scan.",
+          "Select a Gemini model to continue this scan.",
         );
       }
     } catch (error) {
@@ -688,13 +662,13 @@ export function ReceiptScanScreen({
     }
   };
 
-  const availableModelOptions = modelOptions(models, settings);
+  const availableModelOptions = modelOptions(models);
   const selectedOption = settings.selectedGeminiModel
     ? availableModelOptions.find((option) =>
       option.id === settings.selectedGeminiModel
     )
     : undefined;
-  const selectedModel = selectedOption?.status === "Compatible"
+  const selectedModel = selectedOption && selectedOption.disabled !== true
     ? selectedOption.id
     : undefined;
   const project =
@@ -727,55 +701,14 @@ export function ReceiptScanScreen({
       candidate.id === modelId
     );
     const nextSettings = { ...settings, selectedGeminiModel: modelId };
-    setTestState("idle");
     void onSettingsChange(nextSettings);
-    if (pendingScanRef.current && option?.status === "Compatible") {
+    if (pendingScanRef.current && option?.disabled !== true) {
       const pendingInput = makeScanInput(modelId);
       if (!pendingInput) return;
       setPendingScanState(false);
       setOptionsOpen(false);
       setModelError(undefined);
       send({ type: "receipt.scan", input: pendingInput });
-    }
-  };
-  const testSelectedModel = async () => {
-    const selectedId = settings.selectedGeminiModel;
-    const model = selectedId
-      ? models.find((candidate) => candidate.id === selectedId)
-      : undefined;
-    if (!selectedId || !model) return;
-    setTestState("testing");
-    setModelError(undefined);
-    try {
-      const testConfiguration = dependencies.gemini.testConfiguration;
-      if (!testConfiguration) {
-        setTestState("failed");
-        setModelError("Model compatibility checks are unavailable.");
-        return;
-      }
-      const result = await testConfiguration(
-        selectedId,
-        DEFAULT_MODEL_QUERY,
-      );
-      if (result.status === "compatible") {
-        setTestState("passed");
-        if (pendingScanRef.current) {
-          const pendingInput = makeScanInput(selectedId);
-          if (pendingInput) {
-            setPendingScanState(false);
-            setOptionsOpen(false);
-            send({ type: "receipt.scan", input: pendingInput });
-          }
-        }
-      } else {
-        setTestState("failed");
-        setModelError("This model is incompatible with receipt scanning.");
-      }
-    } catch (error) {
-      setTestState("failed");
-      setModelError(
-        messageForError(error, "The model compatibility test failed."),
-      );
     }
   };
   const scan = () => {
@@ -801,19 +734,17 @@ export function ReceiptScanScreen({
     if (!settings.selectedGeminiModel) {
       setPendingScanState(true);
       setOptionsOpen(true);
-      setModelError("Select a compatible Gemini model before scanning.");
+      setModelError("Select a Gemini model before scanning.");
       return;
     }
-    if (selectedOption?.status === "Needs test") {
+    if (!selectedOption || selectedOption.disabled === true) {
       setPendingScanState(true);
       setOptionsOpen(true);
-      setModelError("Test this Gemini model before scanning.");
+      setModelError("Refresh models and select an available Gemini model.");
       return;
     }
     if (!scanInput) {
-      setModelError(
-        "The selected Gemini model is not compatible with receipt scanning.",
-      );
+      setModelError("The selected Gemini model is unavailable.");
       return;
     }
     setPendingScanState(false);
@@ -979,10 +910,10 @@ export function ReceiptScanScreen({
           : null}
         <StatusPanel
           title={selectedOption
-            ? `Gemini: ${selectedOption.id} · ${selectedOption.status}`
+            ? `Gemini: ${selectedOption.id}`
             : "Gemini model not selected"}
           detail={pendingScan
-            ? "Select a compatible model to continue this scan"
+            ? "Select a model to continue this scan"
             : settings.imagePreparationEnabled
             ? "Image preparation: On"
             : "Image preparation: Off · privacy sanitization remains on"}
@@ -1010,14 +941,6 @@ export function ReceiptScanScreen({
                     onValueChange={selectModel}
                     disabled={modelsLoading || models.length === 0}
                   />
-                  {selectedOption?.status === "Needs test"
-                    ? (
-                      <GeminiConfigurationTest
-                        state={testState}
-                        onTest={() => void testSelectedModel()}
-                      />
-                    )
-                    : null}
                   <Switch
                     isSelected={settings.imagePreparationEnabled}
                     onChange={(imagePreparationEnabled) =>
@@ -1740,10 +1663,6 @@ export function GeminiSettingsScreen({
   const [models, setModels] = useState<readonly ReceiptAiModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
-  const [testState, setTestState] = useState<
-    "idle" | "testing" | "passed" | "failed"
-  >("idle");
-
   const refresh = async () => {
     setLoading(true);
     setError(undefined);
@@ -1790,44 +1709,13 @@ export function GeminiSettingsScreen({
     setHasKey(false);
     setMaskedKey("");
     setModels([]);
-    setTestState("idle");
     onSettingsChange({
       ...settings,
       selectedGeminiModel: undefined,
     });
   };
 
-  const options = modelOptions(models, settings);
-  const test = async () => {
-    const selectedModelId = settings.selectedGeminiModel;
-    if (!selectedModelId) return;
-    const selectedModel = models.find((model) => model.id === selectedModelId);
-    if (!selectedModel) return;
-    setTestState("testing");
-    setError(undefined);
-    try {
-      if (!gemini.testConfiguration) {
-        setTestState("failed");
-        setError("Model compatibility checks are unavailable.");
-        return;
-      }
-      const result = await gemini.testConfiguration(
-        selectedModelId,
-        DEFAULT_MODEL_QUERY,
-      );
-      if (result.status === "compatible") {
-        setTestState("passed");
-      } else {
-        setTestState("failed");
-        setError(
-          "This model is incompatible with receipt scanning.",
-        );
-      }
-    } catch (failure) {
-      setTestState("failed");
-      setError(messageForError(failure, "The configuration test failed."));
-    }
-  };
+  const options = modelOptions(models);
 
   return (
     <ContentContainer size="readable">
@@ -1904,10 +1792,6 @@ export function GeminiSettingsScreen({
                 Changing this setting affects future scans. Mandatory metadata
                 removal remains on.
               </Text>
-              <GeminiConfigurationTest
-                state={testState}
-                onTest={() => void test()}
-              />
             </>
           )
           : null}

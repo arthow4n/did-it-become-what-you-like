@@ -518,8 +518,8 @@ export type FakeGeminiPort = ReceiptAiPort & FakeControls & {
 
 const FAKE_MODELS: readonly ReceiptAiModel[] = [
   {
-    id: "fake-gemini-compatible",
-    displayName: "Fake Gemini Compatible",
+    id: "fake-gemini-model",
+    displayName: "Fake Gemini Model",
     lifecycle: "active",
     capabilities: {
       "image-input": true,
@@ -528,8 +528,8 @@ const FAKE_MODELS: readonly ReceiptAiModel[] = [
     },
   },
   {
-    id: "fake-gemini-needs-test",
-    displayName: "Fake Gemini Needs Test",
+    id: "fake-gemini-metadata-unknown",
+    displayName: "Fake Gemini Metadata Unknown",
     lifecycle: "active",
     capabilities: {
       "image-input": true,

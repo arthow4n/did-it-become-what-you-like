@@ -333,10 +333,10 @@ const RECEIPT_QUANTITY_OUTPUT = JSON.stringify({
   uncertainty: [],
 });
 
-const MODEL_NEEDS_TEST: GeminiRawModel = {
-  baseModelId: "gemini-needs-test",
-  displayName: "Needs test model",
-  name: "models/gemini-needs-test",
+const MODEL_WITH_UNKNOWN_METADATA: GeminiRawModel = {
+  baseModelId: "gemini-actions-available",
+  displayName: "Actions metadata model",
+  name: "models/gemini-actions-available",
   supportedActions: ["generateContent"],
 };
 
@@ -460,7 +460,7 @@ Deno.test("A-301 Gemini model refresh filters only explicit unsupported actions"
   };
   const { adapter } = createStorageAndAdapter(() =>
     clientWithModels(
-      [MODEL_NEEDS_TEST, MODEL_TEXT_ONLY, modelWithoutActions],
+      [MODEL_WITH_UNKNOWN_METADATA, MODEL_TEXT_ONLY, modelWithoutActions],
       { text: RECEIPT_OUTPUT },
       () => generateCalls++,
     )
@@ -471,15 +471,21 @@ Deno.test("A-301 Gemini model refresh filters only explicit unsupported actions"
   });
   assertEquals(
     models.map((model) => model.id),
-    ["gemini-needs-test", "gemini-metadata-unknown"],
+    ["gemini-actions-available", "gemini-metadata-unknown"],
   );
+  assertEquals(
+    models[1]?.capabilities["content-generation"],
+    undefined,
+  );
+  assertEquals(models[1]?.capabilities["image-input"], undefined);
+  assertEquals(models[1]?.capabilities["structured-output"], undefined);
   assertEquals(generateCalls, 0);
 });
 
 Deno.test("A-301 extraction sends only permitted context, maps validated output, and clears bytes", async () => {
   const { adapter, requests } = createStorageAndAdapter((captured) =>
     clientWithModels(
-      [MODEL_NEEDS_TEST],
+      [MODEL_WITH_UNKNOWN_METADATA],
       { text: RECEIPT_OUTPUT },
       (request) => captured.push(request),
     )
@@ -556,7 +562,7 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
 Deno.test("A-301 extraction preserves explicit quantity and unit price", async () => {
   const { adapter, requests } = createStorageAndAdapter((captured) =>
     clientWithModels(
-      [MODEL_NEEDS_TEST],
+      [MODEL_WITH_UNKNOWN_METADATA],
       { text: RECEIPT_QUANTITY_OUTPUT },
       (request) => captured.push(request),
     )
@@ -595,7 +601,9 @@ Deno.test("A-301 output rejects quantity fields on adjustment lines", async () =
 
 Deno.test("A-301 signed receipt fixture reconciles a discount adjustment", async () => {
   const { adapter } = createStorageAndAdapter(() =>
-    clientWithModels([MODEL_NEEDS_TEST], { text: RECEIPT_DISCOUNT_OUTPUT })
+    clientWithModels([MODEL_WITH_UNKNOWN_METADATA], {
+      text: RECEIPT_DISCOUNT_OUTPUT,
+    })
   );
   await adapter.setApiKey("AIza.synthetic-discount-test");
   const draft = await adapter.extractReceipt(extractionRequest());
@@ -644,7 +652,7 @@ Deno.test("A-301 localized receipt decimals are canonicalized before validation"
     uncertainty: [],
   });
   const { adapter } = createStorageAndAdapter(() =>
-    clientWithModels([MODEL_NEEDS_TEST], { text: localized })
+    clientWithModels([MODEL_WITH_UNKNOWN_METADATA], { text: localized })
   );
   await adapter.setApiKey("AIza.synthetic-localized-decimals");
   const draft = await adapter.extractReceipt(extractionRequest());
@@ -659,7 +667,7 @@ Deno.test("A-301 unavailable model categories remain reviewable", async () => {
     "category-not-in-catalogue",
   );
   const { adapter } = createStorageAndAdapter(() =>
-    clientWithModels([MODEL_NEEDS_TEST], { text: unknownCategory })
+    clientWithModels([MODEL_WITH_UNKNOWN_METADATA], { text: unknownCategory })
   );
   await adapter.setApiKey("AIza.synthetic-unknown-category");
   const draft = await adapter.extractReceipt(extractionRequest());
@@ -673,7 +681,7 @@ Deno.test("A-301 unavailable model categories remain reviewable", async () => {
 
 Deno.test("A-301 fenced JSON output is accepted only after strict parsing", async () => {
   const { adapter } = createStorageAndAdapter(() =>
-    clientWithModels([MODEL_NEEDS_TEST], {
+    clientWithModels([MODEL_WITH_UNKNOWN_METADATA], {
       text: `Here is the receipt:\n\`\`\`json\n${RECEIPT_OUTPUT}\n\`\`\``,
     })
   );
@@ -684,7 +692,7 @@ Deno.test("A-301 fenced JSON output is accepted only after strict parsing", asyn
 
 Deno.test("A-301 malformed decimal grouping remains rejected", async () => {
   const { adapter } = createStorageAndAdapter(() =>
-    clientWithModels([MODEL_NEEDS_TEST], {
+    clientWithModels([MODEL_WITH_UNKNOWN_METADATA], {
       text: RECEIPT_OUTPUT.replace('"10"', '"1 2"'),
     })
   );
@@ -698,7 +706,7 @@ Deno.test("A-301 malformed decimal grouping remains rejected", async () => {
 Deno.test("A-301 malformed or hostile model output is rejected and redacted", async () => {
   const hostile = "<script>credential=AIza.hostile-output</script>";
   const { adapter } = createStorageAndAdapter(() =>
-    clientWithModels([MODEL_NEEDS_TEST], {
+    clientWithModels([MODEL_WITH_UNKNOWN_METADATA], {
       text: JSON.stringify({
         currency: "SEK",
         date: "2026-08-24",
@@ -725,7 +733,7 @@ Deno.test("A-301 malformed or hostile model output is rejected and redacted", as
 
 Deno.test("A-301 malformed provider JSON reports the response parsing phase", async () => {
   const { adapter } = createStorageAndAdapter(() =>
-    clientWithModels([MODEL_NEEDS_TEST], { text: "not-json" })
+    clientWithModels([MODEL_WITH_UNKNOWN_METADATA], { text: "not-json" })
   );
   await adapter.setApiKey("AIza.synthetic-malformed-json");
   const error = await assertRejects(() =>
@@ -744,7 +752,7 @@ Deno.test("A-301 maps invalid, quota, offline, and abort failures to typed redac
   for (const [name, failure, expected] of scenarios) {
     const { adapter } = createStorageAndAdapter(() => ({
       models: {
-        list: () => ({ models: [MODEL_NEEDS_TEST] }),
+        list: () => ({ models: [MODEL_WITH_UNKNOWN_METADATA] }),
         generateContent: () => Promise.reject(failure),
       },
     }));
@@ -755,10 +763,12 @@ Deno.test("A-301 maps invalid, quota, offline, and abort failures to typed redac
     );
   }
 
-  const offline =
-    createStorageAndAdapter(() => clientWithModels([MODEL_NEEDS_TEST]), {
+  const offline = createStorageAndAdapter(
+    () => clientWithModels([MODEL_WITH_UNKNOWN_METADATA]),
+    {
       online: false,
-    }).adapter;
+    },
+  ).adapter;
   await offline.setApiKey("AIza.synthetic-offline");
   assertEquals(
     await errorCode(offline.extractReceipt(extractionRequest())),
@@ -769,7 +779,7 @@ Deno.test("A-301 maps invalid, quota, offline, and abort failures to typed redac
   const controller = new AbortController();
   const abortingClient: GeminiBrowserClient = {
     models: {
-      list: () => ({ models: [MODEL_NEEDS_TEST] }),
+      list: () => ({ models: [MODEL_WITH_UNKNOWN_METADATA] }),
       generateContent: (_request, options) =>
         new Promise((_resolve, reject) => {
           options?.signal?.addEventListener(

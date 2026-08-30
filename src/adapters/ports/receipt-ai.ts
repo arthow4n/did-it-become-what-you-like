@@ -17,7 +17,10 @@ export type ReceiptAiModel = {
   readonly id: string;
   readonly displayName: string;
   readonly lifecycle: ReceiptAiModelLifecycle;
-  readonly capabilities: Readonly<Record<ReceiptAiCapability, boolean>>;
+  /** undefined means the provider did not expose that capability. */
+  readonly capabilities: Readonly<
+    Record<ReceiptAiCapability, boolean | undefined>
+  >;
 };
 
 export type ReceiptAiModelQuery = {

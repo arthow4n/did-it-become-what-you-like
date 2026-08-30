@@ -89,7 +89,7 @@ Deno.test("adapter-contract fakes honor AbortSignal during an in-flight Gemini r
   gemini.pauseNext();
   const controller = new AbortController();
   const request = gemini.extractReceipt({
-    modelId: "fake-gemini-compatible",
+    modelId: "fake-gemini-model",
     image: {
       bytes: new Uint8Array([1, 2]),
       mimeType: "image/jpeg",

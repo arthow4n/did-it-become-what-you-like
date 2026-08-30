@@ -29,9 +29,9 @@ test(
             contentType: "application/json",
             body: JSON.stringify({
               models: [{
-                name: "models/fake-gemini-compatible",
-                baseModelId: "fake-gemini-compatible",
-                displayName: "Fake Gemini Compatible",
+                name: "models/fake-gemini-model",
+                baseModelId: "fake-gemini-model",
+                displayName: "Fake Gemini Model",
                 supportedGenerationMethods: ["generateContent"],
                 inputModalities: ["image"],
                 supportedResponseFormats: ["application/json"],
@@ -44,12 +44,8 @@ test(
           request.method() === "POST" &&
           request.url().includes(":generateContent")
         ) {
-          const body = request.postData() ?? "";
-          const syntheticConfiguration = body.includes(
-            "Return one valid synthetic receipt.v2 object",
-          );
-          if (!syntheticConfiguration) extractionAttempts++;
-          if (!syntheticConfiguration && extractionAttempts === 1) {
+          extractionAttempts++;
+          if (extractionAttempts === 1) {
             await route.fulfill({
               status: 429,
               contentType: "application/json",
@@ -114,6 +110,8 @@ test(
       "Receipt project",
     );
     await page.getByRole("button", { name: "Save project" }).click();
+    await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
+      .toBeVisible();
     await page.getByRole("button", { name: "Scan" }).click();
     await expect(
       page.getByRole("heading", { name: "Before sending this receipt" }),
@@ -186,12 +184,11 @@ test(
     await expect(
       page.getByRole("button", { name: "Hide options" }),
     ).toBeVisible();
-    await modelPicker.fill("Fake Gemini Compatible");
+    await modelPicker.fill("Fake Gemini Model");
     await expect(
-      page.getByRole("option", { name: /Fake Gemini Compatible/ }),
+      page.getByRole("option", { name: /Fake Gemini Model/ }),
     ).toBeVisible();
-    await page.getByRole("option", { name: /Fake Gemini Compatible/ }).click();
-    await page.getByRole("button", { name: "Test configuration" }).click();
+    await page.getByRole("option", { name: /Fake Gemini Model/ }).click();
     await expect(page.getByText(/quota was exceeded/)).toBeVisible();
     await expect(page.getByText("Error code: quota")).toBeVisible();
     await expect(page.getByText("Operation: gemini.extract")).toBeVisible();
@@ -343,7 +340,7 @@ test(
     const postRequests = requests.filter((request) =>
       request.method === "POST"
     );
-    expect(postRequests).toHaveLength(3);
+    expect(postRequests).toHaveLength(2);
     const requestBody = JSON.parse(
       postRequests[postRequests.length - 1].body ?? "null",
     ) as {

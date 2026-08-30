@@ -611,8 +611,8 @@ Deno.test(
       await withAriaGlobals(async () => {
         const imageStore = new ReceiptImageStore();
         const model = {
-          id: "fake-gemini-compatible",
-          displayName: "Fake Gemini Compatible",
+          id: "fake-gemini-model",
+          displayName: "Fake Gemini Model",
           lifecycle: "active" as const,
           capabilities: {
             "image-input": true,
@@ -796,9 +796,9 @@ Deno.test("receipt-ui keeps metadata-unproven models selectable", async () => {
       render(
         createElement(ModelPicker, {
           options: [{
-            id: "synthetic-needs-test",
-            label: "Synthetic model · Needs test",
-            status: "Needs test",
+            id: "synthetic-metadata-unknown",
+            label: "Synthetic model",
+            reason: "Metadata incomplete",
           }],
           value: undefined,
           onValueChange: (value) => selected = value,
@@ -809,18 +809,15 @@ Deno.test("receipt-ui keeps metadata-unproven models selectable", async () => {
       fireEvent.click(modelInput);
       fireEvent.change(modelInput, { target: { value: "Synthetic" } });
       const option = view.getByRole("option", {
-        name: /Synthetic model · Needs test/,
+        name: /Synthetic model/,
       });
       assert(option.getAttribute("aria-disabled") !== "true");
       fireEvent.click(option);
-      return waitFor(() => assert(selected === "synthetic-needs-test"));
+      return waitFor(() => assert(selected === "synthetic-metadata-unknown"));
     });
   });
-  const settings = DeviceLocalSettingsSchema.parse({
-    imagePreparationEnabled: true,
-  });
   const model = {
-    id: "synthetic-needs-test",
+    id: "synthetic-metadata-unknown",
     displayName: "Synthetic model",
     lifecycle: "active" as const,
     capabilities: {
@@ -829,8 +826,8 @@ Deno.test("receipt-ui keeps metadata-unproven models selectable", async () => {
       "structured-output": false,
     },
   };
-  const option = modelOptions([model], settings)[0];
-  assert(option.status === "Needs test");
+  const option = modelOptions([model])[0];
+  assert(option.label === "Synthetic model");
   assert(option.disabled !== true);
 });
 
@@ -855,11 +852,6 @@ Deno.test("receipt-ui retains a remembered key when refreshing models fails", as
           return Promise.resolve();
         },
         listModels: () => Promise.reject(new Error("model refresh failed")),
-        testConfiguration: () =>
-          Promise.resolve({
-            status: "incompatible" as const,
-            missingCapabilities: [],
-          }),
         extractReceipt: () => Promise.reject(new Error("not used")),
       };
       render(

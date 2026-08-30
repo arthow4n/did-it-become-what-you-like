@@ -65,7 +65,7 @@ const scanInput = {
   currency: "SEK" as const,
   locale: "sv-SE",
   categoryCatalogue: [{ id: UNCATEGORIZED_CATEGORY_ID, name: "Uncategorized" }],
-  model: "fake-gemini-compatible",
+  model: "fake-gemini-model",
   prepareImage: true,
 };
 

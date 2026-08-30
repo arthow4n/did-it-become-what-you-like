@@ -282,13 +282,6 @@ for (const vp of VIEWPORTS) {
       // Select model
       await page.getByRole("combobox", { name: "Model" }).click();
       await page.getByRole("option", { name: /Gemini 2.5 Flash/ }).click();
-      const testConfigBtn = page.getByRole("button", {
-        name: "Test configuration",
-      });
-      if (await testConfigBtn.isVisible()) {
-        await testConfigBtn.click();
-      }
-
       // 20d. Receipt Review Screen
       await expect(page.getByRole("heading", { name: "Review receipt" }))
         .toBeVisible();

@@ -284,7 +284,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 #### M29-002 — Diagnostic Error Taxonomy Across Drive, Import/Export, and Local DB
 
 - **Status/dependencies:** `COMPLETE`; depends on `M29-001`.
-- **Ownership:** `src/adapters/ports/errors.ts`, `src/domain/import-export/types.ts`, `src/domain/import-export/format.ts`, `src/adapters/drive/adapter.ts`, `src/adapters/local/index.ts`, `src/actors/import-export/machine.ts`.
+- **Ownership:** `src/adapters/ports/errors.ts`, `src/domain/import-export/types.ts`, `src/domain/import-export/format.ts`, `src/adapters/drive/adapter.ts`, `src/adapters/local/index.ts`, `src/actors/import-export/machine.ts`, and their contract/integration tests.
 - **Scope/non-goals:**
   - Introduce bounded operation diagnostics for Import/Export: `import.json_syntax`, `import.schema_version`, `import.record_validation`, `import.migration_failure`.
   - Introduce bounded operation diagnostics for Drive: `drive.auth.popup_closed`, `drive.auth.access_denied`, `drive.transport.upload_failed`, `drive.transport.quota_exceeded`.
@@ -294,7 +294,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   - Import, Drive, and Local DB errors carry structured `operation` identifiers, making logs and notices specific and actionable.
 - **Tests:**
   - Domain, actor, and adapter contract/integration tests in `src/domain/import-export/import-export.test.ts`, `src/actors/import-export/import-export-actor.test.ts`, `src/adapters/ports/contract.test.ts`, `src/adapters/drive/adapter.integration.test.ts`, and `src/adapters/local/local-repository.test.ts`.
-- **Verification:** `deno fmt`/`deno lint` on the changed diagnostic sources and tests, `deno check src/adapters/drive/adapter.ts src/adapters/local/index.ts src/actors/import-export/machine.ts src/domain/import-export/format.ts`, `deno test --allow-read --allow-write --allow-run --allow-env src/domain/import-export/import-export.test.ts src/adapters/import-export/import-export.integration.test.ts src/adapters/ports/contract.test.ts src/actors/import-export/import-export-actor.test.ts src/adapters/drive/adapter.integration.test.ts src/adapters/local/local-repository.test.ts` (56 passed), and `git diff --check`.
+- **Verification:** Initial focused validation passed 56 tests; remediation validation passed 68 tests; the fresh R-2910 closure review then passed 79 tests with 13-file format checks, lint, typecheck, and `git diff --check` all clean.
 
 ---
 
@@ -311,7 +311,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 #### M29-003 — Discreet Sync Status & Background Reconnect Header UX
 
 - **Status/dependencies:** `COMPLETE`; depends on `R-2910`.
-- **Ownership:** `src/features/sync-portability-runtime.tsx`, `src/features/sync-ui/`, `src/features/local-ui.tsx`, `src/features/local-ui.css`.
+- **Ownership:** `src/features/sync-portability-runtime.tsx`, `src/features/sync-ui/`, `src/features/local-ui.tsx`, `src/features/receipt-ui.tsx`, and related CSS/tests.
 - **Scope/non-goals:**
   - Remove intrusive top-of-screen Drive warning banners on page reload when local data is healthy.
   - Add a discreet sync status indicator / icon in the header (or next to project selector) reflecting sync state (`Synced`, `Syncing`, `Local only · Tap to reconnect`).
@@ -324,7 +324,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   - New local entries prompt contextual sync notices only after mutation.
 - **Tests:**
   - Component tests in `src/features/local-ui.test.tsx` and `src/features/sync-ui/sync-ui.test.tsx`.
-- **Verification:** `deno fmt`/`deno lint` on the changed sync/runtime/UI sources and tests, `deno check src/features/sync-portability-runtime.tsx src/features/local-ui.tsx src/features/receipt-ui.tsx`, `deno test --allow-read --allow-write --allow-run --allow-env src/features/sync-ui/sync-ui.test.tsx src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx` (56 passed), and `git diff --check`.
+- **Verification:** `deno fmt`/`deno lint` on the changed sync/runtime/UI sources and tests, `deno check src/features/sync-portability-runtime.tsx src/features/local-ui.tsx src/features/receipt-ui.tsx`, `deno test --allow-read --allow-write --allow-run --allow-env src/features/sync-ui/sync-ui.test.tsx src/features/sync-portability-runtime.test.tsx src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx` (67 passed), and `git diff --check`.
 
 ---
 
@@ -349,7 +349,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 #### M29-005 — Form Conflict Field Anchoring, Preference Reset & Touch Target Polish
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M29-004`.
+- **Status/dependencies:** `COMPLETE`; depends on `M29-004`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/settings-pwa.tsx`, `src/features/local-ui.css`, `src/features/local-ui.test.tsx`.
 - **Scope/non-goals:**
   - In `CategoryManager`, anchor duplicate category name conflict errors directly to the `TextField`'s `error` prop (matching `ProjectManager`).
@@ -362,13 +362,13 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   - Touch targets on small screens wrap with proper finger spacing.
 - **Tests:**
   - Component tests in `src/features/local-ui.test.tsx` and `src/features/settings-pwa.test.tsx`.
-- **Verification:** `deno fmt src/features/local-ui.tsx src/features/settings-pwa.tsx src/features/local-ui.css`, `deno lint src/features/local-ui.tsx src/features/settings-pwa.tsx src/features/local-ui.css`, `deno test --related=src/features/local-ui.tsx --related=src/features/settings-pwa.tsx`, `git diff --check`.
+- **Verification:** `deno fmt src/features/local-ui.tsx src/features/local-ui.test.tsx src/features/settings-pwa.tsx src/features/settings-pwa.test.tsx src/features/local-ui.css`, `deno lint` on those changed sources and tests, `deno check src/features/local-ui.tsx src/features/settings-pwa.tsx`, `deno test --allow-read --allow-write --allow-run --allow-env src/features/local-ui.test.tsx src/features/settings-pwa.test.tsx` (40 passed, 0 failed), and `git diff --check`.
 
 ---
 
 #### R-2920 — UI, Ergonomics & PWA Review Gate
 
-- **Status/dependencies:** `PENDING`; depends on `M29-003`, `M29-004`, `M29-005`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M29-003`, `M29-004`, `M29-005`.
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs across sync UI, PWA runtime, CategoryManager, and PreferencesScreen across mobile and desktop viewports.
 - **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening release gate.
@@ -401,7 +401,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-2910` (`IN_PROGRESS`)
+- **Active task / gate:** `R-2920` (`IN_PROGRESS`)
 - **Released baseline:** M0 through M28 and all review gates through `R-2830`
   are complete and pushed on `master`.
 - **Verification status:** M28 release validation passed format (209 files),
@@ -411,8 +411,8 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   modules because all changes were already committed. The M28 ledger and
   hygiene audit were archived at pre-pruning commit `993e5ed`; no obsolete
   spikes, transient M28 documents, redundant verification scripts, or dangling
-  Markdown links were found. M29-001 and M29-002 are now complete; R-2910 is
-  active.
+  Markdown links were found. M29-001 through M29-005 are complete; R-2910 is
+  approved and R-2920 is active.
 - **Active / preserved work:** Clean master working tree after the archive
   edit; no worker or worktree owns unintegrated M28 changes.
 - **M29-001 completion evidence:** Receipt deselection and deletion now clear
@@ -448,10 +448,25 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   src/adapters/ports/contract.test.ts
   src/actors/import-export/import-export-actor.test.ts
   src/adapters/drive/adapter.integration.test.ts
-  src/adapters/local/local-repository.test.ts` passed (56 passed, 0 failed).
-  `git diff --check` passed.
-- **Exact next action:** Run the fresh read-only R-2910 review over receipt
-  safety, first-use routing, and diagnostic operation mappings.
+  src/adapters/local/local-repository.test.ts` passed (79 passed, 0 failed).
+  `git diff --check` passed, including the fresh R-2910 closure review.
+- **M29-003 completion evidence:** Sync state now lives in a context consumed by the
+  Expenses header, with reconnect options retaining the configured account hint and
+  local mutations notifying only when authorization is expired. The former root
+  warning banner is no longer rendered. The focused sync/runtime/local/receipt suite
+  passed 67 tests with format, lint, typecheck, and `git diff --check` clean.
+- **M29-004 completion evidence:** PWA install/update notices use a fixed,
+  safe-area-aware status surface; update-ready notices can be dismissed locally;
+  non-production and unsupported checks settle quietly as up-to-date, including a
+  defensive actor guard. The focused app/actor/settings suite passed 17 tests with
+  format, lint, typecheck, and `git diff --check` clean.
+- **M29-005 completion evidence:** Category conflict diagnostics are attached to the
+  category name field, preferences reset to and persist `03:00` in one action, and
+  narrow card-action rows retain 44px targets with larger row spacing. The focused
+  local/settings suite passed 40 tests with format, lint, typecheck, and `git diff
+  --check` clean.
+- **Exact next action:** Complete the fresh read-only R-2920 review across sync,
+  PWA, category, and preference UI at mobile and desktop widths.
 
 ## Ready-to-Use Orchestration Prompt
 

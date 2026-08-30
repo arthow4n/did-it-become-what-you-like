@@ -12,6 +12,10 @@ import {
   setReceiptLineSelected,
   validateReceiptReviewDraft,
 } from "../receipt.ts";
+import type {
+  OrganizationStore,
+  OrganizationTransaction,
+} from "../organization.ts";
 import {
   type ReceiptAdjustment,
   type ReceiptParent,
@@ -600,6 +604,56 @@ Deno.test(
     assert(
       !unchanged.purchaseLines.some((line) => line.id === "line-conflict"),
       "a derived expense collision must not leave the new line behind",
+    );
+
+    const atomicLocal = createFakeLocalPort();
+    const atomicStore: OrganizationStore = {
+      async transaction<T>(
+        mode: "readonly" | "readwrite",
+        work: (transaction: OrganizationTransaction) => Promise<T>,
+      ): Promise<T> {
+        return await atomicLocal.transaction(mode, async (transaction) => {
+          let writes = 0;
+          const wrapped: OrganizationTransaction = {
+            get: (collection, key) => transaction.get(collection, key),
+            put: async (collection, key, value) => {
+              writes += 1;
+              if (collection === "records" && writes === 2) {
+                throw new Error("injected projection failure");
+              }
+              await transaction.put(collection, key, value);
+            },
+            delete: (collection, key) => transaction.delete(collection, key),
+            query: (collection) => transaction.query(collection),
+          };
+          return await work(wrapped);
+        });
+      },
+    };
+    const atomic = await managementHarness();
+    await atomicLocal.transaction("readwrite", async (transaction) => {
+      const entries = await atomic.local.query("records");
+      for (const entry of entries) {
+        await transaction.put("records", entry.key, entry.value);
+      }
+    });
+    const atomicService = createReceiptManagementService(atomicStore, {
+      nextId: () => "line-atomic",
+    });
+    await rejectsAsync(
+      () =>
+        atomicService.addLine(savedReceipt.id, {
+          type: "purchase",
+          description: "Rolled back line",
+          categoryId: UNCATEGORIZED_CATEGORY_ID,
+          lineTotal: "2",
+        }),
+    );
+    const afterAbort = await atomicService.get(savedReceipt.id);
+    assert(afterAbort);
+    assert(
+      !afterAbort.purchaseLines.some((line) => line.id === "line-atomic"),
+      "an expense projection failure must roll back the new receipt line",
     );
   },
 );

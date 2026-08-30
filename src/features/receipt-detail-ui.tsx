@@ -120,8 +120,8 @@ function lineDescription(
 
 function mutationIsLine(
   kind: string | undefined,
-): kind is "line" | "delete-line" {
-  return kind === "line" || kind === "delete-line";
+): kind is "line" | "delete-line" | "add-line" {
+  return kind === "line" || kind === "delete-line" || kind === "add-line";
 }
 
 export function ReceiptDetailScreen({

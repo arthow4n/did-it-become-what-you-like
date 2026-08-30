@@ -220,7 +220,8 @@ export const savedReceiptMachine = setup({
     hasPendingMutation: ({ context }) => context.pendingMutation !== null,
     hasPendingEditable: ({ context }) =>
       context.pendingMutation?.kind === "metadata" ||
-      context.pendingMutation?.kind === "line",
+      context.pendingMutation?.kind === "line" ||
+      context.pendingMutation?.kind === "add-line",
     mutationDeletedReceipt: ({ event }) => {
       const output = mutationOutput(event);
       return output !== undefined &&

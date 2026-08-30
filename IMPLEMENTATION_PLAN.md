@@ -263,6 +263,11 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs in `src/domain/organization.ts`, `src/domain/receipt.ts`, `src/actors/project-category.ts`, and `src/actors/saved-receipt.ts`. Verify transaction atomicity, signed canonical decimal arithmetic, schema validation, and test coverage.
 - **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening next batch.
+- **Review log:** Initial fresh read-only review was not approved for S2
+  failed add-line discard navigation and S3 missing mid-transaction rollback
+  coverage. Remediation adds `add-line` to the failure-state pending editable
+  guard and UI mutation classifier, plus projection-write rollback coverage.
+  Rerun passed 24 scoped tests with 0 failures; closure review is pending.
 
 ---
 
@@ -594,7 +599,9 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   --allow-env src/domain/tests/receipt_test.ts
   src/actors/contracts/saved-receipt-actor.test.ts
   src/features/receipt-detail-ui.test.tsx` with 23 tests passed and 0 failed.
-  R-2810 is now active. M29 remains staged as dependent follow-up.
+  R-2810 remediation then passed the same scoped command with 24 tests passed
+  and 0 failed, along with formatting, lint, typecheck, and diff checks. R-2810
+  closure is pending. M29 remains staged as dependent follow-up.
 - **Active / preserved work:** Clean master working tree.
 - **Exact next action:** Dispatch a fresh read-only R-2810 reviewer for the
   category and saved-receipt domain/actor diffs; remediate any findings before

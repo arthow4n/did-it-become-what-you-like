@@ -271,6 +271,47 @@ Deno.test(
 );
 
 Deno.test(
+  "saved-receipt actor keeps failed add-line drafts behind discard protection",
+  async () => {
+    const actor = start(createService({
+      addLine: () => Promise.reject({ code: "invalid" }),
+    }));
+    await waitForState(actor, "ready");
+    actor.send({
+      type: "receipt.detail.start-add-line",
+      changes: {
+        type: "adjustment",
+        description: "Failed adjustment",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        amount: "1",
+        lineId: null,
+      },
+    });
+    actor.send({
+      type: "receipt.detail.change-add-line",
+      changes: {
+        type: "adjustment",
+        description: "Failed adjustment",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        amount: "1",
+        lineId: null,
+      },
+    });
+    actor.send({ type: "receipt.detail.add-line" });
+    await waitForState(actor, "failure");
+    actor.send({ type: "receipt.detail.back", destination: "/expenses" });
+    assert(actor.getSnapshot().matches("confirmingDiscard"));
+    actor.send({ type: "receipt.detail.discard-changes" });
+    await waitForState(actor, "completed");
+    assertEquals(actor.getSnapshot().output, {
+      status: "discarded",
+      destination: "/expenses",
+    });
+    actor.stop();
+  },
+);
+
+Deno.test(
   "saved-receipt actor confirms line and whole-receipt deletion with final outcomes",
   async () => {
     const actor = start(createService({

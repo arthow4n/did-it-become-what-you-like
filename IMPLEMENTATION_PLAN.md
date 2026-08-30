@@ -561,7 +561,8 @@ M34-001 -> M34-002 -> R-3410
 
 #### M34-004 — Provider-aware settings and scan setup UI without compatibility testing
 
-- **Status/dependencies:** `PENDING`; depends on `M34-003`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M34-003`. Started after
+  M34-003 integration and validation at checkpoint `62de0fd`.
 - **Ownership:** `src/features/receipt-ui.tsx`,
   `src/features/receipt-ui.test.tsx`, `src/features/local-ui.tsx`,
   `src/features/local-ui.test.tsx`, composition wiring, and
@@ -691,7 +692,7 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M34-004` (`READY`).
+- **Active task / gate:** `M34-004` (`IN_PROGRESS`).
 - **Planning base:** M34-001, M34-002, R-3410, remediation, and M34-003 are
   integrated and pushed on remote `master`; the latest implementation is
   `79463b5`.
@@ -712,10 +713,9 @@ M34-001 -> M34-002 -> R-3410
   `inputModalities`, `outputModalities`, `zdr`, `provider.requireParameters`,
   `provider.dataCollection`, and `responseFormat.jsonSchema`; endpoint methods
   are `endpoints.list({author, slug})` and `endpoints.listZdrEndpoints()`.
-- **Exact next action:** reconcile the M34-004 UI contract against `SPEC.md`,
-  `DESIGN_SYSTEM.md`, and the implemented facade, then dispatch exactly one
-  write-enabled worker for M34-004. Do not begin R-3420 until M34-004 is
-  integrated, verified, pushed, and checkpointed.
+- **Exact next action:** dispatch exactly one write-enabled worker for M34-004.
+  Do not begin R-3420 until M34-004 is integrated, verified, pushed, and
+  checkpointed.
 
 ## Ready-to-Use Orchestration Prompt
 

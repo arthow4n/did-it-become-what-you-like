@@ -88,6 +88,7 @@ an **Orchestrator** dispatching two specialized subagents:
 │ • Brittle doc-string matchers        │      │ • Copy-pasted harnesses & shims      │
 │                                      │      │ • Parallel / redundant fake ports    │
 │                                      │      │ • Repetitive intra-suite test blocks │
+│                                      │      │ • Component mount & UI test bloat    │
 │                                      │      │ • deno.json task target flaws        │
 └──────────────────────────────────────┘      └──────────────────────────────────────┘
                                       │
@@ -297,6 +298,29 @@ and tooling task definitions against these dimensions:
   - Refactor repetitive unit cases into concise table-driven parameterized tests
     over shared domain fixtures.
 
+### Dimension 2J: Component & Feature Test Suite Consolidation & Parameterization
+
+- **What to look for:**
+  - Component test files (e.g. `src/features/**/*.test.tsx`) ballooning in line
+    count (>500–1,500 lines) due to repetitive `withComponentHarness` /
+    `withAriaGlobals` mount setups, verbose inline mock state declarations,
+    copy-pasted `ProjectCategoryState` fixtures, and redundant event handling
+    assertions across minor prop/state permutations.
+  - Multi-line test blocks repeating identical component renders just to verify
+    individual string labels, disabled button attributes, or navigation tabs.
+- **Remediation:**
+  - Consolidate repetitive scenario tests into table-driven parameterized tests
+    (`for (const { state, expectedLabel, expectedAction } of scenarios)`).
+  - Extract reusable localized component render helpers / fixture builder
+    functions (e.g. `renderProjectManager(options)` or
+    `renderPreferences(overrides)`) within the test file or use shared
+    test-support builders.
+  - Parameterize symmetric workflow assertions (e.g. testing dirty navigation or
+    exit guards across multiple workflows like `["manual", "receipt"]`).
+  - Preserve 100% of accessibility queries (`getByRole`), DOM assertions, actor
+    event triggers, and branch coverage while reducing test file line counts and
+    execution overhead.
+
 ---
 
 ## 5. Step-by-Step Execution Protocol
@@ -339,7 +363,7 @@ and tooling task definitions against these dimensions:
    1A–1E.
 2. **Dispatch Section 2 Subagent:** Task with evaluating all test files, test
    support fixtures, E2E specs, and `deno.json` task targets against Dimensions
-   2A–2I.
+   2A–2J.
 
 ### Phase 3: Orchestrator Reconciliation & Coordinated File Pruning
 
@@ -418,6 +442,8 @@ Before closing a pruning audit, confirm:
       `src/test-support/fakes/`.
 - [ ] Verbose repetitive intra-suite unit tests are consolidated into
       parameterized table tests.
+- [ ] Component & feature test suites avoid copy-pasted mount boilerplate and
+      consolidate repetitive UI scenarios into table-driven tests.
 - [ ] Redundant subsystem test slice and sub-installer tasks in `deno.json` are
       pruned in favor of `test`, `test:affected`, and composite installers.
 - [ ] Visual audit screenshot capture scripts remain isolated in `e2e/audit/` /

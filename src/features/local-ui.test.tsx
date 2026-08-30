@@ -272,29 +272,42 @@ Deno.test("local UI first-use route redirects once a project exists", () => {
   assertEquals(firstUseRedirectPath("/expenses", 1), undefined);
 });
 
-Deno.test("local UI manual dirty navigation offers keep or discard", async () => {
-  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
-      const mounted = render(
-        createElement(DirtyNavigationHarness, { workflow: "manual" }),
+for (const workflow of ["manual", "receipt"] as const) {
+  Deno.test(
+    `local UI ${workflow} dirty navigation offers keep or discard`,
+    async () => {
+      await withComponentHarness(
+        async ({ window, render, fireEvent, waitFor }) => {
+          await withAriaDomGlobals(window, async () => {
+            const mounted = render(
+              createElement(DirtyNavigationHarness, { workflow }),
+            );
+            const view = within(document.body);
+            fireEvent.click(
+              view.getByRole("button", {
+                name: `Leave ${workflow} workflow`,
+              }),
+            );
+            assert(view.getByRole("dialog", { name: "Unsaved changes" }));
+            fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+            assert(view.getByText(`${workflow} workflow`));
+            fireEvent.click(
+              view.getByRole("button", {
+                name: `Leave ${workflow} workflow`,
+              }),
+            );
+            fireEvent.click(
+              view.getByRole("button", { name: "Discard changes" }),
+            );
+            await waitFor(() => assert(view.getByText("settings")));
+            assert(!view.queryByText(`${workflow} workflow`));
+            mounted.unmount();
+          });
+        },
       );
-      const view = within(document.body);
-      fireEvent.click(
-        view.getByRole("button", { name: "Leave manual workflow" }),
-      );
-      assert(view.getByRole("dialog", { name: "Unsaved changes" }));
-      fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
-      assert(view.getByText("manual workflow"));
-      fireEvent.click(
-        view.getByRole("button", { name: "Leave manual workflow" }),
-      );
-      fireEvent.click(view.getByRole("button", { name: "Discard changes" }));
-      await waitFor(() => assert(view.getByText("settings")));
-      assert(!view.queryByText("manual workflow"));
-      mounted.unmount();
-    });
-  });
-});
+    },
+  );
+}
 
 Deno.test("local UI manual deletion reports a deleted completion status", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
@@ -477,30 +490,6 @@ Deno.test("local UI isolates edit drafts from the new-expense draft key", async 
         name: "Description (optional)",
       }) as HTMLTextAreaElement;
       assertEquals(description.value, "Existing expense description");
-    });
-  });
-});
-
-Deno.test("local UI receipt dirty navigation offers keep or discard", async () => {
-  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
-      const mounted = render(
-        createElement(DirtyNavigationHarness, { workflow: "receipt" }),
-      );
-      const view = within(document.body);
-      fireEvent.click(
-        view.getByRole("button", { name: "Leave receipt workflow" }),
-      );
-      assert(view.getByRole("dialog", { name: "Unsaved changes" }));
-      fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
-      assert(view.getByText("receipt workflow"));
-      fireEvent.click(
-        view.getByRole("button", { name: "Leave receipt workflow" }),
-      );
-      fireEvent.click(view.getByRole("button", { name: "Discard changes" }));
-      await waitFor(() => assert(view.getByText("settings")));
-      assert(!view.queryByText("receipt workflow"));
-      mounted.unmount();
     });
   });
 });
@@ -1396,170 +1385,130 @@ Deno.test("local UI project editor reports unsaved changes", async () => {
   });
 });
 
-Deno.test(
-  "local UI project editor reconciles an external refresh without losing drafts",
-  async () => {
-    await withComponentHarness(async ({
-      window,
-      render,
-      fireEvent,
-      waitFor,
-    }) => {
-      const { service } = createTestService(organizedState);
-      const renderManager = (nextState: ProjectCategoryState) =>
+for (
+  const {
+    entityName,
+    initialState,
+    fieldName,
+    editButtonName,
+    headingName,
+    draftValue,
+    makeManager,
+    makeRefreshState,
+    makeSecondRefreshState,
+    expectedRefreshedValue,
+  } of [
+    {
+      entityName: "project",
+      initialState: organizedState,
+      fieldName: "Project name",
+      editButtonName: "Edit",
+      headingName: "Edit project",
+      draftValue: "My draft",
+      makeManager: (s: ProjectCategoryState, service: ProjectCategoryService) =>
         createElement(ProjectManager, {
           service,
-          state: nextState,
+          state: s,
           onStateChange: () => undefined,
           onNavigate: () => undefined,
-        });
-      const mounted = await withAriaDomGlobals(
-        window,
-        () => render(renderManager(organizedState)),
-      );
-      const view = within(document.body);
-      await waitFor(() =>
-        assert(view.getAllByRole("button", { name: "Edit" }))
-      );
-      fireEvent.click(view.getAllByRole("button", { name: "Edit" })[0]);
-      await waitFor(() =>
-        assert(view.getByRole("heading", { name: "Edit project" }))
-      );
-      const refreshedProject = { ...project, name: "Fresh project name" };
-      const refreshedState = {
-        ...organizedState,
-        projects: [
-          refreshedProject,
-          otherProject,
-          thirdProject,
-          archivedProject,
-        ],
-      };
-      mounted.rerender(renderManager(refreshedState));
-      await waitFor(() =>
-        assert(
-          (view.getByRole("textbox", {
-            name: "Project name",
-          }) as HTMLInputElement).value === "Fresh project name",
-        )
-      );
-      fireEvent.change(view.getByRole("textbox", { name: "Project name" }), {
-        target: { value: "My draft" },
-      });
-      const secondRefresh = {
-        ...refreshedState,
-        projects: [
-          { ...refreshedProject, name: "Another remote name" },
-          otherProject,
-          thirdProject,
-          archivedProject,
-        ],
-      };
-      mounted.rerender(renderManager(secondRefresh));
-      await waitFor(() =>
-        assert(
-          (view.getByRole("textbox", {
-            name: "Project name",
-          }) as HTMLInputElement).value === "My draft",
-          "an external refresh must not overwrite a dirty project draft",
-        )
-      );
-      mounted.unmount();
-    });
-  },
-);
-
-Deno.test("local UI category editor reports unsaved changes", async () => {
-  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    const { service } = createTestService(categoryState);
-    const dirtyStates: boolean[] = [];
-    await withAriaDomGlobals(window, async () => {
-      render(
-        createElement(CategoryManager, {
-          service,
-          state: categoryState,
-          onStateChange: () => undefined,
-          onNavigate: () => undefined,
-          onDirtyChange: (dirty) => dirtyStates.push(dirty),
         }),
-      );
-      const view = within(document.body);
-      await waitFor(() => assert(view.getByRole("button", { name: "Edit" })));
-      fireEvent.click(view.getByRole("button", { name: "Edit" }));
-      await waitFor(() =>
-        assert(view.getByRole("heading", { name: "Edit category" }))
-      );
-      fireEvent.change(view.getByRole("textbox", { name: "Category name" }), {
-        target: { value: "Meals" },
-      });
-      await waitFor(() => assert(dirtyStates[dirtyStates.length - 1] === true));
-    });
-  });
-});
-
-Deno.test(
-  "local UI category editor reconciles an external refresh without losing drafts",
-  async () => {
-    await withComponentHarness(async ({
-      window,
-      render,
-      fireEvent,
-      waitFor,
-    }) => {
-      const { service } = createTestService(categoryState);
-      const renderManager = (nextState: ProjectCategoryState) =>
+      makeRefreshState: (s: ProjectCategoryState) => ({
+        ...s,
+        projects: [
+          { ...project, name: "Fresh project name" },
+          otherProject,
+          thirdProject,
+          archivedProject,
+        ],
+      }),
+      makeSecondRefreshState: (s: ProjectCategoryState) => ({
+        ...s,
+        projects: [
+          { ...project, name: "Another remote name" },
+          otherProject,
+          thirdProject,
+          archivedProject,
+        ],
+      }),
+      expectedRefreshedValue: "Fresh project name",
+    },
+    {
+      entityName: "category",
+      initialState: categoryState,
+      fieldName: "Category name",
+      editButtonName: "Edit",
+      headingName: "Edit category",
+      draftValue: "My category draft",
+      makeManager: (s: ProjectCategoryState, service: ProjectCategoryService) =>
         createElement(CategoryManager, {
           service,
-          state: nextState,
+          state: s,
           onStateChange: () => undefined,
           onNavigate: () => undefined,
-        });
-      const mounted = await withAriaDomGlobals(
-        window,
-        () => render(renderManager(categoryState)),
-      );
-      const view = within(document.body);
-      await waitFor(() => assert(view.getByRole("button", { name: "Edit" })));
-      fireEvent.click(view.getByRole("button", { name: "Edit" }));
-      await waitFor(() =>
-        assert(view.getByRole("heading", { name: "Edit category" }))
-      );
-      const refreshedCategory = { ...customCategory, name: "Fresh category" };
-      const refreshedState = {
-        ...categoryState,
-        categories: [category, refreshedCategory],
-      };
-      mounted.rerender(renderManager(refreshedState));
-      await waitFor(() =>
-        assert(
-          (view.getByRole("textbox", {
-            name: "Category name",
-          }) as HTMLInputElement).value === "Fresh category",
-        )
-      );
-      fireEvent.change(view.getByRole("textbox", { name: "Category name" }), {
-        target: { value: "My category draft" },
-      });
-      const secondRefresh = {
-        ...refreshedState,
+        }),
+      makeRefreshState: (s: ProjectCategoryState) => ({
+        ...s,
+        categories: [category, { ...customCategory, name: "Fresh category" }],
+      }),
+      makeSecondRefreshState: (s: ProjectCategoryState) => ({
+        ...s,
         categories: [
           category,
-          { ...refreshedCategory, name: "Another remote category" },
+          { ...customCategory, name: "Another remote category" },
         ],
-      };
-      mounted.rerender(renderManager(secondRefresh));
-      await waitFor(() =>
-        assert(
-          (view.getByRole("textbox", {
-            name: "Category name",
-          }) as HTMLInputElement).value === "My category draft",
-          "an external refresh must not overwrite a dirty category draft",
-        )
+      }),
+      expectedRefreshedValue: "Fresh category",
+    },
+  ]
+) {
+  Deno.test(
+    `local UI ${entityName} editor reconciles an external refresh without losing drafts`,
+    async () => {
+      await withComponentHarness(
+        async ({ window, render, fireEvent, waitFor }) => {
+          const { service } = createTestService(initialState);
+          const mounted = await withAriaDomGlobals(
+            window,
+            () => render(makeManager(initialState, service)),
+          );
+          const view = within(document.body);
+          await waitFor(() =>
+            assert(view.getAllByRole("button", { name: editButtonName }))
+          );
+          fireEvent.click(
+            view.getAllByRole("button", { name: editButtonName })[0],
+          );
+          await waitFor(() =>
+            assert(view.getByRole("heading", { name: headingName }))
+          );
+          const refreshedState = makeRefreshState(initialState);
+          mounted.rerender(makeManager(refreshedState, service));
+          await waitFor(() =>
+            assert(
+              (view.getByRole("textbox", {
+                name: fieldName,
+              }) as HTMLInputElement).value === expectedRefreshedValue,
+            )
+          );
+          fireEvent.change(view.getByRole("textbox", { name: fieldName }), {
+            target: { value: draftValue },
+          });
+          const secondRefresh = makeSecondRefreshState(refreshedState);
+          mounted.rerender(makeManager(secondRefresh, service));
+          await waitFor(() =>
+            assert(
+              (view.getByRole("textbox", {
+                name: fieldName,
+              }) as HTMLInputElement).value === draftValue,
+              `an external refresh must not overwrite a dirty ${entityName} draft`,
+            )
+          );
+          mounted.unmount();
+        },
       );
-      mounted.unmount();
-    });
-  },
-);
+    },
+  );
+}
 
 Deno.test("local UI category editor cancel button exits back to category list", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
@@ -1659,95 +1608,82 @@ Deno.test("local UI category deletion exposes replacement selection and affected
   });
 });
 
-Deno.test(
-  "local UI populated-project-delete opens the actor-driven Screen 7A review",
-  async () => {
-    await withComponentHarness(
-      async ({ window, render, fireEvent, waitFor }) => {
-        const { service } = createTestService(populatedOrganizedState);
-        const repository = {
-          deviceId: "0123456789abcdef0123456789abcdef",
-        } as never;
-        await withAriaDomGlobals(window, async () => {
-          render(
-            createElement(ProjectManager, {
-              repository,
-              service,
-              state: populatedOrganizedState,
-              onStateChange: () => undefined,
-              onNavigate: () => undefined,
-            }),
-          );
-          const view = within(document.body);
-          const deleteButton = view.getByRole("button", {
-            name: "Delete project",
+for (
+  const { name, setupState, openDelete } of [
+    {
+      name: "populated-project-delete",
+      setupState: populatedOrganizedState,
+      openDelete: (
+        view: ReturnType<typeof within>,
+        fireEvent: { click: (el: Element) => void },
+      ) =>
+        fireEvent.click(
+          view.getByRole("button", { name: "Delete project" }),
+        ),
+    },
+    {
+      name: "archived populated-project-delete",
+      setupState: {
+        ...populatedOrganizedState,
+        projects: [
+          project,
+          thirdProject,
+          { ...otherProject, archived: true },
+        ],
+        projectOrder: [project.id, thirdProject.id],
+      },
+      openDelete: (
+        view: ReturnType<typeof within>,
+        fireEvent: { click: (el: Element) => void },
+      ) => {
+        fireEvent.click(
+          view.getByRole("button", { name: "Archived projects (1)" }),
+        );
+        const row = view.getByText("Other project").closest("li");
+        assert(row);
+        fireEvent.click(
+          within(row).getByRole("button", { name: "Delete project" }),
+        );
+      },
+    },
+  ]
+) {
+  Deno.test(
+    `local UI ${name} opens the actor-driven Screen 7A review`,
+    async () => {
+      await withComponentHarness(
+        async ({ window, render, fireEvent, waitFor }) => {
+          const { service } = createTestService(setupState);
+          const repository = {
+            deviceId: "0123456789abcdef0123456789abcdef",
+          } as never;
+          await withAriaDomGlobals(window, async () => {
+            render(
+              createElement(ProjectManager, {
+                repository,
+                service,
+                state: setupState,
+                onStateChange: () => undefined,
+                onNavigate: () => undefined,
+              }),
+            );
+            const view = within(document.body);
+            openDelete(view, fireEvent);
+            const dialog = await waitFor(() =>
+              view.getByRole("dialog", { name: "Delete Other project?" })
+            );
+            assert(dialog.textContent?.includes("Expenses"));
+            assert(dialog.textContent?.includes("Receipt parents"));
+            assert(dialog.textContent?.includes("Automerge history"));
+            assert(
+              within(dialog).getByRole("button", {
+                name: "Export safety copy",
+              }),
+              "the safety export must precede typed confirmation",
+            );
           });
-          fireEvent.click(deleteButton);
-          const dialog = await waitFor(() =>
-            view.getByRole("dialog", { name: "Delete Other project?" })
-          );
-          assert(dialog.textContent?.includes("Expenses"));
-          assert(dialog.textContent?.includes("Receipt parents"));
-          assert(dialog.textContent?.includes("Automerge history"));
-          assert(
-            view.getByRole("button", { name: "Export safety copy" }),
-            "the safety export must precede typed confirmation",
-          );
-        });
-      },
-    );
-  },
-);
-
-Deno.test(
-  "local UI archived populated-project-delete opens the actor-driven review",
-  async () => {
-    await withComponentHarness(
-      async ({ window, render, fireEvent, waitFor }) => {
-        const archivedPopulatedProject = {
-          ...otherProject,
-          archived: true,
-        };
-        const archivedState: ProjectCategoryState = {
-          ...populatedOrganizedState,
-          projects: [project, thirdProject, archivedPopulatedProject],
-          projectOrder: [project.id, thirdProject.id],
-        };
-        const { service } = createTestService(archivedState);
-        const repository = {
-          deviceId: "0123456789abcdef0123456789abcdef",
-        } as never;
-        await withAriaDomGlobals(window, async () => {
-          render(
-            createElement(ProjectManager, {
-              repository,
-              service,
-              state: archivedState,
-              onStateChange: () => undefined,
-              onNavigate: () => undefined,
-            }),
-          );
-          const view = within(document.body);
-          fireEvent.click(
-            view.getByRole("button", { name: "Archived projects (1)" }),
-          );
-          const archivedRow = view.getByText("Other project").closest("li");
-          assert(archivedRow);
-          fireEvent.click(
-            within(archivedRow).getByRole("button", {
-              name: "Delete project",
-            }),
-          );
-          const dialog = await waitFor(() =>
-            view.getByRole("dialog", { name: "Delete Other project?" })
-          );
-          assert(
-            within(dialog).getByRole("button", {
-              name: "Export safety copy",
-            }),
-          );
-        });
-      },
-    );
-  },
-);
+        },
+      );
+    },
+  );
+}

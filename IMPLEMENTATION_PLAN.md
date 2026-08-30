@@ -72,8 +72,9 @@ The M29-FINAL release gate passed:
 - The R-2920 closure review passed 88 focused UI/PWA tests and 5 Playwright
   journeys, with no horizontal overflow at 320x568, 390x844, or 1280x800.
 - `deno task build` transformed 2,973 modules and generated the production
-  manifest and service worker; `deno task release:verify` passed with
-  version `0.1.0`, commit `84e7515`, and verified artifact hashes.
+  manifest and service worker; the pre-archive artifact verified with version
+  `0.1.0`, commit `84e7515`. After archiving, the artifact was rebuilt at
+  `cb7a4de` and `deno task release:verify` passed with fresh hashes.
 - The hygiene audit found no obsolete spikes, transient M29 documents,
   redundant verification scripts, inaccurate tasks, or dangling tracked
   Markdown links; no files required removal.
@@ -137,8 +138,12 @@ next milestone planning (after R-2930 approval)
 - **Scope:** Verify M29 history, release evidence, compact plan archive,
   hygiene results, and compliance with `SPEC.md`, `DESIGN_SYSTEM.md`, and
   `AGENTS.md`.
-- **Remediation:** Any finding must be fixed in a bounded commit, rerun only
-  the affected checks, and update this checkpoint before completion.
+- **Remediation:** Initial review found stale release-artifact provenance because
+  the ignored `dist` directory had been built before the archive commit. The
+  primary implementer rebuilt at archive head `cb7a4de` and reran
+  `deno task release:verify`, which passed. Any further finding must be fixed
+  in a bounded commit, rerun only the affected checks, and update this checkpoint
+  before completion.
 - **Output:** Approval closes M29 and permits the next milestone plan.
 
 ## Interruption and recovery protocol
@@ -162,7 +167,9 @@ After a restart, rate limit, lost session, or interrupted command:
   that follows pre-pruning ledger `84e7515`.
 - **M29 implementation:** complete and pushed; R-2910 and R-2920 approved.
 - **M29-FINAL:** complete; release and hygiene evidence is recorded above.
-- **Next action:** Dispatch the fresh read-only R-2930 review. On approval, mark
+- **R-2930 initial review:** Not approved for one S2 stale artifact-provenance
+  finding; the archive-head rebuild and release verification remediation passed.
+- **Next action:** Dispatch the fresh read-only R-2930 closure review. On approval, mark
   R-2930 complete, update the released baseline to include all M29 gates, and
   push the final plan checkpoint.
 

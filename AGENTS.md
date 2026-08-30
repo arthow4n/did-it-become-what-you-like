@@ -70,6 +70,12 @@
   marked complete. Prefer pure unit and XState actor tests for business rules
   and workflows, adapter integration tests for boundaries, and component tests
   for rendering, accessibility semantics, variants, and event wiring.
+- Reuse centralized test infrastructure in `src/test-support/**` (such as
+  `withComponentHarness`, `withAriaGlobals`, `settle()`, `waitForActorState()`,
+  deterministic clock/ID factories, and canonical fake ports in
+  `src/test-support/fakes/ports.ts`). Do not re-declare parallel fake ports,
+  copy-paste inline window/DOM shims, or reimplement custom async event polling
+  loops in individual test files.
 - Use risk-based validation. For an ordinary change, format and lint the changed
   files, run `deno task test:affected`, run the narrowest additional check for
   effects Deno's import graph cannot see, and run `git diff --check`. Use

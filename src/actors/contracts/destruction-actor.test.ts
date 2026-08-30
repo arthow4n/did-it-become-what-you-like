@@ -554,6 +554,31 @@ Deno.test("delete-everywhere reload preserves a failed retry operation", async (
   actor.stop();
 });
 
+Deno.test("delete-everywhere reload reopens legacy failures behind confirmation", async () => {
+  const machine = createDeleteEverywhereMachine(
+    deleteDependencies({ calls: [] }),
+  );
+  const recovered = recoverDeleteEverywhereSnapshot(machine, {
+    version: 1,
+    generation: 13,
+    phase: "failed",
+    safetyExported: false,
+    safetyDeclined: false,
+    declineConfirmed: false,
+    knownDeviceCount: 1,
+    acknowledgedDeviceCount: 0,
+    forcedDeviceCount: 0,
+    updatedAt: "2026-08-24T18:23:00.000Z",
+  });
+  const actor = createActor(machine, { snapshot: recovered }).start();
+  await settle();
+  assert(actor.getSnapshot().matches("reviewing"));
+  actor.send({ type: "delete-everywhere.export-safety" });
+  await settle();
+  assert(actor.getSnapshot().matches("confirming"));
+  actor.stop();
+});
+
 Deno.test("delete-everywhere marks an interrupted invocation for safe reinitialize", async () => {
   const calls: string[] = [];
   const machine = createDeleteEverywhereMachine(deleteDependencies({ calls }));
@@ -798,6 +823,33 @@ Deno.test(
 
     actor.send({ type: "local-erase.open", removeGeminiApiKey: true });
     assert(actor.getSnapshot().matches("failed"));
+    actor.stop();
+  },
+);
+
+Deno.test(
+  "local erase cancellation after database failure preserves reload recovery",
+  async () => {
+    const storage = memoryStorage();
+    const actor = createActor(createLocalEraseMachine({
+      storage,
+      eraseLocalDataset: () =>
+        Promise.reject(adapterError("unavailable", "test.database-erase")),
+      removeGeminiApiKey: () => Promise.resolve(),
+    })).start();
+    actor.send({ type: "local-erase.open", removeGeminiApiKey: true });
+    actor.send({ type: "local-erase.confirm" });
+    await settle();
+    assert(actor.getSnapshot().matches("failed"));
+    actor.send({ type: "local-erase.cancel" });
+    assert(actor.getSnapshot().matches("partial"));
+    persistLocalEraseSnapshot(
+      actor.getSnapshot(),
+      () => "2026-08-24T18:50:00.000Z",
+      storage,
+    );
+    const progress = readLocalEraseProgress(storage);
+    assert(progress?.failureOperation === "erase-local");
     actor.stop();
   },
 );

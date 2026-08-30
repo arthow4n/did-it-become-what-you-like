@@ -865,6 +865,22 @@ function deleteEverywhereFailureIsCancelable(
     operation === "exporting" || operation === "persistingRetirement";
 }
 
+function deleteEverywhereRecoveryPassedLocalErase(
+  progress: DeleteEverywhereProgressRecord,
+): boolean {
+  if (
+    progress.phase === "awaiting-devices" ||
+    progress.phase === "forced-finalization" ||
+    progress.phase === "completed"
+  ) return true;
+  return progress.phase === "failed" && (
+    progress.failureOperation === "erasingLocal" ||
+    progress.failureOperation === "persistingAwaitingDevices" ||
+    progress.failureOperation === "persistingForcedFinalization" ||
+    progress.failureOperation === "persistingCompletion"
+  );
+}
+
 function deleteEverywhereViewFromSnapshot(snapshot: {
   readonly value: unknown;
   readonly context: {
@@ -1106,6 +1122,10 @@ export function SyncPortabilityRuntime({
       }
     },
   );
+  const deleteEverywhereLocalEraseHandled = useRef(
+    deleteEverywhereRecovery !== undefined &&
+      deleteEverywhereRecoveryPassedLocalErase(deleteEverywhereRecovery),
+  );
   const deleteEverywhereMachine = useMemo(
     () =>
       createDeleteEverywhereMachine({
@@ -1160,7 +1180,10 @@ export function SyncPortabilityRuntime({
   const [deleteFinalizationRetry, setDeleteFinalizationRetry] = useState(0);
   const [deleteOpenRequested, setDeleteOpenRequested] = useState(false);
   const [localGeneration, setLocalGeneration] = useState(1);
-  const localEraseHandled = useRef(false);
+  const localEraseHandled = useRef(
+    localEraseRecovery?.phase === "failed" &&
+      localEraseRecovery.failureOperation === "erase-local",
+  );
   const deleteFinalizationHandled = useRef(false);
   const recoveryReinitializeTarget = useRef<
     DeleteEverywhereProgressPhase | null
@@ -1450,16 +1473,41 @@ export function SyncPortabilityRuntime({
   }, [clock, localEraseSnapshot, onNotice, storage]);
 
   useEffect(() => {
+    const recoveredEraseFailure = localEraseRecovery?.phase === "failed" &&
+      localEraseRecovery.failureOperation === "erase-local";
+    const requiresShellReload = localEraseSnapshot.matches("partial") ||
+      (localEraseSnapshot.matches("failed") &&
+        localEraseSnapshot.context.failureOperation === "erase-local");
     if (
-      (!localEraseSnapshot.matches("completed") &&
-        !localEraseSnapshot.matches("partial")) ||
-      localEraseHandled.current
+      (!localEraseSnapshot.matches("completed") && !requiresShellReload) ||
+      localEraseHandled.current || recoveredEraseFailure
     ) {
       return;
     }
     localEraseHandled.current = true;
     onLocalErased?.("local");
-  }, [localEraseSnapshot, onLocalErased]);
+  }, [localEraseRecovery, localEraseSnapshot, onLocalErased]);
+
+  useEffect(() => {
+    const failureState = deleteEverywhereSnapshot.context.failureState;
+    const localEraseFailed = deleteEverywhereSnapshot.matches("failed") &&
+      (failureState === "erasingLocal" ||
+        failureState === "persistingAwaitingDevices" ||
+        failureState === "persistingForcedFinalization" ||
+        failureState === "persistingCompletion");
+    const localEraseBoundaryReached =
+      deleteEverywhereSnapshot.matches("persistingAwaitingDevices") ||
+      deleteEverywhereSnapshot.matches("awaitingDevices") ||
+      deleteEverywhereSnapshot.matches("persistingForcedFinalization") ||
+      deleteEverywhereSnapshot.matches("forcedFinalization") ||
+      deleteEverywhereSnapshot.matches("persistingCompletion") ||
+      deleteEverywhereSnapshot.matches("completed") || localEraseFailed;
+    if (
+      !localEraseBoundaryReached || deleteEverywhereLocalEraseHandled.current
+    ) return;
+    deleteEverywhereLocalEraseHandled.current = true;
+    onLocalErased?.("everywhere");
+  }, [deleteEverywhereSnapshot, onLocalErased]);
 
   useEffect(() => {
     if (

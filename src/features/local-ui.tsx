@@ -1186,6 +1186,7 @@ export function ProjectManager({
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState("SEK");
   const [saveTarget, setSaveTarget] = useState<Project | null>(null);
+  const [recordDeleted, setRecordDeleted] = useState(false);
   const handledInitialCreate = useRef(false);
   const isSubmittingRef = useRef(false);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
@@ -1244,10 +1245,15 @@ export function ProjectManager({
       candidate.id === saveTarget.id
     );
     if (!project) return;
-    if (project.name !== name) {
+    const normalizedName = name.trim();
+    if (project.name !== normalizedName) {
       send({
         type: "project.command",
-        command: { type: "rename", projectId: project.id, name },
+        command: {
+          type: "rename",
+          projectId: project.id,
+          name: normalizedName,
+        },
       });
       return;
     }
@@ -1296,7 +1302,12 @@ export function ProjectManager({
     const freshRecord = state.projects.find((project) =>
       project.id === editor.record.id
     );
-    if (freshRecord === undefined || freshRecord === editor.record) return;
+    if (freshRecord === undefined) {
+      setRecordDeleted(true);
+      return;
+    }
+    if (freshRecord === editor.record) return;
+    setRecordDeleted(false);
     setEditor({ kind: "edit", record: freshRecord });
     if (!dirty) {
       setName(freshRecord.name);
@@ -1317,8 +1328,10 @@ export function ProjectManager({
     onDirtyDiscarded?.();
   }, [discardRequest, onDirtyChange, onDirtyDiscarded]);
 
-  const openEditor = (nextEditor: EditorState<Project>) =>
+  const openEditor = (nextEditor: EditorState<Project>) => {
+    setRecordDeleted(false);
     setEditor(nextEditor);
+  };
   const submitEditor = () => {
     if (!name.trim() || !snapshot.matches("ready")) return;
     if (editor?.kind === "create") {
@@ -1399,7 +1412,17 @@ export function ProjectManager({
                 value={currency}
                 onValueChange={setCurrency}
               />
-              {snapshot.context.error
+              {recordDeleted
+                ? (
+                  <InlineNotice
+                    tone="warning"
+                    title="Project deleted elsewhere"
+                  >
+                    This project no longer exists in the current organization.
+                    Discard this draft before continuing.
+                  </InlineNotice>
+                )
+                : snapshot.context.error
                 ? (
                   <InlineNotice tone="danger" title="Project was not saved">
                     {snapshot.context.error.message}
@@ -1415,7 +1438,7 @@ export function ProjectManager({
                     onComplete?.();
                   }}
                 >
-                  Cancel
+                  {recordDeleted ? "Discard draft" : "Cancel"}
                 </Button>
                 {snapshot.matches("failed")
                   ? (
@@ -1429,7 +1452,7 @@ export function ProjectManager({
                   : null}
                 <Button
                   pending={isSaving}
-                  isDisabled={isSaving || !name.trim()}
+                  isDisabled={recordDeleted || isSaving || !name.trim()}
                   onPress={submitEditor}
                 >
                   Save project
@@ -1943,6 +1966,7 @@ export function CategoryManager({
   const [name, setName] = useState("");
   const [color, setColor] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState("");
+  const [recordDeleted, setRecordDeleted] = useState(false);
   const handledInitialCreate = useRef(false);
   const isSubmittingRef = useRef(false);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
@@ -2051,7 +2075,12 @@ export function CategoryManager({
     const freshRecord = state.categories.find((category) =>
       category.id === editor.record.id
     );
-    if (freshRecord === undefined || freshRecord === editor.record) return;
+    if (freshRecord === undefined) {
+      setRecordDeleted(true);
+      return;
+    }
+    if (freshRecord === editor.record) return;
+    setRecordDeleted(false);
     setEditor({ kind: "edit", record: freshRecord });
     if (!dirty) {
       setName(freshRecord.name);
@@ -2070,6 +2099,11 @@ export function CategoryManager({
     onDirtyChange?.(false);
     onDirtyDiscarded?.();
   }, [discardRequest, onDirtyChange, onDirtyDiscarded]);
+
+  const openEditor = (nextEditor: EditorState<Category>) => {
+    setRecordDeleted(false);
+    setEditor(nextEditor);
+  };
 
   if (editor) {
     return (
@@ -2113,7 +2147,17 @@ export function CategoryManager({
                   </Button>
                 )
                 : null}
-              {snapshot.context.error
+              {recordDeleted
+                ? (
+                  <InlineNotice
+                    tone="warning"
+                    title="Category deleted elsewhere"
+                  >
+                    This category no longer exists in the current organization.
+                    Discard this draft before continuing.
+                  </InlineNotice>
+                )
+                : snapshot.context.error
                 ? (
                   <InlineNotice tone="danger" title="Category was not saved">
                     {snapshot.context.error.message}
@@ -2129,7 +2173,7 @@ export function CategoryManager({
                     onComplete?.();
                   }}
                 >
-                  Cancel
+                  {recordDeleted ? "Discard draft" : "Cancel"}
                 </Button>
                 {snapshot.matches("failed")
                   ? (
@@ -2143,7 +2187,8 @@ export function CategoryManager({
                   : null}
                 <Button
                   pending={snapshot.hasTag("saving")}
-                  isDisabled={snapshot.hasTag("saving") || !name.trim()}
+                  isDisabled={recordDeleted || snapshot.hasTag("saving") ||
+                    !name.trim()}
                   onPress={submitEditor}
                 >
                   Save category
@@ -2207,7 +2252,7 @@ export function CategoryManager({
             />
           }
           actions={
-            <Button onPress={() => setEditor({ kind: "create" })}>
+            <Button onPress={() => openEditor({ kind: "create" })}>
               Create category
             </Button>
           }
@@ -2237,7 +2282,7 @@ export function CategoryManager({
                   <Button
                     variant="quiet"
                     onPress={() =>
-                      setEditor({ kind: "edit", record: category })}
+                      openEditor({ kind: "edit", record: category })}
                   >
                     Edit
                   </Button>
@@ -2342,7 +2387,7 @@ export function CategoryManager({
                         <Button
                           variant="quiet"
                           onPress={() =>
-                            setEditor({ kind: "edit", record: category })}
+                            openEditor({ kind: "edit", record: category })}
                         >
                           Edit
                         </Button>

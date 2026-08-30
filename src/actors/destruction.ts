@@ -269,6 +269,21 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
           "local-erase.cancel": [
             {
               target: "partial",
+              guard: "failedEraseLocal",
+              actions: assign({
+                error: ({ context }) => ({
+                  code: context.error?.code ?? "unknown",
+                  message:
+                    "The local erase may have closed this browser's data before it finished. Reload and retry to continue safely.",
+                  retryable: true,
+                  ...(context.error?.operation === undefined
+                    ? {}
+                    : { operation: context.error.operation }),
+                }),
+              }),
+            },
+            {
+              target: "partial",
               guard: "failedRemoveKey",
               actions: assign({
                 error: ({ context }) => ({
@@ -611,7 +626,10 @@ function stateValueForProgress(
     case "failed":
       return progress.failureOperation === undefined ||
           progress.failureOperation === null
-        ? "idle"
+        // Pre-v1.1 failed records did not identify a safe retry target. Put
+        // them back behind the explicit export/decline confirmation gate
+        // instead of rendering an idle actor with a dead Retry control.
+        ? "reviewing"
         : "failed";
     case "completed":
       return "completed";

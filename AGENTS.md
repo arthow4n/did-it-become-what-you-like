@@ -42,30 +42,39 @@
   creating parallel one-off UI.
 - When an approved pattern is missing, update the design system deliberately and
   keep its documentation, reusable component, and affected screens consistent.
-- After the design system is approved and before implementation, create a
-  dependency-ordered milestone plan. Identify foundational prerequisites,
-  acceptance and verification gates, and workstreams which can safely proceed in
-  parallel without inventing conflicting interfaces or data contracts.
-- Put that executable plan, orchestration procedure, task statuses, current
-  checkpoint, review/fix loop, and resumable coding-agent prompt in the single
+- Create or amend `IMPLEMENTATION_PLAN.md` only when the repo owner explicitly
+  asks to convert work into a planned milestone, or when carrying forward an
+  already active approved milestone. Do not infer a plan from the size of a
+  request, a UI audit, or ordinary implementation work.
+- A planned milestone has dependency-ordered tasks, contract or acceptance
+  gates, parallel ownership, or a resumable handoff need. Put its executable
+  plan, orchestration procedure, task statuses, current checkpoint, review/fix
+  loop, and resumable coding-agent prompt in the single
   `IMPLEMENTATION_PLAN.md` source of truth. Do not scatter live progress across
   several planning files.
-- Once `IMPLEMENTATION_PLAN.md` exists, an implementing or orchestrating agent
-  must read it first, reconcile its checkpoint with the repository and test
-  state, update it after every completed or blocked task, and resume from the
-  next dependency-ready item. It must not treat a stale checklist as stronger
-  evidence than the actual repository.
-- After a rate limit, lost session, machine restart, or interrupted sub-agent,
-  follow the Interruption and Recovery Protocol in `IMPLEMENTATION_PLAN.md`
-  before dispatching or editing. Audit `master`, its upstream, every branch and
-  worktree, uncommitted changes, unpushed commits, recorded validations, and
-  stale `IN_PROGRESS` ownership. Preserve all work and never guess that a task
-  is complete merely because a commit or checklist entry exists.
+- An ordinary focused fix is recorded by its commit, regression tests,
+  validation evidence, and handoff. It must not create or update the plan unless
+  it belongs to an active planned milestone.
+- For an active planned milestone, an implementing or orchestrating agent must
+  read the plan first, reconcile its checkpoint with the repository and test
+  state, update it after every completed or blocked planned task, and resume
+  from the next dependency-ready item. It must not treat a stale checklist as
+  stronger evidence than the actual repository.
+- Every planned milestone ends with a final/archive task. Keep only a concise
+  released-baseline summary in the living plan and prune completed task matrices,
+  temporary evidence, and other historical detail; Git history remains the
+  durable record.
+- After a rate limit, lost session, machine restart, or interrupted sub-agent
+  involving an active planned milestone, follow its Interruption and Recovery
+  Protocol before dispatching or editing. Audit `master`, its upstream, every
+  branch and worktree, uncommitted changes, unpushed commits, recorded
+  validations, and stale `IN_PROGRESS` ownership. Preserve all work and never
+  guess that a task is complete merely because a commit or checklist entry
+  exists.
 - Context compaction alone does not require a full recovery audit when the same
   agent session continues, Git state is known and clean, no command or push was
-  interrupted, and no worker/worktree exists. Re-read the current checkpoint and
-  task, confirm `git status --short --branch`, and continue. Use the full
-  protocol whenever ownership or repository state is uncertain.
+  interrupted, and no active planned milestone has uncertain ownership. Confirm
+  `git status --short --branch` and continue.
 - Every implementation task must include and pass appropriate tests before it is
   marked complete. Prefer pure unit and XState actor tests for business rules
   and workflows, adapter integration tests for boundaries, and component tests
@@ -172,5 +181,7 @@ For the approved Mantine migration and all later design-system work:
    functional progress motion is allowed, with equivalent reduced-motion
    feedback.
 10. A facade contract may change only after an impact inventory identifies all
-    consumers and tests, the change is recorded in `IMPLEMENTATION_PLAN.md`, and
-    the preceding or immediately following review gate approves it.
+    consumers and tests. When the change belongs to an active planned milestone,
+    record it in `IMPLEMENTATION_PLAN.md` and obtain the preceding or immediately
+    following review-gate approval; otherwise record the inventory and approval
+    in the focused change evidence.

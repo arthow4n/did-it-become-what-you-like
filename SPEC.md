@@ -944,10 +944,12 @@ and multi-device synchronization according to the agreed sync design.
 
 ### Post-Design Implementation Orchestration Deliverable
 
-After the design system is approved, planning must create one living
-`IMPLEMENTATION_PLAN.md`. It is the only source of truth for implementation
-orchestration and must be sufficient for a coding agent to resume work without
-reconstructing the plan from chat history.
+When the repo owner explicitly requests planned execution after the design
+system is approved, planning must create one living
+`IMPLEMENTATION_PLAN.md`. It is the only source of truth for that milestone's
+implementation orchestration and must be sufficient for a coding agent to
+resume work without reconstructing the plan from chat history. Focused fixes do
+not create or update this document unless they belong to that active milestone.
 
 That file must contain:
 
@@ -973,8 +975,8 @@ That file must contain:
 - milestone test gates which keep the E2E suite compact, prevent state-machine
   assertions from being duplicated through the UI stack, and reject tasks whose
   required lower-layer tests were deferred;
-- commit/push and plan-update checkpoints which leave the repository resumable
-  after interruption; and
+- commit/push and planned-task checkpoint updates which leave the milestone
+  resumable after interruption; and
 - a ready-to-use orchestration prompt instructing a coding agent to reconcile
   the recorded checkpoint with actual Git/test state, dispatch the next safe
   work, update the file, and continue until the approved definition of done or a

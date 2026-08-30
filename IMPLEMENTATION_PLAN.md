@@ -161,7 +161,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-002 — Navigation route typing, receipt scene association & continuous loop
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-001`.
+- **Status/dependencies:** `COMPLETE`; depends on `M33-001`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/app/routing.ts`.
 - **Scope/non-goals:**
   1. Add `"/expense/edit/${string}"` to `LocalUiPath` type union in
@@ -177,12 +177,12 @@ M33-005 -> M33-006 -> R-3330
 - **Tests:** Update `src/features/local-ui.test.tsx` and
   `src/app/routing.test.ts`.
 - **Verification:**
-  `deno test --related=src/features/local-ui.tsx,src/app/routing.ts`,
+  `deno test --allow-read --allow-write --allow-run --allow-env --related=src/features/local-ui.tsx,src/app/routing.ts`,
   `deno task typecheck`.
 
 #### R-3310 — Batch 1 review gate (Manual expense & routing safety)
 
-- **Status/dependencies:** `PENDING`; depends on `M33-001`, `M33-002`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-001`, `M33-002`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Diffs from `M33-001` and `M33-002`, `manualExpenseMachine`
   event coverage, mount lifecycle tests, route typing, and exit guard wiring.
@@ -325,25 +325,23 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M33-002` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `09986fb` —
-  `fix(manual-expense): harden draft and
-  failure workflows`.
-- **Verification status:**
+- **Active task / gate:** `R-3310` (`IN_PROGRESS`)
+- **Pushed commit / HEAD:** `0ae59bd` —
+  `fix(navigation): keep manual add-another actor continuous`.
+- **Verification status:** M33-001's focused graph passed (41 tests) with lint,
+  typecheck, and diff checks. M33-002's
   `deno fmt IMPLEMENTATION_PLAN.md
-  src/actors/manual-expense.ts src/actors/contracts/manual-expense-actor.test.ts
-  src/features/local-ui.tsx src/features/local-ui.test.tsx`
+  src/features/local-ui.tsx src/features/local-ui.test.tsx
+  src/app/routing.test.ts`
   passed;
-  `deno test
-  --allow-read --allow-write --allow-run --allow-env
-  --related=src/actors/manual-expense.ts,src/features/local-ui.tsx`
-  passed (41 tests); `deno lint` on the four changed TypeScript files passed;
-  `deno task
-  typecheck` passed; `git diff --check` passed.
+  `deno test --allow-read --allow-write
+  --allow-run --allow-env --related=src/features/local-ui.tsx,src/app/routing.ts`
+  passed (31 tests); `deno lint` on the three changed TypeScript files passed;
+  `deno task typecheck` and `git diff --check` passed.
 - **Active / preserved work:** Clean, synchronized `master`; no active M33
   worktrees or subagents.
-- **Next action:** Audit and implement `M33-002` route typing, receipt
-  navigation association, and continuous manual add-another lifecycle.
+- **Next action:** Remediate R-3310's three severity-2 findings, rerun focused
+  actor/component checks, and request reviewer closure before M33-003.
 
 ---
 

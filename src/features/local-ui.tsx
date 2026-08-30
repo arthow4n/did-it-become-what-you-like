@@ -2341,9 +2341,11 @@ export function ManualExpenseScreen({
   const [snapshot, send] = useActor(machine, { input: { persistenceKey } });
   const completionHandled = useRef(false);
   const usefulActionHandled = useRef(false);
-  const syncMutationHandled = useRef(false);
+  const notifiedResultId = useRef<string | null>(null);
+  const addAnotherResultId = useRef<string | null>(null);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
   const syncStatus = useSyncStatus();
+  const saveMode = useRef<ManualSaveMode>("expenses");
 
   useEffect(() => {
     if (request.expense) {
@@ -2354,14 +2356,20 @@ export function ManualExpenseScreen({
     }
   }, [machineKey, request, send]);
 
-  const saveMode = useRef<ManualSaveMode>("expenses");
   useEffect(() => {
-    if (
-      !syncMutationHandled.current && snapshot.matches("saved") &&
-      snapshot.context.result?.expense
-    ) {
-      syncMutationHandled.current = true;
+    const savedExpense = snapshot.context.result?.expense;
+    const completedSave = savedExpense !== undefined &&
+      (snapshot.matches("saved") || saveMode.current === "another");
+    if (completedSave && notifiedResultId.current !== savedExpense.id) {
+      notifiedResultId.current = savedExpense.id;
       syncStatus?.notifyLocalMutation();
+    }
+    if (
+      completedSave && saveMode.current === "another" &&
+      addAnotherResultId.current !== savedExpense.id
+    ) {
+      addAnotherResultId.current = savedExpense.id;
+      onSaved(savedExpense, "another");
     }
     if (completionHandled.current) return;
     if (snapshot.matches("deleted")) {
@@ -2401,8 +2409,8 @@ export function ManualExpenseScreen({
 
   useEffect(() => {
     if (
-      usefulActionHandled.current || !snapshot.matches("saved") ||
-      !snapshot.context.result?.expense
+      usefulActionHandled.current || !snapshot.context.result?.expense ||
+      !(snapshot.matches("saved") || saveMode.current === "another")
     ) return;
     usefulActionHandled.current = true;
     onUsefulAction?.();
@@ -2483,9 +2491,14 @@ export function ManualExpenseScreen({
   const update = (changes: Partial<ManualExpenseDraft>) =>
     send({ type: "expense.change", draft: { ...draft, ...changes } });
   const busy = snapshot.hasTag("saving");
-  const failed = snapshot.matches("saveFailed") ||
+  const draftSaveFailed = snapshot.matches("draftSaveFailed");
+  const saveFailed = snapshot.matches("saveFailed") ||
     snapshot.matches("saveAnotherFailed");
+  const failed = draftSaveFailed || saveFailed;
   const deleteFailed = snapshot.matches("deleteFailed");
+  const formLocked = busy || deleteFailed ||
+    snapshot.hasTag("confirming-delete") ||
+    snapshot.hasTag("confirming-discard") || snapshot.matches("discardFailed");
   const errors = Object.entries(validation).map(([id, message]) => ({
     id,
     message,
@@ -2508,6 +2521,7 @@ export function ManualExpenseScreen({
               icon={<X />}
               aria-label="Close"
               variant="quiet"
+              isDisabled={formLocked}
               onPress={() => send({ type: "expense.back" })}
             />
           }
@@ -2533,7 +2547,16 @@ export function ManualExpenseScreen({
                 detail={failed || deleteFailed
                   ? snapshot.context.error?.message
                   : "Your unfinished form is saved on this device."}
-                action={failed
+                action={draftSaveFailed
+                  ? (
+                    <Button
+                      variant="secondary"
+                      onPress={() => send({ type: "expense.retry-draft" })}
+                    >
+                      Retry draft save
+                    </Button>
+                  )
+                  : saveFailed
                   ? (
                     <Button
                       variant="secondary"
@@ -2542,7 +2565,7 @@ export function ManualExpenseScreen({
                       Retry save
                     </Button>
                   )
-                  : snapshot.hasTag("dirty") && !busy
+                  : snapshot.hasTag("dirty") && !formLocked
                   ? (
                     <Button
                       variant="quiet"
@@ -2559,14 +2582,14 @@ export function ManualExpenseScreen({
             <>
               <Button
                 variant="secondary"
-                isDisabled={busy}
+                isDisabled={formLocked}
                 onPress={() => submit("another")}
               >
                 Save and add another
               </Button>
               <Button
                 pending={busy}
-                isDisabled={busy}
+                isDisabled={formLocked}
                 onPress={() => submit("expenses")}
               >
                 Save expense
@@ -2579,6 +2602,7 @@ export function ManualExpenseScreen({
             fullWidth
             label="Direction"
             value={draft.direction}
+            isDisabled={formLocked}
             onChange={(value) =>
               update({ direction: value as ManualExpenseDraft["direction"] })}
             options={[{ id: "spent", label: "Spent" }, {
@@ -2591,6 +2615,7 @@ export function ManualExpenseScreen({
               label="Amount"
               isRequired
               value={draft.amount}
+              isDisabled={formLocked}
               onChange={(value) => update({ amount: value })}
               currency={draft.currency}
               error={validation.amount}
@@ -2603,12 +2628,14 @@ export function ManualExpenseScreen({
               }))}
               onValueChange={(value) =>
                 update({ currency: CurrencyCodeSchema.parse(value) })}
+              isDisabled={formLocked}
             />
           </div>
           <MerchantPicker
             value={draft.merchant ?? ""}
             onValueChange={(value) => update({ merchant: value })}
             suggestions={[...snapshot.context.suggestions]}
+            isDisabled={formLocked}
           />
           <SelectField
             label="Category"
@@ -2616,6 +2643,7 @@ export function ManualExpenseScreen({
             value={draft.categoryId}
             onValueChange={(value) => update({ categoryId: value })}
             error={validation.categoryId}
+            isDisabled={formLocked}
           />
           <div className="local-ui-form-row local-ui-form-row--date-time">
             <NativeDateField
@@ -2624,6 +2652,7 @@ export function ManualExpenseScreen({
               value={draft.date}
               onChange={(event) => update({ date: event.currentTarget.value })}
               error={validation.date}
+              disabled={formLocked}
               description="The concrete calendar date is saved exactly as shown."
             />
             <NativeTimeField
@@ -2632,18 +2661,21 @@ export function ManualExpenseScreen({
               onChange={(event) =>
                 update({ time: event.currentTarget.value || undefined })}
               error={validation.time}
+              disabled={formLocked}
             />
           </div>
           <ProjectPicker
             options={projects}
             value={draft.projectId}
             onValueChange={(value) => update({ projectId: value })}
+            isDisabled={formLocked}
           />
           <TextArea
             label="Description (optional)"
             value={draft.description}
             onChange={(value) => update({ description: value })}
             error={validation.description}
+            isDisabled={formLocked}
           />
         </ExpenseForm>
         {snapshot.matches("discardConfirming")
@@ -2684,6 +2716,7 @@ export function ManualExpenseScreen({
               <Button
                 variant="danger"
                 fullWidth
+                isDisabled={formLocked}
                 onPress={() => send({ type: "expense.delete" })}
               >
                 Delete this expense

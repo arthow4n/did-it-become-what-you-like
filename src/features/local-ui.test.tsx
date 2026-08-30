@@ -11,6 +11,7 @@ import {
   ManualExpenseRecoveryScreen,
   ManualExpenseScreen,
   manualExpenseSubmitEvent,
+  type ManualSaveMode,
   OrganizeScreen,
   ProjectManager,
   SavedExpenseCompletionScreen,
@@ -58,7 +59,11 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-function createTestService(initialState: ProjectCategoryState): {
+function createTestService(
+  initialState: ProjectCategoryState,
+  getState: () => Promise<ProjectCategoryState> = () =>
+    Promise.resolve(initialState),
+): {
   service: ProjectCategoryService;
   commits: () => number;
   categoryCommands: CategoryOrganizationCommand[];
@@ -73,7 +78,7 @@ function createTestService(initialState: ProjectCategoryState): {
   });
   return {
     service: {
-      getState: () => Promise.resolve(initialState),
+      getState,
       commitProject: () => {
         commitCount += 1;
         return Promise.resolve(output());
@@ -641,6 +646,158 @@ Deno.test("local UI manual saves notify when Drive authorization has expired", a
       );
       assert(notices === 1, "A successful local save should notify once");
       assert(closed === 0, "The completion state should remain visible");
+    });
+  });
+});
+
+Deno.test("local UI locks manual controls while a save is in flight", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      let deferCommit = false;
+      let releaseCommit!: (state: ProjectCategoryState) => void;
+      const pendingCommit = new Promise<ProjectCategoryState>((resolve) => {
+        releaseCommit = resolve;
+      });
+      const { service } = createTestService(
+        state,
+        () => deferCommit ? pendingCommit : Promise.resolve(state),
+      );
+      render(
+        createElement(ManualExpenseScreen, {
+          repository: local,
+          service,
+          state,
+          request: { projectId: project.id },
+          onSaved: () => undefined,
+          onClosed: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("textbox", { name: "Amount" }))
+      );
+      fireEvent.input(view.getByRole("textbox", { name: "Amount" }), {
+        target: { value: "4" },
+      });
+      deferCommit = true;
+      fireEvent.click(view.getByRole("button", { name: "Save expense" }));
+      await waitFor(() =>
+        assert(
+          (view.getByRole("button", {
+            name: "Save expense",
+          }) as HTMLButtonElement).disabled,
+        )
+      );
+      assert(
+        (view.getByRole("textbox", { name: "Amount" }) as HTMLInputElement)
+          .disabled,
+      );
+      assert(
+        (view.getByRole("button", { name: "Close" }) as HTMLButtonElement)
+          .disabled,
+      );
+      releaseCommit(state);
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Expense saved" }))
+      );
+    });
+  });
+});
+
+Deno.test("local UI exposes draft persistence retry without discarding input", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      const { service } = createTestService(state);
+      render(
+        createElement(ManualExpenseScreen, {
+          repository: local,
+          service,
+          state,
+          request: { projectId: project.id },
+          onSaved: () => undefined,
+          onClosed: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("textbox", { name: "Amount" }))
+      );
+      local.failNext("quota");
+      fireEvent.input(view.getByRole("textbox", { name: "Amount" }), {
+        target: { value: "4" },
+      });
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: "Retry draft save" }))
+      );
+      fireEvent.click(view.getByRole("button", { name: "Retry draft save" }));
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: "Discard draft" }))
+      );
+      assertEquals(
+        (view.getByRole("textbox", { name: "Amount" }) as HTMLInputElement)
+          .value,
+        "4",
+      );
+    });
+  });
+});
+
+Deno.test("local UI add-another notifies sync and retains its actor lifecycle", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      const { service } = createTestService(state);
+      let notices = 0;
+      const saveModes: ManualSaveMode[] = [];
+      const syncStatus: SyncStatusContextValue = {
+        view: {
+          mode: "configured",
+          accountEmail: "owner@example.com",
+          network: "online",
+          sync: "authorization-error",
+          lastSyncedAt: null,
+          pendingChangeCount: 0,
+          unresolvedConflictCount: 0,
+        },
+        onOpenSync: () => undefined,
+        onReconnect: () => undefined,
+        notifyLocalMutation: () => notices++,
+      };
+      render(
+        createElement(
+          SyncStatusProvider,
+          { value: syncStatus },
+          createElement(ManualExpenseScreen, {
+            repository: local,
+            service,
+            state,
+            request: { projectId: project.id },
+            onSaved: (_, mode) => saveModes.push(mode),
+            onClosed: () => undefined,
+          }),
+        ),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("textbox", { name: "Amount" }))
+      );
+      fireEvent.input(view.getByRole("textbox", { name: "Amount" }), {
+        target: { value: "4" },
+      });
+      fireEvent.click(
+        view.getByRole("button", { name: "Save and add another" }),
+      );
+      await waitFor(() =>
+        assert(
+          (view.getByRole("textbox", {
+            name: "Amount",
+          }) as HTMLInputElement).value === "",
+        )
+      );
+      assertEquals(notices, 1);
+      assertEquals(saveModes, ["another"]);
     });
   });
 });

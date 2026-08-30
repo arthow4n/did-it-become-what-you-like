@@ -2993,11 +2993,12 @@ function currencyOptionsWithIso(
 }
 
 export function ProjectPicker(
-  { options, value, onValueChange, className }: {
+  { options, value, onValueChange, className, isDisabled }: {
     options: SelectOption[];
     value?: string;
     onValueChange?: (value: string) => void;
     className?: string;
+    isDisabled?: boolean;
   },
 ) {
   return (
@@ -3007,16 +3008,18 @@ export function ProjectPicker(
       value={value}
       onValueChange={onValueChange}
       className={className}
+      isDisabled={isDisabled}
     />
   );
 }
 
 export function CurrencyPicker(
-  { label = "Currency", options, value, onValueChange }: {
+  { label = "Currency", options, value, onValueChange, isDisabled }: {
     label?: ReactNode;
     options: SelectOption[];
     value?: string;
     onValueChange?: (value: string) => void;
+    isDisabled?: boolean;
   },
 ) {
   const currencyOptions = currencyOptionsWithIso(options, value);
@@ -3029,15 +3032,17 @@ export function CurrencyPicker(
       searchable
       placeholder="Search ISO currency"
       className="ds-currency-picker"
+      isDisabled={isDisabled}
     />
   );
 }
 
 export function MerchantPicker(
-  { value, onValueChange, suggestions = [] }: {
+  { value, onValueChange, suggestions = [], isDisabled }: {
     value?: string;
     onValueChange?: (value: string) => void;
     suggestions?: string[];
+    isDisabled?: boolean;
   },
 ) {
   return (
@@ -3045,6 +3050,7 @@ export function MerchantPicker(
       label="Merchant"
       value={value}
       onValueChange={onValueChange}
+      isDisabled={isDisabled}
       description={suggestions.length
         ? `Suggestions available: ${suggestions.join(", ")}`
         : undefined}

@@ -26,7 +26,7 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ## Released Baseline
 
-M0 through M29 and all review gates through `R-2920` are complete. The
+M0 through M29 and all review gates through `R-2930` are complete. The
 released application baseline includes the approved domain, XState actors,
 adapter ports, local-first workflows, causal sync, responsive After Midnight
 UI, the Mantine-backed design-system facade, accessibility, PWA behavior,
@@ -121,19 +121,16 @@ across browser tests.
 ## Active dependency graph
 
 ```text
-M0..M29 implementation and R-2920 review (COMPLETE)
+M0..M29 implementation and R-2930 review (COMPLETE)
    |
    v
-R-2930 final milestone review (IN_PROGRESS)
-   |
-   v
-next milestone planning (after R-2930 approval)
+next milestone planning (after product-owner approval)
 ```
 
 ## R-2930 — Final M29 Review and Release Gate
 
-- **Status:** `IN_PROGRESS`; the implementation, release validation,
-  responsive review, and archive are complete.
+- **Status:** `COMPLETE`; the implementation, release validation, responsive
+  review, and archive are complete.
 - **Reviewer:** Fresh read-only reviewer subagent.
 - **Scope:** Verify M29 history, release evidence, compact plan archive,
   hygiene results, and compliance with `SPEC.md`, `DESIGN_SYSTEM.md`, and
@@ -144,7 +141,13 @@ next milestone planning (after R-2930 approval)
   `deno task release:verify`, which passed. Any further finding must be fixed
   in a bounded commit, rerun only the affected checks, and update this checkpoint
   before completion.
-- **Output:** Approval closes M29 and permits the next milestone plan.
+- **Output:** Fresh read-only review approved M29 and permits the next milestone
+  plan.
+- **Review evidence:** `master`, upstream, and `origin/master` were synchronized;
+  artifact provenance verified at `f4ccb85`; typecheck, 200-file lint, 210-file
+  format check, frozen audit, diff check, facade boundary checks (2 passed), and
+  Markdown hygiene (12 tracked documents, 6 local links, 0 missing targets) all
+  passed. The reviewer found no findings and preserved all historical worktrees.
 
 ## Interruption and recovery protocol
 
@@ -162,24 +165,26 @@ After a restart, rate limit, lost session, or interrupted command:
 
 ## Current Checkpoint
 
-- **Active gate:** `R-2930` (`IN_PROGRESS`).
+- **Active gate:** None; M29 and R-2930 are `COMPLETE`.
 - **Repository:** `master` is clean and synchronized at the archive commit
   that follows pre-pruning ledger `84e7515`.
-- **M29 implementation:** complete and pushed; R-2910 and R-2920 approved.
+- **M29 implementation:** complete and pushed; R-2910, R-2920, and R-2930
+  approved.
 - **M29-FINAL:** complete; release and hygiene evidence is recorded above.
-- **R-2930 initial review:** Not approved for one S2 stale artifact-provenance
-  finding; the archive-head rebuild and release verification remediation passed.
-- **Next action:** Dispatch the fresh read-only R-2930 closure review. On approval, mark
-  R-2930 complete, update the released baseline to include all M29 gates, and
-  push the final plan checkpoint.
+- **R-2930 closure evidence:** Fresh read-only review approved with no findings.
+  It verified the archive-head release artifact, repository checks, frozen audit,
+  facade boundary, Markdown links, compact plan, and preservation of unrelated
+  historical worktrees.
+- **Next action:** Wait for the next product-approved milestone requirements;
+  do not initialize implementation work from this archived baseline alone.
 
 ## Ready-to-use orchestration prompt
 
 ```text
-Act as the integration owner for the active R-2930 gate. Read AGENTS.md,
+Act as the integration owner for the next approved milestone. Read AGENTS.md,
 SPEC.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Audit the current
-master/upstream/worktree state and the compact M29 release evidence. Use a
-fresh read-only reviewer for R-2930, preserve all existing work, update this
-checkpoint after approval, and initialize a new dependency-ordered milestone
-only after the product owner approves its requirements and design.
+master/upstream/worktree state and the compact released baseline. Obtain
+product-owner approval for requirements and design before initializing a new
+dependency-ordered milestone; preserve all existing work and use a fresh
+read-only reviewer at its named release gate.
 ```

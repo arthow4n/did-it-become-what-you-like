@@ -238,7 +238,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### R-3320 — Batch 2 review gate (Receipt scanning & saved receipt detail)
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-003`, `M33-004`.
+- **Status/dependencies:** `COMPLETE`; depends on `M33-003`, `M33-004`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Diffs from `M33-003` and `M33-004`, receipt actor tests,
   discard navigation preservation, and error recovery contracts.
@@ -249,7 +249,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-005 — Project & category manager exit guards & archived deletion
 
-- **Status/dependencies:** `PENDING`; depends on `R-3320`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-3320`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/actors/project-category.ts`.
 - **Scope/non-goals:**
   1. Wire `onDirtyChange` in `ProjectManager` and `CategoryManager` so
@@ -325,18 +325,17 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-3320` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `daa6d8d` —
-  `fix(receipts): restore detail recovery semantics`.
-- **Verification status:**
-  `deno test --allow-read --allow-write --allow-run --allow-env
-  --related=src/actors/saved-receipt.ts,src/features/receipt-detail-ui.tsx`
-  passed (43 tests); `deno lint` on the three changed TypeScript files,
-  `deno task typecheck`, `deno fmt --check` on the four changed files, and
-  `git diff --check` passed.
+- **Active task / gate:** `M33-005` (`IN_PROGRESS`)
+- **Pushed commit / HEAD:** `8a6f944` —
+  `fix(receipts): protect review browser exits`.
+- **Verification status:** R-3320 fresh read-only review and three remediation
+  passes are clear; affected actor/component suites passed (41 tests on the
+  final remediation), with lint, `deno task typecheck`, formatting, and
+  `git diff --check` clean.
 - **Active / preserved work:** Clean, synchronized `master`; no active M33
   worktrees or subagents.
-- **Next action:** Remediate the six R-3320 findings, then request closure.
+- **Next action:** Implement M33-005 organization manager exit guards and
+  archived-project deletion.
 
 ---
 

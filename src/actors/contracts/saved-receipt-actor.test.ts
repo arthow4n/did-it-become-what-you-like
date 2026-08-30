@@ -25,25 +25,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-async function settle(): Promise<void> {
-  for (let index = 0; index < 12; index += 1) await Promise.resolve();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-}
-
-async function waitForState(
-  actor: { getSnapshot(): { value: unknown } },
-  expected: string,
-): Promise<void> {
-  for (let attempt = 0; attempt < 12; attempt += 1) {
-    await settle();
-    if (actor.getSnapshot().value === expected) return;
-  }
-  throw new Error(
-    `Expected actor state ${expected}, got ${
-      String(actor.getSnapshot().value)
-    }`,
-  );
-}
+import { settle, waitForState } from "../../test-support/index.ts";
 
 const receiptId = "receipt-saved-actor";
 const purchaseId = "line-saved-actor";

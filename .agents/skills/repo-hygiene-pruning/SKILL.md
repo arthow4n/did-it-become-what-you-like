@@ -237,21 +237,18 @@ and tooling task definitions against these dimensions:
   - Prune completed migration string assertions. Retain active architectural
     boundaries (e.g. Mantine facade isolation).
 
-### Dimension 2F: Task Target Flaws & Explicit File Enumeration Fragility
+### Dimension 2F: Task Target Flaws & Redundant Task Fragmentation
 
 - **What to look for:**
-  - Tasks named after critical application subsystems pointing to partial
-    subfolders (e.g. `"test:domain": "deno test ... src/domain/tests"`, which
-    skips `src/domain/conflict/` and `src/domain/import-export/`).
-  - Duplicate or overlapping task definitions (e.g. `test:unit` duplicating
-    `test:domain`).
+  - Fragmented or overlapping subsystem slice tasks in `deno.json` (e.g.
+    `test:unit`, `test:domain`, `test:actor`, `test:integration`,
+    `test:component`) that duplicate `test` and `test:affected`.
   - Tasks hardcoding brittle lists of 20+ individual script/e2e files in
     `deno check`.
 - **Remediation:**
-  - Repoint tasks to parent directories (e.g.
-    `"test:domain": "deno test ... src/domain"`).
-  - Prune redundant tasks (e.g. consolidate `test:unit` into `test:domain`).
-  - Clean up `test:integration` to focus strictly on adapter/boundary suites.
+  - Prune redundant subsystem slice tasks and standardize on `test:affected`
+    (for targeted graph-based changed tests) and `test` (for repository-wide
+    test execution).
   - Streamline `check` arguments.
 
 ### Dimension 2G: Copy-Pasted Test Harnesses, Window Shims & Polling Helpers
@@ -349,10 +346,11 @@ and tooling task definitions against these dimensions:
 ### Phase 4: Living Doc, Config & Task Synchronization
 
 1. **Update `deno.json`:**
-   - Remove deleted tasks and clean up argument lists in `check`, `lint`,
-     `fmt:check`.
-   - Repoint `test:domain` to `src/domain` and clean up `test:integration`.
-   - Remove deleted tasks from composite `verify`.
+   - Remove redundant slice tasks (`test:unit`, `test:domain`, `test:actor`,
+     `test:integration`, `test:component`) and standardize on `test` and
+     `test:affected`.
+   - Clean up argument lists in `check`, `lint`, `fmt:check`.
+   - Ensure composite `verify` references only active tasks.
 2. **Update `tsconfig.*.json`:**
    - Remove deleted entries or obsolete spike paths.
 3. **Update Living Documents:**
@@ -408,8 +406,8 @@ Before closing a pruning audit, confirm:
       `src/test-support/fakes/`.
 - [ ] Verbose repetitive intra-suite unit tests are consolidated into
       parameterized table tests.
-- [ ] `test:domain` runs all domain tests (including colocated subdirectories in
-      `src/domain`).
+- [ ] Redundant subsystem test slice tasks in `deno.json` are pruned in favor of
+      `test` and `test:affected`.
 - [ ] Visual audit screenshot capture scripts remain isolated in `e2e/audit/` /
       `scripts/audit-capture.ts`.
 - [ ] No unrelated verify commands or heavy test suites are executed in

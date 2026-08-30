@@ -28,11 +28,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-async function settle(): Promise<void> {
-  for (let index = 0; index < 16; index += 1) await Promise.resolve();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  for (let index = 0; index < 8; index += 1) await Promise.resolve();
-}
+import { settle } from "../../test-support/index.ts";
 
 const projectOne = {
   schemaVersion: 1 as const,

@@ -27,40 +27,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-async function settle(): Promise<void> {
-  for (let turn = 0; turn < 12; turn += 1) {
-    for (let index = 0; index < 8; index += 1) await Promise.resolve();
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  }
-}
-
-type SnapshotLike = {
-  readonly value: unknown;
-  readonly status: unknown;
-  readonly context: { readonly error: unknown };
-};
-
-type ActorLike = { getSnapshot(): SnapshotLike };
-
-async function waitForValue(
-  actor: ActorLike,
-  expected: string,
-): Promise<void> {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    await settle();
-    if (actor.getSnapshot().value === expected) return;
-  }
-  const snapshot = actor.getSnapshot();
-  throw new Error(
-    `Expected ${expected}; got ${
-      JSON.stringify({
-        value: snapshot.value,
-        status: snapshot.status,
-        error: snapshot.context.error,
-      })
-    }`,
-  );
-}
+import { waitForValue } from "../../test-support/index.ts";
 
 let sequence = 0;
 

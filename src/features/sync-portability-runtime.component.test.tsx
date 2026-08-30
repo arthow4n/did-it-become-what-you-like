@@ -8,6 +8,7 @@ import {
 } from "../adapters/local/index.ts";
 import { createInMemoryCausalSyncPort } from "../adapters/sync/causal.ts";
 import { createDeviceRegistry } from "../adapters/sync/device-registry.ts";
+import { withAriaGlobals } from "../test-support/component-harness.tsx";
 import { createFakeSecretStoragePort } from "../test-support/fakes/ports.ts";
 
 declare const Deno: {
@@ -19,43 +20,6 @@ function assert(
   message = "Expected condition",
 ): asserts condition {
   if (!condition) throw new Error(message);
-}
-
-async function withAriaGlobals<T>(
-  testWindow: { [key: string]: unknown },
-  callback: () => T | Promise<T>,
-): Promise<T> {
-  const names = [
-    "HTMLButtonElement",
-    "FocusEvent",
-    "HTMLInputElement",
-    "MutationObserver",
-    "NodeFilter",
-    "requestAnimationFrame",
-    "cancelAnimationFrame",
-    "HTMLSelectElement",
-    "SVGElement",
-    "HTMLTextAreaElement",
-  ] as const;
-  const previous = new Map<string, unknown>();
-  const previousCss = globalThis.CSS;
-  for (const name of names) {
-    previous.set(name, globalThis[name as keyof typeof globalThis]);
-    Object.assign(globalThis, { [name]: testWindow[name] });
-  }
-  Object.assign(globalThis, {
-    CSS: previousCss ?? {
-      escape: (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, "\\$&"),
-    },
-  });
-  try {
-    return await callback();
-  } finally {
-    for (const [name, value] of previous) {
-      Object.assign(globalThis, { [name]: value });
-    }
-    Object.assign(globalThis, { CSS: previousCss });
-  }
 }
 
 Deno.test(

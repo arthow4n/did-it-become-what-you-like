@@ -69,9 +69,7 @@ Deno.test("actor-contract: import diagnostics reject foreign operation text", ()
   });
 });
 
-async function settle(): Promise<void> {
-  for (let index = 0; index < 32; index += 1) await Promise.resolve();
-}
+import { settle } from "../../test-support/index.ts";
 
 const draft: DurableDraft = {
   workflowId: "expense-form",

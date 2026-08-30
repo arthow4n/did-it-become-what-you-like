@@ -27,7 +27,10 @@ import {
   ImportExportScreen,
   type ImportViewModel,
 } from "./conflict-import-ui/index.ts";
-import { withComponentHarness } from "../test-support/component-harness.tsx";
+import {
+  withAriaGlobals as withAriaDomGlobals,
+  withComponentHarness,
+} from "../test-support/component-harness.tsx";
 import {
   type SyncStatusContextValue,
   SyncStatusProvider,
@@ -51,45 +54,6 @@ function assertEquals<T>(actual: T, expected: T): void {
     throw new Error(
       `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
     );
-  }
-}
-
-async function withAriaDomGlobals<T>(
-  testWindow: {
-    HTMLButtonElement: unknown;
-    HTMLInputElement: unknown;
-    MutationObserver: unknown;
-    NodeFilter: unknown;
-    requestAnimationFrame: unknown;
-    cancelAnimationFrame: unknown;
-    HTMLSelectElement: unknown;
-    SVGElement: unknown;
-    HTMLTextAreaElement: unknown;
-  },
-  callback: () => T | Promise<T>,
-): Promise<T> {
-  const names = [
-    "HTMLButtonElement",
-    "HTMLInputElement",
-    "MutationObserver",
-    "NodeFilter",
-    "requestAnimationFrame",
-    "cancelAnimationFrame",
-    "HTMLSelectElement",
-    "SVGElement",
-    "HTMLTextAreaElement",
-  ] as const;
-  const previous = new Map<string, unknown>();
-  for (const name of names) {
-    previous.set(name, globalThis[name as keyof typeof globalThis]);
-    Object.assign(globalThis, { [name]: testWindow[name] });
-  }
-  try {
-    return await callback();
-  } finally {
-    for (const [name, value] of previous) {
-      Object.assign(globalThis, { [name]: value });
-    }
   }
 }
 

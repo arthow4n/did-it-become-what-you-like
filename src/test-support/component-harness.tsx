@@ -86,3 +86,47 @@ export async function withComponentHarness<T>(
     release();
   }
 }
+
+export async function withAriaGlobals<T>(
+  windowOrCallback: unknown | (() => T | Promise<T>),
+  maybeCallback?: () => T | Promise<T>,
+): Promise<T> {
+  const callback = typeof windowOrCallback === "function"
+    ? windowOrCallback as () => T | Promise<T>
+    : maybeCallback!;
+  const testWindow = typeof windowOrCallback === "function"
+    ? (globalThis as unknown as { window?: { [key: string]: unknown } }).window
+    : windowOrCallback as { [key: string]: unknown };
+  if (!testWindow) return await callback();
+  const names = [
+    "HTMLButtonElement",
+    "FocusEvent",
+    "HTMLInputElement",
+    "MutationObserver",
+    "NodeFilter",
+    "requestAnimationFrame",
+    "cancelAnimationFrame",
+    "HTMLSelectElement",
+    "SVGElement",
+    "HTMLTextAreaElement",
+  ] as const;
+  const previous = new Map<string, unknown>();
+  const previousCss = globalThis.CSS;
+  for (const name of names) {
+    previous.set(name, globalThis[name as keyof typeof globalThis]);
+    Object.assign(globalThis, { [name]: testWindow[name] });
+  }
+  Object.assign(globalThis, {
+    CSS: previousCss ?? {
+      escape: (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, "\\$&"),
+    },
+  });
+  try {
+    return await callback();
+  } finally {
+    for (const [name, value] of previous) {
+      Object.assign(globalThis, { [name]: value });
+    }
+    Object.assign(globalThis, { CSS: previousCss });
+  }
+}

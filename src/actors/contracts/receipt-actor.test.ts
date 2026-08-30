@@ -43,26 +43,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-async function settle(): Promise<void> {
-  for (let index = 0; index < 18; index += 1) await Promise.resolve();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  for (let index = 0; index < 8; index += 1) await Promise.resolve();
-}
-
-async function waitForValue(
-  actor: { getSnapshot(): { value: unknown } },
-  expected: string,
-): Promise<void> {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    await settle();
-    if (actor.getSnapshot().value === expected) return;
-  }
-  throw new Error(
-    `Expected actor state ${expected}, got ${
-      String(actor.getSnapshot().value)
-    }`,
-  );
-}
+import { settle, waitForValue } from "../../test-support/index.ts";
 
 const project = {
   schemaVersion: 1 as const,

@@ -4,7 +4,10 @@ import {
   DataPrivacyScreen,
   type DataPrivacyScreenProps,
 } from "./destruction-ui.tsx";
-import { withComponentHarness } from "../test-support/component-harness.tsx";
+import {
+  withAriaGlobals,
+  withComponentHarness,
+} from "../test-support/component-harness.tsx";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -15,53 +18,6 @@ function assert(
   message = "Expected condition",
 ): asserts condition {
   if (!condition) throw new Error(message);
-}
-
-async function withAriaGlobals<T>(
-  testWindow: {
-    HTMLButtonElement: unknown;
-    FocusEvent: unknown;
-    HTMLInputElement: unknown;
-    MutationObserver: unknown;
-    NodeFilter: unknown;
-    requestAnimationFrame: unknown;
-    cancelAnimationFrame: unknown;
-    HTMLSelectElement: unknown;
-    SVGElement: unknown;
-    HTMLTextAreaElement: unknown;
-  },
-  callback: () => T | Promise<T>,
-): Promise<T> {
-  const names = [
-    "HTMLButtonElement",
-    "FocusEvent",
-    "HTMLInputElement",
-    "MutationObserver",
-    "NodeFilter",
-    "requestAnimationFrame",
-    "cancelAnimationFrame",
-    "HTMLSelectElement",
-    "SVGElement",
-    "HTMLTextAreaElement",
-  ] as const;
-  const previous = new Map<string, unknown>();
-  const previousCss = globalThis.CSS;
-  const cssEscape = (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
-  for (const name of names) {
-    previous.set(name, globalThis[name as keyof typeof globalThis]);
-    Object.assign(globalThis, { [name]: testWindow[name] });
-  }
-  Object.assign(globalThis, {
-    CSS: previousCss ?? { escape: cssEscape },
-  });
-  try {
-    return await callback();
-  } finally {
-    for (const [name, value] of previous) {
-      Object.assign(globalThis, { [name]: value });
-    }
-    Object.assign(globalThis, { CSS: previousCss });
-  }
 }
 
 function callbacks() {

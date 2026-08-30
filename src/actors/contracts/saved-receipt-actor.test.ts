@@ -356,6 +356,27 @@ Deno.test(
     });
     actor.stop();
 
+    const externallyDiscarded = start();
+    await waitForState(externallyDiscarded, "ready");
+    externallyDiscarded.send({
+      type: "receipt.detail.edit-line",
+      lineId: adjustmentId,
+    });
+    externallyDiscarded.send({
+      type: "receipt.detail.change-line",
+      changes: {
+        type: "adjustment",
+        description: "Discarded change",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        amount: "1",
+        lineId: purchaseId,
+      },
+    });
+    externallyDiscarded.send({ type: "receipt.detail.discard-changes" });
+    assert(externallyDiscarded.getSnapshot().matches("ready"));
+    assertEquals(externallyDiscarded.getSnapshot().context.lineDraft, null);
+    externallyDiscarded.stop();
+
     const clean = start();
     await waitForState(clean, "ready");
     clean.send({ type: "receipt.detail.back" });

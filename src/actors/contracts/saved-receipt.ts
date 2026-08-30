@@ -571,6 +571,10 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
             "setNavigationDestination",
           ],
         },
+        "receipt.detail.discard-changes": {
+          target: "ready",
+          actions: "clearTransient",
+        },
       },
     },
     linePristine: {
@@ -656,6 +660,10 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
             assign({ discardEditor: () => "line" as const }),
             "setNavigationDestination",
           ],
+        },
+        "receipt.detail.discard-changes": {
+          target: "ready",
+          actions: "clearTransient",
         },
       },
     },

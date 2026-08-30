@@ -465,6 +465,11 @@ M27-001 -> M27-002 -> R-2710
   spec viewport; repeated browser Back could leave history ahead of a dirty
   detail screen; and directly opened detail routes lacked an exit focus target.
   These are the active remediation items for this gate.
+- **Final closure remediation record:** A subsequent fresh review found one
+  remaining severity-2 edge case: final receipt deletion could focus a stale
+  list heading before the asynchronous state refresh exposed the available Add
+  expense action. Deletion now uses a dedicated Add expense focus target; the
+  final fresh closure review is pending.
 
 #### M27-005 — Prove the saved-receipt management journey
 

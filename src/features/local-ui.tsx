@@ -2751,6 +2751,7 @@ export function LocalUiRuntime(
   const receiptReturnFocusRef = useRef<
     | { readonly kind: "receipt"; readonly receiptId: string }
     | { readonly kind: "expenses" }
+    | { readonly kind: "expenses-add" }
     | null
   >(null);
   const dirtyNavigationRef = useRef(false);
@@ -2858,7 +2859,10 @@ export function LocalUiRuntime(
         document.querySelectorAll<HTMLElement>("[data-receipt-group-id]"),
       ).find((element) => element.dataset.receiptGroupId === request.receiptId)
       : undefined;
-    const target = request.kind === "expenses"
+    const target = request.kind === "expenses-add"
+      ? document.querySelector<HTMLElement>("[data-expenses-add]") ??
+        document.querySelector<HTMLElement>("[data-expenses-list-heading]")
+      : request.kind === "expenses"
       ? document.querySelector<HTMLElement>("[data-expenses-list-heading]") ??
         document.querySelector<HTMLElement>("[data-expenses-add]")
       : receiptGroup?.querySelector<HTMLElement>("button") ??
@@ -3125,7 +3129,7 @@ export function LocalUiRuntime(
     setWorkflowDirty(false);
     setDirtyNavigationWorkflow(false);
     if (output.status === "deleted") {
-      receiptReturnFocusRef.current = { kind: "expenses" };
+      receiptReturnFocusRef.current = { kind: "expenses-add" };
       void organization.getState().then(setState);
       setAppNotice(
         output.deletedLineId === undefined

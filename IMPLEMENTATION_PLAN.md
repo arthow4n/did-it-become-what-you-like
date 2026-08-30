@@ -29,7 +29,8 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ### Released Baseline
 
-M0 through M27 and all review gates through `R-2730` are `COMPLETE`. The
+M0 through M28 and all review gates through `R-2820` are `COMPLETE`; final
+M28 release review `R-2830` is the active gate. The
 released application baseline includes the approved domain, actors, adapters,
 responsive UI, After Midnight design system backed by Mantine behind the
 repository facade, accessibility, PWA, tests, GitHub Pages pipeline,
@@ -114,6 +115,37 @@ responsive assertions. `deno task check`, `deno task lint`,
 no severity-1, severity-2, or severity-3 findings and no actionable severity-4
 findings.
 
+M28 additionally fixes persisted category color edits, adds atomic saved
+receipt purchase-line and adjustment mutations with linked expense
+projections, and delivers the saved-receipt detail add-line dialogs with
+staged retry/discard behavior and focus return. Expenses now interleaves
+standalone records and receipt groups with deterministic `(date, time, id)`
+ordering in both directions and displays every filtered category total. Manual
+expense deletion finalizes cleanly, exposes retry/keep recovery on failure,
+and shows `Expense deleted.` when returning to the list. The M28 UI also uses
+the approved responsive wide list/context composition and places destructive
+receipt actions after receipt context and reconciliation.
+
+M28 release evidence is preserved at pre-pruning ledger commit `993e5ed`.
+`deno task fmt:check` checked 209 files, `deno task lint` checked 199 files,
+`deno task check`, `git diff --check`, and the explicit release suite passed.
+The release suite command
+`deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests/project_category_test.ts src/domain/tests/receipt_test.ts src/actors/contracts/project-category-actor.test.ts src/actors/contracts/saved-receipt-actor.test.ts src/features/local-ui.test.tsx src/features/receipt-detail-ui.test.tsx`
+passed 63 tests with 0 failures. `deno task test:affected` selected no test
+modules because the changes were already committed. The initial standard E2E
+run reported 8 passed and one order-sensitive `receipt-review` timeout;
+`deno x -p npm:@playwright/test@1.62.1 playwright test e2e/receipt-review.spec.ts --config=e2e/playwright.config.ts`
+then passed 1 test in 18.5 seconds, and the combined relevant command for
+`e2e/receipt-review.spec.ts e2e/local-first-manual.spec.ts` passed 3 tests in
+35.0 seconds. Fresh R-2820 closure review approved with no severity-1 through
+severity-4 findings. The hygiene audit found no obsolete spikes, transient
+M28 documents, redundant verification scripts, or dangling Markdown links;
+the detailed M28 task and review ledger is intentionally pruned from this
+file and remains queryable at `993e5ed`. Post-pruning hygiene checks
+`deno task fmt:check`, `deno task lint`, `deno task check`, and
+`git diff --check` passed; the tracked-document and cross-reference audit
+found no deletions or dangling links requiring further synchronization.
+
 Detailed task, review, validation, worktree, deployment, and recovery history
 through M27 is preserved in Git at commit `6a05ecf`, the last complete
 pre-pruning ledger. That history is evidence, not active instructions, and
@@ -127,258 +159,15 @@ features/app -> src/design-system public contracts -> Mantine
 features/app -> actors -> domain + adapter ports
 ```
 
----
+#### R-2830 — Final M28 Milestone Review & Release Gate
 
-## M28 — CRUD Completeness, Category Mutation Fixes, Saved Receipt Line Management, & Feed Polish
-
-### M28 authority, outcome, and non-goals
-
-Milestone M28 remediates CRUD gaps, silent mutation bugs, and list ordering defects discovered during the full application audit following M27:
-
-1. **Category Color Mutation Fix:** Restores category color updating in the domain, actor, and `CategoryManager` UI so that user edits to category colors persist instead of being silently discarded.
-2. **Saved Receipt Add Line / Adjustment Mutation:** Extends `ReceiptManagementService`, the saved receipt actor, and `ReceiptDetailScreen` to allow adding new purchase lines and adjustments to an existing saved receipt.
-3. **Unified Chronological Feed in Expenses:** Interleaves standalone expenses and receipt groups into a unified chronological timeline on `ExpensesScreen` based on record date/time and sort order (newest/oldest).
-4. **Category Breakdown Display:** Removes the hardcoded 3-item cutoff (`.slice(0, 3)`) in `ExpensesScreen` category breakdown, ensuring all categories with expenses in the selected period are displayed.
-5. **Standalone Expense Deletion Feedback:** Emits a clear application toast notification when a standalone manual expense is deleted, matching saved-receipt feedback.
-
-Target dependency flow:
-
-```text
-features/app -> src/design-system public contracts -> Mantine
-                                                `-> small owned compositions
-features/app -> actors -> domain + adapter ports
-```
-
-**Non-goals:**
-- Manual non-AI multi-item receipt creation workflow (deferred to a future dedicated receipt-entry milestone).
-- Cross-project or cross-currency receipt aggregate reassignment (explicitly deferred beyond MVP in `SPEC.md`).
-- Multi-currency automatic conversion or live exchange-rate fetching.
-- Visual theme alterations or breaking design-system facade modifications.
-
-### Mandatory single-agent execution rule
-
-- One primary coding agent performs all planning reconciliation, edits, tests,
-  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
-- Independent read-only reviewer subagents are used exclusively at named review
-  gates (`R-2810`, `R-2820`, `R-2830`).
-- Context compaction or session restarts require following the recovery
-  checklist before editing.
-
-### Locked boundary / design-system rules
-
-1. **Domain Transaction Atomicity:** Category and receipt mutations must remain transactional and atomic within `OrganizationStore` / IndexedDB transactions.
-2. **Facade Integrity:** Feature files must continue to import only repository design-system facade primitives; direct `@mantine/*` imports in `src/features/**` remain prohibited.
-3. **Deterministic Timelines:** Chronological interleaving must sort records by `(date, time, id)` consistently in both newest-first and oldest-first modes.
-4. **Zero State Machine Regression:** XState machines continue to own all validation, staging, retry, and dirty state.
-5. **Reduced-Motion & Instant Transitions:** Transitions remain `0ms` without decorative motion.
-
-### Restart and compaction recovery checklist
-
-- [ ] Read `AGENTS.md`, this milestone section, and Current Checkpoint.
-- [ ] Run `git status --short --branch`, `git log -n 20 --oneline`,
-      `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
-- [ ] Verify test and working tree clean state before continuing.
-
----
-
-### Dependency Graph (DAG)
-
-```text
-M28-001 (Category Color Mutation Fix)
-   |
-   v
-M28-002 (Saved Receipt Add Line / Adjustment Service & Actor)
-   |
-   v
- R-2810 (Domain & Actor CRUD Review Gate)
-   |
-   v
-M28-003 (Saved Receipt Detail UI Add Line & Adjustment Dialog)
-   |
-   v
-M28-004 (Expenses Unified Chronological Feed & Breakdown Polish)
-   |
-   v
-M28-005 (Standalone Expense Deletion Toast Feedback)
-   |
-   v
- R-2820 (UI & Workflow Polish Review Gate)
-   |
-   v
-M28-FINAL (Milestone Release Verification & Regression Pass)
-   |
-   v
- R-2830 (Final Milestone Review & Release Gate)
-```
-
----
-
-### Standardized Task Definitions
-
-#### M28-001 — Category Color Mutation Fix in Domain, Actor, and CategoryManager
-
-- **Status/dependencies:** `COMPLETE`; depends on baseline `2131d28`.
-- **Ownership:** `src/domain/organization.ts`, `src/actors/project-category.ts`, `src/features/local-ui.tsx`, `src/domain/tests/project_category_test.ts`, `src/actors/contracts/project-category-actor.test.ts`, `src/features/local-ui.test.tsx`.
-- **Scope/non-goals:**
-  - Update `CategoryOrganizationCommand` to include color updates on category edit (e.g. `{ type: "edit"; categoryId: StableId; name: string; color?: string }` or update `rename` to support color).
-  - Update `service.commitCategory()` to update the category's `color` attribute in the store while preserving schema validation and case-insensitive unique naming. Explicitly support color removal/clearing (removing `color` property when undefined).
-  - Update `CategoryManager` in `src/features/local-ui.tsx` so that `submitEditor` sends the selected `color` when editing existing categories.
-  - Non-goals: Do not alter project organization commands or category ordering contracts.
-- **Outputs/acceptance:**
-  - Editing a category in `CategoryManager` with a new color persists across reloads and is reflected in the category catalogue.
-  - Updating a category name without altering color preserves the existing color.
-  - Clearing color unsets `color` from the stored category record correctly.
-- **Tests:**
-  - Pure domain unit tests in `src/domain/tests/project_category_test.ts`.
-  - Actor contract tests in `src/actors/contracts/project-category-actor.test.ts`.
-  - UI component tests in `src/features/local-ui.test.tsx`.
-- **Verification:** `deno fmt src/domain/organization.ts src/actors/project-category.ts src/features/local-ui.tsx`, `deno lint src/domain/organization.ts src/actors/project-category.ts src/features/local-ui.tsx`, `deno test --related=src/domain/organization.ts --related=src/actors/project-category.ts --related=src/features/local-ui.tsx`, `git diff --check`.
-
----
-
-#### M28-002 — Saved Receipt Add Line / Adjustment Mutation in Domain and Actor
-
-- **Status/dependencies:** `COMPLETE`; depends on `M28-001`.
-- **Ownership:** `src/domain/receipt.ts`, `src/actors/contracts/saved-receipt.ts`, `src/actors/saved-receipt.ts`, `src/domain/tests/receipt_test.ts`, `src/actors/contracts/saved-receipt-actor.test.ts`.
-- **Scope/non-goals:**
-  - Add `addLine(receiptId: StableId, lineChanges: ReceiptLineChanges): Promise<ReceiptAggregate>` to `ReceiptManagementService` in `src/domain/receipt.ts`.
-  - Atomically generate stable line and expense IDs, parse signed canonical decimal amounts, create the `ReceiptPurchaseLine` or `ReceiptAdjustment`, create the linked `Expense` projection, and write both to the `records` collection.
-  - Recompute reconciliation and validate that adjustment links reference an existing purchase line on the same receipt aggregate.
-  - Extend `SavedReceiptMutation` with `{ kind: "add-line"; receiptId: StableId; changes: ReceiptLineChanges }` in `src/actors/contracts/saved-receipt.ts` and wire through `savedReceiptDetailMachine`.
-  - Non-goals: Do not allow modifying receipt currency or project ID.
-- **Outputs/acceptance:**
-  - `addLine` atomically appends purchase lines and adjustments to the saved receipt aggregate.
-  - Reconciliation recalculates accurately with newly added lines.
-  - Derived expense projections for added lines are written atomically.
-- **Tests:**
-  - Domain tests in `src/domain/tests/receipt_test.ts`.
-  - Actor contract tests in `src/actors/contracts/saved-receipt-actor.test.ts`.
-- **Verification:** `deno fmt src/domain/receipt.ts src/actors/saved-receipt.ts src/actors/contracts/saved-receipt.ts`, `deno lint src/domain/receipt.ts src/actors/saved-receipt.ts src/actors/contracts/saved-receipt.ts`, `deno test --related=src/domain/receipt.ts --related=src/actors/saved-receipt.ts`, `git diff --check`.
-
----
-
-#### R-2810 — Domain & Actor CRUD Review Gate
-
-- **Status/dependencies:** `COMPLETE`; depends on `M28-001`, `M28-002`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on the archived M28 release
+  validation.
 - **Reviewer role:** Fresh read-only reviewer subagent.
-- **Audit scope:** Diffs in `src/domain/organization.ts`, `src/domain/receipt.ts`, `src/actors/project-category.ts`, and `src/actors/saved-receipt.ts`. Verify transaction atomicity, signed canonical decimal arithmetic, schema validation, and test coverage.
-- **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening next batch.
-- **Review log:** Initial fresh read-only review was not approved for S2
-  failed add-line discard navigation and S3 missing mid-transaction rollback
-  coverage. Remediation adds `add-line` to the failure-state pending editable
-  guard and UI mutation classifier, plus projection-write rollback coverage.
-  Rerun passed 24 scoped tests with 0 failures. Fresh closure review approved
-  R-2810 with no severity-1 through severity-4 findings; its focused suite
-  passed 60 tests with 0 failures and the branch was clean at `c42f8bc`.
-
----
-
-#### M28-003 — Saved Receipt Detail UI Add Line & Adjustment Dialog
-
-- **Status/dependencies:** `COMPLETE`; depends on `R-2810`.
-- **Ownership:** `src/features/receipt-detail-ui.tsx`, `src/design-system/components.tsx`, `src/features/receipt-detail-ui.test.tsx`.
-- **Scope/non-goals:**
-  - In `ReceiptDetailScreen`, add prominent `Add purchase line` and `Add adjustment` actions to the respective section headers or lists.
-  - Wire opening `ReceiptLineEditor` in creation mode with appropriate default values and category selection.
-  - Wire submission to send `receipt.detail.add-line` to `savedReceiptDetailMachine`, supporting dirty checking, discard, and retry.
-  - Non-goals: Do not alter existing edit line or delete line workflows.
-- **Outputs/acceptance:**
-  - Users can click to add purchase lines and adjustments directly within `ReceiptDetailScreen`.
-  - Staged adding recomputes reconciliation before saving.
-  - Focus returns to the newly added line upon successful commit.
-- **Tests:**
-  - Component tests in `src/features/receipt-detail-ui.test.tsx`.
-- **Verification:** `deno fmt src/features/receipt-detail-ui.tsx`, `deno lint src/features/receipt-detail-ui.tsx`, `deno test --related=src/features/receipt-detail-ui.tsx`, `git diff --check`.
-
----
-
-#### M28-004 — Expenses Unified Chronological Feed & Breakdown Polish
-
-- **Status/dependencies:** `COMPLETE`; depends on `M28-003`.
-- **Ownership:** `src/features/local-ui.tsx`, `src/domain/queries/expenses.ts`, `src/features/local-ui.test.tsx`, `src/domain/tests/queries_test.ts`.
-- **Scope/non-goals:**
-  - In `ExpensesScreen`, construct a unified chronological feed that interleaves standalone expenses and `ReceiptGroup` cards based on their effective date and time.
-  - Respect the user's selected sort order (`newest` or `oldest`) with deterministic tie-breaking.
-  - In `ExpensesScreen:L645`, remove the hardcoded `.slice(0, 3)` limit on `result.categoryBreakdown` to display all active categories with spending in the period.
-  - Non-goals: Do not change the underlying `queryExpenses` data contracts or filter parameters.
-- **Outputs/acceptance:**
-  - Standalone expenses and receipt groups appear sorted chronologically together rather than in two disjoint vertical sections.
-  - Category breakdown displays all categories with spending in the filtered view.
-- **Tests:**
-  - Component tests in `src/features/local-ui.test.tsx`.
-  - Query sorting tests in `src/domain/tests/queries_test.ts`.
-- **Verification:** `deno fmt src/features/local-ui.tsx src/domain/queries/expenses.ts`, `deno lint src/features/local-ui.tsx src/domain/queries/expenses.ts`, `deno test --related=src/features/local-ui.tsx --related=src/domain/queries/expenses.ts`, `git diff --check`.
-
-- **Evidence:** `deno fmt src/features/local-ui.tsx src/domain/queries/expenses.ts src/domain/tests/queries_test.ts src/features/local-ui.test.tsx`, `deno lint src/features/local-ui.tsx src/domain/queries/expenses.ts src/domain/tests/queries_test.ts src/features/local-ui.test.tsx`, `deno check src/features/local-ui.tsx src/domain/queries/expenses.ts src/domain/tests/queries_test.ts src/features/local-ui.test.tsx`, and `git diff --check` passed. The scoped test command `deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests/queries_test.ts src/features/local-ui.test.tsx` passed 33 tests with 0 failures.
-
----
-
-#### M28-005 — Standalone Expense Deletion Toast Feedback
-
-- **Status/dependencies:** `COMPLETE`; depends on `M28-004`.
-- **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.test.tsx`.
-- **Scope/non-goals:**
-  - In `LocalUiRuntime` (`ManualExpenseScreen` onClosed / onSaved handler), check if the manual expense workflow completed with status `"deleted"` and trigger `setAppNotice("Expense deleted.")`.
-  - Ensure the toast displays cleanly when returning to the `/expenses` list view.
-  - Non-goals: Do not modify the existing `SavedExpenseCompletionScreen` undo flow for newly saved expenses.
-- **Outputs/acceptance:**
-  - Deleting a standalone expense shows a visible confirmation toast upon returning to the expense list.
-- **Tests:**
-  - UI component test in `src/features/local-ui.test.tsx`.
-- **Verification:** `deno fmt src/features/local-ui.tsx`, `deno lint src/features/local-ui.tsx`, `deno test --related=src/features/local-ui.tsx`, `git diff --check`.
-
-- **Evidence:** `deno fmt src/features/local-ui.tsx src/features/local-ui.test.tsx`, `deno lint src/features/local-ui.tsx src/features/local-ui.test.tsx`, `deno check src/features/local-ui.tsx src/features/local-ui.test.tsx`, and `git diff --check` passed. The scoped command `deno test --allow-read --allow-write --allow-run --allow-env src/features/local-ui.test.tsx` passed 23 tests with 0 failures. The screen now finalizes the actor's `deleted` state, reports the deleted completion status, and the runtime displays `Expense deleted.` on return to `/expenses`.
-
----
-
-#### R-2820 — UI & Workflow Polish Review Gate
-
-- **Status/dependencies:** `COMPLETE`; depends on `M28-003`, `M28-004`, `M28-005`.
-- **Reviewer role:** Fresh read-only reviewer subagent.
-- **Audit scope:** Diffs across `src/features/receipt-detail-ui.tsx` and `src/features/local-ui.tsx`. Verify unified feed ordering, add-line interaction, category breakdown expansion, and toast behavior across mobile and desktop viewports.
-- **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening release gate.
-- **Review log:** Initial fresh review was not approved with two severity-2
-  findings (standalone deletion failure lacked a retry/keep recovery path;
-  mobile deletion confirmation used the wrong action hierarchy) and two
-  severity-3 findings (receipt deletion appeared before receipt context;
-  wide Expenses remained single-column). Remediation renders retry and keep
-  actions for failed deletion, uses a mobile-safe primary action stack,
-  places receipt deletion after metadata and reconciliation, and gives the
-  Expenses view a responsive wide list/context grid. The remediation gate
-  passed 27 focused local and receipt UI tests with 0 failures; the existing
-  11 query tests also remain green. A fresh closure review is still required.
-  Fresh closure review then approved R-2820 with no severity-1 through
-  severity-4 findings. Its focused UI/actor/query suite passed 45 tests with
-  0 failures, manual-expense actor/adapter checks passed 10 tests with 0
-  failures, and format, lint, typecheck, diff, and facade-boundary checks all
-  passed at `69ea38e`. Chromium capture was unavailable because
-  `agent-browser` is not installed.
-
----
-
-#### M28-FINAL — Milestone Release Verification, Hygiene Pruning & Archival
-
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-2820`.
-- **Ownership:** Repository-wide test, verification, and hygiene suites.
-- **Scope/non-goals:**
-  - Run full repository validation: typecheck (`deno task check`), lint (`deno task lint`), format check (`deno task fmt:check`), diff check (`git diff --check`), affected tests (`deno task test:affected`), and relevant E2E journeys.
-  - Execute standard lifecycle archiving and `repo-hygiene-pruning` protocol per `.agents/skills/implementation-planning/SKILL.md`: summarize completed tasks into `Released Baseline`, prune the live milestone ledger, verify all markdown links, and commit with `[archive]`.
-  - Record exact commands, passing test counts, and release evidence.
-- **Outputs/acceptance:**
-  - Zero test failures, zero lint/formatting issues, clean Git working directory.
-  - Completed milestone ledger archived cleanly into `Released Baseline`.
-- **Verification:** `deno task check && deno task lint && deno task fmt:check && git diff --check && deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests/project_category_test.ts src/domain/tests/receipt_test.ts src/actors/contracts/project-category-actor.test.ts src/actors/contracts/saved-receipt-actor.test.ts src/features/local-ui.test.tsx src/features/receipt-detail-ui.test.tsx`.
-
----
-
----
-
-#### R-2830 — Final Milestone Review & Release Gate
-
-- **Status/dependencies:** `PENDING`; depends on `M28-FINAL`.
-- **Reviewer role:** Fresh read-only reviewer subagent.
-- **Audit scope:** Audit all M28 commits, test evidence, documentation updates, and compliance with `SPEC.md`, `DESIGN_SYSTEM.md`, and `AGENTS.md`.
-- **Outputs:** Approval for milestone completion and integration onto `master`.
+- **Audit scope:** Audit the M28 implementation commits, release evidence,
+  archived plan state, and compliance with `SPEC.md`, `DESIGN_SYSTEM.md`, and
+  `AGENTS.md`.
+- **Output:** Approval to activate M29-001.
 
 ---
 
@@ -608,41 +397,24 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M28-FINAL` (`IN_PROGRESS`)
-- **Released baseline:** M0 through M27 and all review gates through `R-2730`
-  are complete and pushed on `master`.
-- **Verification status:** M28-001 passed formatting, lint, diff checks, and
-  the scoped command `deno test --allow-read --allow-write --allow-run
-  --allow-env src/domain/tests/project_category_test.ts
-  src/actors/contracts/project-category-actor.test.ts
-  src/features/local-ui.test.tsx` with 36 tests passed and 0 failed. M28-002
-  is now active. M28-002 passed formatting, lint, typecheck, diff checks, and
-  the scoped command `deno test --allow-read --allow-write --allow-run
-  --allow-env src/domain/tests/receipt_test.ts
-  src/actors/contracts/saved-receipt-actor.test.ts
-  src/features/receipt-detail-ui.test.tsx` with 23 tests passed and 0 failed.
-  R-2810 remediation then passed the same scoped command with 24 tests passed
-  and 0 failed, along with formatting, lint, typecheck, and diff checks. R-2810
-  is approved with no findings. M28-003 passed its component gate with 4 tests
-  passed and 0 failed, plus formatting, lint, typecheck, and diff checks.
-  M28-004 passed formatting, lint, typecheck, and diff checks. Its scoped
-  command `deno test --allow-read --allow-write --allow-run --allow-env
-  src/domain/tests/queries_test.ts src/features/local-ui.test.tsx` passed 33
-  tests with 0 failures. M28-005 passed formatting, lint, typecheck, and diff
-  checks. Its scoped command `deno test --allow-read --allow-write
-  --allow-run --allow-env src/features/local-ui.test.tsx` passed 23 tests with
-  0 failures. R-2820 was approved by a fresh closure reviewer with no
-  severity-1 through severity-4 findings; its focused UI/actor/query suite
-  passed 45 tests and manual-expense actor/adapter checks passed 10 tests,
-  both with 0 failures. M28-FINAL is now active. M29 remains staged as
-  dependent follow-up.
-- **Active / preserved work:** Clean master working tree.
-- **Exact next action:** Run the M28 release validation and relevant E2E
-  journeys, then execute the required hygiene audit and archive the completed
-  M28 ledger into Released Baseline.
+- **Active task / gate:** `R-2830` (`IN_PROGRESS`)
+- **Released baseline:** M0 through M28 and all review gates through `R-2820`
+  are complete and pushed on `master`; the final M28 review is active.
+- **Verification status:** M28 release validation passed format (209 files),
+  lint (199 files), typecheck, diff checks, the explicit 63-test domain/actor/
+  UI release suite, and the relevant 3-test `receipt-review` plus
+  `local-first-manual` E2E pair. `deno task test:affected` selected no test
+  modules because all changes were already committed. The M28 ledger and
+  hygiene audit were archived at pre-pruning commit `993e5ed`; no obsolete
+  spikes, transient M28 documents, redundant verification scripts, or dangling
+  Markdown links were found. M29 remains staged behind R-2830.
+- **Active / preserved work:** Clean master working tree after the archive
+  edit; no worker or worktree owns unintegrated M28 changes.
+- **Exact next action:** Dispatch the fresh read-only R-2830 final reviewer;
+  after approval, activate M29-001.
 
 ## Ready-to-Use Orchestration Prompt
 
 ```text
-Act as the single primary coding agent for M28 and M29. Read AGENTS.md, SPEC.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Check git status, verify clean working tree, and start execution with task M28-001. Follow single-agent sequential commit cadence, record exact test commands and outputs, update IMPLEMENTATION_PLAN.md after each task, dispatch read-only reviewer subagents at named review gates (R-2810, R-2820, R-2830, R-2910, R-2920, R-2930), and stop when milestones are complete or if blocked.
+Act as the single primary coding agent for M29 after completing R-2830. Read AGENTS.md, SPEC.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Check git status, verify clean working tree, and resume at M29-001. Follow single-agent sequential commit cadence, record exact test commands and outputs, update IMPLEMENTATION_PLAN.md after each task, dispatch read-only reviewer subagents at named review gates (R-2910, R-2920, R-2930), and stop when the milestones are complete or if blocked.
 ```

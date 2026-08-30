@@ -308,27 +308,42 @@ Deno.test("settings-final install offer defers startup checks and supports later
   });
 });
 
-Deno.test("settings-final labels service-worker installation as an update", async () => {
-  await withComponentHarness(async ({ window, render, waitFor }) => {
-    await withAriaGlobals(window, async () => {
-      render(
-        createElement(
-          PwaRuntime,
-          {
-            usefulActionVersion: 0,
-            dirty: false,
-            port: createFakeUpdateInstallPort("installing"),
-            children: createElement(AboutScreen, {
-              onClose: () => undefined,
-              onPrivacy: () => undefined,
-            }),
-          },
-        ),
-      );
-      await waitFor(() => assert(viewText().includes("Installing update…")));
+for (
+  const { mode, expectedText, description } of [
+    {
+      mode: "installing" as const,
+      expectedText: "Installing update…",
+      description: "labels service-worker installation as an update",
+    },
+    {
+      mode: "unsupported" as const,
+      expectedText: "does not provide the service-worker",
+      description: "unsupported browser explains the update limitation",
+    },
+  ]
+) {
+  Deno.test(`settings-final ${description}`, async () => {
+    await withComponentHarness(async ({ window, render, waitFor }) => {
+      await withAriaGlobals(window, async () => {
+        render(
+          createElement(
+            PwaRuntime,
+            {
+              usefulActionVersion: 0,
+              dirty: false,
+              port: createFakeUpdateInstallPort(mode),
+              children: createElement(AboutScreen, {
+                onClose: () => undefined,
+                onPrivacy: () => undefined,
+              }),
+            },
+          ),
+        );
+        await waitFor(() => assert(viewText().includes(expectedText)));
+      });
     });
   });
-});
+}
 
 Deno.test("settings-final labels native app installation separately", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
@@ -489,32 +504,6 @@ Deno.test("settings-final offline update status explains reconnecting", async ()
       window.dispatchEvent(new window.Event("offline"));
       await waitFor(() =>
         assert(viewText().includes("Update check unavailable offline"))
-      );
-    });
-  });
-});
-
-Deno.test("settings-final unsupported browser explains the update limitation", async () => {
-  await withComponentHarness(async ({ window, render, waitFor }) => {
-    await withAriaGlobals(window, async () => {
-      render(
-        createElement(
-          PwaRuntime,
-          {
-            usefulActionVersion: 0,
-            dirty: false,
-            port: createFakeUpdateInstallPort("unsupported"),
-            children: createElement(AboutScreen, {
-              onClose: () => undefined,
-              onPrivacy: () => undefined,
-            }),
-          },
-        ),
-      );
-      await waitFor(() =>
-        assert(
-          viewText().includes("does not provide the service-worker"),
-        )
       );
     });
   });

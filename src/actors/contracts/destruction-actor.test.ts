@@ -604,58 +604,40 @@ Deno.test("delete-everywhere marks an interrupted invocation for safe reinitiali
   actor.stop();
 });
 
-Deno.test("local erase actor persists choice before erasure and removes the key only when checked", async () => {
-  const checkedCalls: string[] = [];
-  const checked = createActor(createLocalEraseMachine({
-    persistChoice: (value) => {
-      checkedCalls.push(`choice:${value}`);
+for (
+  const { removeGeminiApiKey, expectedCalls } of [
+    {
+      removeGeminiApiKey: true,
+      expectedCalls: ["choice:true", "erase", "key"],
     },
-    eraseLocalDataset: () => {
-      checkedCalls.push("erase");
-      return Promise.resolve();
+    { removeGeminiApiKey: false, expectedCalls: ["choice:false", "erase"] },
+  ]
+) {
+  Deno.test(
+    `local erase actor persists choice before erasure (key: ${removeGeminiApiKey})`,
+    async () => {
+      const calls: string[] = [];
+      const actor = createActor(createLocalEraseMachine({
+        persistChoice: (value) => {
+          calls.push(`choice:${value}`);
+        },
+        eraseLocalDataset: () => {
+          calls.push("erase");
+          return Promise.resolve();
+        },
+        removeGeminiApiKey: () => {
+          calls.push("key");
+          return Promise.resolve();
+        },
+      })).start();
+      actor.send({ type: "local-erase.open", removeGeminiApiKey });
+      actor.send({ type: "local-erase.confirm" });
+      await settle();
+      assert(JSON.stringify(calls) === JSON.stringify(expectedCalls));
+      actor.stop();
     },
-    removeGeminiApiKey: () => {
-      checkedCalls.push("key");
-      return Promise.resolve();
-    },
-  })).start();
-  checked.send({ type: "local-erase.open", removeGeminiApiKey: true });
-  checked.send({ type: "local-erase.confirm" });
-  await settle();
-  assert(
-    JSON.stringify(checkedCalls) === JSON.stringify([
-      "choice:true",
-      "erase",
-      "key",
-    ]),
   );
-  checked.stop();
-
-  const uncheckedCalls: string[] = [];
-  const unchecked = createActor(createLocalEraseMachine({
-    persistChoice: (value) => {
-      uncheckedCalls.push(`choice:${value}`);
-    },
-    eraseLocalDataset: () => {
-      uncheckedCalls.push("erase");
-      return Promise.resolve();
-    },
-    removeGeminiApiKey: () => {
-      uncheckedCalls.push("key");
-      return Promise.resolve();
-    },
-  })).start();
-  unchecked.send({ type: "local-erase.open", removeGeminiApiKey: false });
-  unchecked.send({ type: "local-erase.confirm" });
-  await settle();
-  assert(
-    JSON.stringify(uncheckedCalls) === JSON.stringify([
-      "choice:false",
-      "erase",
-    ]),
-  );
-  unchecked.stop();
-});
+}
 
 Deno.test("local erase actor retries a local failure and supports reload-safe choice", async () => {
   const storage = memoryStorage();

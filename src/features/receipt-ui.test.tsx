@@ -111,22 +111,53 @@ Deno.test("receipt-ui scan failure notice exposes a safe reportable code", async
   });
 });
 
+const emptyState: ProjectCategoryState = {
+  projects: [],
+  categories: [],
+  expenses: [],
+  receipts: [],
+  receiptPurchaseLines: [],
+  receiptAdjustments: [],
+  tombstones: [],
+  projectOrder: [],
+};
+
+const defaultTestProject = {
+  schemaVersion: 1 as const,
+  type: "project" as const,
+  id: "project-receipt-ui",
+  name: "Receipt UI project",
+  defaultCurrency: "SEK" as const,
+  archived: false,
+};
+
+const defaultTestCategory = {
+  schemaVersion: 1 as const,
+  type: "category" as const,
+  id: "category-uncategorized" as const,
+  name: "Uncategorized",
+  sortOrder: 0,
+  archived: false,
+  system: true,
+};
+
+const defaultTestState: ProjectCategoryState = {
+  ...emptyState,
+  projects: [defaultTestProject],
+  categories: [defaultTestCategory],
+  projectOrder: [defaultTestProject.id],
+  selectedProjectId: defaultTestProject.id,
+  firstProjectId: defaultTestProject.id,
+  defaultProjectId: defaultTestProject.id,
+};
+
 Deno.test("receipt-ui empty review state keeps a level-one heading", async () => {
   await withComponentHarness(async ({ render, waitFor }) => {
     const local = createFakeLocalPort();
     render(
       createElement(ReceiptReviewScreen, {
         local,
-        state: {
-          projects: [],
-          categories: [],
-          expenses: [],
-          receipts: [],
-          receiptPurchaseLines: [],
-          receiptAdjustments: [],
-          tombstones: [],
-          projectOrder: [],
-        },
+        state: emptyState,
         onClose: () => undefined,
       }),
     );
@@ -148,16 +179,7 @@ Deno.test(
       render(
         createElement(ReceiptReviewScreen, {
           local,
-          state: {
-            projects: [],
-            categories: [],
-            expenses: [],
-            receipts: [],
-            receiptPurchaseLines: [],
-            receiptAdjustments: [],
-            tombstones: [],
-            projectOrder: [],
-          },
+          state: emptyState,
           onClose: () => closed++,
         }),
       );
@@ -181,16 +203,7 @@ Deno.test(
       render(
         createElement(ReceiptReviewScreen, {
           local,
-          state: {
-            projects: [],
-            categories: [],
-            expenses: [],
-            receipts: [],
-            receiptPurchaseLines: [],
-            receiptAdjustments: [],
-            tombstones: [],
-            projectOrder: [],
-          },
+          state: emptyState,
           initialReview: {
             parent: {
               projectId: "project-review-failure",
@@ -235,16 +248,7 @@ Deno.test("receipt-ui review reports its actor-owned dirty state", async () => {
     render(
       createElement(ReceiptReviewScreen, {
         local,
-        state: {
-          projects: [],
-          categories: [],
-          expenses: [],
-          receipts: [],
-          receiptPurchaseLines: [],
-          receiptAdjustments: [],
-          tombstones: [],
-          projectOrder: [],
-        },
+        state: emptyState,
         initialReview: {
           parent: {
             projectId: "project-receipt-dirty",
@@ -610,36 +614,7 @@ Deno.test(
           },
           releaseImage: (ref) => imageStore.releaseForRetry(ref),
         };
-        const project = {
-          schemaVersion: 1 as const,
-          type: "project" as const,
-          id: "project-receipt-ui",
-          name: "Receipt UI project",
-          defaultCurrency: "SEK" as const,
-          archived: false,
-        };
-        const category = {
-          schemaVersion: 1 as const,
-          type: "category" as const,
-          id: "category-uncategorized" as const,
-          name: "Uncategorized",
-          sortOrder: 0,
-          archived: false,
-          system: true,
-        };
-        const state: ProjectCategoryState = {
-          projects: [project],
-          categories: [category],
-          expenses: [],
-          receipts: [],
-          receiptPurchaseLines: [],
-          receiptAdjustments: [],
-          tombstones: [],
-          projectOrder: [project.id],
-          selectedProjectId: project.id,
-          firstProjectId: project.id,
-          defaultProjectId: project.id,
-        };
+        const state = defaultTestState;
         const settings = DeviceLocalSettingsSchema.parse({
           imagePreparationEnabled: true,
           selectedGeminiModel: model.id,

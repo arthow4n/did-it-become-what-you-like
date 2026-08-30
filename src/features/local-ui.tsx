@@ -2995,7 +2995,12 @@ export function LocalUiRuntime(
         return;
       }
 
-      if (transition?.phase === "waiting") return;
+      if (transition?.phase === "waiting") {
+        if (sameHistoryEntry(target, transition.source)) return;
+        const delta = transition.source.index - target.index;
+        if (delta !== 0) globalThis.history.go(delta);
+        return;
+      }
       if (sameHistoryEntry(target, current)) return;
 
       if (dirtyNavigationRef.current) {
@@ -3121,6 +3126,12 @@ export function LocalUiRuntime(
       return;
     }
     if (output.status === "navigated" || output.status === "discarded") {
+      if (output.destination === "/expenses" && receiptDetail !== undefined) {
+        receiptReturnFocusRef.current = {
+          kind: "receipt",
+          receiptId: receiptDetail.receiptId,
+        };
+      }
       navigate((output.destination ?? "/expenses") as LocalUiPath);
     }
   };
@@ -3204,6 +3215,10 @@ export function LocalUiRuntime(
                 }}
                 onDirtyDiscarded={() => finishDirtyNavigation("/expenses")}
                 onBack={() => {
+                  receiptReturnFocusRef.current = {
+                    kind: "receipt",
+                    receiptId: receiptDetail.receiptId,
+                  };
                   setWorkflowDirty(false);
                   setDirtyNavigationWorkflow(false);
                   navigate("/expenses");

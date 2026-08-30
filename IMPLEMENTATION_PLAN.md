@@ -451,7 +451,7 @@ M27-001 -> M27-002 -> R-2710
   checks implicated by a fix, records evidence, and obtains review closure
   before `M27-005`.
 - **Review finding record:** Fresh read-only review found no severity-1
-  findings, but identified six severity-2/3 issues requiring remediation:
+  findings, but identified eight severity-2/3 issues requiring remediation:
   discard confirmation dropped the dirty tag and unload/history protection;
   detail exit had no focus restoration; saved-detail responsive evidence was
   missing; in-place receipt-ID changes could retain the old actor; retryability
@@ -460,6 +460,11 @@ M27-001 -> M27-002 -> R-2710
   enabled during mutation. The review also recorded no finding for the XState
   lifecycle, deletion scope, receipt/manual-expense separation, or facade
   boundary. Remediation is in progress before this gate can close.
+- **Closure review finding record:** The first closure pass confirmed those
+  fixes and found three remaining issues: the custom E2E fixture ignored the
+  spec viewport; repeated browser Back could leave history ahead of a dirty
+  detail screen; and directly opened detail routes lacked an exit focus target.
+  These are the active remediation items for this gate.
 
 #### M27-005 — Prove the saved-receipt management journey
 

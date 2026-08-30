@@ -3,6 +3,7 @@ import {
   deviceViewModels,
   formatApproximateLastSeen,
   observationsFromSyncConflicts,
+  reconnectAuthorizationOptions,
   requestLocalShellRefreshAfterSync,
   requiresDriveAuthorization,
 } from "./sync-portability-runtime.tsx";
@@ -135,6 +136,24 @@ Deno.test("sync runtime marks a configured account as authorization-needed after
   assert(requiresDriveAuthorization("owner@example.com", null));
   assert(!requiresDriveAuthorization("owner@example.com", "authorized"));
   assert(!requiresDriveAuthorization(null, "signed-out"));
+});
+
+Deno.test("sync runtime reconnect options reuse the configured account hint", () => {
+  const options = reconnectAuthorizationOptions({
+    mode: "configured",
+    accountEmail: "owner@example.com",
+    network: "online",
+    sync: "authorization-error",
+    lastSyncedAt: null,
+    pendingChangeCount: 0,
+    unresolvedConflictCount: 0,
+  });
+  assert(options.prompt === "");
+  assert(options.loginHint === "owner@example.com");
+  assert(
+    reconnectAuthorizationOptions({ mode: "disconnected" }).loginHint ===
+      undefined,
+  );
 });
 
 Deno.test(

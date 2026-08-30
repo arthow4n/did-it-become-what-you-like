@@ -28,6 +28,10 @@ import {
   type ImportViewModel,
 } from "./conflict-import-ui/index.ts";
 import { withComponentHarness } from "../test-support/component-harness.tsx";
+import {
+  type SyncStatusContextValue,
+  SyncStatusProvider,
+} from "./sync-ui/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -512,6 +516,101 @@ Deno.test("local UI expenses exposes shared filters, empty state, and add event"
     assert(view.getByText("No expenses in this period"));
     fireEvent.click(view.getByRole("button", { name: "Add expense" }));
     assert(addCount === 1, "Add expense should dispatch the callback");
+  });
+});
+
+Deno.test("local UI expenses places sync status in the page header", async () => {
+  await withComponentHarness(({ render, fireEvent }) => {
+    let reconnected = 0;
+    const syncStatus: SyncStatusContextValue = {
+      view: {
+        mode: "configured",
+        accountEmail: "owner@example.com",
+        network: "online",
+        sync: "authorization-error",
+        lastSyncedAt: null,
+        pendingChangeCount: 1,
+        unresolvedConflictCount: 0,
+      },
+      onOpenSync: () => undefined,
+      onReconnect: () => reconnected++,
+      notifyLocalMutation: () => undefined,
+    };
+    render(
+      createElement(
+        SyncStatusProvider,
+        { value: syncStatus },
+        createElement(ExpensesScreen, {
+          state,
+          expenseDayBoundary: "03:00",
+          offline: false,
+          onAdd: () => undefined,
+          onEdit: () => undefined,
+          onViewReceipt: () => undefined,
+          onProjectChange: () => undefined,
+        }),
+      ),
+    );
+    const view = within(document.body);
+    assert(view.getByRole("heading", { name: "Expenses" }));
+    assert(view.getByText("Local only · Tap to reconnect"));
+    assert(document.querySelector(".sync-ui-shell-status") === null);
+    fireEvent.click(
+      view.getByRole("button", { name: "Reconnect Google Drive" }),
+    );
+    assert(reconnected === 1);
+  });
+});
+
+Deno.test("local UI manual saves notify when Drive authorization has expired", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      const { service } = createTestService(state);
+      let notices = 0;
+      let closed = 0;
+      const syncStatus: SyncStatusContextValue = {
+        view: {
+          mode: "configured",
+          accountEmail: "owner@example.com",
+          network: "online",
+          sync: "authorization-error",
+          lastSyncedAt: null,
+          pendingChangeCount: 0,
+          unresolvedConflictCount: 0,
+        },
+        onOpenSync: () => undefined,
+        onReconnect: () => undefined,
+        notifyLocalMutation: () => notices++,
+      };
+      render(
+        createElement(
+          SyncStatusProvider,
+          { value: syncStatus },
+          createElement(ManualExpenseScreen, {
+            repository: local,
+            service,
+            state,
+            request: { projectId: project.id },
+            onSaved: () => undefined,
+            onClosed: () => closed++,
+          }),
+        ),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("textbox", { name: "Amount" }))
+      );
+      fireEvent.input(view.getByRole("textbox", { name: "Amount" }), {
+        target: { value: "4" },
+      });
+      fireEvent.click(view.getByRole("button", { name: "Save expense" }));
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Expense saved" }))
+      );
+      assert(notices === 1, "A successful local save should notify once");
+      assert(closed === 0, "The completion state should remain visible");
+    });
   });
 });
 

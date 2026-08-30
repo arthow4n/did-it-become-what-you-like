@@ -9,6 +9,8 @@ import {
   type KnownDeviceViewModel,
   SyncAccountPanel,
   type SyncConnectionViewModel,
+  syncIndicatorCopy,
+  SyncStatusIndicator,
 } from "./index.ts";
 import { withComponentHarness } from "../../test-support/component-harness.tsx";
 
@@ -472,6 +474,34 @@ Deno.test("sync GlobalStatus exposes compact labels and shell navigation", async
       assert(opened);
     });
   });
+});
+
+Deno.test("sync status indicator keeps reconnect and detail actions compact", async () => {
+  await withComponentHarness(async ({ render, fireEvent }) => {
+    await withAriaGlobals(() => {
+      let reconnected = 0;
+      let opened = 0;
+      render(
+        createElement(SyncStatusIndicator, {
+          view: { mode: "disconnected" },
+          onOpenSync: () => opened++,
+          onReconnect: () => reconnected++,
+        }),
+      );
+      const view = within(document.body);
+      assert(view.getByText("Local only · Tap to reconnect"));
+      fireEvent.click(
+        view.getByRole("button", { name: "Reconnect Google Drive" }),
+      );
+      assert(reconnected === 1);
+      assert(opened === 0);
+    });
+  });
+  const syncing = syncIndicatorCopy({ ...syncedView, sync: "syncing" });
+  assert(
+    syncing.label === "Syncing" && syncing.tone === "info" &&
+      syncing.action === "details",
+  );
 });
 
 Deno.test("isGlobalStatusActionable identifies quiet steady-states and actionable events", () => {

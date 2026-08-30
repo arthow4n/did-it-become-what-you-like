@@ -58,6 +58,7 @@ import {
   createDriveAdapter,
   createGoogleIdentityProvider,
   type DriveAdapter,
+  type DriveAuthorizationOptions,
   type DriveIdentityProvider,
 } from "../adapters/drive/index.ts";
 import {
@@ -68,7 +69,6 @@ import { runCausalExchange } from "../adapters/sync/coordinator.ts";
 import type { FileSharePort } from "../adapters/ports/index.ts";
 import type { CausalSyncPort } from "../adapters/ports/index.ts";
 import { type StableId, StableIdSchema } from "../domain/index.ts";
-import { Stack } from "../design-system/index.ts";
 import {
   clearDeleteEverywhereProgress,
   type DeleteEverywhereProgressPhase,
@@ -95,13 +95,12 @@ import {
   type SafetyExportStatus,
 } from "./conflict-import-ui/index.ts";
 import {
-  GlobalStatus as SyncGlobalStatus,
   GoogleDriveSyncScreen,
-  isGlobalStatusActionable,
   KnownDevicesScreen,
   type KnownDeviceViewModel,
   type SyncConnectionViewModel,
   syncStatusCopy,
+  SyncStatusProvider,
 } from "./sync-ui/index.ts";
 import {
   type DiagnosticDeviceViewModel,
@@ -338,6 +337,15 @@ export function requiresDriveAuthorization(
   driveStatus: DriveAuthState | null,
 ): boolean {
   return accountEmail !== null && driveStatus !== "authorized";
+}
+
+export function reconnectAuthorizationOptions(
+  view: SyncConnectionViewModel,
+): DriveAuthorizationOptions {
+  return {
+    prompt: "",
+    ...(view.mode === "configured" ? { loginHint: view.accountEmail } : {}),
+  };
 }
 
 function syncViewFromSnapshot(
@@ -1486,7 +1494,7 @@ export function SyncPortabilityRuntime({
     }
     syncAfterAuthorization.current = true;
     const authorizationOptions = reconnect
-      ? { prompt: "" as const }
+      ? reconnectAuthorizationOptions(syncView)
       : undefined;
     void driveAdapter.authorize(authorizationOptions).then((session) => {
       sendSync({
@@ -1775,22 +1783,25 @@ export function SyncPortabilityRuntime({
     )
     : children;
 
-  const showShellStatus = screen !== "sync" &&
-    isGlobalStatusActionable(syncView);
-
   return (
     <>
-      {showShellStatus
-        ? (
-          <Stack gap={1} className="sync-ui-shell-status">
-            <SyncGlobalStatus
-              view={syncView}
-              onOpenSync={() => onNavigate("/settings/sync")}
-            />
-          </Stack>
-        )
-        : null}
-      {content}
+      <SyncStatusProvider
+        value={{
+          view: syncView,
+          onOpenSync: () => onNavigate("/settings/sync"),
+          onReconnect: () => authorizeDrive(true),
+          notifyLocalMutation: () => {
+            if (
+              syncView.mode === "configured" &&
+              syncView.sync === "authorization-error"
+            ) {
+              onNotice("Saved locally. Reconnect Google Drive to sync.");
+            }
+          },
+        }}
+      >
+        {content}
+      </SyncStatusProvider>
     </>
   );
 }

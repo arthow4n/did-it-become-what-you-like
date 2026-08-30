@@ -78,6 +78,7 @@ import {
   TextField,
   WorkflowProgress,
 } from "../design-system/index.ts";
+import { useSyncStatus } from "./sync-ui/index.ts";
 
 const DEVICE_SETTINGS_KEY = "settings-device-local";
 const DEFAULT_MODEL_QUERY: ReceiptAiModelQuery = {
@@ -1338,8 +1339,10 @@ export function ReceiptReviewScreen({
   const [metadataOpen, setMetadataOpen] = useState(false);
   const [metadataError, setMetadataError] = useState<string>();
   const doneRef = useRef(false);
+  const syncMutationHandled = useRef(false);
   const metadataReturnFocusRef = useRef<HTMLElement | null>(null);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
+  const syncStatus = useSyncStatus();
 
   const openMetadata = () => {
     const activeElement = document.activeElement;
@@ -1384,9 +1387,13 @@ export function ReceiptReviewScreen({
       snapshot.matches("cancelled")
     ) {
       doneRef.current = true;
+      if (snapshot.matches("saved") && !syncMutationHandled.current) {
+        syncMutationHandled.current = true;
+        syncStatus?.notifyLocalMutation();
+      }
       onClose();
     }
-  }, [onClose, snapshot]);
+  }, [onClose, snapshot, syncStatus]);
 
   if (
     snapshot.matches("hydrating") || snapshot.matches("persisting") ||

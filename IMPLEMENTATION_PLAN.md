@@ -300,16 +300,17 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 #### R-2910 — Domain, Actor & Diagnostic Review Gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M29-001`, `M29-002`.
+- **Status/dependencies:** `COMPLETE`; depends on `M29-001`, `M29-002`.
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs across `receipt.ts`, `local-ui.tsx`, and adapter error mappings. Verify unlinking logic, routing redirects, and diagnostic taxonomy safety.
-- **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening next batch.
+- **Remediation loop:** Initial review found two S2 findings and one S3 plan-drift finding. The primary implementer corrected Drive preflight operation labeling, restricted import diagnostic preservation to the finite allowlist, and reconciled paths/tests in bounded commits. Fresh closure review approved with no findings.
+- **Evidence:** Closure review against `fb7016d..96e271e` verified a clean synchronized repository, 79 focused tests passed, 13-file format check passed, lint/typecheck passed, and `git diff --check` passed.
 
 ---
 
 #### M29-003 — Discreet Sync Status & Background Reconnect Header UX
 
-- **Status/dependencies:** `PENDING`; depends on `R-2910`.
+- **Status/dependencies:** `COMPLETE`; depends on `R-2910`.
 - **Ownership:** `src/features/sync-portability-runtime.tsx`, `src/features/sync-ui/`, `src/features/local-ui.tsx`, `src/features/local-ui.css`.
 - **Scope/non-goals:**
   - Remove intrusive top-of-screen Drive warning banners on page reload when local data is healthy.
@@ -323,7 +324,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   - New local entries prompt contextual sync notices only after mutation.
 - **Tests:**
   - Component tests in `src/features/local-ui.test.tsx` and `src/features/sync-ui/sync-ui.test.tsx`.
-- **Verification:** `deno fmt src/features/sync-portability-runtime.tsx src/features/local-ui.tsx`, `deno lint src/features/sync-portability-runtime.tsx src/features/local-ui.tsx`, `deno test --related=src/features/sync-portability-runtime.tsx --related=src/features/local-ui.tsx`, `git diff --check`.
+- **Verification:** `deno fmt`/`deno lint` on the changed sync/runtime/UI sources and tests, `deno check src/features/sync-portability-runtime.tsx src/features/local-ui.tsx src/features/receipt-ui.tsx`, `deno test --allow-read --allow-write --allow-run --allow-env src/features/sync-ui/sync-ui.test.tsx src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx` (56 passed), and `git diff --check`.
 
 ---
 

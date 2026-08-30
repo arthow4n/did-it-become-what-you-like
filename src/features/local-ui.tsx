@@ -103,6 +103,7 @@ import {
   SyncPortabilityRuntime,
   type SyncPortabilityScreen,
 } from "./sync-portability-runtime.tsx";
+import { SyncStatusIndicator, useSyncStatus } from "./sync-ui/index.ts";
 import { ReceiptDetailScreen } from "./receipt-detail-ui.tsx";
 import {
   AboutScreen,
@@ -630,6 +631,7 @@ export function ExpensesScreen({
   onViewReceipt: (receiptId: string, focusedLineId?: string) => void;
   onProjectChange: (projectId: string) => void;
 }) {
+  const syncStatus = useSyncStatus();
   const currentProject =
     state.projects.find((project) => project.id === state.selectedProjectId) ??
       state.projects.find((project) => !project.archived);
@@ -744,6 +746,15 @@ export function ExpensesScreen({
           title="Expenses"
           eyebrow={currentProject?.name ?? "Local project"}
           description="Review the selected project and calendar period."
+          status={syncStatus
+            ? (
+              <SyncStatusIndicator
+                view={syncStatus.view}
+                onOpenSync={syncStatus.onOpenSync}
+                onReconnect={syncStatus.onReconnect}
+              />
+            )
+            : undefined}
           actions={
             <Button data-expenses-add="true" onPress={onAdd}>
               Add expense
@@ -2437,7 +2448,9 @@ export function ManualExpenseScreen({
   const [openSent, setOpenSent] = useState(false);
   const completionHandled = useRef(false);
   const usefulActionHandled = useRef(false);
+  const syncMutationHandled = useRef(false);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
+  const syncStatus = useSyncStatus();
 
   useEffect(() => {
     if (request.expense) {
@@ -2458,6 +2471,13 @@ export function ManualExpenseScreen({
 
   const saveMode = useRef<ManualSaveMode>("expenses");
   useEffect(() => {
+    if (
+      !syncMutationHandled.current && snapshot.matches("saved") &&
+      snapshot.context.result?.expense
+    ) {
+      syncMutationHandled.current = true;
+      syncStatus?.notifyLocalMutation();
+    }
     if (completionHandled.current) return;
     if (snapshot.matches("deleted")) {
       send({ type: "expense.finish-delete" });
@@ -2476,7 +2496,7 @@ export function ManualExpenseScreen({
       completionHandled.current = true;
       onClosed(snapshot.matches("deletedOutput") ? "deleted" : undefined);
     }
-  }, [onClosed, onSaved, send, snapshot]);
+  }, [onClosed, onSaved, send, snapshot, syncStatus]);
 
   const dirty = snapshot.hasTag("dirty");
   useEffect(() => {

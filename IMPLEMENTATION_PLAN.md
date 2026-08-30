@@ -613,7 +613,9 @@ M34-001 -> M34-002 -> R-3410
 
 #### R-3420 — SDK routing and provider UX review
 
-- **Status/dependencies:** `READY`; depends on `M34-004`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M34-004`. Initial fresh
+  review returned `APPROVE WITH FINDINGS`; remediation is required before
+  closure and M34-005.
 - **Reviewer role:** fresh read-only OpenRouter/UI reviewer.
 - **Audit scope:** exact package/version; pinned SDK type usage; OpenRouter model
   prefilter arguments; client-side structured-output/image verification;
@@ -623,6 +625,12 @@ M34-001 -> M34-002 -> R-3410
   no live-network tests or debug logging.
 - **Remediation loop:** primary owner fixes severity 1–3 findings and obtains
   reviewer closure before M34-005.
+- **Initial review findings:** four severity-2 findings: Local Erase still
+  removes only the Gemini key; `openrouter/auto` is accepted instead of being
+  rejected as an auto-router model; settings refreshes can apply stale
+  asynchronous state; and an in-flight scan model refresh can cross provider
+  boundaries after a provider switch. The reviewer found no authority conflict,
+  made no edits, and made no provider calls.
 
 #### M34-005 — Secrets, disclosure, and privacy erase generalization
 
@@ -705,7 +713,8 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-3420` (`READY`).
+- **Active task / gate:** `R-3420` (`IN_PROGRESS`, remediation after initial
+  review findings).
 - **Planning base:** M34-001, M34-002, R-3410, remediation, and M34-003 are
   integrated and pushed on remote `master`; M34-004 is integrated and pushed as
   `fe8b9a7`.
@@ -727,9 +736,10 @@ M34-001 -> M34-002 -> R-3410
   `inputModalities`, `outputModalities`, `zdr`, `provider.requireParameters`,
   `provider.dataCollection`, and `responseFormat.jsonSchema`; endpoint methods
   are `endpoints.list({author, slug})` and `endpoints.listZdrEndpoints()`.
-- **Exact next action:** commit and push this checkpoint, then dispatch one
-  fresh read-only reviewer for R-3420. Do not begin M34-005 until R-3420's
-  findings are resolved and its closure is recorded.
+- **Exact next action:** commit and push this findings checkpoint, then dispatch
+  exactly one write-enabled remediation worker for the four R-3420 findings.
+  Do not begin M34-005 until the fixes are integrated, validated, and a fresh
+  read-only R-3420 closure review approves them.
 
 ## Ready-to-Use Orchestration Prompt
 

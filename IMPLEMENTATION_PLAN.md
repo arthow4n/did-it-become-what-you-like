@@ -337,6 +337,16 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs across `src/features/receipt-detail-ui.tsx` and `src/features/local-ui.tsx`. Verify unified feed ordering, add-line interaction, category breakdown expansion, and toast behavior across mobile and desktop viewports.
 - **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening release gate.
+- **Review log:** Initial fresh review was not approved with two severity-2
+  findings (standalone deletion failure lacked a retry/keep recovery path;
+  mobile deletion confirmation used the wrong action hierarchy) and two
+  severity-3 findings (receipt deletion appeared before receipt context;
+  wide Expenses remained single-column). Remediation renders retry and keep
+  actions for failed deletion, uses a mobile-safe primary action stack,
+  places receipt deletion after metadata and reconciliation, and gives the
+  Expenses view a responsive wide list/context grid. The remediation gate
+  passed 27 focused local and receipt UI tests with 0 failures; the existing
+  11 query tests also remain green. A fresh closure review is still required.
 
 ---
 
@@ -617,8 +627,8 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   --allow-run --allow-env src/features/local-ui.test.tsx` passed 23 tests with
   0 failures. R-2820 is now active. M29 remains staged as dependent follow-up.
 - **Active / preserved work:** Clean master working tree.
-- **Exact next action:** Dispatch a fresh read-only UI/workflow reviewer for
-  R-2820, then remediate any bounded findings before the M28 release gate.
+- **Exact next action:** Commit the R-2820 remediation and dispatch a fresh
+  read-only UI/workflow closure reviewer before the M28 release gate.
 
 ## Ready-to-Use Orchestration Prompt
 

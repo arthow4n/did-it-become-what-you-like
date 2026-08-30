@@ -68,6 +68,10 @@
     width: 100%;
   }
 
+  .local-ui-expenses-layout {
+    align-items: start;
+  }
+
   @media (min-width: 720px) {
     .local-ui-expenses-project-picker {
       max-width: 360px;
@@ -266,6 +270,16 @@
     align-items: center;
   }
 
+  .local-ui-delete-actions {
+    margin-block-start: var(--space-3);
+  }
+
+  .local-ui-delete-actions > .ds-button,
+  .local-ui-delete-actions > button,
+  .local-ui-delete-actions > * {
+    min-height: var(--control-height);
+  }
+
   .local-ui-project-delete-dialog {
     width: min(100%, var(--form-max));
   }
@@ -308,7 +322,20 @@
     }
 
     .local-ui-card-actions--primary-stack > .ds-button[data-variant="secondary"],
-    .local-ui-card-actions--primary-stack > .ds-button[data-variant="primary"] {
+    .local-ui-card-actions--primary-stack > .ds-button[data-variant="primary"],
+    .local-ui-card-actions--primary-stack > .ds-button[data-variant="danger"] {
+      width: 100%;
+    }
+
+    .ds-form-actions.local-ui-delete-actions {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .ds-form-actions.local-ui-delete-actions > .ds-button,
+    .ds-form-actions.local-ui-delete-actions > button,
+    .ds-form-actions.local-ui-delete-actions > * {
       width: 100%;
     }
 
@@ -353,6 +380,26 @@
       flex: 0 0 auto;
       min-width: 0;
       white-space: nowrap;
+    }
+
+    .local-ui-delete-actions {
+      gap: var(--space-3);
+    }
+  }
+
+  @media (min-width: 720px) {
+    .ds-responsive-grid.local-ui-expenses-layout {
+      grid-template-columns: minmax(0, 1.45fr) minmax(16rem, 0.75fr);
+    }
+
+    .local-ui-expenses-feed {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .local-ui-expenses-context {
+      grid-column: 2;
+      grid-row: 1;
     }
   }
 

@@ -182,6 +182,23 @@ Deno.test("receipt detail renders saved management and stages metadata changes",
         assert(view.getByText("Coffee"));
         assert(view.getByText("Member discount"));
       });
+      const receiptHeading = view.getAllByRole("heading", {
+        name: "Evening Market",
+      })[0];
+      const header = receiptHeading.closest("header");
+      assert(header);
+      assert(
+        !within(header).queryByRole("button", { name: "Delete receipt" }),
+        "destructive receipt action should follow receipt context",
+      );
+      const receiptDate = view.getByText(/18:42/);
+      const deleteReceipt = view.getByRole("button", {
+        name: "Delete receipt",
+      });
+      assert(
+        Boolean(receiptDate.compareDocumentPosition(deleteReceipt) & 4),
+        "receipt context should precede the destructive action",
+      );
       assert(!view.queryByRole("checkbox"));
       const focused = document.querySelector<HTMLElement>(
         '[data-receipt-line-id="line-bread"]',

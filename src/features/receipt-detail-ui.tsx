@@ -441,35 +441,6 @@ export function ReceiptDetailScreen({
               onPress={() => send({ type: "receipt.detail.back" })}
             />
           }
-          actions={
-            <DangerDialog
-              trigger={
-                <Button
-                  variant="danger"
-                  isDisabled={isMutating}
-                  onPress={() =>
-                    send({ type: "receipt.detail.request-receipt-delete" })}
-                >
-                  <Icon>
-                    <Trash2 />
-                  </Icon>{" "}
-                  Delete receipt
-                </Button>
-              }
-              title="Delete this receipt?"
-              description="This permanently removes the receipt, every purchase line and adjustment, and all receipt-linked expense records from this device. There is no undo after commit."
-              confirmLabel="Delete receipt"
-              isOpen={snapshot.matches("confirmingReceiptDelete")}
-              onOpenChange={(open) => {
-                if (!open && snapshot.matches("confirmingReceiptDelete")) {
-                  send({ type: "receipt.detail.cancel-delete" });
-                }
-              }}
-              onConfirm={() =>
-                send({ type: "receipt.detail.confirm-receipt-delete" })}
-              onCancel={closeDeleteDialog}
-            />
-          }
         />
         {mutationFailure
           ? (
@@ -531,6 +502,36 @@ export function ReceiptDetailScreen({
           difference={difference}
           currency={receipt.currency}
         />
+
+        <FormActions className="local-ui-receipt-detail__danger-actions">
+          <DangerDialog
+            trigger={
+              <Button
+                variant="danger"
+                isDisabled={isMutating}
+                onPress={() =>
+                  send({ type: "receipt.detail.request-receipt-delete" })}
+              >
+                <Icon>
+                  <Trash2 />
+                </Icon>{" "}
+                Delete receipt
+              </Button>
+            }
+            title="Delete this receipt?"
+            description="This permanently removes the receipt, every purchase line and adjustment, and all receipt-linked expense records from this device. There is no undo after commit."
+            confirmLabel="Delete receipt"
+            isOpen={snapshot.matches("confirmingReceiptDelete")}
+            onOpenChange={(open) => {
+              if (!open && snapshot.matches("confirmingReceiptDelete")) {
+                send({ type: "receipt.detail.cancel-delete" });
+              }
+            }}
+            onConfirm={() =>
+              send({ type: "receipt.detail.confirm-receipt-delete" })}
+            onCancel={closeDeleteDialog}
+          />
+        </FormActions>
 
         <Stack gap={3} as="section" aria-label="Purchase lines">
           <Inline justify="space-between">

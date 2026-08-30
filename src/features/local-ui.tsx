@@ -78,6 +78,7 @@ import {
   PeriodPicker,
   ProjectPicker,
   ReceiptGroup,
+  ResponsiveGrid,
   SearchField,
   SegmentedControl,
   SelectField,
@@ -756,193 +757,210 @@ export function ExpensesScreen({
           options={projectOptions}
           onValueChange={onProjectChange}
         />
-        <FilterBar className="local-ui-expenses-filter-bar">
-          <PeriodPicker
-            value={period}
-            onValueChange={setPeriod}
-            customKind={customPeriodKind}
-            customDate={customPeriodDate}
-            onCustomKindChange={setCustomPeriodKind}
-            onCustomDateChange={setCustomPeriodDate}
-          />
-          <SelectField
-            label="Category"
-            options={[
-              { id: "all", label: "All categories" },
-              ...activeCategories.map((category) => ({
-                id: category.id,
-                label: category.name,
-              })),
-            ]}
-            value={categoryId || "all"}
-            onValueChange={(value) =>
-              setCategoryId(value === "all" ? "" : value)}
-          />
-          <div className="local-ui-expenses-filter-bar__search-row">
-            <SearchField
-              label="Find"
-              placeholder="Merchant or description"
-              value={search}
-              onValueChange={setSearch}
-            />
-            <FilterSheet
-              trigger={
-                <Button
-                  variant="secondary"
-                  className="local-ui-expenses-filter-bar__trigger"
+        <ResponsiveGrid
+          columns={2}
+          gap={5}
+          className="local-ui-expenses-layout"
+        >
+          <Stack gap={4} className="local-ui-expenses-context">
+            <FilterBar className="local-ui-expenses-filter-bar">
+              <PeriodPicker
+                value={period}
+                onValueChange={setPeriod}
+                customKind={customPeriodKind}
+                customDate={customPeriodDate}
+                onCustomKindChange={setCustomPeriodKind}
+                onCustomDateChange={setCustomPeriodDate}
+              />
+              <SelectField
+                label="Category"
+                options={[
+                  { id: "all", label: "All categories" },
+                  ...activeCategories.map((category) => ({
+                    id: category.id,
+                    label: category.name,
+                  })),
+                ]}
+                value={categoryId || "all"}
+                onValueChange={(value) =>
+                  setCategoryId(value === "all" ? "" : value)}
+              />
+              <div className="local-ui-expenses-filter-bar__search-row">
+                <SearchField
+                  label="Find"
+                  placeholder="Merchant or description"
+                  value={search}
+                  onValueChange={setSearch}
+                />
+                <FilterSheet
+                  trigger={
+                    <Button
+                      variant="secondary"
+                      className="local-ui-expenses-filter-bar__trigger"
+                    >
+                      <Icon>
+                        <SlidersHorizontal />
+                      </Icon>{" "}
+                      Filters
+                    </Button>
+                  }
+                  onReset={() => {
+                    setCurrency("");
+                    setMinimum("");
+                    setMaximum("");
+                    setSort("newest");
+                  }}
                 >
-                  <Icon>
-                    <SlidersHorizontal />
-                  </Icon>{" "}
-                  Filters
-                </Button>
-              }
-              onReset={() => {
-                setCurrency("");
-                setMinimum("");
-                setMaximum("");
-                setSort("newest");
-              }}
-            >
-              <Stack gap={4}>
-                <CurrencyPicker
-                  value={currency || "all"}
-                  options={[
-                    { id: "all", label: "All currencies" },
-                    ...CURRENCY_OPTIONS.map((code) => ({
-                      id: code,
-                      label: code,
-                    })),
-                  ]}
-                  onValueChange={(value) =>
-                    setCurrency(value === "all" ? "" : value)}
-                />
-                <TextField
-                  label="Minimum signed amount"
-                  value={minimum}
-                  onChange={setMinimum}
-                />
-                <TextField
-                  label="Maximum signed amount"
-                  value={maximum}
-                  onChange={setMaximum}
-                />
-                <SegmentedControl
-                  fullWidth
-                  label="Sort order"
-                  value={sort}
-                  onChange={(value) => setSort(value as "newest" | "oldest")}
-                  options={[{ id: "newest", label: "Newest first" }, {
-                    id: "oldest",
-                    label: "Oldest first",
-                  }]}
-                />
-              </Stack>
-            </FilterSheet>
-          </div>
-        </FilterBar>
-        <ActiveFilterChips
-          filters={[
-            ...(categoryId
-              ? [{
-                id: "category",
-                label: categoryById.get(categoryId) ?? categoryId,
-                onRemove: removeCategory,
-              }]
-              : []),
-            ...(currency
-              ? [{ id: "currency", label: currency, onRemove: removeCurrency }]
-              : []),
-            ...(search
-              ? [{
-                id: "search",
-                label: `Find: ${search}`,
-                onRemove: removeSearch,
-              }]
-              : []),
-          ]}
-        />
-        <MoneySummary items={totals} />
-        <CategoryBreakdown
-          categories={categories}
-          onSelect={setCategoryId}
-          onViewAll={() => setCategoryId("")}
-        />
-        {expenseFeed.length === 0
-          ? (
-            <EmptyState
-              title={search || categoryId
-                ? "No expenses match these filters"
-                : "No expenses in this period"}
-              action={
-                <Button data-expenses-add="true" onPress={onAdd}>
-                  Add an expense
-                </Button>
-              }
-            >
-              {search || categoryId
-                ? "Try removing a filter or choose another period."
-                : "Your local expense list will appear here after the first save."}
-            </EmptyState>
-          )
-          : (
-            <Stack gap={4}>
-              <div data-expenses-list-heading tabIndex={-1}>
-                <Heading size="sm">Expense list</Heading>
+                  <Stack gap={4}>
+                    <CurrencyPicker
+                      value={currency || "all"}
+                      options={[
+                        { id: "all", label: "All currencies" },
+                        ...CURRENCY_OPTIONS.map((code) => ({
+                          id: code,
+                          label: code,
+                        })),
+                      ]}
+                      onValueChange={(value) =>
+                        setCurrency(value === "all" ? "" : value)}
+                    />
+                    <TextField
+                      label="Minimum signed amount"
+                      value={minimum}
+                      onChange={setMinimum}
+                    />
+                    <TextField
+                      label="Maximum signed amount"
+                      value={maximum}
+                      onChange={setMaximum}
+                    />
+                    <SegmentedControl
+                      fullWidth
+                      label="Sort order"
+                      value={sort}
+                      onChange={(value) =>
+                        setSort(value as "newest" | "oldest")}
+                      options={[{ id: "newest", label: "Newest first" }, {
+                        id: "oldest",
+                        label: "Oldest first",
+                      }]}
+                    />
+                  </Stack>
+                </FilterSheet>
               </div>
-              <div data-expenses-feed="true">
-                <List label="Expenses">
-                  {expenseFeed.map((entry) =>
-                    entry.kind === "expense"
-                      ? (
-                        <ExpenseRow
-                          key={entry.item.id}
-                          expense={{
-                            ...expenseViewModel(entry.item),
-                            category: categoryById.get(entry.item.categoryId) ??
-                              entry.item.categoryId,
-                          }}
-                          onSelect={(id) => {
-                            const expense = state.expenses.find((candidate) =>
-                              candidate.id === id
-                            );
-                            if (expense) onEdit(expense);
-                          }}
-                        />
-                      )
-                      : (
-                        <li
-                          key={entry.group.id}
-                          data-receipt-group-id={entry.group.id}
-                        >
-                          <Card as="section">
-                            <ReceiptGroup
-                              merchant={entry.group.receipt.merchant ??
-                                "Receipt"}
-                              date={entry.group.receipt.date}
-                              lines={entry.group.lines.map((item) => ({
-                                ...expenseViewModel(item),
-                                category: categoryById.get(item.categoryId) ??
-                                  item.categoryId,
-                              }))}
-                              total={{
-                                amount: entry.group.total,
-                                currency: entry.group.receipt.currency,
+            </FilterBar>
+            <ActiveFilterChips
+              filters={[
+                ...(categoryId
+                  ? [{
+                    id: "category",
+                    label: categoryById.get(categoryId) ?? categoryId,
+                    onRemove: removeCategory,
+                  }]
+                  : []),
+                ...(currency
+                  ? [{
+                    id: "currency",
+                    label: currency,
+                    onRemove: removeCurrency,
+                  }]
+                  : []),
+                ...(search
+                  ? [{
+                    id: "search",
+                    label: `Find: ${search}`,
+                    onRemove: removeSearch,
+                  }]
+                  : []),
+              ]}
+            />
+            <MoneySummary items={totals} />
+            <CategoryBreakdown
+              categories={categories}
+              onSelect={setCategoryId}
+              onViewAll={() => setCategoryId("")}
+            />
+          </Stack>
+          <Stack gap={4} className="local-ui-expenses-feed">
+            {expenseFeed.length === 0
+              ? (
+                <EmptyState
+                  title={search || categoryId
+                    ? "No expenses match these filters"
+                    : "No expenses in this period"}
+                  action={
+                    <Button data-expenses-add="true" onPress={onAdd}>
+                      Add an expense
+                    </Button>
+                  }
+                >
+                  {search || categoryId
+                    ? "Try removing a filter or choose another period."
+                    : "Your local expense list will appear here after the first save."}
+                </EmptyState>
+              )
+              : (
+                <>
+                  <div data-expenses-list-heading tabIndex={-1}>
+                    <Heading size="sm">Expense list</Heading>
+                  </div>
+                  <div data-expenses-feed="true">
+                    <List label="Expenses">
+                      {expenseFeed.map((entry) =>
+                        entry.kind === "expense"
+                          ? (
+                            <ExpenseRow
+                              key={entry.item.id}
+                              expense={{
+                                ...expenseViewModel(entry.item),
+                                category:
+                                  categoryById.get(entry.item.categoryId) ??
+                                    entry.item.categoryId,
                               }}
-                              onViewReceipt={() =>
-                                onViewReceipt(entry.group.id)}
-                              onSelectLine={(id) => {
-                                onViewReceipt(entry.group.id, id);
+                              onSelect={(id) => {
+                                const expense = state.expenses.find((
+                                  candidate,
+                                ) => candidate.id === id);
+                                if (expense) onEdit(expense);
                               }}
                             />
-                          </Card>
-                        </li>
-                      )
-                  )}
-                </List>
-              </div>
-            </Stack>
-          )}
+                          )
+                          : (
+                            <li
+                              key={entry.group.id}
+                              data-receipt-group-id={entry.group.id}
+                            >
+                              <Card as="section">
+                                <ReceiptGroup
+                                  merchant={entry.group.receipt.merchant ??
+                                    "Receipt"}
+                                  date={entry.group.receipt.date}
+                                  lines={entry.group.lines.map((item) => ({
+                                    ...expenseViewModel(item),
+                                    category:
+                                      categoryById.get(item.categoryId) ??
+                                        item.categoryId,
+                                  }))}
+                                  total={{
+                                    amount: entry.group.total,
+                                    currency: entry.group.receipt.currency,
+                                  }}
+                                  onViewReceipt={() =>
+                                    onViewReceipt(entry.group.id)}
+                                  onSelectLine={(id) => {
+                                    onViewReceipt(entry.group.id, id);
+                                  }}
+                                />
+                              </Card>
+                            </li>
+                          )
+                      )}
+                    </List>
+                  </div>
+                </>
+              )}
+          </Stack>
+        </ResponsiveGrid>
       </Stack>
     </ContentContainer>
   );
@@ -2544,6 +2562,7 @@ export function ManualExpenseScreen({
     send({ type: "expense.change", draft: { ...draft, ...changes } });
   const busy = snapshot.hasTag("saving");
   const failed = snapshot.matches("saveFailed");
+  const deleteFailed = snapshot.matches("deleteFailed");
   const errors = Object.entries(validation).map(([id, message]) => ({
     id,
     message,
@@ -2571,7 +2590,8 @@ export function ManualExpenseScreen({
           }
         />
         <ExpenseForm
-          status={failed || busy || snapshot.hasTag("draft-saving") ||
+          status={failed || deleteFailed || busy ||
+              snapshot.hasTag("draft-saving") ||
               (snapshot.hasTag("dirty") &&
                 Boolean(
                   draft.amount.trim() || draft.merchant?.trim() ||
@@ -2580,14 +2600,14 @@ export function ManualExpenseScreen({
                 ))
             ? (
               <DraftStatus
-                state={failed
+                state={failed || deleteFailed
                   ? "failed"
                   : busy
                   ? "saving"
                   : snapshot.hasTag("draft-saving")
                   ? "saving"
                   : "dirty"}
-                detail={failed
+                detail={failed || deleteFailed
                   ? snapshot.context.error?.message
                   : "Your unfinished form is saved on this device."}
                 action={failed
@@ -2742,20 +2762,42 @@ export function ManualExpenseScreen({
         {snapshot.matches("deleteConfirming")
           ? (
             <InlineNotice tone="danger" title="Delete this expense?">
-              <Inline>
-                <Button
-                  variant="quiet"
-                  onPress={() => send({ type: "expense.cancel-delete" })}
-                >
-                  Keep expense
-                </Button>
+              <FormActions className="local-ui-delete-actions">
                 <Button
                   variant="danger"
                   onPress={() => send({ type: "expense.confirm-delete" })}
                 >
                   Delete expense
                 </Button>
-              </Inline>
+                <Button
+                  variant="quiet"
+                  onPress={() => send({ type: "expense.cancel-delete" })}
+                >
+                  Keep expense
+                </Button>
+              </FormActions>
+            </InlineNotice>
+          )
+          : null}
+        {deleteFailed
+          ? (
+            <InlineNotice tone="danger" title="Expense deletion failed">
+              {snapshot.context.error?.message ??
+                "The expense could not be deleted."}
+              <FormActions className="local-ui-delete-actions">
+                <Button
+                  variant="secondary"
+                  onPress={() => send({ type: "expense.retry-delete" })}
+                >
+                  Retry deletion
+                </Button>
+                <Button
+                  variant="quiet"
+                  onPress={() => send({ type: "expense.cancel-delete" })}
+                >
+                  Keep expense
+                </Button>
+              </FormActions>
             </InlineNotice>
           )
           : null}

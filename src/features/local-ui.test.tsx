@@ -380,7 +380,13 @@ Deno.test("local UI manual deletion reports a deleted completion status", async 
       await waitFor(() =>
         assert(view.getByRole("button", { name: "Delete expense" }))
       );
+      local.failNext("quota");
       fireEvent.click(view.getByRole("button", { name: "Delete expense" }));
+      await waitFor(() => assert(view.getByText("Expense deletion failed")));
+      assert(view.getByRole("button", { name: "Retry deletion" }));
+      assert(view.getByRole("button", { name: "Keep expense" }));
+      local.clearFailures();
+      fireEvent.click(view.getByRole("button", { name: "Retry deletion" }));
       await waitFor(() =>
         assert(completion === "deleted", "Deletion should report its status")
       );
@@ -1092,6 +1098,10 @@ Deno.test("local UI CSS uses shared surface, overlay, and spacing tokens", async
   assert(css.includes("background: var(--color-surface-2);"));
   assert(css.includes("z-index: var(--layer-overlay);"));
   assert(css.includes("gap: var(--space-1);"));
+  assert(css.includes("local-ui-expenses-layout"));
+  assert(css.includes("minmax(0, 1.45fr) minmax(16rem, 0.75fr)"));
+  assert(css.includes("local-ui-delete-actions"));
+  assert(css.includes("min-height: var(--control-height);"));
   assert(!css.includes("var(--surface-2)"));
   assert(!css.includes("z-index: 40;"));
   assert(!css.includes("gap: 0;"));

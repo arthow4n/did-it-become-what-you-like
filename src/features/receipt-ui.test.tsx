@@ -1,23 +1,24 @@
 import { within } from "@testing-library/dom";
-import { createElement } from "react";
+import { createElement, useState } from "react";
 import {
-  GeminiSettingsScreen,
   LineEditorDialog,
   modelOptions,
   readDeviceLocalSettings,
   ReceiptDisclosure,
   ReceiptImageStore,
   ReceiptMetadataEditor,
+  type ReceiptOpenRouterPort,
   ReceiptReviewScreen,
   ReceiptScanFailureNotice,
   ReceiptScanScreen,
+  ReceiptSettingsScreen,
   type ReceiptUiDependencies,
   writeDeviceLocalSettings,
 } from "./receipt-ui.tsx";
 import {
-  GeminiQuickSetup,
   ModelPicker,
   ReceiptLineCard,
+  ReceiptQuickSetup,
   ReceiptSourcePicker,
 } from "../design-system/index.ts";
 import {
@@ -26,9 +27,11 @@ import {
 } from "../domain/index.ts";
 import type { ReceiptReviewDraft } from "../domain/receipt.ts";
 import type {
+  ReceiptAiModel,
   ReceiptAiPort,
   ReceiptExtractionDraft,
 } from "../adapters/ports/index.ts";
+import type { OpenRouterEndpoint } from "../adapters/openrouter/index.ts";
 import { SecretValue } from "../adapters/ports/index.ts";
 import type {
   ContractFailure,
@@ -60,6 +63,57 @@ function assertEquals<T>(actual: T, expected: T): void {
       `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
     );
   }
+}
+
+function createSettingsProvider({
+  key,
+  models,
+  endpoints = [],
+}: {
+  key?: string;
+  models: readonly ReceiptAiModel[];
+  endpoints?: readonly OpenRouterEndpoint[];
+}): ReceiptOpenRouterPort & {
+  readonly modelRefreshes: () => number;
+  readonly endpointRefreshes: () => number;
+  readonly extractionCalls: () => number;
+} {
+  let storedKey = key;
+  let modelRefreshes = 0;
+  let endpointRefreshes = 0;
+  let extractionCalls = 0;
+  const provider: ReceiptOpenRouterPort = {
+    getApiKey: () =>
+      Promise.resolve(
+        storedKey === undefined ? undefined : SecretValue.from(storedKey),
+      ),
+    setApiKey: (value) => {
+      storedKey = value;
+      return Promise.resolve();
+    },
+    removeApiKey: () => {
+      storedKey = undefined;
+      return Promise.resolve();
+    },
+    listModels: () => {
+      modelRefreshes++;
+      return Promise.resolve(models);
+    },
+    listEndpoints: () => {
+      endpointRefreshes++;
+      return Promise.resolve(endpoints);
+    },
+    extractReceipt: () => {
+      extractionCalls++;
+      return Promise.reject(new Error("Unexpected receipt extraction"));
+    },
+  };
+  return {
+    ...provider,
+    modelRefreshes: () => modelRefreshes,
+    endpointRefreshes: () => endpointRefreshes,
+    extractionCalls: () => extractionCalls,
+  };
 }
 
 Deno.test("receipt-ui disclosure states the exact permitted and excluded data", async () => {
@@ -550,12 +604,13 @@ Deno.test("receipt-ui metadata editor cancel preserves the parent draft", async 
   });
 });
 
-Deno.test("receipt-ui Gemini quick setup masks the key and keeps validation visible", async () => {
+Deno.test("receipt-ui provider quick setup masks the key and keeps validation visible", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let saved = false;
       render(
-        createElement(GeminiQuickSetup, {
+        createElement(ReceiptQuickSetup, {
+          providerName: "OpenRouter",
           value: "AIza.test-key",
           onChange: () => undefined,
           onSave: () => saved = true,
@@ -666,6 +721,14 @@ Deno.test(
         const dependencies: ReceiptUiDependencies = {
           ai,
           gemini,
+          openrouter: {
+            ...ai,
+            getApiKey: () =>
+              Promise.resolve(SecretValue.from("openrouter.test")),
+            setApiKey: () => Promise.resolve(),
+            removeApiKey: () => Promise.resolve(),
+            listEndpoints: () => Promise.resolve([]),
+          },
           imagePreparation: createFakeImagePreparationPort(),
           resolveImage: (ref) => {
             lastImageRef = ref;
@@ -678,17 +741,11 @@ Deno.test(
           imagePreparationEnabled: true,
           selectedGeminiModel: model.id,
         });
-        const secretStorage = {
-          get: () => Promise.resolve(SecretValue.from("AIza.test")),
-          set: () => Promise.resolve(),
-          remove: () => Promise.resolve(),
-        };
         let closed = 0;
         let reviewed = false;
         const rendered = render(
           createElement(ReceiptScanScreen, {
             dependencies,
-            secretStorage,
             imageStore,
             state,
             settings,
@@ -735,7 +792,6 @@ Deno.test(
         const remounted = render(
           createElement(ReceiptScanScreen, {
             dependencies,
-            secretStorage,
             imageStore,
             state,
             settings,
@@ -855,8 +911,12 @@ Deno.test("receipt-ui retains a remembered key when refreshing models fails", as
         extractReceipt: () => Promise.reject(new Error("not used")),
       };
       render(
-        createElement(GeminiSettingsScreen, {
+        createElement(ReceiptSettingsScreen, {
           gemini,
+          openrouter: {
+            ...gemini,
+            listEndpoints: () => Promise.resolve([]),
+          },
           settings: DeviceLocalSettingsSchema.parse({
             imagePreparationEnabled: true,
           }),
@@ -888,3 +948,199 @@ Deno.test("receipt-ui retains a remembered key when refreshing models fails", as
     });
   });
 });
+
+Deno.test(
+  "receipt-ui switches providers while restoring each provider's model and key",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(() => {
+        const geminiModel: ReceiptAiModel = {
+          id: "gemini/receipt-model",
+          displayName: "Gemini receipt model",
+          lifecycle: "active",
+          capabilities: {
+            "image-input": undefined,
+            "content-generation": undefined,
+            "structured-output": undefined,
+          },
+        };
+        const openRouterModel: ReceiptAiModel = {
+          id: "openai/receipt-model",
+          displayName: "OpenRouter receipt model",
+          lifecycle: "active",
+          capabilities: {
+            "image-input": true,
+            "content-generation": true,
+            "structured-output": true,
+          },
+        };
+        const endpoint: OpenRouterEndpoint = {
+          modelId: openRouterModel.id,
+          providerName: "Provider Alpha",
+          tag: "provider-alpha",
+          supportedParameters: ["structured_outputs", "response_format"],
+        };
+        const gemini = createSettingsProvider({
+          key: "AIza.gemini-1234",
+          models: [geminiModel],
+        });
+        const openrouter = createSettingsProvider({
+          key: "sk-openrouter-5678",
+          models: [openRouterModel],
+          endpoints: [endpoint],
+        });
+        const initialSettings = DeviceLocalSettingsSchema.parse({
+          activeProvider: "gemini",
+          selectedGeminiModel: geminiModel.id,
+          selectedOpenRouterModel: openRouterModel.id,
+          imagePreparationEnabled: true,
+        });
+        function ControlledSettings() {
+          const [settings, setSettings] = useState(initialSettings);
+          return createElement(ReceiptSettingsScreen, {
+            gemini,
+            openrouter,
+            settings,
+            onSettingsChange: setSettings,
+            onClose: () => undefined,
+          });
+        }
+        render(createElement(ControlledSettings));
+        const view = within(document.body);
+        return waitFor(() => {
+          assert(view.getByText("••••••••1234"));
+          assert(
+            view.getByText(
+              /requires a model that accepts image input and supports structured output constrained by JSON Schema/,
+            ),
+          );
+          const renderedText = document.body.textContent ?? "";
+          for (
+            const removedText of [
+              "Test configuration",
+              "Compatible",
+              "Incompatible",
+              "Needs test",
+            ]
+          ) {
+            assert(!renderedText.includes(removedText));
+          }
+          assert(view.getByRole("combobox", { name: "Model" }));
+        }).then(async () => {
+          const providerPicker = view.getByRole("combobox", {
+            name: "Receipt AI provider",
+          });
+          fireEvent.click(providerPicker);
+          fireEvent.click(view.getByRole("option", { name: "OpenRouter" }));
+          await waitFor(() => {
+            assert(view.getByRole("heading", {
+              name: "OpenRouter receipt scanning",
+            }));
+            assert(view.getByText("Provider Alpha"));
+            assert(view.getByText("••••••••5678"));
+          });
+          const modelPicker = view.getByRole("combobox", {
+            name: "Model",
+          }) as HTMLInputElement;
+          assert(modelPicker.value.includes("OpenRouter receipt model"));
+          fireEvent.click(providerPicker);
+          fireEvent.click(view.getByRole("option", { name: "Gemini" }));
+          await waitFor(() => {
+            assert(view.getByRole("heading", {
+              name: "Gemini receipt scanning",
+            }));
+            const restoredModel = view.getByRole("combobox", {
+              name: "Model",
+            }) as HTMLInputElement;
+            assert(restoredModel.value.includes("Gemini receipt model"));
+          });
+          assert(gemini.extractionCalls() === 0);
+          assert(openrouter.extractionCalls() === 0);
+        });
+      });
+    });
+  },
+);
+
+Deno.test(
+  "receipt-ui OpenRouter privacy changes refresh metadata and reset an invalid provider preference",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(() => {
+        const model: ReceiptAiModel = {
+          id: "openai/receipt-model",
+          displayName: "OpenRouter receipt model",
+          lifecycle: "active",
+          capabilities: {
+            "image-input": true,
+            "content-generation": true,
+            "structured-output": true,
+          },
+        };
+        const provider = createSettingsProvider({
+          key: "sk-openrouter-test",
+          models: [model],
+          endpoints: [{
+            modelId: model.id,
+            providerName: "Provider Alpha",
+            tag: "provider-alpha",
+            supportedParameters: ["structured_outputs", "response_format"],
+          }],
+        });
+        const gemini = createSettingsProvider({ key: "AIza-test", models: [] });
+        const initialSettings = DeviceLocalSettingsSchema.parse({
+          activeProvider: "openrouter",
+          selectedOpenRouterModel: model.id,
+          preferredProviderTag: "provider-gone",
+        });
+        function ControlledSettings() {
+          const [settings, setSettings] = useState(initialSettings);
+          return createElement(ReceiptSettingsScreen, {
+            gemini,
+            openrouter: provider,
+            settings,
+            onSettingsChange: setSettings,
+            onClose: () => undefined,
+          });
+        }
+        render(createElement(ControlledSettings));
+        const view = within(document.body);
+        return waitFor(() => {
+          assert(view.getByText(/previous preferred provider is unavailable/));
+          assert(view.getByRole("checkbox", {
+            name: "Require Zero Data Retention (ZDR)",
+          }));
+          assert(view.getByRole("checkbox", {
+            name: "Deny provider data collection",
+          }));
+        }).then(async () => {
+          const preferred = view.getByRole("combobox", {
+            name: "Preferred provider",
+          });
+          assert((preferred as HTMLInputElement).value === "Automatic");
+          fireEvent.click(preferred);
+          fireEvent.click(view.getByRole("option", { name: "Provider Alpha" }));
+          await waitFor(() =>
+            assert((preferred as HTMLInputElement).value === "Provider Alpha")
+          );
+          const modelRefreshes = provider.modelRefreshes();
+          fireEvent.click(view.getByRole("checkbox", {
+            name: "Require Zero Data Retention (ZDR)",
+          }));
+          await waitFor(() =>
+            assert(provider.modelRefreshes() > modelRefreshes)
+          );
+          fireEvent.click(view.getByRole("checkbox", {
+            name: "Deny provider data collection",
+          }));
+          await waitFor(() =>
+            assert(
+              view.getByText(/ZDR and data-collection controls are separate/),
+            )
+          );
+          assert(provider.extractionCalls() === 0);
+        });
+      });
+    });
+  },
+);

@@ -193,7 +193,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-003 — Receipt scanning & review actor event handling & discard navigation
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-3310`.
+- **Status/dependencies:** `COMPLETE`; depends on `R-3310`.
 - **Ownership:** `src/actors/contracts/receipt.ts`, `src/actors/receipt.ts`,
   `src/features/receipt-ui.tsx`.
 - **Scope/non-goals:**
@@ -217,7 +217,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-004 — Saved receipt detail actor recovery & dirty tag accuracy
 
-- **Status/dependencies:** `PENDING`; depends on `M33-003`.
+- **Status/dependencies:** `READY`; depends on `M33-003`.
 - **Ownership:** `src/actors/contracts/saved-receipt.ts`,
   `src/actors/saved-receipt.ts`, `src/features/receipt-detail-ui.tsx`.
 - **Scope/non-goals:**
@@ -325,21 +325,18 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M33-003` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `4cf5c86` —
-  `fix(manual-expense): close batch one workflow gaps`.
-- **Verification status:** R-3310 found three severity-2 issues and accepted
-  their remediation.
+- **Active task / gate:** `M33-004` (`READY`)
+- **Pushed commit / HEAD:** `c93154e` —
+  `fix(receipts): harden review failure and dirty workflows`.
+- **Verification status:**
   `deno test --allow-read --allow-write --allow-run
-  --allow-env --related=src/design-system/components.tsx,src/features/local-ui.tsx`
-  passed, including 31 design-system and 32 local-ui tests; `deno lint` on
-  changed source/tests, `deno task typecheck`, and `git diff --check` passed.
-  The fresh read-only reviewer confirmed form-lock coverage, disabled picker
-  propagation, draft-save retry, and one-time add-another sync/shell signaling.
+  --allow-env --related=src/actors/receipt.ts,src/features/receipt-ui.tsx`
+  passed (57 tests); `deno lint` on the five changed TypeScript files,
+  `deno task typecheck`, and `git diff --check` passed.
 - **Active / preserved work:** Clean, synchronized `master`; no active M33
   worktrees or subagents.
-- **Next action:** Audit and implement `M33-003` receipt scanning/review event
-  handling, dirty-state derivation, and discard-navigation preservation.
+- **Next action:** Implement `M33-004` saved receipt detail recovery and dirty
+  tag accuracy.
 
 ---
 

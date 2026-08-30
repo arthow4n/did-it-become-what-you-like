@@ -1,22 +1,28 @@
 @layer components {
-  .settings-pwa-install-offer,
-  .settings-pwa-update-offer {
-    margin: var(--space-4) auto 0;
+  .settings-pwa-toast {
+    position: fixed;
+    z-index: var(--layer-toast);
+    right: max(var(--space-4), env(safe-area-inset-right, 0px));
+    bottom: max(
+      var(--space-4),
+      calc(
+        var(--control-height) + var(--space-4) +
+        env(safe-area-inset-bottom, 0px)
+      )
+    );
     width: min(
-      calc(100% - (var(--space-4) * 2)),
+      calc(100vw - (var(--space-4) * 2)),
       var(--form-max)
     );
+    padding: var(--space-4);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-overlay);
   }
 
-  .settings-pwa-install-offer .ds-inline,
-  .settings-pwa-update-offer .ds-inline {
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .settings-pwa-install-offer .ds-inline .ds-text,
-  .settings-pwa-update-offer .ds-inline .ds-text {
-    flex: 1 1 15rem;
+  .settings-pwa-toast .ds-form-actions {
+    justify-content: flex-start;
+    margin-top: var(--space-2);
   }
 
   .settings-pwa-about-links .ds-link-button {

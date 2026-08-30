@@ -63,6 +63,27 @@ Deno.test("install actor supports a later choice without installing", () => {
   actor.stop();
 });
 
+Deno.test("update actor treats unsupported checks as a quiet up-to-date state", async () => {
+  const actor = createActor(
+    updateInstallMachine.provide({
+      actors: {
+        checkForUpdate: fromPromise(() =>
+          Promise.reject({ code: "unsupported" })
+        ),
+      },
+    }),
+  ).start();
+  actor.send({ type: "update.check" });
+  await waitFor(
+    () => actor.getSnapshot().matches("upToDate"),
+    "unsupported update checks should settle quietly",
+  );
+  if (actor.getSnapshot().context.error !== null) {
+    throw new Error("unsupported checks must not retain an error");
+  }
+  actor.stop();
+});
+
 Deno.test("install actor remains reusable for offline updates after install", async () => {
   const actor = createActor(
     updateInstallMachine.provide({

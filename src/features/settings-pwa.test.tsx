@@ -358,6 +358,8 @@ Deno.test("settings-final startup check exposes a waiting update", async () => {
         assert(view.getAllByRole("button", { name: "Reload to update" }).length)
       );
       assert(view.getAllByText("Update ready").length);
+      assert(document.querySelector(".settings-pwa-update-offer") === null);
+      assert(document.querySelector(".settings-pwa-toast") !== null);
     });
   });
 });

@@ -330,8 +330,8 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 #### M29-004 — PWA Update & Reload Banner Resilience
 
-- **Status/dependencies:** `PENDING`; depends on `M29-003`.
-- **Ownership:** `src/features/settings-pwa.tsx`, `src/actors/contracts/update-install.ts`, `src/app/pwa.ts`, `src/features/settings-pwa.test.tsx`.
+- **Status/dependencies:** `COMPLETE`; depends on `M29-003`.
+- **Ownership:** `src/features/settings-pwa.tsx`, `src/features/settings-pwa.css`, `src/actors/contracts/update-install.ts`, `src/app/pwa.ts`, `src/actors/contracts/update-install.test.ts`, `src/app/pwa.test.ts`, `src/features/settings-pwa.test.tsx`.
 - **Scope/non-goals:**
   - Prevent `PwaRuntime` from injecting layout-shifting banners at the root of the document tree.
   - Present `Update ready` notices as non-shifting floating toasts or badges in Settings → About.
@@ -343,13 +343,13 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   - Non-prod environments avoid `Update status could not be checked` errors.
 - **Tests:**
   - Component and actor tests in `src/features/settings-pwa.test.tsx` and `src/actors/contracts/update-install.test.ts`.
-- **Verification:** `deno fmt src/features/settings-pwa.tsx src/app/pwa.ts`, `deno lint src/features/settings-pwa.tsx src/app/pwa.ts`, `deno test --related=src/features/settings-pwa.tsx --related=src/app/pwa.ts`, `git diff --check`.
+- **Verification:** `deno fmt`/`deno lint` on the changed PWA sources and tests, `deno check src/app/pwa.ts src/features/settings-pwa.tsx src/actors/contracts/update-install.ts`, `deno test --allow-read --allow-write --allow-run --allow-env src/app/pwa.test.ts src/actors/contracts/update-install.test.ts src/features/settings-pwa.test.tsx` (17 passed), and `git diff --check`.
 
 ---
 
 #### M29-005 — Form Conflict Field Anchoring, Preference Reset & Touch Target Polish
 
-- **Status/dependencies:** `PENDING`; depends on `M29-004`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M29-004`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/settings-pwa.tsx`, `src/features/local-ui.css`, `src/features/local-ui.test.tsx`.
 - **Scope/non-goals:**
   - In `CategoryManager`, anchor duplicate category name conflict errors directly to the `TextField`'s `error` prop (matching `ProjectManager`).

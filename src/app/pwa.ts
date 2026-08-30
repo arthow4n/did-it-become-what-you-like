@@ -125,7 +125,7 @@ function observeRegistration(
 
 export function registerRepositoryServiceWorker(): void {
   if (
-    !import.meta.env.PROD ||
+    import.meta.env?.PROD !== true ||
     typeof navigator === "undefined" ||
     !("serviceWorker" in navigator)
   ) return;
@@ -172,7 +172,7 @@ export function createBrowserUpdateInstallPort(): BrowserUpdateInstallPort {
       : "unsupported" as UpdateState,
   };
   const ensureRegistration = async (): Promise<ServiceWorkerRegistration> => {
-    if (!import.meta.env.PROD || !("serviceWorker" in navigator)) {
+    if (import.meta.env?.PROD !== true || !("serviceWorker" in navigator)) {
       setRegistrationState("unsupported", listeners, value);
       throw { code: "unsupported" };
     }
@@ -191,6 +191,10 @@ export function createBrowserUpdateInstallPort(): BrowserUpdateInstallPort {
     },
     check: async (options): Promise<UpdateCheckOutput> => {
       if (options?.signal?.aborted) throw { code: "aborted" };
+      if (import.meta.env?.PROD !== true || !("serviceWorker" in navigator)) {
+        setRegistrationState("unsupported", listeners, value);
+        return { status: "up-to-date" };
+      }
       const registration = await ensureRegistration();
       await registration.update();
       if (registration.waiting) {

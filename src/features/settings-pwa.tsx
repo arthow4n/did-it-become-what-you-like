@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import {
   Button,
   Card,
@@ -18,6 +18,7 @@ import {
   FormActions,
   Heading,
   IconButton,
+  Inline,
   InlineNotice,
   LinkButton,
   List,
@@ -57,6 +58,33 @@ export type PwaStatus =
 type PwaInstallKind = "app" | "update" | null;
 
 const AUTOMATIC_UPDATE_CHECK_INTERVAL_MS = 5 * 60_000;
+
+function PwaNotice({
+  title,
+  children,
+  onDismiss,
+}: {
+  readonly title: string;
+  readonly children: ReactNode;
+  readonly onDismiss: () => void;
+}) {
+  return (
+    <StatusMessage className="settings-pwa-toast" tone="info">
+      <Stack gap={2}>
+        <Inline justify="space-between" gap={2}>
+          <strong>{title}</strong>
+          <IconButton
+            icon={<X />}
+            aria-label="Dismiss notification"
+            variant="quiet"
+            onPress={onDismiss}
+          />
+        </Inline>
+        {children}
+      </Stack>
+    </StatusMessage>
+  );
+}
 
 export type PwaController = {
   readonly status: PwaStatus;
@@ -178,9 +206,16 @@ export function PwaRuntime({
   const [snapshot, send] = useActor(machine);
   const [canInstall, setCanInstall] = useState(port.canInstall());
   const [installRequested, setInstallRequested] = useState(false);
+  const [updateNoticeDismissed, setUpdateNoticeDismissed] = useState(false);
   const latestUsefulAction = useRef(0);
   const latestSnapshot = useRef(snapshot);
   latestSnapshot.current = snapshot;
+
+  useEffect(() => {
+    if (!snapshot.matches("updateReady") && !snapshot.matches("blocked")) {
+      setUpdateNoticeDismissed(false);
+    }
+  }, [snapshot]);
 
   useEffect(() => {
     const eventTarget = typeof window === "undefined" ? globalThis : window;
@@ -333,13 +368,14 @@ export function PwaRuntime({
     <PwaContext.Provider value={controller}>
       {controller.installOfferVisible
         ? (
-          <InlineNotice
-            className="settings-pwa-install-offer"
-            tone="info"
+          <PwaNotice
             title="Install app"
+            onDismiss={controller.dismissInstall}
           >
-            Keep After Midnight available from your home screen. Installation is
-            optional and does not change local data.
+            <Text>
+              Keep After Midnight available from your home screen. Installation
+              is optional and does not change local data.
+            </Text>
             <FormActions>
               <Button variant="quiet" onPress={controller.dismissInstall}>
                 Dismiss
@@ -349,18 +385,19 @@ export function PwaRuntime({
               </Button>
               <Button onPress={controller.install}>Install app</Button>
             </FormActions>
-          </InlineNotice>
+          </PwaNotice>
         )
         : null}
-      {status === "update-ready"
+      {status === "update-ready" && !updateNoticeDismissed
         ? (
-          <InlineNotice
-            className="settings-pwa-update-offer"
-            tone="info"
+          <PwaNotice
             title="Update ready"
+            onDismiss={() => setUpdateNoticeDismissed(true)}
           >
-            A new version is ready. Reload only after saving or discarding
-            unfinished input.
+            <Text>
+              A new version is ready. Reload only after saving or discarding
+              unfinished input.
+            </Text>
             <FormActions>
               <Button
                 isDisabled={dirty}
@@ -376,7 +413,7 @@ export function PwaRuntime({
                 )
                 : null}
             </FormActions>
-          </InlineNotice>
+          </PwaNotice>
         )
         : null}
       {children}

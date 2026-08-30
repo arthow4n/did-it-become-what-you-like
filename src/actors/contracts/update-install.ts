@@ -23,6 +23,12 @@ type UpdateInstallContext = {
   readonly error: ContractFailure | null;
 };
 
+function isUnsupportedFailure(error: unknown): boolean {
+  return error !== null && typeof error === "object" &&
+    "code" in error &&
+    (error as { readonly code?: unknown }).code === "unsupported";
+}
+
 export type UpdateInstallOutput =
   | { readonly status: "installed" }
   | { readonly status: "reloaded" };
@@ -121,17 +127,24 @@ export const updateInstallMachine = updateInstallSetup.createMachine({
             actions: assign({ version: () => null, error: () => null }),
           },
         ],
-        onError: {
-          target: "failed",
-          actions: assign({
-            error: ({ event }) =>
-              contractFailureFromError(event.error, {
-                code: "unknown",
-                message: "Update status could not be checked.",
-                retryable: true,
-              }),
-          }),
-        },
+        onError: [
+          {
+            target: "upToDate",
+            guard: ({ event }) => isUnsupportedFailure(event.error),
+            actions: assign({ version: () => null, error: () => null }),
+          },
+          {
+            target: "failed",
+            actions: assign({
+              error: ({ event }) =>
+                contractFailureFromError(event.error, {
+                  code: "unknown",
+                  message: "Update status could not be checked.",
+                  retryable: true,
+                }),
+            }),
+          },
+        ],
       },
       on: { "network.offline": "offline" },
     },

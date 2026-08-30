@@ -1,4 +1,5 @@
 import {
+  createBrowserUpdateInstallPort,
   isWithinRepositoryServiceWorkerScope,
   repositoryAssetPath,
   serviceWorkerRegistrationTarget,
@@ -31,5 +32,18 @@ Deno.test("offline PWA paths remain inside the repository service-worker scope",
   }
   if (isWithinRepositoryServiceWorkerScope("/sibling-repository/app.js")) {
     throw new Error("service worker scope must not escape to a sibling path");
+  }
+});
+
+Deno.test("non-production browser update checks settle as unsupported and current", async () => {
+  const port = createBrowserUpdateInstallPort();
+  const result = await port.check();
+  if (result.status !== "up-to-date") {
+    throw new Error("unsupported development checks should be up-to-date");
+  }
+  if (port.state() !== "unsupported") {
+    throw new Error(
+      "unsupported development checks should expose capability state",
+    );
   }
 });

@@ -368,16 +368,16 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 #### R-2920 — UI, Ergonomics & PWA Review Gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M29-003`, `M29-004`, `M29-005`.
+- **Status/dependencies:** `COMPLETE`; depends on `M29-003`, `M29-004`, `M29-005`.
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs across sync UI, PWA runtime, CategoryManager, and PreferencesScreen across mobile and desktop viewports.
-- **Remediation loop:** Initial review found two S2 narrow-viewport overflow findings: the compact sync indicator could exceed the header action slot, and the long About notice link could exceed a 320px viewport. The primary implementer constrained the indicator and its status text at compact widths, made About links shrinkable and wrapping, added CSS regression assertions, and reran the relevant browser journeys. A fresh closure review is required before opening the release gate.
+- **Remediation loop:** Initial review found two S2 narrow-viewport overflow findings: the compact sync indicator could exceed the header action slot, and the long About notice link could exceed a 320px viewport. The primary implementer constrained the indicator and its status text at compact widths, made About links shrinkable and wrapping, added CSS regression assertions, and reran the relevant browser journeys. Fresh closure review approved with no findings: viewport probes at 320×568, 390×844, and 1280×800 showed no overflow; 88 focused UI/PWA tests and 5 Playwright journeys passed; format (18 files), lint (15 files), typecheck, and `git diff --check` passed.
 
 ---
 
 #### M29-FINAL — Milestone Release Verification, Hygiene Pruning & Archival
 
-- **Status/dependencies:** `PENDING`; depends on `R-2920`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-2920`.
 - **Ownership:** Repository-wide test, verification, and hygiene suites.
 - **Scope/non-goals:**
   - Run full repository validation: typecheck (`deno task check`), lint (`deno task lint`), format check (`deno task fmt:check`), diff check (`git diff --check`), affected tests (`deno task test:affected`), and relevant E2E journeys.
@@ -401,7 +401,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-2920` (`IN_PROGRESS`)
+- **Active task / gate:** `M29-FINAL` (`IN_PROGRESS`)
 - **Released baseline:** M0 through M28 and all review gates through `R-2830`
   are complete and pushed on `master`.
 - **Verification status:** M28 release validation passed format (209 files),
@@ -412,7 +412,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   hygiene audit were archived at pre-pruning commit `993e5ed`; no obsolete
   spikes, transient M28 documents, redundant verification scripts, or dangling
   Markdown links were found. M29-001 through M29-005 are complete; R-2910 is
-  approved and R-2920 is active.
+  approved; M29-FINAL is active.
 - **Active / preserved work:** Clean master working tree after the archive
   edit; no worker or worktree owns unintegrated M28 changes.
 - **M29-001 completion evidence:** Receipt deselection and deletion now clear
@@ -465,8 +465,13 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   narrow card-action rows retain 44px targets with larger row spacing. The focused
   local/settings suite passed 40 tests with format, lint, typecheck, and `git diff
   --check` clean.
-- **Exact next action:** Complete the fresh read-only R-2920 closure review across
-  sync, PWA, category, and preference UI at mobile and desktop widths.
+- **R-2920 closure evidence:** Fresh read-only review approved with no findings.
+  The viewport probe measured no horizontal overflow at 320×568, 390×844, or
+  1280×800; its focused UI/PWA suite passed 88 tests and Playwright passed 5
+  journeys. Format, lint, typecheck, and `git diff --check` passed.
+- **Exact next action:** Run M29-FINAL release validation, complete the hygiene
+  audit, archive the completed M29 ledger into `Released Baseline`, and open
+  R-2930.
 
 ## Ready-to-Use Orchestration Prompt
 

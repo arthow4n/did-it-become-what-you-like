@@ -67,3 +67,43 @@ Deno.test("preference actor discards an unsaved boundary back to the saved value
   }
   actor.stop();
 });
+
+Deno.test(
+  "preference actor retries a failed save without reloading over the draft",
+  async () => {
+    const local = createFakeLocalPort();
+    const actor = createActor(createPreferencesMachine({ local })).start();
+
+    actor.send({ type: "preferences.load" });
+    await waitFor(
+      () => actor.getSnapshot().matches("ready"),
+      "preferences did not load",
+    );
+    actor.send({
+      type: "preferences.change",
+      expenseDayBoundary: "04:30",
+    });
+    local.failNext("unavailable");
+    actor.send({ type: "preferences.save" });
+    await waitFor(
+      () => actor.getSnapshot().matches("failed"),
+      "preferences save did not fail",
+    );
+    if (actor.getSnapshot().context.failureOperation !== "save") {
+      throw new Error("preferences should remember that the save failed");
+    }
+    if (actor.getSnapshot().context.expenseDayBoundary !== "04:30") {
+      throw new Error("a failed save must retain the edited boundary");
+    }
+
+    actor.send({ type: "preferences.retry" });
+    await waitFor(
+      () => actor.getSnapshot().matches("saved"),
+      "preferences save retry did not complete",
+    );
+    if (actor.getSnapshot().context.expenseDayBoundary !== "04:30") {
+      throw new Error("save retry should persist the edited boundary");
+    }
+    actor.stop();
+  },
+);

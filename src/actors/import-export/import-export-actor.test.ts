@@ -138,6 +138,29 @@ Deno.test("import actor: configured Drive offline blocks replace without commit"
   actor.stop();
 });
 
+Deno.test("import actor: preview tracks online and offline transitions", async () => {
+  const { adapter } = setupAdapter({ preSync: () => Promise.resolve() });
+  const source = await adapter.exportDocument();
+  const actor = createImportActor({ adapter }).start();
+  actor.send({ type: "import.open", driveConfigured: true, online: true });
+  actor.send({ type: "import.file-selected", contents: source.json });
+  await waitFor(() => actor.getSnapshot().value === "previewing", "no preview");
+
+  actor.send({ type: "import.network.offline" });
+  assert(actor.getSnapshot().context.online === false);
+  actor.send({ type: "import.network.online" });
+  assert(actor.getSnapshot().context.online === true);
+
+  actor.send({ type: "import.choose-replace" });
+  actor.send({ type: "import.commit" });
+  await waitFor(
+    () => actor.getSnapshot().status === "done",
+    "online preview did not permit replacement",
+  );
+  assertEquals(actor.getSnapshot().output?.status, "completed");
+  actor.stop();
+});
+
 Deno.test("import actor: validation failures retain bounded diagnostics", async () => {
   const { adapter } = setupAdapter();
   const actor = createImportActor({ adapter }).start();

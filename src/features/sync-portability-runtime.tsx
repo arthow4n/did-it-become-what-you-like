@@ -80,7 +80,10 @@ import {
   readLocalEraseProgress,
   writeDeleteEverywhereProgress,
 } from "../domain/destruction.ts";
-import { observationsFromSyncConflicts as expandSyncConflicts } from "../domain/conflict/merge.ts";
+import {
+  groupConflictObservations,
+  observationsFromSyncConflicts as expandSyncConflicts,
+} from "../domain/conflict/merge.ts";
 import {
   type ConflictChoice,
   type ConflictGroupViewModel,
@@ -741,6 +744,29 @@ export function observationsFromSyncConflicts(
   return expandSyncConflicts(conflicts);
 }
 
+export function conflictIdsForResolution(
+  conflicts: readonly {
+    readonly id: string;
+    readonly recordType: string;
+    readonly recordId: string;
+    readonly local: unknown;
+    readonly remote: unknown;
+    readonly relatedChangeIds: readonly string[];
+  }[],
+  groupId: string,
+  parentRevisionIds: readonly string[],
+): readonly string[] {
+  const parents = new Set(parentRevisionIds);
+  return conflicts.filter((conflict) => {
+    const groups = groupConflictObservations(
+      observationsFromSyncConflicts([conflict]),
+    );
+    const resolvedGroup = groups.find((group) => group.id === groupId);
+    return resolvedGroup !== undefined &&
+      resolvedGroup.parentRevisionIds.every((parent) => parents.has(parent));
+  }).map((conflict) => conflict.id);
+}
+
 function localEraseViewFromSnapshot(snapshot: {
   readonly value: unknown;
   readonly context: {
@@ -760,6 +786,8 @@ function localEraseViewFromSnapshot(snapshot: {
       ? "removing-key"
       : phase === "failed"
       ? "failed"
+      : phase === "partial"
+      ? "partial"
       : phase === "completed"
       ? "completed"
       : "idle",
@@ -1141,15 +1169,21 @@ export function SyncPortabilityRuntime({
   }, [onSyncCompleted, syncSnapshot]);
 
   useEffect(() => {
-    const onOffline = () => sendSync({ type: "sync.network.offline" });
-    const onOnline = () => sendSync({ type: "sync.network.online" });
+    const onOffline = () => {
+      sendSync({ type: "sync.network.offline" });
+      sendImport({ type: "import.network.offline" });
+    };
+    const onOnline = () => {
+      sendSync({ type: "sync.network.online" });
+      sendImport({ type: "import.network.online" });
+    };
     globalThis.addEventListener("offline", onOffline);
     globalThis.addEventListener("online", onOnline);
     return () => {
       globalThis.removeEventListener("offline", onOffline);
       globalThis.removeEventListener("online", onOnline);
     };
-  }, [sendSync]);
+  }, [sendImport, sendSync]);
 
   useEffect(() => {
     const previous = previousScreen.current;
@@ -1228,8 +1262,15 @@ export function SyncPortabilityRuntime({
     // The conflict actor has reached its resolved state only after its local
     // commit succeeded. A failed commit therefore leaves the sync banner and
     // conflict count untouched.
-    sendSync({ type: "sync.resolve-conflicts" });
-  }, [conflictSnapshot, sendSync]);
+    sendSync({
+      type: "sync.resolve-conflicts",
+      conflictIds: conflictIdsForResolution(
+        syncSnapshot.context.conflicts,
+        result.groupId,
+        result.resolutionRevision.parents,
+      ),
+    });
+  }, [conflictSnapshot, sendSync, syncSnapshot]);
 
   const deviceProjection = useMemo(
     () => {

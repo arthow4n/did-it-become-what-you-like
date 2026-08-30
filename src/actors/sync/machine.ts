@@ -58,7 +58,10 @@ export type SyncActorEvent =
   | { readonly type: "sync.account.confirm" }
   | { readonly type: "sync.account.cancel" }
   | { readonly type: "sync.retire" }
-  | { readonly type: "sync.resolve-conflicts" };
+  | {
+    readonly type: "sync.resolve-conflicts";
+    readonly conflictIds: readonly StableId[];
+  };
 
 export type SyncActorContext = {
   readonly accountEmail: string | null;
@@ -198,6 +201,11 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
       canRecoverCorruptData: ({ context }) =>
         context.error?.code === "corrupt-data" &&
         dependencies.recovery !== undefined,
+      hasRemainingConflicts: ({ context, event }) =>
+        event.type === "sync.resolve-conflicts" &&
+        context.conflicts.some((conflict) =>
+          !event.conflictIds.includes(conflict.id)
+        ),
     },
   });
 
@@ -532,13 +540,35 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
               queued: () => false,
             }),
           },
-          "sync.resolve-conflicts": {
-            target: "idle",
-            actions: assign({
-              unresolvedConflictCount: () => 0,
-              conflicts: () => [],
-            }),
-          },
+          "sync.resolve-conflicts": [
+            {
+              target: "conflict",
+              guard: "hasRemainingConflicts",
+              actions: assign({
+                conflicts: ({ context, event }) =>
+                  context.conflicts.filter((conflict) =>
+                    !event.conflictIds.includes(conflict.id)
+                  ),
+                unresolvedConflictCount: ({ context, event }) =>
+                  context.conflicts.filter((conflict) =>
+                    !event.conflictIds.includes(conflict.id)
+                  ).length,
+              }),
+            },
+            {
+              target: "idle",
+              actions: assign({
+                conflicts: ({ context, event }) =>
+                  context.conflicts.filter((conflict) =>
+                    !event.conflictIds.includes(conflict.id)
+                  ),
+                unresolvedConflictCount: ({ context, event }) =>
+                  context.conflicts.filter((conflict) =>
+                    !event.conflictIds.includes(conflict.id)
+                  ).length,
+              }),
+            },
+          ],
           "sync.network.offline": {
             target: "offline",
             actions: assign({ online: () => false }),

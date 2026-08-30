@@ -45,8 +45,9 @@ export type LocalEraseContext = {
 };
 
 export type LocalEraseOutput = {
-  readonly status: "completed";
+  readonly status: "completed" | "partial";
   readonly removeGeminiApiKey: boolean;
+  readonly error?: ContractFailure;
 };
 
 export type LocalEraseDependencies = {
@@ -264,7 +265,24 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
             { target: "erasingLocal", guard: "failedEraseLocal" },
             { target: "removingKey", guard: "failedRemoveKey" },
           ],
-          "local-erase.cancel": "cancelled",
+          "local-erase.cancel": [
+            {
+              target: "partial",
+              guard: "failedRemoveKey",
+              actions: assign({
+                error: ({ context }) => ({
+                  code: context.error?.code ?? "unknown",
+                  message:
+                    "Local data was erased, but the Gemini API key still needs removal. Retry to finish.",
+                  retryable: true,
+                  ...(context.error?.operation === undefined
+                    ? {}
+                    : { operation: context.error.operation }),
+                }),
+              }),
+            },
+            "cancelled",
+          ],
         },
       },
       completed: {
@@ -273,6 +291,23 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
           removeGeminiApiKey: context.removeGeminiApiKey,
         }),
         on: { "local-erase.reset": "idle" },
+      },
+      partial: {
+        tags: ["destructive", "partial", "error"],
+        output: ({ context }) => ({
+          status: "partial",
+          removeGeminiApiKey: context.removeGeminiApiKey,
+          error: context.error ?? undefined,
+        }),
+        on: {
+          "local-erase.open": {
+            target: "failed",
+            actions: assign({
+              removeGeminiApiKey: ({ event }) => event.removeGeminiApiKey,
+            }),
+          },
+          "local-erase.reset": "idle",
+        },
       },
       cancelled: {
         on: { "local-erase.reset": "idle" },
@@ -292,6 +327,7 @@ function localErasePhase(value: unknown): LocalEraseProgressPhase | undefined {
     case "removingKey":
       return "removing-key";
     case "failed":
+    case "partial":
       return "failed";
     default:
       return undefined;
@@ -310,6 +346,7 @@ function localEraseFailureOperation(
     case "removingKey":
       return "remove-key";
     case "failed":
+    case "partial":
       return context.failureOperation;
     default:
       return null;
@@ -597,6 +634,7 @@ export function recoverDeleteEverywhereSnapshot(
       declineConfirmed: progress.declineConfirmed,
       result: null,
       error: null,
+      failureState: null,
     },
   });
   return machine.getPersistedSnapshot(resolved);

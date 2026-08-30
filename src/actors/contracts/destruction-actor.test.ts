@@ -248,8 +248,15 @@ Deno.test(
     actor.send({ type: "delete-everywhere.retry" });
     await settle();
     assert(actor.getSnapshot().matches("completed"));
-    assert(calls.includes("delete-drive"));
-    assert(calls.includes("erase-local"));
+    assert(
+      JSON.stringify(calls) ===
+        JSON.stringify([
+          "publish-retirement",
+          "delete-drive",
+          "erase-local",
+        ]),
+      "retry should resume with Drive deletion instead of republishing retirement",
+    );
     assert(writes.filter((phase) => phase === "deleting-drive").length === 2);
     actor.stop();
   },
@@ -369,9 +376,6 @@ Deno.test(
 
     failForcedFinalization = false;
     actor.send({ type: "delete-everywhere.retry" });
-    await settle();
-    assert(actor.getSnapshot().matches("awaitingDevices"));
-    actor.send({ type: "delete-everywhere.force-finalize" });
     await settle();
     assert(actor.getSnapshot().matches("forcedFinalization"));
     actor.send({ type: "delete-everywhere.confirm" });
@@ -732,6 +736,40 @@ Deno.test("local erase retries only the failed key removal after reload-safe fai
   assert(readLocalEraseProgress(storage) === undefined);
   actor.stop();
 });
+
+Deno.test(
+  "local erase cancellation after key failure reports partial completion",
+  async () => {
+    const calls: string[] = [];
+    const actor = createActor(createLocalEraseMachine({
+      eraseLocalDataset: () => {
+        calls.push("erase");
+        return Promise.resolve();
+      },
+      removeGeminiApiKey: () => {
+        calls.push("key");
+        return Promise.reject(adapterError("unavailable", "test.key-remove"));
+      },
+    })).start();
+    actor.send({ type: "local-erase.open", removeGeminiApiKey: true });
+    actor.send({ type: "local-erase.confirm" });
+    await settle();
+    assert(actor.getSnapshot().matches("failed"));
+    actor.send({ type: "local-erase.cancel" });
+    assert(actor.getSnapshot().matches("partial"));
+    assert(
+      actor.getSnapshot().context.error?.message.includes(
+        "Local data was erased",
+      ),
+      "partial state should explain that database erasure already committed",
+    );
+    assert(JSON.stringify(calls) === JSON.stringify(["erase", "key"]));
+
+    actor.send({ type: "local-erase.open", removeGeminiApiKey: true });
+    assert(actor.getSnapshot().matches("failed"));
+    actor.stop();
+  },
+);
 
 Deno.test("delete-everywhere revokes authorization only after acknowledgements or forced finalization", async () => {
   const storage = memoryStorage();

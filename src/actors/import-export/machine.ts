@@ -209,6 +209,12 @@ export function createImportMachine(
       previewing: {
         tags: ["preview"],
         on: {
+          "import.network.offline": {
+            actions: assign({ online: () => false }),
+          },
+          "import.network.online": {
+            actions: assign({ online: () => true }),
+          },
           "import.choose-merge": {
             actions: assign({ mode: () => "merge", error: () => null }),
           },

@@ -20,6 +20,8 @@ export type ImportEvent =
   | { readonly type: "import.commit" }
   | { readonly type: "import.retry" }
   | { readonly type: "import.resolve-conflicts" }
+  | { readonly type: "import.network.offline" }
+  | { readonly type: "import.network.online" }
   | { readonly type: "import.cancel" };
 
 type ImportContext = {
@@ -130,6 +132,12 @@ export const importMachine = importSetup.createMachine({
     previewing: {
       tags: ["preview"],
       on: {
+        "import.network.offline": {
+          actions: assign({ online: () => false }),
+        },
+        "import.network.online": {
+          actions: assign({ online: () => true }),
+        },
         "import.choose-merge": { actions: assign({ mode: () => "merge" }) },
         "import.choose-replace": { actions: assign({ mode: () => "replace" }) },
         "import.commit": [

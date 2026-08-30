@@ -271,7 +271,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-006 — Preferences retry, sync & lifecycle saga remediation
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-005`.
+- **Status/dependencies:** `COMPLETE`; depends on `M33-005`.
 - **Ownership:** `src/actors/preferences.ts`, `src/features/settings-pwa.tsx`,
   `src/actors/contracts/deletion.ts`, `src/actors/destruction.ts`,
   `src/actors/sync/machine.ts`, `src/actors/import-export/machine.ts`.
@@ -297,7 +297,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### R-3330 — Batch 3 review gate (Organization, preferences & sagas)
 
-- **Status/dependencies:** `PENDING`; depends on `M33-005`, `M33-006`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-005`, `M33-006`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Diffs from `M33-005` and `M33-006`, saga resumption,
   preferences retry tests, and full integration review.
@@ -325,18 +325,20 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M33-006` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `8a6f944` —
-  `fix(receipts): protect review browser exits` (M33-005 changes are staged for
-  the next focused implementation commit).
-- **Verification status:** M33-005 focused actor/component suites passed (8
-  actor-contract tests and 36 local UI tests), with `deno task lint`,
-  `deno task fmt:check`, `deno task typecheck`, and `git diff --check` clean.
+- **Active task / gate:** `R-3330` (`IN_PROGRESS`)
+- **Pushed commit / HEAD:** `11c0ec6` —
+  `fix(organization): protect manager exits and archived deletion` (M33-006
+  implementation changes are staged for the next focused implementation
+  commit).
+- **Verification status:** M33-006 focused actor/runtime suites passed (49
+  tests), shared contract tests passed (22 tests), settings and destruction UI
+  suites passed (20 tests), with `deno task lint`, `deno task fmt:check`,
+  `deno task typecheck`, and `git diff --check` clean.
 - **Active / preserved work:** Clean, synchronized `master`; no active M33
-  worktrees or subagents; M33-005 implementation changes remain uncommitted
+  worktrees or subagents; M33-006 implementation changes remain uncommitted
   until the focused commit is created.
-- **Next action:** Commit M33-005, then remediate preferences retry, sync,
-  destruction, deletion, and import/export lifecycle paths in M33-006.
+- **Next action:** Commit M33-006, then dispatch a fresh read-only R-3330 review
+  of organization, preferences, sync, import/export, and destruction flows.
 
 ---
 

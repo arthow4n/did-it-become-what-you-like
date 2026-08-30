@@ -20,6 +20,7 @@ export type PreferencesContext = {
   readonly settings: PortableSettings | null;
   readonly expenseDayBoundary: string;
   readonly error: ContractFailure | null;
+  readonly failureOperation: "load" | "save" | null;
 };
 
 type PreferencesDependencies = {
@@ -71,6 +72,7 @@ export function createPreferencesMachine(
       settings: null,
       expenseDayBoundary: DEFAULT_SETTINGS.expenseDayBoundary,
       error: null,
+      failureOperation: null,
     },
     states: {
       idle: {
@@ -87,6 +89,7 @@ export function createPreferencesMachine(
               expenseDayBoundary: ({ event }) =>
                 event.output.expenseDayBoundary,
               error: () => null,
+              failureOperation: () => null,
             }),
           },
           onError: {
@@ -98,6 +101,7 @@ export function createPreferencesMachine(
                   message: "Preferences could not be loaded.",
                   retryable: true,
                 }),
+              failureOperation: () => "load" as const,
             }),
           },
         },
@@ -109,6 +113,7 @@ export function createPreferencesMachine(
             actions: assign({
               expenseDayBoundary: ({ event }) => event.expenseDayBoundary,
               error: () => null,
+              failureOperation: () => null,
             }),
           },
         },
@@ -120,6 +125,7 @@ export function createPreferencesMachine(
             actions: assign({
               expenseDayBoundary: ({ event }) => event.expenseDayBoundary,
               error: () => null,
+              failureOperation: () => null,
             }),
           },
           "preferences.save": "saving",
@@ -130,6 +136,7 @@ export function createPreferencesMachine(
                 context.settings?.expenseDayBoundary ??
                   DEFAULT_SETTINGS.expenseDayBoundary,
               error: () => null,
+              failureOperation: () => null,
             }),
           },
         },
@@ -150,6 +157,7 @@ export function createPreferencesMachine(
               expenseDayBoundary: ({ event }) =>
                 event.output.expenseDayBoundary,
               error: () => null,
+              failureOperation: () => null,
             }),
           },
           onError: {
@@ -161,6 +169,7 @@ export function createPreferencesMachine(
                   message: "Preferences could not be saved.",
                   retryable: true,
                 }),
+              failureOperation: () => "save" as const,
             }),
           },
         },
@@ -180,12 +189,19 @@ export function createPreferencesMachine(
       failed: {
         tags: ["error"],
         on: {
-          "preferences.retry": "loading",
+          "preferences.retry": [
+            {
+              target: "saving",
+              guard: ({ context }) => context.failureOperation === "save",
+            },
+            "loading",
+          ],
           "preferences.change": {
             target: "dirty",
             actions: assign({
               expenseDayBoundary: ({ event }) => event.expenseDayBoundary,
               error: () => null,
+              failureOperation: () => null,
             }),
           },
           "preferences.save": "saving",

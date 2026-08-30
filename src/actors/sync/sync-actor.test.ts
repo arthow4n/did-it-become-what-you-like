@@ -1,3 +1,4 @@
+import { createActor } from "xstate";
 import type { CausalSyncPort } from "../../adapters/ports/index.ts";
 import {
   CAUSAL_STATE_KEY,
@@ -14,6 +15,7 @@ import {
   createSyncActor,
   hydrateSyncDependencies,
 } from "./index.ts";
+import { createSyncMachine, type SyncActorContext } from "./machine.ts";
 import { waitFor } from "../../test-support/index.ts";
 
 declare const Deno: {
@@ -293,6 +295,71 @@ Deno.test(
     assertEquals(actor.getSnapshot().value, "offline");
     assertEquals(actor.getSnapshot().context.online, false);
     assertEquals(actor.getSnapshot().context.error?.code, "invalid-request");
+    actor.stop();
+  },
+);
+
+Deno.test(
+  "sync-actor: conflict resolution clears only the resolved conflict ids",
+  () => {
+    const machine = createSyncMachine(dependencies());
+    const context: SyncActorContext = {
+      accountEmail: "owner@example.test",
+      online: true,
+      pendingRequest: null,
+      queued: false,
+      pendingChangeCount: 0,
+      unresolvedConflictCount: 2,
+      conflicts: [
+        {
+          id: "conflict-a",
+          recordType: "expense",
+          recordId: "expense-a",
+          local: "local-a",
+          remote: "remote-a",
+          relatedChangeIds: [],
+        },
+        {
+          id: "conflict-b",
+          recordType: "expense",
+          recordId: "expense-b",
+          local: "local-b",
+          remote: "remote-b",
+          relatedChangeIds: [],
+        },
+      ],
+      lastSyncedAt: null,
+      error: null,
+      pendingAccountEmail: null,
+      pendingAccountOnline: false,
+      confirmAccountSwitch: false,
+      knownDevices: [],
+    };
+    const actor = createActor(
+      machine,
+      {
+        input: dependencies(),
+        snapshot: machine.resolveState({ value: "conflict", context }),
+      },
+    ).start();
+
+    actor.send({
+      type: "sync.resolve-conflicts",
+      conflictIds: ["conflict-a"],
+    });
+    assertEquals(actor.getSnapshot().value, "conflict");
+    assertEquals(actor.getSnapshot().context.unresolvedConflictCount, 1);
+    assertEquals(
+      actor.getSnapshot().context.conflicts.map((conflict) => conflict.id),
+      ["conflict-b"],
+    );
+
+    actor.send({
+      type: "sync.resolve-conflicts",
+      conflictIds: ["conflict-b"],
+    });
+    assertEquals(actor.getSnapshot().value, "idle");
+    assertEquals(actor.getSnapshot().context.unresolvedConflictCount, 0);
     actor.stop();
   },
 );

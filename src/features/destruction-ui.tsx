@@ -37,6 +37,7 @@ export type LocalEraseView = {
     | "erasing"
     | "removing-key"
     | "failed"
+    | "partial"
     | "completed";
   readonly removeGeminiApiKey: boolean;
   readonly error?: string;
@@ -192,7 +193,7 @@ export function DataPrivacyScreen({
   ].includes(deleteEverywhere.phase);
   const deleteOpen = deleteEverywhere.phase !== "idle";
   const localOpen = localErase.phase !== "idle" &&
-    localErase.phase !== "completed";
+    localErase.phase !== "completed" && localErase.phase !== "partial";
   useDialogFirstActionFocus(localOpen, "Delete this device's data?");
   useDialogFirstActionFocus(deleteOpen, "Delete everywhere?");
 
@@ -312,6 +313,17 @@ export function DataPrivacyScreen({
               </Stack>
             )}
           </AdaptiveDialog>
+          {localErase.phase === "partial"
+            ? (
+              <InlineNotice tone="warning" title="Local data was erased">
+                {localErase.error ??
+                  "The Gemini API key still needs removal from this device."}
+                <Button variant="secondary" onPress={onOpenLocalErase}>
+                  Retry key removal
+                </Button>
+              </InlineNotice>
+            )
+            : null}
         </Stack>
 
         <Stack gap={3} className="destruction-ui-everywhere">

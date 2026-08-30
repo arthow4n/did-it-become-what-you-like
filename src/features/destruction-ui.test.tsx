@@ -175,6 +175,33 @@ Deno.test("destructive-flow component keeps focus in the local erase dialog", as
   });
 });
 
+Deno.test("destructive-flow component exposes partial local erase honestly", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent }) => {
+    await withAriaGlobals(window, () => {
+      const result = callbacks();
+      render(
+        createElement(
+          DataPrivacyScreen,
+          props({
+            localErase: {
+              phase: "partial",
+              removeGeminiApiKey: true,
+              error:
+                "Local data was erased, but the Gemini API key still needs removal. Retry to finish.",
+            },
+            onOpenLocalErase: result.onOpenLocalErase,
+          }),
+        ),
+      );
+      const view = within(document.body);
+      assert(view.getByText("Local data was erased"));
+      assert(view.getByText(/Gemini API key still needs removal/));
+      fireEvent.click(view.getByRole("button", { name: "Retry key removal" }));
+      assert(result.events.includes("open-local"));
+    });
+  });
+});
+
 Deno.test("destructive-flow component requires the separate decline confirmation", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaGlobals(window, () => {

@@ -240,7 +240,20 @@ type DeleteEverywhereContext = {
   readonly declineConfirmed: boolean;
   readonly result: DeleteEverywhereOutput | null;
   readonly error: ContractFailure | null;
+  readonly failureState: DeleteEverywhereFailureState | null;
 };
+
+type DeleteEverywhereFailureState =
+  | "exporting"
+  | "persistingRetirement"
+  | "publishingRetirement"
+  | "persistingDriveDeletion"
+  | "deletingDrive"
+  | "persistingLocalErasure"
+  | "erasingLocal"
+  | "persistingAwaitingDevices"
+  | "persistingForcedFinalization"
+  | "persistingCompletion";
 
 export type DeleteEverywhereOutputEvent =
   | { readonly status: "completed"; readonly result: DeleteEverywhereOutput }
@@ -273,6 +286,25 @@ const deleteEverywhereSetup = setup({
     allDevicesAcknowledged: ({ context }) =>
       context.progress.acknowledgedDeviceCount >=
         context.progress.knownDeviceCount,
+    failedExporting: ({ context }) => context.failureState === "exporting",
+    failedPersistingRetirement: ({ context }) =>
+      context.failureState === "persistingRetirement",
+    failedPublishingRetirement: ({ context }) =>
+      context.failureState === "publishingRetirement",
+    failedPersistingDriveDeletion: ({ context }) =>
+      context.failureState === "persistingDriveDeletion",
+    failedDeletingDrive: ({ context }) =>
+      context.failureState === "deletingDrive",
+    failedPersistingLocalErasure: ({ context }) =>
+      context.failureState === "persistingLocalErasure",
+    failedErasingLocal: ({ context }) =>
+      context.failureState === "erasingLocal",
+    failedPersistingAwaitingDevices: ({ context }) =>
+      context.failureState === "persistingAwaitingDevices",
+    failedPersistingForcedFinalization: ({ context }) =>
+      context.failureState === "persistingForcedFinalization",
+    failedPersistingCompletion: ({ context }) =>
+      context.failureState === "persistingCompletion",
   },
 });
 
@@ -291,6 +323,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
     declineConfirmed: false,
     result: null,
     error: null,
+    failureState: null,
   },
   states: {
     idle: {
@@ -305,6 +338,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
             declineConfirmed: () => false,
             result: () => null,
             error: () => null,
+            failureState: () => null,
           }),
         },
       },
@@ -335,6 +369,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                 message: "Safety export was not created.",
                 retryable: true,
               }),
+            failureState: () => "exporting" as const,
           }),
         },
       },
@@ -386,6 +421,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                   "Delete Everywhere progress could not be saved before deletion.",
                 retryable: true,
               }),
+            failureState: () => "persistingRetirement" as const,
           }),
         },
       },
@@ -405,6 +441,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                 message: "Retirement could not be published.",
                 retryable: true,
               }),
+            failureState: () => "publishingRetirement" as const,
           }),
         },
       },
@@ -432,6 +469,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                   "Delete Everywhere progress could not be saved before Drive deletion.",
                 retryable: true,
               }),
+            failureState: () => "persistingDriveDeletion" as const,
           }),
         },
       },
@@ -451,6 +489,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                 message: "Drive data could not be deleted.",
                 retryable: true,
               }),
+            failureState: () => "deletingDrive" as const,
           }),
         },
       },
@@ -478,6 +517,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                   "Delete Everywhere progress could not be saved before local erasure.",
                 retryable: true,
               }),
+            failureState: () => "persistingLocalErasure" as const,
           }),
         },
       },
@@ -497,6 +537,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                 message: "Local data could not be erased.",
                 retryable: true,
               }),
+            failureState: () => "erasingLocal" as const,
           }),
         },
       },
@@ -524,6 +565,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                   "Delete Everywhere progress could not be saved before waiting for devices.",
                 retryable: true,
               }),
+            failureState: () => "persistingAwaitingDevices" as const,
           }),
         },
       },
@@ -583,6 +625,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                   "Delete Everywhere progress could not be saved before forced finalization.",
                 retryable: true,
               }),
+            failureState: () => "persistingForcedFinalization" as const,
           }),
         },
       },
@@ -626,6 +669,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                   "Delete Everywhere progress could not be saved before final authorization cleanup.",
                 retryable: true,
               }),
+            failureState: () => "persistingCompletion" as const,
           }),
         },
       },
@@ -633,7 +677,39 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
     failed: {
       tags: ["destructive", "error"],
       on: {
-        "delete-everywhere.retry": "persistingRetirement",
+        "delete-everywhere.retry": [
+          { target: "exporting", guard: "failedExporting" },
+          {
+            target: "persistingRetirement",
+            guard: "failedPersistingRetirement",
+          },
+          {
+            target: "publishingRetirement",
+            guard: "failedPublishingRetirement",
+          },
+          {
+            target: "persistingDriveDeletion",
+            guard: "failedPersistingDriveDeletion",
+          },
+          { target: "deletingDrive", guard: "failedDeletingDrive" },
+          {
+            target: "persistingLocalErasure",
+            guard: "failedPersistingLocalErasure",
+          },
+          { target: "erasingLocal", guard: "failedErasingLocal" },
+          {
+            target: "persistingAwaitingDevices",
+            guard: "failedPersistingAwaitingDevices",
+          },
+          {
+            target: "persistingForcedFinalization",
+            guard: "failedPersistingForcedFinalization",
+          },
+          {
+            target: "persistingCompletion",
+            guard: "failedPersistingCompletion",
+          },
+        ],
         "delete-everywhere.cancel": "cancelled",
       },
     },

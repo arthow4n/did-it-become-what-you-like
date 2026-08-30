@@ -95,6 +95,42 @@ Deno.test("settings-final preferences discard restores the saved boundary", asyn
   });
 });
 
+Deno.test("settings-final preferences retry preserves a failed save draft", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      render(
+        createElement(PreferencesScreen, {
+          local,
+          onClose: () => undefined,
+          onSaved: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => {
+        assert(
+          (view.getByLabelText(/^Expense-day boundary/) as HTMLInputElement)
+            .value === "03:00",
+        );
+      });
+      const input = view.getByLabelText(/^Expense-day boundary/);
+      fireEvent.change(input, { target: { value: "04:30" } });
+      local.failNext("unavailable");
+      fireEvent.click(view.getByRole("button", { name: "Save preferences" }));
+      await waitFor(() => assert(view.getByRole("button", { name: "Retry" })));
+      assert(
+        (view.getByLabelText(/^Expense-day boundary/) as HTMLInputElement)
+          .value === "04:30",
+        "a failed save must keep the edited boundary visible",
+      );
+      fireEvent.click(view.getByRole("button", { name: "Retry" }));
+      await waitFor(() =>
+        assert(!view.queryByRole("button", { name: "Retry" }))
+      );
+    });
+  });
+});
+
 Deno.test("settings-final preferences reset CTA restores and saves 03:00", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {

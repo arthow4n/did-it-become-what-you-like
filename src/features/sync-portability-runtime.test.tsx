@@ -1,4 +1,5 @@
 import {
+  conflictIdsForResolution,
   createConfiguredDriveAdapter,
   deviceViewModels,
   formatApproximateLastSeen,
@@ -44,6 +45,43 @@ Deno.test("sync runtime expands complete conflicts into field observations", () 
   assert(observations[0].local === "Local market");
   assert(observations[0].remote === "Remote market");
 });
+
+Deno.test(
+  "sync runtime scopes a resolution to the causal conflict parents it observed",
+  () => {
+    const conflicts = [
+      {
+        id: "conflict-old",
+        recordType: "expense",
+        recordId: "expense-1",
+        local: { merchant: "Local" },
+        remote: { merchant: "Remote" },
+        relatedChangeIds: ["change-old"],
+      },
+      {
+        id: "conflict-new",
+        recordType: "expense",
+        recordId: "expense-1",
+        local: { merchant: "Local" },
+        remote: { merchant: "Newest" },
+        relatedChangeIds: ["change-new"],
+      },
+    ];
+    assert(
+      JSON.stringify(
+        conflictIdsForResolution(
+          conflicts,
+          "conflict-expense-expense-1-merchant",
+          [
+            "change-old",
+            "conflict-old-merchant-local",
+            "conflict-old-merchant-remote",
+          ],
+        ),
+      ) === JSON.stringify(["conflict-old"]),
+    );
+  },
+);
 
 Deno.test("sync runtime preserves delete-versus-edit metadata", () => {
   const observations = observationsFromSyncConflicts([{

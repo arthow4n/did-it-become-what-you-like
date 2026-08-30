@@ -878,6 +878,15 @@
     border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;
   }
 
+  @media (max-width: 719px) {
+    /* Mantine's Drawer default can fill the viewport even for a short
+       confirmation. Keep adaptive confirmation sheets content-sized. */
+    .mantine-Drawer-content.ds-dialog {
+      height: auto;
+      min-height: 0;
+    }
+  }
+
   .ds-popover,
   .ds-menu {
     padding: var(--space-2);

@@ -349,7 +349,7 @@ export function DirtyExitGuard({
             Your changes are saved on this device. Keep editing or discard them
             before leaving this workflow.
           </Text>
-          <Inline justify="end" gap={3}>
+          <FormActions>
             <Button
               variant="quiet"
               onPress={() => {
@@ -369,7 +369,7 @@ export function DirtyExitGuard({
             >
               Discard changes
             </Button>
-          </Inline>
+          </FormActions>
         </Stack>
       )}
     </AdaptiveDialog>
@@ -3450,7 +3450,15 @@ export function LocalUiRuntime(
           }}
           onDiscard={() => {
             if (pendingNavigationRef.current === null) return;
-            setDirtyExitOpen(false);
+            // A receipt image is memory-only. Leaving the scan immediately is
+            // both safe and more reliable than waiting for an effect in the
+            // soon-to-be-unmounted scan screen to observe a discard counter.
+            // Its teardown cancels an active request before releasing bytes.
+            if (contentPath === "/receipt/scan") {
+              imageStore.clear();
+              finishDirtyNavigation("/expenses");
+              return;
+            }
             setDiscardRequest((request) => request + 1);
           }}
         />

@@ -109,7 +109,22 @@ Critical browser seams are covered by the approved Playwright E2E journeys in
 
 ```text
 M0..M31 implementation, R-3110 review, and M31-FINAL archive (COMPLETE)
+M32 scan exit and compact-dialog remediation (COMPLETE)
 ```
+
+### M32 — Scan exit and compact-dialog remediation: COMPLETE
+
+- The receipt-scan primary action now recovers a selected image from a
+  transient `idle` or `selecting` actor state rather than becoming a no-op.
+- Discarding a scan-owned memory-only image navigates immediately; screen
+  teardown cancels any active request before the image is released.
+- Mobile confirmation sheets are content-sized and use the standard full-width
+  destructive action layout. Scan work now uses one concise status panel;
+  preparation copy, percentages, and three-step progress UI are removed.
+- Evidence: `deno task test:affected` (40 tests),
+  `deno task test:e2e --grep 'receipt-review captures'` (1 browser journey),
+  `deno task check`, `deno task a11y:gallery`, `deno task build`, and the
+  three-viewport audit capture all passed.
 
 ## Interruption and recovery protocol
 
@@ -127,11 +142,10 @@ After a restart, rate limit, lost session, or interrupted command:
 
 ## Current Checkpoint
 
-- **Active task / gate:** None; M31-FINAL is complete.
-- **Repository:** `master` is clean and synchronized with `origin/master`; the
-  M31 implementation commit is `b1d01fc`.
-- **M31 delivery:** 5-tab uniform scene navigation bar (`Expenses`, `Manual`,
-  `Scan`, `Organize`, `Settings`), removal of intermediate `/add` modal dialog
-  and top header button, direct creation scene transitions, and full E2E/audit
-  verification.
+- **Active task / gate:** None; M32 is complete.
+- **Repository:** `master` contains the M32 scan exit and compact-dialog
+  remediation; commit/push is the final handoff action.
+- **M32 delivery:** selected receipt scans recover from transient actor reset,
+  guarded scan discard returns to the chosen tab, confirmation sheets remain
+  compact on mobile, and scan progress is concise rather than step-based.
 - **Next action:** None; ready for the next request.

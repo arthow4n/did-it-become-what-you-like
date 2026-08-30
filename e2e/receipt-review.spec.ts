@@ -150,6 +150,30 @@ test(
       buffer: ONE_PIXEL_PNG,
     });
     await expect(page.getByAltText("Selected receipt preview")).toBeVisible();
+
+    // The scan owns only an in-memory image, so discarding a guarded tab
+    // transition must leave immediately and must not strand the navigation
+    // dialog or the scan actor.
+    await page.getByRole("button", { name: "Expenses", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Unsaved changes" }))
+      .toBeVisible();
+    await page.getByRole("button", { name: "Discard changes" }).click();
+    await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
+      .toBeVisible();
+    await page.getByRole("button", { name: "Scan", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Before sending this receipt" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Continue to scan" }).click();
+    const imageAfterDiscardDialog = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: "Choose image" }).click();
+    const imageAfterDiscard = await imageAfterDiscardDialog;
+    await imageAfterDiscard.setFiles({
+      name: "receipt-after-discard.png",
+      mimeType: "image/png",
+      buffer: ONE_PIXEL_PNG,
+    });
+    await expect(page.getByAltText("Selected receipt preview")).toBeVisible();
     await page.getByRole("button", { name: "Scan with AI" }).click();
     await expect(page.getByRole("dialog", { name: "Set up Gemini" }))
       .toBeVisible();

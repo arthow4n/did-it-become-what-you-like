@@ -76,7 +76,6 @@ import {
   Switch,
   Text,
   TextField,
-  WorkflowProgress,
 } from "../design-system/index.ts";
 import { useSyncStatus } from "./sync-ui/index.ts";
 
@@ -821,6 +820,15 @@ export function ReceiptScanScreen({
   };
   const scan = () => {
     if (!selectedImage) return;
+    // A discard can reset the actor before React has finished tearing down the
+    // screen. Keep the visible selected image and actor state in sync instead
+    // of silently sending a scan event that `idle`/`selecting` cannot handle.
+    if (snapshot.matches("idle")) {
+      send({ type: "receipt.open", disclosureRequired: false });
+      send({ type: "receipt.image-selected" });
+    } else if (snapshot.matches("selecting")) {
+      send({ type: "receipt.image-selected" });
+    }
     if (!hasKey) {
       const activeElement = document.activeElement;
       quickSetupReturnFocusRef.current = activeElement instanceof HTMLElement
@@ -895,14 +903,6 @@ export function ReceiptScanScreen({
     scanBusy,
     selectedImage,
   ]);
-  const status = snapshot.matches("preparing")
-    ? "Preparing image and removing embedded metadata"
-    : snapshot.matches("requesting")
-    ? "Requesting structured receipt extraction"
-    : snapshot.matches("validating")
-    ? "Validating structured output"
-    : undefined;
-
   if (snapshot.matches("disclosure")) {
     return (
       <ContentContainer size="form">
@@ -1098,14 +1098,9 @@ export function ReceiptScanScreen({
           : null}
         {scanBusy
           ? (
-            <WorkflowProgress
-              steps={["Prepare image", "Request extraction", "Validate review"]}
-              current={snapshot.matches("preparing")
-                ? 0
-                : snapshot.matches("requesting")
-                ? 1
-                : 2}
-              status={status}
+            <StatusPanel
+              title="Scanning receipt"
+              detail="This can take a moment."
               action={
                 <Button
                   variant="quiet"

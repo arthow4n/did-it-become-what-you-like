@@ -129,8 +129,11 @@ export function selectProjectOrganizationActions(
   const mode = typeof snapshot.value === "string" ? snapshot.value : "";
   if (mode === "mutating") return [{ type: "cancel" }];
   if (mode === "ready" || mode === "failed") {
+    const actions = snapshot.context.state === null
+      ? []
+      : selectProjectActions(snapshot.context.state);
     return [
-      ...selectProjectActions(snapshot.context.state!),
+      ...actions,
       ...(mode === "failed" ? [{ type: "retry" } as const] : []),
       { type: "cancel" },
     ];
@@ -188,6 +191,15 @@ export function createProjectOrganizationMachine(
       ready: {
         tags: ["ready"],
         on: {
+          "project.open": {
+            target: "ready",
+            actions: assign({
+              state: ({ event }) => event.state,
+              pending: () => null,
+              result: () => null,
+              error: () => null,
+            }),
+          },
           "project.command": {
             target: "mutating",
             actions: assign({
@@ -240,6 +252,15 @@ export function createProjectOrganizationMachine(
       failed: {
         tags: ["error"],
         on: {
+          "project.open": {
+            target: "ready",
+            actions: assign({
+              state: ({ event }) => event.state,
+              pending: () => null,
+              result: () => null,
+              error: () => null,
+            }),
+          },
           "project.retry": "mutating",
           "project.command": {
             target: "mutating",
@@ -290,8 +311,11 @@ export function selectCategoryOrganizationActions(
   const mode = typeof snapshot.value === "string" ? snapshot.value : "";
   if (mode === "mutating") return [{ type: "cancel" }];
   if (mode === "ready" || mode === "failed") {
+    const actions = snapshot.context.state === null
+      ? []
+      : selectCategoryActions(snapshot.context.state);
     return [
-      ...selectCategoryActions(snapshot.context.state!),
+      ...actions,
       ...(mode === "failed" ? [{ type: "retry" } as const] : []),
       { type: "cancel" },
     ];
@@ -337,6 +361,15 @@ export function createCategoryOrganizationMachine(
       ready: {
         tags: ["ready"],
         on: {
+          "category.open": {
+            target: "ready",
+            actions: assign({
+              state: ({ event }) => event.state,
+              pending: () => null,
+              result: () => null,
+              error: () => null,
+            }),
+          },
           "category.command": {
             target: "mutating",
             actions: assign({
@@ -378,6 +411,15 @@ export function createCategoryOrganizationMachine(
       failed: {
         tags: ["error"],
         on: {
+          "category.open": {
+            target: "ready",
+            actions: assign({
+              state: ({ event }) => event.state,
+              pending: () => null,
+              result: () => null,
+              error: () => null,
+            }),
+          },
           "category.retry": "mutating",
           "category.command": {
             target: "mutating",

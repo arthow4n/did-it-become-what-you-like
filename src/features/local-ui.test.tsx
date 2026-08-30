@@ -1199,6 +1199,38 @@ Deno.test("local UI project editor and manager expose safe ordering and confirma
   });
 });
 
+Deno.test("local UI archived empty projects can be deleted directly", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    const { service, commits } = createTestService(organizedState);
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(ProjectManager, {
+          service,
+          state: organizedState,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      fireEvent.click(
+        view.getByRole("button", { name: "Archived projects (1)" }),
+      );
+      const archivedRow = view.getByText("Archived project").closest("li");
+      assert(archivedRow);
+      fireEvent.click(
+        within(archivedRow).getByRole("button", { name: "Delete empty" }),
+      );
+      const dialog = await waitFor(() =>
+        view.getByRole("dialog", { name: "Delete Archived project?" })
+      );
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Delete project" }),
+      );
+      await waitFor(() => assert(commits() === 1));
+    });
+  });
+});
+
 Deno.test("local UI category editor keeps built-in Uncategorized protected", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     const { service } = createTestService(categoryState);
@@ -1329,6 +1361,65 @@ Deno.test("local UI project editor uses level-one heading and ISO currency picke
           }),
         )
       );
+    });
+  });
+});
+
+Deno.test("local UI project editor reports unsaved changes", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    const { service } = createTestService(organizedState);
+    const dirtyStates: boolean[] = [];
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(ProjectManager, {
+          service,
+          state: organizedState,
+          initialCreate: true,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+          onDirtyChange: (dirty) => dirtyStates.push(dirty),
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Create project" }))
+      );
+      fireEvent.change(view.getByRole("textbox", { name: "Project name" }), {
+        target: { value: "Holiday" },
+      });
+      await waitFor(() => assert(dirtyStates[dirtyStates.length - 1] === true));
+      fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+      await waitFor(() =>
+        assert(dirtyStates[dirtyStates.length - 1] === false)
+      );
+    });
+  });
+});
+
+Deno.test("local UI category editor reports unsaved changes", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    const { service } = createTestService(categoryState);
+    const dirtyStates: boolean[] = [];
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(CategoryManager, {
+          service,
+          state: categoryState,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+          onDirtyChange: (dirty) => dirtyStates.push(dirty),
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => assert(view.getByRole("button", { name: "Edit" })));
+      fireEvent.click(view.getByRole("button", { name: "Edit" }));
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Edit category" }))
+      );
+      fireEvent.change(view.getByRole("textbox", { name: "Category name" }), {
+        target: { value: "Meals" },
+      });
+      await waitFor(() => assert(dirtyStates[dirtyStates.length - 1] === true));
     });
   });
 });
@@ -1464,6 +1555,59 @@ Deno.test(
           assert(
             view.getByRole("button", { name: "Export safety copy" }),
             "the safety export must precede typed confirmation",
+          );
+        });
+      },
+    );
+  },
+);
+
+Deno.test(
+  "local UI archived populated-project-delete opens the actor-driven review",
+  async () => {
+    await withComponentHarness(
+      async ({ window, render, fireEvent, waitFor }) => {
+        const archivedPopulatedProject = {
+          ...otherProject,
+          archived: true,
+        };
+        const archivedState: ProjectCategoryState = {
+          ...populatedOrganizedState,
+          projects: [project, thirdProject, archivedPopulatedProject],
+          projectOrder: [project.id, thirdProject.id],
+        };
+        const { service } = createTestService(archivedState);
+        const repository = {
+          deviceId: "0123456789abcdef0123456789abcdef",
+        } as never;
+        await withAriaDomGlobals(window, async () => {
+          render(
+            createElement(ProjectManager, {
+              repository,
+              service,
+              state: archivedState,
+              onStateChange: () => undefined,
+              onNavigate: () => undefined,
+            }),
+          );
+          const view = within(document.body);
+          fireEvent.click(
+            view.getByRole("button", { name: "Archived projects (1)" }),
+          );
+          const archivedRow = view.getByText("Other project").closest("li");
+          assert(archivedRow);
+          fireEvent.click(
+            within(archivedRow).getByRole("button", {
+              name: "Delete project",
+            }),
+          );
+          const dialog = await waitFor(() =>
+            view.getByRole("dialog", { name: "Delete Other project?" })
+          );
+          assert(
+            within(dialog).getByRole("button", {
+              name: "Export safety copy",
+            }),
           );
         });
       },

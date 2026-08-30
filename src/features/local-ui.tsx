@@ -1160,6 +1160,9 @@ export function ProjectManager({
   initialCreate = false,
   onStateChange,
   onNavigate,
+  onDirtyChange,
+  discardRequest,
+  onDirtyDiscarded,
   onComplete,
 }: {
   repository?: LocalRepository;
@@ -1168,6 +1171,9 @@ export function ProjectManager({
   initialCreate?: boolean;
   onStateChange: (state: ProjectCategoryState) => void;
   onNavigate: (path: LocalUiPath) => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  discardRequest?: number;
+  onDirtyDiscarded?: () => void;
   onComplete?: () => void;
 }) {
   const machine = useMemo(() => createProjectOrganizationMachine(service), [
@@ -1182,6 +1188,7 @@ export function ProjectManager({
   const [saveTarget, setSaveTarget] = useState<Project | null>(null);
   const handledInitialCreate = useRef(false);
   const isSubmittingRef = useRef(false);
+  const handledDiscardRequest = useRef(discardRequest ?? 0);
 
   useEffect(() => {
     if (snapshot.matches("closed")) {
@@ -1192,6 +1199,15 @@ export function ProjectManager({
   useEffect(() => {
     if (snapshot.context.state) onStateChange(snapshot.context.state);
   }, [onStateChange, snapshot.context.state]);
+
+  useEffect(() => {
+    if (
+      (snapshot.matches("ready") || snapshot.matches("failed")) &&
+      snapshot.context.state !== state
+    ) {
+      send({ type: "project.open", state });
+    }
+  }, [send, snapshot, state]);
 
   useEffect(() => {
     if (initialCreate && !handledInitialCreate.current) {
@@ -1253,6 +1269,30 @@ export function ProjectManager({
     }
   }, [editor, onComplete, snapshot]);
 
+  const dirty = editor !== null && (
+    editor.kind === "create"
+      ? name.length > 0 || currency !== "SEK"
+      : name !== editor.record.name ||
+        currency !== editor.record.defaultCurrency
+  );
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (
+      discardRequest === undefined ||
+      discardRequest === handledDiscardRequest.current
+    ) return;
+    handledDiscardRequest.current = discardRequest;
+    setEditor(null);
+    setSaveTarget(null);
+    isSubmittingRef.current = false;
+    onDirtyChange?.(false);
+    onDirtyDiscarded?.();
+  }, [discardRequest, onDirtyChange, onDirtyDiscarded]);
+
   const openEditor = (nextEditor: EditorState<Project>) =>
     setEditor(nextEditor);
   const submitEditor = () => {
@@ -1311,7 +1351,7 @@ export function ProjectManager({
                 icon={<ArrowLeft />}
                 aria-label="Back"
                 variant="quiet"
-                onPress={() => setEditor(null)}
+                onPress={() => onNavigate("/projects")}
               />
             }
           />
@@ -1615,6 +1655,42 @@ export function ProjectManager({
                         >
                           Edit
                         </Button>
+                        {isProjectEmpty(state, project.id)
+                          ? (
+                            <ConfirmDialog
+                              trigger={
+                                <Button variant="danger">Delete empty</Button>
+                              }
+                              title={`Delete ${project.name}?`}
+                              description="This archived project is empty and will be removed locally. This action cannot be undone from the project list."
+                              confirmLabel="Delete project"
+                              confirmVariant="danger"
+                              onConfirm={() =>
+                                send({
+                                  type: "project.command",
+                                  command: {
+                                    type: "delete-empty",
+                                    projectId: project.id,
+                                  },
+                                })}
+                            />
+                          )
+                          : repository
+                          ? (
+                            <ProjectDeletionReview
+                              repository={repository}
+                              state={state}
+                              project={project}
+                              onDeleted={() => {
+                                void service.getState().then(onStateChange);
+                              }}
+                            />
+                          )
+                          : (
+                            <Text size="caption" tone="muted">
+                              Deletion unavailable.
+                            </Text>
+                          )}
                       </Inline>
                     </Inline>
                   </ListRow>
@@ -1818,6 +1894,9 @@ export function CategoryManager({
   initialCreate = false,
   onStateChange,
   onNavigate,
+  onDirtyChange,
+  discardRequest,
+  onDirtyDiscarded,
   onComplete,
 }: {
   service: ProjectCategoryService;
@@ -1825,6 +1904,9 @@ export function CategoryManager({
   initialCreate?: boolean;
   onStateChange: (state: ProjectCategoryState) => void;
   onNavigate: (path: LocalUiPath) => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  discardRequest?: number;
+  onDirtyDiscarded?: () => void;
   onComplete?: () => void;
 }) {
   const machine = useMemo(() => createCategoryOrganizationMachine(service), [
@@ -1839,6 +1921,7 @@ export function CategoryManager({
   const [search, setSearch] = useState("");
   const handledInitialCreate = useRef(false);
   const isSubmittingRef = useRef(false);
+  const handledDiscardRequest = useRef(discardRequest ?? 0);
 
   useEffect(() => {
     if (snapshot.matches("closed")) send({ type: "category.open", state });
@@ -1847,6 +1930,15 @@ export function CategoryManager({
   useEffect(() => {
     if (snapshot.context.state) onStateChange(snapshot.context.state);
   }, [onStateChange, snapshot.context.state]);
+
+  useEffect(() => {
+    if (
+      (snapshot.matches("ready") || snapshot.matches("failed")) &&
+      snapshot.context.state !== state
+    ) {
+      send({ type: "category.open", state });
+    }
+  }, [send, snapshot, state]);
 
   useEffect(() => {
     if (initialCreate && !handledInitialCreate.current) {
@@ -1912,6 +2004,28 @@ export function CategoryManager({
     }
   }, [editor, onComplete, snapshot]);
 
+  const dirty = editor !== null && (
+    editor.kind === "create"
+      ? name.length > 0 || color !== undefined
+      : name !== editor.record.name || color !== editor.record.color
+  );
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (
+      discardRequest === undefined ||
+      discardRequest === handledDiscardRequest.current
+    ) return;
+    handledDiscardRequest.current = discardRequest;
+    setEditor(null);
+    isSubmittingRef.current = false;
+    onDirtyChange?.(false);
+    onDirtyDiscarded?.();
+  }, [discardRequest, onDirtyChange, onDirtyDiscarded]);
+
   if (editor) {
     return (
       <ContentContainer size="form">
@@ -1926,7 +2040,7 @@ export function CategoryManager({
                 icon={<ArrowLeft />}
                 aria-label="Back"
                 variant="quiet"
-                onPress={() => setEditor(null)}
+                onPress={() => onNavigate("/categories")}
               />
             }
           />
@@ -3428,7 +3542,13 @@ export function LocalUiRuntime(
                 state={state}
                 initialCreate={projectEditorOpen}
                 onStateChange={setState}
-                onNavigate={navigate}
+                onNavigate={requestNavigation}
+                onDirtyChange={(dirty) => {
+                  setWorkflowDirty(dirty);
+                  setDirtyNavigationWorkflow(dirty);
+                }}
+                discardRequest={discardRequest}
+                onDirtyDiscarded={() => finishDirtyNavigation("/projects")}
                 onComplete={() => {
                   if (projectEditorOpen) {
                     setProjectEditorOpen(false);
@@ -3444,7 +3564,13 @@ export function LocalUiRuntime(
                 state={state}
                 initialCreate={categoryEditorOpen}
                 onStateChange={setState}
-                onNavigate={navigate}
+                onNavigate={requestNavigation}
+                onDirtyChange={(dirty) => {
+                  setWorkflowDirty(dirty);
+                  setDirtyNavigationWorkflow(dirty);
+                }}
+                discardRequest={discardRequest}
+                onDirtyDiscarded={() => finishDirtyNavigation("/categories")}
                 onComplete={() => {
                   if (categoryEditorOpen) {
                     setCategoryEditorOpen(false);

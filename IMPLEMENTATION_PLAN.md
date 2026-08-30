@@ -249,7 +249,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-005 — Project & category manager exit guards & archived deletion
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-3320`.
+- **Status/dependencies:** `COMPLETE`; depends on `R-3320`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/actors/project-category.ts`.
 - **Scope/non-goals:**
   1. Wire `onDirtyChange` in `ProjectManager` and `CategoryManager` so
@@ -271,7 +271,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-006 — Preferences retry, sync & lifecycle saga remediation
 
-- **Status/dependencies:** `PENDING`; depends on `M33-005`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-005`.
 - **Ownership:** `src/actors/preferences.ts`, `src/features/settings-pwa.tsx`,
   `src/actors/contracts/deletion.ts`, `src/actors/destruction.ts`,
   `src/actors/sync/machine.ts`, `src/actors/import-export/machine.ts`.
@@ -325,17 +325,18 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M33-005` (`IN_PROGRESS`)
+- **Active task / gate:** `M33-006` (`IN_PROGRESS`)
 - **Pushed commit / HEAD:** `8a6f944` —
-  `fix(receipts): protect review browser exits`.
-- **Verification status:** R-3320 fresh read-only review and three remediation
-  passes are clear; affected actor/component suites passed (41 tests on the
-  final remediation), with lint, `deno task typecheck`, formatting, and
-  `git diff --check` clean.
+  `fix(receipts): protect review browser exits` (M33-005 changes are staged for
+  the next focused implementation commit).
+- **Verification status:** M33-005 focused actor/component suites passed (8
+  actor-contract tests and 36 local UI tests), with `deno task lint`,
+  `deno task fmt:check`, `deno task typecheck`, and `git diff --check` clean.
 - **Active / preserved work:** Clean, synchronized `master`; no active M33
-  worktrees or subagents.
-- **Next action:** Implement M33-005 organization manager exit guards and
-  archived-project deletion.
+  worktrees or subagents; M33-005 implementation changes remain uncommitted
+  until the focused commit is created.
+- **Next action:** Commit M33-005, then remediate preferences retry, sync,
+  destruction, deletion, and import/export lifecycle paths in M33-006.
 
 ---
 

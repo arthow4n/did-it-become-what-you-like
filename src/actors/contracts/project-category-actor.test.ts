@@ -5,6 +5,7 @@ import {
   createProjectActorMachine,
   createProjectCategoryService,
   createProjectOrganizationMachine,
+  selectCategoryOrganizationActions,
   selectProjectOrganizationActions,
 } from "../project-category.ts";
 import {
@@ -131,6 +132,58 @@ Deno.test("project-category actor: organization snapshot exposes guard-valid act
   );
   actor.stop();
 });
+
+Deno.test(
+  "project-category organization selectors tolerate an unopened actor",
+  () => {
+    const context = {
+      state: null,
+      pending: null,
+      result: null,
+      error: null,
+    };
+    assertEquals(
+      selectProjectOrganizationActions({ value: "ready", context }),
+      [{ type: "cancel" }],
+    );
+    assertEquals(
+      selectProjectOrganizationActions({ value: "failed", context }),
+      [{ type: "retry" }, { type: "cancel" }],
+    );
+    assertEquals(
+      selectCategoryOrganizationActions({ value: "ready", context }),
+      [{ type: "cancel" }],
+    );
+    assertEquals(
+      selectCategoryOrganizationActions({ value: "failed", context }),
+      [{ type: "retry" }, { type: "cancel" }],
+    );
+  },
+);
+
+Deno.test(
+  "project-category organization actors accept fresh state while ready",
+  async () => {
+    const { service } = createService();
+    const state = await service.getState();
+    const freshState = { ...state, projectOrder: [...state.projectOrder] };
+    const projectActor = createActor(
+      createProjectOrganizationMachine(service),
+    ).start();
+    projectActor.send({ type: "project.open", state });
+    projectActor.send({ type: "project.open", state: freshState });
+    assertEquals(projectActor.getSnapshot().context.state, freshState);
+    projectActor.stop();
+
+    const categoryActor = createActor(
+      createCategoryOrganizationMachine(service),
+    ).start();
+    categoryActor.send({ type: "category.open", state });
+    categoryActor.send({ type: "category.open", state: freshState });
+    assertEquals(categoryActor.getSnapshot().context.state, freshState);
+    categoryActor.stop();
+  },
+);
 
 Deno.test("project-category actor: offline failure retains retryable state and retries locally", async () => {
   const { local, service } = createService();

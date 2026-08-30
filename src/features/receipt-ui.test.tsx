@@ -138,6 +138,42 @@ Deno.test("receipt-ui empty review state keeps a level-one heading", async () =>
   });
 });
 
+Deno.test("receipt-ui review reports its actor-owned dirty state", async () => {
+  await withComponentHarness(async ({ render, waitFor }) => {
+    const local = createFakeLocalPort();
+    const dirtyStates: boolean[] = [];
+    render(
+      createElement(ReceiptReviewScreen, {
+        local,
+        state: {
+          projects: [],
+          categories: [],
+          expenses: [],
+          receipts: [],
+          receiptPurchaseLines: [],
+          receiptAdjustments: [],
+          tombstones: [],
+          projectOrder: [],
+        },
+        initialReview: {
+          parent: {
+            projectId: "project-receipt-dirty",
+            date: "2026-08-30",
+            currency: "SEK",
+            printedTotal: "-1",
+          },
+          lines: [],
+          uncertainty: [],
+          printedTotalMismatch: false,
+        },
+        onDirtyChange: (dirty) => dirtyStates.push(dirty),
+        onClose: () => undefined,
+      }),
+    );
+    await waitFor(() => assert(dirtyStates.includes(true)));
+  });
+});
+
 Deno.test("receipt-ui source picker exposes native capture actions and ephemeral removal", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {

@@ -441,7 +441,7 @@ export function createReceiptReviewMachine(
         },
       },
       persisted: {
-        tags: ["review-ready"],
+        tags: ["review-ready", "dirty"],
         on: {
           "receipt.review.change": {
             target: "persisting",
@@ -526,7 +526,7 @@ export function createReceiptReviewMachine(
         },
       },
       mismatch: {
-        tags: ["warning"],
+        tags: ["warning", "dirty"],
         on: {
           "receipt.review.confirm-mismatch": "saving",
           "receipt.review.submit": {
@@ -662,10 +662,11 @@ export function createReceiptReviewMachine(
         always: [
           { target: "saved", guard: "hasSavedOutcome" },
           { target: "discarded", guard: "hasDiscardedOutcome" },
+          "cancelled",
         ],
       },
       failed: {
-        tags: ["error"],
+        tags: ["error", "dirty"],
         on: {
           "receipt.review.retry": [
             { target: "hydrating", guard: "retryHydrate" },
@@ -677,6 +678,55 @@ export function createReceiptReviewMachine(
             target: "persisting",
             actions: assign({
               review: ({ event }) => validateReceiptReviewDraft(event.review),
+              error: () => null,
+              failureOperation: () => "persist" as const,
+            }),
+          },
+          "receipt.review.select-line": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                setReceiptLineSelected(
+                  context.review!,
+                  event.lineId,
+                  event.selected,
+                ),
+              error: () => null,
+              failureOperation: () => "persist" as const,
+            }),
+          },
+          "receipt.review.edit-line": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                editReceiptLine(context.review!, event.line),
+              error: () => null,
+              failureOperation: () => "persist" as const,
+            }),
+          },
+          "receipt.review.add-line": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                addReceiptLine(context.review!, event.line),
+              error: () => null,
+              failureOperation: () => "persist" as const,
+            }),
+          },
+          "receipt.review.remove-line": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                removeReceiptLine(context.review!, event.lineId),
+              error: () => null,
+              failureOperation: () => "persist" as const,
+            }),
+          },
+          "receipt.review.change-parent": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                editReceiptParent(context.review!, event.parent),
               error: () => null,
               failureOperation: () => "persist" as const,
             }),

@@ -193,7 +193,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-003 — Receipt scanning & review actor event handling & discard navigation
 
-- **Status/dependencies:** `READY`; depends on `R-3310`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-3310`.
 - **Ownership:** `src/actors/contracts/receipt.ts`, `src/actors/receipt.ts`,
   `src/features/receipt-ui.tsx`.
 - **Scope/non-goals:**
@@ -325,7 +325,7 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M33-003` (`READY`)
+- **Active task / gate:** `M33-003` (`IN_PROGRESS`)
 - **Pushed commit / HEAD:** `4cf5c86` —
   `fix(manual-expense): close batch one workflow gaps`.
 - **Verification status:** R-3310 found three severity-2 issues and accepted
@@ -338,8 +338,8 @@ M33-005 -> M33-006 -> R-3330
   propagation, draft-save retry, and one-time add-another sync/shell signaling.
 - **Active / preserved work:** Clean, synchronized `master`; no active M33
   worktrees or subagents.
-- **Next action:** Implement `M33-003` receipt scanning/review event handling,
-  dirty-state derivation, and discard-navigation preservation.
+- **Next action:** Audit and implement `M33-003` receipt scanning/review event
+  handling, dirty-state derivation, and discard-navigation preservation.
 
 ---
 

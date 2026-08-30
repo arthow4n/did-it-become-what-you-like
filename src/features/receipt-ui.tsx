@@ -1330,7 +1330,6 @@ export function ReceiptReviewScreen({
   );
   const [snapshot, send] = useActor(machine, { input: {} });
   const [openSent, setOpenSent] = useState(false);
-  const [changed, setChanged] = useState(false);
   const [metadataOpen, setMetadataOpen] = useState(false);
   const [metadataError, setMetadataError] = useState<string>();
   const doneRef = useRef(false);
@@ -1363,8 +1362,8 @@ export function ReceiptReviewScreen({
   }, [initialReview, openSent, send]);
 
   useEffect(() => {
-    onDirtyChange?.(changed && !snapshot.matches("saved"));
-  }, [changed, onDirtyChange, snapshot]);
+    onDirtyChange?.(snapshot.hasTag("dirty"));
+  }, [onDirtyChange, snapshot]);
 
   useEffect(() => {
     if (
@@ -1438,7 +1437,6 @@ export function ReceiptReviewScreen({
     label: line.description || "Unclear purchase",
   }));
   const sendReview = (event: ReceiptReviewActorEvent) => {
-    setChanged(true);
     send(event);
   };
   const updateParent = (parent: ReceiptReviewDraft["parent"]) => {
@@ -1471,7 +1469,7 @@ export function ReceiptReviewScreen({
         <PageHeader
           title="Review receipt"
           headingLevel={1}
-          leading={changed
+          leading={snapshot.hasTag("dirty")
             ? (
               <AdaptiveDialog
                 trigger={

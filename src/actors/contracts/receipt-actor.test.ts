@@ -22,6 +22,7 @@ import { UNCATEGORIZED_CATEGORY_ID } from "../../domain/index.ts";
 import {
   createReceiptReviewMachine,
   createReceiptScanMachine,
+  type ReceiptReviewActorEvent,
 } from "../receipt.ts";
 
 declare const Deno: {
@@ -558,4 +559,65 @@ Deno.test("receipt-actor review: persistence failure retries and explicit discar
   );
   actor.stop();
   void organization;
+});
+
+Deno.test("receipt-actor review: failed persistence retains every line and parent edit path", async () => {
+  const { local } = await receiptHarness();
+  local.failNext("quota");
+  const actor = createActor(
+    createReceiptReviewMachine({
+      local,
+      commit: createReceiptCommitService(local),
+      persistenceKey: "workflow:receipt-failed-edits",
+    }),
+    { input: { persistenceKey: "workflow:receipt-failed-edits" } },
+  ).start();
+  actor.send({ type: "receipt.review.open", review: reviewDraft() });
+  await waitForActorState(actor, "failed");
+
+  const expectPersistenceFailure = async (event: ReceiptReviewActorEvent) => {
+    local.failNext("quota");
+    actor.send(event);
+    await waitForActorState(actor, "failed");
+  };
+  const firstLine = actor.getSnapshot().context.review!.lines[0]!;
+  await expectPersistenceFailure({
+    type: "receipt.review.select-line",
+    lineId: firstLine.id,
+    selected: !firstLine.selected,
+  });
+  await expectPersistenceFailure({
+    type: "receipt.review.edit-line",
+    line: { ...firstLine, description: "Edited after failure" },
+  });
+  const addedLine = {
+    type: "purchase" as const,
+    id: "receipt-failed-added-line",
+    description: "Added after failure",
+    categoryId: "category-uncategorized",
+    lineTotal: "-1",
+    selected: true,
+    uncertain: false,
+  };
+  await expectPersistenceFailure({
+    type: "receipt.review.add-line",
+    line: addedLine,
+  });
+  await expectPersistenceFailure({
+    type: "receipt.review.remove-line",
+    lineId: addedLine.id,
+  });
+  await expectPersistenceFailure({
+    type: "receipt.review.change-parent",
+    parent: {
+      ...actor.getSnapshot().context.review!.parent,
+      merchant: "Updated merchant",
+    },
+  });
+  assertEquals(
+    actor.getSnapshot().context.review?.parent.merchant,
+    "Updated merchant",
+  );
+  assert(actor.getSnapshot().hasTag("dirty"));
+  actor.stop();
 });

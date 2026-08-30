@@ -7,6 +7,7 @@ export * from "./ports.ts";
 export * from "./project-category.ts";
 export * from "./receipt.ts";
 export * from "./root-shell.ts";
+export * from "./saved-receipt.ts";
 export * from "./sync.ts";
 export * from "./types.ts";
 export * from "./update-install.ts";

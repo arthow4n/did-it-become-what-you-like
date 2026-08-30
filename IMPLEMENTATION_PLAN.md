@@ -410,7 +410,10 @@ M34-001 -> M34-002 -> R-3410
 
 #### M34-001 — Product contract, port simplification, and device-settings migration
 
-- **Status/dependencies:** `READY`; no M34 dependency.
+- **Status/dependencies:** `IN_PROGRESS`; no M34 dependency. The integration
+  owner has dispatched the single M34-001 write-enabled worker; no next task may
+  begin until its commit is reviewed, integrated, validated, pushed, and
+  checkpointed.
 - **Ownership:** `SPEC.md`, `src/adapters/ports/receipt-ai.ts`,
   `src/adapters/ports/secrets.ts`, `src/domain/schema/records.ts`, focused
   settings/schema tests and the smallest settings serialization helpers needed.
@@ -659,17 +662,18 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M34-001` (`READY`).
+- **Active task / gate:** `M34-001` (`IN_PROGRESS`).
 - **Planning base:** M34 planning commits are on remote `master`; implementation
   has not started in this ledger. Resolve exact HEAD with `git rev-parse HEAD`
   during recovery instead of relying on an older recorded hash.
 - **Verification status:** planning-only changes; no application-runtime test
   evidence is claimed.
-- **Active / preserved work:** no M34 implementation owner recorded. Reconcile
-  local/upstream/branches/worktrees/uncommitted work before editing.
-- **Exact next action:** read M34 references and execute/delegate only M34-001;
-  mark it `IN_PROGRESS`, complete its contract/tests, push, checkpoint, then
-  advance to M34-002.
+- **Active / preserved work:** one write-enabled worker is restricted to the
+  M34-001 ownership paths in its isolated task workspace. Existing unrelated
+  worktrees contain preserved untracked progress files and are not touched.
+- **Exact next action:** receive and review only the M34-001 worker result;
+  integrate its focused commit on `master`, run the required validation, push,
+  checkpoint M34-001, then advance to M34-002.
 
 ## Ready-to-Use Orchestration Prompt
 

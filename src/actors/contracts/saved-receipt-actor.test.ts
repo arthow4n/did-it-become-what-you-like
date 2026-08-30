@@ -121,7 +121,15 @@ Deno.test(
       createService({ get: () => Promise.resolve(undefined) }),
     );
     await waitForActorState(missing, "notFound");
-    assertEquals(missing.getSnapshot().output?.status, "not-found");
+    assertEquals(missing.getSnapshot().status, "active");
+    missing.send({ type: "receipt.detail.reload" });
+    await waitForActorState(missing, "notFound");
+    missing.send({
+      type: "receipt.detail.open",
+      receiptId: "receipt-reopened",
+    });
+    await waitForActorState(missing, "notFound");
+    assertEquals(missing.getSnapshot().context.receiptId, "receipt-reopened");
     missing.stop();
   },
 );

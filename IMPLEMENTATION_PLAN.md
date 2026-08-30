@@ -217,7 +217,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-004 — Saved receipt detail actor recovery & dirty tag accuracy
 
-- **Status/dependencies:** `READY`; depends on `M33-003`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-003`.
 - **Ownership:** `src/actors/contracts/saved-receipt.ts`,
   `src/actors/saved-receipt.ts`, `src/features/receipt-detail-ui.tsx`.
 - **Scope/non-goals:**
@@ -325,7 +325,7 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M33-004` (`READY`)
+- **Active task / gate:** `M33-004` (`IN_PROGRESS`)
 - **Pushed commit / HEAD:** `c93154e` —
   `fix(receipts): harden review failure and dirty workflows`.
 - **Verification status:**

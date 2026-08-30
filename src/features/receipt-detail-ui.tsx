@@ -180,9 +180,8 @@ export function ReceiptDetailScreen({
     (snapshot.matches("lineAddingPristine") ||
       snapshot.matches("lineAddingDirty") ||
       (mutationFailure && pendingMutationKind === "add-line"));
-  const dirty = snapshot.hasTag("dirty") ||
-    (mutationFailure && mutationIsLine(pendingMutationKind) ||
-      mutationFailure && pendingMutationKind === "metadata");
+  const dirty = snapshot.hasTag("dirty") &&
+    !(mutationFailure && pendingMutationKind === "delete-line");
   const canRetry = snapshot.can({ type: "receipt.detail.retry" });
 
   useEffect(() => {

@@ -890,7 +890,7 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
       },
     },
     failure: {
-      tags: ["error"],
+      tags: ["error", "dirty"],
       on: {
         "receipt.detail.back": [
           {
@@ -938,6 +938,10 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
           target: "ready",
           actions: "clearTransient",
         },
+        "receipt.detail.cancel-edit": {
+          target: "ready",
+          actions: "clearTransient",
+        },
         "receipt.detail.retry": [
           { target: "loading", guard: "retryLoad", actions: "clearError" },
           {
@@ -965,11 +969,21 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
       output: ({ context }) => context.outcome!,
     },
     notFound: {
-      type: "final",
-      output: ({ context }) => ({
-        status: "not-found",
-        receiptId: context.receiptId!,
-      }),
+      tags: ["error"],
+      on: {
+        "receipt.detail.reload": {
+          target: "loading",
+          actions: "clearTransient",
+        },
+        "receipt.detail.open": {
+          target: "loading",
+          actions: ["setReceiptId", "clearTransient"],
+        },
+        "receipt.detail.back": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+      },
     },
   },
 });

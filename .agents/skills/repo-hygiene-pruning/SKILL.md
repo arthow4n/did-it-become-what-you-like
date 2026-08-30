@@ -60,9 +60,9 @@ test cases, redundant E2E specs, and inaccurate task definitions.
      pure unit code changed).
    - Match checks to their required environment and impact boundary. During
      hygiene and doc pruning audits, run only syntax, typecheck, lint, and
-     format checks (`deno task check`, `deno task fmt:check`, `deno task lint`,
-     `git diff --check`). Do not run heavy test suites or long-running browser
-     tasks.
+     format checks (`deno task typecheck`, `deno task fmt:check`,
+     `deno task lint`, `git diff --check`). Do not run heavy test suites or
+     long-running browser tasks.
 
 ---
 
@@ -183,7 +183,7 @@ and tooling task definitions against these dimensions:
   - Tests asserting `typeof Component !== 'undefined'` for statically imported
     symbols already validated by `tsc` / `deno check`.
 - **Remediation:**
-  - Prune no-op runtime test cases. Rely on `deno task check` / `tsc` for
+  - Prune no-op runtime test cases. Rely on `deno task typecheck` / `tsc` for
     type-level contract validation.
 
 ### Dimension 2B: Source-Code Text & AST-Scraping Regex Matchers
@@ -374,7 +374,7 @@ and tooling task definitions against these dimensions:
    ```bash
    deno task fmt:check
    deno task lint
-   deno task check
+   deno task typecheck
    git diff --check
    ```
 2. Review staged changes:

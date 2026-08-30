@@ -691,7 +691,7 @@ and multi-device synchronization according to the agreed sync design.
   including the frontend toolchain.
 - Application and test source code must use TypeScript 7 with strict type
   checking. The project must pin the official stable `typescript@7` package, and
-  the canonical `deno task check` workflow must invoke that package's `tsc`
+  the canonical `deno task typecheck` workflow must invoke that package's `tsc`
   executable through Deno 2. Deno's separate experimental `--unstable-tsgo`
   integration is neither required nor a substitute for this dependency. Silently
   falling back to an older TypeScript checker is not acceptable for the required
@@ -945,11 +945,11 @@ and multi-device synchronization according to the agreed sync design.
 ### Post-Design Implementation Orchestration Deliverable
 
 When the repo owner explicitly requests planned execution after the design
-system is approved, planning must create one living
-`IMPLEMENTATION_PLAN.md`. It is the only source of truth for that milestone's
-implementation orchestration and must be sufficient for a coding agent to
-resume work without reconstructing the plan from chat history. Focused fixes do
-not create or update this document unless they belong to that active milestone.
+system is approved, planning must create one living `IMPLEMENTATION_PLAN.md`. It
+is the only source of truth for that milestone's implementation orchestration
+and must be sufficient for a coding agent to resume work without reconstructing
+the plan from chat history. Focused fixes do not create or update this document
+unless they belong to that active milestone.
 
 That file must contain:
 

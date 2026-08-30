@@ -258,10 +258,10 @@ each small UI edit. Validate at two levels:
    Add an immediate targeted browser/gallery check only when the edit changes
    focus, overlays, navigation, responsive layout, CSS-only behavior, or another
    effect Deno's module graph cannot observe.
-2. **Named UI checkpoint:** run `deno task a11y:gallery`, the affected component
-   layer if additional coverage is required, one production build for the
-   coherent batch, and inspect all batch-owned states with `agent-browser`. Do
-   not rerun unchanged successful commands merely because a reviewer starts.
+2. **Named UI checkpoint:** run `deno task gallery:verify`, the affected
+   component layer if additional coverage is required, one production build for
+   the coherent batch, and inspect all batch-owned states with `agent-browser`.
+   Do not rerun unchanged successful commands merely because a reviewer starts.
 3. **Inspect with `agent-browser` at the checkpoint:**
    - **Desktop Viewport (`1280×800`):**
      ```bash

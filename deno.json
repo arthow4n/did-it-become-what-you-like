@@ -43,16 +43,16 @@
     "dev": "deno run -A npm:vite@8.2.2 --host 127.0.0.1",
     "fmt:check": "deno fmt --check deno.json tsconfig.app.json vite.config.ts vite.gallery.config.ts index.html src scripts e2e",
     "lint": "deno lint src scripts e2e vite.config.ts vite.gallery.config.ts",
-    "check": "deno run -A npm:typescript@7.0.2/tsc --noEmit --project tsconfig.app.json && deno check --config deno.json scripts/*.ts scripts/**/*.ts e2e/*.ts e2e/**/*.ts",
+    "typecheck": "deno run -A npm:typescript@7.0.2/tsc --noEmit --project tsconfig.app.json && deno check --config deno.json scripts/*.ts scripts/**/*.ts e2e/*.ts e2e/**/*.ts",
     "test": "deno test --allow-read --allow-write --allow-run --allow-env src scripts/tests",
     "test:affected": "deno test --allow-read --allow-write --allow-run --allow-env --changed",
     "build": "deno run -A npm:vite@8.2.2 build --config vite.config.ts",
-    "verify": "deno task fmt:check && deno task lint && deno task check && deno task test && deno task build && deno task release:verify && deno audit --frozen && git diff --check",
+    "verify": "deno task fmt:check && deno task lint && deno task typecheck && deno task test && deno task build && deno task release:verify && deno audit --frozen && git diff --check",
     "browser:install": "deno run -A scripts/install-browsers.ts",
     "test:e2e": "deno x -p npm:@playwright/test@1.62.1 playwright test --config=e2e/playwright.config.ts",
     "audit:capture": "deno run -A scripts/audit-capture.ts",
     "gallery": "deno run -A npm:vite@8.2.2 build --config vite.gallery.config.ts",
-    "a11y:gallery": "deno run -A scripts/verify-gallery.ts",
+    "gallery:verify": "deno run -A scripts/verify-gallery.ts",
     "release:verify": "deno run -A scripts/verify-release.ts"
   }
 }

@@ -19,9 +19,9 @@ dependency licenses and notices are listed in
 
 ## Release operations
 
-GitHub Pages publishes the verified `dist/` artifact from `master` at
+GitHub Pages publishes the CI-verified `dist/` artifact from `master` at
 <https://arthow4n.github.io/did-it-become-what-you-like/>. Release checks bind
 the artifact to the checked-out short commit, verify repository-relative
 hash-routing/PWA behavior, and scan published text for secret-like values. See
-[RELEASE.md](RELEASE.md) for the local checklist, deployment boundary, and
-rollback procedure.
+[DEPLOYMENT.md](DEPLOYMENT.md) for the deployment boundary, hosted smoke checks,
+and rollback procedure.

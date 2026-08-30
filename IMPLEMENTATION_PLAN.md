@@ -53,19 +53,12 @@ is unavailable.
 ## Definition of done
 
 A release candidate must have focused tests for every implementation task,
-appropriate actor/domain/adapter/component coverage, a clean working tree, and
-the following repository checks as risk requires:
-
-```text
-deno task fmt:check
-deno task lint
-deno task check
-deno task test
-deno task build
-deno task release:verify
-deno audit --frozen
-git diff --check
-```
+appropriate actor/domain/adapter/component coverage, and a clean working tree.
+Task-level validation follows the risk-based policy in `AGENTS.md`. CI/CD is the
+release authority: the pushed candidate must pass CI's canonical quality gate
+before deployment. That gate runs `deno task verify`. Browser E2E and gallery
+verification remain separate, risk-selected checks rather than implied parts of
+that gate.
 
 Critical browser seams are covered by the approved Playwright E2E journeys in
 `e2e/`, while domain and actor rules are not duplicated across browser tests.
@@ -94,7 +87,7 @@ session, or command failure:
 ## Current Checkpoint
 
 - **Active task / gate:** None.
-- **Repository:** Released baseline; verify `git status --short --branch`
-  before beginning new work.
+- **Repository:** Released baseline; verify `git status --short --branch` before
+  beginning new work.
 - **Next action:** Follow the ordinary focused-fix workflow unless the repo
   owner explicitly requests conversion into a planned milestone.

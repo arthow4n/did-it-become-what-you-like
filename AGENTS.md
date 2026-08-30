@@ -49,9 +49,8 @@
 - A planned milestone has dependency-ordered tasks, contract or acceptance
   gates, parallel ownership, or a resumable handoff need. Put its executable
   plan, orchestration procedure, task statuses, current checkpoint, review/fix
-  loop, and resumable coding-agent prompt in the single
-  `IMPLEMENTATION_PLAN.md` source of truth. Do not scatter live progress across
-  several planning files.
+  loop, and resumable coding-agent prompt in the single `IMPLEMENTATION_PLAN.md`
+  source of truth. Do not scatter live progress across several planning files.
 - An ordinary focused fix is recorded by its commit, regression tests,
   validation evidence, and handoff. It must not create or update the plan unless
   it belongs to an active planned milestone.
@@ -61,9 +60,9 @@
   from the next dependency-ready item. It must not treat a stale checklist as
   stronger evidence than the actual repository.
 - Every planned milestone ends with a final/archive task. Keep only a concise
-  released-baseline summary in the living plan and prune completed task matrices,
-  temporary evidence, and other historical detail; Git history remains the
-  durable record.
+  released-baseline summary in the living plan and prune completed task
+  matrices, temporary evidence, and other historical detail; Git history remains
+  the durable record.
 - After a rate limit, lost session, machine restart, or interrupted sub-agent
   involving an active planned milestone, follow its Interruption and Recovery
   Protocol before dispatching or editing. Audit `master`, its upstream, every
@@ -85,20 +84,34 @@
   `src/test-support/fakes/ports.ts`). Do not re-declare parallel fake ports,
   copy-paste inline window/DOM shims, or reimplement custom async event polling
   loops in individual test files.
-- Use risk-based validation. For an ordinary change, format and lint the changed
-  files, run `deno task test:affected`, run the narrowest additional check for
-  effects Deno's import graph cannot see, and run `git diff --check`. Use
-  `deno test --related=<path>` when validating a known source file directly.
+- Validation task vocabulary:
+  - `fmt:check` and `lint` check applicable source and configuration files.
+  - `typecheck` is the static type gate: TypeScript's compiler checks the app
+    and Vite configuration; Deno checks scripts and E2E entry points.
+  - `test` is the full Deno test suite; `test:affected` selects tests affected
+    by uncommitted Git changes.
+  - `release:verify` checks an already built `dist/` artifact.
+  - `verify` is the CI quality gate: formatting, linting, type checking, Deno
+    tests, production build, built-artifact verification, dependency audit, and
+    whitespace checks. It does not run browser E2E or gallery verification.
+  - `test:e2e` and `gallery:verify` are separate browser checks selected when
+    their browser-integration or visual coverage is required.
+- Use risk-based validation. For an ordinary change, format and lint applicable
+  changed source/configuration files, run `deno task test:affected`, run the
+  narrowest additional check for effects Deno's import graph cannot see, and run
+  `git diff --check`. Use `deno test --related=<path>` when validating a known
+  source file directly.
 - `deno test --changed` and `--related` select tests through the transitive
   module graph. They do not prove CSS, HTML, generated assets, service-worker
   behavior, build configuration, deployment configuration, or external browser
   journeys. Add only the explicit build, gallery, browser, integration, schema,
   Pages, CI, or E2E check which can detect the changed non-import behavior.
-- Run the full `deno task verify` only at a final/release gate, after a
+- Run `deno task verify` locally only as a final preflight, after a
   cross-cutting dependency/toolchain/configuration change whose impact cannot be
-  bounded reliably, or when CI exposes an unexpected broader failure. Do not run
-  an umbrella command and then rerun its constituent suites against the same
-  commit.
+  bounded, or when diagnosing a broader CI failure. CI/CD runs the same quality
+  gate and is the authority for merge and deployment acceptance; local success
+  is not a release. Do not run an umbrella command and then rerun its
+  constituent suites against the same commit.
 - Batch visual validation at the next named UI review checkpoint. Individual UI
   tasks run affected tests; perform an earlier targeted gallery or
   `agent-browser` check only when the task introduces or changes focus,
@@ -107,7 +120,7 @@
 - A reviewer may trust exact successful evidence recorded for the same commit
   and should rerun only risk-selected commands. Do not mechanically repeat the
   implementer's complete command matrix. After a fix, rerun affected validation;
-  repeat a full gate only when shared or cross-cutting code changed.
+  repeat the CI quality gate only when shared or cross-cutting code changed.
 - Record exact commands and results. An unsupported summary such as “tests pass”
   is not sufficient evidence, but evidence collection must not cause an
   otherwise identical command to be repeated without a stated risk reason.
@@ -182,6 +195,6 @@ For the approved Mantine migration and all later design-system work:
    feedback.
 10. A facade contract may change only after an impact inventory identifies all
     consumers and tests. When the change belongs to an active planned milestone,
-    record it in `IMPLEMENTATION_PLAN.md` and obtain the preceding or immediately
-    following review-gate approval; otherwise record the inventory and approval
-    in the focused change evidence.
+    record it in `IMPLEMENTATION_PLAN.md` and obtain the preceding or
+    immediately following review-gate approval; otherwise record the inventory
+    and approval in the focused change evidence.

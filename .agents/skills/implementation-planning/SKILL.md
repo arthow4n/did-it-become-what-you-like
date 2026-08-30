@@ -244,7 +244,7 @@ run the `repo-hygiene-pruning` skill (`.agents/skills/repo-hygiene-pruning/SKILL
 3. **Audit Cross-References:** Verify zero dangling `.md` links across the entire
    codebase.
 4. **Environment-Scoped Verification:** Run only syntax, typecheck, lint, and
-   formatting validation (`deno task check`, `deno task fmt:check`,
+   formatting validation (`deno task typecheck`, `deno task fmt:check`,
    `deno task lint`, `git diff --check`). Do not launch heavy browser tests or
    long test suites during doc pruning.
 

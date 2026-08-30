@@ -46,28 +46,23 @@ Deno.test("CI and Pages workflows follow reviewed security and task policies", a
     /^permissions:\s*\n\s+contents:\s+read\s*$/m.test(ci),
     "CI must grant read-only repository contents permission",
   );
-  assert(
-    ci.includes("deno task fmt:check") && ci.includes("deno task build"),
-    "CI must run the foundation formatting and production build tasks",
-  );
+  for (const [index, workflow] of workflows.entries()) {
+    assert(
+      workflow.includes("deno task verify"),
+      `workflow ${index + 1} must run the canonical CI quality gate`,
+    );
+  }
   assert(
     pages.includes("VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}"),
     "Pages must pass the non-secret Google OAuth client ID to the production build",
   );
-  for (const [index, workflow] of workflows.entries()) {
-    assert(
-      workflow.includes("deno task release:verify"),
-      `workflow ${index + 1} must verify release provenance before publication`,
-    );
-  }
-  const releaseVerificationPosition = pages.indexOf(
-    "run: deno task release:verify",
+  const qualityGatePosition = pages.indexOf(
+    "run: deno task verify",
   );
   const uploadPosition = pages.indexOf("actions/upload-pages-artifact@");
   assert(
-    releaseVerificationPosition >= 0 &&
-      releaseVerificationPosition < uploadPosition,
-    "Pages must verify release provenance before uploading the artifact",
+    qualityGatePosition >= 0 && qualityGatePosition < uploadPosition,
+    "Pages must complete the CI quality gate before uploading the artifact",
   );
   const deployJob = pages.slice(pages.indexOf("\ndeploy:"));
   assert(

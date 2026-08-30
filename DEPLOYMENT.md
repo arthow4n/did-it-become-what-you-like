@@ -1,16 +1,24 @@
-# GitHub Pages release operations
+# GitHub Pages deployment operations
 
 This repository publishes a static PWA from `master` to the standard Pages URL:
 
 <https://arthow4n.github.io/did-it-become-what-you-like/>
 
-## Release boundary
+## CI/CD deployment boundary
 
-The Pages workflow checks out the exact pushed commit, runs the required Deno
-validation and production build, verifies the resulting `dist/` artifact, and
-uploads that artifact before the separate deploy job runs. The deploy job has
-only Pages write and OIDC token permissions; it does not rebuild source or
-accept a local directory. No credentials are required by CI.
+CI is the automated quality authority for every push and pull request. The Pages
+workflow is the deployment authority for pushes to `master`: it checks out the
+exact pushed commit, runs `deno task verify`, and uploads the resulting `dist/`
+artifact before the separate deploy job runs. There is no separate local release
+gate or manual artifact handoff.
+
+The CI quality gate covers formatting, linting, type checking, Deno tests, the
+production build, built-artifact verification, dependency audit, and whitespace
+checks. Browser E2E and gallery verification are separate, risk-selected checks;
+they are not implied by `deno task verify`.
+
+The deploy job has only Pages write and OIDC token permissions; it does not
+rebuild source or accept a local directory. No credentials are required by CI.
 
 `deno task release:verify` must run after `deno task build`. It verifies the
 repository-relative artifact paths, hash-route shell fallback, CSP allowlist,
@@ -39,30 +47,23 @@ Configure the public Google OAuth client ID before testing Drive on Pages:
 6. Run the Pages workflow, open the deployed app, and use **Settings → Google
    Drive and sync → Connect Google Drive**.
 
-## Local release checklist
+## Local preflight
 
-Run from a clean checkout of the intended release commit:
+`deno task verify` is an optional local mirror of the CI quality gate, useful
+before a final push or while diagnosing a CI failure. Passing it does not
+release anything; the CI/CD workflows accept and deploy the pushed commit.
 
-```text
-deno task fmt:check
-deno task lint
-deno task check
-deno task test
-deno task build
-deno task release:verify
-```
-
-The canonical aggregate is `deno task verify`; the release-specific sequence is
-`deno task build && deno task release:verify`. Do not commit `dist/`, browser
+`deno task release:verify` is the built-artifact portion of that gate and must
+follow `deno task build` when run by itself. Do not commit `dist/`, browser
 profiles, screenshots, traces, or other generated artifacts.
 
 ## Hosted smoke and rollback
 
-After the integration owner pushes the reviewed commit, confirm the workflow run
-succeeds and record its deployed commit. Smoke the hosted base path and a nested
-hash route refresh, then check manifest/service-worker scope, offline relaunch,
-and an update-ready reload with no unsaved form. These are live checks and
-cannot be claimed from a local build.
+After the integration owner pushes the reviewed commit, confirm the Pages
+workflow succeeds and record its deployed commit. Smoke the hosted base path and
+a nested hash route refresh, then check manifest/service-worker scope, offline
+relaunch, and an update-ready reload with no unsaved form. These are live checks
+and cannot be claimed from a local build.
 
 If a published release is defective, stop further release pushes, identify the
 last known-good commit and its successful Pages run, then revert the faulty

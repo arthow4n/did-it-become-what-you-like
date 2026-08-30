@@ -317,7 +317,7 @@ Once all checklist items are checked off:
    ```
 2. **Run Design System Accessibility Check:**
    ```bash
-   deno task a11y:gallery
+   deno task gallery:verify
    ```
 3. **Run Production Build:**
    ```bash
@@ -327,9 +327,9 @@ Once all checklist items are checked off:
    ```bash
    deno task test:e2e --grep <affected-journey>
    ```
-   Run `deno task verify` only when this is the final/release gate or the audit
+   Run `deno task verify` only as a final local preflight or when the audit
    changed cross-cutting dependency, toolchain, or configuration behavior whose
-   impact cannot be bounded reliably.
+   impact cannot be bounded reliably. CI/CD remains the release authority.
 5. If any test expectation requires precision updating (e.g. formatted money
    string `SEK -12.50`), update the test, re-verify, commit, and push.
 

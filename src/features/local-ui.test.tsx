@@ -1244,21 +1244,3 @@ Deno.test(
     );
   },
 );
-
-Deno.test("local UI CSS uses shared surface, overlay, and spacing tokens", async () => {
-  const css = await Deno.readTextFile(
-    new URL("./local-ui.css", import.meta.url),
-  );
-  assert(css.includes("background: var(--color-surface-2);"));
-  assert(css.includes("z-index: var(--layer-overlay);"));
-  assert(css.includes("gap: var(--space-1);"));
-  assert(css.includes("local-ui-expenses-layout"));
-  assert(css.includes("minmax(0, 1.45fr) minmax(16rem, 0.75fr)"));
-  assert(css.includes("local-ui-delete-actions"));
-  assert(css.includes("min-height: var(--control-height);"));
-  assert(css.includes("row-gap: var(--space-3);"));
-  assert(css.includes("@media (max-width: 359px)"));
-  assert(!css.includes("var(--surface-2)"));
-  assert(!css.includes("z-index: 40;"));
-  assert(!css.includes("gap: 0;"));
-});

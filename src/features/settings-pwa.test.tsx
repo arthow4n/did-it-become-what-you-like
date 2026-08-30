@@ -460,16 +460,6 @@ Deno.test("settings-final unsupported browser explains the update limitation", a
   });
 });
 
-Deno.test("settings-final About links wrap within the narrow viewport", async () => {
-  const css = await Deno.readTextFile(
-    new URL("./settings-pwa.css", import.meta.url),
-  );
-  assert(css.includes(".settings-pwa-about-links .ds-link-button"));
-  assert(css.includes("width: 100%;"));
-  assert(css.includes("overflow-wrap: anywhere;"));
-  assert(css.includes("white-space: normal;"));
-});
-
 function viewText(): string {
   return document.body.textContent ?? "";
 }

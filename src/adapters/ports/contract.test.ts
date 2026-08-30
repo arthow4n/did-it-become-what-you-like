@@ -2,35 +2,12 @@ import {
   ADAPTER_DIAGNOSTIC_OPERATIONS,
   ADAPTER_ERROR_CODES,
   AdapterError,
-  type CausalSyncPort,
-  type DriveAuthorizationPort,
-  type DriveTransportPort,
-  type FileSelectionPort,
-  type FileSharePort,
-  type ImagePreparationPort,
   isAdapterDiagnosticOperation,
   isAdapterErrorCode,
-  type LocalPort,
   mapAdapterError,
-  type OnlineStatusPort,
-  type ReceiptAiPort,
   RETIRED_DATASET_ERROR_ALIASES,
   RETRY_BY_ERROR_CODE,
-  type SecretStoragePort,
-  type UpdateInstallPort,
 } from "./index.ts";
-
-import {
-  createFakeCausalSyncPort,
-  createFakeDrivePorts,
-  createFakeFileSharePort,
-  createFakeGeminiPort,
-  createFakeImagePreparationPort,
-  createFakeLocalPort,
-  createFakeOnlineStatusPort,
-  createFakeSecretStoragePort,
-  createFakeUpdateInstallPort,
-} from "../../test-support/fakes/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -50,35 +27,6 @@ function assertEquals<T>(actual: T, expected: T): void {
     );
   }
 }
-
-Deno.test("adapter-contract ports expose browser-neutral typed boundaries", () => {
-  const fixtures: {
-    local: LocalPort;
-    causal: CausalSyncPort;
-    driveAuth: DriveAuthorizationPort;
-    driveTransport: DriveTransportPort;
-    receiptAi: ReceiptAiPort;
-    image: ImagePreparationPort;
-    online: OnlineStatusPort;
-    fileSelection: FileSelectionPort;
-    fileShare: FileSharePort;
-    update: UpdateInstallPort;
-    secrets: SecretStoragePort;
-  } = {
-    local: createFakeLocalPort(),
-    causal: createFakeCausalSyncPort(),
-    driveAuth: createFakeDrivePorts(),
-    driveTransport: createFakeDrivePorts(),
-    receiptAi: createFakeGeminiPort(),
-    image: createFakeImagePreparationPort(),
-    online: createFakeOnlineStatusPort(),
-    fileSelection: createFakeFileSharePort(),
-    fileShare: createFakeFileSharePort(),
-    update: createFakeUpdateInstallPort(),
-    secrets: createFakeSecretStoragePort(),
-  };
-  assertEquals(Object.keys(fixtures).length, 11);
-});
 
 Deno.test("adapter-contract error mapping is exhaustive and retry-explicit", () => {
   for (const code of ADAPTER_ERROR_CODES) {

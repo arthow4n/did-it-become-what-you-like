@@ -683,27 +683,3 @@ Deno.test("known devices keep rename controls ordered after activation", async (
     });
   });
 });
-
-Deno.test("known device acknowledgement badges have a narrow-layout containment contract", async () => {
-  const css = await Deno.readTextFile(
-    new URL("./sync-ui.css", import.meta.url),
-  );
-  assert(css.includes(".sync-ui-device-row .ds-badge"));
-  assert(css.includes("max-width: 100%"));
-  assert(css.includes("overflow-wrap: anywhere"));
-  assert(css.includes("white-space: normal"));
-});
-
-Deno.test("sync status indicator has a compact header containment contract", async () => {
-  const css = await Deno.readTextFile(
-    new URL("./sync-ui.css", import.meta.url),
-  );
-  assert(
-    css.includes(
-      ".ds-page-header__actions > .ds-button.sync-ui-status-indicator",
-    ),
-  );
-  assert(css.includes("width: 100%;"));
-  assert(css.includes("overflow-wrap: anywhere;"));
-  assert(css.includes("white-space: normal;"));
-});

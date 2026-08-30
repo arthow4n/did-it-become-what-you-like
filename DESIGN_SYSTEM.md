@@ -290,8 +290,8 @@ flexbox abuse, all components and screens must follow these rules:
    - Compact screens (`< 720px`) MUST anchor application navigation to the
      bottom viewport edge with safe-area padding
      (`padding-bottom: max(var(--space-2), env(safe-area-inset-bottom))`).
-   - Bottom sheets (e.g. `FilterSheet` or modal dialogs) must include bottom safe-area
-     clearance
+   - Bottom sheets (e.g. `FilterSheet` or modal dialogs) must include bottom
+     safe-area clearance
      (`padding-bottom: max(var(--space-5), env(safe-area-inset-bottom))`).
    - Content container `<main>` must maintain bottom padding
      (`padding-bottom: calc(var(--control-height) + var(--space-8) + env(safe-area-inset-bottom, 0px))`)
@@ -342,20 +342,20 @@ pending control keeps its label or an equally descriptive accessible name.
 
 ### Reusable patterns
 
-| Pattern                                                    | Responsibility                                                 |
-| ---------------------------------------------------------- | -------------------------------------------------------------- |
-| `AppNavigation`                                            | Expenses/Add/Organize/Settings bottom bar and desktop rail     |
-| `GlobalStatus`                                             | Offline, reconnecting, syncing, conflict, error, update status |
-| `FormLayout`, `FormActions`, `ErrorSummary`, `DraftStatus` | Consistent form spacing, validation, dirty/save feedback       |
-| `FilterBar`, `FilterSheet`, `ActiveFilterChips`            | Quick filters, advanced filters, removable active criteria     |
-| `MasterDetail`                                             | Mobile list-to-detail and wide two-column detail composition   |
-| `ManagementList`                                           | Active/archived sections, search, reorder and row actions      |
-| `ReorderControls`                                          | Drag plus keyboard-accessible move actions                     |
-| `SettingsList`, `SettingsRow`                              | Settings navigation with concise live summary                  |
-| `StatusPanel`                                              | Identity, current state, timestamps, pending counts, actions   |
-| `SafetyExportStep`                                         | Reusable pre-destructive JSON export/decline confirmation      |
-| `WorkflowProgress`                                         | Named resumable steps, retry, and terminal result              |
-| `UpdatePrompt`                                             | Checking/current/ready/offline/error and guarded reload        |
+| Pattern                                                    | Responsibility                                                     |
+| ---------------------------------------------------------- | ------------------------------------------------------------------ |
+| `AppNavigation`                                            | Expenses/Manual/Scan/Organize/Settings bottom bar and desktop rail |
+| `GlobalStatus`                                             | Offline, reconnecting, syncing, conflict, error, update status     |
+| `FormLayout`, `FormActions`, `ErrorSummary`, `DraftStatus` | Consistent form spacing, validation, dirty/save feedback           |
+| `FilterBar`, `FilterSheet`, `ActiveFilterChips`            | Quick filters, advanced filters, removable active criteria         |
+| `MasterDetail`                                             | Mobile list-to-detail and wide two-column detail composition       |
+| `ManagementList`                                           | Active/archived sections, search, reorder and row actions          |
+| `ReorderControls`                                          | Drag plus keyboard-accessible move actions                         |
+| `SettingsList`, `SettingsRow`                              | Settings navigation with concise live summary                      |
+| `StatusPanel`                                              | Identity, current state, timestamps, pending counts, actions       |
+| `SafetyExportStep`                                         | Reusable pre-destructive JSON export/decline confirmation          |
+| `WorkflowProgress`                                         | Named resumable steps, retry, and terminal result                  |
+| `UpdatePrompt`                                             | Checking/current/ready/offline/error and guarded reload            |
 
 ### Domain composites
 

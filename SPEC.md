@@ -1044,8 +1044,7 @@ These questions must be resolved incrementally before implementation.
 ### 9. Testing and Visual Acceptance
 
 - There are no remaining owner-preference decisions in this section.
-  `deno
-  test`, React Testing Library/`happy-dom`, a proper provisional
+  `deno test`, React Testing Library/`happy-dom`, a proper provisional
   Playwright E2E dependency, and separately installed `agent-browser` are
   subject to the recorded foundation compatibility gates.
 - Critical E2E journeys, representative viewports, accessibility gates, and the

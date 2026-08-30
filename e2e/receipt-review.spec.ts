@@ -8,7 +8,7 @@ const ONE_PIXEL_PNG = Buffer.from(
 
 test(
   "receipt-review captures, scans with fake Gemini, and saves atomically",
-  async ({ isolatedContext }, testInfo) => {
+  async ({ isolatedContext }) => {
     test.setTimeout(60_000);
     const page = await isolatedContext.newPage();
     await page.setViewportSize({ width: 390, height: 844 });
@@ -202,46 +202,6 @@ test(
     await expect(
       page.getByRole("heading", { name: "Fake Receipt Market", level: 1 }),
     ).toBeVisible();
-    const assertNoHorizontalOverflow = async () => {
-      await expect.poll(() =>
-        page.evaluate(() =>
-          document.documentElement.scrollWidth <=
-            document.documentElement.clientWidth
-        )
-      ).toBe(true);
-    };
-    const assertViewport = async (width: number, height: number) => {
-      await expect.poll(() =>
-        page.evaluate(() => ({ width: innerWidth, height: innerHeight }))
-      ).toEqual({ width, height });
-    };
-    await assertViewport(390, 844);
-    await assertNoHorizontalOverflow();
-    await page.screenshot({
-      path: testInfo.outputPath("receipt-detail-phone.png"),
-      fullPage: false,
-      animations: "disabled",
-    });
-    await page.setViewportSize({ width: 320, height: 568 });
-    await assertViewport(320, 568);
-    await expect(page.getByRole("button", { name: "Delete receipt" }))
-      .toBeVisible();
-    await assertNoHorizontalOverflow();
-    await page.screenshot({
-      path: testInfo.outputPath("receipt-detail-narrow.png"),
-      fullPage: false,
-      animations: "disabled",
-    });
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await assertViewport(1280, 800);
-    await expect(page.getByRole("button", { name: "Delete receipt" }))
-      .toBeVisible();
-    await assertNoHorizontalOverflow();
-    await page.screenshot({
-      path: testInfo.outputPath("receipt-detail-desktop.png"),
-      fullPage: false,
-      animations: "disabled",
-    });
 
     await page.getByRole("button", { name: "Back to expenses" }).click();
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))

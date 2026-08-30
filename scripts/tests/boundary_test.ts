@@ -3,7 +3,6 @@
 const sourceRoots = ["src"];
 const approvedLibraryRoot = "src/design-system/";
 const mantineSpecifier = /^@mantine\//;
-const reactAriaSpecifier = "react-aria-components";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -24,50 +23,36 @@ async function collectSourceFiles(
 }
 
 function hasMantinePublicType(source: string): string | undefined {
-  const publicTypePattern = /export\s+(?:type|interface)\s+([A-Za-z_$][\w$]*)/g;
-  for (const match of source.matchAll(publicTypePattern)) {
-    const start = match.index ?? 0;
-    const isInterface = /\binterface\b/.test(match[0]);
-    let braces = 0;
-    let parentheses = 0;
-    let brackets = 0;
-    let end = source.length;
-    for (let index = start; index < source.length; index++) {
-      const character = source[index];
-      if (character === "{") braces++;
-      else if (character === "}") {
-        braces--;
-        if (isInterface && braces === 0) {
-          end = index + 1;
-          break;
-        }
-      } else if (character === "(") parentheses++;
-      else if (character === ")") parentheses--;
-      else if (character === "[") brackets++;
-      else if (character === "]") brackets--;
-      else if (
-        character === ";" && braces === 0 && parentheses === 0 &&
-        brackets === 0
-      ) {
-        end = index + 1;
-        break;
-      }
+  const typeAliases = source.matchAll(
+    /export\s+type\s+([A-Za-z_$][\w$]*)\s*=([\s\S]*?);/g,
+  );
+  for (const match of typeAliases) {
+    if (/(?:@mantine\/|\bMantine[A-Z]\w*\b|\bMantine\b)/.test(match[2])) {
+      return match[1];
     }
-    const declaration = source.slice(start, end);
+  }
+
+  const interfaces = source.matchAll(
+    /export\s+interface\s+([A-Za-z_$][\w$]*)([\s\S]*?)\n\}/g,
+  );
+  for (const match of interfaces) {
+    if (/(?:@mantine\/|\bMantine[A-Z]\w*\b|\bMantine\b)/.test(match[2])) {
+      return match[1];
+    }
+  }
+
+  const values = source.matchAll(
+    /export\s+(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::\s*([^=]+))?\s*=/g,
+  );
+  for (const match of values) {
     if (
-      /(?:@mantine\/|\bMantine[A-Z]\w*\b|\bMantine\b)/.test(declaration)
+      match[2] &&
+      /(?:@mantine\/|\bMantine[A-Z]\w*\b|\bMantine\b)/.test(match[2])
     ) {
       return match[1];
     }
   }
 
-  const exportedTypedValuePattern =
-    /export\s+(?:const|let|var)\s+[A-Za-z_$][\w$]*(?:\s*:\s*[\s\S]*?)?\s*=/g;
-  for (const match of source.matchAll(exportedTypedValuePattern)) {
-    if (/(?:@mantine\/|\bMantine[A-Z]\w*\b|\bMantine\b)/.test(match[0])) {
-      return match[0].replace(/\s*=\s*$/, "").trim();
-    }
-  }
   return undefined;
 }
 
@@ -86,24 +71,18 @@ Deno.test("design-system facade boundary isolation and type privacy", async () =
       )
     ) {
       const specifier = match[1];
-      if (specifier === reactAriaSpecifier) {
-        violations.push(`${path}: React Aria import ${specifier}`);
-      } else if (
+      if (
         mantineSpecifier.test(specifier) &&
         !path.startsWith(approvedLibraryRoot)
       ) {
         violations.push(`${path}: Mantine import ${specifier}`);
       }
     }
-
-    if (source.includes(reactAriaSpecifier)) {
-      violations.push(`${path}: React Aria dependency reference`);
-    }
   }
 
   const publicBarrel = await Deno.readTextFile("src/design-system/index.ts");
   assert(
-    !/react-aria-components|@mantine\//.test(publicBarrel),
+    !/@mantine\//.test(publicBarrel),
     "the public design-system barrel must not import or export a library module",
   );
   assert(

@@ -54,7 +54,7 @@ When evaluating screens and components, audit against these 5 pillars:
   - Modals, Drawers & Overlays (`.ds-modal-overlay`, `.local-ui-overlay`): `40`
   - Floating Toasts / Global Status Notifications: `50`
 - **Zero Covered Elements & Full Bottom Sheet Masking:** Bottom sheets (e.g.
-  `AddChoiceScreen`) must sit on top of the bottom navigation bar
+  `FilterSheet`, `AdaptiveDialog`) must sit on top of the bottom navigation bar
   (`z-index: 40`), cover bottom navigation cleanly with their backdrop, and
   include bottom safe-area clearance
   (`padding-bottom: max(var(--space-5), env(safe-area-inset-bottom))`).
@@ -93,10 +93,11 @@ When evaluating screens and components, audit against these 5 pillars:
     (~150px) floating lopsided on the left or right of a mobile screen leaving
     60% blank space.
 - **Choice Sheet & Intermediate Overlay Ergonomics:** Intermediate selection
-  dialogs and bottom sheets (e.g. `AddChoiceScreen`) must use clean, prominent,
-  full-width action buttons with clear leading icons (`Plus`, `Search`/`Scan`)
-  and concise labels. Avoid noisy, multi-line card descriptions and nested
-  borders when a clean button choice is faster and clearer for the user.
+  dialogs and bottom sheets (e.g. `FilterSheet`, `ReceiptSourcePicker`) must use
+  clean, prominent, full-width action buttons with clear leading icons (`Plus`,
+  `Search`/`Scan`) and concise labels. Avoid noisy, multi-line card descriptions
+  and nested borders when a clean button choice is faster and clearer for the
+  user.
 - **Form Action Button Vertical Hierarchy:** In mobile vertical button stacks,
   the primary submit/confirm action must ALWAYS be on **TOP**, and
   secondary/cancel actions on the **BOTTOM**. Never invert this order.

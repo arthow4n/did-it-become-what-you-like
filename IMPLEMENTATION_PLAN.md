@@ -30,15 +30,15 @@ M0 through M31 and all review gates through `R-3110` are complete. The released
 application baseline includes the approved domain, XState actors, adapter ports,
 local-first workflows, causal sync, responsive After Midnight UI, the
 Mantine-backed design-system facade, accessibility, PWA behavior, diagnostic
-taxonomy, receipt and organization safety, GitHub Pages delivery, the
-5-tab uniform navigation bar, and the mobile/narrow viewport ergonomics
-described by `SPEC.md`, `DESIGN_SYSTEM.md`, and `AGENTS.md`.
+taxonomy, receipt and organization safety, GitHub Pages delivery, the 5-tab
+uniform navigation bar, and the mobile/narrow viewport ergonomics described by
+`SPEC.md`, `DESIGN_SYSTEM.md`, and `AGENTS.md`.
 
 M30 and M31 specifically deliver:
 
-- Receipt extraction consolidates selected, confident duplicate purchase
-  lines into quantity-aware review entries and sums repeated bottle-deposit
-  charges while preserving receipt sign semantics and manual review safety.
+- Receipt extraction consolidates selected, confident duplicate purchase lines
+  into quantity-aware review entries and sums repeated bottle-deposit charges
+  while preserving receipt sign semantics and manual review safety.
 - A uniform 5-item navigation tab bar (`Expenses`, `Manual`, `Scan`, `Organize`,
   `Settings`) providing direct scene transitions with accessible
   `aria-current="page"` selected states across compact mobile (<720px) and
@@ -71,8 +71,7 @@ The M31 implementation commit `b1d01fc` was pushed to `origin/master`.
 - `deno task fmt:check` checked 210 files and passed.
 - `deno task lint` checked 200 files and passed.
 - `git diff --check` passed.
-- The full test suite passed 435 tests with 0 failures:
-  `deno task test`.
+- The full test suite passed 435 tests with 0 failures: `deno task test`.
 - `deno task build` transformed 2,973 modules and verified production assets.
 - `deno task release:verify` passed for version `0.1.0`.
 - Full E2E suite passed all 9 Playwright journeys (`deno task test:e2e`).
@@ -93,8 +92,8 @@ features/app -> actors -> domain + adapter ports
 
 Files under `src/features/**` and `src/app/**` use only the repository
 design-system facade. Mantine-specific implementation, provider mapping, and
-library customization stay in `src/design-system/**`. Durable workflow and
-form state remains in XState actors; product composites remain repository-owned
+library customization stay in `src/design-system/**`. Durable workflow and form
+state remains in XState actors; product composites remain repository-owned
 compositions. Domain code depends on narrow adapter ports, never browser or
 library internals. Local mutations remain available when sync or network state
 is unavailable.
@@ -143,8 +142,8 @@ After a restart, rate limit, lost session, or interrupted command:
 ## Current Checkpoint
 
 - **Active task / gate:** None; M31-FINAL is complete.
-- **Repository:** `master` is clean and synchronized with `origin/master`;
-  the M31 implementation commit is `b1d01fc`.
+- **Repository:** `master` is clean and synchronized with `origin/master`; the
+  M31 implementation commit is `b1d01fc`.
 - **M31 delivery:** 5-tab uniform scene navigation bar (`Expenses`, `Manual`,
   `Scan`, `Organize`, `Settings`), removal of intermediate `/add` modal dialog
   and top header button, direct creation scene transitions, and full E2E/audit

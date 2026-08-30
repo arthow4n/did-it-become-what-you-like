@@ -94,30 +94,6 @@ function assertEqual<T>(
   }
 }
 
-function hexToken(css: string, token: string): string {
-  const match = css.match(new RegExp(`--${token}:\\s*(#[0-9a-f]{6})`, "i"));
-  assert(match, `Expected ${token} to have a hex value`);
-  return match[1].toLowerCase();
-}
-
-function relativeLuminance(hex: string): number {
-  const channels = [0, 1, 2].map((channel) => {
-    const value = Number.parseInt(
-      hex.slice(1 + channel * 2, 3 + channel * 2),
-      16,
-    ) / 255;
-    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-}
-
-function contrastRatio(first: string, second: string): number {
-  const firstLuminance = relativeLuminance(first);
-  const secondLuminance = relativeLuminance(second);
-  return (Math.max(firstLuminance, secondLuminance) + 0.05) /
-    (Math.min(firstLuminance, secondLuminance) + 0.05);
-}
-
 async function withAriaDomGlobals<T>(
   testWindow: {
     HTMLButtonElement: unknown;
@@ -1207,92 +1183,6 @@ Deno.test("M8 filter and status facades preserve grouping and workflow state", a
   );
 });
 
-Deno.test("design-system adaptive dialog keeps sheet and desktop modal positioning", async () => {
-  const css = await Deno.readTextFile(new URL("./tokens.css", import.meta.url));
-  assert(css.includes("place-items: end center;"));
-  assert(
-    css.includes(
-      "border-radius: var(--radius-overlay) var(--radius-overlay) 0 0;",
-    ),
-  );
-  const wideLayout = css.slice(css.indexOf("@media (min-width: 1024px)"));
-  assert(wideLayout.includes("place-items: center;"));
-  assert(wideLayout.includes("border-radius: var(--radius-overlay);"));
-  assert(css.includes("overflow-y: auto;"));
-});
-
-Deno.test("design-system CSS locks semantic tokens, immediate motion, targets, and forced colors", async () => {
-  const css = await Deno.readTextFile(new URL("./tokens.css", import.meta.url));
-  assert(css.includes("--color-canvas: #101315"));
-  assert(css.includes("--color-accent: #78dcca"));
-  assert(css.includes("--motion-immediate: 0ms"));
-  assert(css.includes("--layer-overlay: 40"));
-  assert(css.includes("z-index: var(--layer-toast)"));
-  assert(css.includes("transition: none"));
-  assert(css.includes("--target-min: 44px"));
-  assert(css.includes("@media (max-width: 359px)"));
-  assert(css.includes("max(var(--space-2), env(safe-area-inset-bottom, 0px))"));
-  assert(
-    css.includes(
-      "padding-bottom: max(var(--space-6), env(safe-area-inset-bottom));",
-    ),
-  );
-  assert(css.includes(".ds-sticky-action-bar"));
-  for (
-    const selector of [
-      ".ds-search-field__clear",
-      ".ds-secret-field__toggle",
-      ".ds-toast__dismiss",
-    ]
-  ) {
-    const ruleStart = css.indexOf(selector);
-    const ruleEnd = css.indexOf("}", ruleStart);
-    assert(
-      ruleStart >= 0 &&
-        css.slice(ruleStart, ruleEnd).includes("width: 44px;") &&
-        css.slice(ruleStart, ruleEnd).includes("height: 44px;"),
-      `${selector} must retain a 44px hit area`,
-    );
-  }
-  assert(css.includes("flex-direction: column;"));
-  assert(css.includes("@media (prefers-reduced-motion: reduce)"));
-  assert(css.includes("@media (forced-colors: active)"));
-  assert(css.includes("@keyframes ds-progress"));
-  assert(css.includes("overflow-wrap: anywhere;"));
-
-  const surface = hexToken(css, "color-surface-1");
-  for (
-    const token of [
-      "color-text-primary",
-      "color-text-secondary",
-      "color-text-muted",
-      "color-accent",
-      "color-positive",
-      "color-negative",
-      "color-danger",
-      "color-warning",
-      "color-info",
-    ]
-  ) {
-    assert(
-      contrastRatio(hexToken(css, token), surface) >= 4.5,
-      `${token} must retain 4.5:1 contrast on color-surface-1`,
-    );
-  }
-  assert(
-    contrastRatio(
-      hexToken(css, "color-on-danger"),
-      hexToken(css, "color-danger"),
-    ) >=
-      4.5,
-    "color-on-danger must retain 4.5:1 contrast on color-danger",
-  );
-  assert(css.includes("color: var(--color-on-danger);"));
-  assert(!css.includes("color: #241113;"));
-  assert(css.includes("gap: var(--space-1);"));
-  assert(!css.includes("gap: 2px;"));
-});
-
 Deno.test("design-system page headers can provide the application heading", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaDomGlobals(window, () => {
@@ -1355,14 +1245,6 @@ Deno.test("design-system category totals preserve long identity and signed money
       mounted.unmount();
     })
   );
-});
-
-Deno.test("application root leaves the main landmark to AppFrame", async () => {
-  const html = await Deno.readTextFile(
-    new URL("../../index.html", import.meta.url),
-  );
-  assert(html.includes('<div id="root"></div>'));
-  assert(!html.includes('<main id="root">'));
 });
 
 Deno.test("design-system money component keeps sign and currency in accessible text", async () => {

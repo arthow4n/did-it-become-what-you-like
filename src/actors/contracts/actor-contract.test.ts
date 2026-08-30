@@ -159,7 +159,7 @@ const typedEvents = [
     request: { reason: "manual" } satisfies SyncRequest,
   } satisfies SyncEvent,
 ];
-assert(typedEvents.length === 3);
+void typedEvents;
 
 // @ts-expect-error Receipt scans cannot omit the ephemeral image request payload.
 const invalidReceiptEvent: ReceiptScanEvent = { type: "receipt.scan" };

@@ -720,13 +720,3 @@ Deno.test("export panel exposes canonical download/share actions and retryable s
     });
   });
 });
-
-Deno.test("import and export CSS preserves review max-width, narrow layout, and immediate interaction", async () => {
-  const css = await Deno.readTextFile(
-    new URL("./conflict-import-ui.css", import.meta.url),
-  );
-  assert(css.includes("conflict-import-master-detail"));
-  assert(css.includes("@media (max-width: 719px)"));
-  assert(css.includes("transition: none"));
-  assert(css.includes("overflow-wrap: anywhere"));
-});

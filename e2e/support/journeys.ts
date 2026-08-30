@@ -31,7 +31,7 @@ export type ApprovedJourneyId = (typeof APPROVED_JOURNEYS)[number]["id"];
 export function assertApprovedJourneyBoundaries(): void {
   if (APPROVED_JOURNEYS.length !== 5) {
     throw new Error(
-      "F-005 must expose exactly five approved E2E journey boundaries.",
+      "E2E journey registry must expose exactly five approved journey boundaries.",
     );
   }
   const ids = new Set(APPROVED_JOURNEYS.map((journey) => journey.id));

@@ -10,9 +10,8 @@
 coverage/
 *.lcov
 
-# Deno-managed npm links and disposable F-001 build output
+# Deno-managed npm links and disposable build output
 /node_modules/
-/spikes/toolchain/.tmp/
 /dist/
 /dist-gallery/
 /playwright-report/

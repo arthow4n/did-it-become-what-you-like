@@ -15,14 +15,14 @@ function assertEquals<T>(actual: T, expected: T): void {
 Deno.test("hash routing survives a nested Pages refresh URL", () => {
   const url = hashRouteUrl(
     "https://owner.github.io",
-    "/foundation/nested",
+    "/settings/nested",
   );
 
   assertEquals(
     new URL(url).pathname,
     "/did-it-become-what-you-like/",
   );
-  assertEquals(new URL(url).hash, "#/foundation/nested");
-  assertEquals(routeFromHash(new URL(url).hash), "/foundation/nested");
-  assertEquals(hashForRoute("foundation/nested"), "#/foundation/nested");
+  assertEquals(new URL(url).hash, "#/settings/nested");
+  assertEquals(routeFromHash(new URL(url).hash), "/settings/nested");
+  assertEquals(hashForRoute("settings/nested"), "#/settings/nested");
 });

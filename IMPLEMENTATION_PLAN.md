@@ -371,7 +371,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 - **Status/dependencies:** `IN_PROGRESS`; depends on `M29-003`, `M29-004`, `M29-005`.
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs across sync UI, PWA runtime, CategoryManager, and PreferencesScreen across mobile and desktop viewports.
-- **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening release gate.
+- **Remediation loop:** Initial review found two S2 narrow-viewport overflow findings: the compact sync indicator could exceed the header action slot, and the long About notice link could exceed a 320px viewport. The primary implementer constrained the indicator and its status text at compact widths, made About links shrinkable and wrapping, added CSS regression assertions, and reran the relevant browser journeys. A fresh closure review is required before opening the release gate.
 
 ---
 
@@ -465,8 +465,8 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   narrow card-action rows retain 44px targets with larger row spacing. The focused
   local/settings suite passed 40 tests with format, lint, typecheck, and `git diff
   --check` clean.
-- **Exact next action:** Complete the fresh read-only R-2920 review across sync,
-  PWA, category, and preference UI at mobile and desktop widths.
+- **Exact next action:** Complete the fresh read-only R-2920 closure review across
+  sync, PWA, category, and preference UI at mobile and desktop widths.
 
 ## Ready-to-Use Orchestration Prompt
 

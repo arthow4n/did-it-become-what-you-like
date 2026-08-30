@@ -335,6 +335,117 @@ Deno.test("manual-expense: null-draft hydration and open failures retry safely",
   open.stop();
 });
 
+Deno.test("manual-expense: queued open starts after empty draft hydration", async () => {
+  const harness = await createHarness();
+  const actor = createExpenseActor(harness, "workflow:queued-open");
+  actor.send({ type: "expense.hydrate" });
+  actor.send({ type: "expense.open", request: { projectId: project.id } });
+  await settle();
+  assertEquals(actor.getSnapshot().value, "editing");
+  assertEquals(actor.getSnapshot().context.draft?.projectId, project.id);
+  actor.stop();
+});
+
+Deno.test("manual-expense: transient and failed edits retain delete and merchant actions", async () => {
+  const harness = await createHarness();
+  const expense = expenseRecord({ id: "expense-transient-actions" });
+  await harness.local.transaction(
+    "readwrite",
+    (transaction) =>
+      transaction.put("records", expense.id, asExpenseValue(expense)),
+  );
+
+  const persisting = createExpenseActor(harness, "workflow:delete-persisting");
+  persisting.send({ type: "expense.open", request: { expense } });
+  await settle();
+  persisting.send({
+    type: "expense.change",
+    draft: draftWith(persisting.getSnapshot().context.draft!, {
+      description: "Changed while saving",
+    }),
+  });
+  assertEquals(persisting.getSnapshot().value, "persistingDraft");
+  persisting.send({ type: "expense.delete" });
+  assertEquals(persisting.getSnapshot().value, "deleteConfirming");
+  persisting.stop();
+
+  const draftFailure = createExpenseActor(
+    harness,
+    "workflow:delete-draft-failure",
+  );
+  draftFailure.send({ type: "expense.open", request: { expense } });
+  await settle();
+  harness.local.failNext("quota");
+  draftFailure.send({
+    type: "expense.change",
+    draft: draftWith(draftFailure.getSnapshot().context.draft!, {
+      description: "Draft persistence fails",
+    }),
+  });
+  await settle();
+  assertEquals(draftFailure.getSnapshot().value, "draftSaveFailed");
+  draftFailure.send({ type: "expense.delete" });
+  assertEquals(draftFailure.getSnapshot().value, "deleteConfirming");
+  draftFailure.stop();
+
+  const saveFailure = createExpenseActor(
+    harness,
+    "workflow:save-failure-actions",
+  );
+  saveFailure.send({ type: "expense.open", request: { expense } });
+  await settle();
+  harness.local.failNext("quota");
+  saveFailure.send({ type: "expense.submit" });
+  await settle();
+  assertEquals(saveFailure.getSnapshot().value, "saveFailed");
+  saveFailure.send({ type: "expense.merchant.choose", merchant: " Market " });
+  await settle();
+  assertEquals(saveFailure.getSnapshot().value, "editing");
+  assertEquals(saveFailure.getSnapshot().context.draft?.merchant, "Market");
+  saveFailure.send({ type: "expense.merchant.clear" });
+  await settle();
+  assertEquals(saveFailure.getSnapshot().context.draft?.merchant, undefined);
+  harness.local.failNext("quota");
+  saveFailure.send({ type: "expense.submit" });
+  await settle();
+  assertEquals(saveFailure.getSnapshot().value, "saveFailed");
+  saveFailure.send({ type: "expense.delete" });
+  assertEquals(saveFailure.getSnapshot().value, "deleteConfirming");
+  saveFailure.stop();
+});
+
+Deno.test("manual-expense: failed save-and-add-another keeps the draft editable", async () => {
+  const harness = await createHarness();
+  const actor = createExpenseActor(harness, "workflow:save-another-failure");
+  actor.send({ type: "expense.open" });
+  await settle();
+  actor.send({
+    type: "expense.change",
+    draft: draftWith(actor.getSnapshot().context.draft!, { amount: "9.25" }),
+  });
+  await settle();
+  harness.local.failNext("quota");
+  actor.send({ type: "expense.submit-and-add-another" });
+  await settle();
+  assertEquals(actor.getSnapshot().value, "saveAnotherFailed");
+  assert(actor.getSnapshot().hasTag("dirty"));
+  assertEquals(actor.getSnapshot().context.draft?.amount, "9.25");
+  actor.send({
+    type: "expense.change",
+    draft: draftWith(actor.getSnapshot().context.draft!, {
+      description: "Corrected after failed save",
+    }),
+  });
+  await settle();
+  assertEquals(actor.getSnapshot().value, "editing");
+  assertEquals(actor.getSnapshot().context.draft?.amount, "9.25");
+  assertEquals(
+    actor.getSnapshot().context.draft?.description,
+    "Corrected after failed save",
+  );
+  actor.stop();
+});
+
 Deno.test("manual-expense: merchant suggestions can be chosen and cleared", async () => {
   const harness = await createHarness();
   await harness.local.transaction("readwrite", async (transaction) => {

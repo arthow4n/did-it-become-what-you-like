@@ -652,6 +652,7 @@ const manualExpenseSetup = setup({
     hasDraft: ({ context }) => context.draft !== null,
     canDelete: ({ context }) => context.originalExpense !== null,
     hasSavedResult: ({ context }) => context.result !== null,
+    hasOpenRequest: ({ context }) => context.openRequest !== null,
     hasHydratedDraft: ({ event }) => "output" in event && event.output !== null,
   },
 });
@@ -711,6 +712,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
               error: () => null,
             }),
           },
+          { target: "opening", guard: "hasOpenRequest" },
           { target: "idle", actions: assign({ error: () => null }) },
         ],
         onError: {
@@ -722,6 +724,13 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
                 message: "Unable to restore the expense draft.",
                 retryable: true,
               }),
+          }),
+        },
+      },
+      on: {
+        "expense.open": {
+          actions: assign({
+            openRequest: ({ event }) => event.request ?? {},
           }),
         },
       },
@@ -921,6 +930,10 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
             }),
           },
         ],
+        "expense.delete": {
+          target: "deleteConfirming",
+          guard: "canDelete",
+        },
         "expense.back": "discardConfirming",
         "expense.cancel": "discardConfirming",
         "expense.discard": "discardConfirming",
@@ -983,6 +996,10 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
             }),
           },
         ],
+        "expense.delete": {
+          target: "deleteConfirming",
+          guard: "canDelete",
+        },
         "expense.back": "discardConfirming",
         "expense.cancel": "discardConfirming",
         "expense.discard": "discardConfirming",
@@ -1043,7 +1060,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           }),
         },
         onError: {
-          target: "saveAnotherFailed",
+          target: "openingAnotherFailed",
           actions: assign({
             error: ({ event }) =>
               contractFailureFromError(event.error, {
@@ -1055,8 +1072,18 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         },
       },
     },
-    saveAnotherFailed: {
+    openingAnotherFailed: {
       tags: ["error"],
+      on: {
+        "expense.retry": "openingAnother",
+        "expense.retry-draft": "openingAnother",
+        "expense.finish-save": "savedOutput",
+        "expense.cancel": "savedOutput",
+        "expense.back": "savedOutput",
+      },
+    },
+    saveAnotherFailed: {
+      tags: ["dirty", "error"],
       on: {
         "expense.retry": [
           { target: "savingForAnother", guard: "hasDraft" },
@@ -1070,6 +1097,38 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           target: "persistingDraft",
           guard: "hasDraft",
           actions: "persistDraftChange",
+        },
+        "expense.merchant.choose": {
+          target: "persistingDraft",
+          guard: "hasDraft",
+          actions: assign({
+            draft: ({ context, event }) => ({
+              ...context.draft!,
+              merchant: event.merchant.trim() || undefined,
+            }),
+            validation: () => ({}),
+            error: () => null,
+            persistenceRevision: ({ context }) =>
+              context.persistenceRevision + 1,
+          }),
+        },
+        "expense.merchant.clear": {
+          target: "persistingDraft",
+          guard: "hasDraft",
+          actions: assign({
+            draft: ({ context }) => ({
+              ...context.draft!,
+              merchant: undefined,
+            }),
+            validation: () => ({}),
+            error: () => null,
+            persistenceRevision: ({ context }) =>
+              context.persistenceRevision + 1,
+          }),
+        },
+        "expense.delete": {
+          target: "deleteConfirming",
+          guard: "canDelete",
         },
         "expense.back": [
           { target: "discardConfirming", guard: "hasDraft" },
@@ -1129,6 +1188,36 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         "expense.change": {
           target: "persistingDraft",
           actions: "persistDraftChange",
+        },
+        "expense.merchant.choose": {
+          target: "persistingDraft",
+          actions: assign({
+            draft: ({ context, event }) => ({
+              ...context.draft!,
+              merchant: event.merchant.trim() || undefined,
+            }),
+            validation: () => ({}),
+            error: () => null,
+            persistenceRevision: ({ context }) =>
+              context.persistenceRevision + 1,
+          }),
+        },
+        "expense.merchant.clear": {
+          target: "persistingDraft",
+          actions: assign({
+            draft: ({ context }) => ({
+              ...context.draft!,
+              merchant: undefined,
+            }),
+            validation: () => ({}),
+            error: () => null,
+            persistenceRevision: ({ context }) =>
+              context.persistenceRevision + 1,
+          }),
+        },
+        "expense.delete": {
+          target: "deleteConfirming",
+          guard: "canDelete",
         },
         "expense.back": "discardConfirming",
         "expense.cancel": "discardConfirming",

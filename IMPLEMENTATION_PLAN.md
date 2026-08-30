@@ -135,7 +135,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-001 — Manual expense actor logic & mount race remediation
 
-- **Status/dependencies:** `READY`; depends on released baseline.
+- **Status/dependencies:** `IN_PROGRESS`; depends on released baseline.
 - **Ownership:** `src/actors/manual-expense.ts`, `src/features/local-ui.tsx`.
 - **Scope/non-goals:**
   1. Fix the mount effect race condition in `ManualExpenseScreen` where
@@ -325,10 +325,11 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M33-001` (`READY`)
-- **Repository:** Clean on `master`; M33 milestone ledger initialized.
-- **Next action:** Single primary implementer begins `M33-001` upon repo owner
-  authorization.
+- **Active task / gate:** `M33-001` (`IN_PROGRESS`)
+- **Repository:** Clean, synchronized `master` reconciled at `3acdbd3`; no M33
+  work or active ownership existed before recovery.
+- **Next action:** Implement the audited manual-expense actor and screen
+  regressions, then run the task's focused validation.
 
 ---
 

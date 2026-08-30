@@ -2301,14 +2301,15 @@ export function ManualExpenseScreen({
   onClosed: (status?: "deleted") => void;
 }) {
   const [machineKey, setMachineKey] = useState(0);
+  const persistenceKey = request.expense
+    ? `workflow:manual-expense:edit:${request.expense.id}`
+    : undefined;
   const machine = useMemo(
     () =>
       createManualExpenseMachine({ local: repository, organization: service }),
     [repository, service, machineKey],
   );
-  const [snapshot, send] = useActor(machine, { input: {} });
-  const [hydrationStarted, setHydrationStarted] = useState(false);
-  const [openSent, setOpenSent] = useState(false);
+  const [snapshot, send] = useActor(machine, { input: { persistenceKey } });
   const completionHandled = useRef(false);
   const usefulActionHandled = useRef(false);
   const syncMutationHandled = useRef(false);
@@ -2318,19 +2319,11 @@ export function ManualExpenseScreen({
   useEffect(() => {
     if (request.expense) {
       send({ type: "expense.open", request });
-      setOpenSent(true);
     } else {
       send({ type: "expense.hydrate" });
-      setHydrationStarted(true);
+      send({ type: "expense.open", request });
     }
   }, [machineKey, request, send]);
-
-  useEffect(() => {
-    if (hydrationStarted && !openSent && snapshot.matches("idle")) {
-      send({ type: "expense.open", request });
-      setOpenSent(true);
-    }
-  }, [hydrationStarted, machineKey, openSent, request, send, snapshot]);
 
   const saveMode = useRef<ManualSaveMode>("expenses");
   useEffect(() => {
@@ -2354,7 +2347,8 @@ export function ManualExpenseScreen({
       onSaved(snapshot.context.result.expense, saveMode.current);
     } else if (
       snapshot.matches("discarded") || snapshot.matches("cancelled") ||
-      snapshot.matches("deletedOutput") || snapshot.matches("savedUndone")
+      snapshot.matches("deletedOutput") || snapshot.matches("savedOutput") ||
+      snapshot.matches("savedUndone")
     ) {
       completionHandled.current = true;
       onClosed(snapshot.matches("deletedOutput") ? "deleted" : undefined);
@@ -2409,15 +2403,24 @@ export function ManualExpenseScreen({
         error={snapshot.context.error?.message}
         onUndo={() => send({ type: "expense.undo-saved" })}
         onRetry={() => send({ type: "expense.retry-undo" })}
-        onContinue={onClosed}
+        onContinue={() => send({ type: "expense.finish-save" })}
       />
     );
   }
   const retryOpening = () => {
-    setHydrationStarted(false);
-    setOpenSent(false);
     setMachineKey((value) => value + 1);
   };
+  if (snapshot.matches("openingAnotherFailed")) {
+    return (
+      <ManualExpenseRecoveryScreen
+        message={snapshot.context.error?.message ??
+          "The next expense form could not be opened."}
+        title="Expense saved"
+        onRetry={() => send({ type: "expense.retry" })}
+        onClose={() => send({ type: "expense.finish-save" })}
+      />
+    );
+  }
   if (
     (snapshot.matches("hydrateFailed") || snapshot.matches("openFailed") ||
       snapshot.matches("draftSaveFailed")) &&
@@ -2451,7 +2454,8 @@ export function ManualExpenseScreen({
   const update = (changes: Partial<ManualExpenseDraft>) =>
     send({ type: "expense.change", draft: { ...draft, ...changes } });
   const busy = snapshot.hasTag("saving");
-  const failed = snapshot.matches("saveFailed");
+  const failed = snapshot.matches("saveFailed") ||
+    snapshot.matches("saveAnotherFailed");
   const deleteFailed = snapshot.matches("deleteFailed");
   const errors = Object.entries(validation).map(([id, message]) => ({
     id,

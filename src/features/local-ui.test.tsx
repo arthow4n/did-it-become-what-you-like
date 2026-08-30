@@ -394,6 +394,86 @@ Deno.test("local UI hydrated manual drafts expose an in-form discard action", as
   });
 });
 
+Deno.test("local UI opens a blank manual form after empty draft hydration", async () => {
+  await withComponentHarness(async ({ window, render, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      const { service } = createTestService(state);
+      render(
+        createElement(ManualExpenseScreen, {
+          repository: local,
+          service,
+          state,
+          request: { projectId: project.id },
+          onSaved: () => undefined,
+          onClosed: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("textbox", { name: "Amount" }))
+      );
+    });
+  });
+});
+
+Deno.test("local UI isolates edit drafts from the new-expense draft key", async () => {
+  await withComponentHarness(async ({ window, render, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      await local.transaction(
+        "readwrite",
+        (transaction) =>
+          transaction.put("workflow-snapshots", "workflow:manual-expense", {
+            version: 1,
+            kind: "manual-expense-draft",
+            revision: 1,
+            draft: {
+              projectId: project.id,
+              categoryId: category.id,
+              date: "2026-08-30",
+              amount: "4",
+              currency: "SEK",
+              description: "New expense draft only",
+              direction: "spent",
+            },
+          } as never),
+      );
+      const expense: Expense = {
+        schemaVersion: 1,
+        type: "expense",
+        id: "expense-isolated-edit-draft",
+        projectId: project.id,
+        categoryId: category.id,
+        date: "2026-08-30",
+        amount: "-8",
+        currency: "SEK",
+        description: "Existing expense description",
+        source: "manual",
+      };
+      const { service } = createTestService({ ...state, expenses: [expense] });
+      render(
+        createElement(ManualExpenseScreen, {
+          repository: local,
+          service,
+          state: { ...state, expenses: [expense] },
+          request: { expense },
+          onSaved: () => undefined,
+          onClosed: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("textbox", { name: "Description (optional)" }))
+      );
+      const description = view.getByRole("textbox", {
+        name: "Description (optional)",
+      }) as HTMLTextAreaElement;
+      assertEquals(description.value, "Existing expense description");
+    });
+  });
+});
+
 Deno.test("local UI receipt dirty navigation offers keep or discard", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {

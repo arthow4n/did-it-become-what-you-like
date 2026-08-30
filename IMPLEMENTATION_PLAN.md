@@ -561,8 +561,9 @@ M34-001 -> M34-002 -> R-3410
 
 #### M34-004 — Provider-aware settings and scan setup UI without compatibility testing
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M34-003`. Started after
-  M34-003 integration and validation at checkpoint `62de0fd`.
+- **Status/dependencies:** `COMPLETE`; depends on `M34-003`. Integrated on
+  `master` and pushed as `fe8b9a7` after worker review and integrated
+  validation.
 - **Ownership:** `src/features/receipt-ui.tsx`,
   `src/features/receipt-ui.test.tsx`, `src/features/local-ui.tsx`,
   `src/features/local-ui.test.tsx`, composition wiring, and
@@ -597,10 +598,22 @@ M34-001 -> M34-002 -> R-3410
 - **Verification:** format/lint; `deno task test:affected`; focused component tests
   as needed; targeted browser/gallery check only if changed overlay/focus/
   navigation behavior requires it; `git diff --check`.
+- **Implementation evidence:** provider-neutral scan setup and settings now
+  select Gemini or OpenRouter independently, preserve each provider's model and
+  key, expose OpenRouter endpoint/ZDR/data-collection controls, and reset stale
+  preferred-provider choices with an explanatory notice. Refresh and provider
+  changes remain metadata/UI operations and do not call extraction. The shared
+  requirement copy describes image input plus structured-output/JSON-Schema
+  support, and no compatibility-test controls remain.
+- **Validation evidence:** integrated focused component/design-system tests
+  passed 88/88 (20 receipt UI, 37 local UI, 31 design-system); `deno task
+  fmt:check` passed (211 files); `deno task lint` passed (202 files);
+  `deno task typecheck` passed; `deno task build` passed (with the existing
+  large-chunk warning); `git diff --check` passed. No provider calls were made.
 
 #### R-3420 — SDK routing and provider UX review
 
-- **Status/dependencies:** `PENDING`; depends on `M34-004`.
+- **Status/dependencies:** `READY`; depends on `M34-004`.
 - **Reviewer role:** fresh read-only OpenRouter/UI reviewer.
 - **Audit scope:** exact package/version; pinned SDK type usage; OpenRouter model
   prefilter arguments; client-side structured-output/image verification;
@@ -692,18 +705,19 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M34-004` (`IN_PROGRESS`).
+- **Active task / gate:** `R-3420` (`READY`).
 - **Planning base:** M34-001, M34-002, R-3410, remediation, and M34-003 are
-  integrated and pushed on remote `master`; the latest implementation is
-  `79463b5`.
+  integrated and pushed on remote `master`; M34-004 is integrated and pushed as
+  `fe8b9a7`.
 - **Verification status:** R-3410 closure audit approved with no residual
   severity 1–3 findings; post-remediation `deno task test:affected`: 382/382
   passed; focused Gemini test: 17/17 passed; integrated M34-003 OpenRouter tests:
   14/14 passed; `deno task fmt:check`: passed (211 files); `deno task lint`:
-  passed (202 files); `deno task typecheck`: passed; isolated receipt E2E: 1/1
-  passed; `git diff --check`: passed. The first default E2E attempt was
-  invalidated before app startup because Playwright reused an unrelated server
-  on port 5173; no provider calls were made.
+  passed (202 files); `deno task typecheck`: passed; M34-004 focused
+  component/design-system tests: 88/88 passed; `deno task build` passed;
+  isolated receipt E2E: 1/1 passed; `git diff --check`: passed. The first
+  default E2E attempt was invalidated before app startup because Playwright
+  reused an unrelated server on port 5173; no provider calls were made.
 - **Active / preserved work:** no active M34 implementation worker. Existing
   unrelated worktrees contain preserved untracked progress files and are not
   touched.
@@ -713,9 +727,9 @@ M34-001 -> M34-002 -> R-3410
   `inputModalities`, `outputModalities`, `zdr`, `provider.requireParameters`,
   `provider.dataCollection`, and `responseFormat.jsonSchema`; endpoint methods
   are `endpoints.list({author, slug})` and `endpoints.listZdrEndpoints()`.
-- **Exact next action:** dispatch exactly one write-enabled worker for M34-004.
-  Do not begin R-3420 until M34-004 is integrated, verified, pushed, and
-  checkpointed.
+- **Exact next action:** commit and push this checkpoint, then dispatch one
+  fresh read-only reviewer for R-3420. Do not begin M34-005 until R-3420's
+  findings are resolved and its closure is recorded.
 
 ## Ready-to-Use Orchestration Prompt
 

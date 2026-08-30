@@ -446,7 +446,10 @@ M34-001 -> M34-002 -> R-3410
 
 #### M34-002 — Shared receipt prompt/schema core and Gemini metadata filtering
 
-- **Status/dependencies:** `READY`; depends on `M34-001`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M34-001`. The integration
+  owner has dispatched the single M34-002 write-enabled worker; no later task
+  may begin until its commit is reviewed, integrated, validated, pushed, and
+  checkpointed.
 - **Ownership:** `src/adapters/gemini/{adapter,schema,client}.ts`, their tests,
   new provider-neutral `src/adapters/receipt-ai/**`, and port helpers only where
   required.
@@ -660,10 +663,10 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M34-002` (`READY`).
-- **Planning base:** M34 planning commits are on remote `master`; implementation
-  has reached the pushed M34-001 implementation commit `b08d4d7`; the next
-  checkpoint commit records the transition to M34-002.
+- **Active task / gate:** `M34-002` (`IN_PROGRESS`).
+- **Planning base:** M34 planning commits and M34-001 are pushed on remote
+  `master`; the latest implementation is `b08d4d7` and the latest checkpoint is
+  `0b7c256`.
 - **Verification status:** worker pre-commit `deno task test:affected`: 393/393
   passed; integrated focused tests: 51/51 passed; `deno task fmt:check`: passed
   (202 files); `deno task lint`: passed (193 files); `deno task typecheck`:
@@ -671,11 +674,12 @@ M34-001 -> M34-002 -> R-3410
   `deno task test:affected` reported no affected test modules, so it was
   supplemented by the 51-test focused run. SPEC.md was manually reviewed
   against the M34 contract. No live provider calls were made.
-- **Active / preserved work:** no active M34 worker. Existing unrelated
+- **Active / preserved work:** one write-enabled worker is restricted to the
+  M34-002 ownership paths in its isolated task workspace. Existing unrelated
   worktrees contain preserved untracked progress files and are not touched.
-- **Exact next action:** read M34-002 references, mark only M34-002
-  `IN_PROGRESS`, dispatch its single write-enabled worker, and do not begin
-  later tasks until M34-002 is integrated, validated, pushed, and checkpointed.
+- **Exact next action:** receive and review only the M34-002 worker result;
+  integrate its focused commit on `master`, run the required validation, push,
+  checkpoint M34-002, then open the R-3410 review gate.
 
 ## Ready-to-Use Orchestration Prompt
 

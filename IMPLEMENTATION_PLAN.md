@@ -344,6 +344,8 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 ---
 
+---
+
 #### R-2830 — Final Milestone Review & Release Gate
 
 - **Status/dependencies:** `PENDING`; depends on `M28-FINAL`.
@@ -353,13 +355,237 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 ---
 
+## M29 — Sync Ergonomics, PWA Resilience, Diagnostic Taxonomy & Flow Safety
+
+### M29 authority, outcome, and non-goals
+
+Milestone M29 improves application ergonomics, eliminates disruptive layout shifts, adds diagnostic error codes, and fixes state transition safety across sync, PWA, and form workflows:
+
+1. **Discreet Sync Status & Background Reconnect UX:** Replaces intrusive full-width top-of-screen Drive warning banners on reload with a quiet header sync indicator (`☁️` status pill/icon) and contextual post-mutation notices ("Saved locally. Reconnect Google Drive to sync.").
+2. **PWA Update & Reload Notification Resilience:** Moves root layout update banners to floating toasts or Settings/About badges, prevents layout shift on window focus/tab switches, and eliminates spurious dev-mode update check failures.
+3. **Receipt Review Adjustment Unlink Safety:** Automatically unlinks adjustment references (`adjustment.lineId = undefined`) when a linked purchase line is unchecked or removed during receipt review draft editing, preventing commit validation failures.
+4. **First-Use & Draft Route Safety:** Adds a reactive redirect from `/first-use` to `/expenses` once projects are hydrated from background sync or backup import; adds an in-form "Discard draft" CTA in `ManualExpenseScreen`.
+5. **Diagnostic Error Taxonomy:** Standardizes structured `operation` diagnostic codes across Drive Sync (`drive.auth.*`, `drive.transport.*`), JSON Backup Import (`import.json_syntax`, `import.schema_version`, `import.record_validation`, `import.migration_failure`), and Local IndexedDB (`local.quota_exceeded`, `local.db_blocked`, `local.tx_abort`).
+6. **Form & Preference Polish:** Anchors category name conflict errors directly to `TextField`'s `error` prop in `CategoryManager`; adds a "Reset to default (03:00)" button in `PreferencesScreen`; ensures minimum 44px touch target spacing on narrow mobile viewports.
+
+Target dependency flow:
+
+```text
+features/app -> src/design-system public contracts -> Mantine
+                                                `-> small owned compositions
+features/app -> actors -> domain + adapter ports
+```
+
+**Non-goals:**
+- Persisting OAuth refresh tokens in durable browser storage (prohibited by security architecture and GIS client model in `SPEC.md`).
+- Replacing IndexedDB or Automerge causal sync engines.
+- Adding complex background push notification infrastructure.
+- Modifying released visual design tokens.
+
+### Mandatory single-agent execution rule
+
+- One primary coding agent performs all planning reconciliation, edits, tests,
+  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
+- Independent read-only reviewer subagents are used exclusively at named review
+  gates (`R-2910`, `R-2920`, `R-2930`).
+- Context compaction or session restarts require following the recovery
+  checklist before editing.
+
+### Locked boundary / design-system rules
+
+1. **Local-First Authority:** Local mutations and browsing must never be blocked or degraded by sync or network state.
+2. **Zero Layout Shift:** Background state transitions (update checks, sync re-auth) must not cause sudden layout jumping.
+3. **Safe Operation Diagnostics:** Diagnostic strings must be bounded and non-sensitive.
+4. **Durability & Dirty Protection:** PWA reload prompts must remain blocked while forms are dirty.
+5. **Reduced-Motion & Instant Transitions:** Transitions remain `0ms` without decorative motion.
+
+### Restart and compaction recovery checklist
+
+- [ ] Read `AGENTS.md`, this milestone section, and Current Checkpoint.
+- [ ] Run `git status --short --branch`, `git log -n 20 --oneline`,
+      `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
+- [ ] Verify test and working tree clean state before continuing.
+
+---
+
+### Dependency Graph (DAG)
+
+```text
+M29-001 (Receipt Review Unlink Safety & First-Use Route Safety)
+   |
+   v
+M29-002 (Diagnostic Error Taxonomy across Drive, Import & Local DB)
+   |
+   v
+ R-2910 (Domain, Actor & Diagnostic Review Gate)
+   |
+   v
+M29-003 (Discreet Sync Status & Background Reconnect Header UX)
+   |
+   v
+M29-004 (PWA Update & Reload Banner Resilience)
+   |
+   v
+M29-005 (Form Conflict Anchoring, Preference Reset & Touch Target Polish)
+   |
+   v
+ R-2920 (UI, Ergonomics & PWA Review Gate)
+   |
+   v
+M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
+   |
+   v
+ R-2930 (Final Milestone Review & Release Gate)
+```
+
+---
+
+### Standardized Task Definitions
+
+#### M29-001 — Receipt Review Adjustment Unlink Safety & First-Use Routing Safety
+
+- **Status/dependencies:** `PENDING`; depends on `R-2830` (completion of M28).
+- **Ownership:** `src/domain/receipt.ts`, `src/actors/receipt.ts`, `src/features/local-ui.tsx`, `src/domain/tests/receipt_test.ts`, `src/features/local-ui.test.tsx`.
+- **Scope/non-goals:**
+  - In `src/domain/receipt.ts`, update `setReceiptLineSelected()` and `removeReceiptLine()` to automatically clear `lineId` (`adjustment.lineId = undefined`) on any adjustment referencing an unselected or removed purchase line.
+  - In `src/features/local-ui.tsx`, add a reactive routing effect so that when `path === "/first-use"` and `state.projects.length > 0`, navigation automatically redirects to `/expenses`.
+  - In `ManualExpenseScreen`, add an in-form "Discard draft" action on `DraftStatus` when a hydrated draft is present.
+  - Non-goals: Do not alter saved receipt detail workflows (which already unlink adjustments).
+- **Outputs/acceptance:**
+  - Unchecking or removing a purchase line during review unlinks dependent adjustments and commits cleanly without throwing `invalid`.
+  - Syncing or restoring a backup from the first-use screen immediately takes the user to `/expenses` once projects exist.
+  - Restored manual expense drafts can be discarded cleanly within the form.
+- **Tests:**
+  - Unit tests in `src/domain/tests/receipt_test.ts`.
+  - Component tests in `src/features/local-ui.test.tsx` and `src/features/receipt-ui.test.tsx`.
+- **Verification:** `deno fmt src/domain/receipt.ts src/actors/receipt.ts src/features/local-ui.tsx`, `deno lint src/domain/receipt.ts src/actors/receipt.ts src/features/local-ui.tsx`, `deno test --related=src/domain/receipt.ts --related=src/features/local-ui.tsx`, `git diff --check`.
+
+---
+
+#### M29-002 — Diagnostic Error Taxonomy Across Drive, Import/Export, and Local DB
+
+- **Status/dependencies:** `PENDING`; depends on `M29-001`.
+- **Ownership:** `src/adapters/ports/types.ts`, `src/adapters/import-export/index.ts`, `src/adapters/drive/adapter.ts`, `src/adapters/local/index.ts`, `src/actors/contracts/types.ts`.
+- **Scope/non-goals:**
+  - Introduce bounded operation diagnostics for Import/Export: `import.json_syntax`, `import.schema_version`, `import.record_validation`, `import.migration_failure`.
+  - Introduce bounded operation diagnostics for Drive: `drive.auth.popup_closed`, `drive.auth.access_denied`, `drive.transport.upload_failed`, `drive.transport.quota_exceeded`.
+  - Introduce bounded operation diagnostics for Local IndexedDB: `local.quota_exceeded`, `local.db_blocked`, `local.tx_abort`.
+  - Non-goals: Do not expose sensitive token or payload details in diagnostic operation strings.
+- **Outputs/acceptance:**
+  - Import, Drive, and Local DB errors carry structured `operation` identifiers, making logs and notices specific and actionable.
+- **Tests:**
+  - Unit and adapter contract tests in `src/test-support/fakes/adapter-contract.test.ts`, `src/domain/import-export/import-export.test.ts`.
+- **Verification:** `deno fmt src/adapters/import-export/index.ts src/adapters/drive/adapter.ts src/adapters/local/index.ts`, `deno lint src/adapters/import-export/index.ts src/adapters/drive/adapter.ts src/adapters/local/index.ts`, `deno test --related=src/adapters/import-export/index.ts --related=src/adapters/drive/adapter.ts`, `git diff --check`.
+
+---
+
+#### R-2910 — Domain, Actor & Diagnostic Review Gate
+
+- **Status/dependencies:** `PENDING`; depends on `M29-001`, `M29-002`.
+- **Reviewer role:** Fresh read-only reviewer subagent.
+- **Audit scope:** Diffs across `receipt.ts`, `local-ui.tsx`, and adapter error mappings. Verify unlinking logic, routing redirects, and diagnostic taxonomy safety.
+- **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening next batch.
+
+---
+
+#### M29-003 — Discreet Sync Status & Background Reconnect Header UX
+
+- **Status/dependencies:** `PENDING`; depends on `R-2910`.
+- **Ownership:** `src/features/sync-portability-runtime.tsx`, `src/features/sync-ui/`, `src/features/local-ui.tsx`, `src/features/local-ui.css`.
+- **Scope/non-goals:**
+  - Remove intrusive top-of-screen Drive warning banners on page reload when local data is healthy.
+  - Add a discreet sync status indicator / icon in the header (or next to project selector) reflecting sync state (`Synced`, `Syncing`, `Local only · Tap to reconnect`).
+  - Surface non-blocking toasts when an expense/receipt is saved while Drive authentication is expired ("Saved locally. Reconnect Google Drive to sync.").
+  - Keep 1-click reconnect available directly via GIS popup with `login_hint`.
+  - Non-goals: Do not alter conflict review or device retirement screen workflows.
+- **Outputs/acceptance:**
+  - Refreshing the page with configured Drive does not push the UI down with giant warning banners.
+  - Header sync indicator accurately reflects state and allows 1-click reconnect.
+  - New local entries prompt contextual sync notices only after mutation.
+- **Tests:**
+  - Component tests in `src/features/local-ui.test.tsx` and `src/features/sync-ui/sync-ui.test.tsx`.
+- **Verification:** `deno fmt src/features/sync-portability-runtime.tsx src/features/local-ui.tsx`, `deno lint src/features/sync-portability-runtime.tsx src/features/local-ui.tsx`, `deno test --related=src/features/sync-portability-runtime.tsx --related=src/features/local-ui.tsx`, `git diff --check`.
+
+---
+
+#### M29-004 — PWA Update & Reload Banner Resilience
+
+- **Status/dependencies:** `PENDING`; depends on `M29-003`.
+- **Ownership:** `src/features/settings-pwa.tsx`, `src/actors/contracts/update-install.ts`, `src/app/pwa.ts`, `src/features/settings-pwa.test.tsx`.
+- **Scope/non-goals:**
+  - Prevent `PwaRuntime` from injecting layout-shifting banners at the root of the document tree.
+  - Present `Update ready` notices as non-shifting floating toasts or badges in Settings → About.
+  - In dev mode or unsupported browser contexts, ensure `updateInstallMachine` stays in `idle` / `up-to-date` rather than transitioning to `failed` and logging spurious errors.
+  - Preserve form dirty protection so reload offers are never triggered while active input exists.
+  - Non-goals: Do not alter Service Worker caching or registration lifecycles.
+- **Outputs/acceptance:**
+  - Focusing or reloading the tab never causes sudden layout jumps from PWA update banners.
+  - Non-prod environments avoid `Update status could not be checked` errors.
+- **Tests:**
+  - Component and actor tests in `src/features/settings-pwa.test.tsx` and `src/actors/contracts/update-install.test.ts`.
+- **Verification:** `deno fmt src/features/settings-pwa.tsx src/app/pwa.ts`, `deno lint src/features/settings-pwa.tsx src/app/pwa.ts`, `deno test --related=src/features/settings-pwa.tsx --related=src/app/pwa.ts`, `git diff --check`.
+
+---
+
+#### M29-005 — Form Conflict Field Anchoring, Preference Reset & Touch Target Polish
+
+- **Status/dependencies:** `PENDING`; depends on `M29-004`.
+- **Ownership:** `src/features/local-ui.tsx`, `src/features/settings-pwa.tsx`, `src/features/local-ui.css`, `src/features/local-ui.test.tsx`.
+- **Scope/non-goals:**
+  - In `CategoryManager`, anchor duplicate category name conflict errors directly to the `TextField`'s `error` prop (matching `ProjectManager`).
+  - In `PreferencesScreen`, add a `Reset to default (03:00)` CTA button.
+  - In `local-ui.css`, ensure `.local-ui-card-actions--grid` maintains minimum 44px touch target height and row spacing on narrow `< 360px` screens.
+  - Non-goals: Do not alter project or category sorting order rules.
+- **Outputs/acceptance:**
+  - Inline error appears under the name input on category collision.
+  - Preferences can be reset to 03:00 with one click.
+  - Touch targets on small screens wrap with proper finger spacing.
+- **Tests:**
+  - Component tests in `src/features/local-ui.test.tsx` and `src/features/settings-pwa.test.tsx`.
+- **Verification:** `deno fmt src/features/local-ui.tsx src/features/settings-pwa.tsx src/features/local-ui.css`, `deno lint src/features/local-ui.tsx src/features/settings-pwa.tsx src/features/local-ui.css`, `deno test --related=src/features/local-ui.tsx --related=src/features/settings-pwa.tsx`, `git diff --check`.
+
+---
+
+#### R-2920 — UI, Ergonomics & PWA Review Gate
+
+- **Status/dependencies:** `PENDING`; depends on `M29-003`, `M29-004`, `M29-005`.
+- **Reviewer role:** Fresh read-only reviewer subagent.
+- **Audit scope:** Diffs across sync UI, PWA runtime, CategoryManager, and PreferencesScreen across mobile and desktop viewports.
+- **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening release gate.
+
+---
+
+#### M29-FINAL — Milestone Release Verification, Hygiene Pruning & Archival
+
+- **Status/dependencies:** `PENDING`; depends on `R-2920`.
+- **Ownership:** Repository-wide test, verification, and hygiene suites.
+- **Scope/non-goals:**
+  - Run full repository validation: typecheck (`deno task check`), lint (`deno task lint`), format check (`deno task fmt:check`), diff check (`git diff --check`), affected tests (`deno task test:affected`), and relevant E2E journeys.
+  - Execute standard lifecycle archiving and `repo-hygiene-pruning` protocol per `.agents/skills/implementation-planning/SKILL.md`: summarize completed tasks into `Released Baseline`, prune the live milestone ledger, verify all markdown links, and commit with `[archive]`.
+  - Record exact commands, passing test counts, and release evidence.
+- **Outputs/acceptance:**
+  - Zero test failures, zero lint/formatting issues, clean Git working directory.
+  - Completed milestone ledger archived cleanly into `Released Baseline`.
+- **Verification:** `deno task check && deno task lint && deno task fmt:check && git diff --check && deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests/receipt_test.ts src/features/local-ui.test.tsx src/features/settings-pwa.test.tsx src/features/sync-ui/sync-ui.test.tsx`.
+
+---
+
+#### R-2930 — Final Milestone Review & Release Gate
+
+- **Status/dependencies:** `PENDING`; depends on `M29-FINAL`.
+- **Reviewer role:** Fresh read-only reviewer subagent.
+- **Audit scope:** Audit all M29 commits, test evidence, documentation updates, and compliance with `SPEC.md`, `DESIGN_SYSTEM.md`, and `AGENTS.md`.
+- **Outputs:** Approval for milestone completion and integration onto `master`.
+
+---
+
 ## Current Checkpoint
 
 - **Active task / gate:** `M28-001` (`READY`)
 - **Released baseline:** M0 through M27 and all review gates through `R-2730`
   are complete and pushed on `master`.
-- **Verification status:** M28 planned and staged. No implementation work has
-  begun.
+- **Verification status:** M28 planned and staged. M29 planned and staged
+  as dependent follow-up. No implementation work has begun.
 - **Active / preserved work:** Clean master working tree.
 - **Exact next action:** Await repository owner authorization before beginning
   implementation on `M28-001`.
@@ -367,5 +593,6 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 ## Ready-to-Use Orchestration Prompt
 
 ```text
-Act as the single primary coding agent for M28. Read AGENTS.md, SPEC.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Check git status, verify clean working tree, and start execution with task M28-001. Follow single-agent sequential commit cadence, record exact test commands and outputs, update IMPLEMENTATION_PLAN.md after each task, dispatch read-only reviewer subagents at named review gates (R-2810, R-2820, R-2830), and stop when M28 is complete or if blocked.
+Act as the single primary coding agent for M28 and M29. Read AGENTS.md, SPEC.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Check git status, verify clean working tree, and start execution with task M28-001. Follow single-agent sequential commit cadence, record exact test commands and outputs, update IMPLEMENTATION_PLAN.md after each task, dispatch read-only reviewer subagents at named review gates (R-2810, R-2820, R-2830, R-2910, R-2920, R-2930), and stop when milestones are complete or if blocked.
 ```
+

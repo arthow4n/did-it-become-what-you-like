@@ -80,10 +80,19 @@ test(
                         rationale:
                           "The visible product row is a purchase outflow.",
                         selected: true,
+                      }, {
+                        amount: "5",
+                        categoryId: "category-uncategorized",
+                        description: "Second fake item",
+                        direction: "outflow",
+                        kind: "purchase",
+                        rationale:
+                          "The second visible product row is a purchase outflow.",
+                        selected: true,
                       }],
                       merchant: "Fake Receipt Market",
                       mismatch: null,
-                      printedTotal: "10",
+                      printedTotal: "15",
                       schemaVersion: "receipt.v2",
                       uncertainty: [],
                     }),
@@ -173,7 +182,8 @@ test(
     await expect(page.getByRole("heading", { name: "Fake Receipt Market" }))
       .toBeVisible();
     await expect(page.getByText("Fake receipt item")).toBeVisible();
-    await page.getByRole("button", { name: "Save 1 selected entry" }).click();
+    await expect(page.getByText("Second fake item")).toBeVisible();
+    await page.getByRole("button", { name: "Save 2 selected entries" }).click();
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();
     await page.getByRole("button", { name: /Fake Receipt Market/ }).click();
@@ -259,6 +269,78 @@ test(
         document.activeElement?.getAttribute("data-receipt-line-id")
       )
     ).toBeTruthy();
+
+    const focusedLine = page.locator("[data-receipt-line-id]").filter({
+      hasText: "Fake receipt item",
+    }).first();
+    await focusedLine.getByRole("button", { name: "Edit" }).click();
+    const lineEditor = page.getByRole("dialog", { name: "Edit receipt line" });
+    await expect(lineEditor).toBeVisible();
+    await lineEditor.getByLabel("Description").fill(
+      "Updated fake receipt item",
+    );
+    await lineEditor.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByText("Updated fake receipt item")).toBeVisible();
+
+    await page.getByRole("button", { name: "Back to expenses" }).click();
+    await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
+      .toBeVisible();
+    await page.getByRole("button", { name: "Fake Receipt Market 2026-08-24" })
+      .click();
+    await expect(page.getByText("Updated fake receipt item")).toBeVisible();
+    await expect(page.getByText("Second fake item")).toBeVisible();
+
+    const managedGroup = page.getByRole("region", {
+      name: "Fake Receipt Market 2026-08-24",
+    });
+    await managedGroup.getByRole("button", {
+      name: /Updated fake receipt item Uncategorized/,
+    }).click();
+    await expect(
+      page.getByRole("heading", { name: "Fake Receipt Market", level: 1 }),
+    ).toBeVisible();
+    const updatedLine = page.locator("[data-receipt-line-id]").filter({
+      hasText: "Updated fake receipt item",
+    }).first();
+    await updatedLine.getByRole("button", { name: "Remove" }).click();
+    const lineDeleteDialog = page.getByRole("dialog", {
+      name: "Delete this line?",
+    });
+    await expect(lineDeleteDialog).toContainText(
+      "This removes only this purchase line",
+    );
+    await lineDeleteDialog.getByRole("button", { name: "Delete line" }).click();
+    await expect(page.getByText("Updated fake receipt item")).toHaveCount(0);
+    await expect(page.getByText("Second fake item")).toBeVisible();
+
+    await page.getByRole("button", { name: "Back to expenses" }).click();
+    await page.getByRole("button", { name: "Fake Receipt Market 2026-08-24" })
+      .click();
+    await expect(page.getByText("Second fake item")).toBeVisible();
+    const finalGroup = page.getByRole("region", {
+      name: "Fake Receipt Market 2026-08-24",
+    });
+    await finalGroup.getByRole("button", { name: "View receipt" }).click();
+    await page.getByRole("button", { name: "Delete receipt" }).click();
+    const receiptDeleteDialog = page.getByRole("dialog", {
+      name: "Delete this receipt?",
+    });
+    await expect(receiptDeleteDialog).toContainText(
+      "every purchase line and adjustment",
+    );
+    await receiptDeleteDialog.getByRole("button", {
+      name: "Delete receipt",
+    }).click();
+    await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
+      .toBeVisible();
+    await expect(page.getByText("Receipt deleted.")).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
+      .toBeVisible();
+    await expect(page.getByText("Second fake item")).toHaveCount(0);
+    await expect(page.getByRole("region", {
+      name: "Fake Receipt Market 2026-08-24",
+    })).toHaveCount(0);
 
     expect(requests.length).toBeGreaterThanOrEqual(2);
     expect(

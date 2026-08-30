@@ -6,7 +6,7 @@ export const APPROVED_JOURNEYS = [
   },
   {
     id: "receipt-review",
-    title: "Receipt capture and review with fake Gemini",
+    title: "Receipt capture, review, and saved management with fake Gemini",
     boundary: "browser-ui -> receipt actor -> fake Gemini port",
   },
   {

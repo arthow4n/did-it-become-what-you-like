@@ -3146,6 +3146,7 @@ export function LocalUiRuntime(
           receiptId: receiptDetail.receiptId,
         };
       }
+      void organization.getState().then(setState);
       navigate((output.destination ?? "/expenses") as LocalUiPath);
     }
   };

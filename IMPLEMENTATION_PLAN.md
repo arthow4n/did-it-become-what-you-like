@@ -8,8 +8,7 @@ verification, review, and resumable progress.
 Product behavior remains authoritative in `SPEC.md`; shared visual and
 interaction rules remain authoritative in `DESIGN_SYSTEM.md`; agent conduct
 remains authoritative in `AGENTS.md`. This plan orders that approved work and
-must not silently reinterpret those documents. A discovered contradiction is a
-blocked specification issue, not permission to choose whichever text is easier.
+must not silently reinterpret those documents.
 
 ### Status vocabulary
 
@@ -19,138 +18,69 @@ blocked specification issue, not permission to choose whichever text is easier.
 - `PENDING`: a dependency is incomplete.
 - `IN_PROGRESS`: exactly one integration owner is accountable for the task.
 - `INTERRUPTED`: work may exist, but its previous agent/session is no longer
-  reliably active. The Current Checkpoint must identify the branch/worktree,
-  last known evidence, and exact recovery action. This is resumable state, not a
-  product blocker.
+  reliably active; the checkpoint must identify recovery actions.
 - `BLOCKED`: a concrete unresolved owner decision or failed prerequisite is
   recorded. Difficulty alone is not a blocker.
 
 Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
-### Released Baseline
+## Released Baseline
 
-M0 through M28 and all review gates through `R-2830` are `COMPLETE`. The
-released application baseline includes the approved domain, actors, adapters,
-responsive UI, After Midnight design system backed by Mantine behind the
-repository facade, accessibility, PWA, tests, GitHub Pages pipeline,
-operational safeguards, multi-viewport UI/UX polish across desktop/mobile/
-narrow viewports, baseline mobile ergonomics, and a provider-valid privacy-safe
-Gemini compatibility probe backed by the official Google Gen AI SDK and a
-provider-neutral receipt AI port, plus a user-gesture-safe native receipt
-source picker for camera capture and existing-image selection, described by
-`SPEC.md`, `DESIGN_SYSTEM.md`, and `AGENTS.md`. Receipt scan failures retain a
-safe taxonomy and phase-specific operation diagnostics across image lifecycle,
-provider, and normalization boundaries; cleanup cannot mask the primary
-failure. Receipt reconciliation also aligns printed totals with the signed
-direction of selected lines while preserving positive adjustment-only inflows.
-Gemini receipt-extraction instructions explicitly encode these signed amount
-rules, exclude non-line totals, and require an arithmetic self-check. Receipt
-extraction now transcribes printed signs at the provider boundary, carries an
-explicit economic direction and bounded classification rationale, and applies
-ledger signs deterministically in the domain before displaying that rationale
-during review. M19 additionally makes receipt image replacement/removal and
-workflow discard cancel active scans before ephemeral image cleanup, clearing
-stale scan failure context. M20 additionally canonicalizes safe localized
-decimal transcription and accepts harmless JSON fences before strict Gemini
-receipt-output validation, while preserving reviewable category uncertainty.
-M21 additionally distinguishes provider-output failures from persisted-data
-corruption and preserves phase-specific Gemini diagnostics through the actor.
-Unusable provider responses now use the dedicated `invalid-output` code, with
-bounded JSON, schema, response, and mapping operation identifiers. M22
-additionally distinguishes positive bottle-deposit charges from explicit
-returns/refunds in Gemini instructions and applies a narrow domain correction
-for misclassified `PANT BURK` charges, keeping Coop receipt totals reconciled.
-M23 additionally remediates visual, responsive, and ergonomic defects in the
-Add Choice Sheet (`AddChoiceScreen`) and modal header actions across desktop,
-mobile, and narrow viewports. Add Choice actions are streamlined into
-prominent full-width action buttons with clear leading icons (`Plus` and
-`Search`) without verbose card descriptions. Modal/drawer/sheet headers on
-mobile exempt icon buttons (`.ds-icon-button`) from full-width stretching,
-keeping the close `X` button pinned to the top-right inline with the title. The
-Add Choice bottom sheet cleanly overlays bottom navigation with
-`z-index: var(--layer-overlay)` (40), top rounded corners, and safe-area
-insets. M24 additionally ensures Add Choice Sheet buttons stretch to 100%
-full span across modal and bottom sheet viewports by setting `align="stretch"`
-on `Stack` and `width: 100%; display: flex;` on full-width buttons. In
-`OrganizeScreen`, the hardcoded 3-item `.slice(0, 3)` limit is removed,
-displaying all active projects and categories in full. Project and category
-organization machines are also guarded with an explicit submission flag
-(`isSubmittingRef`) to prevent stale actor results from closing editors
-prematurely. M25 additionally makes receipt scan close and component teardown
-cancellation-safe: the actor is canceled before the ephemeral image store is
-cleared, preventing stale `receipt.image.resolve` references during route
-changes, discard, reload, and active image replacement. Gemini settings
-navigation retains its destination while teardown performs the cancellation.
-Regression coverage exercises both the visible Close path and direct active-
-scan unmount, including abort and image release verification. M26 additionally
-keeps receipt-line descriptions visible in expanded expense groups while
-retaining the receipt merchant as the group heading and the merchant-first
-fallback for ordinary manual or incomplete legacy rows.
+M0 through M29 and all review gates through `R-2920` are complete. The
+released application baseline includes the approved domain, XState actors,
+adapter ports, local-first workflows, causal sync, responsive After Midnight
+UI, the Mantine-backed design-system facade, accessibility, PWA behavior,
+diagnostic taxonomy, receipt and organization safety, GitHub Pages delivery,
+and the mobile/narrow viewport ergonomics described by `SPEC.md`,
+`DESIGN_SYSTEM.md`, and `AGENTS.md`.
 
-M27 additionally delivers the saved-receipt detail workflow: receipt groups
-and lines open a dedicated detail route, where staged metadata and line edits
-preserve stable IDs, recompute reconciliation, and retain approved archived
-category behavior. Local mutations are atomic across the receipt aggregate,
-linked adjustments, derived expense projections, and synchronized tombstones.
-The workflow provides scoped line and whole-receipt deletion confirmations,
-approved final-line/no-undo semantics, dirty/discard/reload/history protection,
-retry-aware failures, focus restoration, and responsive saved-detail behavior.
-The list projection refreshes after management changes, and whole-receipt
-deletion remains absent after reload. Manual-expense editing and source-image
-retention remain separate and unchanged.
+M29 specifically delivers:
 
-M27 release evidence is preserved at implementation commit `94bfcbb`, with
-R-2720 closed against `2334c19` and R-2730 reviewed at `6a05ecf` against
-released baseline `2131d28`. The selected receipt/domain/actor/UI/atomic
-adapter command passed 44 tests with 0 failures:
-`deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests/receipt_test.ts src/actors/contracts/saved-receipt-actor.test.ts src/features/local-ui.test.tsx src/features/receipt-detail-ui.test.tsx src/adapters/local/receipt-atomic.integration.test.ts`.
-`deno task test:affected` reported no affected test modules because the
-implementation was already committed. `deno task test:e2e --
-e2e/receipt-review.spec.ts` passed all 9 configured repository journeys in 2.3
-minutes, including saved-receipt save, reopen, line edit/delete, projection,
-whole-receipt deletion, reload, focus, and `390x844`, `320x568`, and `1280x800`
-responsive assertions. `deno task check`, `deno task lint`,
-`deno task fmt:check`, and `git diff --check` passed. Fresh R-2730 review found
-no severity-1, severity-2, or severity-3 findings and no actionable severity-4
-findings.
+- Receipt adjustment unlinking when review lines are deselected or removed,
+  first-use redirection after project hydration, and in-form draft discard.
+- Bounded diagnostics across import/export, Drive authorization/transport,
+  and local IndexedDB boundaries, with stale Drive writes distinguished from
+  upload failures.
+- A discreet sync header indicator and reconnect path, contextual
+  post-mutation local-save notices, fixed PWA install/update notices, quiet
+  unsupported checks, and dirty-form reload protection.
+- Category conflict feedback anchored to the name field, one-click persisted
+  preference reset to `03:00`, and narrow-screen action rows with 44px
+  controls and finger spacing.
+- Release verification, responsive review, and hygiene review with no retained
+  stale documents, spikes, redundant verification scripts, or dangling links.
 
-M28 additionally fixes persisted category color edits, adds atomic saved
-receipt purchase-line and adjustment mutations with linked expense
-projections, and delivers the saved-receipt detail add-line dialogs with
-staged retry/discard behavior and focus return. Expenses now interleaves
-standalone records and receipt groups with deterministic `(date, time, id)`
-ordering in both directions and displays every filtered category total. Manual
-expense deletion finalizes cleanly, exposes retry/keep recovery on failure,
-and shows `Expense deleted.` when returning to the list. The M28 UI also uses
-the approved responsive wide list/context composition and places destructive
-receipt actions after receipt context and reconciliation.
+The completed implementation and review history is preserved in Git at
+pre-pruning ledger commit `84e7515`. That history is evidence, not active
+instructions, and agents must not reconstruct the pruned M29 task ledger in
+this live plan.
 
-M28 release evidence is preserved at pre-pruning ledger commit `993e5ed`.
-`deno task fmt:check` checked 209 files, `deno task lint` checked 199 files,
-`deno task check`, `git diff --check`, and the explicit release suite passed.
-The release suite command
-`deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests/project_category_test.ts src/domain/tests/receipt_test.ts src/actors/contracts/project-category-actor.test.ts src/actors/contracts/saved-receipt-actor.test.ts src/features/local-ui.test.tsx src/features/receipt-detail-ui.test.tsx`
-passed 63 tests with 0 failures. `deno task test:affected` selected no test
-modules because the changes were already committed. The initial standard E2E
-run reported 8 passed and one order-sensitive `receipt-review` timeout;
-`deno x -p npm:@playwright/test@1.62.1 playwright test e2e/receipt-review.spec.ts --config=e2e/playwright.config.ts`
-then passed 1 test in 18.5 seconds, and the combined relevant command for
-`e2e/receipt-review.spec.ts e2e/local-first-manual.spec.ts` passed 3 tests in
-35.0 seconds. Fresh R-2820 closure review approved with no severity-1 through
-severity-4 findings. The hygiene audit found no obsolete spikes, transient
-M28 documents, redundant verification scripts, or dangling Markdown links;
-the detailed M28 task and review ledger is intentionally pruned from this
-file and remains queryable at `993e5ed`. Post-pruning hygiene checks
-`deno task fmt:check`, `deno task lint`, `deno task check`, and
-`git diff --check` passed; the tracked-document and cross-reference audit
-found no deletions or dangling links requiring further synchronization.
+### M29 release evidence
 
-Detailed task, review, validation, worktree, deployment, and recovery history
-through M27 is preserved in Git at commit `6a05ecf`, the last complete
-pre-pruning ledger. That history is evidence, not active instructions, and
-agents must not reconstruct it in this live plan.
+The M29-FINAL release gate passed:
 
-The active dependency flow remains:
+- `deno task check` passed TypeScript and repository script/E2E checks.
+- `deno task lint` checked 200 files.
+- `deno task fmt:check` checked 210 files.
+- `git diff --check` passed.
+- `deno task test:affected` selected no test modules because the code changes
+  were already committed.
+- The explicit release suite passed 71 tests with 0 failures:
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  src/domain/tests/receipt_test.ts src/features/local-ui.test.tsx
+  src/features/settings-pwa.test.tsx src/features/sync-ui/sync-ui.test.tsx`.
+- The R-2920 closure review passed 88 focused UI/PWA tests and 5 Playwright
+  journeys, with no horizontal overflow at 320x568, 390x844, or 1280x800.
+- `deno task build` transformed 2,973 modules and generated the production
+  manifest and service worker; `deno task release:verify` passed with
+  version `0.1.0`, commit `84e7515`, and verified artifact hashes.
+- The hygiene audit found no obsolete spikes, transient M29 documents,
+  redundant verification scripts, inaccurate tasks, or dangling tracked
+  Markdown links; no files required removal.
+
+## Architecture and ownership baseline
+
+The dependency boundaries remain:
 
 ```text
 features/app -> src/design-system public contracts -> Mantine
@@ -158,323 +88,91 @@ features/app -> src/design-system public contracts -> Mantine
 features/app -> actors -> domain + adapter ports
 ```
 
-#### R-2830 — Final M28 Milestone Review & Release Gate
+Files under `src/features/**` and `src/app/**` use only the repository
+design-system facade. Mantine-specific implementation, provider mapping, and
+library customization stay in `src/design-system/**`. Durable workflow and
+form state remains in XState actors; product composites remain repository-owned
+compositions. Domain code depends on narrow adapter ports, never browser or
+library internals. Local mutations remain available when sync or network state
+is unavailable.
 
-- **Status/dependencies:** `COMPLETE`; depends on the archived M28 release
-  validation.
-- **Reviewer role:** Fresh read-only reviewer subagent.
-- **Audit scope:** Audit the M28 implementation commits, release evidence,
-  archived plan state, and compliance with `SPEC.md`, `DESIGN_SYSTEM.md`, and
+## Definition of done
+
+A release candidate must have focused tests for every implementation task,
+appropriate actor/domain/adapter/component coverage, a clean working tree, and
+the following repository checks as risk requires:
+
+```text
+deno task fmt:check
+deno task lint
+deno task check
+deno task test
+deno task build
+deno task release:verify
+deno audit --frozen
+git diff --check
+```
+
+Critical browser seams are covered by the five approved E2E journeys in
+`e2e/support/journeys.ts`, while domain and actor rules are not duplicated
+across browser tests.
+
+## Active dependency graph
+
+```text
+M0..M29 implementation and R-2920 review (COMPLETE)
+   |
+   v
+R-2930 final milestone review (IN_PROGRESS)
+   |
+   v
+next milestone planning (after R-2930 approval)
+```
+
+## R-2930 — Final M29 Review and Release Gate
+
+- **Status:** `IN_PROGRESS`; the implementation, release validation,
+  responsive review, and archive are complete.
+- **Reviewer:** Fresh read-only reviewer subagent.
+- **Scope:** Verify M29 history, release evidence, compact plan archive,
+  hygiene results, and compliance with `SPEC.md`, `DESIGN_SYSTEM.md`, and
   `AGENTS.md`.
-- **Output:** Approval to activate M29-001.
-- **Review log:** Fresh read-only review approved R-2830 with no severity-1
-  through severity-4 findings. It verified archive lineage, 0 dangling local
-  Markdown links, 0 prohibited facade imports, the 63-test release suite, and
-  all 9 repository E2E journeys passing at `fbc0165`.
+- **Remediation:** Any finding must be fixed in a bounded commit, rerun only
+  the affected checks, and update this checkpoint before completion.
+- **Output:** Approval closes M29 and permits the next milestone plan.
 
----
+## Interruption and recovery protocol
 
-## M29 — Sync Ergonomics, PWA Resilience, Diagnostic Taxonomy & Flow Safety
+After a restart, rate limit, lost session, or interrupted command:
 
-### M29 authority, outcome, and non-goals
-
-Milestone M29 improves application ergonomics, eliminates disruptive layout shifts, adds diagnostic error codes, and fixes state transition safety across sync, PWA, and form workflows:
-
-1. **Discreet Sync Status & Background Reconnect UX:** Replaces intrusive full-width top-of-screen Drive warning banners on reload with a quiet header sync indicator (`☁️` status pill/icon) and contextual post-mutation notices ("Saved locally. Reconnect Google Drive to sync.").
-2. **PWA Update & Reload Notification Resilience:** Moves root layout update banners to floating toasts or Settings/About badges, prevents layout shift on window focus/tab switches, and eliminates spurious dev-mode update check failures.
-3. **Receipt Review Adjustment Unlink Safety:** Automatically unlinks adjustment references (`adjustment.lineId = undefined`) when a linked purchase line is unchecked or removed during receipt review draft editing, preventing commit validation failures.
-4. **First-Use & Draft Route Safety:** Adds a reactive redirect from `/first-use` to `/expenses` once projects are hydrated from background sync or backup import; adds an in-form "Discard draft" CTA in `ManualExpenseScreen`.
-5. **Diagnostic Error Taxonomy:** Standardizes structured `operation` diagnostic codes across Drive Sync (`drive.auth.*`, `drive.transport.*`), JSON Backup Import (`import.json_syntax`, `import.schema_version`, `import.record_validation`, `import.migration_failure`), and Local IndexedDB (`local.quota_exceeded`, `local.db_blocked`, `local.tx_abort`).
-6. **Form & Preference Polish:** Anchors category name conflict errors directly to `TextField`'s `error` prop in `CategoryManager`; adds a "Reset to default (03:00)" button in `PreferencesScreen`; ensures minimum 44px touch target spacing on narrow mobile viewports.
-
-Target dependency flow:
-
-```text
-features/app -> src/design-system public contracts -> Mantine
-                                                `-> small owned compositions
-features/app -> actors -> domain + adapter ports
-```
-
-**Non-goals:**
-- Persisting OAuth refresh tokens in durable browser storage (prohibited by security architecture and GIS client model in `SPEC.md`).
-- Replacing IndexedDB or Automerge causal sync engines.
-- Adding complex background push notification infrastructure.
-- Modifying released visual design tokens.
-
-### Mandatory single-agent execution rule
-
-- One primary coding agent performs all planning reconciliation, edits, tests,
-  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
-- Independent read-only reviewer subagents are used exclusively at named review
-  gates (`R-2910`, `R-2920`, `R-2930`).
-- Context compaction or session restarts require following the recovery
-  checklist before editing.
-
-### Locked boundary / design-system rules
-
-1. **Local-First Authority:** Local mutations and browsing must never be blocked or degraded by sync or network state.
-2. **Zero Layout Shift:** Background state transitions (update checks, sync re-auth) must not cause sudden layout jumping.
-3. **Safe Operation Diagnostics:** Diagnostic strings must be bounded and non-sensitive.
-4. **Durability & Dirty Protection:** PWA reload prompts must remain blocked while forms are dirty.
-5. **Reduced-Motion & Instant Transitions:** Transitions remain `0ms` without decorative motion.
-
-### Restart and compaction recovery checklist
-
-- [ ] Read `AGENTS.md`, this milestone section, and Current Checkpoint.
-- [ ] Run `git status --short --branch`, `git log -n 20 --oneline`,
-      `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
-- [ ] Verify test and working tree clean state before continuing.
-
----
-
-### Dependency Graph (DAG)
-
-```text
-M29-001 (Receipt Review Unlink Safety & First-Use Route Safety)
-   |
-   v
-M29-002 (Diagnostic Error Taxonomy across Drive, Import & Local DB)
-   |
-   v
- R-2910 (Domain, Actor & Diagnostic Review Gate)
-   |
-   v
-M29-003 (Discreet Sync Status & Background Reconnect Header UX)
-   |
-   v
-M29-004 (PWA Update & Reload Banner Resilience)
-   |
-   v
-M29-005 (Form Conflict Anchoring, Preference Reset & Touch Target Polish)
-   |
-   v
- R-2920 (UI, Ergonomics & PWA Review Gate)
-   |
-   v
-M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
-   |
-   v
- R-2930 (Final Milestone Review & Release Gate)
-```
-
----
-
-### Standardized Task Definitions
-
-#### M29-001 — Receipt Review Adjustment Unlink Safety & First-Use Routing Safety
-
-- **Status/dependencies:** `COMPLETE`; depends on `R-2830` (completion of M28).
-- **Ownership:** `src/domain/receipt.ts`, `src/actors/receipt.ts`, `src/features/local-ui.tsx`, `src/domain/tests/receipt_test.ts`, `src/features/local-ui.test.tsx`.
-- **Scope/non-goals:**
-  - In `src/domain/receipt.ts`, update `setReceiptLineSelected()` and `removeReceiptLine()` to automatically clear `lineId` (`adjustment.lineId = undefined`) on any adjustment referencing an unselected or removed purchase line.
-  - In `src/features/local-ui.tsx`, add a reactive routing effect so that when `path === "/first-use"` and `state.projects.length > 0`, navigation automatically redirects to `/expenses`.
-  - In `ManualExpenseScreen`, add an in-form "Discard draft" action on `DraftStatus` when a hydrated draft is present.
-  - Non-goals: Do not alter saved receipt detail workflows (which already unlink adjustments).
-- **Outputs/acceptance:**
-  - Unchecking or removing a purchase line during review unlinks dependent adjustments and commits cleanly without throwing `invalid`.
-  - Syncing or restoring a backup from the first-use screen immediately takes the user to `/expenses` once projects exist.
-  - Restored manual expense drafts can be discarded cleanly within the form.
-- **Tests:**
-  - Unit tests in `src/domain/tests/receipt_test.ts`.
-  - Component tests in `src/features/local-ui.test.tsx` and `src/features/receipt-ui.test.tsx`.
-- **Verification:** `deno fmt src/domain/receipt.ts src/actors/receipt.ts src/features/local-ui.tsx`, `deno lint src/domain/receipt.ts src/actors/receipt.ts src/features/local-ui.tsx`, `deno test --related=src/domain/receipt.ts --related=src/features/local-ui.tsx`, `git diff --check`.
-
----
-
-#### M29-002 — Diagnostic Error Taxonomy Across Drive, Import/Export, and Local DB
-
-- **Status/dependencies:** `COMPLETE`; depends on `M29-001`.
-- **Ownership:** `src/adapters/ports/errors.ts`, `src/domain/import-export/types.ts`, `src/domain/import-export/format.ts`, `src/adapters/drive/adapter.ts`, `src/adapters/local/index.ts`, `src/actors/import-export/machine.ts`, and their contract/integration tests.
-- **Scope/non-goals:**
-  - Introduce bounded operation diagnostics for Import/Export: `import.json_syntax`, `import.schema_version`, `import.record_validation`, `import.migration_failure`.
-  - Introduce bounded operation diagnostics for Drive: `drive.auth.popup_closed`, `drive.auth.access_denied`, `drive.transport.upload_failed`, `drive.transport.quota_exceeded`.
-  - Introduce bounded operation diagnostics for Local IndexedDB: `local.quota_exceeded`, `local.db_blocked`, `local.tx_abort`.
-  - Non-goals: Do not expose sensitive token or payload details in diagnostic operation strings.
-- **Outputs/acceptance:**
-  - Import, Drive, and Local DB errors carry structured `operation` identifiers, making logs and notices specific and actionable.
-- **Tests:**
-  - Domain, actor, and adapter contract/integration tests in `src/domain/import-export/import-export.test.ts`, `src/actors/import-export/import-export-actor.test.ts`, `src/adapters/ports/contract.test.ts`, `src/adapters/drive/adapter.integration.test.ts`, and `src/adapters/local/local-repository.test.ts`.
-- **Verification:** Initial focused validation passed 56 tests; remediation validation passed 68 tests; the fresh R-2910 closure review then passed 79 tests with 13-file format checks, lint, typecheck, and `git diff --check` all clean.
-
----
-
-#### R-2910 — Domain, Actor & Diagnostic Review Gate
-
-- **Status/dependencies:** `COMPLETE`; depends on `M29-001`, `M29-002`.
-- **Reviewer role:** Fresh read-only reviewer subagent.
-- **Audit scope:** Diffs across `receipt.ts`, `local-ui.tsx`, and adapter error mappings. Verify unlinking logic, routing redirects, and diagnostic taxonomy safety.
-- **Remediation loop:** Initial review found two S2 findings and one S3 plan-drift finding. The primary implementer corrected Drive preflight operation labeling, restricted import diagnostic preservation to the finite allowlist, and reconciled paths/tests in bounded commits. Fresh closure review approved with no findings.
-- **Evidence:** Closure review against `fb7016d..96e271e` verified a clean synchronized repository, 79 focused tests passed, 13-file format check passed, lint/typecheck passed, and `git diff --check` passed.
-
----
-
-#### M29-003 — Discreet Sync Status & Background Reconnect Header UX
-
-- **Status/dependencies:** `COMPLETE`; depends on `R-2910`.
-- **Ownership:** `src/features/sync-portability-runtime.tsx`, `src/features/sync-ui/`, `src/features/local-ui.tsx`, `src/features/receipt-ui.tsx`, and related CSS/tests.
-- **Scope/non-goals:**
-  - Remove intrusive top-of-screen Drive warning banners on page reload when local data is healthy.
-  - Add a discreet sync status indicator / icon in the header (or next to project selector) reflecting sync state (`Synced`, `Syncing`, `Local only · Tap to reconnect`).
-  - Surface non-blocking toasts when an expense/receipt is saved while Drive authentication is expired ("Saved locally. Reconnect Google Drive to sync.").
-  - Keep 1-click reconnect available directly via GIS popup with `login_hint`.
-  - Non-goals: Do not alter conflict review or device retirement screen workflows.
-- **Outputs/acceptance:**
-  - Refreshing the page with configured Drive does not push the UI down with giant warning banners.
-  - Header sync indicator accurately reflects state and allows 1-click reconnect.
-  - New local entries prompt contextual sync notices only after mutation.
-- **Tests:**
-  - Component tests in `src/features/local-ui.test.tsx` and `src/features/sync-ui/sync-ui.test.tsx`.
-- **Verification:** `deno fmt`/`deno lint` on the changed sync/runtime/UI sources and tests, `deno check src/features/sync-portability-runtime.tsx src/features/local-ui.tsx src/features/receipt-ui.tsx`, `deno test --allow-read --allow-write --allow-run --allow-env src/features/sync-ui/sync-ui.test.tsx src/features/sync-portability-runtime.test.tsx src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx` (67 passed), and `git diff --check`.
-
----
-
-#### M29-004 — PWA Update & Reload Banner Resilience
-
-- **Status/dependencies:** `COMPLETE`; depends on `M29-003`.
-- **Ownership:** `src/features/settings-pwa.tsx`, `src/features/settings-pwa.css`, `src/actors/contracts/update-install.ts`, `src/app/pwa.ts`, `src/actors/contracts/update-install.test.ts`, `src/app/pwa.test.ts`, `src/features/settings-pwa.test.tsx`.
-- **Scope/non-goals:**
-  - Prevent `PwaRuntime` from injecting layout-shifting banners at the root of the document tree.
-  - Present `Update ready` notices as non-shifting floating toasts or badges in Settings → About.
-  - In dev mode or unsupported browser contexts, ensure `updateInstallMachine` stays in `idle` / `up-to-date` rather than transitioning to `failed` and logging spurious errors.
-  - Preserve form dirty protection so reload offers are never triggered while active input exists.
-  - Non-goals: Do not alter Service Worker caching or registration lifecycles.
-- **Outputs/acceptance:**
-  - Focusing or reloading the tab never causes sudden layout jumps from PWA update banners.
-  - Non-prod environments avoid `Update status could not be checked` errors.
-- **Tests:**
-  - Component and actor tests in `src/features/settings-pwa.test.tsx` and `src/actors/contracts/update-install.test.ts`.
-- **Verification:** `deno fmt`/`deno lint` on the changed PWA sources and tests, `deno check src/app/pwa.ts src/features/settings-pwa.tsx src/actors/contracts/update-install.ts`, `deno test --allow-read --allow-write --allow-run --allow-env src/app/pwa.test.ts src/actors/contracts/update-install.test.ts src/features/settings-pwa.test.tsx` (17 passed), and `git diff --check`.
-
----
-
-#### M29-005 — Form Conflict Field Anchoring, Preference Reset & Touch Target Polish
-
-- **Status/dependencies:** `COMPLETE`; depends on `M29-004`.
-- **Ownership:** `src/features/local-ui.tsx`, `src/features/settings-pwa.tsx`, `src/features/local-ui.css`, `src/features/local-ui.test.tsx`.
-- **Scope/non-goals:**
-  - In `CategoryManager`, anchor duplicate category name conflict errors directly to the `TextField`'s `error` prop (matching `ProjectManager`).
-  - In `PreferencesScreen`, add a `Reset to default (03:00)` CTA button.
-  - In `local-ui.css`, ensure `.local-ui-card-actions--grid` maintains minimum 44px touch target height and row spacing on narrow `< 360px` screens.
-  - Non-goals: Do not alter project or category sorting order rules.
-- **Outputs/acceptance:**
-  - Inline error appears under the name input on category collision.
-  - Preferences can be reset to 03:00 with one click.
-  - Touch targets on small screens wrap with proper finger spacing.
-- **Tests:**
-  - Component tests in `src/features/local-ui.test.tsx` and `src/features/settings-pwa.test.tsx`.
-- **Verification:** `deno fmt src/features/local-ui.tsx src/features/local-ui.test.tsx src/features/settings-pwa.tsx src/features/settings-pwa.test.tsx src/features/local-ui.css`, `deno lint` on those changed sources and tests, `deno check src/features/local-ui.tsx src/features/settings-pwa.tsx`, `deno test --allow-read --allow-write --allow-run --allow-env src/features/local-ui.test.tsx src/features/settings-pwa.test.tsx` (40 passed, 0 failed), and `git diff --check`.
-
----
-
-#### R-2920 — UI, Ergonomics & PWA Review Gate
-
-- **Status/dependencies:** `COMPLETE`; depends on `M29-003`, `M29-004`, `M29-005`.
-- **Reviewer role:** Fresh read-only reviewer subagent.
-- **Audit scope:** Diffs across sync UI, PWA runtime, CategoryManager, and PreferencesScreen across mobile and desktop viewports.
-- **Remediation loop:** Initial review found two S2 narrow-viewport overflow findings: the compact sync indicator could exceed the header action slot, and the long About notice link could exceed a 320px viewport. The primary implementer constrained the indicator and its status text at compact widths, made About links shrinkable and wrapping, added CSS regression assertions, and reran the relevant browser journeys. Fresh closure review approved with no findings: viewport probes at 320×568, 390×844, and 1280×800 showed no overflow; 88 focused UI/PWA tests and 5 Playwright journeys passed; format (18 files), lint (15 files), typecheck, and `git diff --check` passed.
-
----
-
-#### M29-FINAL — Milestone Release Verification, Hygiene Pruning & Archival
-
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-2920`.
-- **Ownership:** Repository-wide test, verification, and hygiene suites.
-- **Scope/non-goals:**
-  - Run full repository validation: typecheck (`deno task check`), lint (`deno task lint`), format check (`deno task fmt:check`), diff check (`git diff --check`), affected tests (`deno task test:affected`), and relevant E2E journeys.
-  - Execute standard lifecycle archiving and `repo-hygiene-pruning` protocol per `.agents/skills/implementation-planning/SKILL.md`: summarize completed tasks into `Released Baseline`, prune the live milestone ledger, verify all markdown links, and commit with `[archive]`.
-  - Record exact commands, passing test counts, and release evidence.
-- **Outputs/acceptance:**
-  - Zero test failures, zero lint/formatting issues, clean Git working directory.
-  - Completed milestone ledger archived cleanly into `Released Baseline`.
-- **Verification:** `deno task check && deno task lint && deno task fmt:check && git diff --check && deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests/receipt_test.ts src/features/local-ui.test.tsx src/features/settings-pwa.test.tsx src/features/sync-ui/sync-ui.test.tsx`.
-
----
-
-#### R-2930 — Final Milestone Review & Release Gate
-
-- **Status/dependencies:** `PENDING`; depends on `M29-FINAL`.
-- **Reviewer role:** Fresh read-only reviewer subagent.
-- **Audit scope:** Audit all M29 commits, test evidence, documentation updates, and compliance with `SPEC.md`, `DESIGN_SYSTEM.md`, and `AGENTS.md`.
-- **Outputs:** Approval for milestone completion and integration onto `master`.
-
----
+1. Read `AGENTS.md`, `SPEC.md`, `DESIGN_SYSTEM.md`, this plan, and the
+   current checkpoint.
+2. Audit `master`, its upstream, every branch and worktree, uncommitted
+   changes, unpushed commits, and any stale `IN_PROGRESS` ownership:
+   `git status --short --branch`, `git log -n 20 --oneline`,
+   `git branch -vv`, and `git worktree list --porcelain`.
+3. Reconcile recorded evidence with the repository and rerun only the next
+   dependency-ready validation. Preserve all work; never infer completion from
+   a checklist or commit alone.
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M29-FINAL` (`IN_PROGRESS`)
-- **Released baseline:** M0 through M28 and all review gates through `R-2830`
-  are complete and pushed on `master`.
-- **Verification status:** M28 release validation passed format (209 files),
-  lint (199 files), typecheck, diff checks, the explicit 63-test domain/actor/
-  UI release suite, and the relevant 3-test `receipt-review` plus
-  `local-first-manual` E2E pair. `deno task test:affected` selected no test
-  modules because all changes were already committed. The M28 ledger and
-  hygiene audit were archived at pre-pruning commit `993e5ed`; no obsolete
-  spikes, transient M28 documents, redundant verification scripts, or dangling
-  Markdown links were found. M29-001 through M29-005 are complete; R-2910 is
-  approved; M29-FINAL is active.
-- **Active / preserved work:** Clean master working tree after the archive
-  edit; no worker or worktree owns unintegrated M28 changes.
-- **M29-001 completion evidence:** Receipt deselection and deletion now clear
-  dependent adjustment links before validation; first-use routing redirects to
-  expenses after projects appear; hydrated manual drafts expose the actor's
-  existing discard confirmation in-form. `deno fmt src/domain/receipt.ts
-  src/domain/tests/receipt_test.ts src/features/local-ui.tsx
-  src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx` passed;
-  `deno lint src/domain/receipt.ts src/domain/tests/receipt_test.ts
-  src/features/local-ui.tsx src/features/local-ui.test.tsx
-  src/features/receipt-ui.test.tsx` passed; `deno check src/domain/receipt.ts
-  src/features/local-ui.tsx src/features/receipt-ui.test.tsx` passed;
-  `deno test --allow-read --allow-write --allow-run --allow-env
-  src/domain/tests/receipt_test.ts src/actors/contracts/receipt-actor.test.ts
-  src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx` passed (61
-  passed, 0 failed); `git diff --check` passed.
-- **M29-002 completion evidence:** Import diagnostics now distinguish JSON
-  syntax, schema version, record validation, and migration failures; Drive
-  authorization, upload, and quota failures use bounded operation labels; and
-  IndexedDB quota, blocked-open, and transaction-abort branches retain bounded
-  diagnostics. `deno fmt src/adapters/ports/errors.ts
-  src/domain/import-export/types.ts src/domain/import-export/format.ts
-  src/actors/import-export/machine.ts src/adapters/drive/adapter.ts
-  src/adapters/local/index.ts src/domain/import-export/import-export.test.ts
-  src/actors/import-export/import-export-actor.test.ts
-  src/adapters/ports/contract.test.ts
-  src/adapters/drive/adapter.integration.test.ts
-  src/adapters/local/local-repository.test.ts` passed; the corresponding
-  `deno lint` and `deno check` commands passed; and
-  `deno test --allow-read --allow-write --allow-run --allow-env
-  src/domain/import-export/import-export.test.ts
-  src/adapters/import-export/import-export.integration.test.ts
-  src/adapters/ports/contract.test.ts
-  src/actors/import-export/import-export-actor.test.ts
-  src/adapters/drive/adapter.integration.test.ts
-  src/adapters/local/local-repository.test.ts` passed (79 passed, 0 failed).
-  `git diff --check` passed, including the fresh R-2910 closure review.
-- **M29-003 completion evidence:** Sync state now lives in a context consumed by the
-  Expenses header, with reconnect options retaining the configured account hint and
-  local mutations notifying only when authorization is expired. The former root
-  warning banner is no longer rendered. The focused sync/runtime/local/receipt suite
-  passed 67 tests with format, lint, typecheck, and `git diff --check` clean.
-- **M29-004 completion evidence:** PWA install/update notices use a fixed,
-  safe-area-aware status surface; update-ready notices can be dismissed locally;
-  non-production and unsupported checks settle quietly as up-to-date, including a
-  defensive actor guard. The focused app/actor/settings suite passed 17 tests with
-  format, lint, typecheck, and `git diff --check` clean.
-- **M29-005 completion evidence:** Category conflict diagnostics are attached to the
-  category name field, preferences reset to and persist `03:00` in one action, and
-  narrow card-action rows retain 44px targets with larger row spacing. The focused
-  local/settings suite passed 40 tests with format, lint, typecheck, and `git diff
-  --check` clean.
-- **R-2920 closure evidence:** Fresh read-only review approved with no findings.
-  The viewport probe measured no horizontal overflow at 320×568, 390×844, or
-  1280×800; its focused UI/PWA suite passed 88 tests and Playwright passed 5
-  journeys. Format, lint, typecheck, and `git diff --check` passed.
-- **Exact next action:** Run M29-FINAL release validation, complete the hygiene
-  audit, archive the completed M29 ledger into `Released Baseline`, and open
-  R-2930.
+- **Active gate:** `R-2930` (`IN_PROGRESS`).
+- **Repository:** `master` is clean and synchronized at the archive commit
+  that follows pre-pruning ledger `84e7515`.
+- **M29 implementation:** complete and pushed; R-2910 and R-2920 approved.
+- **M29-FINAL:** complete; release and hygiene evidence is recorded above.
+- **Next action:** Dispatch the fresh read-only R-2930 review. On approval, mark
+  R-2930 complete, update the released baseline to include all M29 gates, and
+  push the final plan checkpoint.
 
-## Ready-to-Use Orchestration Prompt
+## Ready-to-use orchestration prompt
 
 ```text
-Act as the single primary coding agent for M29 after completing R-2830. Read AGENTS.md, SPEC.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Check git status, verify clean working tree, and resume at M29-001. Follow single-agent sequential commit cadence, record exact test commands and outputs, update IMPLEMENTATION_PLAN.md after each task, dispatch read-only reviewer subagents at named review gates (R-2910, R-2920, R-2930), and stop when the milestones are complete or if blocked.
+Act as the integration owner for the active R-2930 gate. Read AGENTS.md,
+SPEC.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Audit the current
+master/upstream/worktree state and the compact M29 release evidence. Use a
+fresh read-only reviewer for R-2930, preserve all existing work, update this
+checkpoint after approval, and initialize a new dependency-ordered milestone
+only after the product owner approves its requirements and design.
 ```

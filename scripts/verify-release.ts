@@ -1,10 +1,15 @@
 /// <reference path="./deno.d.ts" />
 
+import {
+  APP_VERSION,
+  LICENSE_NAME,
+  LICENSE_URL,
+  NOTICES_URL,
+  SOURCE_URL,
+} from "../src/app/provenance.ts";
+
 const BASE_PATH = "/did-it-become-what-you-like/";
 const DIST = "dist";
-const SOURCE_URL = "https://github.com/arthow4n/did-it-become-what-you-like";
-const LICENSE_URL = `${SOURCE_URL}/blob/master/LICENSE`;
-const NOTICES_URL = `${SOURCE_URL}/blob/master/THIRD_PARTY_NOTICES.md`;
 const SECRET_PATTERNS = [
   /AIza[0-9A-Za-z_-]{20,}/,
   /gh[pousr]_[0-9A-Za-z]{20,}/,
@@ -116,14 +121,6 @@ async function gitCommit(): Promise<string> {
   return commit;
 }
 
-function sourceConstant(source: string, name: string): string {
-  const match = source.match(
-    new RegExp(`\\b${name}\\s*=\\s*[\\"']([^\\"']+)[\\"']`),
-  );
-  assert(match?.[1], `src/app/build-info.ts must define ${name}.`);
-  return match[1];
-}
-
 async function collectArtifacts(
   directory: string,
   prefix = "",
@@ -158,8 +155,6 @@ async function sha256(bytes: Uint8Array): Promise<string> {
   ).join("");
 }
 
-const buildInfo = await readText("src/app/build-info.ts");
-const version = sourceConstant(buildInfo, "APP_VERSION");
 const commit = await gitCommit();
 const sourceIndex = await readText("index.html");
 const index = await readText(`${DIST}/index.html`);
@@ -244,12 +239,12 @@ assert(
 
 for (
   const expected of [
-    version,
+    APP_VERSION,
     commit,
     SOURCE_URL,
     LICENSE_URL,
     NOTICES_URL,
-    "MIT License",
+    LICENSE_NAME,
   ]
 ) {
   assert(
@@ -276,6 +271,6 @@ for (const file of artifacts) {
 }
 
 console.log(`Release artifact verified for ${SOURCE_URL}`);
-console.log(`version=${version} commit=${commit} base_path=${BASE_PATH}`);
+console.log(`version=${APP_VERSION} commit=${commit} base_path=${BASE_PATH}`);
 console.log("artifact_sha256:");
 console.log(digestLines.join("\n"));

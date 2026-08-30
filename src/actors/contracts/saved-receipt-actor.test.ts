@@ -25,7 +25,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-import { settle, waitForState } from "../../test-support/index.ts";
+import { settle, waitForActorState } from "../../test-support/index.ts";
 
 const receiptId = "receipt-saved-actor";
 const purchaseId = "line-saved-actor";
@@ -93,7 +93,7 @@ Deno.test(
   "saved-receipt actor loads success and not-found outcomes and resets drafts on reload",
   async () => {
     const actor = start();
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     assertEquals(actor.getSnapshot().context.aggregate?.receipt.id, receiptId);
     assert(actor.getSnapshot().hasTag("ready"));
 
@@ -109,7 +109,7 @@ Deno.test(
     });
     assert(actor.getSnapshot().hasTag("dirty"));
     actor.send({ type: "receipt.detail.reload" });
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     assertEquals(actor.getSnapshot().context.metadataDraft, null);
     assertEquals(
       actor.getSnapshot().context.aggregate?.receipt.merchant,
@@ -120,7 +120,7 @@ Deno.test(
     const missing = start(
       createService({ get: () => Promise.resolve(undefined) }),
     );
-    await waitForState(missing, "notFound");
+    await waitForActorState(missing, "notFound");
     assertEquals(missing.getSnapshot().output?.status, "not-found");
     missing.stop();
   },
@@ -146,7 +146,7 @@ Deno.test(
       },
     });
     const actor = start(service);
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     actor.send({ type: "receipt.detail.edit-metadata" });
     assert(actor.getSnapshot().hasTag("editing"));
     assert(!actor.getSnapshot().hasTag("dirty"));
@@ -164,7 +164,7 @@ Deno.test(
     actor.send({ type: "receipt.detail.save-metadata" });
     assert(actor.getSnapshot().hasTag("mutating"));
     assert(!actor.getSnapshot().can({ type: "receipt.detail.save-metadata" }));
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     assertEquals(metadataSaves, 1);
     assertEquals(
       actor.getSnapshot().context.aggregate?.receipt.merchant,
@@ -183,7 +183,7 @@ Deno.test(
     });
     assert(actor.getSnapshot().hasTag("dirty"));
     actor.send({ type: "receipt.detail.save-line" });
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     assertEquals(lineSaves, 1);
     actor.stop();
   },
@@ -215,7 +215,7 @@ Deno.test(
         return Promise.resolve(addedAggregate);
       },
     }));
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     actor.send({
       type: "receipt.detail.start-add-line",
       changes: {
@@ -237,7 +237,7 @@ Deno.test(
     });
     assert(actor.getSnapshot().hasTag("dirty"));
     actor.send({ type: "receipt.detail.add-line" });
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     assertEquals(addedChanges, {
       type: "purchase",
       description: "Added bread",
@@ -258,7 +258,7 @@ Deno.test(
     const actor = start(createService({
       addLine: () => Promise.reject({ code: "invalid" }),
     }));
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     actor.send({
       type: "receipt.detail.start-add-line",
       changes: {
@@ -280,11 +280,11 @@ Deno.test(
       },
     });
     actor.send({ type: "receipt.detail.add-line" });
-    await waitForState(actor, "failure");
+    await waitForActorState(actor, "failure");
     actor.send({ type: "receipt.detail.back", destination: "/expenses" });
     assert(actor.getSnapshot().matches("confirmingDiscard"));
     actor.send({ type: "receipt.detail.discard-changes" });
-    await waitForState(actor, "completed");
+    await waitForActorState(actor, "completed");
     assertEquals(actor.getSnapshot().output, {
       status: "discarded",
       destination: "/expenses",
@@ -307,7 +307,7 @@ Deno.test(
           deletedLineId: purchaseId,
         }),
     }));
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     actor.send({
       type: "receipt.detail.request-line-delete",
       lineId: purchaseId,
@@ -320,16 +320,16 @@ Deno.test(
       lineId: purchaseId,
     });
     actor.send({ type: "receipt.detail.confirm-line-delete" });
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     assertEquals(actor.getSnapshot().context.aggregate?.purchaseLines, []);
     actor.stop();
 
     const deleted = start();
-    await waitForState(deleted, "ready");
+    await waitForActorState(deleted, "ready");
     deleted.send({ type: "receipt.detail.request-receipt-delete" });
     assert(deleted.getSnapshot().matches("confirmingReceiptDelete"));
     deleted.send({ type: "receipt.detail.confirm-receipt-delete" });
-    await waitForState(deleted, "completed");
+    await waitForActorState(deleted, "completed");
     const deletedOutput = deleted.getSnapshot().output;
     assert(deletedOutput?.status === "deleted");
     assertEquals(deletedOutput.receiptId, receiptId);
@@ -339,13 +339,13 @@ Deno.test(
       deleteLine: () =>
         Promise.resolve({ deletedReceipt: true, deletedLineId: purchaseId }),
     }));
-    await waitForState(finalLine, "ready");
+    await waitForActorState(finalLine, "ready");
     finalLine.send({
       type: "receipt.detail.request-line-delete",
       lineId: purchaseId,
     });
     finalLine.send({ type: "receipt.detail.confirm-line-delete" });
-    await waitForState(finalLine, "completed");
+    await waitForActorState(finalLine, "completed");
     const finalLineOutput = finalLine.getSnapshot().output;
     assert(finalLineOutput?.status === "deleted");
     assertEquals(finalLineOutput.deletedLineId, purchaseId);
@@ -365,17 +365,17 @@ Deno.test(
           : Promise.resolve(aggregate);
       },
     }));
-    await waitForState(retryLoad, "failure");
+    await waitForActorState(retryLoad, "failure");
     assertEquals(retryLoad.getSnapshot().context.error?.code, "offline");
     assert(retryLoad.getSnapshot().context.error?.retryable === true);
     retryLoad.send({ type: "receipt.detail.retry" });
-    await waitForState(retryLoad, "ready");
+    await waitForActorState(retryLoad, "ready");
     retryLoad.stop();
 
     const stale = start();
-    await waitForState(stale, "ready");
+    await waitForActorState(stale, "ready");
     stale.send({ type: "receipt.detail.edit-line", lineId: "line-missing" });
-    await waitForState(stale, "notFound");
+    await waitForActorState(stale, "notFound");
     stale.stop();
 
     let resolveMutation: ((value: ReceiptAggregate) => void) | undefined;
@@ -385,7 +385,7 @@ Deno.test(
           resolveMutation = resolve;
         }),
     }));
-    await waitForState(cancelled, "ready");
+    await waitForActorState(cancelled, "ready");
     cancelled.send({ type: "receipt.detail.edit-metadata" });
     cancelled.send({
       type: "receipt.detail.change-metadata",
@@ -411,7 +411,7 @@ Deno.test(
   "saved-receipt actor guards dirty back and browser navigation with discard intent",
   async () => {
     const actor = start();
-    await waitForState(actor, "ready");
+    await waitForActorState(actor, "ready");
     actor.send({ type: "receipt.detail.edit-line", lineId: adjustmentId });
     actor.send({
       type: "receipt.detail.change-line",
@@ -445,7 +445,7 @@ Deno.test(
     actor.stop();
 
     const externallyDiscarded = start();
-    await waitForState(externallyDiscarded, "ready");
+    await waitForActorState(externallyDiscarded, "ready");
     externallyDiscarded.send({
       type: "receipt.detail.edit-line",
       lineId: adjustmentId,
@@ -466,7 +466,7 @@ Deno.test(
     externallyDiscarded.stop();
 
     const clean = start();
-    await waitForState(clean, "ready");
+    await waitForActorState(clean, "ready");
     clean.send({ type: "receipt.detail.back" });
     assertEquals(clean.getSnapshot().output, {
       status: "navigated",
@@ -477,7 +477,7 @@ Deno.test(
     const nonRetryable = start(createService({
       updateMetadata: () => Promise.reject({ code: "invalid" }),
     }));
-    await waitForState(nonRetryable, "ready");
+    await waitForActorState(nonRetryable, "ready");
     nonRetryable.send({ type: "receipt.detail.edit-metadata" });
     nonRetryable.send({
       type: "receipt.detail.change-metadata",
@@ -489,7 +489,7 @@ Deno.test(
       },
     });
     nonRetryable.send({ type: "receipt.detail.save-metadata" });
-    await waitForState(nonRetryable, "failure");
+    await waitForActorState(nonRetryable, "failure");
     assertEquals(nonRetryable.getSnapshot().context.error?.retryable, false);
     assert(!nonRetryable.getSnapshot().can({ type: "receipt.detail.retry" }));
     nonRetryable.send({ type: "receipt.detail.retry" });

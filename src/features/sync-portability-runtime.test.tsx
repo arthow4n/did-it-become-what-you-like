@@ -181,18 +181,3 @@ Deno.test(
     assert(refreshRequests === 1);
   },
 );
-
-// Deno's --filter is a substring selector rather than an alternation regex.
-// Keep the owner-requested selector names executable while the task aliases
-// below also include every actual lower-layer directory.
-Deno.test("conflict|import|export|sync selector coverage", () => {
-  assert(createConfiguredDriveAdapter({}) === null);
-});
-
-Deno.test("sync|conflict|import selector coverage", () => {
-  assert(formatApproximateLastSeen("not-a-date") === "recently");
-});
-
-Deno.test("drive-adapter|sync-schedules|conflict-convergence|import-sync selector coverage", () => {
-  assert(formatApproximateLastSeen("not-a-date") === "recently");
-});

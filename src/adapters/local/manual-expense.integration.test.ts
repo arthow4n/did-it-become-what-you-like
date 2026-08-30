@@ -27,7 +27,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-import { waitForValue } from "../../test-support/index.ts";
+import { waitForActorState } from "../../test-support/index.ts";
 
 let sequence = 0;
 
@@ -99,7 +99,7 @@ Deno.test("manual-save integration: local commit is atomic and clears durable dr
       "workflow:integration-save",
     );
     actor.send({ type: "expense.open" });
-    await waitForValue(actor, "editing");
+    await waitForActorState(actor, "editing");
     const draft = actor.getSnapshot().context.draft;
     assert(draft !== null);
     actor.send({
@@ -111,9 +111,9 @@ Deno.test("manual-save integration: local commit is atomic and clears durable dr
         merchant: "Integration shop",
       },
     });
-    await waitForValue(actor, "editing");
+    await waitForActorState(actor, "editing");
     actor.send({ type: "expense.submit" });
-    await waitForValue(actor, "saved");
+    await waitForActorState(actor, "saved");
     assertEquals(actor.getSnapshot().value, "saved");
     const result = actor.getSnapshot().context.result;
     assert(result !== null);
@@ -140,19 +140,19 @@ Deno.test("manual-save integration: repository failure retains draft and retry c
       "workflow:integration-retry",
     );
     actor.send({ type: "expense.open" });
-    await waitForValue(actor, "editing");
+    await waitForActorState(actor, "editing");
     const draft = actor.getSnapshot().context.draft;
     assert(draft !== null);
     actor.send({ type: "expense.change", draft: { ...draft, amount: "2.00" } });
-    await waitForValue(actor, "editing");
+    await waitForActorState(actor, "editing");
     failWrites = true;
     actor.send({ type: "expense.submit" });
-    await waitForValue(actor, "saveFailed");
+    await waitForActorState(actor, "saveFailed");
     assertEquals(actor.getSnapshot().value, "saveFailed");
     assert(actor.getSnapshot().context.draft !== null);
     failWrites = false;
     actor.send({ type: "expense.retry" });
-    await waitForValue(actor, "saved");
+    await waitForActorState(actor, "saved");
     assertEquals(actor.getSnapshot().value, "saved");
     assertEquals((await service.getState()).expenses[0]?.amount, "-2");
     actor.stop();

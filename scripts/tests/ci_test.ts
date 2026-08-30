@@ -46,6 +46,10 @@ Deno.test("CI and Pages workflows follow reviewed security and task policies", a
     /^permissions:\s*\n\s+contents:\s+read\s*$/m.test(ci),
     "CI must grant read-only repository contents permission",
   );
+  assert(
+    /push:\s*\n\s+branches-ignore:\s*\n\s+- master/m.test(ci),
+    "Pages is the sole quality-and-deployment workflow for master pushes",
+  );
   for (const [index, workflow] of workflows.entries()) {
     assert(
       workflow.includes("deno task verify"),

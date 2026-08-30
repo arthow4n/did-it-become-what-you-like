@@ -12,10 +12,9 @@ exact pushed commit, runs `deno task verify`, and uploads the resulting `dist/`
 artifact before the separate deploy job runs. There is no separate local release
 gate or manual artifact handoff.
 
-The CI quality gate covers formatting, linting, type checking, Deno tests, the
-production build, built-artifact verification, dependency audit, and whitespace
-checks. Browser E2E and gallery verification are separate, risk-selected checks;
-they are not implied by `deno task verify`.
+The CI quality gate is `deno task verify`, defined in `AGENTS.md`. Browser E2E
+and gallery verification are separate, risk-selected checks; they are not
+implied by that command.
 
 The deploy job has only Pages write and OIDC token permissions; it does not
 rebuild source or accept a local directory. No credentials are required by CI.

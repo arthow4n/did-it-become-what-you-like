@@ -92,10 +92,11 @@
     by uncommitted Git changes.
   - `release:verify` checks an already built `dist/` artifact.
   - `verify` is the CI quality gate: formatting, linting, type checking, Deno
-    tests, production build, built-artifact verification, dependency audit, and
-    whitespace checks. It does not run browser E2E or gallery verification.
-  - `test:e2e` and `gallery:verify` are separate browser checks selected when
-    their browser-integration or visual coverage is required.
+    tests, production build, built-artifact verification, and dependency audit.
+    It does not run browser E2E or gallery verification.
+  - `gallery:build` produces the development-only gallery; `test:e2e` and
+    `gallery:verify` are separate browser checks selected when their
+    browser-integration or visual coverage is required.
 - Use risk-based validation. For an ordinary change, format and lint applicable
   changed source/configuration files, run `deno task test:affected`, run the
   narrowest additional check for effects Deno's import graph cannot see, and run
@@ -160,41 +161,9 @@
 
 ### Design-system facade boundary
 
-For the approved Mantine migration and all later design-system work:
-
-1. Files under `src/features/**` and `src/app/**` must not import `@mantine/*`,
-   `react-aria-components`, or another component library. They import only the
-   repository design-system facade.
-2. Public design-system types, props, refs, callback signatures, and exports
-   must not expose Mantine-specific types or objects. Translate library events
-   internally and retain product-oriented contracts such as `onPress`, `tone`,
-   and repository variants unless a reviewed contract change is unavoidable.
-3. Semantic After Midnight tokens remain the visual source of truth. Map them
-   into `MantineProvider` and component defaults; do not replace them with raw
-   Mantine palette indexes in feature code.
-4. Screens may not use Mantine `styles`, `classNames`, CSS selectors, or
-   provider APIs. Library-specific customization stays inside
-   `src/design-system/**`.
-5. XState actors remain the authority for durable form and workflow state.
-   Mantine may own ephemeral component interaction state, but Mantine Form is
-   not introduced as a second business-state layer.
-6. Prefer Mantine's documented `DateInput`, `TimeInput`, and `FileInput` or
-   `Dropzone` components behind the facade when their value, keyboard,
-   accessibility, and capture contracts are compatible. Preserve native date,
-   time, file, and camera behavior as the explicit fallback where a Mantine
-   wrapper cannot preserve it; all variants use the same facade-level field
-   contract.
-7. Product/domain composites such as expense, receipt, conflict, sync,
-   destructive, and Gemini patterns remain repository-owned compositions. They
-   are assembled from facade primitives backed by Mantine rather than copied
-   library internals.
-8. Do not copy Mantine source into the repository. Prefer public, documented
-   Mantine APIs and pin all dependencies through `deno.json`/`deno.lock`.
-9. Ordinary interaction and layout transitions remain `0ms`; only approved
-   functional progress motion is allowed, with equivalent reduced-motion
-   feedback.
-10. A facade contract may change only after an impact inventory identifies all
-    consumers and tests. When the change belongs to an active planned milestone,
-    record it in `IMPLEMENTATION_PLAN.md` and obtain the preceding or
-    immediately following review-gate approval; otherwise record the inventory
-    and approval in the focused change evidence.
+Files under `src/features/**` and `src/app/**` use only the repository
+design-system facade; they do not import component libraries directly. The
+detailed facade, token, XState, native-field, customization, motion, and
+contract-change rules are authoritative in `DESIGN_SYSTEM.md`. Before changing a
+facade contract, inventory its consumers and tests; record the reviewed change
+in focused evidence or the active implementation plan.

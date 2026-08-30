@@ -305,88 +305,22 @@ flexbox abuse, all components and screens must follow these rules:
      actual user modification occurs (`isDirty === true`).
    - Safe focus restoration must occur on dialog/modal exit.
 
-## Component Map
+## Component scope
 
-### UI primitives
+`src/design-system/index.ts` is the current public component inventory; the
+development-only gallery is its visual verification surface. This document
+defines component boundaries rather than manually mirroring implementation
+exports.
 
-| Component                                               | Responsibility                                                                          |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `AppFrame`                                              | Canvas, safe areas, bottom bar/rail transition, main landmark                           |
-| `PageHeader`                                            | Back/close, title, project/scope, trailing status/actions                               |
-| `Stack`, `Inline`, `ResponsiveGrid`, `ContentContainer` | Tokenized layout without screen-local gap values                                        |
-| `Text`, `Heading`, `MoneyText`, `DateText`              | Semantic typography, signed money, tabular numbers, concrete dates                      |
-| `Icon`                                                  | Lucide sizing and decorative/accessibility policy                                       |
-| `Button`, `IconButton`, `LinkButton`                    | Primary, secondary, quiet, and danger actions; loading included                         |
-| `ActionCard`                                            | Large labeled first-use/add-choice action with description                              |
-| `Field`                                                 | Label, required/optional status, description, error, control slot                       |
-| `TextField`, `TextArea`, `SearchField`, `SecretField`   | Common text entry, clear/reveal behavior, validation                                    |
-| `DecimalField`, `MoneyField`                            | Decimal-string quantity/price and signed-domain money input; direction remains separate |
-| `NativeDateField`, `NativeTimeField`, `FileField`       | Approved platform inputs inside the Field contract                                      |
-| `SelectField`                                           | Short selection and type-ahead long-list selection                                      |
-| `ColorChoiceField`                                      | Optional labeled category color with accessible presets/custom value                    |
-| `Checkbox`, `RadioGroup`, `Switch`, `SegmentedControl`  | Boolean, exclusive, and compact mode selection                                          |
-| `Chip`, `Badge`, `StatusDot`                            | Filters and status supplements; never color-only                                        |
-| `Card`, `Section`, `Divider`, `Disclosure`              | Grouping and natural-height expandable content                                          |
-| `List`, `ListRow`, `DefinitionList`                     | Navigable/summary records with consistent density                                       |
-| `AdaptiveDialog`                                        | Sheet on compact screens, modal/popover on wider screens                                |
-| `ConfirmDialog`                                         | Ordinary confirmation with safe initial focus                                           |
-| `DangerDialog`                                          | Strong destructive confirmation and typed phrase slot                                   |
-| `Popover`, `Menu`, `Tooltip`                            | Accessible transient supporting controls                                                |
-| `Banner`, `InlineNotice`, `Toast`, `StatusMessage`      | Persistent, inline, transient, and announced feedback                                   |
-| `Progress`, `Skeleton`, `EmptyState`, `ErrorState`      | Async and collection states without layout jumps                                        |
-| `StickyActionBar`                                       | Safe-area-aware compact-screen primary actions                                          |
+Expose a primitive when its interaction, accessibility contract, or semantic
+token mapping is shared. Keep product/domain composites repository-owned and
+assemble them from facade primitives. Split a component when it has a stable
+responsibility, independent variants/tests, or multiple consumers; tiny private
+layout helpers may remain colocated.
 
-Every interactive primitive supports the applicable default, hover, pressed,
+Every interactive facade component supports applicable default, hover, pressed,
 focus-visible, selected, disabled, pending, invalid, and read-only states. A
 pending control keeps its label or an equally descriptive accessible name.
-
-### Reusable patterns
-
-| Pattern                                                    | Responsibility                                                     |
-| ---------------------------------------------------------- | ------------------------------------------------------------------ |
-| `AppNavigation`                                            | Expenses/Manual/Scan/Organize/Settings bottom bar and desktop rail |
-| `GlobalStatus`                                             | Offline, reconnecting, syncing, conflict, error, update status     |
-| `FormLayout`, `FormActions`, `ErrorSummary`, `DraftStatus` | Consistent form spacing, validation, dirty/save feedback           |
-| `FilterBar`, `FilterSheet`, `ActiveFilterChips`            | Quick filters, advanced filters, removable active criteria         |
-| `MasterDetail`                                             | Mobile list-to-detail and wide two-column detail composition       |
-| `ManagementList`                                           | Active/archived sections, search, reorder and row actions          |
-| `ReorderControls`                                          | Drag plus keyboard-accessible move actions                         |
-| `SettingsList`, `SettingsRow`                              | Settings navigation with concise live summary                      |
-| `StatusPanel`                                              | Identity, current state, timestamps, pending counts, actions       |
-| `SafetyExportStep`                                         | Reusable pre-destructive JSON export/decline confirmation          |
-| `WorkflowProgress`                                         | Named resumable steps, retry, and terminal result                  |
-| `UpdatePrompt`                                             | Checking/current/ready/offline/error and guarded reload            |
-
-### Domain composites
-
-| Composite                                                 | Responsibility                                                                                                         |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `ProjectPicker`                                           | Current project selection and stable-ID values                                                                         |
-| `PeriodPicker`                                            | Today/month/year/custom calendar selection                                                                             |
-| `CurrencyPicker`, `MerchantPicker`                        | Searchable ISO currency and local merchant suggestions                                                                 |
-| `MoneySummary`                                            | Net spent, outflows, and money back for identical filters                                                              |
-| `CategoryBreakdown`                                       | Ranked category totals and filter activation                                                                           |
-| `ExpenseList`, `ExpenseRow`, `ReceiptGroup`               | Date grouping, records, expandable receipt parent/lines                                                                |
-| `ExpenseForm`                                             | Shared create/edit fields and snapshot-derived save actions                                                            |
-| `ReceiptSourcePicker`                                     | Native camera/file input, ephemeral preview, replace/remove                                                            |
-| `GeminiQuickSetup`                                        | Inline key entry, warning, validation, resume action                                                                   |
-| `ReceiptMetadata`, `ReceiptLineCard`, `ReceiptLineEditor` | Review/edit extracted parent and line values; `ReceiptLineCard` also has a management variant without review selection |
-| `ReceiptDetail`                                           | Saved receipt metadata, reconciliation, line hierarchy, and management actions                                         |
-| `ReceiptReconciliation`                                   | Printed, selected, and difference totals plus warning                                                                  |
-| `ProjectEditor`, `CategoryEditor`                         | Stable-ID entity create/edit forms                                                                                     |
-| `DeleteAndReassign`                                       | Category replacement preview and atomic confirmation                                                                   |
-| `ProjectDeletionReview`                                   | Project scope summary, safety export, typed confirmation                                                               |
-| `SyncAccountPanel`, `KnownDeviceList`                     | Drive identity/status and recognizable devices                                                                         |
-| `ConflictResolver`                                        | Record/field progress, candidates, custom value, delete/edit                                                           |
-| `ModelPicker`, `GeminiConfigurationTest`                  | Searchable compatible models and explicit test states                                                                  |
-| `ImportPreview`, `ImportModeChoice`                       | Schema/count validation and merge/dangerous replace                                                                    |
-| `DeletionScopePicker`, `DeletionProgress`                 | Local/disconnect/everywhere scope and device acknowledgements                                                          |
-| `PreferenceExample`                                       | Live expense-day boundary example with concrete dates                                                                  |
-| `AboutSummary`                                            | Version/build, disclosure, privacy, licenses, source, updates                                                          |
-
-Components should be split when they have a stable responsibility, independent
-variants/tests, or multiple consumers; tiny private layout helpers may remain
-colocated.
 
 ## Interaction and Content Rules
 

@@ -43,7 +43,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-import { settle, waitForValue } from "../../test-support/index.ts";
+import { settle, waitForActorState } from "../../test-support/index.ts";
 
 const project = {
   schemaVersion: 1 as const,
@@ -150,7 +150,7 @@ Deno.test("receipt-actor scan: disclosure, preparation, validation, and unreadab
   actor.send({ type: "receipt.disclosure.accept" });
   actor.send({ type: "receipt.image-selected" });
   actor.send({ type: "receipt.scan", input: scanInput });
-  await waitForValue(actor, "reviewReady");
+  await waitForActorState(actor, "reviewReady");
 
   const review = actor.getSnapshot().context.review;
   assert(review !== null);
@@ -179,10 +179,10 @@ Deno.test("receipt-actor scan: offline/model loss failure can retry without reta
   actor.send({ type: "receipt.open" });
   actor.send({ type: "receipt.image-selected" });
   actor.send({ type: "receipt.scan", input: scanInput });
-  await waitForValue(actor, "failed");
+  await waitForActorState(actor, "failed");
   assertEquals(actor.getSnapshot().context.error?.code, "offline");
   actor.send({ type: "receipt.retry", input: scanInput });
-  await waitForValue(actor, "reviewReady");
+  await waitForActorState(actor, "reviewReady");
   assertEquals(released, ["image-memory-only", "image-memory-only"]);
   actor.stop();
 
@@ -193,7 +193,7 @@ Deno.test("receipt-actor scan: offline/model loss failure can retry without reta
   modelLoss.send({ type: "receipt.open" });
   modelLoss.send({ type: "receipt.image-selected" });
   modelLoss.send({ type: "receipt.scan", input: scanInput });
-  await waitForValue(modelLoss, "failed");
+  await waitForActorState(modelLoss, "failed");
   assertEquals(modelLoss.getSnapshot().context.error?.code, "not-found");
   modelLoss.send({ type: "receipt.replace-image" });
   assertEquals(modelLoss.getSnapshot().value, "selecting");
@@ -202,7 +202,7 @@ Deno.test("receipt-actor scan: offline/model loss failure can retry without reta
   assertEquals(modelLoss.getSnapshot().value, "selected");
   assertEquals(modelLoss.getSnapshot().context.error, null);
   modelLoss.send({ type: "receipt.scan", input: scanInput });
-  await waitForValue(modelLoss, "reviewReady");
+  await waitForActorState(modelLoss, "reviewReady");
   modelLoss.stop();
 
   const resetFailure = createActor(createReceiptScanMachine({
@@ -213,7 +213,7 @@ Deno.test("receipt-actor scan: offline/model loss failure can retry without reta
   resetFailure.send({ type: "receipt.open" });
   resetFailure.send({ type: "receipt.image-selected" });
   resetFailure.send({ type: "receipt.scan", input: scanInput });
-  await waitForValue(resetFailure, "failed");
+  await waitForActorState(resetFailure, "failed");
   resetFailure.send({ type: "receipt.reset" });
   assertEquals(resetFailure.getSnapshot().value, "idle");
   assertEquals(resetFailure.getSnapshot().context.error, null);
@@ -232,7 +232,7 @@ Deno.test(
     missingImage.send({ type: "receipt.open" });
     missingImage.send({ type: "receipt.image-selected" });
     missingImage.send({ type: "receipt.scan", input: scanInput });
-    await waitForValue(missingImage, "failed");
+    await waitForActorState(missingImage, "failed");
     assertEquals(missingImage.getSnapshot().context.error, {
       code: "not-found",
       message: "The requested resource was not found.",
@@ -249,7 +249,7 @@ Deno.test(
     invalidOutput.send({ type: "receipt.open" });
     invalidOutput.send({ type: "receipt.image-selected" });
     invalidOutput.send({ type: "receipt.scan", input: scanInput });
-    await waitForValue(invalidOutput, "failed");
+    await waitForActorState(invalidOutput, "failed");
     assertEquals(invalidOutput.getSnapshot().context.error, {
       code: "invalid",
       message: "The supplied data is invalid.",
@@ -273,7 +273,7 @@ Deno.test(
     rawProviderFailure.send({ type: "receipt.open" });
     rawProviderFailure.send({ type: "receipt.image-selected" });
     rawProviderFailure.send({ type: "receipt.scan", input: scanInput });
-    await waitForValue(rawProviderFailure, "failed");
+    await waitForActorState(rawProviderFailure, "failed");
     assertEquals(rawProviderFailure.getSnapshot().context.error, {
       code: "unknown",
       message: "The operation failed for an unknown reason.",
@@ -301,7 +301,7 @@ Deno.test(
     cleanupFailure.send({ type: "receipt.open" });
     cleanupFailure.send({ type: "receipt.image-selected" });
     cleanupFailure.send({ type: "receipt.scan", input: scanInput });
-    await waitForValue(cleanupFailure, "failed");
+    await waitForActorState(cleanupFailure, "failed");
     assertEquals(cleanupFailure.getSnapshot().context.error, {
       code: "quota",
       message: "Storage or service quota was exceeded.",
@@ -341,7 +341,7 @@ Deno.test("receipt-actor scan: repeated extracted lines are consolidated before 
   actor.send({ type: "receipt.open" });
   actor.send({ type: "receipt.image-selected" });
   actor.send({ type: "receipt.scan", input: scanInput });
-  await waitForValue(actor, "reviewReady");
+  await waitForActorState(actor, "reviewReady");
 
   const review = actor.getSnapshot().context.review;
   assert(review !== null);
@@ -375,9 +375,9 @@ Deno.test("receipt-actor scan: cancellation aborts the request and releases the 
   actor.send({ type: "receipt.open" });
   actor.send({ type: "receipt.image-selected" });
   actor.send({ type: "receipt.scan", input: scanInput });
-  await waitForValue(actor, "preparing");
+  await waitForActorState(actor, "preparing");
   actor.send({ type: "receipt.cancel" });
-  await waitForValue(actor, "cancelled");
+  await waitForActorState(actor, "cancelled");
   assertEquals(released, ["image-memory-only"]);
   actor.stop();
 });
@@ -392,7 +392,7 @@ Deno.test("receipt-actor scan: reset aborts an active attempt and clears transie
   actor.send({ type: "receipt.open" });
   actor.send({ type: "receipt.image-selected" });
   actor.send({ type: "receipt.scan", input: scanInput });
-  await waitForValue(actor, "preparing");
+  await waitForActorState(actor, "preparing");
   actor.send({ type: "receipt.reset" });
   assertEquals(actor.getSnapshot().value, "idle");
   assertEquals(actor.getSnapshot().context.error, null);
@@ -411,7 +411,7 @@ Deno.test("receipt-actor scan: replacing an image cancels an active attempt befo
   actor.send({ type: "receipt.open" });
   actor.send({ type: "receipt.image-selected" });
   actor.send({ type: "receipt.scan", input: scanInput });
-  await waitForValue(actor, "preparing");
+  await waitForActorState(actor, "preparing");
   actor.send({ type: "receipt.replace-image" });
   assertEquals(actor.getSnapshot().value, "selecting");
   assertEquals(actor.getSnapshot().context.error, null);
@@ -485,7 +485,7 @@ Deno.test("receipt-actor review: durable validated draft hydrates without image 
     { input: { persistenceKey: "workflow:receipt-actor" } },
   ).start();
   first.send({ type: "receipt.review.open", review: reviewDraft() });
-  await waitForValue(first, "persisted");
+  await waitForActorState(first, "persisted");
   const stored = await local.query("workflow-snapshots");
   assertEquals(stored.length, 1);
   assert(!JSON.stringify(stored[0]?.value).includes("ephemeralId"));
@@ -499,12 +499,12 @@ Deno.test("receipt-actor review: durable validated draft hydrates without image 
     { input: { persistenceKey: "workflow:receipt-actor" } },
   ).start();
   resumed.send({ type: "receipt.review.hydrate" });
-  await waitForValue(resumed, "persisted");
+  await waitForActorState(resumed, "persisted");
   assertEquals(resumed.getSnapshot().context.review?.lines.length, 2);
   resumed.send({ type: "receipt.review.submit", confirmMismatch: false });
-  await waitForValue(resumed, "mismatch");
+  await waitForActorState(resumed, "mismatch");
   resumed.send({ type: "receipt.review.confirm-mismatch" });
-  await waitForValue(resumed, "saved");
+  await waitForActorState(resumed, "saved");
   assertEquals(
     (await local.query("records", { index: "type", equals: "receipt" })).length,
     1,
@@ -545,12 +545,12 @@ Deno.test("receipt-actor review: persistence failure retries and explicit discar
     { input: { persistenceKey: "workflow:receipt-discard" } },
   ).start();
   actor.send({ type: "receipt.review.open", review: reviewDraft() });
-  await waitForValue(actor, "failed");
+  await waitForActorState(actor, "failed");
   assertEquals(actor.getSnapshot().context.error?.code, "quota");
   actor.send({ type: "receipt.review.retry" });
-  await waitForValue(actor, "persisted");
+  await waitForActorState(actor, "persisted");
   actor.send({ type: "receipt.review.discard" });
-  await waitForValue(actor, "discarded");
+  await waitForActorState(actor, "discarded");
   assertEquals(await local.query("workflow-snapshots"), []);
   assertEquals(
     await local.query("records", { index: "type", equals: "receipt" }),

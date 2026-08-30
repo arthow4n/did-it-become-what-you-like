@@ -1,10 +1,5 @@
-import { Buffer } from "node:buffer";
 import { expect, test } from "./playwright.ts";
-
-const ONE_PIXEL_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
-  "base64",
-);
+import { ONE_PIXEL_PNG } from "./support/fixtures.ts";
 
 test(
   "receipt-review captures, scans with fake Gemini, and saves atomically",
@@ -12,6 +7,11 @@ test(
     test.setTimeout(60_000);
     const page = await isolatedContext.newPage();
     await page.setViewportSize({ width: 390, height: 844 });
+    // Keep the fake receipt inside the app's default "Today" period, whatever
+    // month or year the browser happens to run in.
+    const receiptDate = await page.evaluate(() =>
+      new Date().toISOString().slice(0, 10)
+    );
     const requests: Array<{ method: string; url: string; body?: string }> = [];
     let extractionAttempts = 0;
     await page.route(
@@ -71,7 +71,7 @@ test(
                   parts: [{
                     text: JSON.stringify({
                       currency: "SEK",
-                      date: "2026-08-24",
+                      date: receiptDate,
                       lines: [{
                         amount: "10",
                         categoryId: "category-uncategorized",
@@ -216,17 +216,21 @@ test(
     await page.getByRole("button", { name: "Save 2 selected entries" }).click();
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();
-    await page.getByRole("button", { name: /Fake Receipt Market/ }).click();
     await expect(page.getByText("Fake Receipt Market").first()).toBeVisible();
-    const receiptGroup = page.getByRole("region", {
-      name: "Fake Receipt Market 2026-08-24",
-    });
+    const receiptGroup = page.locator("[data-receipt-group-id]");
+    const ensureReceiptGroupExpanded = async () => {
+      const viewReceipt = receiptGroup.getByRole("button", {
+        name: "View receipt",
+      });
+      if (!(await viewReceipt.isVisible())) {
+        await receiptGroup.getByRole("button", {
+          name: /Fake Receipt Market/,
+        }).click();
+      }
+      await expect(viewReceipt).toBeVisible();
+    };
     await expect(receiptGroup).toBeVisible();
-    await expect(
-      receiptGroup.getByRole("button", {
-        name: /Fake receipt item Uncategorized/,
-      }),
-    ).toBeVisible();
+    await ensureReceiptGroupExpanded();
 
     await receiptGroup.getByRole("button", { name: "View receipt" }).click();
     await expect(
@@ -243,11 +247,8 @@ test(
           document.activeElement?.getAttribute("data-receipt-view")
       )
     ).toBeTruthy();
-    await page.getByRole("button", { name: "Fake Receipt Market 2026-08-24" })
-      .click();
-    const reopenedGroup = page.getByRole("region", {
-      name: "Fake Receipt Market 2026-08-24",
-    });
+    await ensureReceiptGroupExpanded();
+    const reopenedGroup = page.locator("[data-receipt-group-id]");
     await reopenedGroup.getByRole("button", {
       name: /Fake receipt item Uncategorized/,
     }).click();
@@ -275,14 +276,11 @@ test(
     await page.getByRole("button", { name: "Back to expenses" }).click();
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();
-    await page.getByRole("button", { name: "Fake Receipt Market 2026-08-24" })
-      .click();
+    await ensureReceiptGroupExpanded();
     await expect(page.getByText("Updated fake receipt item")).toBeVisible();
     await expect(page.getByText("Second fake item")).toBeVisible();
 
-    const managedGroup = page.getByRole("region", {
-      name: "Fake Receipt Market 2026-08-24",
-    });
+    const managedGroup = page.locator("[data-receipt-group-id]");
     await managedGroup.getByRole("button", {
       name: /Updated fake receipt item Uncategorized/,
     }).click();
@@ -304,12 +302,9 @@ test(
     await expect(page.getByText("Second fake item")).toBeVisible();
 
     await page.getByRole("button", { name: "Back to expenses" }).click();
-    await page.getByRole("button", { name: "Fake Receipt Market 2026-08-24" })
-      .click();
+    await ensureReceiptGroupExpanded();
     await expect(page.getByText("Second fake item")).toBeVisible();
-    const finalGroup = page.getByRole("region", {
-      name: "Fake Receipt Market 2026-08-24",
-    });
+    const finalGroup = page.locator("[data-receipt-group-id]");
     await finalGroup.getByRole("button", { name: "View receipt" }).click();
     await page.getByRole("button", { name: "Delete receipt" }).click();
     const receiptDeleteDialog = page.getByRole("dialog", {
@@ -328,9 +323,7 @@ test(
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();
     await expect(page.getByText("Second fake item")).toHaveCount(0);
-    await expect(page.getByRole("region", {
-      name: "Fake Receipt Market 2026-08-24",
-    })).toHaveCount(0);
+    await expect(page.locator("[data-receipt-group-id]")).toHaveCount(0);
 
     expect(requests.length).toBeGreaterThanOrEqual(2);
     expect(

@@ -60,7 +60,7 @@ async function runAgent(
 }
 
 async function buildGallery(): Promise<void> {
-  await run(Deno.execPath(), ["task", "gallery"]);
+  await run(Deno.execPath(), ["task", "gallery:build"]);
 }
 
 async function serveGallery(): Promise<{ url: string; close(): void }> {

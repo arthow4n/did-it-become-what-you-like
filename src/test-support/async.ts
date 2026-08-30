@@ -53,6 +53,3 @@ export async function waitFor(
   if (predicate()) return;
   throw new Error(message);
 }
-
-export const waitForValue = waitForActorState;
-export const waitForState = waitForActorState;

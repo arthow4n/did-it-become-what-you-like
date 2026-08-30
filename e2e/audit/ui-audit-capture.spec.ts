@@ -1,13 +1,8 @@
-import { Buffer } from "node:buffer";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 import { expect, test } from "../playwright.ts";
-
-const ONE_PIXEL_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
-  "base64",
-);
+import { ONE_PIXEL_PNG } from "../support/fixtures.ts";
 
 const AUDIT_DIR = process.env.AUDIT_OUTPUT_DIR ||
   join(Deno.cwd(), "ui-audit", "screenshots");

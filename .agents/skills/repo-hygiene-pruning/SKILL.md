@@ -196,7 +196,7 @@ and tooling task definitions against these dimensions:
     visibility checks.
 - **Remediation:**
   - Replace source-text scraping with standard component harness tests or
-    multi-viewport gallery verification (`deno task a11y:gallery`).
+    multi-viewport gallery verification (`deno task gallery:verify`).
 
 ### Dimension 2C: Milestone-Named & Proof Subprocess Tooling Tests
 
@@ -261,9 +261,9 @@ and tooling task definitions against these dimensions:
   - Test files repeatedly copying multi-line global window/ARIA shims (e.g.
     `withAriaGlobals` duplicating DOM/CSS global setup across feature tests)
     instead of centralizing them in `src/test-support/component-harness.tsx`.
-  - Re-implementation of event-loop settling and actor state waiting utilities
-    (`settle()`, `waitForValue()`, `waitForState()`) scattered across actor and
-    adapter integration tests.
+  - Re-implementation of event-loop settling and actor state-waiting utilities
+    (`settle()`, `waitForActorState()`) scattered across actor and adapter
+    integration tests.
 - **Remediation:**
   - Centralize DOM/ARIA window shimming inside
     `src/test-support/component-harness.tsx` and reuse it across all UI test
@@ -365,7 +365,8 @@ and tooling task definitions against these dimensions:
    - In `IMPLEMENTATION_PLAN.md`: update authority references and HEAD commit
      hash.
    - In `SPEC.md` / `DESIGN_SYSTEM.md` / `AGENTS.md`: replace dangling links.
-   - In `RELEASE.md`: synchronize release checklists with current task names.
+   - In `DEPLOYMENT.md`: synchronize deployment guidance with current task
+     names.
 
 ### Phase 5: Format, Diff Verification, Commit & Push
 

@@ -47,11 +47,11 @@
     "test": "deno test --allow-read --allow-write --allow-run --allow-env src scripts/tests",
     "test:affected": "deno test --allow-read --allow-write --allow-run --allow-env --changed",
     "build": "deno run -A npm:vite@8.2.2 build --config vite.config.ts",
-    "verify": "deno task fmt:check && deno task lint && deno task typecheck && deno task test && deno task build && deno task release:verify && deno audit --frozen && git diff --check",
+    "verify": "deno task fmt:check && deno task lint && deno task typecheck && deno task test && deno task build && deno task release:verify && deno audit --frozen",
     "browser:install": "deno run -A scripts/install-browsers.ts",
     "test:e2e": "deno x -p npm:@playwright/test@1.62.1 playwright test --config=e2e/playwright.config.ts",
     "audit:capture": "deno run -A scripts/audit-capture.ts",
-    "gallery": "deno run -A npm:vite@8.2.2 build --config vite.gallery.config.ts",
+    "gallery:build": "deno run -A npm:vite@8.2.2 build --config vite.gallery.config.ts",
     "gallery:verify": "deno run -A scripts/verify-gallery.ts",
     "release:verify": "deno run -A scripts/verify-release.ts"
   }

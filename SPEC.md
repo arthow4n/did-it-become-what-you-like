@@ -2,17 +2,10 @@
 
 ## Status and Decision Language
 
-This document is the starting point for the application specification. Product
-requirements, user experience, and implementation details will be refined only
-after discussion and agreement. Implementation must not begin until the repo
-owner explicitly approves the specification.
-
-After product and screen decisions are complete, the project must define and
-approve the shared `DESIGN_SYSTEM.md` before planning UI implementation. It must
-then turn the approved specifications into dependency-ordered milestones,
-identify prerequisites and safe parallel workstreams, and attach verification
-criteria. Neither design-system work nor milestone planning constitutes approval
-to begin application implementation.
+This document records the approved product baseline. Product behavior and user
+experience changes require explicit repo-owner approval; active implementation
+sequencing and agent conduct are defined in `IMPLEMENTATION_PLAN.md` and
+`AGENTS.md` when a planned milestone exists.
 
 The terms in this document have the following meanings:
 
@@ -742,14 +735,10 @@ and multi-device synchronization according to the agreed sync design.
 - Durable expense records may live in an appropriate persistence layer, but
   access to and mutation of them must be coordinated by the actor system.
 - React with `@xstate/react` is the confirmed UI framework.
-- Repository-owned design-system components must use React Aria Components for
-  behavior-heavy accessible primitives, ordinary CSS with semantic custom
-  properties for styling, and directly imported Lucide React icons. The MVP must
-  not add Tailwind, runtime CSS-in-JS, or a second styled component library
-  without a newly agreed requirement.
-- Screens bind XState actors to components defined by `DESIGN_SYSTEM.md`.
-  Application screens must not independently style raw React Aria controls into
-  competing button, field, overlay, notice, or status systems.
+- Screens bind XState actors to the repository-owned, library-neutral components
+  defined by `DESIGN_SYSTEM.md`. The facade owns component-library integration;
+  screens must not create competing button, field, overlay, notice, or status
+  systems.
 
 ### Future Automation Extension
 
@@ -941,130 +930,3 @@ and multi-device synchronization according to the agreed sync design.
   repository-pinned SHA-256, and installs the corresponding Chrome for Testing.
   Exact implementation-time versions and hashes are compatibility-task outputs;
   Node/npm is not a project toolchain.
-
-### Post-Design Implementation Orchestration Deliverable
-
-When the repo owner explicitly requests planned execution after the design
-system is approved, planning must create one living `IMPLEMENTATION_PLAN.md`. It
-is the only source of truth for that milestone's implementation orchestration
-and must be sufficient for a coding agent to resume work without reconstructing
-the plan from chat history. Focused fixes do not create or update this document
-unless they belong to that active milestone.
-
-That file must contain:
-
-- the approved MVP scope, deferred exclusions, architecture baseline, and
-  definition of done;
-- a dependency graph and ordered milestones with stable task IDs;
-- for every task: scope and non-goals, prerequisites, allowed file/contract
-  ownership, expected outputs, acceptance criteria, verification commands, and
-  status, including the cheapest appropriate unit, actor, component, or E2E test
-  layer and the exact tests delivered with that task;
-- explicit parallel lanes and collision rules so sub-agents are dispatched only
-  where work is genuinely independent;
-- a worktree policy identifying when isolated worktrees are worthwhile, their
-  disjoint file/contract ownership, the integration owner and merge order, and
-  how unintegrated work is protected;
-- the current checkpoint, completed evidence, blockers, and next
-  dependency-ready work;
-- a sub-agent orchestration procedure which uses bounded tasks, minimizes
-  duplicate context and work, and scales concurrency only when it is useful;
-- a review loop of implementer self-check, independent review, automated tests,
-  `agent-browser` visual/accessibility inspection where applicable, scoped fix,
-  and full re-verification before completion;
-- milestone test gates which keep the E2E suite compact, prevent state-machine
-  assertions from being duplicated through the UI stack, and reject tasks whose
-  required lower-layer tests were deferred;
-- commit/push and planned-task checkpoint updates which leave the milestone
-  resumable after interruption; and
-- a ready-to-use orchestration prompt instructing a coding agent to reconcile
-  the recorded checkpoint with actual Git/test state, dispatch the next safe
-  work, update the file, and continue until the approved definition of done or a
-  genuine owner decision is required.
-
-The later planning discussion will decide the concrete milestones, task graph,
-review independence, sub-agent ownership, and concurrency limits. This section
-records the required format and outcome, not those implementation decisions.
-
-## Open Questions and Ambiguities
-
-These questions must be resolved incrementally before implementation.
-
-### 1. Expense Record and Invoice Semantics
-
-- There are no remaining MVP decisions in this section. Receipt parents,
-  independently editable lines, required line descriptions, monetary signs, and
-  optional quantity/unit-price fields are specified above.
-
-### 2. Project Behavior
-
-- There are no remaining MVP UI decisions in this section. Project switching,
-  organization, and deletion are specified in this document and
-  `DESIGN_SYSTEM.md`.
-
-### 3. Currency Behavior — Deferred Beyond MVP
-
-- There are no remaining MVP decisions in this section. Cross-currency reporting
-  and its historical exchange-rate, provenance, and rounding rules are one
-  deferred feature batch and are not part of current specification work.
-
-### 4. Local Persistence and Google Drive Sync
-
-- There are no remaining owner-preference decisions in this section. Automerge
-  receives one comprehensive compatibility gate; alternatives are evaluated only
-  if it fails.
-
-### 5. Google Access and Privacy
-
-- There are no remaining MVP decisions in this section. The permitted Gemini
-  request data, mandatory metadata sanitization, owner preview, and excluded
-  local/synchronized data are specified above.
-
-### 6. Gemini API-Key Architecture
-
-- There are no remaining owner-preference decisions in this section. Unknown
-  model capabilities require a passing synthetic test, while exact image
-  preparation thresholds are an evidence-based compatibility-task output.
-
-### 7. Filtering and Reporting
-
-- There are no remaining MVP interaction decisions in this section. Calendar
-  periods, combinable project-scoped filters, search, sorting, and
-  multi-currency totals are specified above and in `DESIGN_SYSTEM.md`.
-- Comparisons, trends, and charts remain post-MVP possibilities. Stable IDs,
-  original signed decimal amounts and currencies, immutable transaction dates,
-  and preserved historical records provide their initial data foundation.
-
-### 8. Framework, PWA, and Browser Support
-
-- React and the component/design-system foundation are defined in
-  `DESIGN_SYSTEM.md`.
-- Browser versions, equal iOS/Android mobile targets, offline boundaries,
-  hash-based GitHub Pages routing, repository-relative assets, and
-  repository-scoped service-worker behavior are specified above.
-
-### 9. Testing and Visual Acceptance
-
-- There are no remaining owner-preference decisions in this section.
-  `deno test`, React Testing Library/`happy-dom`, a proper provisional
-  Playwright E2E dependency, and separately installed `agent-browser` are
-  subject to the recorded foundation compatibility gates.
-- Critical E2E journeys, representative viewports, accessibility gates, and the
-  fake-adapter boundary are specified above. Detailed synchronization and Gemini
-  behaviors belong at lower test layers; CI never requires live service
-  credentials.
-
-## Recommended Decision Order
-
-1. Define expense and invoice record semantics.
-2. Define canonical storage/export data and multi-currency semantics.
-3. Define local persistence, Google Drive sync, and conflict behavior.
-4. Define the remaining Gemini model, privacy, and key UX details.
-5. Confirm React, browser support, and detailed PWA behavior.
-6. Approve every screen and applicable cross-cutting UI/PWA state.
-7. Select and document the UI library, design system, tokens, reusable
-   components, responsive rules, and interaction patterns.
-8. Agree on acceptance criteria and test tooling.
-9. Break the approved scope into dependency-ordered milestones, prerequisites,
-   verification gates, and safe parallel workstreams.
-10. Obtain explicit owner approval before beginning implementation.

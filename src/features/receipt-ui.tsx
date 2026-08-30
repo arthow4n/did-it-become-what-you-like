@@ -22,9 +22,9 @@ import {
   CanonicalDecimalSchema,
   type Category,
   CurrencyCodeSchema,
-  type DeviceLocalGeminiCompatibility,
+  DEFAULT_DEVICE_LOCAL_SETTINGS,
   type DeviceLocalSettings,
-  DeviceLocalSettingsSchema,
+  parseDeviceLocalSettings,
   StableIdSchema,
 } from "../domain/index.ts";
 import {
@@ -83,8 +83,6 @@ const DEVICE_SETTINGS_KEY = "settings-device-local";
 const DEFAULT_MODEL_QUERY: ReceiptAiModelQuery = {
   requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
 };
-const GEMINI_COMPATIBILITY_EVIDENCE_VERSION = "receipt-compatibility.v1";
-const LEGACY_GEMINI_KEY_REVISION = "legacy-key";
 
 type ReceiptGeminiPort = ReceiptAiPort & {
   getApiKey(options?: { signal?: AbortSignal }): Promise<
@@ -94,6 +92,20 @@ type ReceiptGeminiPort = ReceiptAiPort & {
   >;
   setApiKey(value: string, options?: { signal?: AbortSignal }): Promise<void>;
   removeApiKey(options?: { signal?: AbortSignal }): Promise<void>;
+  testConfiguration?: (
+    modelId: string,
+    query: ReceiptAiModelQuery,
+    options?: { signal?: AbortSignal },
+  ) => Promise<
+    {
+      readonly status: "compatible";
+      readonly model: ReceiptAiModel;
+    } | {
+      readonly status: "needs-test" | "incompatible";
+      readonly model?: ReceiptAiModel;
+      readonly missingCapabilities: readonly string[];
+    }
+  >;
 };
 
 export type ReceiptUiDependencies = ReceiptScanMachineDependencies & {
@@ -106,60 +118,6 @@ type ReceiptImageEntry = {
   readonly previewUrl: string;
   bytes?: Uint8Array;
 };
-
-function modelFingerprint(model: ReceiptAiModel): string {
-  return [
-    model.id,
-    model.lifecycle,
-    ...REQUIRED_RECEIPT_AI_CAPABILITIES.map((capability) =>
-      model.capabilities[capability] ? "1" : "0"
-    ),
-  ].join("|");
-}
-
-function geminiKeyRevision(settings: DeviceLocalSettings): string {
-  return settings.geminiKeyRevision ?? LEGACY_GEMINI_KEY_REVISION;
-}
-
-function compatibilityEvidenceFor(
-  settings: DeviceLocalSettings,
-  model: ReceiptAiModel,
-): DeviceLocalGeminiCompatibility | undefined {
-  return settings.geminiCompatibilityEvidence?.find((evidence) =>
-    evidence.modelId === model.id &&
-    evidence.modelFingerprint === modelFingerprint(model) &&
-    evidence.keyRevision === geminiKeyRevision(settings) &&
-    evidence.evidenceVersion === GEMINI_COMPATIBILITY_EVIDENCE_VERSION
-  );
-}
-
-function recordCompatibilityEvidence(
-  settings: DeviceLocalSettings,
-  model: ReceiptAiModel,
-  status: DeviceLocalGeminiCompatibility["status"],
-  keyRevision = geminiKeyRevision(settings),
-): DeviceLocalSettings {
-  const nextEvidence: DeviceLocalGeminiCompatibility = {
-    modelId: model.id,
-    modelFingerprint: modelFingerprint(model),
-    keyRevision,
-    evidenceVersion: GEMINI_COMPATIBILITY_EVIDENCE_VERSION,
-    status,
-  };
-  const prior =
-    settings.geminiCompatibilityEvidence?.filter((evidence) =>
-      evidence.modelId !== model.id || evidence.keyRevision !== keyRevision
-    ) ?? [];
-  return {
-    ...settings,
-    geminiKeyRevision: keyRevision,
-    geminiCompatibilityEvidence: [...prior, nextEvidence].slice(-32),
-  };
-}
-
-function newGeminiKeyRevision(): string {
-  return `key-revision-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
-}
 
 export class ReceiptImageStore {
   readonly #entries = new Map<string, ReceiptImageEntry>();
@@ -264,29 +222,18 @@ export async function readDeviceLocalSettings(
     (transaction) =>
       transaction.get<JsonValue>("settings", DEVICE_SETTINGS_KEY),
   );
-  const parsed = DeviceLocalSettingsSchema.safeParse(readJsonRecord(value));
-  return parsed.success ? parsed.data : { imagePreparationEnabled: true };
+  try {
+    return parseDeviceLocalSettings(readJsonRecord(value));
+  } catch {
+    return DEFAULT_DEVICE_LOCAL_SETTINGS;
+  }
 }
 
 export async function writeDeviceLocalSettings(
   local: LocalPort,
   settings: DeviceLocalSettings,
 ): Promise<void> {
-  const safe = DeviceLocalSettingsSchema.parse({
-    imagePreparationEnabled: settings.imagePreparationEnabled,
-    ...(settings.lastSelectedProjectId === undefined
-      ? {}
-      : { lastSelectedProjectId: settings.lastSelectedProjectId }),
-    ...(settings.selectedGeminiModel === undefined
-      ? {}
-      : { selectedGeminiModel: settings.selectedGeminiModel }),
-    ...(settings.geminiKeyRevision === undefined
-      ? {}
-      : { geminiKeyRevision: settings.geminiKeyRevision }),
-    ...(settings.geminiCompatibilityEvidence === undefined
-      ? {}
-      : { geminiCompatibilityEvidence: settings.geminiCompatibilityEvidence }),
-  });
+  const safe = parseDeviceLocalSettings(settings);
   await local.transaction(
     "readwrite",
     (transaction) =>
@@ -323,7 +270,7 @@ export function createDefaultReceiptUiDependencies(
 
 export function modelOptions(
   models: readonly ReceiptAiModel[],
-  settings: DeviceLocalSettings,
+  _settings: DeviceLocalSettings,
 ): Array<{
   id: string;
   label: string;
@@ -332,12 +279,7 @@ export function modelOptions(
   reason?: string;
 }> {
   return models.map((model) => {
-    const evidence = compatibilityEvidenceFor(settings, model);
     const label = model.lifecycle !== "active"
-      ? "Incompatible"
-      : evidence?.status === "compatible"
-      ? "Compatible"
-      : evidence?.status === "incompatible"
       ? "Incompatible"
       : geminiModelCapabilityLabel(model, DEFAULT_MODEL_QUERY);
     return {
@@ -708,11 +650,7 @@ export function ReceiptScanScreen({
     setKeyError(undefined);
     try {
       await dependencies.gemini.setApiKey(apiKey.trim());
-      const nextSettings = {
-        ...settings,
-        geminiKeyRevision: newGeminiKeyRevision(),
-        geminiCompatibilityEvidence: [],
-      };
+      const nextSettings = settings;
       onSettingsChange(nextSettings);
       const nextModels = await refreshModels();
       if (nextModels.length === 0) {
@@ -722,7 +660,7 @@ export function ReceiptScanScreen({
       const nextSelectedModel = settings.selectedGeminiModel &&
           nextModelOptions.find((option) =>
               option.id === settings.selectedGeminiModel
-            )?.status === "Compatible"
+            )?.status !== "Incompatible"
         ? settings.selectedGeminiModel
         : undefined;
       setHasKey(true);
@@ -809,16 +747,16 @@ export function ReceiptScanScreen({
     setTestState("testing");
     setModelError(undefined);
     try {
-      const result = await dependencies.ai.testConfiguration(
+      const testConfiguration = dependencies.gemini.testConfiguration;
+      if (!testConfiguration) {
+        setTestState("failed");
+        setModelError("Model compatibility checks are unavailable.");
+        return;
+      }
+      const result = await testConfiguration(
         selectedId,
         DEFAULT_MODEL_QUERY,
       );
-      const nextSettings = recordCompatibilityEvidence(
-        settings,
-        model,
-        result.status === "compatible" ? "compatible" : "incompatible",
-      );
-      onSettingsChange(nextSettings);
       if (result.status === "compatible") {
         setTestState("passed");
         if (pendingScanRef.current) {
@@ -1837,11 +1775,7 @@ export function GeminiSettingsScreen({
     setError(undefined);
     try {
       await gemini.setApiKey(apiKey.trim());
-      onSettingsChange({
-        ...settings,
-        geminiKeyRevision: newGeminiKeyRevision(),
-        geminiCompatibilityEvidence: [],
-      });
+      onSettingsChange(settings);
       setApiKey("");
       await refresh();
     } catch (failure) {
@@ -1860,8 +1794,6 @@ export function GeminiSettingsScreen({
     onSettingsChange({
       ...settings,
       selectedGeminiModel: undefined,
-      geminiKeyRevision: undefined,
-      geminiCompatibilityEvidence: undefined,
     });
   };
 
@@ -1874,16 +1806,15 @@ export function GeminiSettingsScreen({
     setTestState("testing");
     setError(undefined);
     try {
+      if (!gemini.testConfiguration) {
+        setTestState("failed");
+        setError("Model compatibility checks are unavailable.");
+        return;
+      }
       const result = await gemini.testConfiguration(
         selectedModelId,
         DEFAULT_MODEL_QUERY,
       );
-      const nextSettings = recordCompatibilityEvidence(
-        settings,
-        selectedModel,
-        result.status === "compatible" ? "compatible" : "incompatible",
-      );
-      onSettingsChange(nextSettings);
       if (result.status === "compatible") {
         setTestState("passed");
       } else {

@@ -20,14 +20,6 @@ export type ReceiptAiModel = {
   readonly capabilities: Readonly<Record<ReceiptAiCapability, boolean>>;
 };
 
-export type ReceiptAiConfigurationResult =
-  | { readonly status: "compatible"; readonly model: ReceiptAiModel }
-  | {
-    readonly status: "needs-test" | "incompatible";
-    readonly model?: ReceiptAiModel;
-    readonly missingCapabilities: readonly ReceiptAiCapability[];
-  };
-
 export type ReceiptAiModelQuery = {
   readonly requiredCapabilities: readonly ReceiptAiCapability[];
 };
@@ -81,11 +73,6 @@ export interface ReceiptAiPort {
     query: ReceiptAiModelQuery,
     options?: OperationOptions,
   ): Promise<readonly ReceiptAiModel[]>;
-  testConfiguration(
-    modelId: string,
-    query: ReceiptAiModelQuery,
-    options?: OperationOptions,
-  ): Promise<ReceiptAiConfigurationResult>;
   extractReceipt(
     request: ReceiptExtractionRequest,
     options?: OperationOptions,

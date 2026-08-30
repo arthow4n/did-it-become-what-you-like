@@ -206,26 +206,56 @@ export const PortableSettingsSchema = z.object({
 }).strict();
 export type PortableSettings = z.infer<typeof PortableSettingsSchema>;
 
-const DeviceLocalGeminiCompatibilitySchema = z.object({
-  modelId: NonEmptyTextSchema,
-  modelFingerprint: NonEmptyTextSchema,
-  keyRevision: NonEmptyTextSchema,
-  evidenceVersion: NonEmptyTextSchema,
-  status: z.enum(["compatible", "incompatible"]),
-}).strict();
-
-export type DeviceLocalGeminiCompatibility = z.infer<
-  typeof DeviceLocalGeminiCompatibilitySchema
->;
+export const ReceiptAiProviderSchema = z.enum(["gemini", "openrouter"]);
+export type ReceiptAiProvider = z.infer<typeof ReceiptAiProviderSchema>;
 
 export const DeviceLocalSettingsSchema = z.object({
   lastSelectedProjectId: StableIdSchema.optional(),
-  geminiApiKey: z.string().min(1).optional(),
+  activeProvider: ReceiptAiProviderSchema.default("gemini"),
   selectedGeminiModel: NonEmptyTextSchema.optional(),
-  imagePreparationEnabled: z.boolean(),
-  geminiKeyRevision: NonEmptyTextSchema.optional(),
-  geminiCompatibilityEvidence: z.array(DeviceLocalGeminiCompatibilitySchema)
-    .max(32)
-    .optional(),
+  selectedOpenRouterModel: NonEmptyTextSchema.optional(),
+  preferredProviderTag: NonEmptyTextSchema.optional(),
+  requireZdr: z.boolean().default(false),
+  denyProviderDataCollection: z.boolean().default(false),
+  imagePreparationEnabled: z.boolean().default(true),
 }).strict();
 export type DeviceLocalSettings = z.infer<typeof DeviceLocalSettingsSchema>;
+
+export const DEFAULT_DEVICE_LOCAL_SETTINGS: DeviceLocalSettings = {
+  activeProvider: "gemini",
+  requireZdr: false,
+  denyProviderDataCollection: false,
+  imagePreparationEnabled: true,
+};
+
+const DEVICE_LOCAL_SETTINGS_KEYS = [
+  "lastSelectedProjectId",
+  "activeProvider",
+  "selectedGeminiModel",
+  "selectedOpenRouterModel",
+  "preferredProviderTag",
+  "requireZdr",
+  "denyProviderDataCollection",
+  "imagePreparationEnabled",
+] as const;
+
+function recordFromUnknown(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+/**
+ * Parses device-local settings while dropping fields from removed features.
+ * This is intentionally separate from the strict schema so persisted legacy
+ * settings cannot carry compatibility evidence, key revisions, or secrets
+ * into active product state.
+ */
+export function parseDeviceLocalSettings(input: unknown): DeviceLocalSettings {
+  const record = recordFromUnknown(input);
+  const current: Record<string, unknown> = {};
+  for (const key of DEVICE_LOCAL_SETTINGS_KEYS) {
+    if (key in record) current[key] = record[key];
+  }
+  return DeviceLocalSettingsSchema.parse(current);
+}

@@ -17,6 +17,7 @@ import {
   type Category,
   createReceiptManagementService,
   CurrencyCodeSchema,
+  DEFAULT_DEVICE_LOCAL_SETTINGS,
   type DeviceLocalSettings,
   type Expense,
   PortableSettingsSchema,
@@ -3044,9 +3045,9 @@ export function LocalUiRuntime(
   if (currentHistoryRef.current === null) {
     currentHistoryRef.current = historyEntryForLocation();
   }
-  const [deviceSettings, setDeviceSettings] = useState<DeviceLocalSettings>({
-    imagePreparationEnabled: true,
-  });
+  const [deviceSettings, setDeviceSettings] = useState<DeviceLocalSettings>(
+    DEFAULT_DEVICE_LOCAL_SETTINGS,
+  );
   const [syncSummary, setSyncSummary] = useState("Not connected");
   const [geminiSummary, setGeminiSummary] = useState("Not configured");
   const [receiptReview, setReceiptReview] = useState<ReceiptReviewDraft>();
@@ -3343,9 +3344,7 @@ export function LocalUiRuntime(
 
   const updateDeviceSettings = async (next: DeviceLocalSettings) => {
     setDeviceSettings(next);
-    if (next.geminiKeyRevision === undefined) {
-      setGeminiSummary("Not configured");
-    } else if (next.selectedGeminiModel) {
+    if (next.selectedGeminiModel) {
       setGeminiSummary("Key and model configured");
     } else {
       setGeminiSummary("Key configured; choose a model");

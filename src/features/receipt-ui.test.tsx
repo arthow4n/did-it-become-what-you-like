@@ -4,6 +4,7 @@ import {
   GeminiSettingsScreen,
   LineEditorDialog,
   modelOptions,
+  readDeviceLocalSettings,
   ReceiptDisclosure,
   ReceiptImageStore,
   ReceiptMetadataEditor,
@@ -11,6 +12,7 @@ import {
   ReceiptScanFailureNotice,
   ReceiptScanScreen,
   type ReceiptUiDependencies,
+  writeDeviceLocalSettings,
 } from "./receipt-ui.tsx";
 import {
   GeminiQuickSetup,
@@ -52,6 +54,14 @@ function assert(
   if (!condition) throw new Error(message);
 }
 
+function assertEquals<T>(actual: T, expected: T): void {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(
+      `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+    );
+  }
+}
+
 Deno.test("receipt-ui disclosure states the exact permitted and excluded data", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let accepted = false;
@@ -74,6 +84,60 @@ Deno.test("receipt-ui disclosure states the exact permitted and excluded data", 
     fireEvent.click(view.getByRole("button", { name: "Cancel" }));
     assert(accepted && declined);
   });
+});
+
+Deno.test("receipt-ui device settings migrate legacy values and round-trip new values", async () => {
+  const local = createFakeLocalPort();
+  await local.transaction(
+    "readwrite",
+    (transaction) =>
+      transaction.put("settings", "settings-device-local", {
+        imagePreparationEnabled: false,
+        selectedGeminiModel: "gemini-2.0-flash",
+        geminiApiKey: "AIza.must-not-persist",
+        geminiKeyRevision: "legacy-key-revision",
+        geminiCompatibilityEvidence: [],
+      }),
+  );
+
+  const migrated = await readDeviceLocalSettings(local);
+  assert(migrated.activeProvider === "gemini");
+  assert(migrated.selectedGeminiModel === "gemini-2.0-flash");
+  assert(migrated.imagePreparationEnabled === false);
+  assert(migrated.requireZdr === false);
+  assert(migrated.denyProviderDataCollection === false);
+  assert(!("geminiKeyRevision" in migrated));
+  assert(!("geminiCompatibilityEvidence" in migrated));
+
+  await writeDeviceLocalSettings(local, {
+    ...migrated,
+    activeProvider: "openrouter",
+    selectedOpenRouterModel: "openai/gpt-4.1-mini",
+    preferredProviderTag: "openai",
+    requireZdr: true,
+    denyProviderDataCollection: true,
+  });
+  const roundTripped = await readDeviceLocalSettings(local);
+  assertEquals(roundTripped, {
+    activeProvider: "openrouter",
+    selectedGeminiModel: "gemini-2.0-flash",
+    selectedOpenRouterModel: "openai/gpt-4.1-mini",
+    preferredProviderTag: "openai",
+    requireZdr: true,
+    denyProviderDataCollection: true,
+    imagePreparationEnabled: false,
+  });
+  const stored = await local.transaction(
+    "readonly",
+    (transaction) => transaction.get("settings", "settings-device-local"),
+  );
+  assert(
+    stored !== undefined && stored !== null && typeof stored === "object" &&
+      !Array.isArray(stored),
+  );
+  assert(!("geminiApiKey" in stored));
+  assert(!("geminiKeyRevision" in stored));
+  assert(!("geminiCompatibilityEvidence" in stored));
 });
 
 Deno.test("receipt-ui scan failure notice exposes a safe reportable code", async () => {
@@ -578,11 +642,6 @@ Deno.test(
         let lastImageRef: ReceiptImageRef | undefined;
         const ai: ReceiptAiPort = {
           listModels: () => Promise.resolve([model]),
-          testConfiguration: () =>
-            Promise.resolve({
-              status: "compatible",
-              model,
-            }),
           extractReceipt: (_request, options) =>
             new Promise((resolve, reject) => {
               const signal = options?.signal;
@@ -618,14 +677,6 @@ Deno.test(
         const settings = DeviceLocalSettingsSchema.parse({
           imagePreparationEnabled: true,
           selectedGeminiModel: model.id,
-          geminiKeyRevision: "legacy-key",
-          geminiCompatibilityEvidence: [{
-            modelId: model.id,
-            modelFingerprint: `${model.id}|active|1|1|1`,
-            keyRevision: "legacy-key",
-            evidenceVersion: "receipt-compatibility.v1",
-            status: "compatible",
-          }],
         });
         const secretStorage = {
           get: () => Promise.resolve(SecretValue.from("AIza.test")),
@@ -738,7 +789,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-ui keeps Needs test models selectable and evidence device-local", async () => {
+Deno.test("receipt-ui keeps metadata-unproven models selectable", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(() => {
       let selected: string | undefined;
@@ -767,16 +818,7 @@ Deno.test("receipt-ui keeps Needs test models selectable and evidence device-loc
   });
   const settings = DeviceLocalSettingsSchema.parse({
     imagePreparationEnabled: true,
-    geminiKeyRevision: "key-revision-test",
-    geminiCompatibilityEvidence: [{
-      modelId: "synthetic-needs-test",
-      modelFingerprint: "synthetic-needs-test|active|0|0|0",
-      keyRevision: "key-revision-test",
-      evidenceVersion: "receipt-compatibility.v1",
-      status: "compatible",
-    }],
   });
-  assert(settings.geminiCompatibilityEvidence?.[0].status === "compatible");
   const model = {
     id: "synthetic-needs-test",
     displayName: "Synthetic model",
@@ -787,17 +829,9 @@ Deno.test("receipt-ui keeps Needs test models selectable and evidence device-loc
       "structured-output": false,
     },
   };
-  const compatible = modelOptions([model], settings)[0];
-  assert(compatible.status === "Compatible");
-  assert(compatible.disabled !== true);
-  const stale = modelOptions([model], {
-    ...settings,
-    geminiCompatibilityEvidence: [{
-      ...settings.geminiCompatibilityEvidence![0],
-      modelFingerprint: "synthetic-needs-test|active|1|0|0",
-    }],
-  })[0];
-  assert(stale.status === "Needs test");
+  const option = modelOptions([model], settings)[0];
+  assert(option.status === "Needs test");
+  assert(option.disabled !== true);
 });
 
 Deno.test("receipt-ui retains a remembered key when refreshing models fails", async () => {
@@ -831,7 +865,9 @@ Deno.test("receipt-ui retains a remembered key when refreshing models fails", as
       render(
         createElement(GeminiSettingsScreen, {
           gemini,
-          settings: { imagePreparationEnabled: true },
+          settings: DeviceLocalSettingsSchema.parse({
+            imagePreparationEnabled: true,
+          }),
           onSettingsChange: (next) => changes.push(next),
           onClose: () => undefined,
         }),

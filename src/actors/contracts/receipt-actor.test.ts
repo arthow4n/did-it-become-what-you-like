@@ -289,8 +289,6 @@ Deno.test(
 
     const rawProvider: ReceiptAiPort = {
       listModels: () => Promise.resolve([]),
-      testConfiguration: () =>
-        Promise.resolve({ status: "needs-test", missingCapabilities: [] }),
       extractReceipt: () =>
         Promise.reject(new Error("provider details must not cross the actor")),
     };

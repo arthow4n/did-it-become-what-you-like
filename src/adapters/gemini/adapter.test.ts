@@ -28,6 +28,7 @@ import {
 import {
   createLocalStorageSecretStorage,
   GEMINI_API_KEY_STORAGE_KEY,
+  OPENROUTER_API_KEY_STORAGE_KEY,
 } from "./secrets.ts";
 import {
   isAdapterError,
@@ -432,6 +433,22 @@ Deno.test("A-301 key storage is namespaced, removable, and opaque", async () => 
   );
   await storage.remove("gemini-api-key");
   assertEquals(memory.values.has(GEMINI_API_KEY_STORAGE_KEY), false);
+
+  const openRouterSecret = "sk-or-v1.synthetic-do-not-log";
+  await storage.set("openrouter-api-key", SecretValue.from(openRouterSecret));
+  assertEquals(
+    memory.values.get(OPENROUTER_API_KEY_STORAGE_KEY),
+    openRouterSecret,
+  );
+  const loadedOpenRouter = await storage.get("openrouter-api-key");
+  assert(loadedOpenRouter !== undefined);
+  assertEquals(String(loadedOpenRouter), "[REDACTED]");
+  assert(
+    !JSON.stringify({ loadedOpenRouter, memory: [...memory.values.keys()] })
+      .includes(openRouterSecret),
+  );
+  await storage.remove("openrouter-api-key");
+  assertEquals(memory.values.has(OPENROUTER_API_KEY_STORAGE_KEY), false);
 });
 
 Deno.test("A-301 models retain Needs test entries and synthetic validation promotes only tested models", async () => {

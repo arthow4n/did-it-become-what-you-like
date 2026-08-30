@@ -9,7 +9,6 @@ import {
 } from "../ports/index.ts";
 import type {
   ReceiptAiCapability,
-  ReceiptAiConfigurationResult,
   ReceiptAiModel,
   ReceiptAiModelQuery,
   ReceiptAiPort,
@@ -466,7 +465,14 @@ export class GeminiAdapter implements ReceiptAiPort {
     modelId: string,
     query: ReceiptAiModelQuery,
     options?: OperationOptions,
-  ): Promise<ReceiptAiConfigurationResult> {
+  ): Promise<
+    | { readonly status: "compatible"; readonly model: ReceiptAiModel }
+    | {
+      readonly status: "needs-test" | "incompatible";
+      readonly model?: ReceiptAiModel;
+      readonly missingCapabilities: readonly ReceiptAiCapability[];
+    }
+  > {
     const required = requiredCapabilities(query);
     const client = await this.#client(options, "gemini.testConfiguration");
     const rawModels = await this.#listRawModels(client, options);

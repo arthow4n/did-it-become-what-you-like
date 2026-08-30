@@ -1,6 +1,6 @@
 import type { OperationOptions } from "./common.ts";
 
-export type SecretName = "gemini-api-key";
+export type SecretName = "gemini-api-key" | "openrouter-api-key";
 
 const REDACTED = "[REDACTED]";
 

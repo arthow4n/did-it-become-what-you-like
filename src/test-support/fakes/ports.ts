@@ -587,18 +587,6 @@ export function createFakeGeminiPort(
         )
       );
     },
-    testConfiguration: async (modelId, query, options) => {
-      controls.check(options);
-      const model = FAKE_MODELS.find((candidate) => candidate.id === modelId);
-      const missingCapabilities = query.requiredCapabilities.filter((
-        capability,
-      ) => !model?.capabilities[capability]);
-      if (!model) return { status: "incompatible", missingCapabilities };
-      if (missingCapabilities.length > 0) {
-        return { status: "needs-test", model, missingCapabilities };
-      }
-      return { status: "compatible", model };
-    },
     extractReceipt: async (
       request: ReceiptExtractionRequest,
       options?: OperationOptions,

@@ -125,11 +125,13 @@ and multi-device synchronization according to the agreed sync design.
   uses the same category set in every context. Switching projects isolates
   expense views but does not create a separate category catalogue.
 - Active categories have a global custom order used by manual pickers and the
-  Gemini category catalogue. A category requires a case-insensitively unique
+  active receipt-AI provider's category catalogue. A category requires a
+  case-insensitively unique
   trimmed active name, may have an optional color which is never its sole
   identifier, and does not require an icon in the initial release.
 - Archiving a category preserves historical relationships while excluding it
-  from new-entry and Gemini choices. Empty custom categories can be deleted.
+  from new-entry and receipt-AI choices. Empty custom categories can be
+  deleted.
   Deleting a used category requires atomic reassignment of all references across
   all projects to an explicitly selected replacement, defaulting to
   `Uncategorized`, followed by a synchronized tombstone for the old category.
@@ -179,7 +181,7 @@ and multi-device synchronization according to the agreed sync design.
   complete JSON safety export, require strong confirmation, and atomically
   create synchronized tombstones for the project and every expense, receipt
   parent, receipt line, adjustment, and derived index entry belonging to it.
-  Global categories, other projects, their records, the Gemini key, and
+  Global categories, other projects, their records, receipt-AI keys, and
   unrelated settings remain unchanged.
 - Populated-project deletion is logical synchronized deletion, not physical
   privacy erasure from Automerge history. Physical destruction of the complete
@@ -270,23 +272,32 @@ and multi-device synchronization according to the agreed sync design.
   the application must explain that scanning is unavailable while keeping manual
   entry fully usable. It must not retain or queue a selected receipt image for
   later submission.
-- `@google/genai`, used with a Google AI Studio API key, is the provisional
-  default SDK and service for this feature.
-- The owner chooses which compatible Gemini model performs receipt extraction.
-  The application must use the SDK's model-listing API to refresh models
-  available to the entered API key rather than permanently hard-coding one model
-  name. It should recommend a suitable stable, fast model by default while
-  allowing the owner to select another compatible model. The picker must provide
-  type-ahead search because the returned list may be long.
-- A model appearing in the API's list is not sufficient proof that it supports
-  every required receipt feature or that it has free-tier quota. The model
-  picker must identify or validate support for image input, content generation,
-  and the required structured-output schema, explain incompatibility clearly,
-  and recover when a previously selected model is removed or deprecated.
-- Receipt extraction must use Gemini's schema-constrained structured output, not
-  parse an unconstrained prose response. The response schema must be versioned,
-  cover the agreed receipt parent, lines, uncertainty, and mismatch information,
-  and be validated again in the browser before review data is accepted.
+- Receipt scanning supports Gemini through `@google/genai` and OpenRouter
+  through the OpenRouter TypeScript SDK. The owner chooses one active provider
+  and a selected model for each provider; the existing Gemini local API-key
+  storage remains usable when upgrading.
+- Both providers require a model which accepts image input and supports
+  structured output constrained by JSON Schema. The application uses each
+  provider's model-list metadata to prefilter candidates where that metadata
+  permits, but a model list is not a compatibility guarantee or a quota
+  guarantee. There is no manual configuration or compatibility test. An
+  unsupported model instead produces an actionable error from the real,
+  explicit **Scan with AI** request, and no data is saved.
+- Gemini model discovery uses the SDK's model-listing API. When returned
+  `supportedActions` metadata is present, a model must include
+  `generateContent`; when it is absent, the model remains a candidate rather
+  than receiving an invented compatibility verdict. The application does not
+  maintain a static structured-output model allowlist or send a probe request.
+- OpenRouter model discovery requests metadata for image and text modalities,
+  `structured_outputs`, and `response_format`, with its ZDR filter when ZDR is
+  enabled. Returned metadata is checked again for image input, text output, and
+  both structured-output parameters. Extraction sends only the exact selected
+  model; provider failover may use another endpoint for that same model but
+  never another model.
+- Receipt extraction from either provider uses the same versioned instruction,
+  semantic output schema, local runtime validation, normalization, parser, and
+  draft mapping. Providers may translate only the shared contracts into their
+  wire formats. Structured output is mandatory, not unconstrained prose.
 - Runtime validation and static types must share a maintainable source of truth.
   Zod 4 is the provisional validator when a schema library is useful; Zod 3 must
   not be introduced. JSON Schema sent to Gemini and the corresponding runtime
@@ -304,14 +315,13 @@ and multi-device synchronization according to the agreed sync design.
 - If a selected model disappears or becomes incompatible after the available
   models are refreshed, receipt scanning must pause and require a new selection;
   the application must not silently substitute another model.
-- Gemini settings must offer a configuration test which validates the entered
-  key, selected model, and required capabilities without sending a real receipt
-  or expense data. Errors must distinguish at least an invalid key, unavailable
-  or deprecated model, quota/rate limiting, offline state, and an unknown
-  service error, with a relevant corrective action for each.
-- Gemini may be contacted only following an explicit owner action such as **Scan
-  with AI**. The application must never scan receipts automatically or make
-  background inference requests.
+- Either provider may be contacted only following an explicit owner action such
+  as **Scan with AI**. Refreshing models or provider metadata, changing
+  settings, starting the application, switching providers, and restoring the
+  network must never make an inference request. Errors from the real request
+  must distinguish actionable conditions such as an invalid key, unavailable or
+  deprecated model, quota/rate limiting, offline state, and unknown service
+  failure.
 - A receipt request may send only the selected receipt image, the versioned
   extraction instructions/schema, active category stable IDs and names, device
   locale, and the current project's default currency code. The API credential is
@@ -328,11 +338,21 @@ and multi-device synchronization according to the agreed sync design.
   preparation off preserves the source pixel dimensions and avoids optional
   resize/compression, but it never disables metadata removal.
 - A model whose returned metadata does not establish every required receipt
-  capability is labeled **Needs test**, not assumed compatible. Its synthetic
-  configuration test must pass for the current key and model before that model
-  can be used to scan a real receipt. Test evidence is device-local and must be
-  invalidated when the relevant key, model, schema/compatibility version, or
-  capability requirements change.
+  capability is not presented as proven compatible. It remains a candidate when
+  the provider's metadata is incomplete and is checked only by the real,
+  explicit scan request. No synthetic 1x1 inference, compatibility evidence, or
+  key-revision state is stored.
+- OpenRouter settings are device-local and include an optional preferred
+  provider tag, independent **Require Zero Data Retention (ZDR)** and **Deny
+  provider data collection** controls, and the selected OpenRouter model. A
+  preferred tag is sent first while same-model provider fallback remains
+  enabled. ZDR and data-collection are separate constraints and either may
+  reduce route availability. If a saved preferred provider becomes invalid
+  after a model or privacy change, the application resets it to Automatic and
+  explains why; it never silently chooses a different preference.
+- Existing device settings migrate to Gemini as the active provider while
+  preserving the selected Gemini model. New and migrated OpenRouter preferences
+  default to Automatic/unset, with ZDR and data-collection denial both off.
 - Exact preparation dimensions, byte targets, compression quality, and accepted
   browser-decodable formats are compatibility-tuning outputs rather than owner
   preferences. The implementation-plan compatibility task must derive them from
@@ -500,8 +520,8 @@ and multi-device synchronization according to the agreed sync design.
 - Deleting this device's local data must also leave that device disconnected so
   the preserved Drive dataset is not immediately downloaded again. This local
   disconnection does not alter Drive data or another device's connection.
-- Deleting local data must offer removal of the locally stored Gemini API key
-  through a checkbox enabled by default.
+- Deleting local data must offer removal of the locally stored receipt-AI API
+  keys through a checkbox enabled by default.
 - Before deleting everywhere, the application must offer a complete JSON safety
   export. The owner may explicitly decline it to perform intentional permanent
   deletion, but declining requires an additional explicit confirmation.
@@ -638,14 +658,14 @@ and multi-device synchronization according to the agreed sync design.
 - First launch must offer three useful paths: create the first local project,
   restore a validated versioned JSON backup, or connect Google Drive. There must
   be no tutorial, feature tour, walkthrough, or onboarding carousel.
-- Gemini setup is optional and must not block first use or manual entry.
+- Receipt-AI setup is optional and must not block first use or manual entry.
 - The application must not present an installation prompt immediately on
   arrival. After the owner completes a durable useful action, it may show a
   dismissible **Install app** action when supported. Dismissal never blocks use,
   and installation remains reachable later from About when supported.
 - After the application shell has been cached, offline launch must open existing
   local data normally with a compact non-blocking indicator. Local browsing and
-  expense creation, editing, and deletion remain enabled; Drive and Gemini
+  expense creation, editing, and deletion remain enabled; Drive and receipt-AI
   actions explain that they require connectivity. First-use project creation and
   local JSON restoration also remain available offline.
 - The About screen must show the release version and short Git commit hash, the
@@ -779,8 +799,9 @@ and multi-device synchronization according to the agreed sync design.
 
 - Expense-day boundary is a synchronized personal domain preference and belongs
   to the portable dataset. Last-selected project, OAuth tokens, device-specific
-  UI state, Gemini API key, selected Gemini model, and image-preparation
-  preference remain device-local.
+  UI state, receipt-AI API keys, active provider, each provider's selected model,
+  OpenRouter routing/privacy preferences, and image-preparation preference remain
+  device-local.
 - IndexedDB is required for all locally persisted application data, including
   expenses, categories, projects, settings, sync metadata, migrations,
   device-local workflow drafts/snapshots, and extracted receipt records. Source
@@ -800,8 +821,8 @@ and multi-device synchronization according to the agreed sync design.
   version. A centralized migration registry must define each supported ordered
   migration, apply migrations atomically, and be tested against every supported
   source version.
-- `localStorage` must not be used for expense or other application data. The
-  user-entered Google AI Studio API key is the single approved exception.
+- `localStorage` must not be used for expense or other application data. User-
+  entered receipt-AI API keys are the single approved exception.
 - Service-worker caches may hold the application shell and other explicitly
   approved cacheable resources; they are not a source of truth for user data.
 
@@ -817,9 +838,10 @@ and multi-device synchronization according to the agreed sync design.
 - No API key may be committed to the repository or embedded in the published
   application bundle.
 - The owner has accepted the personal-app risk of direct browser use. The user
-  will enter their own Google AI Studio API key at runtime, and the application
-  will persist it in `localStorage` under a key namespaced with
-  `did-it-become-what-you-like`.
+  will enter their own provider API key at runtime, and the application will
+  persist it in `localStorage` under a key namespaced with
+  `did-it-become-what-you-like`. The existing Gemini storage key literal is
+  retained for migration compatibility.
 - The key is device-specific and must never be synchronized or included in any
   data export. It is remembered automatically until the owner explicitly deletes
   it; there is no separate remember-key or session-only option in the initial
@@ -827,11 +849,11 @@ and multi-device synchronization according to the agreed sync design.
   **Remove** action. Changing it means removing it and then entering the new
   key; there is no redundant **Replace** control. Removing the key disables only
   AI scanning and does not remove expense data.
-- The selected Gemini model and image-preparation preference are also
-  device-local because available models, keys, and device capabilities may
-  differ. They are neither synchronized nor included in complete data exports.
-  Image preparation is an on/off device default which may be overridden for an
-  individual scan.
+- The active provider, selected model for each provider, OpenRouter routing and
+  privacy preferences, and image-preparation preference are also device-local
+  because available models, keys, and device capabilities may differ. They are
+  neither synchronized nor included in complete data exports. Image preparation
+  is an on/off device default which may be overridden for an individual scan.
 - The UI must state that this locally stored key is not a browser secret and can
   be read by JavaScript executing on the same origin. It must provide clear
   controls to enter and remove the key.
@@ -855,8 +877,9 @@ and multi-device synchronization according to the agreed sync design.
   installation where the platform exposes it. An unsupported browser receives a
   concise explanation rather than an unreliable degraded workflow.
 - Before first use, the application must explain that invoice images and their
-  extracted content are sent to Google Gemini. Later scan flows retain a visible
-  reminder without requiring repetitive confirmation before every scan.
+  extracted content are sent to the selected receipt-AI provider. Later scan
+  flows retain a visible reminder without requiring repetitive confirmation
+  before every scan.
 - The public PWA requires no separate application login. Local data is available
   only in its browser origin, while Google OAuth independently protects Drive
   synchronization.

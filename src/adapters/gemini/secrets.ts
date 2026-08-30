@@ -10,6 +10,8 @@ import {
 export const GEMINI_SECRET_STORAGE_NAMESPACE = "did-it-become-what-you-like:v1";
 export const GEMINI_API_KEY_STORAGE_KEY =
   `${GEMINI_SECRET_STORAGE_NAMESPACE}:gemini-api-key`;
+export const OPENROUTER_API_KEY_STORAGE_KEY =
+  `${GEMINI_SECRET_STORAGE_NAMESPACE}:openrouter-api-key`;
 
 export type StorageLike = Pick<Storage, "getItem" | "removeItem" | "setItem">;
 
@@ -25,18 +27,22 @@ function browserStorage(): StorageLike {
 }
 
 /**
- * The only durable Gemini credential boundary. It stores the opaque key in a
- * repository-namespaced localStorage slot and exposes it only as SecretValue.
- * It has no IndexedDB, sync, export, or logging integration by construction.
+ * The durable receipt-AI credential boundary. It stores opaque keys in
+ * repository-namespaced localStorage slots and exposes them only as
+ * SecretValue. It has no IndexedDB, sync, export, or logging integration by
+ * construction.
  */
 export function createLocalStorageSecretStorage(
   storage: StorageLike = browserStorage(),
 ): SecretStoragePort {
   const read = (name: SecretName): string => {
-    if (name !== "gemini-api-key") {
-      throw adapterError("invalid-request", "secrets.get");
-    }
-    return GEMINI_API_KEY_STORAGE_KEY;
+    return name === "gemini-api-key"
+      ? GEMINI_API_KEY_STORAGE_KEY
+      : name === "openrouter-api-key"
+      ? OPENROUTER_API_KEY_STORAGE_KEY
+      : (() => {
+        throw adapterError("invalid-request", "secrets.get");
+      })();
   };
   return {
     get: async (name, options?: OperationOptions) => {

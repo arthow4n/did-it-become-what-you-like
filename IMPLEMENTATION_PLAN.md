@@ -29,8 +29,7 @@ Task IDs and review-gate IDs are stable. Never renumber them after work begins.
 
 ### Released Baseline
 
-M0 through M28 and all review gates through `R-2820` are `COMPLETE`; final
-M28 release review `R-2830` is the active gate. The
+M0 through M28 and all review gates through `R-2830` are `COMPLETE`. The
 released application baseline includes the approved domain, actors, adapters,
 responsive UI, After Midnight design system backed by Mantine behind the
 repository facade, accessibility, PWA, tests, GitHub Pages pipeline,
@@ -161,13 +160,17 @@ features/app -> actors -> domain + adapter ports
 
 #### R-2830 — Final M28 Milestone Review & Release Gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on the archived M28 release
+- **Status/dependencies:** `COMPLETE`; depends on the archived M28 release
   validation.
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Audit the M28 implementation commits, release evidence,
   archived plan state, and compliance with `SPEC.md`, `DESIGN_SYSTEM.md`, and
   `AGENTS.md`.
 - **Output:** Approval to activate M29-001.
+- **Review log:** Fresh read-only review approved R-2830 with no severity-1
+  through severity-4 findings. It verified archive lineage, 0 dangling local
+  Markdown links, 0 prohibited facade imports, the 63-test release suite, and
+  all 9 repository E2E journeys passing at `fbc0165`.
 
 ---
 
@@ -260,7 +263,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 #### M29-001 — Receipt Review Adjustment Unlink Safety & First-Use Routing Safety
 
-- **Status/dependencies:** `PENDING`; depends on `R-2830` (completion of M28).
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-2830` (completion of M28).
 - **Ownership:** `src/domain/receipt.ts`, `src/actors/receipt.ts`, `src/features/local-ui.tsx`, `src/domain/tests/receipt_test.ts`, `src/features/local-ui.test.tsx`.
 - **Scope/non-goals:**
   - In `src/domain/receipt.ts`, update `setReceiptLineSelected()` and `removeReceiptLine()` to automatically clear `lineId` (`adjustment.lineId = undefined`) on any adjustment referencing an unselected or removed purchase line.
@@ -397,9 +400,9 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-2830` (`IN_PROGRESS`)
-- **Released baseline:** M0 through M28 and all review gates through `R-2820`
-  are complete and pushed on `master`; the final M28 review is active.
+- **Active task / gate:** `M29-001` (`IN_PROGRESS`)
+- **Released baseline:** M0 through M28 and all review gates through `R-2830`
+  are complete and pushed on `master`.
 - **Verification status:** M28 release validation passed format (209 files),
   lint (199 files), typecheck, diff checks, the explicit 63-test domain/actor/
   UI release suite, and the relevant 3-test `receipt-review` plus
@@ -407,11 +410,11 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   modules because all changes were already committed. The M28 ledger and
   hygiene audit were archived at pre-pruning commit `993e5ed`; no obsolete
   spikes, transient M28 documents, redundant verification scripts, or dangling
-  Markdown links were found. M29 remains staged behind R-2830.
+  Markdown links were found. M29-001 is now active.
 - **Active / preserved work:** Clean master working tree after the archive
   edit; no worker or worktree owns unintegrated M28 changes.
-- **Exact next action:** Dispatch the fresh read-only R-2830 final reviewer;
-  after approval, activate M29-001.
+- **Exact next action:** Implement M29-001 receipt-review unlink safety,
+  first-use route redirect, and in-form draft discard behavior.
 
 ## Ready-to-Use Orchestration Prompt
 

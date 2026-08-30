@@ -93,6 +93,7 @@ function createService(
     updateMetadata: overrides.updateMetadata ??
       (() => Promise.resolve(aggregate)),
     updateLine: overrides.updateLine ?? (() => Promise.resolve(aggregate)),
+    addLine: overrides.addLine ?? (() => Promise.resolve(aggregate)),
     deleteLine: overrides.deleteLine ??
       (() => Promise.resolve({ aggregate, deletedReceipt: false })),
     deleteReceipt: overrides.deleteReceipt ??
@@ -202,6 +203,69 @@ Deno.test(
     actor.send({ type: "receipt.detail.save-line" });
     await waitForState(actor, "ready");
     assertEquals(lineSaves, 1);
+    actor.stop();
+  },
+);
+
+Deno.test(
+  "saved-receipt actor stages and commits a new purchase line",
+  async () => {
+    let addedChanges: unknown;
+    const addedAggregate: ReceiptAggregate = {
+      ...aggregate,
+      purchaseLines: [
+        ...aggregate.purchaseLines,
+        {
+          schemaVersion: 1,
+          type: "receipt-purchase-line",
+          id: "line-added",
+          receiptId,
+          projectId: aggregate.receipt.projectId,
+          categoryId: UNCATEGORIZED_CATEGORY_ID,
+          description: "Added bread",
+          lineTotal: "-3",
+        },
+      ],
+    };
+    const actor = start(createService({
+      addLine: (_receiptId, changes) => {
+        addedChanges = changes;
+        return Promise.resolve(addedAggregate);
+      },
+    }));
+    await waitForState(actor, "ready");
+    actor.send({
+      type: "receipt.detail.start-add-line",
+      changes: {
+        type: "purchase",
+        description: "Added bread",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        lineTotal: "3",
+      },
+    });
+    assert(actor.getSnapshot().matches("lineAddingPristine"));
+    actor.send({
+      type: "receipt.detail.change-add-line",
+      changes: {
+        type: "purchase",
+        description: "Added bread",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        lineTotal: "3",
+      },
+    });
+    assert(actor.getSnapshot().hasTag("dirty"));
+    actor.send({ type: "receipt.detail.add-line" });
+    await waitForState(actor, "ready");
+    assertEquals(addedChanges, {
+      type: "purchase",
+      description: "Added bread",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      lineTotal: "3",
+    });
+    assertEquals(
+      actor.getSnapshot().context.aggregate?.purchaseLines.at(-1)?.id,
+      "line-added",
+    );
     actor.stop();
   },
 );

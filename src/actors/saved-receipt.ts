@@ -33,6 +33,14 @@ async function mutateReceipt(
           mutation.changes,
         ),
       };
+    case "add-line":
+      return {
+        kind: "add-line",
+        aggregate: await service.addLine(
+          mutation.receiptId,
+          mutation.changes,
+        ),
+      };
     case "delete-line":
       return {
         kind: "delete-line",

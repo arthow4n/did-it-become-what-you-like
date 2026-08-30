@@ -815,6 +815,10 @@ export type ReceiptManagementService = {
     lineId: StableId,
     changes: ReceiptLineChanges,
   ): Promise<ReceiptAggregate>;
+  addLine(
+    receiptId: StableId,
+    changes: ReceiptLineChanges,
+  ): Promise<ReceiptAggregate>;
   deleteLine(
     receiptId: StableId,
     lineId: StableId,
@@ -1177,10 +1181,11 @@ async function deleteAggregate(
 
 export function createReceiptManagementService(
   store: OrganizationStore,
-  options: Pick<ReceiptServiceOptions, "now" | "deviceId"> = {},
+  options: Pick<ReceiptServiceOptions, "now" | "deviceId" | "nextId"> = {},
 ): ReceiptManagementService {
   const now = options.now ?? (() => new Date().toISOString());
   const deviceId = StableIdSchema.parse(options.deviceId ?? "device-local");
+  const nextId = options.nextId ?? defaultReceiptId;
 
   return {
     get(receiptId) {
@@ -1341,6 +1346,137 @@ export function createReceiptManagementService(
             asOrganizationJsonValue(projected),
           );
         }
+        const nextRecords = await readReceiptRecords(transaction);
+        return aggregateFromRecords(nextRecords, receiptId)!;
+      });
+    },
+
+    addLine(receiptId, changes) {
+      return store.transaction("readwrite", async (transaction) => {
+        const records = await readReceiptRecords(transaction);
+        const aggregate = aggregateFromRecords(records, receiptId);
+        if (!aggregate) throw new ReceiptDomainError("not-found");
+        validateEditableCategory(
+          records,
+          UNCATEGORIZED_CATEGORY_ID,
+          changes.categoryId,
+        );
+
+        const lineId = nextId("line");
+        if (records.ids.has(lineId) || records.tombstonedIds.has(lineId)) {
+          throw new ReceiptDomainError("conflict");
+        }
+        const expenseIdResult = StableIdSchema.safeParse(`expense-${lineId}`);
+        if (!expenseIdResult.success) {
+          throw new ReceiptDomainError(
+            "invalid",
+            "The new receipt line could not receive a stable expense identity.",
+          );
+        }
+        const expenseId = expenseIdResult.data;
+        if (
+          records.ids.has(expenseId) || records.tombstonedIds.has(expenseId)
+        ) {
+          throw new ReceiptDomainError("conflict");
+        }
+
+        let line: ReceiptLine;
+        try {
+          if (changes.type === "purchase") {
+            const quantity = changes.quantity === undefined ||
+                changes.quantity === null
+              ? undefined
+              : canonicalValue(changes.quantity, "Enter a valid quantity.");
+            const unitPrice = changes.unitPrice === undefined ||
+                changes.unitPrice === null
+              ? undefined
+              : canonicalValue(
+                changes.unitPrice,
+                "Enter a valid unit price.",
+              );
+            line = ReceiptPurchaseLineSchema.parse({
+              schemaVersion: CURRENT_SCHEMA_VERSION,
+              type: "receipt-purchase-line",
+              id: lineId,
+              receiptId,
+              projectId: aggregate.receipt.projectId,
+              categoryId: changes.categoryId,
+              description: changes.description,
+              ...(quantity === undefined ? {} : { quantity }),
+              ...(unitPrice === undefined ? {} : { unitPrice }),
+              lineTotal: ensureOutflowSign(
+                canonicalValue(changes.lineTotal, "Enter a valid line total."),
+              ),
+            });
+          } else {
+            if (
+              changes.lineId !== undefined && changes.lineId !== null &&
+              !aggregate.purchaseLines.some((candidate) =>
+                candidate.id === changes.lineId
+              )
+            ) {
+              throw new ReceiptDomainError(
+                "invalid",
+                "An adjustment link must reference a purchase line on this receipt.",
+              );
+            }
+            line = ReceiptAdjustmentSchema.parse({
+              schemaVersion: CURRENT_SCHEMA_VERSION,
+              type: "receipt-adjustment",
+              id: lineId,
+              receiptId,
+              projectId: aggregate.receipt.projectId,
+              categoryId: changes.categoryId,
+              description: changes.description,
+              amount: canonicalValue(
+                changes.amount,
+                "Enter a valid adjustment.",
+              ),
+              ...(changes.lineId === undefined || changes.lineId === null
+                ? {}
+                : { lineId: changes.lineId }),
+            });
+          }
+        } catch (error) {
+          if (error instanceof ReceiptDomainError) throw error;
+          throw new ReceiptDomainError(
+            "invalid",
+            "Receipt line values are invalid.",
+          );
+        }
+
+        const expense = ExpenseSchema.parse({
+          schemaVersion: CURRENT_SCHEMA_VERSION,
+          type: "expense",
+          id: expenseId,
+          projectId: aggregate.receipt.projectId,
+          categoryId: line.categoryId,
+          date: aggregate.receipt.date,
+          ...(aggregate.receipt.time === undefined
+            ? {}
+            : { time: aggregate.receipt.time }),
+          amount: receiptLineAmount(line),
+          currency: aggregate.receipt.currency,
+          ...(aggregate.receipt.merchant === undefined
+            ? {}
+            : { merchant: aggregate.receipt.merchant }),
+          description: line.description,
+          source: line.type === "receipt-purchase-line"
+            ? "receipt-line"
+            : "adjustment",
+          receiptId,
+          receiptLineId: line.id,
+        });
+        await transaction.put(
+          "records",
+          line.id,
+          asOrganizationJsonValue(line),
+        );
+        await transaction.put(
+          "records",
+          expense.id,
+          asOrganizationJsonValue(expense),
+        );
         const nextRecords = await readReceiptRecords(transaction);
         return aggregateFromRecords(nextRecords, receiptId)!;
       });

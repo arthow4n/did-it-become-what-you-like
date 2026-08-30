@@ -9,7 +9,7 @@ import {
 import type { StableId } from "../../domain/index.ts";
 import { type ContractFailure, contractFailureFromError } from "./types.ts";
 
-export type SavedReceiptEditor = "metadata" | "line";
+export type SavedReceiptEditor = "metadata" | "line" | "add-line";
 
 export type SavedReceiptLineDraft = {
   readonly lineId: StableId;
@@ -29,6 +29,11 @@ export type SavedReceiptMutation =
     readonly changes: ReceiptLineChanges;
   }
   | {
+    readonly kind: "add-line";
+    readonly receiptId: StableId;
+    readonly changes: ReceiptLineChanges;
+  }
+  | {
     readonly kind: "delete-line";
     readonly receiptId: StableId;
     readonly lineId: StableId;
@@ -41,6 +46,7 @@ export type SavedReceiptMutation =
 export type SavedReceiptMutationOutput =
   | { readonly kind: "metadata"; readonly aggregate: ReceiptAggregate }
   | { readonly kind: "line"; readonly aggregate: ReceiptAggregate }
+  | { readonly kind: "add-line"; readonly aggregate: ReceiptAggregate }
   | {
     readonly kind: "delete-line";
     readonly result: ReceiptMutationResult;
@@ -70,6 +76,15 @@ export type SavedReceiptActorEvent =
     readonly changes: ReceiptLineChanges;
   }
   | { readonly type: "receipt.detail.save-line" }
+  | {
+    readonly type: "receipt.detail.start-add-line";
+    readonly changes: ReceiptLineChanges;
+  }
+  | {
+    readonly type: "receipt.detail.change-add-line";
+    readonly changes: ReceiptLineChanges;
+  }
+  | { readonly type: "receipt.detail.add-line" }
   | { readonly type: "receipt.detail.cancel-edit" }
   | {
     readonly type: "receipt.detail.request-line-delete";
@@ -154,6 +169,7 @@ export type SavedReceiptActorContext = {
   readonly aggregate: ReceiptAggregate | null;
   readonly metadataDraft: ReceiptMetadataChanges | null;
   readonly lineDraft: SavedReceiptLineDraft | null;
+  readonly addLineDraft: ReceiptLineChanges | null;
   readonly pendingLineId: StableId | null;
   readonly pendingMutation: SavedReceiptMutation | null;
   readonly discardEditor: SavedReceiptEditor | null;
@@ -215,6 +231,7 @@ export const savedReceiptMachine = setup({
       const output = mutationOutput(event);
       return output !== undefined &&
         (output.kind === "metadata" || output.kind === "line" ||
+          output.kind === "add-line" ||
           (output.kind === "delete-line" &&
             output.result.aggregate !== undefined));
     },
@@ -225,11 +242,13 @@ export const savedReceiptMachine = setup({
       context.pendingMutation !== null && context.error?.retryable === true,
     discardMetadata: ({ context }) => context.discardEditor === "metadata",
     discardLine: ({ context }) => context.discardEditor === "line",
+    discardAddLine: ({ context }) => context.discardEditor === "add-line",
   },
   actions: {
     clearTransient: assign({
       metadataDraft: () => null,
       lineDraft: () => null,
+      addLineDraft: () => null,
       pendingLineId: () => null,
       pendingMutation: () => null,
       discardEditor: () => null,
@@ -314,6 +333,17 @@ export const savedReceiptMachine = setup({
         changes: context.lineDraft!.changes,
       }),
     }),
+    setAddLineDraft: assign({
+      addLineDraft: ({ event }) =>
+        event.type === "receipt.detail.start-add-line" ? event.changes : null,
+    }),
+    setAddLineMutation: assign({
+      pendingMutation: ({ context }) => ({
+        kind: "add-line",
+        receiptId: context.receiptId!,
+        changes: context.addLineDraft!,
+      }),
+    }),
     setDeleteLineMutation: assign({
       pendingMutation: ({ context }) => ({
         kind: "delete-line",
@@ -333,13 +363,16 @@ export const savedReceiptMachine = setup({
           ? "metadata"
           : context.pendingMutation?.kind === "line"
           ? "line"
+          : context.pendingMutation?.kind === "add-line"
+          ? "add-line"
           : null,
     }),
     setMutationAggregate: assign({
       aggregate: ({ event }) => {
         const output = mutationOutput(event);
         if (output === undefined) return null;
-        return output.kind === "metadata" || output.kind === "line"
+        return output.kind === "metadata" || output.kind === "line" ||
+            output.kind === "add-line"
           ? output.aggregate
           : output.result.aggregate ?? null;
       },
@@ -415,6 +448,7 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
     aggregate: null,
     metadataDraft: null,
     lineDraft: null,
+    addLineDraft: null,
     pendingLineId: null,
     pendingMutation: null,
     discardEditor: null,
@@ -476,6 +510,11 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
           target: "metadataPristine",
           guard: "hasAggregate",
           actions: "setMetadataDraft",
+        },
+        "receipt.detail.start-add-line": {
+          target: "lineAddingPristine",
+          guard: "hasAggregate",
+          actions: "setAddLineDraft",
         },
         "receipt.detail.edit-line": [
           {
@@ -682,16 +721,98 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
         },
       },
     },
+    lineAddingPristine: {
+      tags: ["editing"],
+      on: {
+        "receipt.detail.change-add-line": {
+          target: "lineAddingDirty",
+          actions: [
+            "clearError",
+            assign({ addLineDraft: ({ event }) => event.changes }),
+          ],
+        },
+        "receipt.detail.cancel-edit": {
+          target: "ready",
+          actions: "clearTransient",
+        },
+        "receipt.detail.reload": {
+          target: "loading",
+          actions: "clearTransient",
+        },
+        "receipt.detail.back": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+        "receipt.detail.close": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+        "receipt.detail.navigate": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+      },
+    },
+    lineAddingDirty: {
+      tags: ["editing", "dirty"],
+      on: {
+        "receipt.detail.change-add-line": {
+          actions: [
+            "clearError",
+            assign({ addLineDraft: ({ event }) => event.changes }),
+          ],
+        },
+        "receipt.detail.add-line": {
+          target: "mutating",
+          actions: ["setAddLineMutation", "clearError"],
+        },
+        "receipt.detail.cancel-edit": {
+          target: "confirmingDiscard",
+          actions: assign({ discardEditor: () => "add-line" as const }),
+        },
+        "receipt.detail.reload": {
+          target: "loading",
+          actions: "clearTransient",
+        },
+        "receipt.detail.back": {
+          target: "confirmingDiscard",
+          actions: [
+            assign({ discardEditor: () => "add-line" as const }),
+            "setNavigationDestination",
+          ],
+        },
+        "receipt.detail.close": {
+          target: "confirmingDiscard",
+          actions: [
+            assign({ discardEditor: () => "add-line" as const }),
+            "setNavigationDestination",
+          ],
+        },
+        "receipt.detail.navigate": {
+          target: "confirmingDiscard",
+          actions: [
+            assign({ discardEditor: () => "add-line" as const }),
+            "setNavigationDestination",
+          ],
+        },
+        "receipt.detail.discard-changes": {
+          target: "ready",
+          actions: "clearTransient",
+        },
+      },
+    },
     confirmingDiscard: {
       tags: ["confirming-discard", "dirty"],
       on: {
         "receipt.detail.keep-editing": [
           { target: "metadataDirty", guard: "discardMetadata" },
           { target: "lineDirty", guard: "discardLine" },
+          { target: "lineAddingDirty", guard: "discardAddLine" },
         ],
         "receipt.detail.cancel-discard": [
           { target: "metadataDirty", guard: "discardMetadata" },
           { target: "lineDirty", guard: "discardLine" },
+          { target: "lineAddingDirty", guard: "discardAddLine" },
         ],
         "receipt.detail.discard-changes": [
           {

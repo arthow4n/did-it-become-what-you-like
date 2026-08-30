@@ -4,6 +4,7 @@ import {
   createReceiptManagementService,
   editReceiptLine,
   normalizeReceiptExtractionDraft,
+  type ReceiptIdGenerator,
   receiptMismatchDifference,
   type ReceiptReviewDraft,
   receiptSelectedTotal,
@@ -144,6 +145,7 @@ async function managementHarness(
     savedPurchase,
     savedAdjustment,
   ],
+  options: { readonly nextId?: ReceiptIdGenerator } = {},
 ): Promise<{
   readonly local: FakeLocalPort;
   readonly service: ReturnType<typeof createReceiptManagementService>;
@@ -159,6 +161,7 @@ async function managementHarness(
     service: createReceiptManagementService(local, {
       deviceId: "device-receipt-domain",
       now: () => "2026-08-30T12:00:00.000Z",
+      ...options,
     }),
   };
 }
@@ -497,6 +500,107 @@ Deno.test(
     assertEquals(legacy?.description, "Bottle return");
     assertEquals(legacy?.amount, "3");
     assertEquals(legacy?.categoryId, "category-food");
+  },
+);
+
+Deno.test(
+  "saved receipt management: add-line creates atomic line and expense projections",
+  async () => {
+    let sequence = 0;
+    const { service } = await managementHarness(undefined, {
+      nextId: () => `line-added-${++sequence}`,
+    });
+    const purchase = await service.addLine(savedReceipt.id, {
+      type: "purchase",
+      description: "  Bread  ",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      quantity: "2.00",
+      unitPrice: "1.75",
+      lineTotal: "3.50",
+    });
+    const addedPurchase = purchase.purchaseLines.find((line) =>
+      line.id === "line-added-1"
+    );
+    assert(addedPurchase);
+    assertEquals(addedPurchase.description, "Bread");
+    assertEquals(addedPurchase.lineTotal, "-3.5");
+    assertEquals(
+      purchase.derivedExpenses.find((expense) =>
+        expense.receiptLineId === addedPurchase.id
+      )?.amount,
+      "-3.5",
+    );
+    assertEquals(
+      purchase.derivedExpenses.find((expense) =>
+        expense.receiptLineId === addedPurchase.id
+      )?.source,
+      "receipt-line",
+    );
+
+    const adjustment = await service.addLine(savedReceipt.id, {
+      type: "adjustment",
+      description: "Bottle return",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      amount: "1.00",
+      lineId: savedPurchase.id,
+    });
+    const addedAdjustment = adjustment.adjustments.find((line) =>
+      line.id === "line-added-2"
+    );
+    assert(addedAdjustment);
+    assertEquals(addedAdjustment.amount, "1");
+    assertEquals(addedAdjustment.lineId, savedPurchase.id);
+
+    const conflict = await managementHarness([
+      {
+        schemaVersion: 1,
+        type: "project",
+        id: savedReceipt.projectId,
+        name: "Receipt project",
+        defaultCurrency: "SEK",
+        archived: false,
+      },
+      {
+        schemaVersion: 1,
+        type: "category",
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+        sortOrder: 0,
+        archived: false,
+        system: true,
+      },
+      savedReceipt,
+      savedPurchase,
+      savedAdjustment,
+      {
+        schemaVersion: 1,
+        type: "expense",
+        id: "expense-line-conflict",
+        projectId: savedReceipt.projectId,
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        date: savedReceipt.date,
+        amount: "-1",
+        currency: savedReceipt.currency,
+        description: "Existing expense",
+        source: "manual",
+      },
+    ], { nextId: () => "line-conflict" });
+    await rejectsAsync(
+      () =>
+        conflict.service.addLine(savedReceipt.id, {
+          type: "purchase",
+          description: "Should not persist",
+          categoryId: UNCATEGORIZED_CATEGORY_ID,
+          lineTotal: "2",
+        }),
+      "conflict",
+    );
+    const unchanged = await conflict.service.get(savedReceipt.id);
+    assert(unchanged);
+    assert(
+      !unchanged.purchaseLines.some((line) => line.id === "line-conflict"),
+      "a derived expense collision must not leave the new line behind",
+    );
   },
 );
 

@@ -114,6 +114,7 @@ const aggregate: ReceiptAggregate = {
 
 function createService(options?: {
   updateLine?: ReceiptManagementService["updateLine"];
+  addLine?: ReceiptManagementService["addLine"];
   deleteReceipt?: () => Promise<{ deletedReceipt: boolean }>;
 }): ReceiptManagementService {
   let current = aggregate;
@@ -139,6 +140,7 @@ function createService(options?: {
       return Promise.resolve(current);
     },
     updateLine: options?.updateLine ?? (() => Promise.resolve(current)),
+    addLine: options?.addLine ?? (() => Promise.resolve(current)),
     deleteLine: (_receiptId, lineId) =>
       Promise.resolve({
         aggregate: {

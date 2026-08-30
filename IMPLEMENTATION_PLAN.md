@@ -238,7 +238,7 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 #### M28-002 — Saved Receipt Add Line / Adjustment Mutation in Domain and Actor
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M28-001`.
+- **Status/dependencies:** `COMPLETE`; depends on `M28-001`.
 - **Ownership:** `src/domain/receipt.ts`, `src/actors/contracts/saved-receipt.ts`, `src/actors/saved-receipt.ts`, `src/domain/tests/receipt_test.ts`, `src/actors/contracts/saved-receipt-actor.test.ts`.
 - **Scope/non-goals:**
   - Add `addLine(receiptId: StableId, lineChanges: ReceiptLineChanges): Promise<ReceiptAggregate>` to `ReceiptManagementService` in `src/domain/receipt.ts`.
@@ -259,7 +259,7 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 #### R-2810 — Domain & Actor CRUD Review Gate
 
-- **Status/dependencies:** `PENDING`; depends on `M28-001`, `M28-002`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M28-001`, `M28-002`.
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs in `src/domain/organization.ts`, `src/domain/receipt.ts`, `src/actors/project-category.ts`, and `src/actors/saved-receipt.ts`. Verify transaction atomicity, signed canonical decimal arithmetic, schema validation, and test coverage.
 - **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening next batch.
@@ -581,7 +581,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M28-002` (`IN_PROGRESS`)
+- **Active task / gate:** `R-2810` (`IN_PROGRESS`)
 - **Released baseline:** M0 through M27 and all review gates through `R-2730`
   are complete and pushed on `master`.
 - **Verification status:** M28-001 passed formatting, lint, diff checks, and
@@ -589,10 +589,16 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   --allow-env src/domain/tests/project_category_test.ts
   src/actors/contracts/project-category-actor.test.ts
   src/features/local-ui.test.tsx` with 36 tests passed and 0 failed. M28-002
-  is now active. M29 remains staged as dependent follow-up.
+  is now active. M28-002 passed formatting, lint, typecheck, diff checks, and
+  the scoped command `deno test --allow-read --allow-write --allow-run
+  --allow-env src/domain/tests/receipt_test.ts
+  src/actors/contracts/saved-receipt-actor.test.ts
+  src/features/receipt-detail-ui.test.tsx` with 23 tests passed and 0 failed.
+  R-2810 is now active. M29 remains staged as dependent follow-up.
 - **Active / preserved work:** Clean master working tree.
-- **Exact next action:** Inspect the saved-receipt aggregate and actor mutation
-  contracts, then implement atomic add-line support with domain and actor tests.
+- **Exact next action:** Dispatch a fresh read-only R-2810 reviewer for the
+  category and saved-receipt domain/actor diffs; remediate any findings before
+  starting M28-003.
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -333,7 +333,7 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 #### R-2820 — UI & Workflow Polish Review Gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M28-003`, `M28-004`, `M28-005`.
+- **Status/dependencies:** `COMPLETE`; depends on `M28-003`, `M28-004`, `M28-005`.
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs across `src/features/receipt-detail-ui.tsx` and `src/features/local-ui.tsx`. Verify unified feed ordering, add-line interaction, category breakdown expansion, and toast behavior across mobile and desktop viewports.
 - **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening release gate.
@@ -347,12 +347,18 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
   Expenses view a responsive wide list/context grid. The remediation gate
   passed 27 focused local and receipt UI tests with 0 failures; the existing
   11 query tests also remain green. A fresh closure review is still required.
+  Fresh closure review then approved R-2820 with no severity-1 through
+  severity-4 findings. Its focused UI/actor/query suite passed 45 tests with
+  0 failures, manual-expense actor/adapter checks passed 10 tests with 0
+  failures, and format, lint, typecheck, diff, and facade-boundary checks all
+  passed at `69ea38e`. Chromium capture was unavailable because
+  `agent-browser` is not installed.
 
 ---
 
 #### M28-FINAL — Milestone Release Verification, Hygiene Pruning & Archival
 
-- **Status/dependencies:** `PENDING`; depends on `R-2820`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-2820`.
 - **Ownership:** Repository-wide test, verification, and hygiene suites.
 - **Scope/non-goals:**
   - Run full repository validation: typecheck (`deno task check`), lint (`deno task lint`), format check (`deno task fmt:check`), diff check (`git diff --check`), affected tests (`deno task test:affected`), and relevant E2E journeys.
@@ -602,7 +608,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-2820` (`IN_PROGRESS`)
+- **Active task / gate:** `M28-FINAL` (`IN_PROGRESS`)
 - **Released baseline:** M0 through M27 and all review gates through `R-2730`
   are complete and pushed on `master`.
 - **Verification status:** M28-001 passed formatting, lint, diff checks, and
@@ -625,10 +631,15 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   tests with 0 failures. M28-005 passed formatting, lint, typecheck, and diff
   checks. Its scoped command `deno test --allow-read --allow-write
   --allow-run --allow-env src/features/local-ui.test.tsx` passed 23 tests with
-  0 failures. R-2820 is now active. M29 remains staged as dependent follow-up.
+  0 failures. R-2820 was approved by a fresh closure reviewer with no
+  severity-1 through severity-4 findings; its focused UI/actor/query suite
+  passed 45 tests and manual-expense actor/adapter checks passed 10 tests,
+  both with 0 failures. M28-FINAL is now active. M29 remains staged as
+  dependent follow-up.
 - **Active / preserved work:** Clean master working tree.
-- **Exact next action:** Commit the R-2820 remediation and dispatch a fresh
-  read-only UI/workflow closure reviewer before the M28 release gate.
+- **Exact next action:** Run the M28 release validation and relevant E2E
+  journeys, then execute the required hygiene audit and archive the completed
+  M28 ledger into Released Baseline.
 
 ## Ready-to-Use Orchestration Prompt
 

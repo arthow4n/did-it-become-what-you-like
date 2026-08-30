@@ -553,6 +553,16 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
   );
   assert(
     requests[0].config.systemInstruction.includes(
+      "omit a leading asterisk only when the receipt uses it as a retailer marker",
+    ),
+  );
+  assert(
+    requests[0].config.systemInstruction.includes(
+      "never remove asterisks mechanically",
+    ),
+  );
+  assert(
+    requests[0].config.systemInstruction.includes(
       "Discounts, refunds, cashback, and explicit bottle-deposit returns",
     ),
   );

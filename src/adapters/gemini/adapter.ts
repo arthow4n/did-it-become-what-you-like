@@ -353,6 +353,7 @@ function promptFor(request: ReceiptExtractionRequest): string {
       JSON.stringify(categories)
     }.`,
     "Amount transcription rules: copy each numeric amount exactly as printed, including a printed minus sign; use a period as the decimal separator and omit digit-grouping separators; do not convert it to the owner's ledger sign.",
+    "Product-description transcription rule: omit a leading asterisk only when the receipt uses it as a retailer marker for a discount, offer, or loyalty condition (for example, `*Ostringar Mild Jal` becomes `Ostringar Mild Jal`). Preserve an asterisk whenever it is actually part of the printed product description, including an asterisk within a name; never remove asterisks mechanically.",
     "Every product or purchase line has direction outflow, even when the receipt prints no minus sign. Set kind to purchase.",
     "Discounts, refunds, cashback, and explicit bottle-deposit returns have direction inflow and kind adjustment because they reduce the amount owed. A positive PANT BURK/PANT bottle-deposit line printed beside purchased goods is a deposit charge, not a return: keep its printed amount and set direction outflow. Use inflow for a deposit only when the receipt explicitly says return/refund/återbetalning or prints a negative amount.",
     "Tips, fees, surcharges, and other extra charges have direction outflow and kind adjustment because they increase the amount owed.",

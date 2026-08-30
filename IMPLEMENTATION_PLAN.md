@@ -208,3 +208,8 @@ After a restart, rate limit, lost session, or interrupted command:
   passed.
 - **Next action:** None; the next milestone may begin from this synchronized
   baseline.
+- **Receipt prompt maintenance:** Complete. `receipt-extraction-v6` instructs
+  Gemini to omit a leading retailer discount/offer/loyalty asterisk from a
+  product description only when that contextual meaning is evident, while
+  preserving asterisks that genuinely belong to a product name. Focused Gemini
+  adapter tests and the affected graph passed before commit.

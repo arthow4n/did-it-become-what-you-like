@@ -259,7 +259,7 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 #### R-2810 — Domain & Actor CRUD Review Gate
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M28-001`, `M28-002`.
+- **Status/dependencies:** `COMPLETE`; depends on `M28-001`, `M28-002`.
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs in `src/domain/organization.ts`, `src/domain/receipt.ts`, `src/actors/project-category.ts`, and `src/actors/saved-receipt.ts`. Verify transaction atomicity, signed canonical decimal arithmetic, schema validation, and test coverage.
 - **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening next batch.
@@ -267,13 +267,15 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
   failed add-line discard navigation and S3 missing mid-transaction rollback
   coverage. Remediation adds `add-line` to the failure-state pending editable
   guard and UI mutation classifier, plus projection-write rollback coverage.
-  Rerun passed 24 scoped tests with 0 failures; closure review is pending.
+  Rerun passed 24 scoped tests with 0 failures. Fresh closure review approved
+  R-2810 with no severity-1 through severity-4 findings; its focused suite
+  passed 60 tests with 0 failures and the branch was clean at `c42f8bc`.
 
 ---
 
 #### M28-003 — Saved Receipt Detail UI Add Line & Adjustment Dialog
 
-- **Status/dependencies:** `PENDING`; depends on `R-2810`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-2810`.
 - **Ownership:** `src/features/receipt-detail-ui.tsx`, `src/design-system/components.tsx`, `src/features/receipt-detail-ui.test.tsx`.
 - **Scope/non-goals:**
   - In `ReceiptDetailScreen`, add prominent `Add purchase line` and `Add adjustment` actions to the respective section headers or lists.
@@ -601,11 +603,11 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   src/features/receipt-detail-ui.test.tsx` with 23 tests passed and 0 failed.
   R-2810 remediation then passed the same scoped command with 24 tests passed
   and 0 failed, along with formatting, lint, typecheck, and diff checks. R-2810
-  closure is pending. M29 remains staged as dependent follow-up.
+  is approved with no findings. M28-003 is now active. M29 remains staged as
+  dependent follow-up.
 - **Active / preserved work:** Clean master working tree.
-- **Exact next action:** Dispatch a fresh read-only R-2810 reviewer for the
-  category and saved-receipt domain/actor diffs; remediate any findings before
-  starting M28-003.
+- **Exact next action:** Implement the saved receipt add-line and adjustment
+  dialogs with staged actor events, focus restoration, and component coverage.
 
 ## Ready-to-Use Orchestration Prompt
 

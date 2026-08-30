@@ -331,6 +331,59 @@ Deno.test(
   },
 );
 
+Deno.test("receipt-actor scan: repeated extracted lines are consolidated before review", async () => {
+  const gemini = createFakeGeminiPort(extractionDraft({
+    printedTotal: "-5",
+    lines: [{
+      description: "Coffee",
+      amount: "2.5",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "purchase",
+      direction: "outflow",
+      selected: true,
+      rationale: "The receipt lists this purchased drink.",
+    }, {
+      description: "coffee",
+      amount: "2.5",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "purchase",
+      direction: "outflow",
+      selected: true,
+      rationale: "The receipt lists this purchased drink.",
+    }],
+  }));
+  const actor = createActor(createScanMachine(
+    gemini,
+    createFakeImagePreparationPort(),
+    [],
+  )).start();
+  actor.send({ type: "receipt.open" });
+  actor.send({ type: "receipt.image-selected" });
+  actor.send({ type: "receipt.scan", input: scanInput });
+  await waitForValue(actor, "reviewReady");
+
+  const review = actor.getSnapshot().context.review;
+  assert(review !== null);
+  assertEquals(review.lines.length, 1);
+  assertEquals(
+    review.lines[0]?.type === "purchase" ? review.lines[0].quantity : undefined,
+    "2",
+  );
+  assertEquals(
+    review.lines[0]?.type === "purchase"
+      ? review.lines[0].unitPrice
+      : undefined,
+    "2.5",
+  );
+  assertEquals(
+    review.lines[0]?.type === "purchase"
+      ? review.lines[0].lineTotal
+      : undefined,
+    "-5",
+  );
+  actor.stop();
+});
+
 Deno.test("receipt-actor scan: cancellation aborts the request and releases the image", async () => {
   const gemini = createFakeGeminiPort(extractionDraft());
   const preparation = createFakeImagePreparationPort();

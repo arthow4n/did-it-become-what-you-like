@@ -23,6 +23,7 @@ import {
   RECEIPT_JSON_SCHEMA,
   RECEIPT_SCHEMA_VERSION,
   RECEIPT_SCHEMA_VERSION_NUMBER,
+  ReceiptOutputError,
 } from "./schema.ts";
 import {
   createLocalStorageSecretStorage,
@@ -310,6 +311,27 @@ const RECEIPT_DISCOUNT_OUTPUT = JSON.stringify({
   uncertainty: [],
 });
 
+const RECEIPT_QUANTITY_OUTPUT = JSON.stringify({
+  currency: "SEK",
+  date: "2026-08-29",
+  lines: [{
+    amount: "33.98",
+    categoryId: "category-groceries",
+    description: "Broccoli",
+    direction: "outflow",
+    kind: "purchase",
+    rationale: "The receipt shows two broccoli units at 16.99 each.",
+    selected: true,
+    quantity: "2",
+    unitPrice: "16.99",
+  }],
+  merchant: "Coop",
+  mismatch: null,
+  printedTotal: "33.98",
+  schemaVersion: RECEIPT_SCHEMA_VERSION,
+  uncertainty: [],
+});
+
 const MODEL_NEEDS_TEST: GeminiRawModel = {
   baseModelId: "gemini-needs-test",
   displayName: "Needs test model",
@@ -544,8 +566,53 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
       "provide a concise rationale",
     ),
   );
+  assert(
+    requests[0].config.systemInstruction.includes(
+      "payment/tender amounts, subtotals, tax summaries, receipt totals",
+    ),
+  );
   assertEquals(requests[0].config.responseMimeType, "application/json");
   assertEquals(requests[0].config.responseJsonSchema, RECEIPT_JSON_SCHEMA);
+});
+
+Deno.test("A-301 extraction preserves explicit quantity and unit price", async () => {
+  const { adapter, requests } = createStorageAndAdapter((captured) =>
+    clientWithModels(
+      [MODEL_NEEDS_TEST],
+      { text: RECEIPT_QUANTITY_OUTPUT },
+      (request) => captured.push(request),
+    )
+  );
+  await adapter.setApiKey("AIza.synthetic-quantity-test");
+  const draft = await adapter.extractReceipt(extractionRequest());
+  assertEquals(
+    draft.lines[0]?.kind === "purchase" ? draft.lines[0].quantity : undefined,
+    "2",
+  );
+  assertEquals(
+    draft.lines[0]?.kind === "purchase" ? draft.lines[0].unitPrice : undefined,
+    "16.99",
+  );
+  assert(
+    requests[0]?.config.systemInstruction.includes(
+      "quantity and unitPrice",
+    ),
+  );
+});
+
+Deno.test("A-301 output rejects quantity fields on adjustment lines", async () => {
+  const source = JSON.parse(RECEIPT_QUANTITY_OUTPUT) as {
+    readonly [key: string]: unknown;
+    readonly lines: readonly Record<string, unknown>[];
+  };
+  const invalidOutput = {
+    ...source,
+    lines: [{ ...source.lines[0], kind: "adjustment" }],
+  };
+  const error = await assertRejects(() =>
+    Promise.resolve(parseReceiptOutput(JSON.stringify(invalidOutput)))
+  );
+  assert(error instanceof ReceiptOutputError);
 });
 
 Deno.test("A-301 signed receipt fixture reconciles a discount adjustment", async () => {

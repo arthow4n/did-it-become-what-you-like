@@ -27,7 +27,12 @@ import {
   TombstoneSchema,
   UNCATEGORIZED_CATEGORY_ID,
 } from "./schema/index.ts";
-import { moneyAdd, moneyCompare, moneySubtract } from "./money/index.ts";
+import {
+  moneyAdd,
+  moneyCompare,
+  moneyDivide,
+  moneySubtract,
+} from "./money/index.ts";
 import type {
   OrganizationJsonValue,
   OrganizationStore,
@@ -64,6 +69,10 @@ export type ReceiptDraftLine =
     readonly selectionReason?: string;
     readonly classificationReason?: string;
   };
+
+type ReceiptDraftLineCandidate =
+  | Omit<Extract<ReceiptDraftLine, { readonly type: "purchase" }>, "id">
+  | Omit<Extract<ReceiptDraftLine, { readonly type: "adjustment" }>, "id">;
 
 export type ReceiptReviewDraft = {
   readonly parent: Omit<ReceiptParent, "id" | "schemaVersion" | "type">;
@@ -284,6 +293,108 @@ function safeClassificationReason(value: unknown): string | undefined {
   return reason.length === 0 ? undefined : reason;
 }
 
+const BOTTLE_DEPOSIT_CHARGE_PATTERN =
+  /\b(?:pant(?:\s+burk)?|bottle\s+deposit)\b/i;
+const BOTTLE_DEPOSIT_RETURN_PATTERN =
+  /\b(?:retur|åter|återbetalning|refund|return)\b/i;
+
+function positiveReceiptAmount(
+  value: CanonicalDecimal,
+): CanonicalDecimal {
+  return moneyCompare(value, "0") < 0 ? moneySubtract("0", value) : value;
+}
+
+function inferredReceiptUnitPrice(
+  line: Extract<ReceiptDraftLineCandidate, { readonly type: "purchase" }>,
+): CanonicalDecimal | undefined {
+  const quantity = line.quantity ?? "1";
+  if (moneyCompare(quantity, "0") <= 0) return undefined;
+  return moneyDivide(positiveReceiptAmount(line.lineTotal), quantity);
+}
+
+/**
+ * Consolidate only extracted lines which are safe to treat as repeated units.
+ * Unselected or uncertain lines stay independent so review never loses an
+ * individual correction or selection decision.
+ */
+function receiptLineMergeKey(
+  line: ReceiptDraftLineCandidate,
+): string | undefined {
+  if (!line.selected || line.uncertain || line.description.length === 0) {
+    return undefined;
+  }
+  if (
+    line.type === "adjustment" &&
+    (!BOTTLE_DEPOSIT_CHARGE_PATTERN.test(line.description) ||
+      BOTTLE_DEPOSIT_RETURN_PATTERN.test(line.description))
+  ) {
+    return undefined;
+  }
+  const description = line.description
+    .normalize("NFKC")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase("en-US");
+  const amount = line.type === "purchase" ? line.lineTotal : line.amount;
+  return [
+    line.type,
+    description,
+    line.categoryId,
+    amount,
+    line.type === "purchase" ? line.quantity ?? "1" : "",
+    line.type === "purchase" ? line.unitPrice ?? "" : "",
+  ].join("\u0000");
+}
+
+function consolidateReceiptLines(
+  lines: readonly ReceiptDraftLineCandidate[],
+): readonly ReceiptDraftLineCandidate[] {
+  const consolidated: ReceiptDraftLineCandidate[] = [];
+  const indices = new Map<string, number>();
+  for (const line of lines) {
+    const key = receiptLineMergeKey(line);
+    if (key === undefined) {
+      consolidated.push(line);
+      continue;
+    }
+    const existingIndex = indices.get(key);
+    if (existingIndex === undefined) {
+      indices.set(key, consolidated.length);
+      consolidated.push(line);
+      continue;
+    }
+    const existing = consolidated[existingIndex];
+    if (existing === undefined || existing.type !== line.type) {
+      consolidated.push(line);
+      continue;
+    }
+    if (existing.type === "purchase" && line.type === "purchase") {
+      const unitPrice = existing.unitPrice ?? line.unitPrice ??
+        inferredReceiptUnitPrice(existing) ?? inferredReceiptUnitPrice(line);
+      consolidated[existingIndex] = {
+        ...existing,
+        quantity: moneyAdd(
+          existing.quantity ?? "1",
+          line.quantity ?? "1",
+        ),
+        unitPrice,
+        lineTotal: moneyAdd(existing.lineTotal, line.lineTotal),
+      };
+    } else if (
+      existing.type === "adjustment" &&
+      line.type === "adjustment" &&
+      BOTTLE_DEPOSIT_CHARGE_PATTERN.test(existing.description) &&
+      !BOTTLE_DEPOSIT_RETURN_PATTERN.test(existing.description)
+    ) {
+      consolidated[existingIndex] = {
+        ...existing,
+        amount: moneyAdd(existing.amount, line.amount),
+      };
+    }
+  }
+  return consolidated;
+}
+
 /** Receipt purchases and their parent total are outgoing amounts. */
 function ensureOutflowSign(value: CanonicalDecimal): CanonicalDecimal {
   return moneyCompare(value, "0") > 0 ? moneySubtract("0", value) : value;
@@ -303,15 +414,11 @@ function normalizeExtractedAmount(
   return value;
 }
 
-const BOTTLE_DEPOSIT_CHARGE_PATTERN =
-  /\b(?:pant(?:\s+burk)?|bottle\s+deposit)\b/i;
-const BOTTLE_DEPOSIT_RETURN_PATTERN =
-  /\b(?:retur|åter|återbetalning|refund|return)\b/i;
-
 /**
  * A positive deposit printed with purchased goods is a charge, not a refund.
  * Keep this correction deliberately narrow: explicit return/refund evidence or
- * a printed negative amount remains an inflow.
+ * a printed negative amount remains an inflow, even if the model direction is
+ * contradictory.
  */
 function normalizeBottleDepositDirection(
   description: string,
@@ -324,10 +431,24 @@ function normalizeBottleDepositDirection(
 } {
   if (
     kind !== "adjustment" ||
-    direction !== "inflow" ||
     amount === undefined ||
-    moneyCompare(amount, "0") < 0 ||
-    !BOTTLE_DEPOSIT_CHARGE_PATTERN.test(description) ||
+    !BOTTLE_DEPOSIT_CHARGE_PATTERN.test(description)
+  ) {
+    return { direction };
+  }
+  if (moneyCompare(amount, "0") < 0) {
+    return {
+      direction: "inflow",
+      ...(direction === "outflow"
+        ? {
+          classificationReason:
+            "The printed negative PANT BURK amount is a deposit return, so it is treated as money back.",
+        }
+        : {}),
+    };
+  }
+  if (
+    direction !== "inflow" ||
     BOTTLE_DEPOSIT_RETURN_PATTERN.test(description)
   ) {
     return { direction };
@@ -520,12 +641,11 @@ export function normalizeReceiptExtractionDraft(
   const categories = new Set(
     input.categoryCatalogue.map((category) => category.id),
   );
-  const lines: ReceiptDraftLine[] = [];
+  const candidates: ReceiptDraftLineCandidate[] = [];
   for (const rawLine of value.lines) {
     if (!isRecord(rawLine)) {
-      lines.push({
+      candidates.push({
         type: "purchase",
-        id: input.nextId(),
         description: "",
         categoryId: UNCATEGORIZED_CATEGORY_ID,
         lineTotal: "0",
@@ -555,6 +675,8 @@ export function normalizeReceiptExtractionDraft(
       rawLine.rationale,
     );
     const amount = parseDecimal(rawLine.amount);
+    const quantity = parseDecimal(rawLine.quantity);
+    const unitPrice = parseDecimal(rawLine.unitPrice);
     const modelDirection = rawLine.direction === "inflow"
       ? "inflow"
       : rawLine.direction === "outflow"
@@ -570,6 +692,12 @@ export function normalizeReceiptExtractionDraft(
     const classificationReason = normalizedDeposit.classificationReason ??
       modelClassificationReason;
     const directionMismatch = kind === "purchase" && direction !== "outflow";
+    const quantityInvalid = rawLine.quantity !== undefined &&
+      quantity === undefined;
+    const unitPriceInvalid = rawLine.unitPrice !== undefined &&
+      unitPrice === undefined;
+    const purchaseDetailsOnAdjustment = kind === "adjustment" &&
+      (rawLine.quantity !== undefined || rawLine.unitPrice !== undefined);
     // Purchases are always ledger outflows even if an untrusted boundary
     // contradicts the contract; keep the line safe while marking it invalid.
     const normalizationDirection = kind === "purchase" ? "outflow" : direction;
@@ -577,6 +705,7 @@ export function normalizeReceiptExtractionDraft(
       (categoryIssue ? "The category suggestion was unavailable." : undefined);
     const invalidLine = kind === undefined || amount === undefined ||
       direction === undefined || directionMismatch ||
+      quantityInvalid || unitPriceInvalid || purchaseDetailsOnAdjustment ||
       description.length === 0 ||
       classificationReason === undefined;
     const selected = rawLine.selected === true && !invalidLine &&
@@ -589,11 +718,9 @@ export function normalizeReceiptExtractionDraft(
     const normalizedAmount = amount === undefined
       ? "0"
       : normalizeExtractedAmount(amount, normalizationDirection);
-    const id = input.nextId();
     if (kind === "adjustment") {
-      lines.push({
+      candidates.push({
         type: "adjustment",
-        id,
         description,
         categoryId,
         amount: normalizedAmount,
@@ -603,12 +730,13 @@ export function normalizeReceiptExtractionDraft(
         ...(selectionReason === undefined ? {} : { selectionReason }),
       });
     } else {
-      lines.push({
+      candidates.push({
         type: "purchase",
-        id,
         description,
         categoryId,
         lineTotal: normalizedAmount,
+        ...(quantity === undefined ? {} : { quantity }),
+        ...(unitPrice === undefined ? {} : { unitPrice }),
         selected,
         uncertain,
         ...(classificationReason === undefined ? {} : { classificationReason }),
@@ -616,6 +744,9 @@ export function normalizeReceiptExtractionDraft(
       });
     }
   }
+  const lines: ReceiptDraftLine[] = consolidateReceiptLines(candidates).map(
+    (line) => ({ ...line, id: input.nextId() }),
+  );
   const uncertainty = [
     ...value.uncertainty.map((item) => item.trim()).filter(Boolean),
     ...value.mismatches.map((item) => item.trim()).filter(Boolean),

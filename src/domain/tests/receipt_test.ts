@@ -1129,6 +1129,296 @@ Deno.test(
 );
 
 Deno.test(
+  "receipt-actor domain: repeated confident purchases become quantity lines",
+  () => {
+    let sequence = 0;
+    const normalized = normalizeReceiptExtractionDraft({
+      merchant: "Shop",
+      currency: "SEK",
+      date: "2026-08-29",
+      printedTotal: "20",
+      uncertainty: [],
+      mismatches: [],
+      lines: [{
+        description: "Coffee",
+        amount: "2.5",
+        categoryId: "category-drinks",
+        kind: "purchase",
+        direction: "outflow",
+        selected: true,
+        rationale: "The receipt lists this purchased drink.",
+      }, {
+        description: "Tea",
+        amount: "6",
+        quantity: "2",
+        categoryId: "category-drinks",
+        kind: "purchase",
+        direction: "outflow",
+        selected: true,
+        rationale: "The receipt lists this purchased drink.",
+      }, {
+        description: "Tea",
+        amount: "6",
+        quantity: "2",
+        categoryId: "category-drinks",
+        kind: "purchase",
+        direction: "outflow",
+        selected: true,
+        rationale: "The receipt lists this purchased drink.",
+      }, {
+        description: "  coffee  ",
+        amount: "2.5",
+        categoryId: "category-drinks",
+        kind: "purchase",
+        direction: "outflow",
+        selected: true,
+        rationale: "The receipt lists this purchased drink.",
+      }, {
+        description: "Coffee",
+        amount: "3",
+        categoryId: "category-drinks",
+        kind: "purchase",
+        direction: "outflow",
+        selected: true,
+        rationale: "The receipt lists this purchased drink.",
+      }, {
+        description: "Coffee",
+        amount: "2.5",
+        categoryId: "category-drinks",
+        kind: "purchase",
+        direction: "outflow",
+        selected: false,
+        rationale: "The receipt lists this purchased drink.",
+      }],
+    }, {
+      projectId: "project-receipt-domain",
+      currency: "SEK",
+      categoryCatalogue: [{
+        id: "category-drinks",
+        name: "Drinks",
+      }, {
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+      }],
+      nextId: () => `line-repeat-purchase-${++sequence}`,
+    });
+
+    assertEquals(normalized.lines.length, 4);
+    assertEquals(normalized.lines[0]?.description, "Coffee");
+    assertEquals(
+      normalized.lines[0]?.type === "purchase"
+        ? normalized.lines[0].lineTotal
+        : undefined,
+      "-5",
+    );
+    assertEquals(
+      normalized.lines[0]?.type === "purchase"
+        ? normalized.lines[0].quantity
+        : undefined,
+      "2",
+    );
+    assertEquals(
+      normalized.lines[0]?.type === "purchase"
+        ? normalized.lines[0].unitPrice
+        : undefined,
+      "2.5",
+    );
+    assertEquals(normalized.lines[1]?.description, "Tea");
+    assertEquals(
+      normalized.lines[1]?.type === "purchase"
+        ? normalized.lines[1].lineTotal
+        : undefined,
+      "-12",
+    );
+    assertEquals(
+      normalized.lines[1]?.type === "purchase"
+        ? normalized.lines[1].quantity
+        : undefined,
+      "4",
+    );
+    assertEquals(
+      normalized.lines[1]?.type === "purchase"
+        ? normalized.lines[1].unitPrice
+        : undefined,
+      "3",
+    );
+    assertEquals(normalized.lines[2]?.type, "purchase");
+    assertEquals(
+      normalized.lines[2]?.type === "purchase"
+        ? normalized.lines[2].lineTotal
+        : undefined,
+      "-3",
+    );
+    assertEquals(normalized.lines[3]?.selected, false);
+    assertEquals(receiptSelectedTotal(normalized), "-20");
+    assertEquals(receiptMismatchDifference(normalized), "0");
+  },
+);
+
+Deno.test(
+  "receipt-actor domain: explicit extracted quantity and unit price are preserved",
+  () => {
+    let sequence = 0;
+    const normalized = normalizeReceiptExtractionDraft({
+      merchant: "Shop",
+      currency: "SEK",
+      date: "2026-08-29",
+      printedTotal: "33.98",
+      uncertainty: [],
+      mismatches: [],
+      lines: [{
+        description: "Broccoli",
+        amount: "33.98",
+        quantity: "2",
+        unitPrice: "16.99",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        kind: "purchase",
+        direction: "outflow",
+        selected: true,
+        rationale: "The receipt shows two broccoli units at 16.99 each.",
+      }],
+    }, {
+      projectId: "project-receipt-domain",
+      currency: "SEK",
+      categoryCatalogue: [{
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+      }],
+      nextId: () => `line-explicit-quantity-${++sequence}`,
+    });
+
+    assertEquals(normalized.lines.length, 1);
+    assertEquals(
+      normalized.lines[0]?.type === "purchase"
+        ? normalized.lines[0].quantity
+        : undefined,
+      "2",
+    );
+    assertEquals(
+      normalized.lines[0]?.type === "purchase"
+        ? normalized.lines[0].unitPrice
+        : undefined,
+      "16.99",
+    );
+    assertEquals(receiptSelectedTotal(normalized), "-33.98");
+    assertEquals(receiptMismatchDifference(normalized), "0");
+  },
+);
+
+Deno.test(
+  "receipt-actor domain: same-name bottle charge and printed return stay separate",
+  () => {
+    let sequence = 0;
+    const normalized = normalizeReceiptExtractionDraft({
+      merchant: "Shop",
+      currency: "SEK",
+      date: "2026-08-29",
+      printedTotal: "0",
+      uncertainty: [],
+      mismatches: [],
+      lines: [{
+        description: "PANT BURK",
+        amount: "2",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        kind: "adjustment",
+        direction: "inflow",
+        selected: true,
+        rationale: "The positive PANT BURK row is listed with purchased goods.",
+      }, {
+        description: "PANT BURK",
+        amount: "-2",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        kind: "adjustment",
+        direction: "outflow",
+        selected: true,
+        rationale: "The printed negative amount identifies a deposit return.",
+      }],
+    }, {
+      projectId: "project-receipt-domain",
+      currency: "SEK",
+      categoryCatalogue: [{
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+      }],
+      nextId: () => `line-charge-return-${++sequence}`,
+    });
+
+    assertEquals(normalized.lines.length, 2);
+    assertEquals(
+      normalized.lines[0]?.type === "adjustment"
+        ? normalized.lines[0].amount
+        : undefined,
+      "-2",
+    );
+    assertEquals(
+      normalized.lines[1]?.type === "adjustment"
+        ? normalized.lines[1].amount
+        : undefined,
+      "2",
+    );
+    assertEquals(normalized.lines[1]?.selected, true);
+    assertEquals(receiptSelectedTotal(normalized), "0");
+    assertEquals(receiptMismatchDifference(normalized), "0");
+  },
+);
+
+Deno.test(
+  "receipt-actor domain: repeated non-deposit adjustments remain independent",
+  () => {
+    let sequence = 0;
+    const normalized = normalizeReceiptExtractionDraft({
+      merchant: "Shop",
+      currency: "SEK",
+      date: "2026-08-29",
+      printedTotal: "4",
+      uncertainty: [],
+      mismatches: [],
+      lines: [{
+        description: "Discount",
+        amount: "2",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        kind: "adjustment",
+        direction: "inflow",
+        selected: true,
+        rationale: "The receipt lists this discount.",
+      }, {
+        description: "discount",
+        amount: "2",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        kind: "adjustment",
+        direction: "inflow",
+        selected: true,
+        rationale: "The receipt lists this discount.",
+      }],
+    }, {
+      projectId: "project-receipt-domain",
+      currency: "SEK",
+      categoryCatalogue: [{
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+      }],
+      nextId: () => `line-repeat-adjustment-${++sequence}`,
+    });
+
+    assertEquals(normalized.lines.length, 2);
+    assertEquals(
+      normalized.lines[0]?.type === "adjustment"
+        ? normalized.lines[0].amount
+        : undefined,
+      "2",
+    );
+    assertEquals(
+      normalized.lines[1]?.type === "adjustment"
+        ? normalized.lines[1].amount
+        : undefined,
+      "2",
+    );
+    assertEquals(receiptSelectedTotal(normalized), "4");
+    assertEquals(receiptMismatchDifference(normalized), "0");
+  },
+);
+
+Deno.test(
   "receipt-actor domain: Coop bottle deposits reconcile the printed total",
   () => {
     let sequence = 0;
@@ -1189,17 +1479,18 @@ Deno.test(
       nextId: () => `line-coop-receipt-${++sequence}`,
     });
     assertEquals(normalized.parent.printedTotal, "-325.78");
+    assertEquals(normalized.lines.length, 10);
     assertEquals(
       normalized.lines[8]?.type === "adjustment"
         ? normalized.lines[8].amount
         : undefined,
-      "-2",
+      "-4",
     );
     assertEquals(
       normalized.lines[9]?.type === "adjustment"
         ? normalized.lines[9].amount
         : undefined,
-      "-2",
+      "15.76",
     );
     assertEquals(receiptSelectedTotal(normalized), "-325.78");
     assertEquals(receiptMismatchDifference(normalized), "0");

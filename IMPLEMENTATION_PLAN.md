@@ -124,8 +124,145 @@ across browser tests.
 M0..M29 implementation and R-2930 review (COMPLETE)
    |
    v
-next milestone planning (after product-owner approval)
+M30-001 -> M30-002 -> R-3010 -> M30-FINAL
 ```
+
+## M30 — Receipt extraction line consolidation
+
+### M30 authority, outcome, and non-goals
+
+M30 adds a domain-owned post-extraction normalization pass so repeated,
+confidently equivalent receipt lines are represented once in review. Quantity
+and unit-price data are derived for consolidated purchase lines; repeated
+bottle-deposit adjustments remain adjustments and are summed rather than being
+changed into ordinary purchases.
+
+Target dependency flow:
+
+```text
+provider extraction -> domain normalization -> receipt review actor -> review UI
+```
+
+**Non-goals:** making prompt-only deduplication the source of truth, changing
+receipt sign semantics, changing persisted adjustment semantics, or adding a
+second UI state layer. The provider contract may carry explicit quantity data,
+but domain post-processing remains authoritative for duplicate lines.
+
+### Mandatory single-agent execution rule
+
+- One primary coding agent performs all planning reconciliation, edits, tests,
+  fixes, commits, pushes, and checkpoint updates sequentially on `master`.
+- Independent read-only reviewer subagents are used exclusively at named
+  review gates.
+- Context compaction or session restarts require following the recovery
+  checklist before editing.
+
+### Locked boundary / design-system rules
+
+- Consolidation stays in `src/domain/receipt.ts`, after untrusted extraction
+  values are validated and ledger signs are normalized.
+- Explicit provider quantity/unit-price fields remain optional, strict,
+  provider-neutral, and are accepted only for purchase lines.
+- Only confident, selected lines with matching semantic identity and amount may
+  consolidate.
+- Purchase consolidation preserves the existing purchase quantity/unit-price
+  contract; bottle-deposit charges remain adjustment lines.
+- Existing receipt totals, mismatch detection, selection behavior, and durable
+  actor contracts remain unchanged.
+- No feature or app file imports a component library directly.
+
+### Restart and compaction recovery checklist
+
+- [ ] Read `AGENTS.md`, this milestone section, and Current Checkpoint.
+- [ ] Run `git status --short --branch`, `git log -n 20 --oneline`,
+      `git branch -vv`, `git worktree list --porcelain`, and check remote sync.
+- [ ] Verify test and working tree state before continuing.
+
+#### M30-001 — Normalize repeated extracted lines
+
+- **Status/dependencies:** `COMPLETE`; depends on M29 and R-2930.
+- **Ownership:** `src/domain/receipt.ts`, `src/domain/money/index.ts`,
+  `src/domain/tests/receipt_test.ts`, `src/domain/tests/domain_test.ts`,
+  `src/adapters/ports/receipt-ai.ts`, `src/adapters/gemini/schema.ts`.
+- **Scope/non-goals:** Add a bounded post-extraction consolidation pass. Merge
+  only selected, non-uncertain lines with matching normalized descriptions,
+  categories, kinds, and amounts; retain the first stable identity and
+  provenance fields. Set quantity and positive unit price for consolidated
+  purchases and sum repeated bottle-deposit charge adjustments. Do not alter
+  persisted schemas or manual edits; explicit provider quantity/unit-price
+  fields are preserved for purchases.
+- **Outputs/acceptance:** The two equivalent `PANT BURK` charges in the
+  supplied Coop receipt become one `SEK -4` adjustment; equivalent purchases
+  become one line with quantity and unit price; unsafe or non-equivalent lines
+  remain distinct.
+- **Tests:** Domain unit tests cover purchase consolidation, explicit quantity
+  preservation, adjustment consolidation, charge/return separation,
+  amount/description/category safety, and selection/uncertainty preservation.
+- **Verification:** The focused domain command passed with 27 tests:
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  src/domain/tests/domain_test.ts src/domain/tests/receipt_test.ts`.
+  `deno task check` and `git diff --check` passed. A prior bare related-test
+  attempt selected the full graph without the repository permission flags and
+  reported 21 environment/permission failures; the permissioned affected
+  command passed below.
+
+#### M30-002 — Reconcile adapter and review integration
+
+- **Status/dependencies:** `COMPLETE`; depends on M30-001.
+- **Ownership:** `src/adapters/gemini/adapter.ts`,
+  `src/adapters/gemini/schema.ts`, `src/adapters/gemini/adapter.test.ts`,
+  `src/adapters/ports/receipt-ai.ts`, `src/actors/contracts/receipt-actor.test.ts`,
+  `src/features/receipt-ui.test.tsx`, `IMPLEMENTATION_PLAN.md`.
+- **Scope/non-goals:** Carry optional explicit quantity/unit-price data through
+  the provider-neutral extraction contract and verify the existing review
+  components render consolidated quantity/unit-price data. Do not move
+  durable workflow state into the adapter or UI.
+- **Outputs/acceptance:** Adapter extraction returns provider-neutral quantity
+  data; the actor receives normalized lines without duplicate cards; the review
+  card renders `quantity × unit price`.
+- **Tests:** Focused adapter and receipt review tests, plus the affected test
+  selection command.
+- **Verification:** The complete focused M30 command passed with 69 tests:
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  src/domain/tests/domain_test.ts src/domain/tests/receipt_test.ts
+  src/adapters/gemini/adapter.test.ts
+  src/actors/contracts/receipt-actor.test.ts
+  src/features/receipt-ui.test.tsx`. The permissioned affected command
+  `deno test --allow-read --allow-write --allow-run --allow-env --changed
+  --quiet` passed with 341 tests; `deno task check` and `git diff --check`
+  passed.
+
+#### R-3010 — Receipt consolidation review gate
+
+- **Status/dependencies:** `COMPLETE`; depends on M30-002.
+- **Reviewer role:** Fresh read-only reviewer subagent.
+- **Audit scope:** Diff since R-2930, domain safety rules, test evidence,
+  provider-boundary preservation, receipt totals, and compliance with
+  `AGENTS.md`, `SPEC.md`, and `DESIGN_SYSTEM.md`.
+- **Remediation loop:** The primary agent fixes all severity 1–3 findings in
+  bounded remediation commits, reruns affected validation, and records the
+  resolution here before closure.
+- **Review evidence:** The initial review found and the primary agent fixed
+  negative PANT direction normalization, explicit quantity/unit-price
+  transport, actor/UI coverage, and stale prompt exclusions. Follow-up found
+  and the primary agent fixed quantity-only unit-price derivation, restored
+  provider kind-specific validation, and the remaining stale plan statements.
+  The final fresh read-only reviewer re-check approved the milestone with no
+  remaining severity 1–3 findings.
+
+#### M30-FINAL — Milestone closure and ledger archiving
+
+- **Status/dependencies:** `IN_PROGRESS`; depends on R-3010.
+- **Ownership:** `IMPLEMENTATION_PLAN.md`.
+- **Scope/non-goals:** Record final exact verification and pushed commit,
+  prune the completed M30 task history into Released Baseline, and run the
+  repository-hygiene pruning procedure. No application behavior changes.
+- **Outputs/acceptance:** Compact live plan with M30 release evidence and a
+  clean synchronized repository. Any archival commit must include `[archive]`.
+- **Tests:** `deno task check`, `deno task fmt:check`, `deno task lint`, and
+  `git diff --check` during plan pruning, plus the release checks required by
+  the final review gate.
+- **Verification:** Exact commands and results recorded in this ledger.
 
 ## R-2930 — Final M29 Review and Release Gate
 
@@ -165,9 +302,10 @@ After a restart, rate limit, lost session, or interrupted command:
 
 ## Current Checkpoint
 
-- **Active gate:** None; M29 and R-2930 are `COMPLETE`.
-- **Repository:** `master` is clean and synchronized at the archive commit
-  that follows pre-pruning ledger `84e7515`.
+- **Active task / gate:** `M30-FINAL` (`IN_PROGRESS`).
+- **Repository:** `master` remains at the clean synchronized baseline
+  `601257d`; the M30 implementation and plan updates are currently in the
+  working tree pending the integration commit and push.
 - **M29 implementation:** complete and pushed; R-2910, R-2920, and R-2930
   approved.
 - **M29-FINAL:** complete; release and hygiene evidence is recorded above.
@@ -175,16 +313,29 @@ After a restart, rate limit, lost session, or interrupted command:
   It verified the archive-head release artifact, repository checks, frozen audit,
   facade boundary, Markdown links, compact plan, and preservation of unrelated
   historical worktrees.
-- **Next action:** Wait for the next product-approved milestone requirements;
-  do not initialize implementation work from this archived baseline alone.
+- **M30 checkpoint:** Requirements and implementation authorization were
+  approved in the product-owner request. Domain blast-radius inspection found
+  the existing quantity fields and review rendering are reusable.
+- **M30 implementation evidence:** M30-001 and M30-002 are complete in the
+  working tree. The post-extraction normalizer consolidates selected,
+  confident equal lines, derives quantity/unit price for repeated purchases,
+  and sums repeated bottle-deposit adjustments without changing persisted
+  schemas. The provider-neutral port and Gemini schema now carry optional
+  purchase-only quantity/unit-price fields.
+- **R-3010 closure evidence:** Fresh read-only re-check approved with no
+  remaining severity 1–3 findings. Focused validation passed 69 tests and the
+  permissioned affected graph passed 341 tests; full format and lint checks
+  passed.
+- **Next action:** Commit and push the implementation, then run the required
+  hygiene/archive closeout and record the final synchronized checkpoint.
 
 ## Ready-to-use orchestration prompt
 
 ```text
-Act as the integration owner for the next approved milestone. Read AGENTS.md,
-SPEC.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Audit the current
-master/upstream/worktree state and the compact released baseline. Obtain
-product-owner approval for requirements and design before initializing a new
-dependency-ordered milestone; preserve all existing work and use a fresh
-read-only reviewer at its named release gate.
+Act as the integration owner for M30. Read AGENTS.md, SPEC.md,
+DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Reconcile master/upstream and
+worktree state, complete M30-001 and M30-002 sequentially, use a fresh
+read-only reviewer at R-3010, record exact evidence, and close the milestone
+with the required [archive] ledger update without disturbing unrelated
+worktrees.
 ```

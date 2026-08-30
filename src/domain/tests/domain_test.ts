@@ -12,6 +12,7 @@ import {
   importDataset,
   moneyAdd,
   moneyCompare,
+  moneyDivide,
   moneyMultiply,
   PortableDatasetSchema,
   ProjectSchema,
@@ -83,6 +84,7 @@ Deno.test("domain: canonical decimals normalize and reject unsafe representation
   assertEquals(canonicalDecimal("00010.9000"), "10.9");
   assertEquals(canonicalDecimal("-0.000"), "0");
   assertEquals(moneyAdd("0.1", "0.2"), "0.3");
+  assertEquals(moneyDivide("33.98", "2"), "16.99");
   assertEquals(moneyMultiply("1.25", "8"), "10");
   assertEquals(moneyCompare("-1", "0"), -1);
   for (const invalid of ["1e3", "+1", " 1", "1 ", "NaN", ""]) {

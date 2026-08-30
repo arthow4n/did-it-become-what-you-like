@@ -36,6 +36,19 @@ export function moneyMultiply(
   );
 }
 
+export function moneyDivide(
+  first: CanonicalDecimal,
+  second: CanonicalDecimal,
+): CanonicalDecimal {
+  const divisor = new Big(parseCanonicalDecimal(second));
+  if (divisor.cmp("0") === 0) {
+    throw new Error("Cannot divide money by zero.");
+  }
+  return canonicalDecimal(
+    new Big(parseCanonicalDecimal(first)).div(divisor).toString(),
+  );
+}
+
 export function moneyCompare(
   first: CanonicalDecimal,
   second: CanonicalDecimal,

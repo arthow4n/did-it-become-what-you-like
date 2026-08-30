@@ -211,9 +211,11 @@ Deno.test("receipt-ui line card exposes uncertainty, selection, edit, and remove
             type: "purchase",
             description: "Unclear item",
             category: "Uncategorized",
-            amount: "-4",
+            amount: "-5",
             selected: false,
             uncertain: true,
+            quantity: "2",
+            unitPrice: "2.5",
             selectionReason: "The receipt text was partly hidden.",
             classificationReason:
               "The product row is visible under the grocery section.",
@@ -225,6 +227,7 @@ Deno.test("receipt-ui line card exposes uncertainty, selection, edit, and remove
         }),
       );
       const view = within(document.body);
+      assert(view.getByText("2 × 2.5"));
       assert(view.getByText("The receipt text was partly hidden."));
       assert(
         view.getByText(

@@ -357,6 +357,7 @@ function promptFor(request: ReceiptExtractionRequest): string {
     "Discounts, refunds, cashback, and explicit bottle-deposit returns have direction inflow and kind adjustment because they reduce the amount owed. A positive PANT BURK/PANT bottle-deposit line printed beside purchased goods is a deposit charge, not a return: keep its printed amount and set direction outflow. Use inflow for a deposit only when the receipt explicitly says return/refund/återbetalning or prints a negative amount.",
     "Tips, fees, surcharges, and other extra charges have direction outflow and kind adjustment because they increase the amount owed.",
     "For every line, provide a concise rationale (one short sentence) naming the receipt evidence used for its category and direction. This is evidence, not hidden chain-of-thought.",
+    "When a purchased line explicitly shows a quantity and unit price (for example, `2 st x 16,99`), populate quantity and unitPrice and set amount to the printed line total.",
     "Do not return payment/tender amounts, subtotals, tax summaries, receipt totals, or quantity-only rows as line items; do not duplicate a product line for its quantity.",
     "Set printedTotal to the amount exactly as printed. Before returning JSON, use the direction field to verify every selected line contributes once to the owner's signed total; preserve a mismatch explanation when the image cannot be reconciled.",
     "Return JSON only and preserve uncertainty.",

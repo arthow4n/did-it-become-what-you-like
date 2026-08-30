@@ -14,7 +14,7 @@ import type {
 
 export const RECEIPT_SCHEMA_VERSION = "receipt.v2" as const;
 export const RECEIPT_SCHEMA_VERSION_NUMBER = 2 as const;
-export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v4" as const;
+export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v5" as const;
 
 const CanonicalDecimalTextSchema = z.string().regex(
   /^-?(0|[1-9]\d*)(\.\d+)?$/,
@@ -29,7 +29,22 @@ const ReceiptLineOutputSchema = z.strictObject({
   kind: z.enum(["purchase", "adjustment"]),
   rationale: z.string().trim().min(1).max(500),
   selected: z.boolean(),
+  quantity: CanonicalDecimalTextSchema.optional(),
+  unitPrice: CanonicalDecimalTextSchema.optional(),
   uncertainty: z.string().trim().min(1).max(1_000).optional(),
+}).superRefine((line, context) => {
+  // Google's structured-schema subset cannot express this kind-specific
+  // relationship. Keep the provider boundary strict in local validation.
+  if (
+    line.kind === "adjustment" &&
+    (line.quantity !== undefined || line.unitPrice !== undefined)
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["kind"],
+      message: "quantity and unitPrice are only valid for purchases",
+    });
+  }
 });
 
 /** The single runtime source of truth for Gemini's structured response. */
@@ -99,7 +114,12 @@ function normalizeOutputDecimals(value: unknown): unknown {
   const lines = Array.isArray(value.lines)
     ? value.lines.map((line) =>
       isSchemaRecord(line)
-        ? { ...line, amount: normalizeDecimalText(line.amount) }
+        ? {
+          ...line,
+          amount: normalizeDecimalText(line.amount),
+          quantity: normalizeDecimalText(line.quantity),
+          unitPrice: normalizeDecimalText(line.unitPrice),
+        }
         : line
     )
     : value.lines;
@@ -256,16 +276,25 @@ export function mapReceiptOutputToDraft(
         line.uncertainty,
         "The suggested category is unavailable; review the category.",
       ].filter((item): item is string => item !== undefined).join(" ");
-      return {
+      const common = {
         description: line.description,
         amount: line.amount,
         categoryId: line.categoryId,
-        kind: line.kind,
         direction: line.direction,
         selected: line.selected,
         rationale: line.rationale,
         ...(uncertainty === undefined ? {} : { uncertainty }),
       };
+      return line.kind === "purchase"
+        ? {
+          ...common,
+          kind: line.kind,
+          ...(line.quantity === undefined ? {} : { quantity: line.quantity }),
+          ...(line.unitPrice === undefined
+            ? {}
+            : { unitPrice: line.unitPrice }),
+        }
+        : { ...common, kind: line.kind };
     }),
     uncertainty: output.uncertainty,
     mismatches: mismatchText(output),

@@ -388,7 +388,7 @@ M27-001 -> M27-002 -> R-2710
 
 #### M27-004 — Add receipt-detail navigation and management UI
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on completed `M27-003`.
+- **Status/dependencies:** `COMPLETE`; depends on completed `M27-003`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.css`,
   `src/features/local-ui.test.tsx`, `src/features/receipt-ui.tsx`,
   `src/features/receipt-ui.test.tsx`, `src/features/receipt-detail-ui.tsx`,
@@ -397,7 +397,8 @@ M27-001 -> M27-002 -> R-2710
   `src/actors/contracts/shell-actor.test.ts`, and, only if approved by the
   `M27-001` impact inventory, `src/design-system/components.tsx`,
   `src/design-system/design-system.test.tsx`,
-  `src/design-system/public-api.test.ts`.
+  `src/design-system/public-api.test.ts`, and `DESIGN_SYSTEM.md` for the
+  approved facade variant documentation.
 - **Scope/non-goals:** Wire receipt groups and saved lines to the dedicated
   detail workflow, render the approved metadata/reconciliation/line hierarchy,
   and expose edit and destructive actions with approved confirmations, progress,
@@ -427,9 +428,18 @@ M27-001 -> M27-002 -> R-2710
   `deno test src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx src/features/receipt-detail-ui.test.tsx src/actors/contracts/shell-actor.test.ts`,
   `deno task test:affected`, `git diff --check`.
 
+- **Closure evidence:** The focused UI, shell, and design-system suite passed
+  with 74 passed and 0 failed; the affected graph passed with 229 passed and 0
+  failed. `deno task fmt:check`, `deno task lint`, `deno task check`, and
+  `git diff --check` passed. The named visual checkpoint passed
+  `deno task a11y:gallery` across narrow, phone, and desktop viewports with
+  screenshot/tree/axe inspection, and `deno task build` completed successfully
+  with the existing large-chunk warning. The implementation was pushed in
+  `6737367`.
+
 #### R-2720 — Actor, UI, accessibility, and responsive review
 
-- **Status/dependencies:** `PENDING`; depends on `M27-004`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on completed `M27-004`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** XState v5 lifecycle correctness, facade-boundary compliance,
   route/event wiring, destructive scope clarity, focus and keyboard semantics,
@@ -504,9 +514,9 @@ M27-001 -> M27-002 -> R-2710
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M27-004` (`IN_PROGRESS`; R-2710 is closed)
-- **Pushed implementation baseline:** `2b38a96`; M27-003 is complete and the
-  detail UI is the next dependency-ready task.
+- **Active task / gate:** `R-2720` (`IN_PROGRESS`; R-2710 is closed)
+- **Pushed implementation baseline:** `6737367`; M27-004 is complete and the
+  fresh actor/UI/accessibility review is the current gate.
 - **Verification status:** R-2710 closure evidence is `deno task check`, focused
   receipt/domain/local/import-export suites (36 passed, 0 failed), formatting,
   lint, and `git diff --check`; the pre-remediation M27-002 affected suite
@@ -514,9 +524,9 @@ M27-001 -> M27-002 -> R-2710
 - **Active / preserved work:** Single primary agent on `master`; no M27 worker
   or worktree. The M27-002 implementation and review checkpoint are being
   preserved on the primary branch.
-- **Exact next action:** Read the approved UI contracts and inspect the shared
-  facade, then implement M27-004 receipt-detail routing, management UI, and
-  focused component tests before its visual/accessibility review gate.
+- **Exact next action:** Dispatch a fresh read-only reviewer for R-2720, audit
+  the actor/UI/facade boundary and the named multi-viewport evidence, then
+  remediate every severity 1–3 finding before opening M27-005.
 
 ## Ready-to-Use Orchestration Prompt
 

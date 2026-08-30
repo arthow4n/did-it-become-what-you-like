@@ -366,6 +366,7 @@ Deno.test("local UI expenses exposes shared filters, empty state, and add event"
         offline: true,
         onAdd: () => addCount++,
         onEdit: () => undefined,
+        onViewReceipt: () => undefined,
         onProjectChange: () => undefined,
       }),
     );

@@ -91,6 +91,11 @@ Deno.test("shell-actor: restores route, exposes offline modes, and switches proj
   assertEquals(actor.getSnapshot().context.activeWorkflow, "expense-form");
   actor.send({ type: "shell.workflow.close" });
   assertEquals(actor.getSnapshot().context.activeWorkflow, null);
+  actor.send({ type: "shell.navigate", route: "receipt-detail" });
+  actor.send({ type: "shell.workflow.open", workflow: "receipt-detail" });
+  assertEquals(actor.getSnapshot().context.route, "receipt-detail");
+  assertEquals(actor.getSnapshot().context.activeWorkflow, "receipt-detail");
+  actor.send({ type: "shell.workflow.close" });
 
   actor.send({
     type: "shell.project.select",

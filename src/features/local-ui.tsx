@@ -14,6 +14,7 @@ import {
 import {
   CalendarDateSchema,
   type Category,
+  createReceiptManagementService,
   CurrencyCodeSchema,
   type DeviceLocalSettings,
   type Expense,
@@ -100,6 +101,7 @@ import {
   SyncPortabilityRuntime,
   type SyncPortabilityScreen,
 } from "./sync-portability-runtime.tsx";
+import { ReceiptDetailScreen } from "./receipt-detail-ui.tsx";
 import {
   AboutScreen,
   PreferencesScreen,
@@ -137,17 +139,33 @@ export type LocalUiPath =
   | "/settings/preferences"
   | "/settings/about"
   | "/receipt/scan"
-  | "/receipt/review";
+  | "/receipt/review"
+  | `/receipt/detail/${string}`;
 
 function shellRouteForPath(path: string): ShellRoute {
   if (path === "/first-use") return "first-use";
   if (path === "/add") return "add";
   if (path.startsWith("/expense/")) return "expense-form";
+  if (path === "/receipt/scan") return "receipt-scan";
+  if (path === "/receipt/review") return "receipt-review";
+  if (path.startsWith("/receipt/detail/")) return "receipt-detail";
   if (path === "/organize") return "organize";
   if (path === "/projects") return "projects";
   if (path === "/categories") return "categories";
   if (path.startsWith("/settings")) return "settings";
   return "expenses";
+}
+
+function receiptDetailForPath(path: string): {
+  receiptId: string;
+  focusedLineId?: string;
+} | undefined {
+  if (!path.startsWith("/receipt/detail/")) return undefined;
+  const [receiptId, query] = path.slice("/receipt/detail/".length).split("?");
+  if (!receiptId) return undefined;
+  const focusedLineId = new URLSearchParams(query ?? "").get("line") ??
+    undefined;
+  return focusedLineId ? { receiptId, focusedLineId } : { receiptId };
 }
 
 function pathFromHash(): string {
@@ -557,6 +575,7 @@ export function ExpensesScreen({
   offline,
   onAdd,
   onEdit,
+  onViewReceipt,
   onProjectChange,
 }: {
   state: ProjectCategoryState;
@@ -564,6 +583,7 @@ export function ExpensesScreen({
   offline: boolean;
   onAdd: () => void;
   onEdit: (expense: Expense) => void;
+  onViewReceipt: (receiptId: string, focusedLineId?: string) => void;
   onProjectChange: (projectId: string) => void;
 }) {
   const currentProject =
@@ -842,13 +862,10 @@ export function ExpensesScreen({
                       amount: group.total,
                       currency: group.receipt.currency,
                     }}
+                    onViewReceipt={() =>
+                      onViewReceipt(group.id)}
                     onSelectLine={(id) => {
-                      const expense = state.expenses.find((candidate) =>
-                        candidate.id === id
-                      );
-                      if (expense) {
-                        onEdit(expense);
-                      }
+                      onViewReceipt(group.id, id);
                     }}
                   />
                 </Card>
@@ -2687,6 +2704,10 @@ export function LocalUiRuntime(
     () => createProjectCategoryService(repository),
     [repository],
   );
+  const receiptManagement = useMemo(
+    () => createReceiptManagementService(repository),
+    [repository],
+  );
   const shellMachine = useMemo(
     () =>
       createLocalShellMachine({
@@ -3023,6 +3044,7 @@ export function LocalUiRuntime(
 
   const activePath = path ||
     (state.projects.length ? "/expenses" : "/first-use");
+  const receiptDetail = receiptDetailForPath(activePath);
   const showAddChoice = activePath === "/add";
   const contentPath = showAddChoice ? "/expenses" : activePath;
   const selectedNavigation = activePath.startsWith("/organize") ||
@@ -3048,6 +3070,28 @@ export function LocalUiRuntime(
     if (id === "add") return requestNavigation("/add");
     if (id === "organize" || id === "settings" || id === "expenses") {
       requestNavigation(`/${id}` as LocalUiPath);
+    }
+  };
+
+  const completeReceiptDetail = (output: {
+    status: string;
+    destination?: string;
+    deletedLineId?: string;
+  }) => {
+    setWorkflowDirty(false);
+    setDirtyNavigationWorkflow(false);
+    if (output.status === "deleted") {
+      void organization.getState().then(setState);
+      setAppNotice(
+        output.deletedLineId === undefined
+          ? "Receipt deleted."
+          : "Final receipt line deleted; receipt removed.",
+      );
+      navigate("/expenses");
+      return;
+    }
+    if (output.status === "navigated" || output.status === "discarded") {
+      navigate((output.destination ?? "/expenses") as LocalUiPath);
     }
   };
 
@@ -3100,8 +3144,35 @@ export function LocalUiRuntime(
                 onAdd={() => navigate("/add")}
                 onEdit={(expense) =>
                   navigate(`/expense/edit/${expense.id}` as LocalUiPath)}
+                onViewReceipt={(receiptId, focusedLineId) =>
+                  navigate(
+                    `/receipt/detail/${receiptId}${
+                      focusedLineId ? `?line=${focusedLineId}` : ""
+                    }` as LocalUiPath,
+                  )}
                 onProjectChange={(projectId) =>
                   sendShell({ type: "shell.project.select", projectId })}
+              />
+            )
+            : receiptDetail
+            ? (
+              <ReceiptDetailScreen
+                service={receiptManagement}
+                receiptId={receiptDetail.receiptId}
+                focusedLineId={receiptDetail.focusedLineId}
+                categories={state.categories}
+                discardRequest={discardRequest}
+                onDirtyChange={(dirty) => {
+                  setWorkflowDirty(dirty);
+                  setDirtyNavigationWorkflow(dirty);
+                }}
+                onDirtyDiscarded={() => finishDirtyNavigation("/expenses")}
+                onBack={() => {
+                  setWorkflowDirty(false);
+                  setDirtyNavigationWorkflow(false);
+                  navigate("/expenses");
+                }}
+                onComplete={completeReceiptDetail}
               />
             )
             : contentPath === "/receipt/scan"

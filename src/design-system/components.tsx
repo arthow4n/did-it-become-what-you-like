@@ -3192,10 +3192,12 @@ export type ReceiptGroupProps = {
   lines: ExpenseViewModel[];
   total: MoneyTextProps;
   onSelectLine?: (id: string) => void;
+  onViewReceipt?: () => void;
 };
 
 export function ReceiptGroup(
-  { merchant, date, lines, total, onSelectLine }: ReceiptGroupProps,
+  { merchant, date, lines, total, onSelectLine, onViewReceipt }:
+    ReceiptGroupProps,
 ) {
   // Receipt groups already identify the merchant in their heading. Each
   // expanded line should therefore lead with its item description; retain a
@@ -3214,6 +3216,13 @@ export function ReceiptGroup(
     >
       <Stack gap={3}>
         <MoneyText {...total} />
+        {onViewReceipt
+          ? (
+            <Button variant="secondary" onPress={onViewReceipt}>
+              View receipt
+            </Button>
+          )
+          : null}
         <ExpenseList expenses={lineExpenses} onSelect={onSelectLine} />
       </Stack>
     </Disclosure>
@@ -3294,6 +3303,7 @@ export function ReceiptSourcePicker(
 export type ReceiptMetadataViewModel = {
   merchant?: string;
   date: string;
+  time?: string;
   currency: string;
   printedTotal: string;
 };
@@ -3310,7 +3320,8 @@ export function ReceiptMetadata(
         <Stack gap={1}>
           <Heading size="sm">{metadata.merchant || "Receipt"}</Heading>
           <Text tone="secondary">
-            {metadata.date} · {metadata.currency}
+            {metadata.date}
+            {metadata.time ? ` · ${metadata.time}` : ""} · {metadata.currency}
           </Text>
         </Stack>
         {onEdit ? <Button variant="quiet" onPress={onEdit}>Edit</Button> : null}
@@ -3342,9 +3353,18 @@ export type ReceiptLineViewModel = {
 };
 
 export function ReceiptLineCard(
-  { line, currency, onSelectedChange, onEdit, editControl, onRemove }: {
+  {
+    line,
+    currency,
+    mode = "review",
+    onSelectedChange,
+    onEdit,
+    editControl,
+    onRemove,
+  }: {
     line: ReceiptLineViewModel;
     currency: string;
+    mode?: "review" | "management";
     onSelectedChange?: (selected: boolean) => void;
     onEdit?: () => void;
     editControl?: ReactNode;
@@ -3354,12 +3374,16 @@ export function ReceiptLineCard(
   return (
     <Card as="section">
       <Inline justify="space-between">
-        <Checkbox
-          isSelected={line.selected}
-          onChange={onSelectedChange}
-        >
-          <strong>{line.description || "Unclear item"}</strong>
-        </Checkbox>
+        {mode === "management"
+          ? <strong>{line.description || "Unclear item"}</strong>
+          : (
+            <Checkbox
+              isSelected={line.selected}
+              onChange={onSelectedChange}
+            >
+              <strong>{line.description || "Unclear item"}</strong>
+            </Checkbox>
+          )}
         <MoneyText
           amount={line.amount}
           currency={currency}

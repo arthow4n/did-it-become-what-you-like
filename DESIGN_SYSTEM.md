@@ -370,7 +370,7 @@ pending control keeps its label or an equally descriptive accessible name.
 | `ExpenseForm`                                             | Shared create/edit fields and snapshot-derived save actions                    |
 | `ReceiptSourcePicker`                                     | Native camera/file input, ephemeral preview, replace/remove                    |
 | `GeminiQuickSetup`                                        | Inline key entry, warning, validation, resume action                           |
-| `ReceiptMetadata`, `ReceiptLineCard`, `ReceiptLineEditor` | Review/edit extracted parent and line values                                   |
+| `ReceiptMetadata`, `ReceiptLineCard`, `ReceiptLineEditor` | Review/edit extracted parent and line values; `ReceiptLineCard` also has a management variant without review selection |
 | `ReceiptDetail`                                           | Saved receipt metadata, reconciliation, line hierarchy, and management actions |
 | `ReceiptReconciliation`                                   | Printed, selected, and difference totals plus warning                          |
 | `ProjectEditor`, `CategoryEditor`                         | Stable-ID entity create/edit forms                                             |
@@ -414,6 +414,9 @@ colocated.
   group and keeps line activation within the receipt-detail workflow. The detail
   hierarchy must show metadata and reconciliation before destructive actions,
   and must distinguish purchase lines from adjustments without relying on color.
+  Receipt groups keep that entry point explicit rather than making an entire
+  expanded group an ambiguous click target; management line cards do not render
+  the review-only selection checkbox.
 - Receipt metadata and line editors use the shared Field, FormActions,
   DraftStatus, and AdaptiveDialog contracts. Dirty staged values are owned by
   the XState actor; in-app exits offer Keep editing and Discard changes, and

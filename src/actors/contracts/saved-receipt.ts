@@ -202,6 +202,9 @@ export const savedReceiptMachine = setup({
     },
     hasPendingLine: ({ context }) => context.pendingLineId !== null,
     hasPendingMutation: ({ context }) => context.pendingMutation !== null,
+    hasPendingEditable: ({ context }) =>
+      context.pendingMutation?.kind === "metadata" ||
+      context.pendingMutation?.kind === "line",
     mutationDeletedReceipt: ({ event }) => {
       const output = mutationOutput(event);
       return output !== undefined &&
@@ -319,6 +322,14 @@ export const savedReceiptMachine = setup({
         kind: "delete-receipt",
         receiptId: context.receiptId!,
       }),
+    }),
+    setDiscardEditorFromPending: assign({
+      discardEditor: ({ context }) =>
+        context.pendingMutation?.kind === "metadata"
+          ? "metadata"
+          : context.pendingMutation?.kind === "line"
+          ? "line"
+          : null,
     }),
     setMutationAggregate: assign({
       aggregate: ({ event }) => {
@@ -755,6 +766,52 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
     failure: {
       tags: ["error"],
       on: {
+        "receipt.detail.back": [
+          {
+            target: "confirmingDiscard",
+            guard: "hasPendingEditable",
+            actions: [
+              "setDiscardEditorFromPending",
+              "setNavigationDestination",
+            ],
+          },
+          {
+            target: "completed",
+            actions: ["setNavigationDestination", "setNavigatedOutcome"],
+          },
+        ],
+        "receipt.detail.close": [
+          {
+            target: "confirmingDiscard",
+            guard: "hasPendingEditable",
+            actions: [
+              "setDiscardEditorFromPending",
+              "setNavigationDestination",
+            ],
+          },
+          {
+            target: "completed",
+            actions: ["setNavigationDestination", "setNavigatedOutcome"],
+          },
+        ],
+        "receipt.detail.navigate": [
+          {
+            target: "confirmingDiscard",
+            guard: "hasPendingEditable",
+            actions: [
+              "setDiscardEditorFromPending",
+              "setNavigationDestination",
+            ],
+          },
+          {
+            target: "completed",
+            actions: ["setNavigationDestination", "setNavigatedOutcome"],
+          },
+        ],
+        "receipt.detail.discard-changes": {
+          target: "ready",
+          actions: "clearTransient",
+        },
         "receipt.detail.retry": [
           { target: "loading", guard: "retryLoad", actions: "clearError" },
           {

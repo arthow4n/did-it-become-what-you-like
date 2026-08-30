@@ -241,6 +241,17 @@
     gap: var(--space-3);
   }
 
+  .local-ui-receipt-detail__line {
+    min-width: 0;
+    scroll-margin-block: var(--space-5);
+  }
+
+  .local-ui-receipt-detail__line:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: var(--focus-ring-offset);
+    border-radius: var(--radius-card);
+  }
+
   .local-ui-card-actions--primary-stack {
     display: flex;
     flex-wrap: wrap;

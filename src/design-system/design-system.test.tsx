@@ -55,6 +55,7 @@ import {
   Progress,
   RadioGroup,
   ReceiptGroup,
+  ReceiptLineCard,
   ResponsiveGrid,
   SearchField,
   SecretField,
@@ -1433,6 +1434,7 @@ Deno.test("design-system positive money rows always expose an explicit plus", as
 Deno.test("design-system receipt groups show line descriptions", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaDomGlobals(window, () => {
+      let viewed = false;
       const mounted = render(
         createElement(ReceiptGroup, {
           merchant: "Stora Coop Backaplan",
@@ -1447,6 +1449,7 @@ Deno.test("design-system receipt groups show line descriptions", async () => {
             date: "2026-08-29",
           }],
           total: { amount: "-33.98", currency: "SEK" },
+          onViewReceipt: () => viewed = true,
         }),
       );
       const view = within(document.body);
@@ -1459,6 +1462,39 @@ Deno.test("design-system receipt groups show line descriptions", async () => {
         1,
         "The receipt merchant should appear only in the group heading",
       );
+      fireEvent.click(view.getByRole("button", { name: "View receipt" }));
+      assert(
+        viewed,
+        "View receipt should expose the saved receipt entry point",
+      );
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system receipt line management variant removes review selection", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaDomGlobals(window, () => {
+      const mounted = render(
+        createElement(ReceiptLineCard, {
+          mode: "management",
+          line: {
+            id: "saved-line",
+            type: "purchase",
+            description: "Saved bread",
+            category: "Food",
+            amount: "-25",
+            selected: true,
+            uncertain: false,
+          },
+          currency: "SEK",
+          onEdit: () => undefined,
+          onRemove: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      assert(view.getByText("Saved bread"));
+      assert(!view.queryByRole("checkbox"));
       mounted.unmount();
     })
   );

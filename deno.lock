@@ -8,6 +8,7 @@
     "npm:@mantine/dropzone@9.5.0": "9.5.0_@mantine+core@9.5.0__@mantine+hooks@9.5.0___react@19.2.8__react@19.2.8__react-dom@19.2.8___react@19.2.8__@types+react@19.2.18_@mantine+hooks@9.5.0__react@19.2.8_react@19.2.8_react-dom@19.2.8__react@19.2.8",
     "npm:@mantine/hooks@9.5.0": "9.5.0_react@19.2.8",
     "npm:@mantine/notifications@9.5.0": "9.5.0_@mantine+core@9.5.0__@mantine+hooks@9.5.0___react@19.2.8__react@19.2.8__react-dom@19.2.8___react@19.2.8__@types+react@19.2.18_@mantine+hooks@9.5.0__react@19.2.8_react@19.2.8_react-dom@19.2.8__react@19.2.8_@types+react@19.2.18",
+    "npm:@openrouter/sdk@1.2.82": "1.2.82",
     "npm:@playwright/test@1.62.1": "1.62.1",
     "npm:@testing-library/dom@10.4.1": "10.4.1",
     "npm:@testing-library/react@16.3.2": "16.3.2_@testing-library+dom@10.4.1_@types+react@19.2.18_@types+react-dom@19.2.4__@types+react@19.2.18_react@19.2.8_react-dom@19.2.8__react@19.2.8",
@@ -952,6 +953,13 @@
       "integrity": "sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==",
       "os": ["linux"],
       "cpu": ["x64"]
+    },
+    "@openrouter/sdk@1.2.82": {
+      "integrity": "sha512-h9KgwurgfMo7QgqdqUK3P1qWVnDTVmFZWL/0k8HAvoHqIJPg7PavcGMm/x9uiRtUaNaGLQMKlXkoFY8bM8Rlfw==",
+      "dependencies": [
+        "zod"
+      ],
+      "scripts": true
     },
     "@oxc-project/types@0.146.0": {
       "integrity": "sha512-XC0QsnnhVe7sLIWmYmdPw7x5P0h4W8vUU3Nv1ySgWXtvCz8NizoAEpGXA0sOYoJQV2Rl13LgURAHQ5cI5ILCSA=="
@@ -3498,6 +3506,7 @@
       "npm:@mantine/dropzone@9.5.0",
       "npm:@mantine/hooks@9.5.0",
       "npm:@mantine/notifications@9.5.0",
+      "npm:@openrouter/sdk@1.2.82",
       "npm:@playwright/test@1.62.1",
       "npm:@testing-library/dom@10.4.1",
       "npm:@testing-library/react@16.3.2",

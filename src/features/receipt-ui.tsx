@@ -1386,8 +1386,10 @@ export function ReceiptReviewScreen({
     } else send({ type: "receipt.review.hydrate" });
   }, [initialReview, openSent, send]);
 
+  const dirty = snapshot.hasTag("dirty");
+  useDirtyBeforeUnload(dirty);
+
   useEffect(() => {
-    const dirty = snapshot.hasTag("dirty");
     onDirtyChange?.(dirty);
     onDiscardDisabledChange?.(snapshot.hasTag("saving"));
   }, [onDiscardDisabledChange, onDirtyChange, snapshot]);

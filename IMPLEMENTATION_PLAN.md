@@ -217,7 +217,7 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 #### M28-001 — Category Color Mutation Fix in Domain, Actor, and CategoryManager
 
-- **Status/dependencies:** `READY`; depends on baseline `2131d28`.
+- **Status/dependencies:** `COMPLETE`; depends on baseline `2131d28`.
 - **Ownership:** `src/domain/organization.ts`, `src/actors/project-category.ts`, `src/features/local-ui.tsx`, `src/domain/tests/project_category_test.ts`, `src/actors/contracts/project-category-actor.test.ts`, `src/features/local-ui.test.tsx`.
 - **Scope/non-goals:**
   - Update `CategoryOrganizationCommand` to include color updates on category edit (e.g. `{ type: "edit"; categoryId: StableId; name: string; color?: string }` or update `rename` to support color).
@@ -238,7 +238,7 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 #### M28-002 — Saved Receipt Add Line / Adjustment Mutation in Domain and Actor
 
-- **Status/dependencies:** `PENDING`; depends on `M28-001`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M28-001`.
 - **Ownership:** `src/domain/receipt.ts`, `src/actors/contracts/saved-receipt.ts`, `src/actors/saved-receipt.ts`, `src/domain/tests/receipt_test.ts`, `src/actors/contracts/saved-receipt-actor.test.ts`.
 - **Scope/non-goals:**
   - Add `addLine(receiptId: StableId, lineChanges: ReceiptLineChanges): Promise<ReceiptAggregate>` to `ReceiptManagementService` in `src/domain/receipt.ts`.
@@ -581,18 +581,21 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M28-001` (`READY`)
+- **Active task / gate:** `M28-002` (`IN_PROGRESS`)
 - **Released baseline:** M0 through M27 and all review gates through `R-2730`
   are complete and pushed on `master`.
-- **Verification status:** M28 planned and staged. M29 planned and staged
-  as dependent follow-up. No implementation work has begun.
+- **Verification status:** M28-001 passed formatting, lint, diff checks, and
+  the scoped command `deno test --allow-read --allow-write --allow-run
+  --allow-env src/domain/tests/project_category_test.ts
+  src/actors/contracts/project-category-actor.test.ts
+  src/features/local-ui.test.tsx` with 36 tests passed and 0 failed. M28-002
+  is now active. M29 remains staged as dependent follow-up.
 - **Active / preserved work:** Clean master working tree.
-- **Exact next action:** Await repository owner authorization before beginning
-  implementation on `M28-001`.
+- **Exact next action:** Inspect the saved-receipt aggregate and actor mutation
+  contracts, then implement atomic add-line support with domain and actor tests.
 
 ## Ready-to-Use Orchestration Prompt
 
 ```text
 Act as the single primary coding agent for M28 and M29. Read AGENTS.md, SPEC.md, DESIGN_SYSTEM.md, and IMPLEMENTATION_PLAN.md. Check git status, verify clean working tree, and start execution with task M28-001. Follow single-agent sequential commit cadence, record exact test commands and outputs, update IMPLEMENTATION_PLAN.md after each task, dispatch read-only reviewer subagents at named review gates (R-2810, R-2820, R-2830, R-2910, R-2920, R-2930), and stop when milestones are complete or if blocked.
 ```
-

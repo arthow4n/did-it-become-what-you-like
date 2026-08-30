@@ -104,6 +104,8 @@ export type CategoryOrganizationCommand =
     readonly type: "rename";
     readonly categoryId: StableId;
     readonly name: string;
+    /** Omit to preserve the current color; pass undefined to clear it. */
+    readonly color?: string;
   }
   | { readonly type: "archive"; readonly categoryId: StableId }
   | { readonly type: "restore"; readonly categoryId: StableId }
@@ -1036,9 +1038,15 @@ export function createProjectCategoryService(
           if (!category.archived) {
             assertActiveNameUnique(state.categories, command.name, category.id);
           }
+          const { color: _currentColor, ...categoryWithoutColor } = category;
           const renamed = CategorySchema.parse({
-            ...category,
+            ...categoryWithoutColor,
             name: command.name,
+            ...("color" in command
+              ? (command.color === undefined ? {} : { color: command.color })
+              : category.color === undefined
+              ? {}
+              : { color: category.color }),
           });
           await transaction.put(
             "records",

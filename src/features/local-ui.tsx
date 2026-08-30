@@ -1906,6 +1906,7 @@ export function CategoryManager({
           type: "rename",
           categoryId: editor.record.id,
           name: name.trim(),
+          color,
         },
       });
     }
@@ -1956,6 +1957,13 @@ export function CategoryManager({
                 onValueChange={setColor}
                 description="Color supplements the category name and is never its only identifier."
               />
+              {color
+                ? (
+                  <Button variant="quiet" onPress={() => setColor(undefined)}>
+                    Clear color
+                  </Button>
+                )
+                : null}
               {snapshot.context.error
                 ? (
                   <InlineNotice tone="danger" title="Category was not saved">

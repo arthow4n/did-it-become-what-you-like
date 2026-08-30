@@ -334,6 +334,52 @@ Deno.test("organization: category uniqueness, order, archive, and Uncategorized 
   );
 });
 
+Deno.test("organization: category rename updates, preserves, and clears color", async () => {
+  const { service } = createService();
+  await service.commitCategory({
+    type: "create",
+    category: { ...food, color: "#78DCCA" },
+  });
+
+  await service.commitCategory({
+    type: "rename",
+    categoryId: food.id,
+    name: "Groceries",
+  });
+  let state = await service.getState();
+  assertEquals(
+    state.categories.find((candidate) => candidate.id === food.id)?.color,
+    "#78DCCA",
+  );
+
+  await service.commitCategory({
+    type: "rename",
+    categoryId: food.id,
+    name: "Groceries",
+    color: "#8FC8F8",
+  });
+  state = await service.getState();
+  assertEquals(
+    state.categories.find((candidate) => candidate.id === food.id)?.color,
+    "#8FC8F8",
+  );
+
+  await service.commitCategory({
+    type: "rename",
+    categoryId: food.id,
+    name: "Groceries",
+    color: undefined,
+  });
+  state = await service.getState();
+  assert(
+    !Object.prototype.hasOwnProperty.call(
+      state.categories.find((candidate) => candidate.id === food.id),
+      "color",
+    ),
+    "explicitly clearing a color removes the optional stored property",
+  );
+});
+
 Deno.test("organization: delete-and-reassign atomically updates every category reference", async () => {
   const { local, service } = createService();
   await seed(local, [projectOne, food, travel, expense("expense-food")]);

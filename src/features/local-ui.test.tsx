@@ -15,6 +15,7 @@ import {
   SettingsScreen,
 } from "./local-ui.tsx";
 import type {
+  CategoryOrganizationCommand,
   ProjectCategoryService,
   ProjectCategoryState,
 } from "../domain/organization.ts";
@@ -34,6 +35,14 @@ function assert(
   message = "Expected condition",
 ): asserts condition {
   if (!condition) throw new Error(message);
+}
+
+function assertEquals<T>(actual: T, expected: T): void {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(
+      `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+    );
+  }
 }
 
 async function withAriaDomGlobals<T>(
@@ -78,8 +87,10 @@ async function withAriaDomGlobals<T>(
 function createTestService(initialState: ProjectCategoryState): {
   service: ProjectCategoryService;
   commits: () => number;
+  categoryCommands: CategoryOrganizationCommand[];
 } {
   let commitCount = 0;
+  const categoryCommands: CategoryOrganizationCommand[] = [];
   const output = () => ({
     projects: initialState.projects,
     categories: initialState.categories,
@@ -97,13 +108,15 @@ function createTestService(initialState: ProjectCategoryState): {
         commitCount += 1;
         return Promise.resolve(output());
       },
-      commitCategory: () => {
+      commitCategory: (command) => {
         commitCount += 1;
+        categoryCommands.push(command);
         return Promise.resolve(output());
       },
       resolveCategoryReference: (categoryId) => Promise.resolve(categoryId),
     },
     commits: () => commitCount,
+    categoryCommands,
   };
 }
 
@@ -804,6 +817,42 @@ Deno.test("local UI category editor cancel button exits back to category list", 
           }),
         )
       );
+    });
+  });
+});
+
+Deno.test("local UI category editor submits the selected replacement color", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    const editableCategory = { ...customCategory, color: "#78DCCA" };
+    const editableState = {
+      ...categoryState,
+      categories: [category, editableCategory],
+    };
+    const { service, categoryCommands } = createTestService(editableState);
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(CategoryManager, {
+          service,
+          state: editableState,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => assert(view.getByRole("button", { name: "Edit" })));
+      fireEvent.click(view.getByRole("button", { name: "Edit" }));
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Edit category" }))
+      );
+      fireEvent.click(view.getByRole("button", { name: "Choose #8FC8F8" }));
+      fireEvent.click(view.getByRole("button", { name: "Save category" }));
+      await waitFor(() => assert(categoryCommands.length === 1));
+      assertEquals(categoryCommands[0], {
+        type: "rename",
+        categoryId: editableCategory.id,
+        name: editableCategory.name,
+        color: "#8FC8F8",
+      });
     });
   });
 });

@@ -215,6 +215,8 @@ export type CategoryCommand =
     readonly type: "rename";
     readonly categoryId: StableId;
     readonly name: string;
+    /** Omit to preserve the current color; pass undefined to clear it. */
+    readonly color?: string;
   }
   | { readonly type: "archive"; readonly categoryId: StableId }
   | { readonly type: "restore"; readonly categoryId: StableId }

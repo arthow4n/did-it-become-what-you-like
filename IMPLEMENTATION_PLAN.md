@@ -446,10 +446,8 @@ M34-001 -> M34-002 -> R-3410
 
 #### M34-002 — Shared receipt prompt/schema core and Gemini metadata filtering
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M34-001`. The integration
-  owner has dispatched the single M34-002 write-enabled worker; no later task
-  may begin until its commit is reviewed, integrated, validated, pushed, and
-  checkpointed.
+- **Status/dependencies:** `COMPLETE`; depends on `M34-001`. Integrated on
+  `master` and pushed as `6ff9fc5` after worker commit review and validation.
 - **Ownership:** `src/adapters/gemini/{adapter,schema,client}.ts`, their tests,
   new provider-neutral `src/adapters/receipt-ai/**`, and port helpers only where
   required.
@@ -479,7 +477,7 @@ M34-001 -> M34-002 -> R-3410
 
 #### R-3410 — Shared contract and compatibility-test removal review
 
-- **Status/dependencies:** `PENDING`; depends on `M34-002`.
+- **Status/dependencies:** `READY`; depends on `M34-002`.
 - **Reviewer role:** fresh read-only architecture/contracts reviewer.
 - **Audit scope:** M34-001..002; `SPEC.md`; removal of testConfiguration,
   synthetic probes, compatibility evidence, and stale UI-facing contracts;
@@ -663,23 +661,20 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M34-002` (`IN_PROGRESS`).
-- **Planning base:** M34 planning commits and M34-001 are pushed on remote
-  `master`; the latest implementation is `b08d4d7` and the latest checkpoint is
-  `0b7c256`.
-- **Verification status:** worker pre-commit `deno task test:affected`: 393/393
-  passed; integrated focused tests: 51/51 passed; `deno task fmt:check`: passed
-  (202 files); `deno task lint`: passed (193 files); `deno task typecheck`:
+- **Active task / gate:** `R-3410` (`READY`).
+- **Planning base:** M34 planning commits, M34-001, and M34-002 are pushed on
+  remote `master`; the latest implementation is `6ff9fc5`.
+- **Verification status:** worker pre-commit `deno task test:affected`: 86/86
+  passed; integrated focused tests: 20/20 passed; `deno task fmt:check`: passed
+  (206 files); `deno task lint`: passed (197 files); `deno task typecheck`:
   passed; `git diff --check`: passed. The integrated clean-tree
-  `deno task test:affected` reported no affected test modules, so it was
-  supplemented by the 51-test focused run. SPEC.md was manually reviewed
-  against the M34 contract. No live provider calls were made.
-- **Active / preserved work:** one write-enabled worker is restricted to the
-  M34-002 ownership paths in its isolated task workspace. Existing unrelated
-  worktrees contain preserved untracked progress files and are not touched.
-- **Exact next action:** receive and review only the M34-002 worker result;
-  integrate its focused commit on `master`, run the required validation, push,
-  checkpoint M34-002, then open the R-3410 review gate.
+  `deno task test:affected` reported no affected test modules. No live provider
+  calls were made.
+- **Active / preserved work:** no active M34 implementation worker. Existing
+  unrelated worktrees contain preserved untracked progress files and are not
+  touched.
+- **Exact next action:** dispatch the fresh read-only R-3410 reviewer; do not
+  begin M34-003 until the review and any bounded remediation are complete.
 
 ## Ready-to-Use Orchestration Prompt
 

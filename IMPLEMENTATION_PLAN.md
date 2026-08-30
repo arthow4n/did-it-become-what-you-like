@@ -182,7 +182,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### R-3310 — Batch 1 review gate (Manual expense & routing safety)
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-001`, `M33-002`.
+- **Status/dependencies:** `COMPLETE`; depends on `M33-001`, `M33-002`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Diffs from `M33-001` and `M33-002`, `manualExpenseMachine`
   event coverage, mount lifecycle tests, route typing, and exit guard wiring.
@@ -193,7 +193,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-003 — Receipt scanning & review actor event handling & discard navigation
 
-- **Status/dependencies:** `PENDING`; depends on `R-3310`.
+- **Status/dependencies:** `READY`; depends on `R-3310`.
 - **Ownership:** `src/actors/contracts/receipt.ts`, `src/actors/receipt.ts`,
   `src/features/receipt-ui.tsx`.
 - **Scope/non-goals:**
@@ -325,23 +325,21 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-3310` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `0ae59bd` —
-  `fix(navigation): keep manual add-another actor continuous`.
-- **Verification status:** M33-001's focused graph passed (41 tests) with lint,
-  typecheck, and diff checks. M33-002's
-  `deno fmt IMPLEMENTATION_PLAN.md
-  src/features/local-ui.tsx src/features/local-ui.test.tsx
-  src/app/routing.test.ts`
-  passed;
-  `deno test --allow-read --allow-write
-  --allow-run --allow-env --related=src/features/local-ui.tsx,src/app/routing.ts`
-  passed (31 tests); `deno lint` on the three changed TypeScript files passed;
-  `deno task typecheck` and `git diff --check` passed.
+- **Active task / gate:** `M33-003` (`READY`)
+- **Pushed commit / HEAD:** `4cf5c86` —
+  `fix(manual-expense): close batch one workflow gaps`.
+- **Verification status:** R-3310 found three severity-2 issues and accepted
+  their remediation.
+  `deno test --allow-read --allow-write --allow-run
+  --allow-env --related=src/design-system/components.tsx,src/features/local-ui.tsx`
+  passed, including 31 design-system and 32 local-ui tests; `deno lint` on
+  changed source/tests, `deno task typecheck`, and `git diff --check` passed.
+  The fresh read-only reviewer confirmed form-lock coverage, disabled picker
+  propagation, draft-save retry, and one-time add-another sync/shell signaling.
 - **Active / preserved work:** Clean, synchronized `master`; no active M33
   worktrees or subagents.
-- **Next action:** Remediate R-3310's three severity-2 findings, rerun focused
-  actor/component checks, and request reviewer closure before M33-003.
+- **Next action:** Implement `M33-003` receipt scanning/review event handling,
+  dirty-state derivation, and discard-navigation preservation.
 
 ---
 

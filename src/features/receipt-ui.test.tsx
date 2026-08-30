@@ -22,6 +22,7 @@ import {
   DeviceLocalSettingsSchema,
   type ProjectCategoryState,
 } from "../domain/index.ts";
+import type { ReceiptReviewDraft } from "../domain/receipt.ts";
 import type {
   ReceiptAiPort,
   ReceiptExtractionDraft,
@@ -234,6 +235,92 @@ Deno.test("receipt-ui line card exposes uncertainty, selection, edit, and remove
       fireEvent.click(view.getByRole("button", { name: "Edit" }));
       fireEvent.click(view.getByRole("button", { name: "Remove" }));
       assert(selected === true && edited && removed);
+    });
+  });
+});
+
+Deno.test("receipt-ui deselecting a purchase unlinks its adjustment", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    await withAriaGlobals(async () => {
+      const local = createFakeLocalPort();
+      const review: ReceiptReviewDraft = {
+        parent: {
+          projectId: "project-receipt-ui-review",
+          date: "2026-08-30",
+          merchant: "Market",
+          currency: "SEK",
+          printedTotal: "-4",
+        },
+        lines: [{
+          type: "purchase",
+          id: "receipt-purchase-ui-review",
+          description: "Milk",
+          categoryId: "category-uncategorized",
+          lineTotal: "-5",
+          selected: true,
+          uncertain: false,
+        }, {
+          type: "adjustment",
+          id: "receipt-adjustment-ui-review",
+          description: "Discount",
+          categoryId: "category-uncategorized",
+          amount: "1",
+          lineId: "receipt-purchase-ui-review",
+          selected: true,
+          uncertain: false,
+        }],
+        uncertainty: [],
+        printedTotalMismatch: false,
+      };
+      const state: ProjectCategoryState = {
+        projects: [{
+          schemaVersion: 1,
+          type: "project",
+          id: "project-receipt-ui-review",
+          name: "Review project",
+          defaultCurrency: "SEK",
+          archived: false,
+        }],
+        categories: [{
+          schemaVersion: 1,
+          type: "category",
+          id: "category-uncategorized",
+          name: "Uncategorized",
+          sortOrder: 0,
+          archived: false,
+          system: true,
+        }],
+        selectedProjectId: "project-receipt-ui-review",
+        firstProjectId: "project-receipt-ui-review",
+        defaultProjectId: "project-receipt-ui-review",
+        expenses: [],
+        receipts: [],
+        receiptPurchaseLines: [],
+        receiptAdjustments: [],
+        tombstones: [],
+        projectOrder: ["project-receipt-ui-review"],
+      };
+      render(
+        createElement(ReceiptReviewScreen, {
+          local,
+          state,
+          initialReview: review,
+          onClose: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => assert(view.getAllByRole("checkbox").length === 2));
+      fireEvent.click(view.getAllByRole("checkbox")[0]!);
+      await waitFor(async () => {
+        const snapshots = await local.query("workflow-snapshots");
+        const snapshot = snapshots[0]?.value as {
+          review?: { lines?: Array<{ id?: string; lineId?: string }> };
+        } | undefined;
+        const adjustment = snapshot?.review?.lines?.find((line) =>
+          line.id === "receipt-adjustment-ui-review"
+        );
+        assert(adjustment && adjustment.lineId === undefined);
+      });
     });
   });
 });

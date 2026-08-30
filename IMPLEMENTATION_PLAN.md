@@ -263,7 +263,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 #### M29-001 — Receipt Review Adjustment Unlink Safety & First-Use Routing Safety
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-2830` (completion of M28).
+- **Status/dependencies:** `COMPLETE`; depends on `R-2830` (completion of M28).
 - **Ownership:** `src/domain/receipt.ts`, `src/actors/receipt.ts`, `src/features/local-ui.tsx`, `src/domain/tests/receipt_test.ts`, `src/features/local-ui.test.tsx`.
 - **Scope/non-goals:**
   - In `src/domain/receipt.ts`, update `setReceiptLineSelected()` and `removeReceiptLine()` to automatically clear `lineId` (`adjustment.lineId = undefined`) on any adjustment referencing an unselected or removed purchase line.
@@ -283,7 +283,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 #### M29-002 — Diagnostic Error Taxonomy Across Drive, Import/Export, and Local DB
 
-- **Status/dependencies:** `PENDING`; depends on `M29-001`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M29-001`.
 - **Ownership:** `src/adapters/ports/types.ts`, `src/adapters/import-export/index.ts`, `src/adapters/drive/adapter.ts`, `src/adapters/local/index.ts`, `src/actors/contracts/types.ts`.
 - **Scope/non-goals:**
   - Introduce bounded operation diagnostics for Import/Export: `import.json_syntax`, `import.schema_version`, `import.record_validation`, `import.migration_failure`.
@@ -400,7 +400,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M29-001` (`IN_PROGRESS`)
+- **Active task / gate:** `M29-002` (`IN_PROGRESS`)
 - **Released baseline:** M0 through M28 and all review gates through `R-2830`
   are complete and pushed on `master`.
 - **Verification status:** M28 release validation passed format (209 files),
@@ -413,8 +413,22 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   Markdown links were found. M29-001 is now active.
 - **Active / preserved work:** Clean master working tree after the archive
   edit; no worker or worktree owns unintegrated M28 changes.
-- **Exact next action:** Implement M29-001 receipt-review unlink safety,
-  first-use route redirect, and in-form draft discard behavior.
+- **M29-001 completion evidence:** Receipt deselection and deletion now clear
+  dependent adjustment links before validation; first-use routing redirects to
+  expenses after projects appear; hydrated manual drafts expose the actor's
+  existing discard confirmation in-form. `deno fmt src/domain/receipt.ts
+  src/domain/tests/receipt_test.ts src/features/local-ui.tsx
+  src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx` passed;
+  `deno lint src/domain/receipt.ts src/domain/tests/receipt_test.ts
+  src/features/local-ui.tsx src/features/local-ui.test.tsx
+  src/features/receipt-ui.test.tsx` passed; `deno check src/domain/receipt.ts
+  src/features/local-ui.tsx src/features/receipt-ui.test.tsx` passed;
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  src/domain/tests/receipt_test.ts src/actors/contracts/receipt-actor.test.ts
+  src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx` passed (61
+  passed, 0 failed); `git diff --check` passed.
+- **Exact next action:** Implement M29-002 bounded diagnostics across import/
+  export, Drive, and local IndexedDB adapters, then verify its adapter tests.
 
 ## Ready-to-Use Orchestration Prompt
 

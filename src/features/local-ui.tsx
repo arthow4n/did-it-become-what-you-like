@@ -159,6 +159,13 @@ function shellRouteForPath(path: string): ShellRoute {
   return "expenses";
 }
 
+export function firstUseRedirectPath(
+  path: string,
+  projectCount: number,
+): LocalUiPath | undefined {
+  return path === "/first-use" && projectCount > 0 ? "/expenses" : undefined;
+}
+
 function receiptDetailForPath(path: string): {
   receiptId: string;
   focusedLineId?: string;
@@ -2619,6 +2626,15 @@ export function ManualExpenseScreen({
                       Retry save
                     </Button>
                   )
+                  : snapshot.hasTag("dirty") && !busy
+                  ? (
+                    <Button
+                      variant="quiet"
+                      onPress={() => send({ type: "expense.discard" })}
+                    >
+                      Discard draft
+                    </Button>
+                  )
                   : undefined}
               />
             )
@@ -3012,6 +3028,12 @@ export function LocalUiRuntime(
     }
     setPath(nextPath);
   };
+
+  useEffect(() => {
+    if (!shellReady || state === null) return;
+    const redirect = firstUseRedirectPath(path, state.projects.length);
+    if (redirect !== undefined) navigate(redirect);
+  }, [navigate, path, shellReady, state]);
 
   const requestNavigation = (nextPath: LocalUiPath) => {
     if (dirtyNavigationWorkflow) {

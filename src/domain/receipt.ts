@@ -648,11 +648,23 @@ export function setReceiptLineSelected(
   lineId: StableId,
   selected: boolean,
 ): ReceiptReviewDraft {
+  const target = review.lines.find((line) => line.id === lineId);
+  const lines = review.lines.map((line) =>
+    line.id === lineId ? { ...line, selected } : line
+  );
+  if (!selected && target?.type === "purchase") {
+    return withChangedLines(
+      review,
+      lines.map((line) =>
+        line.type === "adjustment" && line.lineId === lineId
+          ? { ...line, lineId: undefined }
+          : line
+      ),
+    );
+  }
   return withChangedLines(
     review,
-    review.lines.map((line) =>
-      line.id === lineId ? { ...line, selected } : line
-    ),
+    lines,
   );
 }
 
@@ -685,16 +697,14 @@ export function removeReceiptLine(
   review: ReceiptReviewDraft,
   lineId: StableId,
 ): ReceiptReviewDraft {
+  const lines = review.lines.filter((line) => line.id !== lineId).map((line) =>
+    line.type === "adjustment" && line.lineId === lineId
+      ? { ...line, lineId: undefined }
+      : line
+  );
   return withChangedLines(
-    {
-      ...review,
-      lines: review.lines.map((line) =>
-        line.type === "adjustment" && line.lineId === lineId
-          ? { ...line, lineId: undefined }
-          : line
-      ),
-    },
-    review.lines.filter((line) => line.id !== lineId),
+    review,
+    lines,
   );
 }
 

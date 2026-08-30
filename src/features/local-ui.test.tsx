@@ -5,6 +5,7 @@ import {
   CategoryManager,
   DirtyExitGuard,
   ExpensesScreen,
+  firstUseRedirectPath,
   FirstUseScreen,
   LoadingScreen,
   ManualExpenseRecoveryScreen,
@@ -312,6 +313,12 @@ Deno.test("local UI first-use screen exposes the three approved entry paths", as
   });
 });
 
+Deno.test("local UI first-use route redirects once a project exists", () => {
+  assertEquals(firstUseRedirectPath("/first-use", 0), undefined);
+  assertEquals(firstUseRedirectPath("/first-use", 1), "/expenses");
+  assertEquals(firstUseRedirectPath("/expenses", 1), undefined);
+});
+
 Deno.test("local UI manual dirty navigation offers keep or discard", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
@@ -390,6 +397,53 @@ Deno.test("local UI manual deletion reports a deleted completion status", async 
       await waitFor(() =>
         assert(completion === "deleted", "Deletion should report its status")
       );
+    });
+  });
+});
+
+Deno.test("local UI hydrated manual drafts expose an in-form discard action", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      await local.transaction(
+        "readwrite",
+        (transaction) =>
+          transaction.put("workflow-snapshots", "workflow:manual-expense", {
+            version: 1,
+            kind: "manual-expense-draft",
+            revision: 1,
+            draft: {
+              projectId: project.id,
+              categoryId: category.id,
+              date: "2026-08-30",
+              amount: "4",
+              currency: "SEK",
+              description: "Restored draft",
+              direction: "spent",
+            },
+          } as never),
+      );
+      const { service } = createTestService(state);
+      let closed = false;
+      render(
+        createElement(ManualExpenseScreen, {
+          repository: local,
+          service,
+          state,
+          request: {},
+          onSaved: () => undefined,
+          onClosed: () => closed = true,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: "Discard draft" }))
+      );
+      fireEvent.click(view.getByRole("button", { name: "Discard draft" }));
+      await waitFor(() => assert(view.getByText("Discard unsaved changes?")));
+      fireEvent.click(view.getByRole("button", { name: "Discard changes" }));
+      await waitFor(() => assert(closed));
+      assertEquals(await local.query("workflow-snapshots"), []);
     });
   });
 });

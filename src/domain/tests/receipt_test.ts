@@ -91,6 +91,14 @@ function review(
   };
 }
 
+function adjustmentLineId(
+  draft: ReceiptReviewDraft,
+  id: string,
+): string | undefined {
+  const line = draft.lines.find((candidate) => candidate.id === id);
+  return line?.type === "adjustment" ? line.lineId : undefined;
+}
+
 const savedReceipt: ReceiptParent = {
   schemaVersion: 1,
   type: "receipt",
@@ -874,8 +882,26 @@ Deno.test("receipt-actor domain: signs, totals, selection, editing, adding, and 
   assertEquals(receiptSelectedTotal(normalized), "-10");
   assertEquals(receiptMismatchDifference(normalized), "-2");
 
-  const unselected = setReceiptLineSelected(normalized, "line-purchase", false);
-  assertEquals(receiptSelectedTotal(unselected), "0");
+  const linkedReview = validateReceiptReviewDraft(review());
+  const unselected = setReceiptLineSelected(
+    linkedReview,
+    "line-purchase",
+    false,
+  );
+  assertEquals(receiptSelectedTotal(unselected), "2");
+  assertEquals(
+    adjustmentLineId(unselected, "line-discount"),
+    undefined,
+  );
+  const relinked = setReceiptLineSelected(
+    linkedReview,
+    "line-purchase",
+    true,
+  );
+  assertEquals(
+    adjustmentLineId(relinked, "line-discount"),
+    "line-purchase",
+  );
   const added = addReceiptLine(unselected, {
     type: "adjustment",
     id: "line-refund",
@@ -890,7 +916,12 @@ Deno.test("receipt-actor domain: signs, totals, selection, editing, adding, and 
     description: "Refunded bottle",
   });
   assertEquals(edited.lines[1]?.description, "Refunded bottle");
-  assertEquals(removeReceiptLine(edited, "line-refund").lines.length, 1);
+  assertEquals(removeReceiptLine(edited, "line-refund").lines.length, 2);
+  const removedPurchase = removeReceiptLine(review(), "line-purchase");
+  assertEquals(
+    adjustmentLineId(removedPurchase, "line-discount"),
+    undefined,
+  );
 });
 
 Deno.test("receipt-actor domain: receipt totals follow selected line direction", () => {

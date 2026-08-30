@@ -4,7 +4,7 @@ import {
   LOCAL_DATABASE_VERSION,
   openLocalRepository,
 } from "./index.ts";
-import { isAdapterError } from "../ports/errors.ts";
+import { type AdapterError, isAdapterError } from "../ports/errors.ts";
 import {
   CURRENT_SCHEMA_VERSION,
   DATASET_FORMAT,
@@ -33,13 +33,13 @@ function assertEquals<T>(actual: T, expected: T): void {
 async function rejectsWithCode(
   operation: Promise<unknown>,
   code: string,
-): Promise<void> {
+): Promise<AdapterError> {
   try {
     await operation;
   } catch (error) {
     assert(isAdapterError(error));
     assertEquals(error.code, code);
-    return;
+    return error;
   }
   throw new Error(`Expected adapter error ${code}`);
 }
@@ -357,6 +357,34 @@ Deno.test("local-repository: quota/failure injection leaves prior records intact
       (await repository.query("records")).map((entry) => entry.key),
       ["stable"],
     );
+  } finally {
+    repository.close();
+    await deleteLocalRepositoryDatabase(name, indexedDB);
+  }
+});
+
+Deno.test("local-repository: native quota errors expose a bounded diagnostic", async () => {
+  const name = databaseName();
+  await deleteLocalRepositoryDatabase(name, indexedDB).catch(() => undefined);
+  const repository = await openLocalRepository({
+    databaseName: name,
+    deviceId: "0123456789abcdef0123456789abcdef",
+    indexedDB,
+    keyRange: IDBKeyRange,
+    beforeRequest: (operation) => {
+      if (operation === "local.value.put") {
+        throw new DOMException("storage quota", "QuotaExceededError");
+      }
+    },
+  });
+  try {
+    const error = await rejectsWithCode(
+      repository.transaction("readwrite", async (transaction) => {
+        await transaction.put("records", "quota", expense("quota"));
+      }),
+      "quota",
+    );
+    assertEquals(error.operation, "local.quota_exceeded");
   } finally {
     repository.close();
     await deleteLocalRepositoryDatabase(name, indexedDB);

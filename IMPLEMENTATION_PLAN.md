@@ -283,7 +283,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 #### M29-002 — Diagnostic Error Taxonomy Across Drive, Import/Export, and Local DB
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M29-001`.
+- **Status/dependencies:** `COMPLETE`; depends on `M29-001`.
 - **Ownership:** `src/adapters/ports/types.ts`, `src/adapters/import-export/index.ts`, `src/adapters/drive/adapter.ts`, `src/adapters/local/index.ts`, `src/actors/contracts/types.ts`.
 - **Scope/non-goals:**
   - Introduce bounded operation diagnostics for Import/Export: `import.json_syntax`, `import.schema_version`, `import.record_validation`, `import.migration_failure`.
@@ -300,7 +300,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 #### R-2910 — Domain, Actor & Diagnostic Review Gate
 
-- **Status/dependencies:** `PENDING`; depends on `M29-001`, `M29-002`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M29-001`, `M29-002`.
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs across `receipt.ts`, `local-ui.tsx`, and adapter error mappings. Verify unlinking logic, routing redirects, and diagnostic taxonomy safety.
 - **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening next batch.
@@ -400,7 +400,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M29-002` (`IN_PROGRESS`)
+- **Active task / gate:** `R-2910` (`IN_PROGRESS`)
 - **Released baseline:** M0 through M28 and all review gates through `R-2830`
   are complete and pushed on `master`.
 - **Verification status:** M28 release validation passed format (209 files),
@@ -410,7 +410,8 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   modules because all changes were already committed. The M28 ledger and
   hygiene audit were archived at pre-pruning commit `993e5ed`; no obsolete
   spikes, transient M28 documents, redundant verification scripts, or dangling
-  Markdown links were found. M29-001 is now active.
+  Markdown links were found. M29-001 and M29-002 are now complete; R-2910 is
+  active.
 - **Active / preserved work:** Clean master working tree after the archive
   edit; no worker or worktree owns unintegrated M28 changes.
 - **M29-001 completion evidence:** Receipt deselection and deletion now clear
@@ -427,8 +428,29 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   src/domain/tests/receipt_test.ts src/actors/contracts/receipt-actor.test.ts
   src/features/local-ui.test.tsx src/features/receipt-ui.test.tsx` passed (61
   passed, 0 failed); `git diff --check` passed.
-- **Exact next action:** Implement M29-002 bounded diagnostics across import/
-  export, Drive, and local IndexedDB adapters, then verify its adapter tests.
+- **M29-002 completion evidence:** Import diagnostics now distinguish JSON
+  syntax, schema version, record validation, and migration failures; Drive
+  authorization, upload, and quota failures use bounded operation labels; and
+  IndexedDB quota, blocked-open, and transaction-abort branches retain bounded
+  diagnostics. `deno fmt src/adapters/ports/errors.ts
+  src/domain/import-export/types.ts src/domain/import-export/format.ts
+  src/actors/import-export/machine.ts src/adapters/drive/adapter.ts
+  src/adapters/local/index.ts src/domain/import-export/import-export.test.ts
+  src/actors/import-export/import-export-actor.test.ts
+  src/adapters/ports/contract.test.ts
+  src/adapters/drive/adapter.integration.test.ts
+  src/adapters/local/local-repository.test.ts` passed; the corresponding
+  `deno lint` and `deno check` commands passed; and
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  src/domain/import-export/import-export.test.ts
+  src/adapters/import-export/import-export.integration.test.ts
+  src/adapters/ports/contract.test.ts
+  src/actors/import-export/import-export-actor.test.ts
+  src/adapters/drive/adapter.integration.test.ts
+  src/adapters/local/local-repository.test.ts` passed (56 passed, 0 failed).
+  `git diff --check` passed.
+- **Exact next action:** Run the fresh read-only R-2910 review over receipt
+  safety, first-use routing, and diagnostic operation mappings.
 
 ## Ready-to-Use Orchestration Prompt
 

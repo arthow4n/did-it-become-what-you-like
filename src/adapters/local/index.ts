@@ -1,5 +1,6 @@
 import * as Automerge from "@automerge/automerge";
 import {
+  ADAPTER_DIAGNOSTIC_OPERATIONS,
   type AdapterError,
   adapterError,
   isAdapterError,
@@ -223,7 +224,7 @@ function request<T>(
     beforeRequest?.(operation);
   } catch (error) {
     return Promise.reject(
-      isAdapterError(error) ? error : mapAdapterError(error, operation),
+      isAdapterError(error) ? error : mapIndexedDbError(error, operation),
     );
   }
   return new Promise<T>((resolve, reject) => {
@@ -242,7 +243,10 @@ function mapIndexedDbError(error: unknown, operation: string): AdapterError {
     case "AbortError":
       return adapterError("aborted", operation);
     case "QuotaExceededError":
-      return adapterError("quota", operation);
+      return adapterError(
+        "quota",
+        ADAPTER_DIAGNOSTIC_OPERATIONS.localQuotaExceeded,
+      );
     case "ConstraintError":
       return adapterError("conflict", operation);
     case "DataError":
@@ -260,14 +264,23 @@ function mapIndexedDbError(error: unknown, operation: string): AdapterError {
 
 function idbDone(
   transaction: IDBTransaction,
-  operation: string,
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     transaction.oncomplete = () => resolve();
     transaction.onabort = () =>
-      reject(mapIndexedDbError(transaction.error, operation));
+      reject(
+        mapIndexedDbError(
+          transaction.error,
+          ADAPTER_DIAGNOSTIC_OPERATIONS.localTransactionAbort,
+        ),
+      );
     transaction.onerror = () =>
-      reject(mapIndexedDbError(transaction.error, operation));
+      reject(
+        mapIndexedDbError(
+          transaction.error,
+          ADAPTER_DIAGNOSTIC_OPERATIONS.localTransactionAbort,
+        ),
+      );
   });
 }
 
@@ -332,7 +345,12 @@ function openDatabase(
     openRequest.onerror = () =>
       reject(mapIndexedDbError(openRequest.error, "local.database.open"));
     openRequest.onblocked = () =>
-      reject(adapterError("unavailable", "local.database.open"));
+      reject(
+        adapterError(
+          "unavailable",
+          ADAPTER_DIAGNOSTIC_OPERATIONS.localDbBlocked,
+        ),
+      );
   });
 }
 
@@ -666,7 +684,7 @@ class IndexedDbLocalRepository implements LocalRepository {
       [...ALL_STORES],
       "readonly",
     );
-    const done = idbDone(transaction, "local.database.hydrate");
+    const done = idbDone(transaction);
     let documentEntry: StoredDocument | undefined;
     let records: StoredEntry[] = [];
     let recoveryCandidate: {
@@ -746,7 +764,7 @@ class IndexedDbLocalRepository implements LocalRepository {
       [...ALL_STORES],
       "readwrite",
     );
-    const done = idbDone(transaction, "local.document.initialize");
+    const done = idbDone(transaction);
     try {
       const current = await request(
         transaction.objectStore(DOCUMENT_STORE).get(LOCAL_DOCUMENT_KEY),
@@ -788,7 +806,7 @@ class IndexedDbLocalRepository implements LocalRepository {
       [...ALL_STORES],
       "readwrite",
     );
-    const done = idbDone(transaction, "local.document.recover");
+    const done = idbDone(transaction);
     try {
       const value: StoredDocument = {
         key: LOCAL_DOCUMENT_KEY,
@@ -1140,7 +1158,7 @@ class IndexedDbLocalRepository implements LocalRepository {
       [...ALL_STORES],
       mode,
     );
-    const done = idbDone(idbTransaction, "local.transaction");
+    const done = idbDone(idbTransaction);
     let document = emptyDocument(this.deviceId);
     try {
       const current = await request(
@@ -1318,7 +1336,7 @@ class IndexedDbLocalRepository implements LocalRepository {
   async loadDocument(): Promise<Automerge.Doc<LocalDocument>> {
     this.ensureOpen();
     const transaction = this.database.transaction([...ALL_STORES], "readonly");
-    const done = idbDone(transaction, "local.document.load");
+    const done = idbDone(transaction);
     try {
       const current = await request(
         transaction.objectStore(DOCUMENT_STORE).get(LOCAL_DOCUMENT_KEY),
@@ -1349,7 +1367,7 @@ class IndexedDbLocalRepository implements LocalRepository {
       [...ALL_STORES],
       "readwrite",
     );
-    const done = idbDone(idbTransaction, "local.projection.rebuild");
+    const done = idbDone(idbTransaction);
     try {
       const entries = await readAllEntries(
         idbTransaction.objectStore(RECORD_STORE),

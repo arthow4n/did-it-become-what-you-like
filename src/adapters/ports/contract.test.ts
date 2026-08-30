@@ -1,4 +1,5 @@
 import {
+  ADAPTER_DIAGNOSTIC_OPERATIONS,
   ADAPTER_ERROR_CODES,
   AdapterError,
   type CausalSyncPort,
@@ -113,6 +114,22 @@ Deno.test("adapter-contract error mapping is exhaustive and retry-explicit", () 
     ).code,
     "unknown",
   );
+});
+
+Deno.test("adapter-contract diagnostics use the bounded operation vocabulary", () => {
+  assertEquals(Object.values(ADAPTER_DIAGNOSTIC_OPERATIONS), [
+    "import.json_syntax",
+    "import.schema_version",
+    "import.record_validation",
+    "import.migration_failure",
+    "drive.auth.popup_closed",
+    "drive.auth.access_denied",
+    "drive.transport.upload_failed",
+    "drive.transport.quota_exceeded",
+    "local.quota_exceeded",
+    "local.db_blocked",
+    "local.tx_abort",
+  ]);
 });
 
 Deno.test("adapter-contract errors do not copy foreign error messages", () => {

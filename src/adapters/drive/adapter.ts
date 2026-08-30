@@ -6,6 +6,7 @@ import {
 } from "../ports/common.ts";
 import type { ClockPort } from "../ports/time.ts";
 import {
+  ADAPTER_DIAGNOSTIC_OPERATIONS,
   AdapterError,
   adapterError,
   type AdapterErrorCode,
@@ -128,6 +129,9 @@ const DRIVE_METADATA_FIELDS =
   "nextPageToken,files(id,name,mimeType,modifiedTime,version)";
 const DRIVE_FILE_METADATA_FIELDS = "id,name,mimeType,modifiedTime,version";
 const DRIVE_MUTATION_FIELDS = "id,name,mimeType,modifiedTime,version";
+const DIAGNOSTIC_OPERATIONS = new Set<string>(
+  Object.values(ADAPTER_DIAGNOSTIC_OPERATIONS),
+);
 
 function defaultClock(): ClockPort {
   return {
@@ -167,7 +171,9 @@ function safeOperationError(
 ): AdapterError {
   if (isAdapterError(error)) {
     return new AdapterError(error.code, {
-      operation,
+      operation: DIAGNOSTIC_OPERATIONS.has(error.operation)
+        ? error.operation
+        : operation,
       retryAfterMs: error.retryAfterMs,
       details: error.details,
     });
@@ -204,7 +210,9 @@ function mapHttpStatus(
   else if (status >= 400 && status <= 499) code = "invalid-request";
   else code = "unknown";
   return new AdapterError(code, {
-    operation,
+    operation: status === 413
+      ? ADAPTER_DIAGNOSTIC_OPERATIONS.driveQuotaExceeded
+      : operation,
     retryAfterMs,
     details: { httpStatus: status },
   });
@@ -361,8 +369,14 @@ function tokenFailureCode(response: unknown): string {
 
 function isAuthorizationCancel(response: unknown): boolean {
   const code = tokenFailureCode(response);
-  return code.includes("cancel") || code.includes("den") ||
-    code.includes("closed") || code.includes("abort");
+  return code.includes("cancel") || code.includes("closed") ||
+    code.includes("abort");
+}
+
+function isAuthorizationDenied(response: unknown): boolean {
+  const code = tokenFailureCode(response);
+  return code === "denied" || code === "access_denied" ||
+    code === "user_denied" || code.includes("access_denied");
 }
 
 function accountIdFromAbout(
@@ -723,69 +737,78 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
     // read the response ETag header. The metadata read immediately before the
     // mutation therefore provides the browser-compatible stale-write check;
     // never send the version value as If-Match because it is not an ETag.
-    return withRetry("drive.write", optionsForOperation, async () => {
-      const metadata = await metadataForName(
-        request.name,
-        "drive.write",
-        optionsForOperation,
-      );
-      if (request.expectedEtag !== undefined) {
-        if (metadata === undefined) {
-          throw adapterError("not-found", "drive.write");
-        }
-        if (metadata.etag !== request.expectedEtag) {
-          if (attempted) {
-            const currentBody = await bodyFor(metadata, optionsForOperation);
-            if (currentBody.body === request.body) {
-              return metadataToFile(
-                metadata,
-                currentBody.body,
-                currentBody.etag,
-              );
-            }
+    return withRetry(
+      ADAPTER_DIAGNOSTIC_OPERATIONS.driveUploadFailed,
+      optionsForOperation,
+      async () => {
+        const metadata = await metadataForName(
+          request.name,
+          "drive.write",
+          optionsForOperation,
+        );
+        if (request.expectedEtag !== undefined) {
+          if (metadata === undefined) {
+            throw adapterError("not-found", "drive.write");
           }
-          throw adapterError("conflict", "drive.write");
+          if (metadata.etag !== request.expectedEtag) {
+            if (attempted) {
+              const currentBody = await bodyFor(metadata, optionsForOperation);
+              if (currentBody.body === request.body) {
+                return metadataToFile(
+                  metadata,
+                  currentBody.body,
+                  currentBody.etag,
+                );
+              }
+            }
+            throw adapterError("conflict", "drive.write");
+          }
         }
-      }
-      const operation = metadata === undefined
-        ? "drive.create"
-        : "drive.update";
-      const token = requireToken(operation);
-      const isCreate = metadata === undefined;
-      const multipart = isCreate
-        ? multipartBody(
+        const operation = metadata === undefined
+          ? "drive.create"
+          : "drive.update";
+        const token = requireToken(operation);
+        const isCreate = metadata === undefined;
+        const multipart = isCreate
+          ? multipartBody(
+            {
+              mimeType: "application/json",
+              name: request.name,
+              parents: ["appDataFolder"],
+            },
+            request.body,
+          )
+          : undefined;
+        attempted = true;
+        const response = await responseJson(
+          token,
           {
-            mimeType: "application/json",
-            name: request.name,
-            parents: ["appDataFolder"],
+            path: isCreate
+              ? "files"
+              : `files/${encodeURIComponent(metadata.id)}`,
+            root: DRIVE_UPLOAD_ROOT,
+            parameters: {
+              uploadType: isCreate ? "multipart" : "media",
+              fields: DRIVE_MUTATION_FIELDS,
+            },
+            method: isCreate ? "POST" : "PATCH",
+            body: isCreate ? multipart!.body : request.body,
+            headers: {
+              "Content-Type": isCreate
+                ? multipart!.contentType
+                : "application/json",
+            },
           },
-          request.body,
-        )
-        : undefined;
-      attempted = true;
-      const response = await responseJson(
-        token,
-        {
-          path: isCreate ? "files" : `files/${encodeURIComponent(metadata.id)}`,
-          root: DRIVE_UPLOAD_ROOT,
-          parameters: {
-            uploadType: isCreate ? "multipart" : "media",
-            fields: DRIVE_MUTATION_FIELDS,
-          },
-          method: isCreate ? "POST" : "PATCH",
-          body: isCreate ? multipart!.body : request.body,
-          headers: {
-            "Content-Type": isCreate
-              ? multipart!.contentType
-              : "application/json",
-          },
-        },
-        operation,
-        optionsForOperation,
-      );
-      const next = appDataMetadata(response.value, operation);
-      return metadataToFile(next, request.body);
-    });
+          ADAPTER_DIAGNOSTIC_OPERATIONS.driveUploadFailed,
+          optionsForOperation,
+        );
+        const next = appDataMetadata(
+          response.value,
+          ADAPTER_DIAGNOSTIC_OPERATIONS.driveUploadFailed,
+        );
+        return metadataToFile(next, request.body);
+      },
+    );
   }
 
   async function deleteRaw(
@@ -928,11 +951,17 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
         }
       };
       const errorCallback = (response: unknown): void => {
+        const cancelled = isAuthorizationCancel(response);
+        const denied = isAuthorizationDenied(response);
         finish(() =>
           reject(
             adapterError(
-              isAuthorizationCancel(response) ? "aborted" : "unavailable",
-              "drive.authorize",
+              cancelled ? "aborted" : denied ? "forbidden" : "unavailable",
+              cancelled
+                ? ADAPTER_DIAGNOSTIC_OPERATIONS.driveAuthPopupClosed
+                : denied
+                ? ADAPTER_DIAGNOSTIC_OPERATIONS.driveAuthAccessDenied
+                : "drive.authorize",
             ),
           )
         );
@@ -1037,7 +1066,10 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
           await revokeToken(acquired.value, undefined).catch(() => undefined);
         }
         clearToken();
-        throw mapped(error, "drive.authorize");
+        throw mapped(
+          error,
+          isAdapterError(error) ? error.operation : "drive.authorize",
+        );
       } finally {
         authorizationInFlight = false;
       }

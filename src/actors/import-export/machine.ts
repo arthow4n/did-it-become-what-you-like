@@ -6,6 +6,7 @@ import type {
   ImportOutput,
   ImportPreview,
 } from "../contracts/index.ts";
+import { contractFailureFromError } from "../contracts/index.ts";
 import {
   type ExportResult,
   type ImportCommitRequest,
@@ -66,24 +67,12 @@ function failure(
       code: error.code === "future-version" ? "unsupported" : "invalid",
       message: error.message,
       retryable: false,
+      operation: error.operation,
     };
   }
-  if (error && typeof error === "object" && "code" in error) {
-    const code = (error as { readonly code?: unknown }).code;
-    if (
-      code === "offline" || code === "unavailable" || code === "unsupported" ||
-      code === "aborted" || code === "conflict" || code === "quota" ||
-      code === "corrupt-data" || code === "invalid-request"
-    ) {
-      return {
-        code,
-        message: fallback.message,
-        retryable: code === "offline" || code === "unavailable" ||
-          code === "quota",
-      };
-    }
-  }
-  return fallback;
+  return contractFailureFromError(error, fallback, {
+    preserveOperation: true,
+  });
 }
 
 export function createImportMachine(

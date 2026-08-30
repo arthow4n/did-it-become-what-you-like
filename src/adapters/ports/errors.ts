@@ -21,6 +21,25 @@ export const ADAPTER_ERROR_CODES = [
 
 export type AdapterErrorCode = typeof ADAPTER_ERROR_CODES[number];
 
+/** Stable, non-sensitive operation labels used in user-facing diagnostics. */
+export const ADAPTER_DIAGNOSTIC_OPERATIONS = {
+  importJsonSyntax: "import.json_syntax",
+  importSchemaVersion: "import.schema_version",
+  importRecordValidation: "import.record_validation",
+  importMigrationFailure: "import.migration_failure",
+  driveAuthPopupClosed: "drive.auth.popup_closed",
+  driveAuthAccessDenied: "drive.auth.access_denied",
+  driveUploadFailed: "drive.transport.upload_failed",
+  driveQuotaExceeded: "drive.transport.quota_exceeded",
+  localQuotaExceeded: "local.quota_exceeded",
+  localDbBlocked: "local.db_blocked",
+  localTransactionAbort: "local.tx_abort",
+} as const;
+
+export type AdapterDiagnosticOperation = typeof ADAPTER_DIAGNOSTIC_OPERATIONS[
+  keyof typeof ADAPTER_DIAGNOSTIC_OPERATIONS
+];
+
 export const RETRY_BY_ERROR_CODE: Readonly<
   Record<AdapterErrorCode, RetryDirective>
 > = {

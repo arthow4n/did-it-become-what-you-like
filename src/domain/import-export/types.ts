@@ -4,6 +4,17 @@ export const CANONICAL_EXPORT_SCHEMA_VERSION = 1 as const;
 export const CANONICAL_EXPORT_FORMAT =
   "did-it-become-what-you-like/portable-export" as const;
 
+export const IMPORT_DIAGNOSTIC_OPERATIONS = {
+  jsonSyntax: "import.json_syntax",
+  schemaVersion: "import.schema_version",
+  recordValidation: "import.record_validation",
+  migrationFailure: "import.migration_failure",
+} as const;
+
+export type ImportDiagnosticOperation = typeof IMPORT_DIAGNOSTIC_OPERATIONS[
+  keyof typeof IMPORT_DIAGNOSTIC_OPERATIONS
+];
+
 export type CanonicalExportChange = {
   readonly id: StableId;
   readonly actorId: StableId;
@@ -67,9 +78,19 @@ export type ImportErrorCode =
 export class ImportExportDomainError extends Error {
   override readonly name = "ImportExportDomainError";
   readonly code: ImportErrorCode;
+  readonly operation: ImportDiagnosticOperation;
 
-  constructor(code: ImportErrorCode, message: string) {
+  constructor(
+    code: ImportErrorCode,
+    message: string,
+    operation: ImportDiagnosticOperation = code === "invalid-json"
+      ? IMPORT_DIAGNOSTIC_OPERATIONS.jsonSyntax
+      : code === "future-version"
+      ? IMPORT_DIAGNOSTIC_OPERATIONS.schemaVersion
+      : IMPORT_DIAGNOSTIC_OPERATIONS.recordValidation,
+  ) {
     super(message);
     this.code = code;
+    this.operation = operation;
   }
 }

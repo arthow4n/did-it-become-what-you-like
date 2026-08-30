@@ -241,6 +241,57 @@ Deno.test(
     }
     assert(malformed instanceof ImportExportDomainError);
     assertEquals((malformed as ImportExportDomainError).code, "invalid-json");
+    assertEquals(
+      (malformed as ImportExportDomainError).operation,
+      "import.json_syntax",
+    );
+  },
+);
+
+Deno.test(
+  "import-export domain: diagnostics distinguish schema, record, and migration failures",
+  () => {
+    let missingSchema: unknown;
+    try {
+      parseCanonicalExport(JSON.stringify({ projects: [] }));
+    } catch (error) {
+      missingSchema = error;
+    }
+    assert(missingSchema instanceof ImportExportDomainError);
+    assertEquals(
+      (missingSchema as ImportExportDomainError).operation,
+      "import.schema_version",
+    );
+
+    let invalidRecord: unknown;
+    try {
+      parseCanonicalExport(JSON.stringify({
+        ...dataset(),
+        expenses: [{}],
+      }));
+    } catch (error) {
+      invalidRecord = error;
+    }
+    assert(invalidRecord instanceof ImportExportDomainError);
+    assertEquals(
+      (invalidRecord as ImportExportDomainError).operation,
+      "import.record_validation",
+    );
+
+    let migrationFailure: unknown;
+    try {
+      parseCanonicalExport(JSON.stringify({
+        schemaVersion: 0,
+        projects: "not-an-array",
+      }));
+    } catch (error) {
+      migrationFailure = error;
+    }
+    assert(migrationFailure instanceof ImportExportDomainError);
+    assertEquals(
+      (migrationFailure as ImportExportDomainError).operation,
+      "import.migration_failure",
+    );
   },
 );
 

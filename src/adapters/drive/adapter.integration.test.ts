@@ -87,6 +87,7 @@ class SyntheticDriveEndpoint {
   private malformedList = false;
   private partialResponse = false;
   private mutationFailure: number | undefined;
+  private uploadFailure: number | undefined;
 
   failNext(status: number, retryAfter?: string): void {
     this.failures.push({
@@ -109,6 +110,10 @@ class SyntheticDriveEndpoint {
 
   failAfterMutation(status = 503): void {
     this.mutationFailure = status;
+  }
+
+  failNextUpload(status: number): void {
+    this.uploadFailure = status;
   }
 
   setAboutPermissionId(permissionId: string): void {
@@ -194,6 +199,14 @@ class SyntheticDriveEndpoint {
           ? undefined
           : { "retry-after": failure.retryAfter },
       });
+    }
+    if (
+      this.uploadFailure !== undefined &&
+      requestUrl.searchParams.get("uploadType") !== null
+    ) {
+      const status = this.uploadFailure;
+      this.uploadFailure = undefined;
+      return new Response("upload failed", { status });
     }
     if (path.endsWith("/about")) {
       return this.json({
@@ -354,6 +367,7 @@ class SyntheticIdentity implements DriveIdentityProvider {
   requestCount = 0;
   revokeCount = 0;
   cancel = false;
+  deny = false;
   readonly issuedToken = globalThis.crypto.randomUUID();
 
   initTokenClient(
@@ -365,6 +379,10 @@ class SyntheticIdentity implements DriveIdentityProvider {
         this.requestCount += 1;
         if (this.cancel) {
           config.error_callback?.({ type: "user_cancel" });
+          return;
+        }
+        if (this.deny) {
+          config.error_callback?.({ error: "access_denied" });
           return;
         }
         config.callback({
@@ -504,14 +522,59 @@ Deno.test(
 Deno.test("drive-adapter: cancellation and account mismatch never install a token", async () => {
   const cancelled = fixture();
   cancelled.identity.cancel = true;
-  await rejectsWithCode(cancelled.adapter.authorize(), "aborted");
+  const cancelledError = await rejectsWithCode(
+    cancelled.adapter.authorize(),
+    "aborted",
+  ) as { readonly operation?: string };
+  assertEquals(cancelledError.operation, "drive.auth.popup_closed");
   assertEquals(cancelled.adapter.status(), "signed-out");
+
+  const denied = fixture();
+  denied.identity.deny = true;
+  const deniedError = await rejectsWithCode(
+    denied.adapter.authorize(),
+    "forbidden",
+  ) as { readonly operation?: string };
+  assertEquals(deniedError.operation, "drive.auth.access_denied");
+  assertEquals(denied.adapter.status(), "signed-out");
 
   const mismatch = fixture({ expectedAccountId: "different-account" });
   const error = await rejectsWithCode(mismatch.adapter.authorize(), "conflict");
   assert(!String(error).includes(mismatch.identity.issuedToken));
   assertEquals(mismatch.identity.revokeCount, 1);
   assertEquals(mismatch.adapter.status(), "signed-out");
+});
+
+Deno.test("drive-adapter: upload failures expose transport diagnostics", async () => {
+  const failed = fixture();
+  await authorized(failed.adapter);
+  await failed.adapter.readRetirementMarker();
+  await failed.adapter.readRetirementMarker();
+  await failed.adapter.readRetirementMarker();
+  await failed.adapter.readRetirementMarker();
+  failed.endpoint.failNextUpload(503);
+  const uploadError = await rejectsWithCode(
+    failed.adapter.writeAppData({ name: "upload.json", body: "{}" }, {
+      retry: { maxAttempts: 1, directive: "never" },
+    }),
+    "unavailable",
+  ) as { readonly operation?: string };
+  assertEquals(uploadError.operation, "drive.transport.upload_failed");
+
+  const quota = fixture();
+  await authorized(quota.adapter);
+  await quota.adapter.readRetirementMarker();
+  await quota.adapter.readRetirementMarker();
+  await quota.adapter.readRetirementMarker();
+  await quota.adapter.readRetirementMarker();
+  quota.endpoint.failNextUpload(413);
+  const quotaError = await rejectsWithCode(
+    quota.adapter.writeAppData({ name: "quota.json", body: "{}" }, {
+      retry: { maxAttempts: 1, directive: "never" },
+    }),
+    "quota",
+  ) as { readonly operation?: string };
+  assertEquals(quotaError.operation, "drive.transport.quota_exceeded");
 });
 
 Deno.test("drive-adapter: token expiry requires a new user authorization", async () => {

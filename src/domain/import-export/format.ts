@@ -17,6 +17,7 @@ import {
   type CanonicalExport,
   type CanonicalExportChange,
   type CanonicalImportPreview,
+  IMPORT_DIAGNOSTIC_OPERATIONS,
   ImportExportDomainError,
 } from "./types.ts";
 
@@ -47,27 +48,56 @@ function schemaVersionOf(value: unknown): number {
     throw new ImportExportDomainError(
       "invalid-document",
       "The import must contain an integer schemaVersion.",
+      IMPORT_DIAGNOSTIC_OPERATIONS.schemaVersion,
     );
   }
   if (!Number.isInteger(value.schemaVersion)) {
     throw new ImportExportDomainError(
       "invalid-document",
       "The import schemaVersion must be an integer.",
+      IMPORT_DIAGNOSTIC_OPERATIONS.schemaVersion,
     );
   }
   return value.schemaVersion;
 }
 
 function parseDataset(value: unknown): PortableDataset {
+  const sourceSchemaVersion = isRecord(value) ? value.schemaVersion : undefined;
+  if (
+    typeof sourceSchemaVersion !== "number" ||
+    !Number.isInteger(sourceSchemaVersion)
+  ) {
+    throw new ImportExportDomainError(
+      "invalid-document",
+      "The import dataset must contain an integer schemaVersion.",
+      IMPORT_DIAGNOSTIC_OPERATIONS.schemaVersion,
+    );
+  }
+  if (sourceSchemaVersion > CURRENT_SCHEMA_VERSION) {
+    throw new ImportExportDomainError(
+      "future-version",
+      `Dataset schema version ${sourceSchemaVersion} is newer than supported version ${CURRENT_SCHEMA_VERSION}.`,
+      IMPORT_DIAGNOSTIC_OPERATIONS.schemaVersion,
+    );
+  }
   try {
     return migrateToCurrent(value);
   } catch (error) {
     if (error instanceof Error) {
-      throw new ImportExportDomainError("invalid-document", error.message);
+      throw new ImportExportDomainError(
+        "invalid-document",
+        error.message,
+        sourceSchemaVersion < CURRENT_SCHEMA_VERSION
+          ? IMPORT_DIAGNOSTIC_OPERATIONS.migrationFailure
+          : IMPORT_DIAGNOSTIC_OPERATIONS.recordValidation,
+      );
     }
     throw new ImportExportDomainError(
       "invalid-document",
       "The import dataset is invalid.",
+      sourceSchemaVersion < CURRENT_SCHEMA_VERSION
+        ? IMPORT_DIAGNOSTIC_OPERATIONS.migrationFailure
+        : IMPORT_DIAGNOSTIC_OPERATIONS.recordValidation,
     );
   }
 }
@@ -86,6 +116,7 @@ function parseHistoryChanges(
       throw new ImportExportDomainError(
         "invalid-document",
         `Causal history change ${change.id} has an invalid payload.`,
+        IMPORT_DIAGNOSTIC_OPERATIONS.recordValidation,
       );
     }
     return {
@@ -107,6 +138,7 @@ function parseLegacyOrCurrent(value: unknown): {
     throw new ImportExportDomainError(
       "future-version",
       `Dataset schema version ${sourceSchemaVersion} is newer than supported version ${CURRENT_SCHEMA_VERSION}.`,
+      IMPORT_DIAGNOSTIC_OPERATIONS.schemaVersion,
     );
   }
   return {
@@ -133,7 +165,11 @@ function parseEnvelope(value: Record<string, unknown>): {
     const message = error instanceof z.ZodError
       ? formatValidationError(error)
       : "The export envelope is invalid.";
-    throw new ImportExportDomainError("invalid-document", message);
+    throw new ImportExportDomainError(
+      "invalid-document",
+      message,
+      IMPORT_DIAGNOSTIC_OPERATIONS.recordValidation,
+    );
   }
   const migrated = parseLegacyOrCurrent(parsed.dataset);
   return {
@@ -197,6 +233,7 @@ function canonicalChange(change: CanonicalExportChange): CanonicalExportChange {
     throw new ImportExportDomainError(
       "invalid-document",
       `Causal history change ${change.id} has an invalid payload.`,
+      IMPORT_DIAGNOSTIC_OPERATIONS.recordValidation,
     );
   }
   return {
@@ -281,6 +318,7 @@ export function parseCanonicalExport(json: string): {
     throw new ImportExportDomainError(
       "invalid-json",
       "The import is not valid JSON.",
+      IMPORT_DIAGNOSTIC_OPERATIONS.jsonSyntax,
     );
   }
   if (!isRecord(value)) {

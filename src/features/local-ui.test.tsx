@@ -8,6 +8,7 @@ import {
   FirstUseScreen,
   LoadingScreen,
   ManualExpenseRecoveryScreen,
+  ManualExpenseScreen,
   manualExpenseSubmitEvent,
   OrganizeScreen,
   ProjectManager,
@@ -19,6 +20,8 @@ import type {
   ProjectCategoryService,
   ProjectCategoryState,
 } from "../domain/organization.ts";
+import type { Expense } from "../domain/index.ts";
+import { createFakeLocalPort } from "../test-support/fakes/ports.ts";
 import {
   ImportExportScreen,
   type ImportViewModel,
@@ -329,6 +332,58 @@ Deno.test("local UI manual dirty navigation offers keep or discard", async () =>
       await waitFor(() => assert(view.getByText("settings")));
       assert(!view.queryByText("manual workflow"));
       mounted.unmount();
+    });
+  });
+});
+
+Deno.test("local UI manual deletion reports a deleted completion status", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const expense: Expense = {
+        schemaVersion: 1,
+        type: "expense",
+        id: "expense-delete-feedback",
+        projectId: project.id,
+        categoryId: category.id,
+        date: "2026-08-30",
+        amount: "-8",
+        currency: "SEK",
+        description: "Expense to remove",
+        source: "manual",
+      };
+      const local = createFakeLocalPort();
+      await local.transaction(
+        "readwrite",
+        (transaction) => transaction.put("records", expense.id, expense),
+      );
+      const deletionState = { ...state, expenses: [expense] };
+      const { service } = createTestService(deletionState);
+      let completion: string | undefined;
+      render(
+        createElement(ManualExpenseScreen, {
+          repository: local,
+          service,
+          state: deletionState,
+          request: { expense },
+          onSaved: () => undefined,
+          onDirtyChange: () => undefined,
+          onClosed: (status) => completion = status,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: "Delete this expense" }))
+      );
+      fireEvent.click(
+        view.getByRole("button", { name: "Delete this expense" }),
+      );
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: "Delete expense" }))
+      );
+      fireEvent.click(view.getByRole("button", { name: "Delete expense" }));
+      await waitFor(() =>
+        assert(completion === "deleted", "Deletion should report its status")
+      );
     });
   });
 });

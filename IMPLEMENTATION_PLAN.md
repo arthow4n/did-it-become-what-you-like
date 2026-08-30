@@ -315,7 +315,7 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 #### M28-005 — Standalone Expense Deletion Toast Feedback
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M28-004`.
+- **Status/dependencies:** `COMPLETE`; depends on `M28-004`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.test.tsx`.
 - **Scope/non-goals:**
   - In `LocalUiRuntime` (`ManualExpenseScreen` onClosed / onSaved handler), check if the manual expense workflow completed with status `"deleted"` and trigger `setAppNotice("Expense deleted.")`.
@@ -327,11 +327,13 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
   - UI component test in `src/features/local-ui.test.tsx`.
 - **Verification:** `deno fmt src/features/local-ui.tsx`, `deno lint src/features/local-ui.tsx`, `deno test --related=src/features/local-ui.tsx`, `git diff --check`.
 
+- **Evidence:** `deno fmt src/features/local-ui.tsx src/features/local-ui.test.tsx`, `deno lint src/features/local-ui.tsx src/features/local-ui.test.tsx`, `deno check src/features/local-ui.tsx src/features/local-ui.test.tsx`, and `git diff --check` passed. The scoped command `deno test --allow-read --allow-write --allow-run --allow-env src/features/local-ui.test.tsx` passed 23 tests with 0 failures. The screen now finalizes the actor's `deleted` state, reports the deleted completion status, and the runtime displays `Expense deleted.` on return to `/expenses`.
+
 ---
 
 #### R-2820 — UI & Workflow Polish Review Gate
 
-- **Status/dependencies:** `PENDING`; depends on `M28-003`, `M28-004`, `M28-005`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M28-003`, `M28-004`, `M28-005`.
 - **Reviewer role:** Fresh read-only reviewer subagent.
 - **Audit scope:** Diffs across `src/features/receipt-detail-ui.tsx` and `src/features/local-ui.tsx`. Verify unified feed ordering, add-line interaction, category breakdown expansion, and toast behavior across mobile and desktop viewports.
 - **Remediation loop:** Primary implementer resolves any findings in bounded commits before opening release gate.
@@ -590,7 +592,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M28-005` (`IN_PROGRESS`)
+- **Active task / gate:** `R-2820` (`IN_PROGRESS`)
 - **Released baseline:** M0 through M27 and all review gates through `R-2730`
   are complete and pushed on `master`.
 - **Verification status:** M28-001 passed formatting, lint, diff checks, and
@@ -610,11 +612,13 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   M28-004 passed formatting, lint, typecheck, and diff checks. Its scoped
   command `deno test --allow-read --allow-write --allow-run --allow-env
   src/domain/tests/queries_test.ts src/features/local-ui.test.tsx` passed 33
-  tests with 0 failures. M28-005 is now active. M29 remains staged as
-  dependent follow-up.
+  tests with 0 failures. M28-005 passed formatting, lint, typecheck, and diff
+  checks. Its scoped command `deno test --allow-read --allow-write
+  --allow-run --allow-env src/features/local-ui.test.tsx` passed 23 tests with
+  0 failures. R-2820 is now active. M29 remains staged as dependent follow-up.
 - **Active / preserved work:** Clean master working tree.
-- **Exact next action:** Wire the standalone-expense deletion completion to the
-  existing app notice toast and add its component coverage.
+- **Exact next action:** Dispatch a fresh read-only UI/workflow reviewer for
+  R-2820, then remediate any bounded findings before the M28 release gate.
 
 ## Ready-to-Use Orchestration Prompt
 

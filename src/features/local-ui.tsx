@@ -119,6 +119,7 @@ import {
   type LocalRepository,
   openLocalRepository,
 } from "../adapters/local/index.ts";
+import type { LocalPort } from "../adapters/ports/local.ts";
 import { hashForRoute, routeFromHash } from "../app/routing.ts";
 import { isSupportedBrowser } from "../app/pwa.ts";
 
@@ -2390,7 +2391,7 @@ export function ManualExpenseScreen({
   discardRequest,
   onClosed,
 }: {
-  repository: LocalRepository;
+  repository: LocalPort;
   service: ProjectCategoryService;
   state: ProjectCategoryState;
   request: ManualExpenseOpenRequest;
@@ -2398,7 +2399,7 @@ export function ManualExpenseScreen({
   onUsefulAction?: () => void;
   onDirtyChange?: (dirty: boolean) => void;
   discardRequest?: number;
-  onClosed: () => void;
+  onClosed: (status?: "deleted") => void;
 }) {
   const [machineKey, setMachineKey] = useState(0);
   const machine = useMemo(
@@ -2433,6 +2434,10 @@ export function ManualExpenseScreen({
   const saveMode = useRef<ManualSaveMode>("expenses");
   useEffect(() => {
     if (completionHandled.current) return;
+    if (snapshot.matches("deleted")) {
+      send({ type: "expense.finish-delete" });
+      return;
+    }
     if (
       snapshot.matches("saved") && snapshot.context.result?.expense &&
       saveMode.current === "another"
@@ -2444,9 +2449,9 @@ export function ManualExpenseScreen({
       snapshot.matches("deletedOutput") || snapshot.matches("savedUndone")
     ) {
       completionHandled.current = true;
-      onClosed();
+      onClosed(snapshot.matches("deletedOutput") ? "deleted" : undefined);
     }
-  }, [onClosed, onSaved, snapshot]);
+  }, [onClosed, onSaved, send, snapshot]);
 
   const dirty = snapshot.hasTag("dirty");
   useEffect(() => {
@@ -3377,8 +3382,9 @@ export function LocalUiRuntime(
                   setDirtyNavigationWorkflow(dirty);
                 }}
                 discardRequest={discardRequest}
-                onClosed={() => {
+                onClosed={(status) => {
                   void organization.getState().then(setState);
+                  if (status === "deleted") setAppNotice("Expense deleted.");
                   setWorkflowDirty(false);
                   finishDirtyNavigation("/expenses");
                 }}

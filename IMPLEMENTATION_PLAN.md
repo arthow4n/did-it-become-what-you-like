@@ -477,7 +477,9 @@ M34-001 -> M34-002 -> R-3410
 
 #### R-3410 — Shared contract and compatibility-test removal review
 
-- **Status/dependencies:** `READY`; depends on `M34-002`.
+- **Status/dependencies:** `COMPLETE`; depends on `M34-002`. Initial review found
+  two bounded findings; remediation was integrated and pushed as `abb4457`, with
+  the fixture cleanup pushed as `e320493`.
 - **Reviewer role:** fresh read-only architecture/contracts reviewer.
 - **Audit scope:** M34-001..002; `SPEC.md`; removal of testConfiguration,
   synthetic probes, compatibility evidence, and stale UI-facing contracts;
@@ -485,6 +487,19 @@ M34-001 -> M34-002 -> R-3410
   migration safety; secret boundaries; `AGENTS.md` compliance.
 - **Remediation loop:** primary owner fixes severity 1–3 findings, reruns affected
   validation, records resolution, and obtains closure before M34-003.
+- **Review evidence:** initial verdict `APPROVE WITH FINDINGS`; closure audit
+  verdict `APPROVE` with no residual severity 1–3 findings. Compatibility
+  handlers, statuses, buttons, and E2E expectations now proceed directly to the
+  real scan. Gemini preserves absent metadata as `undefined` and filters only
+  explicit `supportedActions` values lacking `generateContent`. The parent shell
+  also clears its project-creation dirty state before navigating to expenses.
+  Legacy fixture naming was cleaned up in `e320493`.
+- **Validation evidence:** `deno task fmt:check` passed (206 files); `deno task
+  lint` passed (197 files); `deno task typecheck` passed; `deno task
+  test:affected` passed (382/382); focused Gemini test passed (17/17); isolated
+  receipt E2E passed (1/1, 23.5s) using an alternate local port because the
+  default Playwright config reused an unrelated Vite server already bound to
+  5173; `git diff --check` passed. No provider calls were made.
 
 #### M34-003 — OpenRouter SDK adapter, model prefilter, endpoint metadata, and routing
 
@@ -661,20 +676,22 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-3410` (`READY`).
-- **Planning base:** M34 planning commits, M34-001, and M34-002 are pushed on
-  remote `master`; the latest implementation is `6ff9fc5`.
-- **Verification status:** worker pre-commit `deno task test:affected`: 86/86
-  passed; integrated focused tests: 20/20 passed; `deno task fmt:check`: passed
-  (206 files); `deno task lint`: passed (197 files); `deno task typecheck`:
-  passed; `git diff --check`: passed. The integrated clean-tree
-  `deno task test:affected` reported no affected test modules. No live provider
-  calls were made.
+- **Active task / gate:** `M34-003` (`READY`).
+- **Planning base:** M34-001, M34-002, R-3410, and remediation are integrated
+  and pushed on remote `master`; the latest implementation is `e320493`.
+- **Verification status:** R-3410 closure audit approved with no residual
+  severity 1–3 findings; post-remediation `deno task test:affected`: 382/382
+  passed; focused Gemini test: 17/17 passed; `deno task fmt:check`: passed (206
+  files); `deno task lint`: passed (197 files); `deno task typecheck`: passed;
+  isolated receipt E2E: 1/1 passed; `git diff --check`: passed. The first default
+  E2E attempt was invalidated before app startup because Playwright reused an
+  unrelated server on port 5173; no provider calls were made.
 - **Active / preserved work:** no active M34 implementation worker. Existing
   unrelated worktrees contain preserved untracked progress files and are not
   touched.
-- **Exact next action:** dispatch the fresh read-only R-3410 reviewer; do not
-  begin M34-003 until the review and any bounded remediation are complete.
+- **Exact next action:** read and verify all M34-003 OpenRouter references,
+  mark M34-003 `IN_PROGRESS`, and dispatch exactly one write-enabled worker for
+  that task. Do not begin M34-004 until M34-003 is integrated and verified.
 
 ## Ready-to-Use Orchestration Prompt
 

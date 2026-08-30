@@ -406,7 +406,7 @@ function extractionRequest(
     },
     instructionVersion: RECEIPT_INSTRUCTION_VERSION,
     locale: "sv-SE",
-    modelId: "gemini-needs-test",
+    modelId: "gemini-actions-available",
     schemaVersion: RECEIPT_SCHEMA_VERSION_NUMBER,
   };
 }

@@ -275,7 +275,7 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 #### M28-003 — Saved Receipt Detail UI Add Line & Adjustment Dialog
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-2810`.
+- **Status/dependencies:** `COMPLETE`; depends on `R-2810`.
 - **Ownership:** `src/features/receipt-detail-ui.tsx`, `src/design-system/components.tsx`, `src/features/receipt-detail-ui.test.tsx`.
 - **Scope/non-goals:**
   - In `ReceiptDetailScreen`, add prominent `Add purchase line` and `Add adjustment` actions to the respective section headers or lists.
@@ -294,7 +294,7 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 #### M28-004 — Expenses Unified Chronological Feed & Breakdown Polish
 
-- **Status/dependencies:** `PENDING`; depends on `M28-003`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M28-003`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/domain/queries/expenses.ts`, `src/features/local-ui.test.tsx`, `src/domain/tests/queries_test.ts`.
 - **Scope/non-goals:**
   - In `ExpensesScreen`, construct a unified chronological feed that interleaves standalone expenses and `ReceiptGroup` cards based on their effective date and time.
@@ -603,11 +603,12 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   src/features/receipt-detail-ui.test.tsx` with 23 tests passed and 0 failed.
   R-2810 remediation then passed the same scoped command with 24 tests passed
   and 0 failed, along with formatting, lint, typecheck, and diff checks. R-2810
-  is approved with no findings. M28-003 is now active. M29 remains staged as
-  dependent follow-up.
+  is approved with no findings. M28-003 passed its component gate with 4 tests
+  passed and 0 failed, plus formatting, lint, typecheck, and diff checks.
+  M28-004 is now active. M29 remains staged as dependent follow-up.
 - **Active / preserved work:** Clean master working tree.
-- **Exact next action:** Implement the saved receipt add-line and adjustment
-  dialogs with staged actor events, focus restoration, and component coverage.
+- **Exact next action:** Inspect and implement the unified expense/receipt feed,
+  deterministic chronological ordering, and complete category breakdown output.
 
 ## Ready-to-Use Orchestration Prompt
 

@@ -268,6 +268,87 @@ Deno.test("receipt detail exposes scoped line and whole-receipt confirmations", 
   });
 });
 
+Deno.test("receipt detail adds purchase lines and adjustments with focus return", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    let current = aggregate;
+    let nextLine = 0;
+    await withAriaGlobals(async () => {
+      render(
+        createElement(ReceiptDetailScreen, {
+          service: createService({
+            addLine: (_receiptId, changes) => {
+              const id = `line-added-ui-${++nextLine}`;
+              current = changes.type === "purchase"
+                ? {
+                  ...current,
+                  purchaseLines: [...current.purchaseLines, {
+                    schemaVersion: 1,
+                    type: "receipt-purchase-line",
+                    id,
+                    receiptId: current.receipt.id,
+                    projectId: current.receipt.projectId,
+                    categoryId: changes.categoryId,
+                    description: changes.description,
+                    lineTotal: changes.lineTotal,
+                  }],
+                }
+                : {
+                  ...current,
+                  adjustments: [...current.adjustments, {
+                    schemaVersion: 1,
+                    type: "receipt-adjustment",
+                    id,
+                    receiptId: current.receipt.id,
+                    projectId: current.receipt.projectId,
+                    categoryId: changes.categoryId,
+                    description: changes.description,
+                    amount: changes.amount,
+                    ...(changes.lineId ? { lineId: changes.lineId } : {}),
+                  }],
+                };
+              return Promise.resolve(current);
+            },
+          }),
+          receiptId: aggregate.receipt.id,
+          categories: [category],
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => assert(view.getByText("Coffee")));
+
+      fireEvent.click(view.getByRole("button", { name: "Add purchase line" }));
+      await waitFor(() =>
+        assert(view.getByRole("dialog", { name: "Add receipt line" }))
+      );
+      fireEvent.input(view.getByLabelText(/Description/), {
+        target: { value: "Tea" },
+      });
+      fireEvent.input(view.getByLabelText(/Line total/), {
+        target: { value: "4" },
+      });
+      fireEvent.click(view.getByRole("button", { name: "Add line" }));
+      await waitFor(() => assert(view.getByText("Tea")));
+      const addedPurchase = document.querySelector<HTMLElement>(
+        '[data-receipt-line-id="line-added-ui-1"]',
+      );
+      assert(addedPurchase && document.activeElement === addedPurchase);
+
+      fireEvent.click(view.getByRole("button", { name: "Add adjustment" }));
+      await waitFor(() =>
+        assert(view.getByRole("dialog", { name: "Add receipt line" }))
+      );
+      fireEvent.input(view.getByLabelText(/Description/), {
+        target: { value: "Bottle return" },
+      });
+      fireEvent.input(view.getByLabelText(/Signed adjustment/), {
+        target: { value: "1" },
+      });
+      fireEvent.click(view.getByRole("button", { name: "Add line" }));
+      await waitFor(() => assert(view.getByText("Bottle return")));
+    });
+  });
+});
+
 Deno.test(
   "receipt detail disables line management while an atomic change is pending",
   async () => {

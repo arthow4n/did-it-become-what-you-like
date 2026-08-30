@@ -1,6 +1,6 @@
 import { useActor } from "@xstate/react";
 import { useEffect, useMemo, useRef } from "react";
-import { ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, RotateCcw, Trash2 } from "lucide-react";
 import type { Category, StableId } from "../domain/index.ts";
 import {
   moneySubtract,
@@ -88,6 +88,27 @@ function editorValue(draft: SavedReceiptLineDraft): ReceiptLineEditorValue {
     };
 }
 
+function editorValueFromChanges(
+  changes: ReceiptLineChanges,
+): ReceiptLineEditorValue {
+  return changes.type === "purchase"
+    ? {
+      type: "purchase",
+      description: changes.description,
+      categoryId: changes.categoryId,
+      amount: changes.lineTotal,
+      quantity: changes.quantity ?? undefined,
+      unitPrice: changes.unitPrice ?? undefined,
+    }
+    : {
+      type: "adjustment",
+      description: changes.description,
+      categoryId: changes.categoryId,
+      amount: changes.amount,
+      lineId: changes.lineId ?? undefined,
+    };
+}
+
 function changesFromEditor(value: ReceiptLineEditorValue): ReceiptLineChanges {
   if (value.type === "purchase") {
     return {
@@ -143,6 +164,7 @@ export function ReceiptDetailScreen({
   const handledDiscardRequest = useRef(discardRequest ?? 0);
   const completedOutput = useRef<SavedReceiptActorOutput | null>(null);
   const focusedLineRef = useRef<string | undefined>(undefined);
+  const pendingAddedLineIds = useRef<Set<string> | null>(null);
 
   const pendingMutationKind = snapshot.context.pendingMutation?.kind;
   const mutationFailure = snapshot.matches("failure") &&
@@ -154,6 +176,10 @@ export function ReceiptDetailScreen({
   const editingLine = snapshot.context.lineDraft !== null &&
     (snapshot.matches("linePristine") || snapshot.matches("lineDirty") ||
       (mutationFailure && mutationIsLine(pendingMutationKind)));
+  const editingAddLine = snapshot.context.addLineDraft !== null &&
+    (snapshot.matches("lineAddingPristine") ||
+      snapshot.matches("lineAddingDirty") ||
+      (mutationFailure && pendingMutationKind === "add-line"));
   const dirty = snapshot.hasTag("dirty") ||
     (mutationFailure && mutationIsLine(pendingMutationKind) ||
       mutationFailure && pendingMutationKind === "metadata");
@@ -196,6 +222,24 @@ export function ReceiptDetailScreen({
     target.focus({ preventScroll: true });
     target.scrollIntoView?.({ block: "nearest" });
   }, [focusedLineId, snapshot.context.aggregate]);
+
+  useEffect(() => {
+    const aggregate = snapshot.context.aggregate;
+    const knownIds = pendingAddedLineIds.current;
+    if (!aggregate || !knownIds || snapshot.context.addLineDraft !== null) {
+      return;
+    }
+    const addedLine = [...aggregate.purchaseLines, ...aggregate.adjustments]
+      .find((line) => !knownIds.has(line.id));
+    if (!addedLine) return;
+    const target = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-receipt-line-id]"),
+    ).find((element) => element.dataset.receiptLineId === addedLine.id);
+    if (!target) return;
+    pendingAddedLineIds.current = null;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView?.({ block: "nearest" });
+  }, [snapshot.context.addLineDraft, snapshot.context.aggregate]);
 
   useEffect(() => {
     if (snapshot.status !== "done" || !snapshot.output) return;
@@ -338,6 +382,22 @@ export function ReceiptDetailScreen({
     label: line.description,
   }));
   const lineDraft = snapshot.context.lineDraft;
+  const addLineDraft = snapshot.context.addLineDraft;
+  const activeLineEditorValue = lineDraft
+    ? editorValue(lineDraft)
+    : addLineDraft
+    ? editorValueFromChanges(addLineDraft)
+    : null;
+  const activeLineCategoryId = lineDraft?.changes.categoryId ??
+    addLineDraft?.categoryId;
+  const canSubmitAddLine = addLineDraft !== null &&
+    addLineDraft.description.trim().length > 0 &&
+    (addLineDraft.type === "purchase"
+      ? addLineDraft.lineTotal.trim().length > 0
+      : addLineDraft.amount.trim().length > 0) &&
+    snapshot.can({ type: "receipt.detail.add-line" });
+  const defaultCategoryId = categories.find((category) => !category.archived)
+    ?.id ?? categories[0]?.id ?? "category-uncategorized";
   const pendingLine = snapshot.context.pendingLineId === null
     ? undefined
     : [...purchaseLines, ...adjustments].find((line) =>
@@ -473,7 +533,33 @@ export function ReceiptDetailScreen({
         />
 
         <Stack gap={3} as="section" aria-label="Purchase lines">
-          <Heading level={2} size="md">Purchase lines</Heading>
+          <Inline justify="space-between">
+            <Heading level={2} size="md">Purchase lines</Heading>
+            <Button
+              variant="secondary"
+              isDisabled={isMutating}
+              onPress={() => {
+                pendingAddedLineIds.current = new Set([
+                  ...purchaseLines.map((line) => line.id),
+                  ...adjustments.map((line) => line.id),
+                ]);
+                send({
+                  type: "receipt.detail.start-add-line",
+                  changes: {
+                    type: "purchase",
+                    description: "",
+                    categoryId: defaultCategoryId,
+                    lineTotal: "",
+                  },
+                });
+              }}
+            >
+              <Icon>
+                <Plus />
+              </Icon>{" "}
+              Add purchase line
+            </Button>
+          </Inline>
           {purchaseLines.length === 0
             ? <Text tone="secondary">No purchase lines remain.</Text>
             : purchaseLines.map((line) => (
@@ -517,7 +603,34 @@ export function ReceiptDetailScreen({
         </Stack>
 
         <Stack gap={3} as="section" aria-label="Adjustments">
-          <Heading level={2} size="md">Adjustments</Heading>
+          <Inline justify="space-between">
+            <Heading level={2} size="md">Adjustments</Heading>
+            <Button
+              variant="secondary"
+              isDisabled={isMutating}
+              onPress={() => {
+                pendingAddedLineIds.current = new Set([
+                  ...purchaseLines.map((line) => line.id),
+                  ...adjustments.map((line) => line.id),
+                ]);
+                send({
+                  type: "receipt.detail.start-add-line",
+                  changes: {
+                    type: "adjustment",
+                    description: "",
+                    categoryId: defaultCategoryId,
+                    amount: "",
+                    lineId: null,
+                  },
+                });
+              }}
+            >
+              <Icon>
+                <Plus />
+              </Icon>{" "}
+              Add adjustment
+            </Button>
+          </Inline>
           {adjustments.length === 0
             ? <Text tone="secondary">No adjustments on this receipt.</Text>
             : adjustments.map((line) => (
@@ -677,28 +790,37 @@ export function ReceiptDetailScreen({
 
       <AdaptiveDialog
         trigger={null}
-        title="Edit receipt line"
-        isOpen={editingLine}
+        title={editingAddLine ? "Add receipt line" : "Edit receipt line"}
+        isOpen={editingLine || editingAddLine}
         isDismissable={!mutationFailure}
         onOpenChange={(open) => {
           if (!open) closeLineEditor();
         }}
       >
-        {lineDraft
+        {activeLineEditorValue
           ? (
             <Stack gap={4}>
               <ReceiptLineEditor
-                value={editorValue(lineDraft)}
+                value={activeLineEditorValue}
                 categories={categoryOptions(
                   categories,
-                  lineDraft.changes.categoryId,
+                  activeLineCategoryId,
                 )}
                 linkOptions={links}
-                onChange={(value) =>
-                  send({
-                    type: "receipt.detail.change-line",
-                    changes: changesFromEditor(value),
-                  })}
+                onChange={(value) => {
+                  const changes = changesFromEditor(value);
+                  send(
+                    editingAddLine
+                      ? {
+                        type: "receipt.detail.change-add-line",
+                        changes,
+                      }
+                      : {
+                        type: "receipt.detail.change-line",
+                        changes,
+                      },
+                  );
+                }}
               />
               {mutationFailure
                 ? (
@@ -733,12 +855,19 @@ export function ReceiptDetailScreen({
                     )
                   : (
                     <Button
-                      isDisabled={!snapshot.can({
-                        type: "receipt.detail.save-line",
-                      })}
-                      onPress={() => send({ type: "receipt.detail.save-line" })}
+                      isDisabled={editingAddLine
+                        ? !canSubmitAddLine
+                        : !snapshot.can({
+                          type: "receipt.detail.save-line",
+                        })}
+                      onPress={() =>
+                        send(
+                          editingAddLine
+                            ? { type: "receipt.detail.add-line" }
+                            : { type: "receipt.detail.save-line" },
+                        )}
                     >
-                      Save changes
+                      {editingAddLine ? "Add line" : "Save changes"}
                     </Button>
                   )}
               </FormActions>

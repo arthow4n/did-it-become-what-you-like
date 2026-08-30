@@ -738,7 +738,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
     // mutation therefore provides the browser-compatible stale-write check;
     // never send the version value as If-Match because it is not an ETag.
     return withRetry(
-      ADAPTER_DIAGNOSTIC_OPERATIONS.driveUploadFailed,
+      "drive.write",
       optionsForOperation,
       async () => {
         const metadata = await metadataForName(

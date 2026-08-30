@@ -8,6 +8,7 @@ import {
   type FileSelectionPort,
   type FileSharePort,
   type ImagePreparationPort,
+  isAdapterDiagnosticOperation,
   isAdapterErrorCode,
   type LocalPort,
   mapAdapterError,
@@ -130,6 +131,11 @@ Deno.test("adapter-contract diagnostics use the bounded operation vocabulary", (
     "local.db_blocked",
     "local.tx_abort",
   ]);
+});
+
+Deno.test("adapter-contract rejects foreign diagnostic operation text", () => {
+  assert(isAdapterDiagnosticOperation("drive.transport.upload_failed"));
+  assert(!isAdapterDiagnosticOperation("AIza-direct-credential-response-text"));
 });
 
 Deno.test("adapter-contract errors do not copy foreign error messages", () => {

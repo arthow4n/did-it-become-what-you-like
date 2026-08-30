@@ -34,6 +34,7 @@ import type {
   ReceiptScanInput,
   SyncRequest,
 } from "./index.ts";
+import { contractFailureFromError } from "./types.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -53,6 +54,20 @@ function assertEquals<T>(actual: T, expected: T): void {
     );
   }
 }
+
+Deno.test("actor-contract: import diagnostics reject foreign operation text", () => {
+  const secret = "AIza-direct-credential-response-text";
+  const failure = contractFailureFromError(
+    { code: "invalid-request", operation: secret },
+    { code: "invalid", message: "Invalid import.", retryable: false },
+    { diagnosticOperationOnly: true, preserveOperation: true },
+  );
+  assertEquals(failure, {
+    code: "invalid-request",
+    message: "The request was invalid.",
+    retryable: false,
+  });
+});
 
 async function settle(): Promise<void> {
   for (let index = 0; index < 32; index += 1) await Promise.resolve();

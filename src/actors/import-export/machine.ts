@@ -71,6 +71,7 @@ function failure(
     };
   }
   return contractFailureFromError(error, fallback, {
+    diagnosticOperationOnly: true,
     preserveOperation: true,
   });
 }

@@ -728,14 +728,15 @@ Deno.test("drive-adapter: writes and deletes reject stale version tokens", async
     expectedEtag: first.etag,
   });
   assertEquals((await adapter.readAppData("sync.json"))?.body, '{"v":2}');
-  await rejectsWithCode(
+  const staleWriteError = await rejectsWithCode(
     adapter.writeAppData({
       name: "sync.json",
       body: "stale",
       expectedEtag: first.etag,
     }),
     "conflict",
-  );
+  ) as { readonly operation?: string };
+  assertEquals(staleWriteError.operation, "drive.write");
   await rejectsWithCode(
     adapter.deleteAppData("sync.json", first.etag),
     "conflict",

@@ -14,6 +14,7 @@ import type {
 import type {
   UpdateCheckOutput as PortUpdateCheckOutput,
 } from "../../adapters/ports/update-install.ts";
+import { isAdapterDiagnosticOperation } from "../../adapters/ports/errors.ts";
 import type { PortErrorCode } from "./ports.ts";
 
 export type {
@@ -109,7 +110,11 @@ function isPortErrorCode(value: unknown): value is PortErrorCode {
 export function contractFailureFromError(
   error: unknown,
   fallback: ContractFailure,
-  options: { readonly preserveOperation?: boolean } = {},
+  options: {
+    readonly preserveOperation?: boolean;
+    /** Restrict foreign operation text to the finite adapter diagnostic set. */
+    readonly diagnosticOperationOnly?: boolean;
+  } = {},
 ): ContractFailure {
   if (!isRecord(error) || !isPortErrorCode(error.code)) return fallback;
 
@@ -124,7 +129,9 @@ export function contractFailureFromError(
     : fallback.operation;
   const operation = options.preserveOperation === true &&
       typeof operationCandidate === "string" &&
-      SAFE_OPERATION.test(operationCandidate)
+      SAFE_OPERATION.test(operationCandidate) &&
+      (options.diagnosticOperationOnly !== true ||
+        isAdapterDiagnosticOperation(operationCandidate))
     ? operationCandidate
     : undefined;
 

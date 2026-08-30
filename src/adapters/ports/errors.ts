@@ -40,6 +40,16 @@ export type AdapterDiagnosticOperation = typeof ADAPTER_DIAGNOSTIC_OPERATIONS[
   keyof typeof ADAPTER_DIAGNOSTIC_OPERATIONS
 ];
 
+export function isAdapterDiagnosticOperation(
+  value: unknown,
+): value is AdapterDiagnosticOperation {
+  return typeof value === "string" &&
+    (Object.values(ADAPTER_DIAGNOSTIC_OPERATIONS) as readonly string[])
+      .includes(
+        value,
+      );
+}
+
 export const RETRY_BY_ERROR_CODE: Readonly<
   Record<AdapterErrorCode, RetryDirective>
 > = {

@@ -573,6 +573,10 @@ export function ReceiptScanScreen({
     ) {
       send({ type: "receipt.network.offline" });
       clearSelectedImage();
+      setPendingScanState(false);
+      setQuickSetupOpen(false);
+      setOptionsOpen(false);
+      setCaptureMode(false);
     } else if (!offline && snapshot.matches("offline")) {
       send({ type: "receipt.network.online" });
     }
@@ -1395,14 +1399,18 @@ export function ReceiptReviewScreen({
 
   if (
     snapshot.matches("hydrating") || snapshot.matches("persisting") ||
-    snapshot.matches("clearing")
+    snapshot.matches("saving") || snapshot.matches("clearing")
   ) {
     return (
       <ContentContainer size="review">
         <PageHeader title="Review receipt" headingLevel={1} />
         <StatusPanel
-          title="Saving receipt review locally"
-          detail="The structured draft stays on this device."
+          title={snapshot.matches("saving")
+            ? "Saving receipt"
+            : "Saving receipt review locally"}
+          detail={snapshot.matches("saving")
+            ? "The receipt is being committed to this device."
+            : "The structured draft stays on this device."}
         />
       </ContentContainer>
     );

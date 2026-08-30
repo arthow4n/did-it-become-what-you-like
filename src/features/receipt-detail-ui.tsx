@@ -351,6 +351,27 @@ export function ReceiptDetailScreen({
                       Retry
                     </Button>
                   )
+                  : snapshot.can({ type: "receipt.detail.reload" })
+                  ? (
+                    <Button
+                      variant="secondary"
+                      onPress={() => send({ type: "receipt.detail.reload" })}
+                    >
+                      Reload receipt
+                    </Button>
+                  )
+                  : null}
+                {destructiveFailure &&
+                    snapshot.can({ type: "receipt.detail.cancel-delete" })
+                  ? (
+                    <Button
+                      variant="quiet"
+                      onPress={() =>
+                        send({ type: "receipt.detail.cancel-delete" })}
+                    >
+                      Keep receipt
+                    </Button>
+                  )
                   : null}
                 <Button variant="secondary" onPress={onBack}>
                   Back to expenses

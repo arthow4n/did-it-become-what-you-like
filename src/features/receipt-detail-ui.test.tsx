@@ -412,3 +412,40 @@ Deno.test(
     });
   },
 );
+
+Deno.test(
+  "receipt detail exposes reload and keep actions for non-retryable deletion failures",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(async () => {
+        render(
+          createElement(ReceiptDetailScreen, {
+            service: createService({
+              deleteLine: () => Promise.reject({ code: "invalid" }),
+            }),
+            receiptId: aggregate.receipt.id,
+            categories: [category],
+          }),
+        );
+        const view = within(document.body);
+        await waitFor(() => assert(view.getByText("Coffee")));
+        fireEvent.click(
+          view.getAllByRole("button", { name: "Remove" })[0],
+        );
+        const dialog = view.getByRole("dialog", {
+          name: "Delete this line?",
+        });
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: "Delete line" }),
+        );
+        await waitFor(() => {
+          assert(view.getByText("Receipt deletion failed"));
+          assert(view.getByRole("button", { name: "Reload receipt" }));
+          assert(view.getByRole("button", { name: "Keep receipt" }));
+        });
+        fireEvent.click(view.getByRole("button", { name: "Keep receipt" }));
+        await waitFor(() => assert(view.getByText("Coffee")));
+      });
+    });
+  },
+);

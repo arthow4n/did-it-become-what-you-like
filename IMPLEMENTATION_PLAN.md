@@ -484,7 +484,8 @@ M27-001 -> M27-002 -> R-2710
 
 #### M27-005 — Prove the saved-receipt management journey
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on closed `R-2720`.
+- **Status/dependencies:** `COMPLETE`; depends on closed `R-2720`. The bounded
+  journey and selected regression evidence are committed and pushed.
 - **Ownership:** `e2e/receipt-review.spec.ts`, `e2e/support/journeys.ts`,
   `e2e/support/fake-services.ts`,
   `src/adapters/local/receipt-atomic.integration.test.ts`,
@@ -510,10 +511,22 @@ M27-001 -> M27-002 -> R-2710
   `deno test src/domain/tests/receipt_test.ts src/actors/contracts/saved-receipt-actor.test.ts src/features/local-ui.test.tsx src/features/receipt-detail-ui.test.tsx src/adapters/local/receipt-atomic.integration.test.ts`,
   `deno task test:e2e -- e2e/receipt-review.spec.ts`, `deno task check`,
   `deno task lint`, `deno task fmt:check`, `git diff --check`.
+- **Completion evidence:** Commit `94bfcbb` extends the single fake-Gemini
+  receipt journey through two-line save, saved-detail reopen, metadata edit,
+  list projection refresh, scoped line deletion while preserving the receipt,
+  whole-receipt deletion, toast/completion routing, and reload persistence. It
+  asserts the focused receipt/line targets and captures the saved-detail
+  layout at `390x844`, `320x568`, and `1280x800` without horizontal overflow.
+  `deno task test:affected` completed with no affected test modules because the
+  implementation was already committed; the explicit selected suite passed
+  44 tests with 0 failures; `deno task test:e2e -- e2e/receipt-review.spec.ts`
+  passed all 9 repository journeys in 2.3 minutes (the task runner forwards
+  this invocation to the complete configured E2E set); and `deno task check`,
+  `deno task lint`, `deno task fmt:check`, and `git diff --check` passed.
 
 #### R-2730 — M27 final implementation and journey review
 
-- **Status/dependencies:** `PENDING`; depends on `M27-005`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on completed `M27-005`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Complete M27 diff since the released baseline, closure of
   prior findings, product-decision fidelity, aggregate deletion safety,
@@ -545,9 +558,10 @@ M27-001 -> M27-002 -> R-2710
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M27-005` (`IN_PROGRESS`; R-2720 is closed)
-- **Pushed implementation baseline:** `2334c19`; M27-004 and R-2720 are
-  complete, and the bounded saved-receipt browser journey is now active.
+- **Active task / gate:** `R-2730` (`IN_PROGRESS`; M27-005 is complete and
+  R-2720 is closed)
+- **Pushed implementation baseline:** `94bfcbb`; M27-004, R-2720, and M27-005
+  are complete, and the bounded saved-receipt management journey is passing.
 - **Verification status:** R-2710 closure evidence is `deno task check`, focused
   receipt/domain/local/import-export suites (36 passed, 0 failed), formatting,
   lint, and `git diff --check`; the pre-remediation M27-002 affected suite
@@ -555,10 +569,9 @@ M27-001 -> M27-002 -> R-2710
 - **Active / preserved work:** Single primary agent on `master`; no M27 worker
   or worktree. The M27-002 implementation and review checkpoint are being
   preserved on the primary branch.
-- **Exact next action:** Extend the existing receipt-review E2E and selected
-  atomic regression coverage for reopen, line edit/delete, list projection,
-  whole-receipt deletion, and reload, then record exact validation before
-  opening R-2730.
+- **Exact next action:** Dispatch the fresh read-only R-2730 reviewer against
+  the complete M27 diff and remediate any severity-1–3 findings before
+  running M27-FINAL archive and repository-pruning checks.
 
 ## Ready-to-Use Orchestration Prompt
 

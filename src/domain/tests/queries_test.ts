@@ -12,6 +12,7 @@ import {
   type ReceiptPurchaseLine,
 } from "../index.ts";
 import {
+  compareExpenseTimelineEntries,
   expenseDateForLocalNow,
   type ExpenseQuerySource,
   formatDecimal,
@@ -291,6 +292,35 @@ Deno.test("query: ordering uses inherited receipt time and stable IDs", () => {
     filter({ sort: "oldest" }),
   );
   assertEquals(oldest.map(({ id }) => id), ["a", "b"]);
+});
+
+Deno.test("query: timeline ties keep stable IDs in both sort directions", () => {
+  const receiptEntry = {
+    date: "2026-08-30",
+    time: "20:00",
+    id: "receipt-timeline",
+  };
+  const expenseEntry = {
+    date: "2026-08-30",
+    time: "19:00",
+    id: "expense-timeline",
+  };
+  assert(
+    compareExpenseTimelineEntries(receiptEntry, expenseEntry, "newest") < 0,
+    "newest entries should put the later receipt first",
+  );
+  assert(
+    compareExpenseTimelineEntries(receiptEntry, expenseEntry, "oldest") > 0,
+    "oldest entries should put the earlier expense first",
+  );
+  assertEquals(
+    compareExpenseTimelineEntries(
+      { ...receiptEntry, time: "20:00", id: "a" },
+      { ...receiptEntry, time: "20:00", id: "b" },
+      "newest",
+    ) < 0,
+    true,
+  );
 });
 
 Deno.test("query: receipt lines expand once, inherit parent fields, and group filtered lines", () => {

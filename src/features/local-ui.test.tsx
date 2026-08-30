@@ -400,6 +400,107 @@ Deno.test("local UI expenses exposes shared filters, empty state, and add event"
   });
 });
 
+Deno.test("local UI expenses interleaves receipt groups and shows every category", async () => {
+  await withComponentHarness(({ render }) => {
+    const categories = [
+      category,
+      {
+        ...customCategory,
+        id: "category-travel",
+        name: "Travel",
+        sortOrder: 2,
+      },
+      { ...customCategory, id: "category-home", name: "Home", sortOrder: 3 },
+      { ...customCategory, id: "category-work", name: "Work", sortOrder: 4 },
+    ];
+    const receiptId = "receipt-feed";
+    const timelineState: ProjectCategoryState = {
+      ...state,
+      categories,
+      expenses: [
+        {
+          schemaVersion: 1,
+          type: "expense",
+          id: "expense-feed-before",
+          projectId: project.id,
+          categoryId: "category-travel",
+          date: "2026-08-30",
+          time: "19:00",
+          amount: "-2",
+          currency: "SEK",
+          description: "Manual before receipt",
+          source: "manual",
+        },
+        ...[
+          ["category-home", "Home expense"],
+          ["category-work", "Work expense"],
+        ].map(([categoryId, description], index) => ({
+          schemaVersion: 1 as const,
+          type: "expense" as const,
+          id: `expense-feed-${index}`,
+          projectId: project.id,
+          categoryId,
+          date: "2026-08-30",
+          time: "18:00",
+          amount: "-1",
+          currency: "SEK" as const,
+          description,
+          source: "manual" as const,
+        })),
+      ],
+      receipts: [{
+        schemaVersion: 1,
+        type: "receipt" as const,
+        id: receiptId,
+        projectId: project.id,
+        date: "2026-08-30",
+        time: "20:00",
+        merchant: "Receipt after manual",
+        currency: "SEK" as const,
+        printedTotal: "-3",
+      }],
+      receiptPurchaseLines: [{
+        schemaVersion: 1,
+        type: "receipt-purchase-line" as const,
+        id: "line-feed",
+        receiptId,
+        projectId: project.id,
+        categoryId: category.id,
+        description: "Receipt item",
+        lineTotal: "-3",
+      }],
+      receiptAdjustments: [],
+    };
+    render(
+      createElement(ExpensesScreen, {
+        state: timelineState,
+        expenseDayBoundary: "03:00",
+        offline: false,
+        onAdd: () => undefined,
+        onEdit: () => undefined,
+        onViewReceipt: () => undefined,
+        onProjectChange: () => undefined,
+      }),
+    );
+    const view = within(document.body);
+    const feed = document.querySelector<HTMLElement>(
+      '[data-expenses-feed="true"]',
+    );
+    assert(feed);
+    const feedText = feed.textContent ?? "";
+    assert(
+      feedText.indexOf("Receipt after manual") <
+        feedText.indexOf("Manual before receipt"),
+      "receipt groups and standalone expenses should share chronological order",
+    );
+    const categoryTotals = view.getByRole("list", { name: "Category totals" });
+    assert(
+      within(categoryTotals).getAllByRole("button").length === 4,
+      "category breakdown should show every category with spending",
+    );
+  });
+});
+
 Deno.test("local UI add choice disables AI scanning while offline", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaDomGlobals(window, () => {

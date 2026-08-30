@@ -178,9 +178,16 @@ function matchesFilter(
   return true;
 }
 
-function compareItems(
-  left: ExpenseListItem,
-  right: ExpenseListItem,
+export type ExpenseTimelineEntry = {
+  readonly date: string;
+  readonly time?: string;
+  readonly id: string;
+};
+
+/** Compare standalone records and receipt groups by one shared timeline rule. */
+export function compareExpenseTimelineEntries(
+  left: ExpenseTimelineEntry,
+  right: ExpenseTimelineEntry,
   order: "newest" | "oldest",
 ): number {
   let difference = compareCodeUnits(left.date, right.date);
@@ -192,6 +199,14 @@ function compareItems(
   // Keep equal temporal values deterministic in both directions. The stable
   // ID is not reversed when the owner switches newest/oldest.
   return compareCodeUnits(left.id, right.id);
+}
+
+function compareItems(
+  left: ExpenseListItem,
+  right: ExpenseListItem,
+  order: "newest" | "oldest",
+): number {
+  return compareExpenseTimelineEntries(left, right, order);
 }
 
 function validateRange(filter: ExpenseQueryFilter): void {

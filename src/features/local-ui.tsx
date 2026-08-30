@@ -7,6 +7,7 @@ import {
   type ProjectCategoryState,
 } from "../domain/organization.ts";
 import {
+  compareExpenseTimelineEntries,
   type ExpensePeriod,
   type ExpenseQueryResult,
   queryExpenses,
@@ -57,7 +58,7 @@ import {
   EmptyState,
   ErrorSummary,
   ExpenseForm,
-  ExpenseList,
+  ExpenseRow,
   FilterBar,
   FilterSheet,
   FormActions,
@@ -433,6 +434,40 @@ function expenseViewModel(
   };
 }
 
+type ExpenseFeedEntry =
+  | {
+    readonly kind: "expense";
+    readonly item: ExpenseQueryResult["expenses"][number];
+  }
+  | {
+    readonly kind: "receipt";
+    readonly group: ExpenseQueryResult["receiptGroups"][number];
+  };
+
+function compareExpenseFeedEntries(
+  left: ExpenseFeedEntry,
+  right: ExpenseFeedEntry,
+  order: "newest" | "oldest",
+): number {
+  return compareExpenseTimelineEntries(
+    left.kind === "receipt"
+      ? {
+        date: left.group.receipt.date,
+        time: left.group.receipt.time,
+        id: left.group.id,
+      }
+      : left.item,
+    right.kind === "receipt"
+      ? {
+        date: right.group.receipt.date,
+        time: right.group.receipt.time,
+        id: right.group.id,
+      }
+      : right.item,
+    order,
+  );
+}
+
 export function AddChoiceScreen({
   offline,
   onClose,
@@ -642,7 +677,7 @@ export function ExpensesScreen({
   const activeCategories = state.categories.filter((category) =>
     !category.archived || category.id === categoryId
   );
-  const categories = result.categoryBreakdown.slice(0, 3).map((category) => ({
+  const categories = result.categoryBreakdown.map((category) => ({
     id: category.categoryId,
     name: category.categoryName,
     amount: category.amount,
@@ -675,13 +710,18 @@ export function ExpensesScreen({
       currency: currentProject?.defaultCurrency ?? "SEK",
       tone: "neutral" as const,
     }];
-  const plainExpenses = result.expenses.filter((item) =>
-    item.receiptId === undefined
-  )
-    .map((item) => ({
-      ...expenseViewModel(item),
-      category: categoryById.get(item.categoryId) ?? item.categoryId,
-    }));
+  const expenseFeed: readonly ExpenseFeedEntry[] = [
+    ...result.expenses.filter((item) => item.receiptId === undefined).map((
+      item,
+    ) => ({
+      kind: "expense" as const,
+      item,
+    })),
+    ...result.receiptGroups.map((group) => ({
+      kind: "receipt" as const,
+      group,
+    })),
+  ].sort((left, right) => compareExpenseFeedEntries(left, right, sort));
 
   const removeCategory = () => setCategoryId("");
   const removeCurrency = () => setCurrency("");
@@ -827,7 +867,7 @@ export function ExpensesScreen({
           onSelect={setCategoryId}
           onViewAll={() => setCategoryId("")}
         />
-        {plainExpenses.length === 0 && result.receiptGroups.length === 0
+        {expenseFeed.length === 0
           ? (
             <EmptyState
               title={search || categoryId
@@ -849,39 +889,57 @@ export function ExpensesScreen({
               <div data-expenses-list-heading tabIndex={-1}>
                 <Heading size="sm">Expense list</Heading>
               </div>
-              <ExpenseList
-                expenses={plainExpenses}
-                onSelect={(id) => {
-                  const expense = state.expenses.find((candidate) =>
-                    candidate.id === id
-                  );
-                  if (expense) onEdit(expense);
-                }}
-              />
-              {result.receiptGroups.map((group) => (
-                <div key={group.id} data-receipt-group-id={group.id}>
-                  <Card as="section">
-                    <ReceiptGroup
-                      merchant={group.receipt.merchant ?? "Receipt"}
-                      date={group.receipt.date}
-                      lines={group.lines.map((item) => ({
-                        ...expenseViewModel(item),
-                        category: categoryById.get(item.categoryId) ??
-                          item.categoryId,
-                      }))}
-                      total={{
-                        amount: group.total,
-                        currency: group.receipt.currency,
-                      }}
-                      onViewReceipt={() =>
-                        onViewReceipt(group.id)}
-                      onSelectLine={(id) => {
-                        onViewReceipt(group.id, id);
-                      }}
-                    />
-                  </Card>
-                </div>
-              ))}
+              <div data-expenses-feed="true">
+                <List label="Expenses">
+                  {expenseFeed.map((entry) =>
+                    entry.kind === "expense"
+                      ? (
+                        <ExpenseRow
+                          key={entry.item.id}
+                          expense={{
+                            ...expenseViewModel(entry.item),
+                            category: categoryById.get(entry.item.categoryId) ??
+                              entry.item.categoryId,
+                          }}
+                          onSelect={(id) => {
+                            const expense = state.expenses.find((candidate) =>
+                              candidate.id === id
+                            );
+                            if (expense) onEdit(expense);
+                          }}
+                        />
+                      )
+                      : (
+                        <li
+                          key={entry.group.id}
+                          data-receipt-group-id={entry.group.id}
+                        >
+                          <Card as="section">
+                            <ReceiptGroup
+                              merchant={entry.group.receipt.merchant ??
+                                "Receipt"}
+                              date={entry.group.receipt.date}
+                              lines={entry.group.lines.map((item) => ({
+                                ...expenseViewModel(item),
+                                category: categoryById.get(item.categoryId) ??
+                                  item.categoryId,
+                              }))}
+                              total={{
+                                amount: entry.group.total,
+                                currency: entry.group.receipt.currency,
+                              }}
+                              onViewReceipt={() =>
+                                onViewReceipt(entry.group.id)}
+                              onSelectLine={(id) => {
+                                onViewReceipt(entry.group.id, id);
+                              }}
+                            />
+                          </Card>
+                        </li>
+                      )
+                  )}
+                </List>
+              </div>
             </Stack>
           )}
       </Stack>

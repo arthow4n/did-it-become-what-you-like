@@ -294,7 +294,7 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
 
 #### M28-004 — Expenses Unified Chronological Feed & Breakdown Polish
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M28-003`.
+- **Status/dependencies:** `COMPLETE`; depends on `M28-003`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/domain/queries/expenses.ts`, `src/features/local-ui.test.tsx`, `src/domain/tests/queries_test.ts`.
 - **Scope/non-goals:**
   - In `ExpensesScreen`, construct a unified chronological feed that interleaves standalone expenses and `ReceiptGroup` cards based on their effective date and time.
@@ -309,11 +309,13 @@ M28-FINAL (Milestone Release Verification & Regression Pass)
   - Query sorting tests in `src/domain/tests/queries_test.ts`.
 - **Verification:** `deno fmt src/features/local-ui.tsx src/domain/queries/expenses.ts`, `deno lint src/features/local-ui.tsx src/domain/queries/expenses.ts`, `deno test --related=src/features/local-ui.tsx --related=src/domain/queries/expenses.ts`, `git diff --check`.
 
+- **Evidence:** `deno fmt src/features/local-ui.tsx src/domain/queries/expenses.ts src/domain/tests/queries_test.ts src/features/local-ui.test.tsx`, `deno lint src/features/local-ui.tsx src/domain/queries/expenses.ts src/domain/tests/queries_test.ts src/features/local-ui.test.tsx`, `deno check src/features/local-ui.tsx src/domain/queries/expenses.ts src/domain/tests/queries_test.ts src/features/local-ui.test.tsx`, and `git diff --check` passed. The scoped test command `deno test --allow-read --allow-write --allow-run --allow-env src/domain/tests/queries_test.ts src/features/local-ui.test.tsx` passed 33 tests with 0 failures.
+
 ---
 
 #### M28-005 — Standalone Expense Deletion Toast Feedback
 
-- **Status/dependencies:** `PENDING`; depends on `M28-004`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M28-004`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/features/local-ui.test.tsx`.
 - **Scope/non-goals:**
   - In `LocalUiRuntime` (`ManualExpenseScreen` onClosed / onSaved handler), check if the manual expense workflow completed with status `"deleted"` and trigger `setAppNotice("Expense deleted.")`.
@@ -588,7 +590,7 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-2810` (`IN_PROGRESS`)
+- **Active task / gate:** `M28-005` (`IN_PROGRESS`)
 - **Released baseline:** M0 through M27 and all review gates through `R-2730`
   are complete and pushed on `master`.
 - **Verification status:** M28-001 passed formatting, lint, diff checks, and
@@ -605,10 +607,14 @@ M29-FINAL (Milestone Release Verification, Hygiene Pruning & Archival)
   and 0 failed, along with formatting, lint, typecheck, and diff checks. R-2810
   is approved with no findings. M28-003 passed its component gate with 4 tests
   passed and 0 failed, plus formatting, lint, typecheck, and diff checks.
-  M28-004 is now active. M29 remains staged as dependent follow-up.
+  M28-004 passed formatting, lint, typecheck, and diff checks. Its scoped
+  command `deno test --allow-read --allow-write --allow-run --allow-env
+  src/domain/tests/queries_test.ts src/features/local-ui.test.tsx` passed 33
+  tests with 0 failures. M28-005 is now active. M29 remains staged as
+  dependent follow-up.
 - **Active / preserved work:** Clean master working tree.
-- **Exact next action:** Inspect and implement the unified expense/receipt feed,
-  deterministic chronological ordering, and complete category breakdown output.
+- **Exact next action:** Wire the standalone-expense deletion completion to the
+  existing app notice toast and add its component coverage.
 
 ## Ready-to-Use Orchestration Prompt
 

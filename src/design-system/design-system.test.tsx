@@ -1074,6 +1074,13 @@ Deno.test("M8 shell facades preserve landmarks and navigation state", async () =
     assert(view.getByRole("heading", { name: "Settings", level: 1 }));
     const settings = view.getByRole("button", { name: "Settings" });
     assertEqual(settings.getAttribute("aria-current"), "page");
+    assert(view.getByRole("button", { name: "Manual" }));
+    assert(view.getByRole("button", { name: "Scan" }));
+    assert(view.getByRole("button", { name: "Organize" }));
+    fireEvent.click(view.getByRole("button", { name: "Manual" }));
+    assertEqual(selected, "manual");
+    fireEvent.click(view.getByRole("button", { name: "Scan" }));
+    assertEqual(selected, "scan");
     fireEvent.click(view.getByRole("button", { name: "Expenses" }));
     assertEqual(selected, "expenses");
     mounted.unmount();

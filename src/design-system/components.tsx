@@ -18,7 +18,14 @@ import type {
   ReactNode,
   Ref,
 } from "react";
-import { ChevronRight, CircleAlert, CircleCheck, Plus, X } from "lucide-react";
+import {
+  ChevronRight,
+  CircleAlert,
+  CircleCheck,
+  Plus,
+  Sparkles,
+  X,
+} from "lucide-react";
 import {
   Accordion as MantineAccordion,
   ActionIcon as MantineActionIcon,
@@ -3678,7 +3685,8 @@ export function ExpenseForm(
 
 export type AppNavigationIconSet = {
   expenses?: ReactNode;
-  add?: ReactNode;
+  manual?: ReactNode;
+  scan?: ReactNode;
   organize?: ReactNode;
   settings?: ReactNode;
 };
@@ -3699,7 +3707,18 @@ export function DefaultNavigation(
           icon: icons.expenses ?? <CircleCheck />,
           selected: selected === "expenses",
         },
-        { id: "add", label: "Add", icon: icons.add ?? <Plus />, action: true },
+        {
+          id: "manual",
+          label: "Manual",
+          icon: icons.manual ?? <Plus />,
+          selected: selected === "manual",
+        },
+        {
+          id: "scan",
+          label: "Scan",
+          icon: icons.scan ?? <Sparkles />,
+          selected: selected === "scan",
+        },
         {
           id: "organize",
           label: "Organize",

@@ -125,17 +125,11 @@ for (const vp of VIEWPORTS) {
         .toBeVisible();
       await snap("03-expenses-empty");
 
-      // 4. Add Choice Sheet
-      await page.getByRole("button", { name: "Add expense" }).click();
-      await expect(page.getByRole("dialog", { name: "Add an expense" }))
-        .toBeVisible();
-      await snap("04-add-choice-sheet");
-
-      // 5. Manual Expense Form (Empty)
-      await page.getByRole("button", { name: /Add manually/ }).click();
+      // 4. Manual Expense Form (Empty)
+      await page.getByRole("button", { name: "Manual" }).click();
       await expect(page.getByRole("heading", { name: "New expense", level: 1 }))
         .toBeVisible();
-      await snap("05-manual-expense-empty");
+      await snap("04-manual-expense-empty");
 
       // 6. Manual Expense Form (Populated)
       await page.getByRole("textbox", { name: "Amount" }).fill("450.00");

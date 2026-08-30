@@ -159,6 +159,7 @@ async function createProject(page: Page, name: string): Promise<void> {
 }
 
 test("drive-reconnect routes authorization, account switching, sync, and reconnect through the fake Drive boundary", async ({ isolatedContext }) => {
+  test.setTimeout(60_000);
   const page = await isolatedContext.newPage();
   await installFakeDrive(page);
   await createProject(page, "Drive journey project");

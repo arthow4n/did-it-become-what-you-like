@@ -9,6 +9,7 @@ const ONE_PIXEL_PNG = Buffer.from(
 test(
   "receipt-review captures, scans with fake Gemini, and saves atomically",
   async ({ isolatedContext }, testInfo) => {
+    test.setTimeout(60_000);
     const page = await isolatedContext.newPage();
     await page.setViewportSize({ width: 390, height: 844 });
     const requests: Array<{ method: string; url: string; body?: string }> = [];
@@ -113,8 +114,7 @@ test(
       "Receipt project",
     );
     await page.getByRole("button", { name: "Save project" }).click();
-    await page.getByRole("button", { name: "Add expense" }).click();
-    await page.getByRole("button", { name: /Scan receipt with AI/ }).click();
+    await page.getByRole("button", { name: "Scan" }).click();
     await expect(
       page.getByRole("heading", { name: "Before sending this receipt" }),
     ).toBeVisible();

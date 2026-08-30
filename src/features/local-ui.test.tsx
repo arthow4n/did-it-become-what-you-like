@@ -1,7 +1,6 @@
 import { within } from "@testing-library/dom";
-import { createElement, useEffect, useRef, useState } from "react";
+import { createElement, useState } from "react";
 import {
-  AddChoiceScreen,
   CategoryManager,
   DirtyExitGuard,
   ExpensesScreen,
@@ -33,6 +32,7 @@ import {
   type SyncStatusContextValue,
   SyncStatusProvider,
 } from "./sync-ui/index.ts";
+import { DefaultNavigation } from "../design-system/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -127,28 +127,6 @@ function createTestService(initialState: ProjectCategoryState): {
     commits: () => commitCount,
     categoryCommands,
   };
-}
-
-function AddChoiceHarness() {
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
-  useEffect(() => triggerRef.current?.focus(), []);
-  return createElement(
-    "div",
-    null,
-    createElement(
-      "button",
-      { ref: triggerRef, onClick: () => setOpen(true) },
-      "Open add choice",
-    ),
-    open
-      ? createElement(AddChoiceScreen, {
-        offline: true,
-        onClose: () => setOpen(false),
-        onManual: () => setOpen(false),
-      })
-      : null,
-  );
 }
 
 function FirstUseRestoreHarness() {
@@ -515,8 +493,15 @@ Deno.test("local UI expenses exposes shared filters, empty state, and add event"
       "Filters button should be inside search-row",
     );
     assert(view.getByText("No expenses in this period"));
-    fireEvent.click(view.getByRole("button", { name: "Add expense" }));
-    assert(addCount === 1, "Add expense should dispatch the callback");
+    assert(
+      view.queryByRole("button", { name: "Add expense" }) === null,
+      "Expenses header should not contain an Add expense action button",
+    );
+    fireEvent.click(view.getByRole("button", { name: "Add an expense" }));
+    assert(
+      addCount === 1,
+      "Add an expense in empty state should dispatch the callback",
+    );
   });
 });
 
@@ -716,59 +701,28 @@ Deno.test("local UI expenses interleaves receipt groups and shows every category
   });
 });
 
-Deno.test("local UI add choice disables AI scanning while offline", async () => {
+Deno.test("local UI shell navigation routes directly to manual and scan scenes", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaDomGlobals(window, () => {
-      let manualCount = 0;
+      let selectedTab: string = "";
       render(
-        createElement(AddChoiceScreen, {
-          offline: true,
-          onClose: () => undefined,
-          onManual: () => manualCount++,
+        createElement(DefaultNavigation, {
+          selected: "expenses",
+          onSelect: (id: string) => {
+            selectedTab = id;
+          },
         }),
       );
       const view = within(document.body);
-      assert(view.getByRole("dialog", { name: "Add an expense" }));
-      const scan = view.getByRole("button", { name: /Scan receipt with AI/ });
-      assert((scan as HTMLButtonElement).disabled);
-      fireEvent.click(view.getByRole("button", { name: /Add manually/ }));
-      assert(manualCount === 1, "Manual entry should remain available offline");
-    });
-  });
-});
-
-Deno.test("local UI add choice traps focus and restores it after outside dismissal", async () => {
-  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
-      render(createElement(AddChoiceHarness));
-      const view = within(document.body);
-      const trigger = view.getByRole("button", { name: "Open add choice" });
-      fireEvent.click(trigger);
-      const dialog = await waitFor(() =>
-        view.getByRole("dialog", { name: "Add an expense" })
-      );
-      const close = view.getByRole("button", { name: "Close" });
-      const manual = view.getByRole("button", { name: /Add manually/ });
-      assert(
-        document.activeElement === close,
-        "Dialog should focus its close action",
-      );
-      fireEvent.keyDown(close, { key: "Tab" });
-      assert(
-        document.activeElement === manual,
-        "Tab should stay inside the dialog",
-      );
-      fireEvent.keyDown(manual, { key: "Tab" });
-      assert(
-        document.activeElement === close,
-        "Tab should wrap to the first action",
-      );
-      fireEvent.mouseDown(dialog);
-      await waitFor(() => assert(!document.querySelector('[role="dialog"]')));
-      assert(
-        document.activeElement === trigger,
-        "Dismissal should restore the trigger focus",
-      );
+      assert(view.getByRole("button", { name: "Expenses" }));
+      assert(view.getByRole("button", { name: "Manual" }));
+      assert(view.getByRole("button", { name: "Scan" }));
+      assert(view.getByRole("button", { name: "Organize" }));
+      assert(view.getByRole("button", { name: "Settings" }));
+      fireEvent.click(view.getByRole("button", { name: "Manual" }));
+      assertEquals(selectedTab, "manual");
+      fireEvent.click(view.getByRole("button", { name: "Scan" }));
+      assertEquals(selectedTab, "scan");
     });
   });
 });

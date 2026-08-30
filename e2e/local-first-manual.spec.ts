@@ -20,24 +20,16 @@ test.describe("local-first-manual journey", () => {
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();
 
-    await page.getByRole("button", { name: "Add expense" }).click();
-    await expect(page.getByRole("dialog", { name: "Add an expense" }))
+    await expect(page.getByRole("button", { name: "Expenses" }))
       .toBeVisible();
-    await expect(page.getByRole("button", { name: "Close" })).toBeFocused();
-    await page.keyboard.press("Tab");
-    await expect(page.getByRole("button", { name: /Add manually/ }))
-      .toBeFocused();
-    await page.keyboard.press("Tab");
-    await expect(page.getByRole("button", { name: /Scan receipt with AI/ }))
-      .toBeFocused();
-    await page.mouse.click(5, 5);
-    await expect(page.getByRole("dialog", { name: "Add an expense" }))
-      .toBeHidden();
-    await expect(page.getByRole("button", { name: "Add expense" }))
-      .toBeFocused();
+    await expect(page.getByRole("button", { name: "Scan" }))
+      .toBeVisible();
+    await expect(page.getByRole("button", { name: "Organize" }))
+      .toBeVisible();
+    await expect(page.getByRole("button", { name: "Settings" }))
+      .toBeVisible();
 
-    await page.getByRole("button", { name: "Add expense" }).click();
-    await page.getByRole("button", { name: /Add manually/ }).click();
+    await page.getByRole("button", { name: "Manual" }).click();
     await expect(page.getByRole("heading", { name: "New expense", level: 1 }))
       .toBeVisible();
 
@@ -67,14 +59,13 @@ test.describe("local-first-manual journey", () => {
       page.getByLabel("Expenses").getByText("SEK -12.50", { exact: true }),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Add expense" }).click();
-    await expect(page.getByRole("dialog", { name: "Add an expense" }))
+    await page.getByRole("button", { name: "Manual" }).click();
+    await expect(page.getByRole("heading", { name: "New expense", level: 1 }))
       .toBeVisible();
     await page.goBack();
-    await expect(page.getByRole("dialog", { name: "Add an expense" }))
-      .toBeHidden();
-    await expect(page.getByRole("button", { name: "Add expense" }))
-      .toBeFocused();
+    await page.getByRole("button", { name: "Discard changes" }).click();
+    await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
+      .toBeVisible();
 
     await page.reload();
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
@@ -125,8 +116,7 @@ test.describe("local-first-manual recovery seam", () => {
       })
     );
 
-    await page.getByRole("button", { name: "Add expense" }).click();
-    await page.getByRole("button", { name: /Add manually/ }).click();
+    await page.getByRole("button", { name: "Manual" }).click();
     await expect(
       page.getByText("The expense form could not be opened"),
     ).toBeVisible();

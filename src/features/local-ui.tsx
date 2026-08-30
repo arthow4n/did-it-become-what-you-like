@@ -1,6 +1,6 @@
 import { useActor } from "@xstate/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowLeft, SlidersHorizontal, X } from "lucide-react";
 import {
   createProjectCategoryService,
   type ProjectCategoryService,
@@ -478,142 +478,6 @@ function compareExpenseFeedEntries(
   );
 }
 
-export function AddChoiceScreen({
-  offline,
-  onClose,
-  onManual,
-  onScan,
-}: {
-  offline: boolean;
-  onClose: () => void;
-  onManual: () => void;
-  onScan?: () => void;
-}) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-  const skipRestoreRef = useRef(false);
-
-  useEffect(() => {
-    const active = document.activeElement;
-    if (active && typeof (active as HTMLElement).focus === "function") {
-      previousFocusRef.current = active as HTMLElement;
-    }
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const firstFocusable = dialog.querySelector<HTMLElement>(
-      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    );
-    (firstFocusable ?? dialog).focus();
-    return () => {
-      if (skipRestoreRef.current) return;
-      const previous = previousFocusRef.current;
-      globalThis.setTimeout(() => {
-        if (
-          previous && previous.isConnected &&
-          typeof previous.focus === "function"
-        ) {
-          try {
-            previous.focus();
-          } catch {
-            // ignore
-          }
-        }
-      }, 0);
-    };
-  }, []);
-
-  const leaveForManualEntry = () => {
-    skipRestoreRef.current = true;
-    onManual();
-  };
-
-  return (
-    <div
-      ref={dialogRef}
-      className="local-ui-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Add an expense"
-      tabIndex={-1}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") onClose();
-        if (event.key !== "Tab") return;
-        const dialog = dialogRef.current;
-        if (!dialog) return;
-        const focusable = Array.from(
-          dialog.querySelectorAll<HTMLElement>(
-            'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-          ),
-        ).filter((element) => element.getAttribute("aria-disabled") !== "true");
-        if (focusable.length === 0) {
-          event.preventDefault();
-          dialog.focus();
-          return;
-        }
-        const activeIndex = focusable.indexOf(
-          document.activeElement as HTMLElement,
-        );
-        const nextIndex = event.shiftKey
-          ? activeIndex <= 0 ? focusable.length - 1 : activeIndex - 1
-          : activeIndex < 0 || activeIndex === focusable.length - 1
-          ? 0
-          : activeIndex + 1;
-        event.preventDefault();
-        focusable[nextIndex].focus();
-      }}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <Card
-        className="local-ui-add-choice"
-        as="section"
-      >
-        <PageHeader
-          headingLevel={2}
-          title="Add an expense"
-          actions={
-            <IconButton
-              aria-label="Close"
-              icon={<X />}
-              variant="quiet"
-              onPress={onClose}
-            />
-          }
-        />
-        <Stack gap={3} className="local-ui-add-choice__actions">
-          <Button
-            variant="primary"
-            fullWidth
-            className="local-ui-add-choice__button"
-            onPress={leaveForManualEntry}
-          >
-            <Icon>
-              <Plus />
-            </Icon>
-            <span>Add manually</span>
-          </Button>
-          <Button
-            variant="secondary"
-            fullWidth
-            isDisabled={offline}
-            className="local-ui-add-choice__button"
-            onPress={() => {
-              skipRestoreRef.current = true;
-              onScan?.();
-            }}
-          >
-            <Icon>
-              <Search />
-            </Icon>
-            <span>Scan receipt with AI</span>
-          </Button>
-        </Stack>
-      </Card>
-    </div>
-  );
-}
-
 export function ExpensesScreen({
   state,
   expenseDayBoundary,
@@ -755,11 +619,6 @@ export function ExpensesScreen({
               />
             )
             : undefined}
-          actions={
-            <Button data-expenses-add="true" onPress={onAdd}>
-              Add expense
-            </Button>
-          }
         />
         {offline
           ? (
@@ -3248,17 +3107,23 @@ export function LocalUiRuntime(
     );
   }
 
-  const activePath = path ||
-    (state.projects.length ? "/expenses" : "/first-use");
+  const activePath = path === "/add"
+    ? "/expense/new"
+    : (path || (state.projects.length ? "/expenses" : "/first-use"));
   const receiptDetail = receiptDetailForPath(activePath);
-  const showAddChoice = activePath === "/add";
-  const contentPath = showAddChoice ? "/expenses" : activePath;
-  const selectedNavigation = activePath.startsWith("/organize") ||
-      activePath === "/projects" || activePath === "/categories"
-    ? "organize"
-    : activePath.startsWith("/settings")
-    ? "settings"
-    : "expenses";
+  const contentPath = activePath;
+  const selectedNavigation =
+    activePath === "/expense/new" || activePath.startsWith("/expense/edit/")
+      ? "manual"
+      : activePath === "/receipt/scan" || activePath === "/receipt/review" ||
+          receiptDetail !== undefined
+      ? "scan"
+      : activePath.startsWith("/organize") ||
+          activePath === "/projects" || activePath === "/categories"
+      ? "organize"
+      : activePath.startsWith("/settings")
+      ? "settings"
+      : "expenses";
   const portabilityScreen: SyncPortabilityScreen =
     activePath === "/settings/sync"
       ? "sync"
@@ -3273,7 +3138,8 @@ export function LocalUiRuntime(
       : null;
 
   const selectNavigation = (id: string) => {
-    if (id === "add") return requestNavigation("/add");
+    if (id === "manual") return requestNavigation("/expense/new");
+    if (id === "scan") return requestNavigation("/receipt/scan");
     if (id === "organize" || id === "settings" || id === "expenses") {
       requestNavigation(`/${id}` as LocalUiPath);
     }
@@ -3355,7 +3221,7 @@ export function LocalUiRuntime(
                 state={state}
                 expenseDayBoundary={expenseDayBoundary}
                 offline={shellSnapshot.hasTag("offline")}
-                onAdd={() => navigate("/add")}
+                onAdd={() => navigate("/expense/new")}
                 onEdit={(expense) =>
                   navigate(`/expense/edit/${expense.id}` as LocalUiPath)}
                 onViewReceipt={(receiptId, focusedLineId) => {
@@ -3572,16 +3438,6 @@ export function LocalUiRuntime(
             )
             : <FoundationExpensesPlaceholder />}
         </SyncPortabilityRuntime>
-        {showAddChoice
-          ? (
-            <AddChoiceScreen
-              offline={shellSnapshot.hasTag("offline")}
-              onClose={() => navigate("/expenses")}
-              onManual={() => navigate("/expense/new")}
-              onScan={() => navigate("/receipt/scan")}
-            />
-          )
-          : null}
         {appNotice
           ? <Toast onDismiss={() => setAppNotice(null)}>{appNotice}</Toast>
           : null}

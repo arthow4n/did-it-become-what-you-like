@@ -220,21 +220,23 @@ breathing room from neighboring elements.
 
 ### 15. Modal & Drawer Header Close Button Wrapping / Stretching
 
-- **Wrong:** Blanket mobile CSS rules (`.ds-page-header__actions > button { width: 100%; }`)
-  that force single `IconButton` close triggers (`X`, back arrow) to wrap onto a
-  new row beneath the title and stretch full-width or center awkwardly.
-- **Right:** Keep modal/drawer/sheet headers on a single row with the close button
-  pinned to the right edge (`.ds-page-header__actions > .ds-icon-button { width: auto; }`
-  and `flex: 0 0 auto`).
+- **Wrong:** Blanket mobile CSS rules
+  (`.ds-page-header__actions > button { width: 100%; }`) that force single
+  `IconButton` close triggers (`X`, back arrow) to wrap onto a new row beneath
+  the title and stretch full-width or center awkwardly.
+- **Right:** Keep modal/drawer/sheet headers on a single row with the close
+  button pinned to the right edge
+  (`.ds-page-header__actions > .ds-icon-button { width: auto; }` and
+  `flex: 0 0 auto`).
 
 ### 16. Cluttered Choice Sheets & Intermediate Overlays
 
 - **Wrong:** Bloating quick-decision sheets (such as `AddChoiceScreen`) with
   nested container cards, verbose multi-line explanatory paragraphs, and
   irregularly aligned icons.
-- **Right:** Use clean, prominent, full-width action buttons with crisp titles and
-  leading icons (`Plus`, `Search`/`Scan`), keeping intermediate choices direct,
-  fast, and visually polished.
+- **Right:** Use clean, prominent, full-width action buttons with crisp titles
+  and leading icons (`Plus`, `Search`/`Scan`), keeping intermediate choices
+  direct, fast, and visually polished.
 
 ---
 

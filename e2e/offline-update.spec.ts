@@ -64,8 +64,7 @@ test("offline-update keeps local launch, install fallback, update readiness, and
   await installFakePwaBoundary(page);
   await createProject(page);
 
-  await page.getByRole("button", { name: "Add expense" }).click();
-  await page.getByRole("button", { name: /Add manually/ }).click();
+  await page.getByRole("button", { name: "Manual" }).click();
   await page.getByRole("textbox", { name: "Amount" }).fill("12.50");
   await page.getByRole("searchbox", { name: "Merchant" }).fill(
     "Offline market",

@@ -23,8 +23,7 @@ test("dirty manual and receipt history keeps input through Back and discards exp
   const page = await isolatedContext.newPage();
   await createProject(page);
 
-  await page.getByRole("button", { name: "Add expense" }).click();
-  await page.getByRole("button", { name: /Add manually/ }).click();
+  await page.getByRole("button", { name: "Manual" }).click();
   await page.getByRole("textbox", { name: "Amount" }).fill("12.50");
   await page.goBack();
   await expect(page.getByRole("dialog", { name: "Unsaved changes" }))
@@ -38,10 +37,10 @@ test("dirty manual and receipt history keeps input through Back and discards exp
   );
   await page.goBack();
   await page.getByRole("button", { name: "Discard changes" }).click();
-  await expect(page.getByRole("dialog", { name: "Add an expense" }))
+  await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
     .toBeVisible();
 
-  await page.getByRole("button", { name: /Scan receipt with AI/ }).click();
+  await page.getByRole("button", { name: "Scan" }).click();
   await page.getByRole("button", { name: "Continue to scan" }).click();
   await page.getByLabel("Receipt image file").setInputFiles({
     name: "history-receipt.png",
@@ -60,7 +59,7 @@ test("dirty manual and receipt history keeps input through Back and discards exp
   await expect(page.getByAltText("Selected receipt preview")).toBeVisible();
   await page.goBack();
   await page.getByRole("button", { name: "Discard changes" }).click();
-  await expect(page.getByRole("dialog", { name: "Add an expense" }))
+  await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
     .toBeVisible();
   await expect(page.getByAltText("Selected receipt preview")).toHaveCount(0);
 });

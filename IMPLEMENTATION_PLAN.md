@@ -503,8 +503,8 @@ M34-001 -> M34-002 -> R-3410
 
 #### M34-003 — OpenRouter SDK adapter, model prefilter, endpoint metadata, and routing
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-3410`. Started after
-  R-3410 closure and the pinned SDK/reference audit at checkpoint `6522f2b`.
+- **Status/dependencies:** `COMPLETE`; depends on `R-3410`. Integrated on
+  `master` and pushed as `79463b5` after worker review and integrated validation.
 - **Ownership:** `deno.json`, `deno.lock`, new
   `src/adapters/openrouter/{client,adapter,index}.ts` and focused tests; shared
   receipt module only for a proven provider-neutral defect.
@@ -544,6 +544,20 @@ M34-001 -> M34-002 -> R-3410
 - **Verification:** lockfile update through repo's Deno/npm workflow;
   format/lint; focused OpenRouter tests; `deno task typecheck`;
   `deno task test:affected`; `git diff --check`.
+- **Implementation evidence:** the adapter uses only the exact pinned SDK
+  through `client.ts`, consumes model pages, applies server and client metadata
+  filters, exposes structured-output endpoint metadata, intersects the pinned
+  ZDR endpoint list by `modelId` + `tag`, and emits one exact-model chat request
+  with shared prompt text, base64 image input, strict JSON Schema, and the
+  required provider privacy/routing fields. No model fallback array or SDK debug
+  logging is present.
+- **Validation evidence:** worker reported focused OpenRouter tests 14/14 and
+  affected tests 475/475; integrated focused tests `deno test
+  --allow-read --allow-write --allow-run --allow-env
+  src/adapters/openrouter/client.test.ts src/adapters/openrouter/adapter.test.ts`
+  passed 14/14; `deno task fmt:check` passed (211 files); `deno task lint` passed
+  (202 files); `deno task typecheck` passed; `git diff --check` passed. No live
+  provider calls were made.
 
 #### M34-004 — Provider-aware settings and scan setup UI without compatibility testing
 
@@ -677,16 +691,18 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M34-003` (`IN_PROGRESS`).
-- **Planning base:** M34-001, M34-002, R-3410, and remediation are integrated
-  and pushed on remote `master`; the latest implementation is `e320493`.
+- **Active task / gate:** `M34-004` (`READY`).
+- **Planning base:** M34-001, M34-002, R-3410, remediation, and M34-003 are
+  integrated and pushed on remote `master`; the latest implementation is
+  `79463b5`.
 - **Verification status:** R-3410 closure audit approved with no residual
   severity 1–3 findings; post-remediation `deno task test:affected`: 382/382
-  passed; focused Gemini test: 17/17 passed; `deno task fmt:check`: passed (206
-  files); `deno task lint`: passed (197 files); `deno task typecheck`: passed;
-  isolated receipt E2E: 1/1 passed; `git diff --check`: passed. The first default
-  E2E attempt was invalidated before app startup because Playwright reused an
-  unrelated server on port 5173; no provider calls were made.
+  passed; focused Gemini test: 17/17 passed; integrated M34-003 OpenRouter tests:
+  14/14 passed; `deno task fmt:check`: passed (211 files); `deno task lint`:
+  passed (202 files); `deno task typecheck`: passed; isolated receipt E2E: 1/1
+  passed; `git diff --check`: passed. The first default E2E attempt was
+  invalidated before app startup because Playwright reused an unrelated server
+  on port 5173; no provider calls were made.
 - **Active / preserved work:** no active M34 implementation worker. Existing
   unrelated worktrees contain preserved untracked progress files and are not
   touched.
@@ -696,9 +712,10 @@ M34-001 -> M34-002 -> R-3410
   `inputModalities`, `outputModalities`, `zdr`, `provider.requireParameters`,
   `provider.dataCollection`, and `responseFormat.jsonSchema`; endpoint methods
   are `endpoints.list({author, slug})` and `endpoints.listZdrEndpoints()`.
-- **Exact next action:** dispatch exactly one write-enabled worker for M34-003.
-  Do not begin M34-004 until M34-003 is integrated, verified, pushed, and
-  checkpointed.
+- **Exact next action:** reconcile the M34-004 UI contract against `SPEC.md`,
+  `DESIGN_SYSTEM.md`, and the implemented facade, then dispatch exactly one
+  write-enabled worker for M34-004. Do not begin R-3420 until M34-004 is
+  integrated, verified, pushed, and checkpointed.
 
 ## Ready-to-Use Orchestration Prompt
 

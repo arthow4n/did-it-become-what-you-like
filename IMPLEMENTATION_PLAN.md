@@ -217,7 +217,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-004 — Saved receipt detail actor recovery & dirty tag accuracy
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-003`.
+- **Status/dependencies:** `COMPLETE`; depends on `M33-003`.
 - **Ownership:** `src/actors/contracts/saved-receipt.ts`,
   `src/actors/saved-receipt.ts`, `src/features/receipt-detail-ui.tsx`.
 - **Scope/non-goals:**
@@ -238,7 +238,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### R-3320 — Batch 2 review gate (Receipt scanning & saved receipt detail)
 
-- **Status/dependencies:** `PENDING`; depends on `M33-003`, `M33-004`.
+- **Status/dependencies:** `READY`; depends on `M33-003`, `M33-004`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Diffs from `M33-003` and `M33-004`, receipt actor tests,
   discard navigation preservation, and error recovery contracts.
@@ -325,18 +325,18 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M33-004` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `c93154e` —
-  `fix(receipts): harden review failure and dirty workflows`.
+- **Active task / gate:** `R-3320` (`READY`)
+- **Pushed commit / HEAD:** `daa6d8d` —
+  `fix(receipts): restore detail recovery semantics`.
 - **Verification status:**
-  `deno test --allow-read --allow-write --allow-run
-  --allow-env --related=src/actors/receipt.ts,src/features/receipt-ui.tsx`
-  passed (57 tests); `deno lint` on the five changed TypeScript files,
-  `deno task typecheck`, and `git diff --check` passed.
+  `deno test --allow-read --allow-write --allow-run --allow-env
+  --related=src/actors/saved-receipt.ts,src/features/receipt-detail-ui.tsx`
+  passed (43 tests); `deno lint` on the three changed TypeScript files,
+  `deno task typecheck`, `deno fmt --check` on the four changed files, and
+  `git diff --check` passed.
 - **Active / preserved work:** Clean, synchronized `master`; no active M33
   worktrees or subagents.
-- **Next action:** Implement `M33-004` saved receipt detail recovery and dirty
-  tag accuracy.
+- **Next action:** Run the fresh read-only `R-3320` review gate.
 
 ---
 

@@ -450,6 +450,16 @@ M27-001 -> M27-002 -> R-2710
   bounded commits, reruns affected actor/component checks and only the visual
   checks implicated by a fix, records evidence, and obtains review closure
   before `M27-005`.
+- **Review finding record:** Fresh read-only review found no severity-1
+  findings, but identified six severity-2/3 issues requiring remediation:
+  discard confirmation dropped the dirty tag and unload/history protection;
+  detail exit had no focus restoration; saved-detail responsive evidence was
+  missing; in-place receipt-ID changes could retain the old actor; retryability
+  metadata was ignored; archived categories were offered for selection; mobile
+  destructive actions were not stacked; and line actions remained visually
+  enabled during mutation. The review also recorded no finding for the XState
+  lifecycle, deletion scope, receipt/manual-expense separation, or facade
+  boundary. Remediation is in progress before this gate can close.
 
 #### M27-005 — Prove the saved-receipt management journey
 
@@ -524,9 +534,9 @@ M27-001 -> M27-002 -> R-2710
 - **Active / preserved work:** Single primary agent on `master`; no M27 worker
   or worktree. The M27-002 implementation and review checkpoint are being
   preserved on the primary branch.
-- **Exact next action:** Dispatch a fresh read-only reviewer for R-2720, audit
-  the actor/UI/facade boundary and the named multi-viewport evidence, then
-  remediate every severity 1–3 finding before opening M27-005.
+- **Exact next action:** Remediate the recorded R-2720 severity-2/3 findings,
+  rerun the implicated actor/component/browser checks, and obtain fresh review
+  closure before opening M27-005.
 
 ## Ready-to-Use Orchestration Prompt
 

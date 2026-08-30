@@ -113,6 +113,7 @@ const aggregate: ReceiptAggregate = {
 };
 
 function createService(options?: {
+  updateLine?: ReceiptManagementService["updateLine"];
   deleteReceipt?: () => Promise<{ deletedReceipt: boolean }>;
 }): ReceiptManagementService {
   let current = aggregate;
@@ -137,7 +138,7 @@ function createService(options?: {
       };
       return Promise.resolve(current);
     },
-    updateLine: () => Promise.resolve(current),
+    updateLine: options?.updateLine ?? (() => Promise.resolve(current)),
     deleteLine: (_receiptId, lineId) =>
       Promise.resolve({
         aggregate: {
@@ -264,3 +265,52 @@ Deno.test("receipt detail exposes scoped line and whole-receipt confirmations", 
     });
   });
 });
+
+Deno.test(
+  "receipt detail disables line management while an atomic change is pending",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      let resolveUpdate: ((value: ReceiptAggregate) => void) | undefined;
+      await withAriaGlobals(async () => {
+        render(
+          createElement(ReceiptDetailScreen, {
+            service: createService({
+              updateLine: () =>
+                new Promise<ReceiptAggregate>((resolve) => {
+                  resolveUpdate = resolve;
+                }),
+            }),
+            receiptId: aggregate.receipt.id,
+            categories: [category],
+          }),
+        );
+        const view = within(document.body);
+        await waitFor(() => assert(view.getByText("Coffee")));
+        const editButtons = view.getAllByRole("button", { name: "Edit" });
+        fireEvent.click(editButtons[1]);
+        await waitFor(() =>
+          assert(view.getByRole("dialog", { name: "Edit receipt line" }))
+        );
+        fireEvent.input(view.getByLabelText(/Description/), {
+          target: { value: "Updated coffee" },
+        });
+        fireEvent.click(view.getByRole("button", { name: "Save changes" }));
+        await waitFor(() => assert(view.getByText("Saving receipt change")));
+        const coffeeLine = document.querySelector<HTMLElement>(
+          '[data-receipt-line-id="line-coffee"]',
+        );
+        assert(coffeeLine);
+        assert(
+          within(coffeeLine).getByRole("button", { name: "Edit" }).hasAttribute(
+            "disabled",
+          ),
+        );
+        assert(
+          within(coffeeLine).getByRole("button", { name: "Remove" })
+            .hasAttribute("disabled"),
+        );
+        resolveUpdate?.(aggregate);
+      });
+    });
+  },
+);

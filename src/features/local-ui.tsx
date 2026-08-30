@@ -838,7 +838,9 @@ export function ExpensesScreen({
           )
           : (
             <Stack gap={4}>
-              <Heading size="sm">Expense list</Heading>
+              <div data-expenses-list-heading tabIndex={-1}>
+                <Heading size="sm">Expense list</Heading>
+              </div>
               <ExpenseList
                 expenses={plainExpenses}
                 onSelect={(id) => {
@@ -849,26 +851,28 @@ export function ExpensesScreen({
                 }}
               />
               {result.receiptGroups.map((group) => (
-                <Card key={group.id} as="section">
-                  <ReceiptGroup
-                    merchant={group.receipt.merchant ?? "Receipt"}
-                    date={group.receipt.date}
-                    lines={group.lines.map((item) => ({
-                      ...expenseViewModel(item),
-                      category: categoryById.get(item.categoryId) ??
-                        item.categoryId,
-                    }))}
-                    total={{
-                      amount: group.total,
-                      currency: group.receipt.currency,
-                    }}
-                    onViewReceipt={() =>
-                      onViewReceipt(group.id)}
-                    onSelectLine={(id) => {
-                      onViewReceipt(group.id, id);
-                    }}
-                  />
-                </Card>
+                <div key={group.id} data-receipt-group-id={group.id}>
+                  <Card as="section">
+                    <ReceiptGroup
+                      merchant={group.receipt.merchant ?? "Receipt"}
+                      date={group.receipt.date}
+                      lines={group.lines.map((item) => ({
+                        ...expenseViewModel(item),
+                        category: categoryById.get(item.categoryId) ??
+                          item.categoryId,
+                      }))}
+                      total={{
+                        amount: group.total,
+                        currency: group.receipt.currency,
+                      }}
+                      onViewReceipt={() =>
+                        onViewReceipt(group.id)}
+                      onSelectLine={(id) => {
+                        onViewReceipt(group.id, id);
+                      }}
+                    />
+                  </Card>
+                </div>
               ))}
             </Stack>
           )}
@@ -2736,6 +2740,11 @@ export function LocalUiRuntime(
   const pendingNavigationRef = useRef<LocalUiPendingNavigation | null>(null);
   const currentHistoryRef = useRef<LocalUiHistoryEntry | null>(null);
   const historyTransitionRef = useRef<LocalUiHistoryTransition | null>(null);
+  const receiptReturnFocusRef = useRef<
+    | { readonly kind: "receipt"; readonly receiptId: string }
+    | { readonly kind: "expenses" }
+    | null
+  >(null);
   const dirtyNavigationRef = useRef(false);
   dirtyNavigationRef.current = dirtyNavigationWorkflow;
   if (currentHistoryRef.current === null) {
@@ -2831,6 +2840,29 @@ export function LocalUiRuntime(
       } satisfies LocalShellEvent,
     );
   }, [path, sendShell, shellReady]);
+
+  useEffect(() => {
+    if (path !== "/expenses") return;
+    const request = receiptReturnFocusRef.current;
+    if (!request) return;
+    const receiptGroup = request.kind === "receipt"
+      ? Array.from(
+        document.querySelectorAll<HTMLElement>("[data-receipt-group-id]"),
+      ).find((element) => element.dataset.receiptGroupId === request.receiptId)
+      : undefined;
+    const target = request.kind === "expenses"
+      ? document.querySelector<HTMLElement>("[data-expenses-list-heading]")
+      : receiptGroup?.querySelector<HTMLElement>(
+        "[data-receipt-view='true']",
+      ) ??
+        receiptGroup?.querySelector<HTMLElement>("button") ??
+        document.querySelector<HTMLElement>("[data-expenses-list-heading]");
+    if (!target) return;
+    receiptReturnFocusRef.current = null;
+    queueMicrotask(() => {
+      if (target.isConnected) target.focus();
+    });
+  }, [path, state]);
 
   const navigate = (nextPath: LocalUiPath) => {
     const current = currentHistoryRef.current;
@@ -3081,6 +3113,7 @@ export function LocalUiRuntime(
     setWorkflowDirty(false);
     setDirtyNavigationWorkflow(false);
     if (output.status === "deleted") {
+      receiptReturnFocusRef.current = { kind: "expenses" };
       void organization.getState().then(setState);
       setAppNotice(
         output.deletedLineId === undefined
@@ -3144,12 +3177,17 @@ export function LocalUiRuntime(
                 onAdd={() => navigate("/add")}
                 onEdit={(expense) =>
                   navigate(`/expense/edit/${expense.id}` as LocalUiPath)}
-                onViewReceipt={(receiptId, focusedLineId) =>
+                onViewReceipt={(receiptId, focusedLineId) => {
+                  receiptReturnFocusRef.current = {
+                    kind: "receipt",
+                    receiptId,
+                  };
                   navigate(
                     `/receipt/detail/${receiptId}${
                       focusedLineId ? `?line=${focusedLineId}` : ""
                     }` as LocalUiPath,
-                  )}
+                  );
+                }}
                 onProjectChange={(projectId) =>
                   sendShell({ type: "shell.project.select", projectId })}
               />
@@ -3157,6 +3195,7 @@ export function LocalUiRuntime(
             : receiptDetail
             ? (
               <ReceiptDetailScreen
+                key={receiptDetail.receiptId}
                 service={receiptManagement}
                 receiptId={receiptDetail.receiptId}
                 focusedLineId={receiptDetail.focusedLineId}

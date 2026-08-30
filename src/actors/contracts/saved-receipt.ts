@@ -218,7 +218,11 @@ export const savedReceiptMachine = setup({
           (output.kind === "delete-line" &&
             output.result.aggregate !== undefined));
     },
-    retryLoad: ({ context }) => context.failureOperation === "load",
+    retryLoad: ({ context }) =>
+      context.failureOperation === "load" && context.error?.retryable === true,
+    retryMutation: ({ context }) =>
+      context.failureOperation === "mutation" &&
+      context.pendingMutation !== null && context.error?.retryable === true,
     discardMetadata: ({ context }) => context.discardEditor === "metadata",
     discardLine: ({ context }) => context.discardEditor === "line",
   },
@@ -679,7 +683,7 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
       },
     },
     confirmingDiscard: {
-      tags: ["confirming-discard"],
+      tags: ["confirming-discard", "dirty"],
       on: {
         "receipt.detail.keep-editing": [
           { target: "metadataDirty", guard: "discardMetadata" },
@@ -816,7 +820,7 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
           { target: "loading", guard: "retryLoad", actions: "clearError" },
           {
             target: "mutating",
-            guard: "hasPendingMutation",
+            guard: "retryMutation",
             actions: "clearError",
           },
         ],

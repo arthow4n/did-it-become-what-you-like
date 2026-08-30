@@ -2045,7 +2045,7 @@ export function ConfirmDialog({
       {(close) => (
         <Stack gap={5}>
           <Text>{description}</Text>
-          <Inline justify="end" gap={2}>
+          <FormActions>
             <Button
               variant="secondary"
               onPress={() => {
@@ -2064,7 +2064,7 @@ export function ConfirmDialog({
             >
               {confirmLabel}
             </Button>
-          </Inline>
+          </FormActions>
         </Stack>
       )}
     </AdaptiveDialog>
@@ -2123,7 +2123,7 @@ export function DeleteAndReassign({
             value={replacementId}
             onValueChange={setReplacementId}
           />
-          <Inline justify="end" gap={2}>
+          <FormActions>
             <Button
               variant="secondary"
               onPress={() => {
@@ -2143,7 +2143,7 @@ export function DeleteAndReassign({
             >
               {confirmLabel}
             </Button>
-          </Inline>
+          </FormActions>
         </Stack>
       )}
     </AdaptiveDialog>
@@ -2195,7 +2195,7 @@ export function DangerDialog(
               />
             )
             : null}
-          <Inline justify="end" gap={2}>
+          <FormActions>
             <Button
               variant="secondary"
               onPress={() => {
@@ -2215,7 +2215,7 @@ export function DangerDialog(
             >
               {props.confirmLabel}
             </Button>
-          </Inline>
+          </FormActions>
         </Stack>
       )}
     </AdaptiveDialog>
@@ -3218,7 +3218,11 @@ export function ReceiptGroup(
         <MoneyText {...total} />
         {onViewReceipt
           ? (
-            <Button variant="secondary" onPress={onViewReceipt}>
+            <Button
+              variant="secondary"
+              data-receipt-view="true"
+              onPress={onViewReceipt}
+            >
               View receipt
             </Button>
           )
@@ -3357,6 +3361,7 @@ export function ReceiptLineCard(
     line,
     currency,
     mode = "review",
+    isDisabled,
     onSelectedChange,
     onEdit,
     editControl,
@@ -3365,6 +3370,7 @@ export function ReceiptLineCard(
     line: ReceiptLineViewModel;
     currency: string;
     mode?: "review" | "management";
+    isDisabled?: boolean;
     onSelectedChange?: (selected: boolean) => void;
     onEdit?: () => void;
     editControl?: ReactNode;
@@ -3379,6 +3385,7 @@ export function ReceiptLineCard(
           : (
             <Checkbox
               isSelected={line.selected}
+              isDisabled={isDisabled}
               onChange={onSelectedChange}
             >
               <strong>{line.description || "Unclear item"}</strong>
@@ -3411,10 +3418,22 @@ export function ReceiptLineCard(
         <Inline>
           {editControl}
           {editControl === undefined && onEdit
-            ? <Button variant="quiet" onPress={onEdit}>Edit</Button>
+            ? (
+              <Button variant="quiet" isDisabled={isDisabled} onPress={onEdit}>
+                Edit
+              </Button>
+            )
             : null}
           {onRemove
-            ? <Button variant="quiet" onPress={onRemove}>Remove</Button>
+            ? (
+              <Button
+                variant="quiet"
+                isDisabled={isDisabled}
+                onPress={onRemove}
+              >
+                Remove
+              </Button>
+            )
             : null}
         </Inline>
       </Inline>

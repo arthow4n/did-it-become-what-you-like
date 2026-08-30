@@ -55,10 +55,16 @@ export type ReceiptDetailScreenProps = {
   onComplete?: (output: SavedReceiptActorOutput) => void;
 };
 
-function categoryOptions(categories: readonly Category[]) {
-  return categories.map((category) => ({
+function categoryOptions(
+  categories: readonly Category[],
+  currentCategoryId?: string,
+) {
+  return categories.filter((category) =>
+    !category.archived || category.id === currentCategoryId
+  ).map((category) => ({
     id: category.id,
     label: category.archived ? `${category.name} (archived)` : category.name,
+    ...(category.archived ? { disabled: true } : {}),
   }));
 }
 
@@ -151,6 +157,7 @@ export function ReceiptDetailScreen({
   const dirty = snapshot.hasTag("dirty") ||
     (mutationFailure && mutationIsLine(pendingMutationKind) ||
       mutationFailure && pendingMutationKind === "metadata");
+  const canRetry = snapshot.can({ type: "receipt.detail.retry" });
 
   useEffect(() => {
     onDirtyChange?.(dirty);
@@ -326,7 +333,6 @@ export function ReceiptDetailScreen({
     ...adjustments.map(receiptLineAmount),
   ]);
   const difference = moneySubtract(selectedTotal, receipt.printedTotal);
-  const options = categoryOptions(categories);
   const links = purchaseLines.map((line) => ({
     id: line.id,
     label: line.description,
@@ -411,14 +417,25 @@ export function ReceiptDetailScreen({
               title="Receipt change failed"
               action={
                 <Inline>
-                  <Button
-                    onPress={() => send({ type: "receipt.detail.retry" })}
-                  >
-                    <Icon>
-                      <RotateCcw />
-                    </Icon>{" "}
-                    Retry
-                  </Button>
+                  {canRetry
+                    ? (
+                      <Button
+                        onPress={() => send({ type: "receipt.detail.retry" })}
+                      >
+                        <Icon>
+                          <RotateCcw />
+                        </Icon>{" "}
+                        Retry
+                      </Button>
+                    )
+                    : (
+                      <Button
+                        variant="secondary"
+                        onPress={() => send({ type: "receipt.detail.reload" })}
+                      >
+                        Reload receipt
+                      </Button>
+                    )}
                   <Button
                     variant="secondary"
                     onPress={() =>
@@ -468,6 +485,7 @@ export function ReceiptDetailScreen({
               >
                 <ReceiptLineCard
                   mode="management"
+                  isDisabled={isMutating}
                   line={{
                     id: line.id,
                     type: "purchase",
@@ -511,6 +529,7 @@ export function ReceiptDetailScreen({
               >
                 <ReceiptLineCard
                   mode="management"
+                  isDisabled={isMutating}
                   line={{
                     id: line.id,
                     type: "adjustment",
@@ -612,7 +631,9 @@ export function ReceiptDetailScreen({
                 ? (
                   <InlineNotice tone="danger" title="Save failed">
                     {snapshot.context.error?.message ??
-                      "Retry to save these receipt details."}
+                      (canRetry
+                        ? "Retry to save these receipt details."
+                        : "Reload the receipt to discard this failed change.")}
                   </InlineNotice>
                 )
                 : null}
@@ -621,13 +642,22 @@ export function ReceiptDetailScreen({
                   Cancel
                 </Button>
                 {mutationFailure
-                  ? (
-                    <Button
-                      onPress={() => send({ type: "receipt.detail.retry" })}
-                    >
-                      Retry
-                    </Button>
-                  )
+                  ? canRetry
+                    ? (
+                      <Button
+                        onPress={() => send({ type: "receipt.detail.retry" })}
+                      >
+                        Retry
+                      </Button>
+                    )
+                    : (
+                      <Button
+                        variant="secondary"
+                        onPress={() => send({ type: "receipt.detail.reload" })}
+                      >
+                        Reload receipt
+                      </Button>
+                    )
                   : (
                     <Button
                       isDisabled={!snapshot.can({
@@ -659,7 +689,10 @@ export function ReceiptDetailScreen({
             <Stack gap={4}>
               <ReceiptLineEditor
                 value={editorValue(lineDraft)}
-                categories={options}
+                categories={categoryOptions(
+                  categories,
+                  lineDraft.changes.categoryId,
+                )}
                 linkOptions={links}
                 onChange={(value) =>
                   send({
@@ -671,7 +704,9 @@ export function ReceiptDetailScreen({
                 ? (
                   <InlineNotice tone="danger" title="Save failed">
                     {snapshot.context.error?.message ??
-                      "Retry to save this receipt line."}
+                      (canRetry
+                        ? "Retry to save this receipt line."
+                        : "Reload the receipt to discard this failed change.")}
                   </InlineNotice>
                 )
                 : null}
@@ -680,13 +715,22 @@ export function ReceiptDetailScreen({
                   Cancel
                 </Button>
                 {mutationFailure
-                  ? (
-                    <Button
-                      onPress={() => send({ type: "receipt.detail.retry" })}
-                    >
-                      Retry
-                    </Button>
-                  )
+                  ? canRetry
+                    ? (
+                      <Button
+                        onPress={() => send({ type: "receipt.detail.retry" })}
+                      >
+                        Retry
+                      </Button>
+                    )
+                    : (
+                      <Button
+                        variant="secondary"
+                        onPress={() => send({ type: "receipt.detail.reload" })}
+                      >
+                        Reload receipt
+                      </Button>
+                    )
                   : (
                     <Button
                       isDisabled={!snapshot.can({

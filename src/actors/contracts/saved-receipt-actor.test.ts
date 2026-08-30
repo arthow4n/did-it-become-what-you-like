@@ -341,6 +341,7 @@ Deno.test(
       destination: "/expenses",
     });
     assert(actor.getSnapshot().matches("confirmingDiscard"));
+    assert(actor.getSnapshot().hasTag("dirty"));
     actor.send({ type: "receipt.detail.keep-editing" });
     assert(actor.getSnapshot().matches("lineDirty"));
     actor.send({
@@ -385,5 +386,27 @@ Deno.test(
       destination: "/expenses",
     });
     clean.stop();
+
+    const nonRetryable = start(createService({
+      updateMetadata: () => Promise.reject({ code: "invalid" }),
+    }));
+    await waitForState(nonRetryable, "ready");
+    nonRetryable.send({ type: "receipt.detail.edit-metadata" });
+    nonRetryable.send({
+      type: "receipt.detail.change-metadata",
+      changes: {
+        merchant: "Invalid market",
+        date: aggregate.receipt.date,
+        time: aggregate.receipt.time ?? null,
+        printedTotal: aggregate.receipt.printedTotal,
+      },
+    });
+    nonRetryable.send({ type: "receipt.detail.save-metadata" });
+    await waitForState(nonRetryable, "failure");
+    assertEquals(nonRetryable.getSnapshot().context.error?.retryable, false);
+    assert(!nonRetryable.getSnapshot().can({ type: "receipt.detail.retry" }));
+    nonRetryable.send({ type: "receipt.detail.retry" });
+    assert(nonRetryable.getSnapshot().matches("failure"));
+    nonRetryable.stop();
   },
 );

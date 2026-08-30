@@ -3,7 +3,8 @@ name: repo-hygiene-pruning
 description: >-
   Standardized procedure for auditing, identifying, updating, and pruning stale
   documents, code-mirroring markdown files, obsolete spikes, redundant verification
-  scripts, brittle test structures, and misleading test tasks across the repository.
+  scripts, brittle test structures, copy-pasted test harnesses/shims, duplicate fake ports,
+  and misleading test tasks across the repository.
 ---
 
 # Repository Hygiene, Documentation & Test Tooling Pruning Workflow
@@ -11,7 +12,8 @@ description: >-
 This skill defines the standardized protocol for orchestrating repository
 hygiene audits to discover and prune stale documentation, code-mirroring
 markdown files, obsolete spike artifacts, tautological/brittle test structures,
-redundant E2E specs, and inaccurate task definitions.
+copy-pasted test harnesses/shims, redundant fake ports, repetitive intra-suite
+test cases, redundant E2E specs, and inaccurate task definitions.
 
 ---
 
@@ -41,10 +43,16 @@ redundant E2E specs, and inaccurate task definitions.
    - Tests that merely assert hardcoded substring matches inside markdown/source
      files, or execute no-op runtime loops over compile-time boolean tuples,
      provide false confidence and create maintenance drag.
-5. **Mandatory `[archive]` Commit Tagging:**
+5. **Shared Test Harnesses & Parameterized Fixtures over Copy-Paste:**
+   - Test harnesses, global shims (e.g. DOM/ARIA environment setups), async
+     polling utilities, and fake ports belong in centralized `src/test-support/`
+     modules rather than being duplicated across test files.
+   - Verbose repetitive test cases testing variations of the same input/output
+     rules should be consolidated into concise table-driven parameterizations.
+6. **Mandatory `[archive]` Commit Tagging:**
    - Per `AGENTS.md`, any document, spike, ledger, or test structure deletion
      must be committed with `[archive]` in the commit message.
-6. **Environment-Scoped & Risk-Bounded Verification:**
+7. **Environment-Scoped & Risk-Bounded Verification:**
    - Never execute broad or heavy verification commands in environments or
      phases where they are irrelevant (e.g. running full test suites or browser
      visual captures during docs or hygiene pruning; running release provenance
@@ -77,7 +85,10 @@ an **Orchestrator** dispatching two specialized subagents:
 │ • Code-mirroring markdown & schemas  │      │ • Source AST / string-scraping tests │
 │ • Stale migration & import matrices  │      │ • Milestone-named & spike artifacts  │
 │ • Obsolete spikes & proof entries    │      │ • Redundant micro E2E specs          │
-│ • Brittle doc-string matchers        │      │ • deno.json task target flaws        │
+│ • Brittle doc-string matchers        │      │ • Copy-pasted harnesses & shims      │
+│                                      │      │ • Parallel / redundant fake ports    │
+│                                      │      │ • Repetitive intra-suite test blocks │
+│                                      │      │ • deno.json task target flaws        │
 └──────────────────────────────────────┘      └──────────────────────────────────────┘
                                       │
                                       ▼
@@ -243,6 +254,44 @@ and tooling task definitions against these dimensions:
   - Clean up `test:integration` to focus strictly on adapter/boundary suites.
   - Streamline `check` arguments.
 
+### Dimension 2G: Copy-Pasted Test Harnesses, Window Shims & Polling Helpers
+
+- **What to look for:**
+  - Test files repeatedly copying multi-line global window/ARIA shims (e.g.
+    `withAriaGlobals` duplicating DOM/CSS global setup across feature tests)
+    instead of centralizing them in `src/test-support/component-harness.tsx`.
+  - Re-implementation of event-loop settling and actor state waiting utilities
+    (`settle()`, `waitForValue()`, `waitForState()`) scattered across actor and
+    adapter integration tests.
+- **Remediation:**
+  - Centralize DOM/ARIA window shimming inside
+    `src/test-support/component-harness.tsx` and reuse it across all UI test
+    suites.
+  - Colocate shared async actor settlement and state-waiting helpers inside
+    `src/test-support/` modules.
+
+### Dimension 2H: Parallel & Redundant Test Fake Ports
+
+- **What to look for:**
+  - Standalone fake port implementations (e.g. `src/test-support/fake-drive.ts`,
+    `src/test-support/fake-gemini.ts`) that duplicate or overlap canonical fake
+    ports in `src/test-support/fakes/ports.ts`.
+  - Unused or single-consumer duplicate fake fixture files.
+- **Remediation:**
+  - Standardize all consumers (including E2E support harnesses) on canonical
+    fake port factories in `src/test-support/fakes/` and prune the redundant
+    parallel implementations.
+
+### Dimension 2I: Intra-Suite Repetitive Test Cases & Table-Driven Consolidation
+
+- **What to look for:**
+  - Multiple 30-40 line test cases repeating identical record construction and
+    execution steps merely to test minor input permutations (such as decimal
+    formatting variations, sign adjustments, or single-field invalidation).
+- **Remediation:**
+  - Refactor repetitive unit cases into concise table-driven parameterized tests
+    over shared domain fixtures.
+
 ---
 
 ## 5. Step-by-Step Execution Protocol
@@ -285,7 +334,7 @@ and tooling task definitions against these dimensions:
    1A–1E.
 2. **Dispatch Section 2 Subagent:** Task with evaluating all test files, test
    support fixtures, E2E specs, and `deno.json` task targets against Dimensions
-   2A–2F.
+   2A–2I.
 
 ### Phase 3: Orchestrator Reconciliation & Coordinated File Pruning
 
@@ -353,6 +402,12 @@ Before closing a pruning audit, confirm:
       the codebase.
 - [ ] Redundant micro E2E tests are pruned in favor of multi-viewport gallery
       and actor tests.
+- [ ] Shared DOM/ARIA shims and polling utilities are centralized in
+      `src/test-support/` rather than copy-pasted across feature tests.
+- [ ] Redundant standalone fake ports are pruned in favor of canonical fakes in
+      `src/test-support/fakes/`.
+- [ ] Verbose repetitive intra-suite unit tests are consolidated into
+      parameterized table tests.
 - [ ] `test:domain` runs all domain tests (including colocated subdirectories in
       `src/domain`).
 - [ ] Visual audit screenshot capture scripts remain isolated in `e2e/audit/` /

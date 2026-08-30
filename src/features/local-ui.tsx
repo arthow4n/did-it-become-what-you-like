@@ -130,6 +130,7 @@ export type LocalUiPath =
   | "/expenses"
   | "/add"
   | "/expense/new"
+  | `/expense/edit/${string}`
   | "/organize"
   | "/projects"
   | "/categories"
@@ -145,6 +146,34 @@ export type LocalUiPath =
   | "/receipt/scan"
   | "/receipt/review"
   | `/receipt/detail/${string}`;
+
+export type LocalUiNavigation =
+  | "expenses"
+  | "manual"
+  | "scan"
+  | "organize"
+  | "settings";
+
+export function selectedNavigationForPath(
+  activePath: string,
+): LocalUiNavigation {
+  if (
+    activePath === "/expense/new" || activePath.startsWith("/expense/edit/")
+  ) {
+    return "manual";
+  }
+  if (activePath === "/receipt/scan" || activePath === "/receipt/review") {
+    return "scan";
+  }
+  if (
+    activePath.startsWith("/organize") || activePath === "/projects" ||
+    activePath === "/categories"
+  ) {
+    return "organize";
+  }
+  if (activePath.startsWith("/settings")) return "settings";
+  return "expenses";
+}
 
 function shellRouteForPath(path: string): ShellRoute {
   if (path === "/first-use") return "first-use";
@@ -2752,7 +2781,6 @@ export function LocalUiRuntime(
   const [path, setPath] = useState(pathFromHash);
   const [projectEditorOpen, setProjectEditorOpen] = useState(false);
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
-  const [manualFormKey, setManualFormKey] = useState(0);
   const [appNotice, setAppNotice] = useState<string | null>(null);
   const [usefulActionVersion, setUsefulActionVersion] = useState(0);
   const [workflowDirty, setWorkflowDirty] = useState(false);
@@ -3117,18 +3145,7 @@ export function LocalUiRuntime(
     : (path || (state.projects.length ? "/expenses" : "/first-use"));
   const receiptDetail = receiptDetailForPath(activePath);
   const contentPath = activePath;
-  const selectedNavigation =
-    activePath === "/expense/new" || activePath.startsWith("/expense/edit/")
-      ? "manual"
-      : activePath === "/receipt/scan" || activePath === "/receipt/review" ||
-          receiptDetail !== undefined
-      ? "scan"
-      : activePath.startsWith("/organize") ||
-          activePath === "/projects" || activePath === "/categories"
-      ? "organize"
-      : activePath.startsWith("/settings")
-      ? "settings"
-      : "expenses";
+  const selectedNavigation = selectedNavigationForPath(activePath);
   const portabilityScreen: SyncPortabilityScreen =
     activePath === "/settings/sync"
       ? "sync"
@@ -3227,8 +3244,7 @@ export function LocalUiRuntime(
                 expenseDayBoundary={expenseDayBoundary}
                 offline={shellSnapshot.hasTag("offline")}
                 onAdd={() => navigate("/expense/new")}
-                onEdit={(expense) =>
-                  navigate(`/expense/edit/${expense.id}` as LocalUiPath)}
+                onEdit={(expense) => navigate(`/expense/edit/${expense.id}`)}
                 onViewReceipt={(receiptId, focusedLineId) => {
                   receiptReturnFocusRef.current = {
                     kind: "receipt",
@@ -3322,16 +3338,13 @@ export function LocalUiRuntime(
                 contentPath.startsWith("/expense/edit/")
             ? (
               <ManualExpenseScreen
-                key={`${contentPath}-${manualFormKey}`}
+                key={contentPath}
                 repository={repository}
                 service={organization}
                 state={state}
                 request={manualRequest}
-                onSaved={(_, mode) => {
+                onSaved={() => {
                   void organization.getState().then(setState);
-                  if (mode === "another") {
-                    setManualFormKey((value) => value + 1);
-                  }
                 }}
                 onUsefulAction={() =>
                   setUsefulActionVersion((value) => value + 1)}

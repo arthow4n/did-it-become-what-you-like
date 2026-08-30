@@ -7,12 +7,14 @@ import {
   firstUseRedirectPath,
   FirstUseScreen,
   LoadingScreen,
+  type LocalUiPath,
   ManualExpenseRecoveryScreen,
   ManualExpenseScreen,
   manualExpenseSubmitEvent,
   OrganizeScreen,
   ProjectManager,
   SavedExpenseCompletionScreen,
+  selectedNavigationForPath,
   SettingsScreen,
 } from "./local-ui.tsx";
 import type {
@@ -783,6 +785,15 @@ Deno.test("local UI shell navigation routes directly to manual and scan scenes",
       assertEquals(selectedTab, "scan");
     });
   });
+});
+
+Deno.test("local UI associates receipt detail with expenses navigation", () => {
+  const editPath: LocalUiPath = "/expense/edit/expense-typed";
+  assertEquals(selectedNavigationForPath(editPath), "manual");
+  assertEquals(
+    selectedNavigationForPath("/receipt/detail/receipt-123?line=line-456"),
+    "expenses",
+  );
 });
 
 Deno.test("local UI null-draft recovery exposes retry and back actions", async () => {

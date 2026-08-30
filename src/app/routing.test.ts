@@ -26,3 +26,9 @@ Deno.test("hash routing survives a nested Pages refresh URL", () => {
   assertEquals(routeFromHash(new URL(url).hash), "/settings/nested");
   assertEquals(hashForRoute("settings/nested"), "#/settings/nested");
 });
+
+Deno.test("hash routing preserves a dynamic expense edit route", () => {
+  const route = "/expense/edit/expense-123";
+
+  assertEquals(routeFromHash(hashForRoute(route)), route);
+});

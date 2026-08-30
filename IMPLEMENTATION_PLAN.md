@@ -135,7 +135,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### M33-001 — Manual expense actor logic & mount race remediation
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on released baseline.
+- **Status/dependencies:** `COMPLETE`; depends on released baseline.
 - **Ownership:** `src/actors/manual-expense.ts`, `src/features/local-ui.tsx`.
 - **Scope/non-goals:**
   1. Fix the mount effect race condition in `ManualExpenseScreen` where
@@ -156,12 +156,12 @@ M33-005 -> M33-006 -> R-3330
   `src/actors/contracts/manual-expense-actor.test.ts` and component tests in
   `src/features/local-ui.test.tsx`.
 - **Verification:**
-  `deno test --related=src/actors/manual-expense.ts,src/features/local-ui.tsx`,
+  `deno test --allow-read --allow-write --allow-run --allow-env --related=src/actors/manual-expense.ts,src/features/local-ui.tsx`,
   `deno task typecheck`.
 
 #### M33-002 — Navigation route typing, receipt scene association & continuous loop
 
-- **Status/dependencies:** `PENDING`; depends on `M33-001`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-001`.
 - **Ownership:** `src/features/local-ui.tsx`, `src/app/routing.ts`.
 - **Scope/non-goals:**
   1. Add `"/expense/edit/${string}"` to `LocalUiPath` type union in
@@ -325,11 +325,25 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M33-001` (`IN_PROGRESS`)
-- **Repository:** Clean, synchronized `master` reconciled at `3acdbd3`; no M33
-  work or active ownership existed before recovery.
-- **Next action:** Implement the audited manual-expense actor and screen
-  regressions, then run the task's focused validation.
+- **Active task / gate:** `M33-002` (`IN_PROGRESS`)
+- **Pushed commit / HEAD:** `09986fb` —
+  `fix(manual-expense): harden draft and
+  failure workflows`.
+- **Verification status:**
+  `deno fmt IMPLEMENTATION_PLAN.md
+  src/actors/manual-expense.ts src/actors/contracts/manual-expense-actor.test.ts
+  src/features/local-ui.tsx src/features/local-ui.test.tsx`
+  passed;
+  `deno test
+  --allow-read --allow-write --allow-run --allow-env
+  --related=src/actors/manual-expense.ts,src/features/local-ui.tsx`
+  passed (41 tests); `deno lint` on the four changed TypeScript files passed;
+  `deno task
+  typecheck` passed; `git diff --check` passed.
+- **Active / preserved work:** Clean, synchronized `master`; no active M33
+  worktrees or subagents.
+- **Next action:** Audit and implement `M33-002` route typing, receipt
+  navigation association, and continuous manual add-another lifecycle.
 
 ---
 

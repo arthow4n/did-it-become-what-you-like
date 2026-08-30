@@ -1029,9 +1029,9 @@ Deno.test("local UI organize and settings screens expose labeled destinations", 
         createElement(SettingsScreen, {
           expenseDayBoundary: "03:00",
           syncSummary: "Synced · 2 minutes ago",
-          geminiSummary: "Key and model configured",
+          receiptSummary: "Key and model configured",
           onSync: () => undefined,
-          onGemini: () => undefined,
+          onReceipt: () => undefined,
           onPreferences: () => undefined,
           onImport: () => undefined,
           onPrivacy: () => undefined,
@@ -1047,6 +1047,7 @@ Deno.test("local UI organize and settings screens expose labeled destinations", 
     assert(view.getByText("Expense day 03:00"));
     assert(view.getByText("Synced · 2 minutes ago"));
     assert(view.getByText("Key and model configured"));
+    assert(view.getByRole("button", { name: "Open Receipt scanning" }));
     assert(
       view.getByRole("button", { name: "Open Google Drive and sync" }),
     );

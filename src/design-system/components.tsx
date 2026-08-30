@@ -3594,8 +3594,9 @@ export function ModelPicker(
   );
 }
 
-export function GeminiQuickSetup(
+export function ReceiptQuickSetup(
   {
+    providerName,
     value,
     onChange,
     onSave,
@@ -3604,6 +3605,7 @@ export function GeminiQuickSetup(
     showHeading = true,
     autoFocus = false,
   }: {
+    providerName: string;
     value: string;
     onChange: (value: string) => void;
     onSave: () => void;
@@ -3616,7 +3618,9 @@ export function GeminiQuickSetup(
   return (
     <Card as="section">
       <Stack gap={4}>
-        {showHeading ? <Heading size="sm">Set up Gemini</Heading> : null}
+        {showHeading
+          ? <Heading size="sm">Set up {providerName}</Heading>
+          : null}
         <SecretField
           label="API key"
           autoFocus={autoFocus}
@@ -3628,8 +3632,10 @@ export function GeminiQuickSetup(
         <InlineNotice tone="warning" title="Before you continue">
           The selected receipt image, extraction schema and instructions, active
           category IDs and names, device locale, and project currency code are
-          sent to Google Gemini. Expense history, project names, Drive data,
-          other device details, and sync metadata are excluded.
+          sent to{" "}
+          {providerName}. Expense history, project names, Drive data, other
+          device details, and sync metadata are excluded. The image is used only
+          for this scan and is not uploaded publicly or stored by this app.
         </InlineNotice>
         <FormActions>
           <Button

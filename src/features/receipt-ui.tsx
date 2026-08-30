@@ -7,6 +7,11 @@ import {
   REQUIRED_RECEIPT_AI_CAPABILITIES,
 } from "../adapters/gemini/index.ts";
 import {
+  createOpenRouterAdapter,
+  type OpenRouterEndpoint,
+  type OpenRouterRoutingOptions,
+} from "../adapters/openrouter/index.ts";
+import {
   type ImageInput,
   type ReceiptAiModel,
   type ReceiptAiPort,
@@ -49,11 +54,11 @@ import {
   AdaptiveDialog,
   Button,
   Card,
+  Checkbox,
   ContentContainer,
   ErrorState,
   FileField,
   FormActions,
-  GeminiQuickSetup,
   Heading,
   IconButton,
   Inline,
@@ -66,8 +71,10 @@ import {
   ReceiptLineCard,
   ReceiptLineEditor,
   ReceiptMetadata,
+  ReceiptQuickSetup,
   ReceiptReconciliation,
   ReceiptSourcePicker,
+  SelectField,
   Stack,
   StatusPanel,
   StickyActionBar,
@@ -82,7 +89,7 @@ const DEFAULT_MODEL_QUERY: ReceiptAiModelQuery = {
   requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
 };
 
-type ReceiptGeminiPort = ReceiptAiPort & {
+type ReceiptProviderPort = ReceiptAiPort & {
   getApiKey(options?: { signal?: AbortSignal }): Promise<
     {
       reveal(): string;
@@ -92,9 +99,24 @@ type ReceiptGeminiPort = ReceiptAiPort & {
   removeApiKey(options?: { signal?: AbortSignal }): Promise<void>;
 };
 
+export type ReceiptOpenRouterPort = ReceiptProviderPort & {
+  listEndpoints(
+    modelId: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<readonly OpenRouterEndpoint[]>;
+};
+
+export type ReceiptProvider = "gemini" | "openrouter";
+
+export const RECEIPT_PROVIDER_NAMES: Record<ReceiptProvider, string> = {
+  gemini: "Gemini",
+  openrouter: "OpenRouter",
+};
+
 export type ReceiptUiDependencies = ReceiptScanMachineDependencies & {
   readonly ai: ReceiptAiPort;
-  readonly gemini: ReceiptGeminiPort;
+  readonly gemini: ReceiptProviderPort;
+  readonly openrouter: ReceiptOpenRouterPort;
 };
 
 type ReceiptImageEntry = {
@@ -231,11 +253,16 @@ export async function writeDeviceLocalSettings(
 
 export function createDefaultReceiptUiDependencies(
   imageStore: ReceiptImageStore,
+  getRoutingOptions: () => OpenRouterRoutingOptions = () => ({}),
 ): { dependencies: ReceiptUiDependencies; secretStorage: SecretStoragePort } {
   const secretStorage = createLocalStorageSecretStorage();
   const gemini = createGeminiAdapter({
     secretStorage,
     createClient: createGoogleGenAiClient,
+  });
+  const openrouter = createOpenRouterAdapter({
+    secretStorage,
+    getRoutingOptions,
   });
   const imagePreparation = createImagePreparationPort();
   const resolveImage: ReceiptImageResolver = (image) =>
@@ -245,11 +272,38 @@ export function createDefaultReceiptUiDependencies(
     dependencies: {
       ai: gemini,
       gemini,
+      openrouter,
       imagePreparation,
       resolveImage,
       releaseImage: (image) => imageStore.releaseForRetry(image),
     },
   };
+}
+
+function providerPort(
+  dependencies: ReceiptUiDependencies,
+  provider: ReceiptProvider,
+): ReceiptProviderPort {
+  return provider === "gemini" ? dependencies.gemini : dependencies.openrouter;
+}
+
+function selectedModelFor(
+  settings: DeviceLocalSettings,
+  provider: ReceiptProvider,
+): string | undefined {
+  return provider === "gemini"
+    ? settings.selectedGeminiModel
+    : settings.selectedOpenRouterModel;
+}
+
+function settingsWithSelectedModel(
+  settings: DeviceLocalSettings,
+  provider: ReceiptProvider,
+  model: string | undefined,
+): DeviceLocalSettings {
+  return provider === "gemini"
+    ? { ...settings, selectedGeminiModel: model }
+    : { ...settings, selectedOpenRouterModel: model };
 }
 
 export function modelOptions(
@@ -312,7 +366,12 @@ function lineViewModel(
   };
 }
 
-export function ReceiptDisclosure({ onAccept, onDecline }: {
+export function ReceiptDisclosure({
+  providerName = "your selected receipt-AI provider",
+  onAccept,
+  onDecline,
+}: {
+  providerName?: string;
   onAccept: () => void;
   onDecline: () => void;
 }) {
@@ -324,7 +383,7 @@ export function ReceiptDisclosure({ onAccept, onDecline }: {
           <Text>
             This receipt image, the extraction schema and instructions, active
             category IDs and names, your device locale, and the project currency
-            code may be sent to Google Gemini for extraction.
+            code may be sent to {providerName} for extraction.
           </Text>
           <Text tone="secondary">
             Expense history, project names, Drive data, other device identifiers
@@ -403,7 +462,6 @@ function useDirtyBeforeUnload(dirty: boolean): void {
 
 export function ReceiptScanScreen({
   dependencies,
-  secretStorage,
   imageStore,
   state,
   settings,
@@ -418,7 +476,6 @@ export function ReceiptScanScreen({
   onOpenSettings,
 }: {
   dependencies: ReceiptUiDependencies;
-  secretStorage: SecretStoragePort;
   imageStore: ReceiptImageStore;
   state: ProjectCategoryState;
   settings: DeviceLocalSettings;
@@ -432,9 +489,16 @@ export function ReceiptScanScreen({
   onClose: () => void;
   onOpenSettings: () => void;
 }) {
+  const activeProvider = settings.activeProvider as ReceiptProvider;
+  const activeProviderName = RECEIPT_PROVIDER_NAMES[activeProvider];
+  const activeProviderPort = providerPort(dependencies, activeProvider);
+  const scanDependencies = useMemo(
+    () => ({ ...dependencies, ai: activeProviderPort }),
+    [activeProviderPort, dependencies],
+  );
   const machine = useMemo(
-    () => createReceiptScanMachine(dependencies),
-    [dependencies],
+    () => createReceiptScanMachine(scanDependencies),
+    [scanDependencies],
   );
   const [snapshot, send] = useActor(machine, { input: {} });
   const [selectedImage, setSelectedImage] = useState<
@@ -460,6 +524,7 @@ export function ReceiptScanScreen({
   const quickSetupReturnFocusRef = useRef<HTMLElement | null>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
+  const previousProviderRef = useRef(activeProvider);
 
   const setPendingScanState = (value: boolean) => {
     pendingScanRef.current = value;
@@ -496,6 +561,16 @@ export function ReceiptScanScreen({
   }, [disclosureAccepted, send]);
 
   useEffect(() => {
+    if (previousProviderRef.current === activeProvider) return;
+    previousProviderRef.current = activeProvider;
+    openSent.current = true;
+    send({
+      type: "receipt.open",
+      disclosureRequired: !disclosureAccepted,
+    });
+  }, [activeProvider, disclosureAccepted, send]);
+
+  useEffect(() => {
     if (
       offline && snapshot.status === "active" &&
       !snapshot.matches("offline")
@@ -522,28 +597,33 @@ export function ReceiptScanScreen({
 
   useEffect(() => {
     let active = true;
-    void secretStorage.get("gemini-api-key").then((key) => {
+    void activeProviderPort.getApiKey().then((key) => {
       if (active) setHasKey(key !== undefined);
     }).catch(() => {
       if (active) {
-        setKeyError("Gemini key storage is unavailable on this device.");
+        setKeyError(
+          `${activeProviderName} key storage is unavailable on this device.`,
+        );
       }
     });
     return () => {
       active = false;
     };
-  }, [secretStorage]);
+  }, [activeProviderName, activeProviderPort]);
 
   const refreshModels = async (): Promise<readonly ReceiptAiModel[]> => {
     setModelsLoading(true);
     setModelError(undefined);
     try {
-      const next = await dependencies.ai.listModels(DEFAULT_MODEL_QUERY);
+      const next = await activeProviderPort.listModels(DEFAULT_MODEL_QUERY);
       setModels(next);
       return next;
     } catch (error) {
       setModelError(
-        messageForError(error, "Available Gemini models could not be loaded."),
+        messageForError(
+          error,
+          `Available ${activeProviderName} models could not be loaded.`,
+        ),
       );
       return [];
     } finally {
@@ -554,7 +634,7 @@ export function ReceiptScanScreen({
   useEffect(() => {
     if (!hasKey || offline || models.length > 0) return;
     void refreshModels();
-  }, [hasKey, offline, models.length]);
+  }, [activeProviderPort, hasKey, offline, models.length]);
 
   useEffect(() => {
     if (
@@ -622,20 +702,21 @@ export function ReceiptScanScreen({
     setKeyBusy(true);
     setKeyError(undefined);
     try {
-      await dependencies.gemini.setApiKey(apiKey.trim());
-      const nextSettings = settings;
-      onSettingsChange(nextSettings);
+      await activeProviderPort.setApiKey(apiKey.trim());
       const nextModels = await refreshModels();
       if (nextModels.length === 0) {
-        throw new Error("The key did not return any Gemini models.");
+        throw new Error(
+          `The key did not return any ${activeProviderName} models.`,
+        );
       }
       const nextModelOptions = modelOptions(nextModels);
-      const nextSelectedModel = settings.selectedGeminiModel &&
+      const configuredModel = selectedModelFor(settings, activeProvider);
+      const nextSelectedModel = configuredModel &&
           nextModelOptions.find((option) =>
-            option.id === settings.selectedGeminiModel &&
+            option.id === configuredModel &&
             option.disabled !== true
           )
-        ? settings.selectedGeminiModel
+        ? configuredModel
         : undefined;
       setHasKey(true);
       setApiKey("");
@@ -650,7 +731,7 @@ export function ReceiptScanScreen({
       } else {
         setPendingScanState(true);
         setModelError(
-          "Select a Gemini model to continue this scan.",
+          `Select a ${activeProviderName} model to continue this scan.`,
         );
       }
     } catch (error) {
@@ -663,10 +744,9 @@ export function ReceiptScanScreen({
   };
 
   const availableModelOptions = modelOptions(models);
-  const selectedOption = settings.selectedGeminiModel
-    ? availableModelOptions.find((option) =>
-      option.id === settings.selectedGeminiModel
-    )
+  const configuredModel = selectedModelFor(settings, activeProvider);
+  const selectedOption = configuredModel
+    ? availableModelOptions.find((option) => option.id === configuredModel)
     : undefined;
   const selectedModel = selectedOption && selectedOption.disabled !== true
     ? selectedOption.id
@@ -700,7 +780,11 @@ export function ReceiptScanScreen({
     const option = availableModelOptions.find((candidate) =>
       candidate.id === modelId
     );
-    const nextSettings = { ...settings, selectedGeminiModel: modelId };
+    const nextSettings = settingsWithSelectedModel(
+      settings,
+      activeProvider,
+      modelId,
+    );
     void onSettingsChange(nextSettings);
     if (pendingScanRef.current && option?.disabled !== true) {
       const pendingInput = makeScanInput(modelId);
@@ -731,20 +815,22 @@ export function ReceiptScanScreen({
       setQuickSetupOpen(true);
       return;
     }
-    if (!settings.selectedGeminiModel) {
+    if (!configuredModel) {
       setPendingScanState(true);
       setOptionsOpen(true);
-      setModelError("Select a Gemini model before scanning.");
+      setModelError(`Select a ${activeProviderName} model before scanning.`);
       return;
     }
     if (!selectedOption || selectedOption.disabled === true) {
       setPendingScanState(true);
       setOptionsOpen(true);
-      setModelError("Refresh models and select an available Gemini model.");
+      setModelError(
+        `Refresh ${activeProviderName} models and select an available model.`,
+      );
       return;
     }
     if (!scanInput) {
-      setModelError("The selected Gemini model is unavailable.");
+      setModelError(`The selected ${activeProviderName} model is unavailable.`);
       return;
     }
     setPendingScanState(false);
@@ -759,6 +845,18 @@ export function ReceiptScanScreen({
   const scanBusy = snapshot.matches("preparing") ||
     snapshot.matches("requesting") ||
     snapshot.matches("validating");
+  const changeProvider = (nextProvider: string) => {
+    if (nextProvider !== "gemini" && nextProvider !== "openrouter") return;
+    if (nextProvider === activeProvider || scanBusy) return;
+    void onSettingsChange({
+      ...settings,
+      activeProvider: nextProvider,
+    });
+    setModels([]);
+    setHasKey(false);
+    setModelError(undefined);
+    setOptionsOpen(true);
+  };
   const dirty = selectedImage !== null || scanBusy || quickSetupOpen ||
     pendingScan;
   useDirtyBeforeUnload(dirty);
@@ -811,6 +909,7 @@ export function ReceiptScanScreen({
           }
         />
         <ReceiptDisclosure
+          providerName={activeProviderName}
           onAccept={() => {
             setDisclosureAccepted(true);
             send({ type: "receipt.disclosure.accept" });
@@ -837,8 +936,8 @@ export function ReceiptScanScreen({
           }
         />
         <InlineNotice tone="warning" title="Scanning is unavailable offline">
-          Connect to the internet to send a receipt to Gemini. The selected
-          image is not queued for later.
+          Connect to the internet to send a receipt to{" "}
+          {activeProviderName}. The selected image is not queued for later.
           <Inline>
             <Button
               variant="secondary"
@@ -900,7 +999,10 @@ export function ReceiptScanScreen({
         />
         {selectedImage
           ? (
-            <InlineNotice tone="info" title="Receipt is sent to Google Gemini.">
+            <InlineNotice
+              tone="info"
+              title={`Receipt is sent to ${activeProviderName}.`}
+            >
               Embedded metadata is always removed before sending. The image
               remains in memory only while this scan is open so you can retry or
               replace it; it is removed when you leave, discard, or complete the
@@ -910,8 +1012,8 @@ export function ReceiptScanScreen({
           : null}
         <StatusPanel
           title={selectedOption
-            ? `Gemini: ${selectedOption.id}`
-            : "Gemini model not selected"}
+            ? `${activeProviderName}: ${selectedOption.id}`
+            : `${activeProviderName} model not selected`}
           detail={pendingScan
             ? "Select a model to continue this scan"
             : settings.imagePreparationEnabled
@@ -935,9 +1037,24 @@ export function ReceiptScanScreen({
             >
               <Card as="section">
                 <Stack gap={4}>
+                  <SelectField
+                    label="Receipt AI provider"
+                    options={[
+                      { id: "gemini", label: "Gemini" },
+                      { id: "openrouter", label: "OpenRouter" },
+                    ]}
+                    value={activeProvider}
+                    onValueChange={changeProvider}
+                    isDisabled={scanBusy}
+                  />
+                  <Text tone="secondary">
+                    Receipt scanning requires image input and structured output
+                    constrained by JSON Schema. A listed model is a candidate,
+                    not a user-run test.
+                  </Text>
                   <ModelPicker
                     options={availableModelOptions}
-                    value={settings.selectedGeminiModel}
+                    value={configuredModel}
                     onValueChange={selectModel}
                     disabled={modelsLoading || models.length === 0}
                   />
@@ -955,7 +1072,7 @@ export function ReceiptScanScreen({
                     variant="quiet"
                     onPress={onOpenSettings}
                   >
-                    Open Gemini settings
+                    Open receipt scanning settings
                   </Button>
                 </Stack>
               </Card>
@@ -964,7 +1081,10 @@ export function ReceiptScanScreen({
           : null}
         {modelError
           ? (
-            <InlineNotice tone="danger" title="Gemini is not ready">
+            <InlineNotice
+              tone="danger"
+              title={`${activeProviderName} is not ready`}
+            >
               {modelError}
             </InlineNotice>
           )
@@ -1019,7 +1139,7 @@ export function ReceiptScanScreen({
                 Open setup dialog
               </Button>
             }
-            title="Set up Gemini"
+            title={`Set up ${activeProviderName}`}
             isOpen={quickSetupOpen}
             onOpenChange={(open) => {
               setQuickSetupOpen(open);
@@ -1032,7 +1152,8 @@ export function ReceiptScanScreen({
             }}
           >
             <Stack gap={1} className="receipt-ui-quick-setup">
-              <GeminiQuickSetup
+              <ReceiptQuickSetup
+                providerName={activeProviderName}
                 showHeading={false}
                 autoFocus
                 value={apiKey}
@@ -1646,44 +1767,169 @@ export function ReceiptMetadataEditor({
   );
 }
 
-export function GeminiSettingsScreen({
+function endpointOptions(
+  endpoints: readonly OpenRouterEndpoint[],
+): Array<{ id: string; label: string }> {
+  return endpoints.filter(endpointSupportsReceiptSchema).map((endpoint) => ({
+    id: endpoint.tag,
+    label: endpoint.providerName,
+  }));
+}
+
+function endpointSupportsReceiptSchema(endpoint: OpenRouterEndpoint): boolean {
+  return ["structured_outputs", "response_format"].every((parameter) =>
+    endpoint.supportedParameters.includes(parameter)
+  );
+}
+
+export function ReceiptSettingsScreen({
   gemini,
+  openrouter,
   settings,
   onSettingsChange,
   onClose,
 }: {
-  gemini: ReceiptGeminiPort;
+  gemini: ReceiptProviderPort;
+  openrouter: ReceiptOpenRouterPort;
   settings: DeviceLocalSettings;
   onSettingsChange: (settings: DeviceLocalSettings) => void;
   onClose: () => void;
 }) {
+  const activeProvider = settings.activeProvider as ReceiptProvider;
+  const activeProviderName = RECEIPT_PROVIDER_NAMES[activeProvider];
+  const activeProviderPort = activeProvider === "gemini" ? gemini : openrouter;
   const [hasKey, setHasKey] = useState(false);
   const [maskedKey, setMaskedKey] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [models, setModels] = useState<readonly ReceiptAiModel[]>([]);
+  const [endpoints, setEndpoints] = useState<readonly OpenRouterEndpoint[]>([]);
   const [loading, setLoading] = useState(false);
+  const [endpointLoading, setEndpointLoading] = useState(false);
   const [error, setError] = useState<string>();
-  const refresh = async () => {
+  const [notice, setNotice] = useState<string>();
+
+  const selectedModel = selectedModelFor(settings, activeProvider);
+
+  const refreshEndpoints = async (
+    providerSettings: DeviceLocalSettings = settings,
+  ): Promise<readonly OpenRouterEndpoint[]> => {
+    if (
+      activeProvider !== "openrouter" ||
+      !providerSettings.selectedOpenRouterModel
+    ) {
+      setEndpoints([]);
+      return [];
+    }
+    setEndpointLoading(true);
+    try {
+      const next = await openrouter.listEndpoints(
+        providerSettings.selectedOpenRouterModel,
+      );
+      const qualified = next.filter(endpointSupportsReceiptSchema);
+      setEndpoints(qualified);
+      const preferredTag = providerSettings.preferredProviderTag;
+      if (
+        preferredTag &&
+        !qualified.some((endpoint) => endpoint.tag === preferredTag)
+      ) {
+        onSettingsChange({
+          ...providerSettings,
+          preferredProviderTag: undefined,
+        });
+        setNotice(
+          "The previous preferred provider is unavailable with the current model or privacy filters. Preference reset to Automatic.",
+        );
+      }
+      return qualified;
+    } catch (failure) {
+      setError(
+        messageForError(
+          failure,
+          "OpenRouter provider options could not be loaded.",
+        ),
+      );
+      return [];
+    } finally {
+      setEndpointLoading(false);
+    }
+  };
+
+  const refresh = async (
+    providerSettings: DeviceLocalSettings = settings,
+  ): Promise<void> => {
     setLoading(true);
     setError(undefined);
     try {
-      const key = await gemini.getApiKey();
+      const key = await activeProviderPort.getApiKey();
       setHasKey(key !== undefined);
       setMaskedKey(key ? `••••••••${key.reveal().slice(-4)}` : "");
-      if (key) setModels(await gemini.listModels(DEFAULT_MODEL_QUERY));
-      else setModels([]);
+      if (!key) {
+        setModels([]);
+        setEndpoints([]);
+        return;
+      }
+      const nextModels = await activeProviderPort.listModels(
+        DEFAULT_MODEL_QUERY,
+      );
+      setModels(nextModels);
+      const configuredModel = selectedModelFor(
+        providerSettings,
+        activeProvider,
+      );
+      const configuredModelIsAvailable = configuredModel === undefined ||
+        nextModels.some((model) =>
+          model.id === configuredModel && model.lifecycle === "active"
+        );
+      let effectiveSettings = providerSettings;
+      if (configuredModel && !configuredModelIsAvailable) {
+        effectiveSettings = settingsWithSelectedModel(
+          providerSettings,
+          activeProvider,
+          undefined,
+        );
+        if (activeProvider === "openrouter") {
+          effectiveSettings = {
+            ...effectiveSettings,
+            preferredProviderTag: undefined,
+          };
+        }
+        onSettingsChange(effectiveSettings);
+        setNotice(
+          activeProvider === "openrouter"
+            ? `The saved ${activeProviderName} model is no longer available. Choose another model; the preferred provider was reset to Automatic.`
+            : `The saved ${activeProviderName} model is no longer available. Choose another model.`,
+        );
+      }
+      if (
+        activeProvider === "openrouter" &&
+        effectiveSettings.selectedOpenRouterModel
+      ) {
+        await refreshEndpoints(effectiveSettings);
+      } else {
+        setEndpoints([]);
+      }
     } catch (failure) {
       setError(
-        messageForError(failure, "Gemini settings could not be loaded."),
+        messageForError(
+          failure,
+          `Available ${activeProviderName} models could not be loaded.`,
+        ),
       );
+      setModels([]);
+      setEndpoints([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    setApiKey("");
+    setModels([]);
+    setEndpoints([]);
+    setError(undefined);
+    setNotice(undefined);
     void refresh();
-  }, [gemini]);
+  }, [activeProviderPort]);
 
   const saveKey = async () => {
     if (!apiKey.trim()) {
@@ -1693,10 +1939,10 @@ export function GeminiSettingsScreen({
     setLoading(true);
     setError(undefined);
     try {
-      await gemini.setApiKey(apiKey.trim());
+      await activeProviderPort.setApiKey(apiKey.trim());
       onSettingsChange(settings);
       setApiKey("");
-      await refresh();
+      await refresh(settings);
     } catch (failure) {
       setError(messageForError(failure, "The API key could not be saved."));
     } finally {
@@ -1705,23 +1951,72 @@ export function GeminiSettingsScreen({
   };
 
   const removeKey = async () => {
-    await gemini.removeApiKey();
-    setHasKey(false);
-    setMaskedKey("");
-    setModels([]);
-    onSettingsChange({
-      ...settings,
-      selectedGeminiModel: undefined,
-    });
+    setLoading(true);
+    setError(undefined);
+    try {
+      await activeProviderPort.removeApiKey();
+      setHasKey(false);
+      setMaskedKey("");
+      setModels([]);
+      setEndpoints([]);
+    } catch (failure) {
+      setError(messageForError(failure, "The API key could not be removed."));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const options = modelOptions(models);
+  const changeProvider = (nextProvider: string) => {
+    if (nextProvider !== "gemini" && nextProvider !== "openrouter") return;
+    if (nextProvider === activeProvider) return;
+    onSettingsChange({ ...settings, activeProvider: nextProvider });
+  };
+
+  const changeModel = (modelId: string) => {
+    const nextSettings = settingsWithSelectedModel(
+      settings,
+      activeProvider,
+      modelId,
+    );
+    onSettingsChange(nextSettings);
+    setNotice(undefined);
+    if (activeProvider === "openrouter") void refreshEndpoints(nextSettings);
+  };
+
+  const changePrivacySetting = (
+    change: Partial<
+      Pick<
+        DeviceLocalSettings,
+        "requireZdr" | "denyProviderDataCollection"
+      >
+    >,
+  ) => {
+    const nextSettings = { ...settings, ...change };
+    onSettingsChange(nextSettings);
+    setNotice(undefined);
+    if (activeProvider === "openrouter") void refresh(nextSettings);
+  };
+
+  const providerOptions = activeProvider === "openrouter"
+    ? [
+      { id: "automatic", label: "Automatic" },
+      ...endpointOptions(endpoints),
+    ]
+    : [];
+  const preferredValue = settings.preferredProviderTag &&
+      endpoints.some((endpoint) =>
+        endpoint.tag === settings.preferredProviderTag
+      )
+    ? settings.preferredProviderTag
+    : "automatic";
 
   return (
     <ContentContainer size="readable">
       <Stack gap={5}>
         <PageHeader
-          title="Gemini receipt scanning"
+          title={activeProvider === "gemini"
+            ? "Gemini receipt scanning"
+            : "OpenRouter receipt scanning"}
           headingLevel={1}
           leading={
             <IconButton
@@ -1732,6 +2027,22 @@ export function GeminiSettingsScreen({
             />
           }
         />
+        <SelectField
+          label="Receipt AI provider"
+          options={[
+            { id: "gemini", label: "Gemini" },
+            { id: "openrouter", label: "OpenRouter" },
+          ]}
+          value={activeProvider}
+          onValueChange={changeProvider}
+        />
+        <Text tone="secondary">
+          Receipt scanning requires a model that accepts image input and
+          supports structured output constrained by JSON Schema. Model lists
+          provide metadata-qualified candidates, not a user-run test; an
+          unsupported model reports an actionable error only when you explicitly
+          scan.
+        </Text>
         {hasKey
           ? (
             <Card as="section">
@@ -1741,18 +2052,24 @@ export function GeminiSettingsScreen({
                     <Heading size="sm">API key</Heading>
                     <Text tone="secondary">{maskedKey}</Text>
                   </Stack>
-                  <Button variant="danger" onPress={() => void removeKey()}>
+                  <Button
+                    variant="danger"
+                    isDisabled={loading}
+                    onPress={() => void removeKey()}
+                  >
                     Remove
                   </Button>
                 </Inline>
                 <Text tone="secondary">
-                  Stored only on this device. It is not a browser secret.
+                  Stored only on this device. It is not a browser secret and can
+                  be read by code running on this origin.
                 </Text>
               </Stack>
             </Card>
           )
           : (
-            <GeminiQuickSetup
+            <ReceiptQuickSetup
+              providerName={activeProviderName}
               value={apiKey}
               onChange={setApiKey}
               onSave={() => void saveKey()}
@@ -1764,10 +2081,9 @@ export function GeminiSettingsScreen({
           ? (
             <>
               <ModelPicker
-                options={options}
-                value={settings.selectedGeminiModel}
-                onValueChange={(selectedGeminiModel) =>
-                  void onSettingsChange({ ...settings, selectedGeminiModel })}
+                options={modelOptions(models)}
+                value={selectedModel}
+                onValueChange={changeModel}
                 disabled={loading || models.length === 0}
               />
               <Button
@@ -1778,26 +2094,87 @@ export function GeminiSettingsScreen({
               >
                 Refresh available models
               </Button>
-              <Switch
-                isSelected={settings.imagePreparationEnabled}
-                onChange={(imagePreparationEnabled) =>
-                  void onSettingsChange({
-                    ...settings,
-                    imagePreparationEnabled,
-                  })}
-              >
-                Image preparation · resize and compress before sending
-              </Switch>
-              <Text tone="secondary">
-                Changing this setting affects future scans. Mandatory metadata
-                removal remains on.
-              </Text>
             </>
+          )
+          : null}
+        <Switch
+          isSelected={settings.imagePreparationEnabled}
+          onChange={(imagePreparationEnabled) =>
+            void onSettingsChange({
+              ...settings,
+              imagePreparationEnabled,
+            })}
+        >
+          Prepare image before sending (resize and compress)
+        </Switch>
+        <Text tone="secondary">
+          Metadata removal remains on for every scan. This preference is stored
+          on this device and affects future scans.
+        </Text>
+        {activeProvider === "openrouter"
+          ? (
+            <Card as="section">
+              <Stack gap={4}>
+                <Heading size="sm">OpenRouter routing and privacy</Heading>
+                <SelectField
+                  label="Preferred provider"
+                  options={providerOptions}
+                  value={preferredValue}
+                  onValueChange={(value) =>
+                    void onSettingsChange({
+                      ...settings,
+                      preferredProviderTag: value === "automatic"
+                        ? undefined
+                        : value,
+                    })}
+                  isDisabled={endpointLoading || loading}
+                  description="Automatic keeps OpenRouter's normal routing. A selected provider is preferred for this exact model; same-model fallback remains enabled."
+                />
+                <Button
+                  variant="secondary"
+                  pending={endpointLoading}
+                  isDisabled={endpointLoading || loading || !hasKey ||
+                    !selectedModel}
+                  onPress={() => void refreshEndpoints()}
+                >
+                  Refresh provider options
+                </Button>
+                <Checkbox
+                  isSelected={settings.requireZdr}
+                  onChange={(requireZdr) =>
+                    changePrivacySetting({ requireZdr })}
+                >
+                  Require Zero Data Retention (ZDR)
+                </Checkbox>
+                <Checkbox
+                  isSelected={settings.denyProviderDataCollection}
+                  onChange={(denyProviderDataCollection) =>
+                    changePrivacySetting({ denyProviderDataCollection })}
+                >
+                  Deny provider data collection
+                </Checkbox>
+                <Text tone="secondary">
+                  ZDR and data-collection controls are separate. Either filter
+                  can reduce route availability and may make this model or a
+                  preferred provider unavailable.
+                </Text>
+              </Stack>
+            </Card>
+          )
+          : null}
+        {notice
+          ? (
+            <InlineNotice tone="warning" title="Receipt settings updated">
+              {notice}
+            </InlineNotice>
           )
           : null}
         {error && hasKey
           ? (
-            <InlineNotice tone="danger" title="Gemini settings need attention">
+            <InlineNotice
+              tone="danger"
+              title={`${activeProviderName} settings need attention`}
+            >
               {error}
             </InlineNotice>
           )

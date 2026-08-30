@@ -92,11 +92,11 @@ import {
 } from "../design-system/index.ts";
 import {
   createDefaultReceiptUiDependencies,
-  GeminiSettingsScreen,
   readDeviceLocalSettings,
   ReceiptImageStore,
   ReceiptReviewScreen,
   ReceiptScanScreen,
+  ReceiptSettingsScreen,
   type ReceiptUiDependencies,
   writeDeviceLocalSettings,
 } from "./receipt-ui.tsx";
@@ -1837,8 +1837,8 @@ export function SettingsScreen(
   {
     expenseDayBoundary,
     syncSummary,
-    geminiSummary,
-    onGemini,
+    receiptSummary,
+    onReceipt,
     onSync,
     onImport,
     onPrivacy,
@@ -1847,8 +1847,8 @@ export function SettingsScreen(
   }: {
     expenseDayBoundary: string;
     syncSummary?: string;
-    geminiSummary?: string;
-    onGemini?: () => void;
+    receiptSummary?: string;
+    onReceipt?: () => void;
     onSync?: () => void;
     onImport?: () => void;
     onPrivacy?: () => void;
@@ -1863,9 +1863,9 @@ export function SettingsScreen(
       available: Boolean(onSync),
     },
     {
-      label: "Gemini receipt scanning",
-      summary: geminiSummary ?? "Open to view key and model status",
-      available: Boolean(onGemini),
+      label: "Receipt scanning",
+      summary: receiptSummary ?? "Open to view key and model status",
+      available: Boolean(onReceipt),
     },
     {
       label: "Preferences",
@@ -1901,8 +1901,8 @@ export function SettingsScreen(
                   variant="quiet"
                   isDisabled={!row.available}
                   aria-label={"Open " + row.label}
-                  onPress={row.label === "Gemini receipt scanning"
-                    ? onGemini
+                  onPress={row.label === "Receipt scanning"
+                    ? onReceipt
                     : row.label === "Google Drive and sync"
                     ? onSync
                     : row.label === "Import and export"
@@ -3049,11 +3049,22 @@ export function LocalUiRuntime(
     DEFAULT_DEVICE_LOCAL_SETTINGS,
   );
   const [syncSummary, setSyncSummary] = useState("Not connected");
-  const [geminiSummary, setGeminiSummary] = useState("Not configured");
+  const [receiptSummary, setReceiptSummary] = useState("Not configured");
   const [receiptReview, setReceiptReview] = useState<ReceiptReviewDraft>();
   const imageStore = useMemo(() => new ReceiptImageStore(), []);
+  const deviceSettingsRef = useRef(DEFAULT_DEVICE_LOCAL_SETTINGS);
+  deviceSettingsRef.current = deviceSettings;
   const defaultReceipt = useMemo(
-    () => createDefaultReceiptUiDependencies(imageStore),
+    () =>
+      createDefaultReceiptUiDependencies(
+        imageStore,
+        () => ({
+          preferredProviderTag: deviceSettingsRef.current.preferredProviderTag,
+          requireZdr: deviceSettingsRef.current.requireZdr,
+          denyProviderDataCollection:
+            deviceSettingsRef.current.denyProviderDataCollection,
+        }),
+      ),
     [imageStore],
   );
   const receipt = receiptDependencies ?? defaultReceipt.dependencies;
@@ -3076,7 +3087,9 @@ export function LocalUiRuntime(
       if (active) setDeviceSettings(settings);
     }).catch(() => {
       if (active) {
-        setAppNotice("Device-local Gemini settings could not be opened.");
+        setAppNotice(
+          "Device-local receipt scanning settings could not be opened.",
+        );
       }
     });
     return () => {
@@ -3086,22 +3099,33 @@ export function LocalUiRuntime(
 
   useEffect(() => {
     let active = true;
-    void secretStorage.get("gemini-api-key").then((key) => {
+    const provider = deviceSettings.activeProvider === "gemini"
+      ? receipt.gemini
+      : receipt.openrouter;
+    void provider.getApiKey().then((key) => {
       if (!active) return;
-      setGeminiSummary(
+      const selectedModel = deviceSettings.activeProvider === "gemini"
+        ? deviceSettings.selectedGeminiModel
+        : deviceSettings.selectedOpenRouterModel;
+      setReceiptSummary(
         key === undefined
           ? "Not configured"
-          : deviceSettings.selectedGeminiModel
+          : selectedModel
           ? "Key and model configured"
           : "Key configured; choose a model",
       );
     }).catch(() => {
-      if (active) setGeminiSummary("Configuration status unavailable");
+      if (active) setReceiptSummary("Configuration status unavailable");
     });
     return () => {
       active = false;
     };
-  }, [deviceSettings.selectedGeminiModel, secretStorage]);
+  }, [
+    deviceSettings.activeProvider,
+    deviceSettings.selectedGeminiModel,
+    deviceSettings.selectedOpenRouterModel,
+    receipt,
+  ]);
 
   useEffect(() => {
     const onOffline = () => sendShell({ type: "shell.network.offline" });
@@ -3343,16 +3367,17 @@ export function LocalUiRuntime(
   }, []);
 
   const updateDeviceSettings = async (next: DeviceLocalSettings) => {
+    // Keep adapter routing reads synchronous with the UI event. React state is
+    // batched, while an immediate model/endpoint refresh must already observe
+    // the newly selected ZDR and data-collection policy.
+    deviceSettingsRef.current = next;
     setDeviceSettings(next);
-    if (next.selectedGeminiModel) {
-      setGeminiSummary("Key and model configured");
-    } else {
-      setGeminiSummary("Key configured; choose a model");
-    }
     try {
       await writeDeviceLocalSettings(repository, next);
     } catch {
-      setAppNotice("Device-local Gemini settings could not be saved.");
+      setAppNotice(
+        "Device-local receipt scanning settings could not be saved.",
+      );
     }
   };
 
@@ -3534,7 +3559,6 @@ export function LocalUiRuntime(
             ? (
               <ReceiptScanScreen
                 dependencies={receipt}
-                secretStorage={secretStorage}
                 imageStore={imageStore}
                 state={state}
                 settings={deviceSettings}
@@ -3672,8 +3696,9 @@ export function LocalUiRuntime(
             )
             : contentPath === "/settings/gemini"
             ? (
-              <GeminiSettingsScreen
+              <ReceiptSettingsScreen
                 gemini={receipt.gemini}
+                openrouter={receipt.openrouter}
                 settings={deviceSettings}
                 onSettingsChange={updateDeviceSettings}
                 onClose={() => navigate("/settings")}
@@ -3705,8 +3730,8 @@ export function LocalUiRuntime(
               <SettingsScreen
                 expenseDayBoundary={expenseDayBoundary}
                 syncSummary={syncSummary}
-                geminiSummary={geminiSummary}
-                onGemini={() => navigate("/settings/gemini")}
+                receiptSummary={receiptSummary}
+                onReceipt={() => navigate("/settings/gemini")}
                 onSync={() => navigate("/settings/sync")}
                 onImport={() => navigate("/settings/import-export")}
                 onPrivacy={() => navigate("/settings/privacy")}

@@ -326,19 +326,19 @@ M33-005 -> M33-006 -> R-3330
 ## Current Checkpoint
 
 - **Active task / gate:** `R-3330` (`IN_PROGRESS`)
-- **Pushed commit / HEAD:** `11c0ec6` —
-  `fix(organization): protect manager exits and archived deletion` (M33-006
-  implementation changes are staged for the next focused implementation
-  commit).
-- **Verification status:** M33-006 focused actor/runtime suites passed (49
-  tests), shared contract tests passed (22 tests), settings and destruction UI
-  suites passed (20 tests), with `deno task lint`, `deno task fmt:check`,
-  `deno task typecheck`, and `git diff --check` clean.
+- **Pushed commit / HEAD:** `e447b96` —
+  `fix(logic): close M33 reviewer remediation gaps` (all R-3330 findings are
+  remediated in the pushed working tree).
+- **Verification status:** Focused R-3330 remediation suites passed (104
+  tests), with `deno task fmt:check`, `deno task lint`,
+  `deno task typecheck`, and `git diff --check` clean. The prior M33-006
+  full `deno task verify` passed at `2cbf544`; the final gate remains required
+  after fresh review.
 - **Active / preserved work:** Clean, synchronized `master`; no active M33
-  worktrees or subagents; M33-006 implementation changes remain uncommitted
-  until the focused commit is created.
-- **Next action:** Commit M33-006, then dispatch a fresh read-only R-3330 review
-  of organization, preferences, sync, import/export, and destruction flows.
+  worktrees or subagents. R-3330 remains the sole active gate pending a fresh
+  read-only review of the remediation commit.
+- **Next action:** Dispatch a fresh read-only R-3330 review of organization,
+  preferences, sync, import/export, and destruction flows.
 
 ---
 

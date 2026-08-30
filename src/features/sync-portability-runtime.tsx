@@ -71,6 +71,7 @@ import type { CausalSyncPort } from "../adapters/ports/index.ts";
 import { type StableId, StableIdSchema } from "../domain/index.ts";
 import {
   clearDeleteEverywhereProgress,
+  type DeleteEverywhereFailureOperation,
   type DeleteEverywhereProgressPhase,
   type DeleteEverywhereProgressRecord,
   type DestructionStorage,
@@ -767,6 +768,28 @@ export function conflictIdsForResolution(
   }).map((conflict) => conflict.id);
 }
 
+export function conflictIdsForResolutions(
+  conflicts: Parameters<typeof conflictIdsForResolution>[0],
+  resolutions: readonly {
+    readonly groupId: string;
+    readonly parentRevisionIds: readonly string[];
+  }[],
+): readonly string[] {
+  const ids = new Set<string>();
+  for (const resolution of resolutions) {
+    for (
+      const conflictId of conflictIdsForResolution(
+        conflicts,
+        resolution.groupId,
+        resolution.parentRevisionIds,
+      )
+    ) {
+      ids.add(conflictId);
+    }
+  }
+  return [...ids];
+}
+
 function localEraseViewFromSnapshot(snapshot: {
   readonly value: unknown;
   readonly context: {
@@ -835,6 +858,13 @@ function deleteEverywherePhaseFromValue(
   }
 }
 
+function deleteEverywhereFailureIsCancelable(
+  operation: DeleteEverywhereFailureOperation | null | undefined,
+): boolean {
+  return operation === undefined || operation === null ||
+    operation === "exporting" || operation === "persistingRetirement";
+}
+
 function deleteEverywhereViewFromSnapshot(snapshot: {
   readonly value: unknown;
   readonly context: {
@@ -847,6 +877,7 @@ function deleteEverywhereViewFromSnapshot(snapshot: {
     readonly safetyExported: boolean;
     readonly safetyDeclined: boolean;
     readonly declineConfirmed: boolean;
+    readonly failureState: DeleteEverywhereFailureOperation | null;
     readonly error: { readonly message: string } | null;
   };
 }): DeleteEverywhereView {
@@ -863,6 +894,9 @@ function deleteEverywhereViewFromSnapshot(snapshot: {
     ...(snapshot.context.error === null
       ? {}
       : { error: snapshot.context.error.message }),
+    cancelable: deleteEverywhereFailureIsCancelable(
+      snapshot.context.failureState,
+    ),
     revoking: false,
   };
 }
@@ -879,6 +913,9 @@ function deleteEverywhereViewFromProgress(
     knownDeviceCount: progress.knownDeviceCount,
     acknowledgedDeviceCount: progress.acknowledgedDeviceCount,
     forcedDeviceCount: progress.forcedDeviceCount,
+    cancelable: deleteEverywhereFailureIsCancelable(
+      progress.failureOperation,
+    ),
     revoking: false,
   };
 }
@@ -1143,7 +1180,8 @@ export function SyncPortabilityRuntime({
     ExportEvent | null
   >(null);
   const previousScreen = useRef<SyncPortabilityScreen>(null);
-  const lastResolvedConflict = useRef<string | null>(null);
+  const seenResolutionIds = useRef<Set<string>>(new Set());
+  const resolvedConflictIds = useRef<Set<string>>(new Set());
   const deviceProjectionVersion = useSyncExternalStore(
     syncDependencies.registry.subscribe,
     syncDependencies.registry.revision,
@@ -1242,7 +1280,8 @@ export function SyncPortabilityRuntime({
   useEffect(() => {
     if (
       syncSnapshot.context.conflicts.length > 0 &&
-      conflictSnapshot.matches("idle")
+      (conflictSnapshot.matches("idle") ||
+        conflictSnapshot.matches("resolved"))
     ) {
       sendConflict({
         type: "conflict.refresh",
@@ -1255,20 +1294,31 @@ export function SyncPortabilityRuntime({
 
   useEffect(() => {
     const result = conflictSnapshot.context.result;
-    if (!conflictSnapshot.matches("resolved") || result === null) return;
+    if (result === null) return;
     const resolutionId = result.resolutionRevision.id;
-    if (lastResolvedConflict.current === resolutionId) return;
-    lastResolvedConflict.current = resolutionId;
+    if (seenResolutionIds.current.has(resolutionId)) return;
+    seenResolutionIds.current.add(resolutionId);
+    for (
+      const conflictId of conflictIdsForResolutions(
+        syncSnapshot.context.conflicts,
+        [{
+          groupId: result.groupId,
+          parentRevisionIds: result.resolutionRevision.parents,
+        }],
+      )
+    ) {
+      resolvedConflictIds.current.add(conflictId);
+    }
+    if (!conflictSnapshot.matches("resolved")) return;
+    const conflictIds = [...resolvedConflictIds.current];
+    resolvedConflictIds.current.clear();
+    if (conflictIds.length === 0) return;
     // The conflict actor has reached its resolved state only after its local
     // commit succeeded. A failed commit therefore leaves the sync banner and
     // conflict count untouched.
     sendSync({
       type: "sync.resolve-conflicts",
-      conflictIds: conflictIdsForResolution(
-        syncSnapshot.context.conflicts,
-        result.groupId,
-        result.resolutionRevision.parents,
-      ),
+      conflictIds,
     });
   }, [conflictSnapshot, sendSync, syncSnapshot]);
 
@@ -1400,7 +1450,11 @@ export function SyncPortabilityRuntime({
   }, [clock, localEraseSnapshot, onNotice, storage]);
 
   useEffect(() => {
-    if (!localEraseSnapshot.matches("completed") || localEraseHandled.current) {
+    if (
+      (!localEraseSnapshot.matches("completed") &&
+        !localEraseSnapshot.matches("partial")) ||
+      localEraseHandled.current
+    ) {
       return;
     }
     localEraseHandled.current = true;

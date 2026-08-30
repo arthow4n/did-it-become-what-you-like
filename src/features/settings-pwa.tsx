@@ -451,6 +451,8 @@ export function PreferencesScreen({
   }, [send]);
 
   const dirty = snapshot.hasTag("dirty");
+  const preferenceFailed = snapshot.matches("loadFailed") ||
+    snapshot.matches("saveFailed");
   useEffect(() => {
     if (
       discardRequest === undefined ||
@@ -559,7 +561,7 @@ export function PreferencesScreen({
               Entered at {currentTime} on {enteredDate}. Suggested date:{" "}
               {suggestedDate}.
             </InlineNotice>
-            {snapshot.matches("failed")
+            {preferenceFailed
               ? (
                 <InlineNotice tone="danger" title="Preferences need attention">
                   {snapshot.context.error?.message ??

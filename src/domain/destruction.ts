@@ -25,6 +25,18 @@ export type DeleteEverywhereProgressPhase =
   | "failed"
   | "completed";
 
+export type DeleteEverywhereFailureOperation =
+  | "exporting"
+  | "persistingRetirement"
+  | "publishingRetirement"
+  | "persistingDriveDeletion"
+  | "deletingDrive"
+  | "persistingLocalErasure"
+  | "erasingLocal"
+  | "persistingAwaitingDevices"
+  | "persistingForcedFinalization"
+  | "persistingCompletion";
+
 export type DeleteEverywhereProgressRecord = {
   readonly version: 1;
   readonly generation: number;
@@ -36,6 +48,8 @@ export type DeleteEverywhereProgressRecord = {
   readonly acknowledgedDeviceCount: number;
   readonly forcedDeviceCount: number;
   readonly updatedAt: string;
+  /** The precise operation to retry when phase is failed. */
+  readonly failureOperation?: DeleteEverywhereFailureOperation | null;
 };
 
 export type LocalEraseFailureOperation =
@@ -100,6 +114,17 @@ function isLocalErasePhase(value: unknown): value is LocalEraseProgressPhase {
   ].includes(value);
 }
 
+function isDeleteEverywhereFailureOperation(
+  value: unknown,
+): value is DeleteEverywhereFailureOperation {
+  return value === "exporting" || value === "persistingRetirement" ||
+    value === "publishingRetirement" || value === "persistingDriveDeletion" ||
+    value === "deletingDrive" || value === "persistingLocalErasure" ||
+    value === "erasingLocal" || value === "persistingAwaitingDevices" ||
+    value === "persistingForcedFinalization" ||
+    value === "persistingCompletion";
+}
+
 function isLocalEraseFailureOperation(
   value: unknown,
 ): value is LocalEraseFailureOperation {
@@ -120,6 +145,7 @@ function parseProgress(value: unknown): DeleteEverywhereProgressRecord {
     throw adapterError("corrupt-data", "destruction.progress.read");
   }
   const record = value as Record<string, unknown>;
+  const failureOperation = record.failureOperation;
   if (
     record.version !== 1 || !isSafeCount(record.generation) ||
     !isPhase(record.phase) || !isBoolean(record.safetyExported) ||
@@ -127,6 +153,10 @@ function parseProgress(value: unknown): DeleteEverywhereProgressRecord {
     !isSafeCount(record.knownDeviceCount) ||
     !isSafeCount(record.acknowledgedDeviceCount) ||
     !isSafeCount(record.forcedDeviceCount) ||
+    (failureOperation !== undefined && failureOperation !== null &&
+      !isDeleteEverywhereFailureOperation(failureOperation)) ||
+    (record.phase !== "failed" &&
+      failureOperation !== undefined && failureOperation !== null) ||
     typeof record.updatedAt !== "string" ||
     !Number.isFinite(Date.parse(record.updatedAt)) ||
     record.acknowledgedDeviceCount > record.knownDeviceCount ||
@@ -145,6 +175,11 @@ function parseProgress(value: unknown): DeleteEverywhereProgressRecord {
     acknowledgedDeviceCount: record.acknowledgedDeviceCount,
     forcedDeviceCount: record.forcedDeviceCount,
     updatedAt: record.updatedAt,
+    ...(failureOperation === undefined ? {} : {
+      failureOperation: failureOperation as
+        | DeleteEverywhereFailureOperation
+        | null,
+    }),
   };
 }
 

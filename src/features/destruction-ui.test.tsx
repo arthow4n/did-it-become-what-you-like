@@ -62,6 +62,7 @@ function props(
       knownDeviceCount: 2,
       acknowledgedDeviceCount: 1,
       forcedDeviceCount: 0,
+      cancelable: true,
       revoking: false,
     },
     devices: [],
@@ -219,6 +220,7 @@ Deno.test("destructive-flow component requires the separate decline confirmation
               knownDeviceCount: 2,
               acknowledgedDeviceCount: 1,
               forcedDeviceCount: 0,
+              cancelable: true,
               revoking: false,
             },
             onConfirmDecline: result.onConfirmDecline,
@@ -258,6 +260,7 @@ Deno.test("destructive-flow component explains inaccessible devices and exposes 
               knownDeviceCount: 2,
               acknowledgedDeviceCount: 1,
               forcedDeviceCount: 0,
+              cancelable: true,
               revoking: false,
             },
             devices: [
@@ -297,7 +300,7 @@ Deno.test("destructive-flow component explains inaccessible devices and exposes 
   });
 });
 
-Deno.test("destructive-flow forced finalization exposes an explicit cancel action", async () => {
+Deno.test("destructive-flow forced finalization exposes a pause action", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaGlobals(window, () => {
       const result = callbacks();
@@ -314,6 +317,7 @@ Deno.test("destructive-flow forced finalization exposes an explicit cancel actio
               knownDeviceCount: 2,
               acknowledgedDeviceCount: 1,
               forcedDeviceCount: 1,
+              cancelable: true,
               revoking: false,
             },
             onConfirmDeleteEverywhere: result.onConfirmDeleteEverywhere,
@@ -328,7 +332,7 @@ Deno.test("destructive-flow forced finalization exposes an explicit cancel actio
       fireEvent.click(view.getByRole("button", { name: "Cancel" }));
       assert(
         result.events.join(",") === "confirm-everywhere,cancel-everywhere",
-        "forced finalization must expose both confirm and cancel callbacks",
+        "forced finalization must expose its pause callback",
       );
     });
   });
@@ -352,6 +356,7 @@ Deno.test("destructive-flow component exposes finalization failure and retry", a
               acknowledgedDeviceCount: 2,
               forcedDeviceCount: 0,
               error: "Do not reconnect this account until it is revoked.",
+              cancelable: false,
               revoking: false,
             },
             onRetryFinalization: result.onRetryFinalization,

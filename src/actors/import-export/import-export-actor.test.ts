@@ -161,6 +161,41 @@ Deno.test("import actor: preview tracks online and offline transitions", async (
   actor.stop();
 });
 
+Deno.test(
+  "import actor: an offline replacement failure can recover when the network returns",
+  async () => {
+    const { adapter } = setupAdapter({ preSync: () => Promise.resolve() });
+    const source = await adapter.exportDocument();
+    const actor = createImportActor({ adapter }).start();
+    actor.send({ type: "import.open", driveConfigured: true, online: true });
+    actor.send({ type: "import.file-selected", contents: source.json });
+    await waitFor(
+      () => actor.getSnapshot().value === "previewing",
+      "no preview",
+    );
+    actor.send({ type: "import.choose-replace" });
+    actor.send({ type: "import.network.offline" });
+    actor.send({ type: "import.commit" });
+    assert(actor.getSnapshot().value === "failed");
+    assert(actor.getSnapshot().context.online === false);
+    actor.send({ type: "import.network.online" });
+    assert(actor.getSnapshot().context.online === true);
+    actor.send({ type: "import.retry" });
+    await waitFor(
+      () => actor.getSnapshot().value === "previewing",
+      "replacement did not revalidate after reconnecting",
+    );
+    actor.send({ type: "import.choose-replace" });
+    actor.send({ type: "import.commit" });
+    await waitFor(
+      () => actor.getSnapshot().status === "done",
+      "replacement did not recover after reconnecting",
+    );
+    assertEquals(actor.getSnapshot().output?.status, "completed");
+    actor.stop();
+  },
+);
+
 Deno.test("import actor: validation failures retain bounded diagnostics", async () => {
   const { adapter } = setupAdapter();
   const actor = createImportActor({ adapter }).start();

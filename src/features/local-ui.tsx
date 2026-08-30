@@ -1189,6 +1189,7 @@ export function ProjectManager({
   const handledInitialCreate = useRef(false);
   const isSubmittingRef = useRef(false);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
+  const editorIdentity = useRef<string | null>(null);
 
   useEffect(() => {
     if (snapshot.matches("closed")) {
@@ -1217,7 +1218,14 @@ export function ProjectManager({
   }, [initialCreate]);
 
   useEffect(() => {
-    if (!editor) return;
+    const nextIdentity = editor === null
+      ? null
+      : editor.kind === "create"
+      ? "create"
+      : `edit:${editor.record.id}`;
+    const changed = editorIdentity.current !== nextIdentity;
+    editorIdentity.current = nextIdentity;
+    if (!editor || !changed) return;
     if (editor.kind === "create") {
       setName("");
       setCurrency("SEK");
@@ -1279,6 +1287,22 @@ export function ProjectManager({
   useEffect(() => {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (
+      editor?.kind !== "edit" || saveTarget !== null ||
+      snapshot.context.state === null
+    ) return;
+    const freshRecord = state.projects.find((project) =>
+      project.id === editor.record.id
+    );
+    if (freshRecord === undefined || freshRecord === editor.record) return;
+    setEditor({ kind: "edit", record: freshRecord });
+    if (!dirty) {
+      setName(freshRecord.name);
+      setCurrency(freshRecord.defaultCurrency);
+    }
+  }, [dirty, editor, saveTarget, snapshot.context.state, state.projects]);
 
   useEffect(() => {
     if (
@@ -1922,6 +1946,7 @@ export function CategoryManager({
   const handledInitialCreate = useRef(false);
   const isSubmittingRef = useRef(false);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
+  const editorIdentity = useRef<string | null>(null);
 
   useEffect(() => {
     if (snapshot.matches("closed")) send({ type: "category.open", state });
@@ -1948,7 +1973,14 @@ export function CategoryManager({
   }, [initialCreate]);
 
   useEffect(() => {
-    if (!editor) return;
+    const nextIdentity = editor === null
+      ? null
+      : editor.kind === "create"
+      ? "create"
+      : `edit:${editor.record.id}`;
+    const changed = editorIdentity.current !== nextIdentity;
+    editorIdentity.current = nextIdentity;
+    if (!editor || !changed) return;
     if (editor.kind === "create") {
       setName("");
       setColor(undefined);
@@ -2013,6 +2045,19 @@ export function CategoryManager({
   useEffect(() => {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (editor?.kind !== "edit" || isSubmittingRef.current) return;
+    const freshRecord = state.categories.find((category) =>
+      category.id === editor.record.id
+    );
+    if (freshRecord === undefined || freshRecord === editor.record) return;
+    setEditor({ kind: "edit", record: freshRecord });
+    if (!dirty) {
+      setName(freshRecord.name);
+      setColor(freshRecord.color);
+    }
+  }, [dirty, editor, state.categories]);
 
   useEffect(() => {
     if (

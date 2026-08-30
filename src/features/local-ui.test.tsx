@@ -1396,6 +1396,79 @@ Deno.test("local UI project editor reports unsaved changes", async () => {
   });
 });
 
+Deno.test(
+  "local UI project editor reconciles an external refresh without losing drafts",
+  async () => {
+    await withComponentHarness(async ({
+      window,
+      render,
+      fireEvent,
+      waitFor,
+    }) => {
+      const { service } = createTestService(organizedState);
+      const renderManager = (nextState: ProjectCategoryState) =>
+        createElement(ProjectManager, {
+          service,
+          state: nextState,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+        });
+      const mounted = await withAriaDomGlobals(
+        window,
+        () => render(renderManager(organizedState)),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getAllByRole("button", { name: "Edit" }))
+      );
+      fireEvent.click(view.getAllByRole("button", { name: "Edit" })[0]);
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Edit project" }))
+      );
+      const refreshedProject = { ...project, name: "Fresh project name" };
+      const refreshedState = {
+        ...organizedState,
+        projects: [
+          refreshedProject,
+          otherProject,
+          thirdProject,
+          archivedProject,
+        ],
+      };
+      mounted.rerender(renderManager(refreshedState));
+      await waitFor(() =>
+        assert(
+          (view.getByRole("textbox", {
+            name: "Project name",
+          }) as HTMLInputElement).value === "Fresh project name",
+        )
+      );
+      fireEvent.change(view.getByRole("textbox", { name: "Project name" }), {
+        target: { value: "My draft" },
+      });
+      const secondRefresh = {
+        ...refreshedState,
+        projects: [
+          { ...refreshedProject, name: "Another remote name" },
+          otherProject,
+          thirdProject,
+          archivedProject,
+        ],
+      };
+      mounted.rerender(renderManager(secondRefresh));
+      await waitFor(() =>
+        assert(
+          (view.getByRole("textbox", {
+            name: "Project name",
+          }) as HTMLInputElement).value === "My draft",
+          "an external refresh must not overwrite a dirty project draft",
+        )
+      );
+      mounted.unmount();
+    });
+  },
+);
+
 Deno.test("local UI category editor reports unsaved changes", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service } = createTestService(categoryState);
@@ -1423,6 +1496,70 @@ Deno.test("local UI category editor reports unsaved changes", async () => {
     });
   });
 });
+
+Deno.test(
+  "local UI category editor reconciles an external refresh without losing drafts",
+  async () => {
+    await withComponentHarness(async ({
+      window,
+      render,
+      fireEvent,
+      waitFor,
+    }) => {
+      const { service } = createTestService(categoryState);
+      const renderManager = (nextState: ProjectCategoryState) =>
+        createElement(CategoryManager, {
+          service,
+          state: nextState,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+        });
+      const mounted = await withAriaDomGlobals(
+        window,
+        () => render(renderManager(categoryState)),
+      );
+      const view = within(document.body);
+      await waitFor(() => assert(view.getByRole("button", { name: "Edit" })));
+      fireEvent.click(view.getByRole("button", { name: "Edit" }));
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Edit category" }))
+      );
+      const refreshedCategory = { ...customCategory, name: "Fresh category" };
+      const refreshedState = {
+        ...categoryState,
+        categories: [category, refreshedCategory],
+      };
+      mounted.rerender(renderManager(refreshedState));
+      await waitFor(() =>
+        assert(
+          (view.getByRole("textbox", {
+            name: "Category name",
+          }) as HTMLInputElement).value === "Fresh category",
+        )
+      );
+      fireEvent.change(view.getByRole("textbox", { name: "Category name" }), {
+        target: { value: "My category draft" },
+      });
+      const secondRefresh = {
+        ...refreshedState,
+        categories: [
+          category,
+          { ...refreshedCategory, name: "Another remote category" },
+        ],
+      };
+      mounted.rerender(renderManager(secondRefresh));
+      await waitFor(() =>
+        assert(
+          (view.getByRole("textbox", {
+            name: "Category name",
+          }) as HTMLInputElement).value === "My category draft",
+          "an external refresh must not overwrite a dirty category draft",
+        )
+      );
+      mounted.unmount();
+    });
+  },
+);
 
 Deno.test("local UI category editor cancel button exits back to category list", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {

@@ -86,7 +86,7 @@ Deno.test(
     local.failNext("unavailable");
     actor.send({ type: "preferences.save" });
     await waitFor(
-      () => actor.getSnapshot().matches("failed"),
+      () => actor.getSnapshot().matches("saveFailed"),
       "preferences save did not fail",
     );
     if (actor.getSnapshot().context.failureOperation !== "save") {

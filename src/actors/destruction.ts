@@ -16,6 +16,7 @@ import {
 import {
   clearDeleteEverywhereProgress,
   clearLocalEraseProgress,
+  type DeleteEverywhereFailureOperation,
   type DeleteEverywhereProgressPhase,
   type DeleteEverywhereProgressRecord,
   type DestructionStorage,
@@ -555,6 +556,7 @@ export function persistDeleteEverywhereSnapshot(
       readonly safetyExported: boolean;
       readonly safetyDeclined: boolean;
       readonly declineConfirmed: boolean;
+      readonly failureState: DeleteEverywhereFailureOperation | null;
     };
   },
   now: () => string,
@@ -572,6 +574,9 @@ export function persistDeleteEverywhereSnapshot(
     acknowledgedDeviceCount: snapshot.context.progress.acknowledgedDeviceCount,
     forcedDeviceCount: snapshot.context.progress.forcedDeviceCount,
     updatedAt: now(),
+    ...(phase === "failed" && snapshot.context.failureState !== null
+      ? { failureOperation: snapshot.context.failureState }
+      : {}),
   }, storage);
 }
 
@@ -581,8 +586,9 @@ type DeleteEverywhereStateValue = Parameters<
 >[0]["value"];
 
 function stateValueForProgress(
-  phase: DeleteEverywhereProgressPhase,
+  progress: DeleteEverywhereProgressRecord,
 ): DeleteEverywhereStateValue {
+  const phase = progress.phase;
   switch (phase) {
     case "reviewing":
       return "reviewing";
@@ -603,7 +609,10 @@ function stateValueForProgress(
     case "forced-finalization":
       return "forcedFinalization";
     case "failed":
-      return "failed";
+      return progress.failureOperation === undefined ||
+          progress.failureOperation === null
+        ? "idle"
+        : "failed";
     case "completed":
       return "completed";
   }
@@ -621,7 +630,7 @@ export function recoverDeleteEverywhereSnapshot(
   progress: DeleteEverywhereProgressRecord,
 ) {
   const resolved = machine.resolveState({
-    value: stateValueForProgress(progress.phase),
+    value: stateValueForProgress(progress),
     context: {
       generation: progress.generation,
       progress: {
@@ -634,7 +643,7 @@ export function recoverDeleteEverywhereSnapshot(
       declineConfirmed: progress.declineConfirmed,
       result: null,
       error: null,
-      failureState: null,
+      failureState: progress.failureOperation ?? null,
     },
   });
   return machine.getPersistedSnapshot(resolved);

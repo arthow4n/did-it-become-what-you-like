@@ -131,6 +131,67 @@ Deno.test("settings-final preferences retry preserves a failed save draft", asyn
   });
 });
 
+Deno.test(
+  "settings-final failed preference saves remain dirty and support discard",
+  async () => {
+    await withComponentHarness(
+      async ({ window, render, fireEvent, waitFor }) => {
+        await withAriaGlobals(window, async () => {
+          const local = createFakeLocalPort();
+          let dirty = false;
+          let discarded = 0;
+          const renderPreferences = (discardRequest: number) =>
+            createElement(PreferencesScreen, {
+              local,
+              onClose: () => undefined,
+              onDirtyChange: (value) => dirty = value,
+              discardRequest,
+              onDiscarded: () => discarded++,
+            });
+          const mounted = render(renderPreferences(0));
+          const view = within(document.body);
+          await waitFor(() => {
+            assert(
+              (view.getByLabelText(/^Expense-day boundary/) as HTMLInputElement)
+                .value === "03:00",
+            );
+          });
+          fireEvent.change(view.getByLabelText(/^Expense-day boundary/), {
+            target: { value: "04:30" },
+          });
+          local.failNext("unavailable");
+          fireEvent.click(
+            view.getByRole("button", { name: "Save preferences" }),
+          );
+          await waitFor(() => {
+            assert(view.getByRole("button", { name: "Retry" }));
+            assert(dirty, "a failed save must retain dirty protection");
+            assert(
+              !(view.getByRole("button", {
+                name: "Save preferences",
+              }) as HTMLButtonElement).disabled,
+              "a failed save must leave the draft saveable",
+            );
+          });
+          mounted.rerender(renderPreferences(1));
+          await waitFor(() => {
+            assert(
+              discarded === 1,
+              "discard should complete after save failure",
+            );
+            assert(!dirty, "discard should clear failed-save dirty state");
+            assert(
+              (view.getByLabelText(/^Expense-day boundary/) as HTMLInputElement)
+                .value === "03:00",
+            );
+          });
+          mounted.unmount();
+        });
+      },
+    );
+  },
+);
+
 Deno.test("settings-final preferences reset CTA restores and saves 03:00", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {

@@ -1,5 +1,6 @@
 import {
   conflictIdsForResolution,
+  conflictIdsForResolutions,
   createConfiguredDriveAdapter,
   deviceViewModels,
   formatApproximateLastSeen,
@@ -82,6 +83,50 @@ Deno.test(
     );
   },
 );
+
+Deno.test("sync runtime accumulates all conflict groups before acknowledging sync", () => {
+  const conflicts = [
+    {
+      id: "conflict-a",
+      recordType: "expense",
+      recordId: "expense-a",
+      local: { merchant: "Local A" },
+      remote: { merchant: "Remote A" },
+      relatedChangeIds: ["change-a"],
+    },
+    {
+      id: "conflict-b",
+      recordType: "expense",
+      recordId: "expense-b",
+      local: { merchant: "Local B" },
+      remote: { merchant: "Remote B" },
+      relatedChangeIds: ["change-b"],
+    },
+  ];
+  const resolutions = [
+    {
+      groupId: "conflict-expense-expense-a-merchant",
+      parentRevisionIds: [
+        "change-a",
+        "conflict-a-merchant-local",
+        "conflict-a-merchant-remote",
+      ],
+    },
+    {
+      groupId: "conflict-expense-expense-b-merchant",
+      parentRevisionIds: [
+        "change-b",
+        "conflict-b-merchant-local",
+        "conflict-b-merchant-remote",
+      ],
+    },
+  ];
+  assert(
+    JSON.stringify(conflictIdsForResolutions(conflicts, resolutions)) ===
+      JSON.stringify(["conflict-a", "conflict-b"]),
+    "all successfully committed groups must be acknowledged together",
+  );
+});
 
 Deno.test("sync runtime preserves delete-versus-edit metadata", () => {
   const observations = observationsFromSyncConflicts([{

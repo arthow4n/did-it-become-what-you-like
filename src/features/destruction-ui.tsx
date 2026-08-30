@@ -53,6 +53,7 @@ export type DeleteEverywhereView = {
   readonly acknowledgedDeviceCount: number;
   readonly forcedDeviceCount: number;
   readonly error?: string;
+  readonly cancelable: boolean;
   readonly revoking: boolean;
 };
 
@@ -209,6 +210,7 @@ export function DataPrivacyScreen({
               aria-label="Back"
               variant="quiet"
               onPress={onBack}
+              isDisabled={localErase.phase === "partial"}
             />
           }
         />
@@ -270,7 +272,7 @@ export function DataPrivacyScreen({
                 <Checkbox
                   isSelected={localErase.removeGeminiApiKey}
                   onChange={onLocalEraseChoice}
-                  isDisabled={localEraseBusy}
+                  isDisabled={localEraseBusy || localErase.phase === "failed"}
                 >
                   Remove Gemini API key from this device
                 </Checkbox>
@@ -531,12 +533,16 @@ export function DataPrivacyScreen({
                       {deleteEverywhere.error ??
                         "The destructive workflow failed before completion."}
                       <FormActions>
-                        <Button
-                          variant="quiet"
-                          onPress={onCancelDeleteEverywhere}
-                        >
-                          Cancel
-                        </Button>
+                        {deleteEverywhere.cancelable
+                          ? (
+                            <Button
+                              variant="quiet"
+                              onPress={onCancelDeleteEverywhere}
+                            >
+                              Cancel
+                            </Button>
+                          )
+                          : null}
                         <Button
                           variant="secondary"
                           onPress={onRetryDeleteEverywhere}

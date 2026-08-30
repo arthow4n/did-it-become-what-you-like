@@ -176,6 +176,12 @@ export function createImportMachine(
               result: () => null,
             }),
           },
+          "import.network.offline": {
+            actions: assign({ online: () => false }),
+          },
+          "import.network.online": {
+            actions: assign({ online: () => true }),
+          },
           "import.cancel": "cancelled",
         },
       },
@@ -204,7 +210,15 @@ export function createImportMachine(
             }),
           },
         },
-        on: { "import.cancel": "cancelled" },
+        on: {
+          "import.network.offline": {
+            actions: assign({ online: () => false }),
+          },
+          "import.network.online": {
+            actions: assign({ online: () => true }),
+          },
+          "import.cancel": "cancelled",
+        },
       },
       previewing: {
         tags: ["preview"],
@@ -274,7 +288,15 @@ export function createImportMachine(
             }),
           },
         },
-        on: { "import.cancel": "cancelled" },
+        on: {
+          "import.network.offline": {
+            actions: assign({ online: () => false }),
+          },
+          "import.network.online": {
+            actions: assign({ online: () => true }),
+          },
+          "import.cancel": "cancelled",
+        },
       },
       committing: {
         tags: ["saving"],
@@ -306,7 +328,15 @@ export function createImportMachine(
             }),
           },
         },
-        on: { "import.cancel": "cancelled" },
+        on: {
+          "import.network.offline": {
+            actions: assign({ online: () => false }),
+          },
+          "import.network.online": {
+            actions: assign({ online: () => true }),
+          },
+          "import.cancel": "cancelled",
+        },
       },
       committed: {
         always: [
@@ -324,6 +354,12 @@ export function createImportMachine(
       failed: {
         tags: ["error"],
         on: {
+          "import.network.offline": {
+            actions: assign({ online: () => false }),
+          },
+          "import.network.online": {
+            actions: assign({ online: () => true }),
+          },
           "import.retry": "validating",
           "import.cancel": "cancelled",
         },

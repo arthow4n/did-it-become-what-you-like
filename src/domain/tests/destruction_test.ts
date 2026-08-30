@@ -100,6 +100,29 @@ Deno.test("delete-everywhere rejects corrupt or inconsistent durable progress", 
   assert(rejected, "invalid progress must fail closed");
 });
 
+Deno.test("delete-everywhere persists a retryable failed operation for reload", () => {
+  const storage = memoryStorage();
+  writeDeleteEverywhereProgress({
+    generation: 3,
+    phase: "failed",
+    failureOperation: "deletingDrive",
+    safetyExported: false,
+    safetyDeclined: true,
+    declineConfirmed: true,
+    knownDeviceCount: 1,
+    acknowledgedDeviceCount: 1,
+    forcedDeviceCount: 0,
+    updatedAt: "2026-08-24T18:05:00.000Z",
+  }, storage);
+  const progress = readDeleteEverywhereProgress(storage);
+  assert(progress?.phase === "failed");
+  assert(progress.failureOperation === "deletingDrive");
+  assert(
+    JSON.stringify(progress).includes("deletingDrive"),
+    "the durable record must retain only the bounded retry operation",
+  );
+});
+
 Deno.test("delete-everywhere local erase choice defaults checked and persists unchecked", () => {
   const storage = memoryStorage();
   assert(readLocalEraseGeminiKeyChoice(storage));

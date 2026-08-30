@@ -1,5 +1,6 @@
 import { assign, setup } from "xstate";
 import { unwiredPort } from "./ports.ts";
+import type { DeleteEverywhereFailureOperation } from "../../domain/destruction.ts";
 import {
   type ContractFailure,
   contractFailureFromError,
@@ -243,17 +244,7 @@ type DeleteEverywhereContext = {
   readonly failureState: DeleteEverywhereFailureState | null;
 };
 
-type DeleteEverywhereFailureState =
-  | "exporting"
-  | "persistingRetirement"
-  | "publishingRetirement"
-  | "persistingDriveDeletion"
-  | "deletingDrive"
-  | "persistingLocalErasure"
-  | "erasingLocal"
-  | "persistingAwaitingDevices"
-  | "persistingForcedFinalization"
-  | "persistingCompletion";
+type DeleteEverywhereFailureState = DeleteEverywhereFailureOperation;
 
 export type DeleteEverywhereOutputEvent =
   | { readonly status: "completed"; readonly result: DeleteEverywhereOutput }
@@ -305,6 +296,9 @@ const deleteEverywhereSetup = setup({
       context.failureState === "persistingForcedFinalization",
     failedPersistingCompletion: ({ context }) =>
       context.failureState === "persistingCompletion",
+    failedBeforeIrreversibleWork: ({ context }) =>
+      context.failureState === "exporting" ||
+      context.failureState === "persistingRetirement",
   },
 });
 
@@ -425,6 +419,7 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
           }),
         },
       },
+      on: { "delete-everywhere.cancel": "cancelled" },
     },
     publishingRetirement: {
       tags: ["destructive", "saving"],
@@ -441,6 +436,20 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                 message: "Retirement could not be published.",
                 retryable: true,
               }),
+            failureState: () => "publishingRetirement" as const,
+          }),
+        },
+      },
+      on: {
+        "delete-everywhere.cancel": {
+          target: "failed",
+          actions: assign({
+            error: () => ({
+              code: "unknown",
+              message:
+                "Delete Everywhere was paused after retirement began. Retry to continue safely.",
+              retryable: true,
+            }),
             failureState: () => "publishingRetirement" as const,
           }),
         },
@@ -473,6 +482,20 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
           }),
         },
       },
+      on: {
+        "delete-everywhere.cancel": {
+          target: "failed",
+          actions: assign({
+            error: () => ({
+              code: "unknown",
+              message:
+                "Delete Everywhere was paused after retirement began. Retry to continue safely.",
+              retryable: true,
+            }),
+            failureState: () => "persistingDriveDeletion" as const,
+          }),
+        },
+      },
     },
     deletingDrive: {
       tags: ["destructive", "saving"],
@@ -489,6 +512,20 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                 message: "Drive data could not be deleted.",
                 retryable: true,
               }),
+            failureState: () => "deletingDrive" as const,
+          }),
+        },
+      },
+      on: {
+        "delete-everywhere.cancel": {
+          target: "failed",
+          actions: assign({
+            error: () => ({
+              code: "unknown",
+              message:
+                "Delete Everywhere was paused while Drive deletion was in progress. Retry to continue safely.",
+              retryable: true,
+            }),
             failureState: () => "deletingDrive" as const,
           }),
         },
@@ -521,6 +558,20 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
           }),
         },
       },
+      on: {
+        "delete-everywhere.cancel": {
+          target: "failed",
+          actions: assign({
+            error: () => ({
+              code: "unknown",
+              message:
+                "Delete Everywhere was paused after Drive deletion began. Retry to continue safely.",
+              retryable: true,
+            }),
+            failureState: () => "persistingLocalErasure" as const,
+          }),
+        },
+      },
     },
     erasingLocal: {
       tags: ["destructive", "saving"],
@@ -537,6 +588,20 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                 message: "Local data could not be erased.",
                 retryable: true,
               }),
+            failureState: () => "erasingLocal" as const,
+          }),
+        },
+      },
+      on: {
+        "delete-everywhere.cancel": {
+          target: "failed",
+          actions: assign({
+            error: () => ({
+              code: "unknown",
+              message:
+                "Delete Everywhere was paused while local erasure was in progress. Retry to continue safely.",
+              retryable: true,
+            }),
             failureState: () => "erasingLocal" as const,
           }),
         },
@@ -569,6 +634,20 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
           }),
         },
       },
+      on: {
+        "delete-everywhere.cancel": {
+          target: "failed",
+          actions: assign({
+            error: () => ({
+              code: "unknown",
+              message:
+                "Delete Everywhere was paused after local erasure began. Retry to continue safely.",
+              retryable: true,
+            }),
+            failureState: () => "persistingAwaitingDevices" as const,
+          }),
+        },
+      },
     },
     awaitingDevices: {
       tags: ["destructive", "waiting"],
@@ -595,7 +674,18 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
             }),
           }),
         },
-        "delete-everywhere.cancel": "cancelled",
+        "delete-everywhere.cancel": {
+          target: "failed",
+          actions: assign({
+            error: () => ({
+              code: "unknown",
+              message:
+                "Delete Everywhere was paused after local erasure. Retry to continue safely.",
+              retryable: true,
+            }),
+            failureState: () => "persistingAwaitingDevices" as const,
+          }),
+        },
       },
       always: {
         target: "persistingCompletion",
@@ -629,6 +719,20 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
           }),
         },
       },
+      on: {
+        "delete-everywhere.cancel": {
+          target: "failed",
+          actions: assign({
+            error: () => ({
+              code: "unknown",
+              message:
+                "Delete Everywhere was paused while forced finalization was being saved. Retry to continue safely.",
+              retryable: true,
+            }),
+            failureState: () => "persistingForcedFinalization" as const,
+          }),
+        },
+      },
     },
     forcedFinalization: {
       tags: ["destructive", "waiting", "forced"],
@@ -643,7 +747,18 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
           }),
         },
         "delete-everywhere.confirm": "persistingCompletion",
-        "delete-everywhere.cancel": "cancelled",
+        "delete-everywhere.cancel": {
+          target: "failed",
+          actions: assign({
+            error: () => ({
+              code: "unknown",
+              message:
+                "Delete Everywhere was paused after forced finalization began. Retry to continue safely.",
+              retryable: true,
+            }),
+            failureState: () => "persistingForcedFinalization" as const,
+          }),
+        },
       },
     },
     persistingCompletion: {
@@ -669,6 +784,20 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
                   "Delete Everywhere progress could not be saved before final authorization cleanup.",
                 retryable: true,
               }),
+            failureState: () => "persistingCompletion" as const,
+          }),
+        },
+      },
+      on: {
+        "delete-everywhere.cancel": {
+          target: "failed",
+          actions: assign({
+            error: () => ({
+              code: "unknown",
+              message:
+                "Delete Everywhere was paused before final authorization cleanup. Retry to continue safely.",
+              retryable: true,
+            }),
             failureState: () => "persistingCompletion" as const,
           }),
         },
@@ -710,7 +839,10 @@ export const deleteEverywhereMachine = deleteEverywhereSetup.createMachine({
             guard: "failedPersistingCompletion",
           },
         ],
-        "delete-everywhere.cancel": "cancelled",
+        "delete-everywhere.cancel": {
+          target: "cancelled",
+          guard: "failedBeforeIrreversibleWork",
+        },
       },
     },
     completed: {

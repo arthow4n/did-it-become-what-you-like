@@ -385,7 +385,7 @@ Deno.test(
   },
 );
 
-Deno.test("delete-everywhere forced finalization remains cancelable", async () => {
+Deno.test("delete-everywhere cancellation after local erasure remains retryable", async () => {
   const actor = createActor(
     createDeleteEverywhereMachine(deleteDependencies({ calls: [] })),
   ).start();
@@ -406,7 +406,14 @@ Deno.test("delete-everywhere forced finalization remains cancelable", async () =
   await settle();
   assert(actor.getSnapshot().matches("forcedFinalization"));
   actor.send({ type: "delete-everywhere.cancel" });
-  assert(actor.getSnapshot().matches("cancelled"));
+  assert(actor.getSnapshot().matches("failed"));
+  assert(
+    actor.getSnapshot().context.failureState ===
+      "persistingForcedFinalization",
+  );
+  actor.send({ type: "delete-everywhere.retry" });
+  await settle();
+  assert(actor.getSnapshot().matches("forcedFinalization"));
   actor.stop();
 });
 
@@ -520,6 +527,30 @@ Deno.test("delete-everywhere rehydrates redacted progress at the saved state", a
   assert(actor.getSnapshot().matches("awaitingDevices"));
   assert(actor.getSnapshot().context.generation === 10);
   assert(calls.length === 0);
+  actor.stop();
+});
+
+Deno.test("delete-everywhere reload preserves a failed retry operation", async () => {
+  const machine = createDeleteEverywhereMachine(
+    deleteDependencies({ calls: [] }),
+  );
+  const recovered = recoverDeleteEverywhereSnapshot(machine, {
+    version: 1,
+    generation: 12,
+    phase: "failed",
+    failureOperation: "deletingDrive",
+    safetyExported: true,
+    safetyDeclined: false,
+    declineConfirmed: false,
+    knownDeviceCount: 1,
+    acknowledgedDeviceCount: 1,
+    forcedDeviceCount: 0,
+    updatedAt: "2026-08-24T18:22:00.000Z",
+  });
+  const actor = createActor(machine, { snapshot: recovered }).start();
+  await settle();
+  assert(actor.getSnapshot().matches("failed"));
+  assert(actor.getSnapshot().context.failureState === "deletingDrive");
   actor.stop();
 });
 

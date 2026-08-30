@@ -93,7 +93,7 @@ export function createPreferencesMachine(
             }),
           },
           onError: {
-            target: "failed",
+            target: "loadFailed",
             actions: assign({
               error: ({ event }) =>
                 contractFailureFromError(event.error, {
@@ -161,7 +161,7 @@ export function createPreferencesMachine(
             }),
           },
           onError: {
-            target: "failed",
+            target: "saveFailed",
             actions: assign({
               error: ({ event }) =>
                 contractFailureFromError(event.error, {
@@ -182,20 +182,29 @@ export function createPreferencesMachine(
             actions: assign({
               expenseDayBoundary: ({ event }) => event.expenseDayBoundary,
               error: () => null,
+              failureOperation: () => null,
             }),
           },
         },
       },
-      failed: {
+      loadFailed: {
         tags: ["error"],
         on: {
-          "preferences.retry": [
-            {
-              target: "saving",
-              guard: ({ context }) => context.failureOperation === "save",
-            },
-            "loading",
-          ],
+          "preferences.retry": "loading",
+          "preferences.change": {
+            target: "dirty",
+            actions: assign({
+              expenseDayBoundary: ({ event }) => event.expenseDayBoundary,
+              error: () => null,
+              failureOperation: () => null,
+            }),
+          },
+        },
+      },
+      saveFailed: {
+        tags: ["error", "dirty"],
+        on: {
+          "preferences.retry": "saving",
           "preferences.change": {
             target: "dirty",
             actions: assign({
@@ -205,6 +214,16 @@ export function createPreferencesMachine(
             }),
           },
           "preferences.save": "saving",
+          "preferences.discard": {
+            target: "ready",
+            actions: assign({
+              expenseDayBoundary: ({ context }) =>
+                context.settings?.expenseDayBoundary ??
+                  DEFAULT_SETTINGS.expenseDayBoundary,
+              error: () => null,
+              failureOperation: () => null,
+            }),
+          },
         },
       },
     },

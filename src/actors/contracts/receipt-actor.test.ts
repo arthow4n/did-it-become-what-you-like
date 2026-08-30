@@ -206,6 +206,19 @@ Deno.test("receipt-actor scan: offline/model loss failure can retry without reta
   await waitForActorState(modelLoss, "reviewReady");
   modelLoss.stop();
 
+  const offlineActive = createFakeGeminiPort(extractionDraft());
+  offlineActive.pauseNext();
+  const offlineActor = createActor(
+    createScanMachine(offlineActive, createFakeImagePreparationPort(), []),
+  ).start();
+  offlineActor.send({ type: "receipt.open" });
+  offlineActor.send({ type: "receipt.image-selected" });
+  offlineActor.send({ type: "receipt.scan", input: scanInput });
+  await waitForActorState(offlineActor, "preparing");
+  offlineActor.send({ type: "receipt.network.offline" });
+  assertEquals(offlineActor.getSnapshot().value, "offline");
+  offlineActor.stop();
+
   const resetFailure = createActor(createReceiptScanMachine({
     ai: createFakeGeminiPort(extractionDraft()),
     imagePreparation: preparation,
@@ -546,6 +559,7 @@ Deno.test("receipt-actor review: persistence failure retries and explicit discar
     { input: { persistenceKey: "workflow:receipt-discard" } },
   ).start();
   actor.send({ type: "receipt.review.open", review: reviewDraft() });
+  assert(actor.getSnapshot().hasTag("dirty"));
   await waitForActorState(actor, "failed");
   assertEquals(actor.getSnapshot().context.error?.code, "quota");
   actor.send({ type: "receipt.review.retry" });

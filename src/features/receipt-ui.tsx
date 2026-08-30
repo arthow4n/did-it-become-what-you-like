@@ -567,8 +567,12 @@ export function ReceiptScanScreen({
   }, [disclosureAccepted, send]);
 
   useEffect(() => {
-    if (offline && snapshot.matches("selecting")) {
+    if (
+      offline && snapshot.status === "active" &&
+      !snapshot.matches("offline")
+    ) {
       send({ type: "receipt.network.offline" });
+      clearSelectedImage();
     } else if (!offline && snapshot.matches("offline")) {
       send({ type: "receipt.network.online" });
     }
@@ -1413,6 +1417,37 @@ export function ReceiptReviewScreen({
       </ContentContainer>
     );
   }
+  if (snapshot.matches("failed") && snapshot.context.review === null) {
+    return (
+      <ContentContainer size="review">
+        <Stack gap={4}>
+          <PageHeader title="Review receipt" headingLevel={1} />
+          <ErrorState
+            title="Receipt review needs recovery"
+            action={
+              <Inline>
+                <Button
+                  variant="secondary"
+                  onPress={() => send({ type: "receipt.review.retry" })}
+                >
+                  Retry
+                </Button>
+                <Button
+                  variant="quiet"
+                  onPress={() => send({ type: "receipt.review.discard" })}
+                >
+                  Discard review
+                </Button>
+              </Inline>
+            }
+          >
+            {snapshot.context.error?.message ??
+              "The receipt review could not be recovered."}
+          </ErrorState>
+        </Stack>
+      </ContentContainer>
+    );
+  }
   const review = snapshot.context.review;
   if (!review) {
     return (
@@ -1616,7 +1651,8 @@ export function ReceiptReviewScreen({
         <StickyActionBar>
           <Button
             pending={snapshot.matches("saving")}
-            isDisabled={snapshot.hasTag("saving") || selectedCount === 0}
+            isDisabled={snapshot.hasTag("saving") ||
+              snapshot.matches("failed") || selectedCount === 0}
             onPress={() =>
               send({ type: "receipt.review.submit", confirmMismatch: false })}
           >

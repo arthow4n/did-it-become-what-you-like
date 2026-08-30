@@ -138,6 +138,96 @@ Deno.test("receipt-ui empty review state keeps a level-one heading", async () =>
   });
 });
 
+Deno.test(
+  "receipt-ui exposes recovery controls when review hydration fails",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      const local = createFakeLocalPort();
+      local.failNext("quota");
+      let closed = 0;
+      render(
+        createElement(ReceiptReviewScreen, {
+          local,
+          state: {
+            projects: [],
+            categories: [],
+            expenses: [],
+            receipts: [],
+            receiptPurchaseLines: [],
+            receiptAdjustments: [],
+            tombstones: [],
+            projectOrder: [],
+          },
+          onClose: () => closed++,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => {
+        assert(view.getByText("Receipt review needs recovery"));
+        assert(view.getByRole("button", { name: "Retry" }));
+        assert(view.getByRole("button", { name: "Discard review" }));
+      });
+      fireEvent.click(view.getByRole("button", { name: "Discard review" }));
+      await waitFor(() => assert(closed === 1));
+    });
+  },
+);
+
+Deno.test(
+  "receipt-ui disables review save while the durable commit is failed",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      const local = createFakeLocalPort();
+      render(
+        createElement(ReceiptReviewScreen, {
+          local,
+          state: {
+            projects: [],
+            categories: [],
+            expenses: [],
+            receipts: [],
+            receiptPurchaseLines: [],
+            receiptAdjustments: [],
+            tombstones: [],
+            projectOrder: [],
+          },
+          initialReview: {
+            parent: {
+              projectId: "project-review-failure",
+              date: "2026-08-30",
+              currency: "SEK",
+              printedTotal: "-1",
+            },
+            lines: [{
+              type: "purchase",
+              id: "line-review-failure",
+              description: "Coffee",
+              categoryId: "category-uncategorized",
+              lineTotal: "-1",
+              selected: true,
+              uncertain: false,
+            }],
+            uncertainty: [],
+            printedTotalMismatch: false,
+          },
+          onClose: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      const saveName = "Save 1 selected entry";
+      await waitFor(() => assert(view.getByRole("button", { name: saveName })));
+      local.failNext("quota");
+      fireEvent.click(view.getByRole("button", { name: saveName }));
+      await waitFor(() => {
+        assert(view.getByText("Receipt was not saved"));
+        assert(
+          view.getByRole("button", { name: saveName }).hasAttribute("disabled"),
+        );
+      });
+    });
+  },
+);
+
 Deno.test("receipt-ui review reports its actor-owned dirty state", async () => {
   await withComponentHarness(async ({ render, waitFor }) => {
     const local = createFakeLocalPort();

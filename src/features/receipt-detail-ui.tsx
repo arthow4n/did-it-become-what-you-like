@@ -169,6 +169,7 @@ export function ReceiptDetailScreen({
   const pendingMutationKind = snapshot.context.pendingMutation?.kind;
   const mutationFailure = snapshot.matches("failure") &&
     snapshot.context.failureOperation === "mutation";
+  const destructiveFailure = snapshot.matches("deleteFailure");
   const editingMetadata = snapshot.context.metadataDraft !== null &&
     (snapshot.matches("metadataPristine") ||
       snapshot.matches("metadataDirty") ||
@@ -180,8 +181,7 @@ export function ReceiptDetailScreen({
     (snapshot.matches("lineAddingPristine") ||
       snapshot.matches("lineAddingDirty") ||
       (mutationFailure && pendingMutationKind === "add-line"));
-  const dirty = snapshot.hasTag("dirty") &&
-    !(mutationFailure && pendingMutationKind === "delete-line");
+  const dirty = snapshot.hasTag("dirty");
   const canRetry = snapshot.can({ type: "receipt.detail.retry" });
 
   useEffect(() => {
@@ -290,7 +290,18 @@ export function ReceiptDetailScreen({
           />
           <ErrorState
             title="Receipt not found"
-            action={<Button onPress={onBack}>Back to expenses</Button>}
+            action={
+              <Inline>
+                <Button
+                  onPress={() => send({ type: "receipt.detail.reload" })}
+                >
+                  Reload receipt
+                </Button>
+                <Button variant="secondary" onPress={onBack}>
+                  Back to expenses
+                </Button>
+              </Inline>
+            }
           >
             This saved receipt may have been deleted or is no longer available
             in the selected project.
@@ -301,7 +312,8 @@ export function ReceiptDetailScreen({
   }
 
   if (
-    snapshot.matches("failure") &&
+    (snapshot.matches("loadFailure") || destructiveFailure ||
+      snapshot.matches("failure")) &&
     (!mutationFailure || snapshot.context.aggregate === null)
   ) {
     const failure = snapshot.context.error;
@@ -321,7 +333,9 @@ export function ReceiptDetailScreen({
             }
           />
           <ErrorState
-            title={mutationFailure
+            title={destructiveFailure
+              ? "Receipt deletion failed"
+              : mutationFailure
               ? "Receipt change failed"
               : "Receipt unavailable"}
             action={

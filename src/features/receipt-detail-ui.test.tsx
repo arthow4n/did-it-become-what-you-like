@@ -77,13 +77,15 @@ const aggregate: ReceiptAggregate = {
 };
 
 function createService(options?: {
+  get?: ReceiptManagementService["get"];
   updateLine?: ReceiptManagementService["updateLine"];
   addLine?: ReceiptManagementService["addLine"];
+  deleteLine?: ReceiptManagementService["deleteLine"];
   deleteReceipt?: () => Promise<{ deletedReceipt: boolean }>;
 }): ReceiptManagementService {
   let current = aggregate;
   return {
-    get: () => Promise.resolve(current),
+    get: options?.get ?? (() => Promise.resolve(current)),
     updateMetadata: (_receiptId, changes) => {
       current = {
         ...current,
@@ -105,18 +107,21 @@ function createService(options?: {
     },
     updateLine: options?.updateLine ?? (() => Promise.resolve(current)),
     addLine: options?.addLine ?? (() => Promise.resolve(current)),
-    deleteLine: (_receiptId, lineId) =>
-      Promise.resolve({
-        aggregate: {
-          ...current,
-          purchaseLines: current.purchaseLines.filter((line) =>
-            line.id !== lineId
-          ),
-          adjustments: current.adjustments.filter((line) => line.id !== lineId),
-        },
-        deletedReceipt: false,
-        deletedLineId: lineId,
-      }),
+    deleteLine: options?.deleteLine ??
+      ((_receiptId, lineId) =>
+        Promise.resolve({
+          aggregate: {
+            ...current,
+            purchaseLines: current.purchaseLines.filter((line) =>
+              line.id !== lineId
+            ),
+            adjustments: current.adjustments.filter((line) =>
+              line.id !== lineId
+            ),
+          },
+          deletedReceipt: false,
+          deletedLineId: lineId,
+        })),
     deleteReceipt: options?.deleteReceipt ?? (() =>
       Promise.resolve({
         deletedReceipt: true,
@@ -374,6 +379,35 @@ Deno.test(
             .hasAttribute("disabled"),
         );
         resolveUpdate?.(aggregate);
+      });
+    });
+  },
+);
+
+Deno.test(
+  "receipt detail exposes missing-receipt recovery without a dirty prompt",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      const dirtyStates: boolean[] = [];
+      await withAriaGlobals(async () => {
+        render(
+          createElement(ReceiptDetailScreen, {
+            service: createService({
+              get: () => Promise.resolve(undefined),
+            }),
+            receiptId: aggregate.receipt.id,
+            categories: [category],
+            onDirtyChange: (dirty) => dirtyStates.push(dirty),
+          }),
+        );
+        const view = within(document.body);
+        await waitFor(() => {
+          assert(view.getByText("Receipt not found"));
+          assert(view.getByRole("button", { name: "Reload receipt" }));
+        });
+        assert(!dirtyStates.includes(true));
+        fireEvent.click(view.getByRole("button", { name: "Reload receipt" }));
+        await waitFor(() => assert(view.getByText("Receipt not found")));
       });
     });
   },

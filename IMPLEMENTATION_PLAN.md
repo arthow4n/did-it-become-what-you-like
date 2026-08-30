@@ -238,7 +238,7 @@ M33-005 -> M33-006 -> R-3330
 
 #### R-3320 — Batch 2 review gate (Receipt scanning & saved receipt detail)
 
-- **Status/dependencies:** `READY`; depends on `M33-003`, `M33-004`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `M33-003`, `M33-004`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** Diffs from `M33-003` and `M33-004`, receipt actor tests,
   discard navigation preservation, and error recovery contracts.
@@ -325,7 +325,7 @@ M33-005 -> M33-006 -> R-3330
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-3320` (`READY`)
+- **Active task / gate:** `R-3320` (`IN_PROGRESS`)
 - **Pushed commit / HEAD:** `daa6d8d` —
   `fix(receipts): restore detail recovery semantics`.
 - **Verification status:**
@@ -336,7 +336,7 @@ M33-005 -> M33-006 -> R-3330
   `git diff --check` passed.
 - **Active / preserved work:** Clean, synchronized `master`; no active M33
   worktrees or subagents.
-- **Next action:** Run the fresh read-only `R-3320` review gate.
+- **Next action:** Remediate the six R-3320 findings, then request closure.
 
 ---
 

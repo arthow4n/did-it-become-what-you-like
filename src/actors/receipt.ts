@@ -410,7 +410,7 @@ export function createReceiptReviewMachine(
         },
       },
       persisting: {
-        tags: ["saving"],
+        tags: ["saving", "dirty"],
         invoke: {
           src: "persistReview",
           input: ({ context }) => ({
@@ -604,7 +604,7 @@ export function createReceiptReviewMachine(
         },
       },
       saving: {
-        tags: ["saving"],
+        tags: ["saving", "dirty"],
         invoke: {
           src: "commitReceipt",
           input: ({ context }) => ({
@@ -639,7 +639,7 @@ export function createReceiptReviewMachine(
         },
       },
       clearing: {
-        tags: ["clearing", "saving"],
+        tags: ["clearing", "saving", "dirty"],
         invoke: {
           src: "clearReview",
           input: ({ context }) => ({ key: context.persistenceKey }),

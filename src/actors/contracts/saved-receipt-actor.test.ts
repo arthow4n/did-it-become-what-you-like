@@ -130,6 +130,12 @@ Deno.test(
     });
     await waitForActorState(missing, "notFound");
     assertEquals(missing.getSnapshot().context.receiptId, "receipt-reopened");
+    missing.send({ type: "receipt.detail.navigate", destination: "/settings" });
+    await waitForActorState(missing, "completed");
+    assertEquals(missing.getSnapshot().output, {
+      status: "navigated",
+      destination: "/settings",
+    });
     missing.stop();
   },
 );
@@ -373,7 +379,7 @@ Deno.test(
           : Promise.resolve(aggregate);
       },
     }));
-    await waitForActorState(retryLoad, "failure");
+    await waitForActorState(retryLoad, "loadFailure");
     assertEquals(retryLoad.getSnapshot().context.error?.code, "offline");
     assert(retryLoad.getSnapshot().context.error?.retryable === true);
     retryLoad.send({ type: "receipt.detail.retry" });
@@ -503,5 +509,29 @@ Deno.test(
     nonRetryable.send({ type: "receipt.detail.retry" });
     assert(nonRetryable.getSnapshot().matches("failure"));
     nonRetryable.stop();
+  },
+);
+
+Deno.test(
+  "saved-receipt actor does not mark failed destructive mutations as dirty",
+  async () => {
+    const actor = start(createService({
+      deleteLine: () => Promise.reject({ code: "quota" }),
+    }));
+    await waitForActorState(actor, "ready");
+    actor.send({
+      type: "receipt.detail.request-line-delete",
+      lineId: purchaseId,
+    });
+    actor.send({ type: "receipt.detail.confirm-line-delete" });
+    await waitForActorState(actor, "deleteFailure");
+    assert(!actor.getSnapshot().hasTag("dirty"));
+    actor.send({ type: "receipt.detail.back", destination: "/expenses" });
+    await waitForActorState(actor, "completed");
+    assertEquals(actor.getSnapshot().output, {
+      status: "navigated",
+      destination: "/expenses",
+    });
+    actor.stop();
   },
 );

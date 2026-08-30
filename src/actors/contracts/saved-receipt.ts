@@ -222,6 +222,9 @@ export const savedReceiptMachine = setup({
       context.pendingMutation?.kind === "metadata" ||
       context.pendingMutation?.kind === "line" ||
       context.pendingMutation?.kind === "add-line",
+    hasPendingDeletion: ({ context }) =>
+      context.pendingMutation?.kind === "delete-line" ||
+      context.pendingMutation?.kind === "delete-receipt",
     mutationDeletedReceipt: ({ event }) => {
       const output = mutationOutput(event);
       return output !== undefined &&
@@ -488,7 +491,7 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
           },
         ],
         onError: {
-          target: "failure",
+          target: "loadFailure",
           actions: "setLoadFailure",
         },
       },
@@ -873,10 +876,14 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
             actions: "clearTransient",
           },
         ],
-        onError: {
-          target: "failure",
-          actions: "setMutationFailure",
-        },
+        onError: [
+          {
+            target: "deleteFailure",
+            guard: "hasPendingDeletion",
+            actions: "setMutationFailure",
+          },
+          { target: "failure", actions: "setMutationFailure" },
+        ],
       },
       on: {
         "receipt.detail.cancel": {
@@ -960,6 +967,70 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
         },
       },
     },
+    loadFailure: {
+      tags: ["error"],
+      on: {
+        "receipt.detail.back": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+        "receipt.detail.close": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+        "receipt.detail.navigate": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+        "receipt.detail.retry": {
+          target: "loading",
+          guard: "retryLoad",
+          actions: "clearError",
+        },
+        "receipt.detail.reload": {
+          target: "loading",
+          actions: "clearTransient",
+        },
+        "receipt.detail.cancel": {
+          target: "cancelled",
+          actions: "setCancelledOutcome",
+        },
+      },
+    },
+    deleteFailure: {
+      tags: ["error"],
+      on: {
+        "receipt.detail.back": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+        "receipt.detail.close": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+        "receipt.detail.navigate": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+        "receipt.detail.retry": {
+          target: "mutating",
+          guard: "retryMutation",
+          actions: "clearError",
+        },
+        "receipt.detail.reload": {
+          target: "loading",
+          actions: "clearTransient",
+        },
+        "receipt.detail.cancel-delete": {
+          target: "ready",
+          actions: "clearTransient",
+        },
+        "receipt.detail.cancel": {
+          target: "cancelled",
+          actions: "setCancelledOutcome",
+        },
+      },
+    },
     completed: {
       type: "final",
       output: ({ context }) => context.outcome!,
@@ -980,6 +1051,14 @@ export const savedReceiptDetailMachine = savedReceiptMachine.createMachine({
           actions: ["setReceiptId", "clearTransient"],
         },
         "receipt.detail.back": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+        "receipt.detail.close": {
+          target: "completed",
+          actions: ["setNavigationDestination", "setNavigatedOutcome"],
+        },
+        "receipt.detail.navigate": {
           target: "completed",
           actions: ["setNavigationDestination", "setNavigatedOutcome"],
         },

@@ -1,7 +1,4 @@
-import {
-  adapterError,
-  type CausalSyncPort,
-} from "../../adapters/ports/index.ts";
+import type { CausalSyncPort } from "../../adapters/ports/index.ts";
 import {
   CAUSAL_STATE_KEY,
   createInMemoryCausalSyncPort,
@@ -17,6 +14,7 @@ import {
   createSyncActor,
   hydrateSyncDependencies,
 } from "./index.ts";
+import { waitFor } from "../../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -37,27 +35,12 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-async function waitFor(
-  predicate: () => boolean,
-  message: string,
-): Promise<void> {
-  for (let attempt = 0; attempt < 1_000; attempt += 1) {
-    if (predicate()) return;
-    await Promise.resolve();
-  }
-  throw new Error(message);
-}
-
 function failingPort(
   code: "offline" | "unauthorized" | "quota" | "retired",
 ): CausalSyncPort {
-  const fail = (): Promise<never> =>
-    Promise.reject(adapterError(code, `sync.test-${code}`));
-  return {
-    read: fail,
-    exportPacket: fail,
-    applyPacket: fail,
-  };
+  const port = createFakeCausalSyncPort();
+  port.setScenario({ [code]: true });
+  return port;
 }
 
 function dependencies(

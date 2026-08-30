@@ -39,7 +39,6 @@ import { DefaultNavigation } from "../design-system/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
-  readTextFile(path: string | URL): Promise<string>;
 };
 
 function assert(

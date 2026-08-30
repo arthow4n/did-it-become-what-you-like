@@ -1,6 +1,5 @@
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
-  readTextFile(path: string | URL): Promise<string>;
 };
 
 import { within } from "@testing-library/dom";

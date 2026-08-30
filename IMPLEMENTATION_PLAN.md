@@ -49,36 +49,23 @@ M30 and M31 specifically deliver:
   scanning (`/receipt/scan`) while preserving in-flight dirty workflow exit
   protection (`DirtyExitGuard`).
 
-### M30 release evidence
+### Release validation evidence
 
-The M30 implementation commit `f8d0463` was pushed to `origin/master`. The
-compact ledger archive was pushed as `a4d99ce`.
-
-- `deno task check` passed.
-- `deno task fmt:check` checked 210 files and passed.
-- `deno task lint` checked 200 files and passed.
-- Focused domain, adapter, actor, and review UI tests passed 69 tests.
-- The permissioned affected graph passed 341 tests with 0 failures.
-- `git diff --check` passed.
-- The R-3010 fresh read-only re-check approved the implementation with no
-  remaining severity 1–3 findings.
-
-### M31 release evidence
-
-The M31 implementation commit `b1d01fc` was pushed to `origin/master`.
+The released baseline implementation (pushed to `origin/master`, baseline commit
+`b1d01fc`) satisfies all architectural and verification requirements:
 
 - `deno task check` passed TypeScript and repository checks with 0 errors.
 - `deno task fmt:check` checked 210 files and passed.
 - `deno task lint` checked 200 files and passed.
 - `git diff --check` passed.
-- The full test suite passed 435 tests with 0 failures: `deno task test`.
-- `deno task build` transformed 2,973 modules and verified production assets.
+- The full test suite passed with 0 failures: `deno task test`.
+- `deno task build` transformed production assets.
 - `deno task release:verify` passed for version `0.1.0`.
-- Full E2E suite passed all 9 Playwright journeys (`deno task test:e2e`).
+- E2E critical user journeys passed via Playwright (`deno task test:e2e`).
 - UI audit capture passed across all 3 viewports (1280x800, 390x844, 320x568).
-- The R-3110 independent read-only review approved the implementation with 0
-  findings and verified 100% facade boundary compliance (0 `@mantine/*` imports
-  in `src/features/**` or `src/app/**`).
+- Independent read-only review approved the implementation with 0 findings and
+  verified 100% facade boundary compliance (0 `@mantine/*` imports in
+  `src/features/**` or `src/app/**`).
 
 ## Architecture and ownership baseline
 

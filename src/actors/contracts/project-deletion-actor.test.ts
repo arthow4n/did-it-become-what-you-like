@@ -4,6 +4,7 @@ import type {
   ProjectDeletionService,
   ProjectDeletionTarget,
 } from "../../domain/project-deletion.ts";
+import { settle } from "../../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -14,10 +15,6 @@ function assert(
   message = "Expected condition",
 ): asserts condition {
   if (!condition) throw new Error(message);
-}
-
-async function settle(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
 }
 
 const target: ProjectDeletionTarget = {

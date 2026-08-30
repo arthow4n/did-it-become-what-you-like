@@ -38,5 +38,21 @@ export async function waitForActorState(
   );
 }
 
+export async function waitFor(
+  predicate: () => boolean,
+  message = "Condition not met",
+  maxAttempts = 50,
+): Promise<void> {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (predicate()) return;
+    for (let index = 0; index < 8; index += 1) {
+      await Promise.resolve();
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+  if (predicate()) return;
+  throw new Error(message);
+}
+
 export const waitForValue = waitForActorState;
 export const waitForState = waitForActorState;

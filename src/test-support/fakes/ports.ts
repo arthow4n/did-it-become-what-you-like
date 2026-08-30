@@ -11,12 +11,20 @@ import {
   type CausalSyncRecoveryPort,
   type ClockPort,
   cloneJson,
+} from "../../adapters/ports/index.ts";
+import {
   type DriveAuthorizationPort,
   type DriveAuthSession,
   type DriveAuthState,
   type DriveFile,
   type DriveTransportPort,
   type DriveWriteRequest,
+} from "../../adapters/ports/drive.ts";
+import {
+  DRIVE_RETIREMENT_MARKER_NAME,
+  type DriveRetirementMarker,
+} from "../../adapters/drive/index.ts";
+import {
   type FilePayload,
   type FileSelectionPort,
   type FileSharePort,
@@ -64,6 +72,8 @@ export type FakeScenario = {
   readonly conflict?: boolean;
   readonly corrupt?: boolean;
   readonly partialTransport?: boolean;
+  readonly unauthorized?: boolean;
+  readonly retired?: boolean;
 };
 
 export type FakeControls = {
@@ -78,6 +88,8 @@ type MutableScenario = {
   conflict: boolean;
   corrupt: boolean;
   partialTransport: boolean;
+  unauthorized: boolean;
+  retired: boolean;
 };
 
 function createControls(operation: string): ControlsWithScenario {
@@ -87,6 +99,8 @@ function createControls(operation: string): ControlsWithScenario {
     conflict: false,
     corrupt: false,
     partialTransport: false,
+    unauthorized: false,
+    retired: false,
   };
   let nextFailure: AdapterErrorCode | undefined;
 
@@ -105,6 +119,8 @@ function createControls(operation: string): ControlsWithScenario {
         conflict: false,
         corrupt: false,
         partialTransport: false,
+        unauthorized: false,
+        retired: false,
       };
     },
     check: (options) => {
@@ -115,7 +131,9 @@ function createControls(operation: string): ControlsWithScenario {
         throw adapterError(code, operation);
       }
       if (scenario.offline) throw adapterError("offline", operation);
+      if (scenario.unauthorized) throw adapterError("unauthorized", operation);
       if (scenario.quota) throw adapterError("quota", operation);
+      if (scenario.retired) throw adapterError("retired", operation);
       if (scenario.corrupt) throw adapterError("corrupt-data", operation);
       if (scenario.partialTransport) {
         throw adapterError("partial-transport", operation);
@@ -366,6 +384,13 @@ export type FakeDrivePorts =
   & FakeControls
   & {
     readonly requests: readonly DriveRequestObservation[];
+    readonly readRetirementMarker: (
+      options?: OperationOptions,
+    ) => Promise<DriveRetirementMarker | undefined>;
+    readonly publishRetirementMarker: (
+      marker: DriveRetirementMarker,
+      options?: OperationOptions,
+    ) => Promise<DriveFile>;
   };
 
 export function createFakeDrivePorts(
@@ -448,6 +473,26 @@ export function createFakeDrivePorts(
         throw adapterError("conflict", "drive.delete");
       }
       files.delete(name);
+    },
+    readRetirementMarker: async (options) => {
+      controls.check(options);
+      requireAuth();
+      const file = files.get(DRIVE_RETIREMENT_MARKER_NAME);
+      if (!file) return undefined;
+      try {
+        return JSON.parse(file.body) as DriveRetirementMarker;
+      } catch {
+        return undefined;
+      }
+    },
+    publishRetirementMarker: async (marker, options) => {
+      controls.check(options);
+      requireAuth();
+      const body = JSON.stringify(marker);
+      return api.writeAppData(
+        { name: DRIVE_RETIREMENT_MARKER_NAME, body },
+        options,
+      );
     },
     requests,
     setScenario: controls.setScenario,

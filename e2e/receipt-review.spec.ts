@@ -132,10 +132,13 @@ test(
     await page.getByRole("button", { name: "Remove" }).click();
     await expect(page.getByAltText("Selected receipt preview")).toHaveCount(0);
     await expect.poll(() =>
-      page.getByLabel("Receipt image file").evaluate((input) => ({
-        value: input.value,
-        fileCount: input.files?.length ?? 0,
-      }))
+      page.getByLabel("Receipt image file").evaluate((element) => {
+        const input = element as HTMLInputElement;
+        return {
+          value: input.value,
+          fileCount: input.files?.length ?? 0,
+        };
+      })
     ).toEqual({ value: "", fileCount: 0 });
     const cameraDialog = page.waitForEvent("filechooser");
     await page.getByRole("button", { name: "Take photo" }).click();
@@ -171,10 +174,13 @@ test(
     await expect(page.getByText("provider-only-secret")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Retry" })).toBeEnabled();
     await expect.poll(() =>
-      page.getByLabel("Receipt image file").evaluate((input) => ({
-        value: input.value,
-        fileCount: input.files?.length ?? 0,
-      }))
+      page.getByLabel("Receipt image file").evaluate((element) => {
+        const input = element as HTMLInputElement;
+        return {
+          value: input.value,
+          fileCount: input.files?.length ?? 0,
+        };
+      })
     ).toMatchObject({ fileCount: 1 });
     await page.getByRole("button", { name: "Retry" }).click();
     await expect(page.getByRole("heading", { name: "Review receipt" }))

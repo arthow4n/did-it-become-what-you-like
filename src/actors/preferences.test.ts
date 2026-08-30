@@ -1,21 +1,11 @@
 import { createActor } from "xstate";
 import { createPreferencesMachine } from "./preferences.ts";
 import { createFakeLocalPort } from "../test-support/fakes/ports.ts";
+import { waitFor } from "../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
 };
-
-async function waitFor(
-  condition: () => boolean,
-  message: string,
-): Promise<void> {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    if (condition()) return;
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  }
-  throw new Error(message);
-}
 
 Deno.test("preference actor loads, changes, and persists the day boundary", async () => {
   const local = createFakeLocalPort();

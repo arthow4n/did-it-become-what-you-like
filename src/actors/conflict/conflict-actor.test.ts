@@ -8,6 +8,7 @@ import {
   createFakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
 import { createTestClock } from "../../test-support/clock.ts";
+import { settle } from "../../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -87,12 +88,10 @@ async function seed(
   });
 }
 
-async function settle(
+async function settleActor(
   actor: ReturnType<typeof createConflictActor>,
 ): Promise<void> {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  }
+  await settle();
   assert(actor.getSnapshot().status !== "error");
 }
 
@@ -160,7 +159,7 @@ Deno.test("conflict: workflow selection and candidates survive reload while offl
   await seed(deps.local);
   const actor = createConflictActor(deps, { observations: [observation()] });
   actor.start();
-  await settle(actor);
+  await settleActor(actor);
   assert(actor.getSnapshot().matches("reviewing"));
   const group = actor.getSnapshot().context.state.groups[0];
   actor.send({ type: "conflict.open", groupId: group.id });
@@ -168,12 +167,12 @@ Deno.test("conflict: workflow selection and candidates survive reload while offl
     type: "conflict.choose-candidate",
     candidateId: group.candidates[0].id,
   });
-  await settle(actor);
+  await settleActor(actor);
   actor.stop();
 
   const reloaded = createConflictActor(deps);
   reloaded.start();
-  await settle(reloaded);
+  await settleActor(reloaded);
   assert(reloaded.getSnapshot().matches("reviewing"));
   assertEquals(reloaded.getSnapshot().context.selection?.choice, "candidate");
   assertEquals(
@@ -188,14 +187,14 @@ Deno.test("conflict: actor failure enters retryable state without clearing unres
   await seed(deps.local);
   const actor = createConflictActor(deps, { observations: [observation()] });
   actor.start();
-  await settle(actor);
+  await settleActor(actor);
   const group = actor.getSnapshot().context.state.groups[0];
   actor.send({ type: "conflict.open", groupId: group.id });
   actor.send({ type: "conflict.choose-custom", value: "-40" });
-  await settle(actor);
+  await settleActor(actor);
   deps.local.failNext("quota");
   actor.send({ type: "conflict.submit" });
-  await settle(actor);
+  await settleActor(actor);
   assert(actor.getSnapshot().matches("failed"));
   actor.stop();
   const state = await new ConflictStore(deps).load();

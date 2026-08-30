@@ -43,7 +43,7 @@
     "dev": "deno run -A npm:vite@8.2.2 --host 127.0.0.1",
     "fmt:check": "deno fmt --check deno.json tsconfig.app.json vite.config.ts vite.gallery.config.ts index.html src scripts e2e",
     "lint": "deno lint src scripts e2e vite.config.ts vite.gallery.config.ts",
-    "check": "deno run -A npm:typescript@7.0.2/tsc --noEmit --project tsconfig.app.json && deno check --config deno.json scripts/verify-release.ts scripts/install-browsers.ts scripts/verify-gallery.ts scripts/audit-capture.ts scripts/tests/browser_installer_test.ts scripts/tests/ci_test.ts scripts/tests/boundary_test.ts e2e/playwright.ts e2e/playwright.config.ts e2e/playwright.audit.config.ts",
+    "check": "deno run -A npm:typescript@7.0.2/tsc --noEmit --project tsconfig.app.json && deno check --config deno.json scripts/*.ts scripts/**/*.ts e2e/*.ts e2e/**/*.ts",
     "test": "deno test --allow-read --allow-write --allow-run --allow-env src scripts/tests",
     "test:affected": "deno test --allow-read --allow-write --allow-run --allow-env --changed",
     "build": "deno run -A npm:vite@8.2.2 build --config vite.config.ts",

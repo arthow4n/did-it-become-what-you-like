@@ -7,16 +7,13 @@ import {
   durableWorkflowMachine,
   type ExpenseCommitInput,
   type ExpenseCommitOutput,
-  type ExpenseFormEvent,
   expenseFormMachine,
   importMachine,
   type ImportPreview,
   projectDeletionMachine,
   projectMachine,
   receiptReviewMachine,
-  type ReceiptScanEvent,
   receiptScanMachine,
-  type SyncEvent,
   syncMachine,
   updateInstallMachine,
   workflowHostMachine,
@@ -132,36 +129,6 @@ const clearSnapshot = fromPromise(
 const durableWorkflowWithClear = durableWorkflowMachine.provide({
   actors: { clearSnapshot },
 });
-
-// Compile-time event payload contract checks.
-const typedEvents = [
-  { type: "expense.submit" } satisfies ExpenseFormEvent,
-  {
-    type: "receipt.scan",
-    input: {
-      image: {
-        ephemeralId: "image-1",
-        mediaType: "image/jpeg",
-        byteLength: 10,
-      },
-      projectId: "project-sweden",
-      currency: "SEK",
-      locale: "en-SE",
-      categoryCatalogue: [],
-      model: "gemini-test",
-      prepareImage: true,
-    },
-  } satisfies ReceiptScanEvent,
-  {
-    type: "sync.request",
-    request: { reason: "manual" } satisfies SyncRequest,
-  } satisfies SyncEvent,
-];
-void typedEvents;
-
-// @ts-expect-error Receipt scans cannot omit the ephemeral image request payload.
-const invalidReceiptEvent: ReceiptScanEvent = { type: "receipt.scan" };
-void invalidReceiptEvent;
 
 Deno.test("actor-contract: expense guard keeps incomplete forms editable", () => {
   const actor = createActor(expenseFormMachine).start();

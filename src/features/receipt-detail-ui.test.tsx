@@ -5,7 +5,10 @@ import type {
   ReceiptManagementService,
 } from "../domain/receipt.ts";
 import { ReceiptDetailScreen } from "./receipt-detail-ui.tsx";
-import { withComponentHarness } from "../test-support/component-harness.tsx";
+import {
+  withAriaGlobals,
+  withComponentHarness,
+} from "../test-support/component-harness.tsx";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -16,45 +19,6 @@ function assert(
   message = "Expected condition",
 ): asserts condition {
   if (!condition) throw new Error(message);
-}
-
-async function withAriaGlobals<T>(
-  callback: () => T | Promise<T>,
-): Promise<T> {
-  const testWindow =
-    (globalThis as unknown as { window?: { [key: string]: unknown } }).window;
-  if (!testWindow) return await callback();
-  const names = [
-    "HTMLButtonElement",
-    "FocusEvent",
-    "HTMLInputElement",
-    "MutationObserver",
-    "NodeFilter",
-    "requestAnimationFrame",
-    "cancelAnimationFrame",
-    "HTMLSelectElement",
-    "SVGElement",
-    "HTMLTextAreaElement",
-  ] as const;
-  const previous = new Map<string, unknown>();
-  const previousCss = globalThis.CSS;
-  for (const name of names) {
-    previous.set(name, globalThis[name as keyof typeof globalThis]);
-    Object.assign(globalThis, { [name]: testWindow[name] });
-  }
-  Object.assign(globalThis, {
-    CSS: previousCss ?? {
-      escape: (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, "\\$&"),
-    },
-  });
-  try {
-    return await callback();
-  } finally {
-    for (const [name, value] of previous) {
-      Object.assign(globalThis, { [name]: value });
-    }
-    Object.assign(globalThis, { CSS: previousCss });
-  }
 }
 
 const category = {

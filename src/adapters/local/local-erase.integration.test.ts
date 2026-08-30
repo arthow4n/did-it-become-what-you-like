@@ -10,6 +10,7 @@ import {
   type DestructionStorage,
   readLocalEraseProgress,
 } from "../../domain/destruction.ts";
+import { settle } from "../../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -32,13 +33,6 @@ function memoryStorage(): DestructionStorage & {
     setItem: (key, value) => values.set(key, value),
     removeItem: (key) => values.delete(key),
   };
-}
-
-async function settle(): Promise<void> {
-  for (let turn = 0; turn < 12; turn += 1) {
-    for (let index = 0; index < 8; index += 1) await Promise.resolve();
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  }
 }
 
 let sequence = 0;

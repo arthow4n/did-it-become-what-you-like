@@ -5,55 +5,18 @@ import {
   createFakeLocalPort,
   createFakeUpdateInstallPort,
 } from "../test-support/fakes/ports.ts";
-import { withComponentHarness } from "../test-support/component-harness.tsx";
+import {
+  withAriaGlobals,
+  withComponentHarness,
+} from "../test-support/component-harness.tsx";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
-  readTextFile(path: string | URL): Promise<string>;
 };
-
-async function withAriaDomGlobals<T>(
-  testWindow: {
-    HTMLButtonElement: unknown;
-    HTMLInputElement: unknown;
-    MutationObserver: unknown;
-    NodeFilter: unknown;
-    requestAnimationFrame: unknown;
-    cancelAnimationFrame: unknown;
-    HTMLSelectElement: unknown;
-    SVGElement: unknown;
-    HTMLTextAreaElement: unknown;
-  },
-  callback: () => T | Promise<T>,
-): Promise<T> {
-  const names = [
-    "HTMLButtonElement",
-    "HTMLInputElement",
-    "MutationObserver",
-    "NodeFilter",
-    "requestAnimationFrame",
-    "cancelAnimationFrame",
-    "HTMLSelectElement",
-    "SVGElement",
-    "HTMLTextAreaElement",
-  ] as const;
-  const previous = new Map<string, unknown>();
-  for (const name of names) {
-    previous.set(name, globalThis[name as keyof typeof globalThis]);
-    Object.assign(globalThis, { [name]: testWindow[name] });
-  }
-  try {
-    return await callback();
-  } finally {
-    for (const [name, value] of previous) {
-      Object.assign(globalThis, { [name]: value });
-    }
-  }
-}
 
 Deno.test("settings-final preference screen shows a live day-boundary example", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
       let savedBoundary = "";
       render(
@@ -85,7 +48,7 @@ Deno.test("settings-final preference screen shows a live day-boundary example", 
 
 Deno.test("settings-final preferences discard restores the saved boundary", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
       let discardCount = 0;
       let dirty = false;
@@ -134,7 +97,7 @@ Deno.test("settings-final preferences discard restores the saved boundary", asyn
 
 Deno.test("settings-final preferences reset CTA restores and saves 03:00", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
       let savedBoundary = "";
       render(
@@ -210,7 +173,7 @@ Deno.test("settings-final About exposes exact disclosure and build metadata", as
 
 Deno.test("settings-final install offer defers startup checks and supports later", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       const basePort = createFakeUpdateInstallPort();
       basePort.setInstallAvailable(true);
       basePort.setUpdate();
@@ -250,7 +213,7 @@ Deno.test("settings-final install offer defers startup checks and supports later
 
 Deno.test("settings-final labels service-worker installation as an update", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       render(
         createElement(
           PwaRuntime,
@@ -272,7 +235,7 @@ Deno.test("settings-final labels service-worker installation as an update", asyn
 
 Deno.test("settings-final labels native app installation separately", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       const port = createFakeUpdateInstallPort();
       port.setInstallAvailable(true);
       let finishInstall: (() => void) | undefined;
@@ -310,7 +273,7 @@ Deno.test("settings-final labels native app installation separately", async () =
 
 Deno.test("settings-final update protects dirty input and exposes offline status", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       const port = createFakeUpdateInstallPort();
       port.setUpdate();
       render(
@@ -347,7 +310,7 @@ Deno.test("settings-final update protects dirty input and exposes offline status
 
 Deno.test("settings-final checks for updates when the app becomes active", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       const basePort = createFakeUpdateInstallPort();
       let checks = 0;
       const port = {
@@ -377,7 +340,7 @@ Deno.test("settings-final checks for updates when the app becomes active", async
 
 Deno.test("settings-final startup check exposes a waiting update", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       const port = createFakeUpdateInstallPort();
       port.setUpdate();
       render(
@@ -407,7 +370,7 @@ Deno.test("settings-final startup check exposes a waiting update", async () => {
 
 Deno.test("settings-final offline update status explains reconnecting", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       Object.defineProperty(window.navigator, "onLine", {
         configurable: true,
         value: false,
@@ -436,7 +399,7 @@ Deno.test("settings-final offline update status explains reconnecting", async ()
 
 Deno.test("settings-final unsupported browser explains the update limitation", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
+    await withAriaGlobals(window, async () => {
       render(
         createElement(
           PwaRuntime,

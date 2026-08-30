@@ -15,8 +15,8 @@ accept a local directory. No credentials are required by CI.
 `deno task release:verify` must run after `deno task build`. It verifies the
 repository-relative artifact paths, hash-route shell fallback, CSP allowlist,
 manifest and service-worker scope, dark metadata, injected version and short
-commit, source and notice links, exact disclosure, license files, SHA-256
-provenance lines, and secret-like content absence.
+commit, source and notice links, license files, SHA-256 provenance lines, and
+secret-like content absence.
 
 The About screen is the user-facing provenance surface: it shows version
 `0.1.0`, the short Git commit, the exact generative-AI disclosure, license and

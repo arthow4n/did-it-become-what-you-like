@@ -15,6 +15,7 @@ import {
   readLocalEraseProgress,
   writeDeleteEverywhereProgress,
 } from "../../domain/destruction.ts";
+import { settle } from "../../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -37,10 +38,6 @@ function memoryStorage(): DestructionStorage & {
     setItem: (key, value) => values.set(key, value),
     removeItem: (key) => values.delete(key),
   };
-}
-
-async function settle(): Promise<void> {
-  for (let index = 0; index < 32; index += 1) await Promise.resolve();
 }
 
 function deleteDependencies(options: {

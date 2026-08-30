@@ -75,14 +75,14 @@ semantic tokens
   mechanics. It must not become a second source of business truth. The
   superseded React Aria implementation is not a runtime dependency.
 
-## Mantine migration boundary
+## Design-system facade boundary
 
-The migration preserves the public `src/design-system/index.ts` facade. Feature
-and app files never import Mantine or another component library directly. Public
-design-system props, refs, callback signatures, and types remain
-library-neutral; library events are translated inside the facade. After Midnight
-semantic tokens remain the source of truth and are mapped into `MantineProvider`
-and facade defaults.
+The design system maintains the public `src/design-system/index.ts` facade.
+Feature and app files never import Mantine or another component library
+directly. Public design-system props, refs, callback signatures, and types
+remain library-neutral; library events are translated inside the facade. After
+Midnight semantic tokens remain the source of truth and are mapped into
+`MantineProvider` and facade defaults.
 
 `DesignSystemProvider` is the single runtime entry for Mantine. It forces the
 approved dark scheme and maps the semantic color, type, spacing, radius, focus,

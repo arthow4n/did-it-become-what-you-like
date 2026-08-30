@@ -1,21 +1,11 @@
 import { createActor, fromPromise } from "xstate";
 import { updateInstallMachine } from "./update-install.ts";
 import type { UpdateCheckOutput } from "../../adapters/ports/update-install.ts";
+import { waitFor } from "../../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
 };
-
-async function waitFor(
-  condition: () => boolean,
-  message: string,
-): Promise<void> {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    if (condition()) return;
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  }
-  throw new Error(message);
-}
 
 Deno.test("update actor exposes update-ready and blocks reload for dirty input", async () => {
   let reloads = 0;

@@ -13,6 +13,7 @@ import {
   type PortableDataset,
   UNCATEGORIZED_CATEGORY_ID,
 } from "../../domain/index.ts";
+import { waitFor } from "../../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -31,17 +32,6 @@ function assertEquals<T>(actual: T, expected: T): void {
       `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
     );
   }
-}
-
-async function waitFor(
-  predicate: () => boolean,
-  message: string,
-): Promise<void> {
-  for (let attempt = 0; attempt < 1_000; attempt += 1) {
-    if (predicate()) return;
-    await Promise.resolve();
-  }
-  throw new Error(message);
 }
 
 function dataset(): PortableDataset {

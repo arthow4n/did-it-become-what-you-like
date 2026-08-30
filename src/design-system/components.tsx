@@ -3198,13 +3198,22 @@ export type ReceiptGroupProps = {
   date: string;
   lines: ExpenseViewModel[];
   total: MoneyTextProps;
+  /** Opens the receipt lines on first render without controlling later changes. */
+  defaultExpanded?: boolean;
   onSelectLine?: (id: string) => void;
   onViewReceipt?: () => void;
 };
 
 export function ReceiptGroup(
-  { merchant, date, lines, total, onSelectLine, onViewReceipt }:
-    ReceiptGroupProps,
+  {
+    merchant,
+    date,
+    lines,
+    total,
+    defaultExpanded,
+    onSelectLine,
+    onViewReceipt,
+  }: ReceiptGroupProps,
 ) {
   // Receipt groups already identify the merchant in their heading. Each
   // expanded line should therefore lead with its item description; retain a
@@ -3214,6 +3223,7 @@ export function ReceiptGroup(
   );
   return (
     <Disclosure
+      defaultExpanded={defaultExpanded}
       title={
         <Inline>
           <strong>{merchant}</strong>

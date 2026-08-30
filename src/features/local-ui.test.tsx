@@ -652,6 +652,21 @@ Deno.test("local UI expenses interleaves receipt groups and shows every category
     assert(feed);
     const feedText = feed.textContent ?? "";
     assert(
+      (view.getByRole("radio", { name: "Today" }) as HTMLInputElement)
+        .checked,
+      "the expenses screen should initially filter to the current day",
+    );
+    assert(
+      view.getByRole("button", { name: /Receipt after manual/ }).getAttribute(
+        "aria-expanded",
+      ) === "true",
+      "receipt groups in the expenses list should be expanded initially",
+    );
+    assert(
+      view.getByText("Receipt item"),
+      "expanded receipt groups should show their expense lines immediately",
+    );
+    assert(
       feedText.indexOf("Receipt after manual") <
         feedText.indexOf("Manual before receipt"),
       "receipt groups and standalone expenses should share chronological order",

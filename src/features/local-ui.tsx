@@ -499,7 +499,7 @@ export function ExpensesScreen({
   const currentProject =
     state.projects.find((project) => project.id === state.selectedProjectId) ??
       state.projects.find((project) => !project.archived);
-  const [period, setPeriod] = useState("month");
+  const [period, setPeriod] = useState("today");
   const [customPeriodKind, setCustomPeriodKind] = useState<CustomPeriodKind>(
     "day",
   );
@@ -822,6 +822,7 @@ export function ExpensesScreen({
                                     amount: entry.group.total,
                                     currency: entry.group.receipt.currency,
                                   }}
+                                  defaultExpanded
                                   onViewReceipt={() =>
                                     onViewReceipt(entry.group.id)}
                                   onSelectLine={(id) => {

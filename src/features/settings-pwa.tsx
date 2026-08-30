@@ -731,7 +731,7 @@ export function AboutScreen({
             </Button>
           </Stack>
         </Card>
-        <List label="About and source">
+        <List label="About and source" className="settings-pwa-about-links">
           <ListRow>
             <LinkButton href={LICENSE_URL} target="_blank" rel="noreferrer">
               Application license (MIT)

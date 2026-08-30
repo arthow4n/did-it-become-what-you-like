@@ -25,9 +25,22 @@
     margin-top: var(--space-2);
   }
 
+  .settings-pwa-about-links,
+  .settings-pwa-about-links .ds-list-row,
+  .settings-pwa-about-links .ds-list-row__main {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .settings-pwa-about-links .ds-link-button {
+    width: 100%;
+    max-width: 100%;
     min-height: var(--control-height);
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: flex-start;
+    overflow-wrap: anywhere;
+    text-align: start;
+    white-space: normal;
   }
 }

@@ -2852,10 +2852,7 @@ export function LocalUiRuntime(
       : undefined;
     const target = request.kind === "expenses"
       ? document.querySelector<HTMLElement>("[data-expenses-list-heading]")
-      : receiptGroup?.querySelector<HTMLElement>(
-        "[data-receipt-view='true']",
-      ) ??
-        receiptGroup?.querySelector<HTMLElement>("button") ??
+      : receiptGroup?.querySelector<HTMLElement>("button") ??
         document.querySelector<HTMLElement>("[data-expenses-list-heading]");
     if (!target) return;
     receiptReturnFocusRef.current = null;

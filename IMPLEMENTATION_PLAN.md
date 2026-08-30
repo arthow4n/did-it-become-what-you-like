@@ -78,11 +78,13 @@ receipt workflow behind the existing provider-neutral `ReceiptAiPort`, and
 shares extraction instructions, runtime validation, and draft mapping across
 providers instead of cloning the Gemini implementation.
 
-The approved OpenRouter integration uses the official `@openrouter/sdk` package.
-The implementing agent must verify the current SDK request/response types against
-OpenRouter's official TypeScript SDK documentation before coding and pin the
-chosen compatible package version in `deno.json` and `deno.lock` using the
-repository's dependency conventions.
+The approved OpenRouter integration uses the npm package **exactly
+`@openrouter/sdk`**. Do not substitute another OpenRouter SDK, provider wrapper,
+or similarly named community package. The implementing agent must verify the
+current `@openrouter/sdk` request/response types against OpenRouter's official
+TypeScript SDK documentation before coding and pin the chosen compatible package
+version in `deno.json` and `deno.lock` using the repository's dependency
+conventions.
 
 Target dependency flow:
 
@@ -241,16 +243,17 @@ M34-001 -> M34-002 -> R-3410
 - **Ownership:** `deno.json`, `deno.lock`, new
   `src/adapters/openrouter/{client,adapter,index}.ts` and focused tests; shared
   receipt-inference helpers only when a provider-neutral defect is discovered.
-- **Scope/non-goals:** pin `@openrouter/sdk`; isolate official SDK
-  construction/types in `client.ts`, analogous to the existing Google SDK edge;
-  implement `ReceiptAiPort.listModels`, `testConfiguration`, and
-  `extractReceipt`. Use OpenRouter model metadata for image/text/structured
-  output evidence and use the synthetic 1x1 image probe when metadata is
-  insufficient. Construct receipt input as prompt text followed by an
-  `image_url` base64 data URL. Request strict JSON-Schema structured output using
-  the full shared schema and use the SDK/provider routing option that requires
-  requested parameters when supported by the current SDK. Do not enable model
-  fallbacks.
+- **Scope/non-goals:** pin the npm package exactly `@openrouter/sdk`; do not use
+  or substitute a different OpenRouter SDK/provider package. Isolate the
+  official SDK construction/types in `client.ts`, analogous to the existing
+  Google SDK edge; implement `ReceiptAiPort.listModels`, `testConfiguration`,
+  and `extractReceipt`. Use OpenRouter model metadata for
+  image/text/structured-output evidence and use the synthetic 1x1 image probe
+  when metadata is insufficient. Construct receipt input as prompt text followed
+  by an `image_url` base64 data URL. Request strict JSON-Schema structured output
+  using the full shared schema and use the SDK/provider routing option that
+  requires requested parameters when supported by the current SDK. Do not enable
+  model fallbacks.
 - **Outputs/acceptance:** OpenRouter model IDs/display names/capabilities map into
   `ReceiptAiModel`; incompatible or missing models cannot scan; successful
   structured output passes the shared local validator before becoming a draft;
@@ -434,7 +437,9 @@ in the checked-out did-it-become-what-you-like repository.
 
 The owner has explicitly authorized this implementation: add the official
 OpenRouter TypeScript SDK as a second receipt-scanning provider while preserving
-Gemini. Do not interpret plan authoring as the implementation itself; execute
+Gemini. The npm package name is exactly `@openrouter/sdk`. Do not install or
+substitute a different OpenRouter SDK, provider wrapper, or similarly named
+package. Do not interpret plan authoring as the implementation itself; execute
 M34 now according to its dependency graph and gates.
 
 Before editing:
@@ -453,8 +458,9 @@ Execution rules:
 - Use fresh read-only reviewer subagents only at R-3410, R-3420, and R-3430.
   While a reviewer or long command is running, stop and await the reactive
   completion notification; do not poll rapidly or launch speculative work.
-- Follow the official OpenRouter TypeScript SDK documentation and the actual
-  pinned package types. Do not guess request shapes.
+- Use the official OpenRouter TypeScript SDK from npm package `@openrouter/sdk`
+  and no substitute package. Follow its official documentation and the actual
+  pinned `@openrouter/sdk` package types; do not guess request shapes.
 - Preserve ReceiptAiPort as the receipt actor/domain boundary. Keep provider
   choice, API keys, SDK construction, and routing at the app/adapter edge.
 - Never make real Gemini/OpenRouter calls from automated tests and never place a

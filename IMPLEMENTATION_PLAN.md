@@ -439,7 +439,7 @@ M27-001 -> M27-002 -> R-2710
 
 #### R-2720 — Actor, UI, accessibility, and responsive review
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on completed `M27-004`.
+- **Status/dependencies:** `COMPLETE`; depends on completed `M27-004`.
 - **Reviewer role:** Fresh read-only subagent reviewer.
 - **Audit scope:** XState v5 lifecycle correctness, facade-boundary compliance,
   route/event wiring, destructive scope clarity, focus and keyboard semantics,
@@ -470,10 +470,21 @@ M27-001 -> M27-002 -> R-2710
   list heading before the asynchronous state refresh exposed the available Add
   expense action. Deletion now uses a dedicated Add expense focus target; the
   final fresh closure review is pending.
+- **Closure evidence:** Fresh read-only closure review against `2334c19` found
+  no severity-1–3 findings. It verified dirty/history/unload protection,
+  repeated-Back synchronization, actor remounting, direct and in-app focus
+  restoration including final deletion, retryability and archived-category
+  behavior, mobile destructive action stacking, mutation-disabled line controls,
+  facade and receipt/manual-expense boundaries, and the exact `390x844`,
+  `320x568`, and `1280x800` browser assertions/screenshots. The focused
+  actor/UI/domain/integration checks passed with 47 passed and 0 failed in the
+  reviewer run; the primary remediation run passed 63 focused actor/UI tests and
+  1 receipt browser journey, with `deno task check`, lint, formatting, and
+  `git diff --check` passing.
 
 #### M27-005 — Prove the saved-receipt management journey
 
-- **Status/dependencies:** `PENDING`; depends on closed `R-2720`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on closed `R-2720`.
 - **Ownership:** `e2e/receipt-review.spec.ts`, `e2e/support/journeys.ts`,
   `e2e/support/fake-services.ts`,
   `src/adapters/local/receipt-atomic.integration.test.ts`,
@@ -534,9 +545,9 @@ M27-001 -> M27-002 -> R-2710
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-2720` (`IN_PROGRESS`; R-2710 is closed)
-- **Pushed implementation baseline:** `6737367`; M27-004 is complete and the
-  fresh actor/UI/accessibility review is the current gate.
+- **Active task / gate:** `M27-005` (`IN_PROGRESS`; R-2720 is closed)
+- **Pushed implementation baseline:** `2334c19`; M27-004 and R-2720 are
+  complete, and the bounded saved-receipt browser journey is now active.
 - **Verification status:** R-2710 closure evidence is `deno task check`, focused
   receipt/domain/local/import-export suites (36 passed, 0 failed), formatting,
   lint, and `git diff --check`; the pre-remediation M27-002 affected suite
@@ -544,9 +555,10 @@ M27-001 -> M27-002 -> R-2710
 - **Active / preserved work:** Single primary agent on `master`; no M27 worker
   or worktree. The M27-002 implementation and review checkpoint are being
   preserved on the primary branch.
-- **Exact next action:** Remediate the recorded R-2720 severity-2/3 findings,
-  rerun the implicated actor/component/browser checks, and obtain fresh review
-  closure before opening M27-005.
+- **Exact next action:** Extend the existing receipt-review E2E and selected
+  atomic regression coverage for reopen, line edit/delete, list projection,
+  whole-receipt deletion, and reload, then record exact validation before
+  opening R-2730.
 
 ## Ready-to-Use Orchestration Prompt
 

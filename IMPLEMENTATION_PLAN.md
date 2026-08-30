@@ -85,6 +85,7 @@ The M29-FINAL release gate passed:
 ### M30 release evidence
 
 The M30 implementation commit `f8d0463` was pushed to `origin/master`.
+The compact ledger archive was pushed as `a4d99ce`.
 
 - `deno task check` passed.
 - `deno task fmt:check` checked 210 files and passed.
@@ -181,10 +182,10 @@ After a restart, rate limit, lost session, or interrupted command:
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M30-FINAL` (`IN_PROGRESS`).
-- **Repository:** The M30 implementation commit `f8d0463` is pushed to
-  `origin/master`; the final plan archive update is currently in the working
-  tree pending its `[archive]` commit and push.
+- **Active task / gate:** None; M30-FINAL is complete.
+- **Repository:** `master` is clean and synchronized with `origin/master`;
+  the M30 implementation commit is `f8d0463` and the pushed ledger archive
+  commit is `a4d99ce`.
 - **M29 implementation:** complete and pushed; R-2910, R-2920, and R-2930
   approved.
 - **M29-FINAL:** complete; release and hygiene evidence is recorded above.
@@ -205,5 +206,5 @@ After a restart, rate limit, lost session, or interrupted command:
   remaining severity 1–3 findings. Focused validation passed 69 tests and the
   permissioned affected graph passed 341 tests; full format and lint checks
   passed.
-- **Next action:** Commit and push the compact ledger with the required
-  `[archive]` tag, then record the final synchronized checkpoint.
+- **Next action:** None; the next milestone may begin from this synchronized
+  baseline.

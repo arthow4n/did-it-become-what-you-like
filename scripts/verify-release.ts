@@ -250,7 +250,6 @@ for (
     LICENSE_URL,
     NOTICES_URL,
     "MIT License",
-    "This application is 100% vibe-coded using ChatGPT Codex and Google Antigravity.",
   ]
 ) {
   assert(

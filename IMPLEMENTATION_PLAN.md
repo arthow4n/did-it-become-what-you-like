@@ -115,9 +115,8 @@ deno audit --frozen
 git diff --check
 ```
 
-Critical browser seams are covered by the five approved E2E journeys in
-`e2e/support/journeys.ts`, while domain and actor rules are not duplicated
-across browser tests.
+Critical browser seams are covered by the approved Playwright E2E journeys in
+`e2e/`, while domain and actor rules are not duplicated across browser tests.
 
 ## Active dependency graph
 

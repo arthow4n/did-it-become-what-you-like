@@ -155,15 +155,17 @@ doc-level verification scripts against these dimensions:
     `git rm -r`.
   - Clean up `deno.json`, `tsconfig.app.json`, and boundary scripts.
 
-### Dimension 1E: Brittle Doc-String Matchers in Verification Scripts
+### Dimension 1E: Brittle String & Marketing Matchers in Verification Scripts
 
 - **What to look for:**
-  - Scripts or tests asserting that arbitrary marketing phrases or headings
-    exist in markdown files (e.g. asserting `README.md` or
-    `THIRD_PARTY_NOTICES.md` substrings in `scripts/verify-release.ts`).
+  - Scripts or tests asserting that arbitrary marketing phrases, promotional
+    copy, or headings exist in markdown files or compiled production bundle
+    assets (e.g. asserting specific marketing slogans or vibe-coding copy in
+    `scripts/verify-release.ts`).
 - **Remediation:**
-  - Prune raw doc-string matchers. Retain only structural build artifact
-    validation (CSP, bundle hashes, secret leakage, manifest schema).
+  - Prune non-structural copy string matchers. Retain only structural build
+    artifact validation (CSP allowlist, bundle hashes, secret leakage, license
+    notices, manifest schema, and functional exports).
 
 ---
 
@@ -237,18 +239,20 @@ and tooling task definitions against these dimensions:
   - Prune completed migration string assertions. Retain active architectural
     boundaries (e.g. Mantine facade isolation).
 
-### Dimension 2F: Task Target Flaws & Redundant Task Fragmentation
+### Dimension 2F: Task Target Flaws, Redundant Sub-Commands & Task Fragmentation
 
 - **What to look for:**
   - Fragmented or overlapping subsystem slice tasks in `deno.json` (e.g.
     `test:unit`, `test:domain`, `test:actor`, `test:integration`,
     `test:component`) that duplicate `test` and `test:affected`.
+  - Redundant sub-step installer tasks (e.g. `playwright:install`) that
+    duplicate composite multi-browser setup commands (`browser:install`).
   - Tasks hardcoding brittle lists of 20+ individual script/e2e files in
     `deno check`.
 - **Remediation:**
-  - Prune redundant subsystem slice tasks and standardize on `test:affected`
-    (for targeted graph-based changed tests) and `test` (for repository-wide
-    test execution).
+  - Prune redundant subsystem slice and sub-installer tasks. Standardize on
+    `test:affected` (for targeted graph-based changed tests) and `test` (for
+    repository-wide test execution).
   - Streamline `check` arguments.
 
 ### Dimension 2G: Copy-Pasted Test Harnesses, Window Shims & Polling Helpers
@@ -267,17 +271,21 @@ and tooling task definitions against these dimensions:
   - Colocate shared async actor settlement and state-waiting helpers inside
     `src/test-support/` modules.
 
-### Dimension 2H: Parallel & Redundant Test Fake Ports
+### Dimension 2H: Parallel Fakes & Zero-Import Orphan Support Files
 
 - **What to look for:**
   - Standalone fake port implementations (e.g. `src/test-support/fake-drive.ts`,
     `src/test-support/fake-gemini.ts`) that duplicate or overlap canonical fake
     ports in `src/test-support/fakes/ports.ts`.
-  - Unused or single-consumer duplicate fake fixture files.
+  - Zero-import orphan helper files or unused re-export facades in
+    `e2e/support/` or `src/test-support/` (e.g. `fake-services.ts`, unimported
+    static lists such as `journeys.ts`).
 - **Remediation:**
-  - Standardize all consumers (including E2E support harnesses) on canonical
-    fake port factories in `src/test-support/fakes/` and prune the redundant
-    parallel implementations.
+  - Search for consumer imports of each support file across `src/`, `e2e/`, and
+    `scripts/`.
+  - Delete unimported orphan files with `git rm`.
+  - Standardize all consumers on canonical fake port factories in
+    `src/test-support/fakes/` and prune the redundant parallel implementations.
 
 ### Dimension 2I: Intra-Suite Repetitive Test Cases & Table-Driven Consolidation
 
@@ -391,7 +399,8 @@ Before closing a pruning audit, confirm:
 - [ ] `IMPLEMENTATION_PLAN.md` has no obsolete authority statements and reflects
       the latest HEAD commit.
 - [ ] `DESIGN_SYSTEM.md` is free of ephemeral migration matrices.
-- [ ] No verify scripts test arbitrary text substrings in markdown files.
+- [ ] No verify scripts test arbitrary text substrings or promotional marketing
+      slogans in markdown files or compiled bundle assets.
 - [ ] No runtime tests execute tautological loops over compile-time boolean
       tuples.
 - [ ] No tests scrape `.ts`/`.tsx` source files with regex to verify component
@@ -400,14 +409,16 @@ Before closing a pruning audit, confirm:
       the codebase.
 - [ ] Redundant micro E2E tests are pruned in favor of multi-viewport gallery
       and actor tests.
+- [ ] Zero-import orphan helper files in `e2e/support/` or `src/test-support/`
+      are pruned.
 - [ ] Shared DOM/ARIA shims and polling utilities are centralized in
       `src/test-support/` rather than copy-pasted across feature tests.
 - [ ] Redundant standalone fake ports are pruned in favor of canonical fakes in
       `src/test-support/fakes/`.
 - [ ] Verbose repetitive intra-suite unit tests are consolidated into
       parameterized table tests.
-- [ ] Redundant subsystem test slice tasks in `deno.json` are pruned in favor of
-      `test` and `test:affected`.
+- [ ] Redundant subsystem test slice and sub-installer tasks in `deno.json` are
+      pruned in favor of `test`, `test:affected`, and composite installers.
 - [ ] Visual audit screenshot capture scripts remain isolated in `e2e/audit/` /
       `scripts/audit-capture.ts`.
 - [ ] No unrelated verify commands or heavy test suites are executed in

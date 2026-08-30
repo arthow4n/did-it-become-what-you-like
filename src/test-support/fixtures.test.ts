@@ -3,13 +3,9 @@ declare const Deno: {
 };
 
 import {
-  createFakeDrivePort,
-  createFakeGeminiPort,
   createIdFactory,
   createNetworkFixture,
   createTestClock,
-  FAKE_DRIVE_FILE,
-  FAKE_GEMINI_REQUEST,
   redactLogLine,
   redactValue,
 } from "./index.ts";
@@ -61,45 +57,6 @@ Deno.test("network fixture records requests and exposes offline state", async ()
     failed = true;
   }
   assert(failed, "offline requests must fail deterministically");
-});
-
-Deno.test("fake Drive port provides deterministic conditional writes", async () => {
-  const clock = createTestClock("2026-08-24T10:00:00.000Z");
-  const drive = createFakeDrivePort(clock, createIdFactory("drive"));
-
-  const first = await drive.writeAppData(
-    FAKE_DRIVE_FILE.name,
-    FAKE_DRIVE_FILE.body,
-  );
-  assert(first.ok);
-  if (!first.ok) return;
-  assertEquals(first.file.etag, "drive-etag-0002");
-  const rejected = await drive.writeAppData(
-    FAKE_DRIVE_FILE.name,
-    "stale",
-    "wrong-etag",
-  );
-  assertEquals(rejected, { ok: false, reason: "precondition-failed" });
-  const second = await drive.writeAppData(
-    FAKE_DRIVE_FILE.name,
-    '{"version":2}',
-    first.file.etag,
-  );
-  assert(second.ok);
-  assertEquals(drive.writes.length, 2);
-});
-
-Deno.test("fake Gemini port never records image bytes and rejects incompatible models", async () => {
-  const gemini = createFakeGeminiPort();
-  const result = await gemini.generateReceiptDraft(FAKE_GEMINI_REQUEST);
-
-  assertEquals(result.lines[0]?.amount, "-10");
-  assertEquals(gemini.requestCount, 1);
-  assert(!("image" in (gemini.requestSummaries[0] ?? {})));
-  assertEquals(
-    await gemini.testConfiguration("gemini-test-needs-review"),
-    { ok: false, reason: "model-capability-mismatch" },
-  );
 });
 
 Deno.test("redaction removes credentials from traces and structured logs", () => {

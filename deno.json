@@ -49,7 +49,6 @@
     "build": "deno run -A npm:vite@8.2.2 build --config vite.config.ts",
     "verify": "deno task fmt:check && deno task lint && deno task check && deno task test && deno task build && deno task release:verify && deno audit --frozen && git diff --check",
     "browser:install": "deno run -A scripts/install-browsers.ts",
-    "playwright:install": "deno x -p npm:@playwright/test@1.62.1 playwright install chromium",
     "test:e2e": "deno x -p npm:@playwright/test@1.62.1 playwright test --config=e2e/playwright.config.ts",
     "audit:capture": "deno run -A scripts/audit-capture.ts",
     "gallery": "deno run -A npm:vite@8.2.2 build --config vite.gallery.config.ts",

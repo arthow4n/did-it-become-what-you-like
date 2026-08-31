@@ -39,7 +39,7 @@ export type LocalEraseView = {
     | "failed"
     | "partial"
     | "completed";
-  readonly removeGeminiApiKey: boolean;
+  readonly removeReceiptAiKeys: boolean;
   readonly error?: string;
 };
 
@@ -65,7 +65,7 @@ export type DataPrivacyScreenProps = {
   readonly onBack: () => void;
   readonly onDisconnect: () => void;
   readonly onOpenLocalErase: () => void;
-  readonly onLocalEraseChoice: (removeGeminiApiKey: boolean) => void;
+  readonly onLocalEraseChoice: (removeReceiptAiKeys: boolean) => void;
   readonly onConfirmLocalErase: () => void;
   readonly onRetryLocalErase: () => void;
   readonly onCancelLocalErase: () => void;
@@ -224,6 +224,10 @@ export function DataPrivacyScreen({
               term: "Gemini API key",
               description: "Stored only on this device",
             },
+            {
+              term: "OpenRouter API key",
+              description: "Stored only on this device",
+            },
           ]}
         />
 
@@ -270,11 +274,11 @@ export function DataPrivacyScreen({
                   preserved cloud dataset.
                 </InlineNotice>
                 <Checkbox
-                  isSelected={localErase.removeGeminiApiKey}
+                  isSelected={localErase.removeReceiptAiKeys}
                   onChange={onLocalEraseChoice}
                   isDisabled={localEraseBusy || localErase.phase === "failed"}
                 >
-                  Remove Gemini API key from this device
+                  Remove receipt-AI API keys from this device
                 </Checkbox>
                 {localErase.phase === "failed"
                   ? (
@@ -319,7 +323,7 @@ export function DataPrivacyScreen({
             ? (
               <InlineNotice tone="warning" title="Local data was erased">
                 {localErase.error ??
-                  "The Gemini API key still needs removal from this device."}
+                  "The receipt-AI API keys still need removal from this device."}
                 <Button variant="secondary" onPress={onOpenLocalErase}>
                   Retry key removal
                 </Button>

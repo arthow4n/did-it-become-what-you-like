@@ -65,6 +65,15 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
+function deferred<T>(): {
+  readonly promise: Promise<T>;
+  readonly resolve: (value: T) => void;
+} {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((complete) => resolve = complete);
+  return { promise, resolve };
+}
+
 function createSettingsProvider({
   key,
   models,
@@ -1056,6 +1065,219 @@ Deno.test(
           });
           assert(gemini.extractionCalls() === 0);
           assert(openrouter.extractionCalls() === 0);
+        });
+      });
+    });
+  },
+);
+
+Deno.test(
+  "receipt-ui ignores an older settings model refresh after switching providers",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(() => {
+        const geminiModel: ReceiptAiModel = {
+          id: "gemini/stale-model",
+          displayName: "Stale Gemini model",
+          lifecycle: "active",
+          capabilities: {
+            "image-input": undefined,
+            "content-generation": undefined,
+            "structured-output": undefined,
+          },
+        };
+        const openRouterModel: ReceiptAiModel = {
+          id: "openai/current-model",
+          displayName: "Current OpenRouter model",
+          lifecycle: "active",
+          capabilities: {
+            "image-input": true,
+            "content-generation": true,
+            "structured-output": true,
+          },
+        };
+        const geminiModels = deferred<readonly ReceiptAiModel[]>();
+        const openRouterModels = deferred<readonly ReceiptAiModel[]>();
+        let geminiRefreshes = 0;
+        let openRouterRefreshes = 0;
+        const provider = (
+          key: string,
+          models: Promise<readonly ReceiptAiModel[]>,
+          onRefresh: () => void,
+        ): ReceiptOpenRouterPort => ({
+          getApiKey: () => Promise.resolve(SecretValue.from(key)),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+          listModels: () => {
+            onRefresh();
+            return models;
+          },
+          listEndpoints: () => Promise.resolve([]),
+          extractReceipt: () => Promise.reject(new Error("unused")),
+        });
+        const gemini = provider(
+          "AIza.gemini",
+          geminiModels.promise,
+          () => geminiRefreshes += 1,
+        );
+        const openrouter = provider(
+          "sk.openrouter",
+          openRouterModels.promise,
+          () => openRouterRefreshes += 1,
+        );
+        const initialSettings = DeviceLocalSettingsSchema.parse({
+          activeProvider: "gemini",
+          selectedOpenRouterModel: openRouterModel.id,
+          imagePreparationEnabled: true,
+        });
+        function ControlledSettings() {
+          const [settings, setSettings] = useState(initialSettings);
+          return createElement(ReceiptSettingsScreen, {
+            gemini,
+            openrouter,
+            settings,
+            onSettingsChange: setSettings,
+            onClose: () => undefined,
+          });
+        }
+        render(createElement(ControlledSettings));
+        const view = within(document.body);
+        return waitFor(() => assert(geminiRefreshes === 1)).then(async () => {
+          const providerPicker = view.getByRole("combobox", {
+            name: "Receipt AI provider",
+          });
+          fireEvent.click(providerPicker);
+          fireEvent.click(view.getByRole("option", { name: "OpenRouter" }));
+          await waitFor(() => assert(openRouterRefreshes === 1));
+
+          geminiModels.resolve([geminiModel]);
+          await waitFor(() => {
+            const modelPicker = view.getByRole("combobox", {
+              name: "Model",
+            }) as HTMLInputElement;
+            assert(!modelPicker.value.includes(geminiModel.displayName));
+          });
+          openRouterModels.resolve([openRouterModel]);
+          await waitFor(() => {
+            const modelPicker = view.getByRole("combobox", {
+              name: "Model",
+            }) as HTMLInputElement;
+            assert(modelPicker.value.includes(openRouterModel.displayName));
+          });
+        });
+      });
+    });
+  },
+);
+
+Deno.test(
+  "receipt-ui ignores an older scan model refresh after switching providers",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(() => {
+        const geminiModel: ReceiptAiModel = {
+          id: "gemini/stale-scan-model",
+          displayName: "Stale scan Gemini model",
+          lifecycle: "active",
+          capabilities: {
+            "image-input": undefined,
+            "content-generation": undefined,
+            "structured-output": undefined,
+          },
+        };
+        const openRouterModel: ReceiptAiModel = {
+          id: "openai/current-scan-model",
+          displayName: "Current scan OpenRouter model",
+          lifecycle: "active",
+          capabilities: {
+            "image-input": true,
+            "content-generation": true,
+            "structured-output": true,
+          },
+        };
+        const geminiModels = deferred<readonly ReceiptAiModel[]>();
+        const openRouterModels = deferred<readonly ReceiptAiModel[]>();
+        let geminiRefreshes = 0;
+        let openRouterRefreshes = 0;
+        const provider = (
+          models: Promise<readonly ReceiptAiModel[]>,
+          onRefresh: () => void,
+        ): ReceiptOpenRouterPort => ({
+          getApiKey: () => Promise.resolve(SecretValue.from("key")),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+          listModels: () => {
+            onRefresh();
+            return models;
+          },
+          listEndpoints: () => Promise.resolve([]),
+          extractReceipt: () => Promise.reject(new Error("unused")),
+        });
+        const gemini = provider(
+          geminiModels.promise,
+          () => geminiRefreshes += 1,
+        );
+        const openrouter = provider(
+          openRouterModels.promise,
+          () => openRouterRefreshes += 1,
+        );
+        const dependencies: ReceiptUiDependencies = {
+          ai: gemini,
+          gemini,
+          openrouter,
+          imagePreparation: createFakeImagePreparationPort(),
+          resolveImage: () => Promise.reject(new Error("unused")),
+          releaseImage: () => undefined,
+        };
+        const imageStore = new ReceiptImageStore();
+        const initialSettings = DeviceLocalSettingsSchema.parse({
+          activeProvider: "gemini",
+          imagePreparationEnabled: true,
+          selectedGeminiModel: geminiModel.id,
+          selectedOpenRouterModel: openRouterModel.id,
+        });
+        function ControlledScan() {
+          const [settings, setSettings] = useState(initialSettings);
+          return createElement(ReceiptScanScreen, {
+            dependencies,
+            imageStore,
+            state: defaultTestState,
+            settings,
+            offline: false,
+            onSettingsChange: setSettings,
+            onReview: () => undefined,
+            onClose: () => undefined,
+            onOpenSettings: () => undefined,
+          });
+        }
+        render(createElement(ControlledScan));
+        const view = within(document.body);
+        return waitFor(() => assert(geminiRefreshes === 1)).then(async () => {
+          fireEvent.click(
+            view.getByRole("button", { name: "Continue to scan" }),
+          );
+          fireEvent.click(view.getByRole("button", { name: "Options" }));
+          const providerPicker = view.getByRole("combobox", {
+            name: "Receipt AI provider",
+          });
+          fireEvent.click(providerPicker);
+          fireEvent.click(view.getByRole("option", { name: "OpenRouter" }));
+          await waitFor(() => assert(openRouterRefreshes === 1));
+
+          geminiModels.resolve([geminiModel]);
+          await waitFor(() => {
+            const modelPicker = view.getByRole("combobox", {
+              name: "Model",
+            }) as HTMLInputElement;
+            assert(!modelPicker.value.includes(geminiModel.displayName));
+          });
+          openRouterModels.resolve([openRouterModel]);
+          await waitFor(() => {
+            const modelPicker = view.getByRole("combobox", {
+              name: "Model",
+            }) as HTMLInputElement;
+            assert(modelPicker.value.includes(openRouterModel.displayName));
+          });
         });
       });
     });

@@ -4,7 +4,7 @@ export const DELETE_EVERYWHERE_PROGRESS_KEY =
   "did-it-become-what-you-like:delete-everywhere-progress";
 export const LOCAL_ERASE_PROGRESS_KEY =
   "did-it-become-what-you-like:local-erase-progress";
-export const LOCAL_ERASE_GEMINI_KEY_CHOICE =
+export const LOCAL_ERASE_RECEIPT_AI_KEYS_CHOICE =
   "did-it-become-what-you-like:local-erase-remove-gemini-key";
 
 export type DestructionStorage = Pick<
@@ -67,7 +67,7 @@ export type LocalEraseProgressPhase =
 export type LocalEraseProgressRecord = {
   readonly version: 1;
   readonly phase: LocalEraseProgressPhase;
-  readonly removeGeminiApiKey: boolean;
+  readonly removeReceiptAiKeys: boolean;
   readonly failureOperation: LocalEraseFailureOperation | null;
   readonly updatedAt: string;
 };
@@ -190,6 +190,11 @@ function parseLocalEraseProgress(value: unknown): LocalEraseProgressRecord {
   const record = value as Record<string, unknown>;
   const phase = record.phase;
   const failureOperation = record.failureOperation;
+  const removeReceiptAiKeys = isBoolean(record.removeReceiptAiKeys)
+    ? record.removeReceiptAiKeys
+    : isBoolean(record.removeGeminiApiKey)
+    ? record.removeGeminiApiKey
+    : undefined;
   const expectedFailureOperation = phase === "persisting-choice"
     ? "persist-choice"
     : phase === "erasing-local"
@@ -201,7 +206,7 @@ function parseLocalEraseProgress(value: unknown): LocalEraseProgressRecord {
     isLocalEraseFailureOperation(failureOperation);
   if (
     record.version !== 1 || !isLocalErasePhase(phase) ||
-    !isBoolean(record.removeGeminiApiKey) || !validFailureOperation ||
+    !isBoolean(removeReceiptAiKeys) || !validFailureOperation ||
     (phase === "reviewing" && failureOperation !== null) ||
     (expectedFailureOperation !== undefined &&
       failureOperation !== expectedFailureOperation) ||
@@ -214,7 +219,7 @@ function parseLocalEraseProgress(value: unknown): LocalEraseProgressRecord {
   return {
     version: 1,
     phase,
-    removeGeminiApiKey: record.removeGeminiApiKey,
+    removeReceiptAiKeys,
     failureOperation,
     updatedAt: record.updatedAt,
   };
@@ -280,19 +285,21 @@ export function clearLocalEraseProgress(
   storageOrThrow(storage).removeItem(LOCAL_ERASE_PROGRESS_KEY);
 }
 
-export function readLocalEraseGeminiKeyChoice(
+export function readLocalEraseReceiptAiKeysChoice(
   storage?: DestructionStorage,
 ): boolean {
-  const value = storageOrThrow(storage).getItem(LOCAL_ERASE_GEMINI_KEY_CHOICE);
+  const value = storageOrThrow(storage).getItem(
+    LOCAL_ERASE_RECEIPT_AI_KEYS_CHOICE,
+  );
   return value === null ? true : value === "true";
 }
 
-export function writeLocalEraseGeminiKeyChoice(
+export function writeLocalEraseReceiptAiKeysChoice(
   remove: boolean,
   storage?: DestructionStorage,
 ): void {
   storageOrThrow(storage).setItem(
-    LOCAL_ERASE_GEMINI_KEY_CHOICE,
+    LOCAL_ERASE_RECEIPT_AI_KEYS_CHOICE,
     remove ? "true" : "false",
   );
 }

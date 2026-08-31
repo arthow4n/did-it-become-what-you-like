@@ -77,8 +77,8 @@ import {
   type DestructionStorage,
   isDestructionStorage,
   readDeleteEverywhereProgress,
-  readLocalEraseGeminiKeyChoice,
   readLocalEraseProgress,
+  readLocalEraseReceiptAiKeysChoice,
   writeDeleteEverywhereProgress,
 } from "../domain/destruction.ts";
 import {
@@ -793,7 +793,7 @@ export function conflictIdsForResolutions(
 function localEraseViewFromSnapshot(snapshot: {
   readonly value: unknown;
   readonly context: {
-    readonly removeGeminiApiKey: boolean;
+    readonly removeReceiptAiKeys: boolean;
     readonly error: { readonly message: string } | null;
   };
 }): LocalEraseView {
@@ -814,7 +814,7 @@ function localEraseViewFromSnapshot(snapshot: {
       : phase === "completed"
       ? "completed"
       : "idle",
-    removeGeminiApiKey: snapshot.context.removeGeminiApiKey,
+    removeReceiptAiKeys: snapshot.context.removeReceiptAiKeys,
     ...(snapshot.context.error === null
       ? {}
       : { error: snapshot.context.error.message }),
@@ -1088,8 +1088,9 @@ export function SyncPortabilityRuntime({
           repository.close();
           await deleteLocalRepositoryDatabase(databaseName);
         },
-        removeGeminiApiKey: async () => {
+        removeReceiptAiKeys: async () => {
           await secretStorage.remove("gemini-api-key");
+          await secretStorage.remove("openrouter-api-key");
         },
       }),
     [driveAdapter, repository, secretStorage, sendSync, storage],
@@ -1696,18 +1697,18 @@ export function SyncPortabilityRuntime({
 
   const openLocalErase = () => {
     localEraseHandled.current = false;
-    const removeGeminiApiKey = storage === undefined
+    const removeReceiptAiKeys = storage === undefined
       ? true
-      : readLocalEraseGeminiKeyChoice(storage);
+      : readLocalEraseReceiptAiKeysChoice(storage);
     if (
       localEraseSnapshot.matches("completed") ||
       localEraseSnapshot.matches("cancelled")
     ) {
       sendLocalErase({ type: "local-erase.reset" });
-      sendLocalErase({ type: "local-erase.open", removeGeminiApiKey });
+      sendLocalErase({ type: "local-erase.open", removeReceiptAiKeys });
       return;
     }
-    sendLocalErase({ type: "local-erase.open", removeGeminiApiKey });
+    sendLocalErase({ type: "local-erase.open", removeReceiptAiKeys });
   };
 
   const openDeleteEverywhere = () => {
@@ -1899,8 +1900,8 @@ export function SyncPortabilityRuntime({
           }).catch(() => onNotice("Google Drive could not be disconnected."));
         }}
         onOpenLocalErase={openLocalErase}
-        onLocalEraseChoice={(removeGeminiApiKey) =>
-          sendLocalErase({ type: "local-erase.choice", removeGeminiApiKey })}
+        onLocalEraseChoice={(removeReceiptAiKeys) =>
+          sendLocalErase({ type: "local-erase.choice", removeReceiptAiKeys })}
         onConfirmLocalErase={() =>
           sendLocalErase({ type: "local-erase.confirm" })}
         onRetryLocalErase={() => sendLocalErase({ type: "local-erase.retry" })}

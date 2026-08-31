@@ -76,13 +76,13 @@ Deno.test(
         firstRepository.close();
         await deleteLocalRepositoryDatabase(name, indexedDB);
       },
-      removeGeminiApiKey: () => {
+      removeReceiptAiKeys: () => {
         firstCalls.push("key");
         return pendingKey;
       },
     });
     const first = createActor(firstMachine).start();
-    first.send({ type: "local-erase.open", removeGeminiApiKey: true });
+    first.send({ type: "local-erase.open", removeReceiptAiKeys: true });
     first.send({ type: "local-erase.confirm" });
     await settle();
 
@@ -125,7 +125,7 @@ Deno.test(
         restartedRepository.close();
         await deleteLocalRepositoryDatabase(name, indexedDB);
       },
-      removeGeminiApiKey: () => {
+      removeReceiptAiKeys: () => {
         restartCalls.push("key");
         keyPresent = false;
         return Promise.resolve();

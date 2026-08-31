@@ -51,7 +51,7 @@ function props(
     connected: true,
     localErase: {
       phase: "idle",
-      removeGeminiApiKey: true,
+      removeReceiptAiKeys: true,
     },
     deleteEverywhere: {
       phase: "idle",
@@ -78,7 +78,7 @@ function LocalEraseFocusHarness() {
     props({
       localErase: {
         phase: open ? "reviewing" : "idle",
-        removeGeminiApiKey: false,
+        removeReceiptAiKeys: false,
       },
       onOpenLocalErase: () => setOpen(true),
     }),
@@ -115,18 +115,18 @@ Deno.test(
               props({
                 localErase: {
                   phase: "reviewing",
-                  removeGeminiApiKey: true,
+                  removeReceiptAiKeys: true,
                 },
                 onLocalEraseChoice: result.onLocalEraseChoice,
               }),
             ),
           );
           const checkbox = view.getByRole("checkbox", {
-            name: "Remove Gemini API key from this device",
+            name: "Remove receipt-AI API keys from this device",
           });
           assert(
             (checkbox as HTMLInputElement).checked,
-            "local erase must default to removing the Gemini key",
+            "local erase must default to removing the receipt-AI keys",
           );
           fireEvent.click(checkbox);
           assert(
@@ -165,7 +165,7 @@ Deno.test("destructive-flow component keeps focus in the local erase dialog", as
         name: "Delete this device's data?",
       });
       const checkbox = view.getByRole("checkbox", {
-        name: "Remove Gemini API key from this device",
+        name: "Remove receipt-AI API keys from this device",
       });
       assert(
         dialog.contains(close) && dialog.contains(checkbox) &&
@@ -186,9 +186,9 @@ Deno.test("destructive-flow component exposes partial local erase honestly", asy
           props({
             localErase: {
               phase: "partial",
-              removeGeminiApiKey: true,
+              removeReceiptAiKeys: true,
               error:
-                "Local data was erased, but the Gemini API key still needs removal. Retry to finish.",
+                "Local data was erased, but the receipt-AI API keys still need removal. Retry to finish.",
             },
             onOpenLocalErase: result.onOpenLocalErase,
           }),
@@ -196,7 +196,7 @@ Deno.test("destructive-flow component exposes partial local erase honestly", asy
       );
       const view = within(document.body);
       assert(view.getByText("Local data was erased"));
-      assert(view.getByText(/Gemini API key still needs removal/));
+      assert(view.getByText(/receipt-AI API keys still need removal/));
       fireEvent.click(view.getByRole("button", { name: "Retry key removal" }));
       assert(result.events.includes("open-local"));
     });

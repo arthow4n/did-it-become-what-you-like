@@ -94,6 +94,12 @@ const SECOND_QUALIFIED_MODEL = {
   canonicalSlug: "qwen/qwen2.5-vl-7b-instruct",
   name: "Qwen VL",
 };
+const AUTO_ROUTER_MODEL = {
+  ...QUALIFIED_MODEL,
+  id: "openrouter/auto",
+  canonicalSlug: "openrouter/auto",
+  name: "Auto Router",
+};
 
 const INVALID_MODELS = {
   noImage: {
@@ -275,6 +281,7 @@ Deno.test("model refresh uses exact metadata filters, consumes pagination, and n
   const fixture = createFixture({
     models: [
       QUALIFIED_MODEL,
+      AUTO_ROUTER_MODEL,
       INVALID_MODELS.noImage,
       INVALID_MODELS.noTextOutput,
       INVALID_MODELS.missingSchema,
@@ -499,6 +506,17 @@ Deno.test("invalid requests never call the provider", async () => {
   );
   assert(isAdapterError(error));
   assertEquals(error.code, "invalid-request");
+  assertEquals(calls, 0);
+
+  const autoRouterError = await assertRejects(() =>
+    fixture.adapter.extractReceipt({
+      ...request,
+      modelId: "openrouter/auto",
+    })
+  );
+  assert(isAdapterError(autoRouterError));
+  assertEquals(autoRouterError.code, "invalid-request");
+  assertEquals(autoRouterError.operation, "openrouter.extract");
   assertEquals(calls, 0);
 });
 

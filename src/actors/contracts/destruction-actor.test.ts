@@ -1,5 +1,5 @@
 import { createActor } from "xstate";
-import { adapterError } from "../../adapters/ports/index.ts";
+import { adapterError, SecretValue } from "../../adapters/ports/index.ts";
 import {
   createDeleteEverywhereMachine,
   createLocalEraseMachine,
@@ -16,6 +16,7 @@ import {
   writeDeleteEverywhereProgress,
 } from "../../domain/destruction.ts";
 import { settle } from "../../test-support/index.ts";
+import { createFakeSecretStoragePort } from "../../test-support/fakes/ports.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -605,16 +606,16 @@ Deno.test("delete-everywhere marks an interrupted invocation for safe reinitiali
 });
 
 for (
-  const { removeGeminiApiKey, expectedCalls } of [
+  const { removeReceiptAiKeys, expectedCalls } of [
     {
-      removeGeminiApiKey: true,
+      removeReceiptAiKeys: true,
       expectedCalls: ["choice:true", "erase", "key"],
     },
-    { removeGeminiApiKey: false, expectedCalls: ["choice:false", "erase"] },
+    { removeReceiptAiKeys: false, expectedCalls: ["choice:false", "erase"] },
   ]
 ) {
   Deno.test(
-    `local erase actor persists choice before erasure (key: ${removeGeminiApiKey})`,
+    `local erase actor persists choice before erasure (keys: ${removeReceiptAiKeys})`,
     async () => {
       const calls: string[] = [];
       const actor = createActor(createLocalEraseMachine({
@@ -625,12 +626,12 @@ for (
           calls.push("erase");
           return Promise.resolve();
         },
-        removeGeminiApiKey: () => {
+        removeReceiptAiKeys: () => {
           calls.push("key");
           return Promise.resolve();
         },
       })).start();
-      actor.send({ type: "local-erase.open", removeGeminiApiKey });
+      actor.send({ type: "local-erase.open", removeReceiptAiKeys });
       actor.send({ type: "local-erase.confirm" });
       await settle();
       assert(JSON.stringify(calls) === JSON.stringify(expectedCalls));
@@ -650,9 +651,9 @@ Deno.test("local erase actor retries a local failure and supports reload-safe ch
       }
       return Promise.resolve();
     },
-    removeGeminiApiKey: () => Promise.resolve(),
+    removeReceiptAiKeys: () => Promise.resolve(),
   })).start();
-  actor.send({ type: "local-erase.open", removeGeminiApiKey: false });
+  actor.send({ type: "local-erase.open", removeReceiptAiKeys: false });
   actor.send({ type: "local-erase.confirm" });
   await settle();
   assert(actor.getSnapshot().matches("failed"));
@@ -663,6 +664,42 @@ Deno.test("local erase actor retries a local failure and supports reload-safe ch
   assert(actor.getSnapshot().matches("completed"));
   actor.stop();
 });
+
+Deno.test(
+  "local erase removes both provider keys only when receipt-AI key removal is selected",
+  async () => {
+    const storage = createFakeSecretStoragePort();
+    await storage.set("gemini-api-key", SecretValue.from("AIza.test"));
+    await storage.set(
+      "openrouter-api-key",
+      SecretValue.from("sk-or-v1.test"),
+    );
+    const actor = createActor(createLocalEraseMachine({
+      eraseLocalDataset: () => Promise.resolve(),
+      removeReceiptAiKeys: async () => {
+        await storage.remove("gemini-api-key");
+        await storage.remove("openrouter-api-key");
+      },
+    })).start();
+    actor.send({ type: "local-erase.open", removeReceiptAiKeys: true });
+    actor.send({ type: "local-erase.confirm" });
+    await settle();
+    assert((await storage.get("gemini-api-key")) === undefined);
+    assert((await storage.get("openrouter-api-key")) === undefined);
+    assert(
+      JSON.stringify(
+        storage.audit.map(({ operation, name }) => [operation, name]),
+      )
+        .includes('"remove","gemini-api-key"') &&
+        JSON.stringify(
+          storage.audit.map(({ operation, name }) => [operation, name]),
+        )
+          .includes('"remove","openrouter-api-key"'),
+      "both device-local provider key slots must be removed",
+    );
+    actor.stop();
+  },
+);
 
 Deno.test(
   "local erase persists the key-removal phase before a crash and resumes it",
@@ -680,18 +717,18 @@ Deno.test(
         calls.push("erase");
         return Promise.resolve();
       },
-      removeGeminiApiKey: () => {
+      removeReceiptAiKeys: () => {
         calls.push("key");
         return pendingKey;
       },
     });
     const first = createActor(firstMachine).start();
-    first.send({ type: "local-erase.open", removeGeminiApiKey: true });
+    first.send({ type: "local-erase.open", removeReceiptAiKeys: true });
     first.send({ type: "local-erase.confirm" });
     await settle();
     const saved = readLocalEraseProgress(storage);
     assert(saved?.phase === "removing-key");
-    assert(saved.removeGeminiApiKey);
+    assert(saved.removeReceiptAiKeys);
     assert(JSON.stringify(calls) === JSON.stringify(["erase", "key"]));
 
     // A stopped actor represents a browser crash while the idempotent key
@@ -707,7 +744,7 @@ Deno.test(
         restartCalls.push("erase");
         return Promise.resolve();
       },
-      removeGeminiApiKey: () => {
+      removeReceiptAiKeys: () => {
         restartCalls.push("key");
         return Promise.resolve();
       },
@@ -749,14 +786,14 @@ Deno.test("local erase retries only the failed key removal after reload-safe fai
       calls.push("erase");
       return Promise.resolve();
     },
-    removeGeminiApiKey: () => {
+    removeReceiptAiKeys: () => {
       calls.push("key");
       return fail
         ? Promise.reject(adapterError("unavailable", "test.key-remove"))
         : Promise.resolve();
     },
   })).start();
-  actor.send({ type: "local-erase.open", removeGeminiApiKey: true });
+  actor.send({ type: "local-erase.open", removeReceiptAiKeys: true });
   actor.send({ type: "local-erase.confirm" });
   await settle();
   assert(actor.getSnapshot().matches("failed"));
@@ -784,12 +821,12 @@ Deno.test(
         calls.push("erase");
         return Promise.resolve();
       },
-      removeGeminiApiKey: () => {
+      removeReceiptAiKeys: () => {
         calls.push("key");
         return Promise.reject(adapterError("unavailable", "test.key-remove"));
       },
     })).start();
-    actor.send({ type: "local-erase.open", removeGeminiApiKey: true });
+    actor.send({ type: "local-erase.open", removeReceiptAiKeys: true });
     actor.send({ type: "local-erase.confirm" });
     await settle();
     assert(actor.getSnapshot().matches("failed"));
@@ -803,7 +840,7 @@ Deno.test(
     );
     assert(JSON.stringify(calls) === JSON.stringify(["erase", "key"]));
 
-    actor.send({ type: "local-erase.open", removeGeminiApiKey: true });
+    actor.send({ type: "local-erase.open", removeReceiptAiKeys: true });
     assert(actor.getSnapshot().matches("failed"));
     actor.stop();
   },
@@ -817,9 +854,9 @@ Deno.test(
       storage,
       eraseLocalDataset: () =>
         Promise.reject(adapterError("unavailable", "test.database-erase")),
-      removeGeminiApiKey: () => Promise.resolve(),
+      removeReceiptAiKeys: () => Promise.resolve(),
     })).start();
-    actor.send({ type: "local-erase.open", removeGeminiApiKey: true });
+    actor.send({ type: "local-erase.open", removeReceiptAiKeys: true });
     actor.send({ type: "local-erase.confirm" });
     await settle();
     assert(actor.getSnapshot().matches("failed"));

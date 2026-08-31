@@ -24,15 +24,15 @@ import {
   type LocalEraseProgressPhase,
   type LocalEraseProgressRecord,
   writeDeleteEverywhereProgress,
-  writeLocalEraseGeminiKeyChoice,
   writeLocalEraseProgress,
+  writeLocalEraseReceiptAiKeysChoice,
 } from "../domain/destruction.ts";
 
 export type LocalEraseEvent =
-  | { readonly type: "local-erase.open"; readonly removeGeminiApiKey: boolean }
+  | { readonly type: "local-erase.open"; readonly removeReceiptAiKeys: boolean }
   | {
     readonly type: "local-erase.choice";
-    readonly removeGeminiApiKey: boolean;
+    readonly removeReceiptAiKeys: boolean;
   }
   | { readonly type: "local-erase.confirm" }
   | { readonly type: "local-erase.retry" }
@@ -40,14 +40,14 @@ export type LocalEraseEvent =
   | { readonly type: "local-erase.cancel" };
 
 export type LocalEraseContext = {
-  readonly removeGeminiApiKey: boolean;
+  readonly removeReceiptAiKeys: boolean;
   readonly error: ContractFailure | null;
   readonly failureOperation: LocalEraseFailureOperation | null;
 };
 
 export type LocalEraseOutput = {
   readonly status: "completed" | "partial";
-  readonly removeGeminiApiKey: boolean;
+  readonly removeReceiptAiKeys: boolean;
   readonly error?: ContractFailure;
 };
 
@@ -58,10 +58,10 @@ export type LocalEraseDependencies = {
     progress: Omit<LocalEraseProgressRecord, "version">,
   ) => void | Promise<void>;
   readonly persistChoice?: (
-    removeGeminiApiKey: boolean,
+    removeReceiptAiKeys: boolean,
   ) => void | Promise<void>;
   readonly eraseLocalDataset: () => Promise<void>;
-  readonly removeGeminiApiKey: () => Promise<void>;
+  readonly removeReceiptAiKeys: () => Promise<void>;
 };
 
 function failure(
@@ -72,10 +72,10 @@ function failure(
 }
 
 function defaultPersistChoice(
-  removeGeminiApiKey: boolean,
+  removeReceiptAiKeys: boolean,
   storage?: DestructionStorage,
 ): void {
-  writeLocalEraseGeminiKeyChoice(removeGeminiApiKey, storage);
+  writeLocalEraseReceiptAiKeysChoice(removeReceiptAiKeys, storage);
 }
 
 function defaultPersistProgress(
@@ -88,13 +88,13 @@ function defaultPersistProgress(
 async function persistLocalErasePhase(
   dependencies: LocalEraseDependencies,
   phase: LocalEraseProgressPhase,
-  removeGeminiApiKey: boolean,
+  removeReceiptAiKeys: boolean,
   failureOperation: LocalEraseFailureOperation,
 ): Promise<void> {
   await (dependencies.persistProgress ??
     ((progress) => defaultPersistProgress(progress, dependencies.storage)))({
       phase,
-      removeGeminiApiKey,
+      removeReceiptAiKeys,
       failureOperation,
       updatedAt: dependencies.now?.() ?? new Date().toISOString(),
     });
@@ -133,7 +133,7 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
           await dependencies.eraseLocalDataset();
         },
       ),
-      removeGeminiApiKey: fromPromise(
+      removeReceiptAiKeys: fromPromise(
         async ({ input }: { input: boolean }) => {
           await persistLocalErasePhase(
             dependencies,
@@ -141,17 +141,17 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
             input,
             "remove-key",
           );
-          await dependencies.removeGeminiApiKey();
+          await dependencies.removeReceiptAiKeys();
         },
       ),
     },
     guards: {
-      shouldRemoveGeminiApiKey: ({ context }) => context.removeGeminiApiKey,
+      shouldRemoveReceiptAiKeys: ({ context }) => context.removeReceiptAiKeys,
       failedPersistChoice: ({ context }) =>
         context.failureOperation === "persist-choice",
       failedEraseLocal: ({ context }) =>
         context.failureOperation === "erase-local",
-      failedRemoveKey: ({ context }) =>
+      failedRemoveReceiptAiKeys: ({ context }) =>
         context.failureOperation === "remove-key",
     },
   });
@@ -160,7 +160,7 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
     id: "local-erase",
     initial: "idle",
     context: {
-      removeGeminiApiKey: true,
+      removeReceiptAiKeys: true,
       error: null,
       failureOperation: null,
     },
@@ -170,7 +170,7 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
           "local-erase.open": {
             target: "reviewing",
             actions: assign({
-              removeGeminiApiKey: ({ event }) => event.removeGeminiApiKey,
+              removeReceiptAiKeys: ({ event }) => event.removeReceiptAiKeys,
               error: () => null,
               failureOperation: () => null,
             }),
@@ -182,7 +182,7 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
         on: {
           "local-erase.choice": {
             actions: assign({
-              removeGeminiApiKey: ({ event }) => event.removeGeminiApiKey,
+              removeReceiptAiKeys: ({ event }) => event.removeReceiptAiKeys,
             }),
           },
           "local-erase.confirm": {
@@ -196,7 +196,7 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
         tags: ["destructive", "saving"],
         invoke: {
           src: "persistChoice",
-          input: ({ context }) => context.removeGeminiApiKey,
+          input: ({ context }) => context.removeReceiptAiKeys,
           onDone: "erasingLocal",
           onError: {
             target: "failed",
@@ -217,9 +217,9 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
         tags: ["destructive", "saving"],
         invoke: {
           src: "eraseLocalDataset",
-          input: ({ context }) => context.removeGeminiApiKey,
+          input: ({ context }) => context.removeReceiptAiKeys,
           onDone: [
-            { target: "removingKey", guard: "shouldRemoveGeminiApiKey" },
+            { target: "removingKey", guard: "shouldRemoveReceiptAiKeys" },
             "completed",
           ],
           onError: {
@@ -240,8 +240,8 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
       removingKey: {
         tags: ["destructive", "saving"],
         invoke: {
-          src: "removeGeminiApiKey",
-          input: ({ context }) => context.removeGeminiApiKey,
+          src: "removeReceiptAiKeys",
+          input: ({ context }) => context.removeReceiptAiKeys,
           onDone: "completed",
           onError: {
             target: "failed",
@@ -250,7 +250,7 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
               error: ({ event }) =>
                 failure(event.error, {
                   code: "unknown",
-                  message: "The Gemini API key could not be removed.",
+                  message: "The receipt-AI API keys could not be removed.",
                   retryable: true,
                 }),
             }),
@@ -264,7 +264,7 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
           "local-erase.retry": [
             { target: "persistingChoice", guard: "failedPersistChoice" },
             { target: "erasingLocal", guard: "failedEraseLocal" },
-            { target: "removingKey", guard: "failedRemoveKey" },
+            { target: "removingKey", guard: "failedRemoveReceiptAiKeys" },
           ],
           "local-erase.cancel": [
             {
@@ -284,12 +284,12 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
             },
             {
               target: "partial",
-              guard: "failedRemoveKey",
+              guard: "failedRemoveReceiptAiKeys",
               actions: assign({
                 error: ({ context }) => ({
                   code: context.error?.code ?? "unknown",
                   message:
-                    "Local data was erased, but the Gemini API key still needs removal. Retry to finish.",
+                    "Local data was erased, but the receipt-AI API keys still need removal. Retry to finish.",
                   retryable: true,
                   ...(context.error?.operation === undefined
                     ? {}
@@ -304,7 +304,7 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
       completed: {
         output: ({ context }) => ({
           status: "completed",
-          removeGeminiApiKey: context.removeGeminiApiKey,
+          removeReceiptAiKeys: context.removeReceiptAiKeys,
         }),
         on: { "local-erase.reset": "idle" },
       },
@@ -312,14 +312,14 @@ export function createLocalEraseMachine(dependencies: LocalEraseDependencies) {
         tags: ["destructive", "partial", "error"],
         output: ({ context }) => ({
           status: "partial",
-          removeGeminiApiKey: context.removeGeminiApiKey,
+          removeReceiptAiKeys: context.removeReceiptAiKeys,
           error: context.error ?? undefined,
         }),
         on: {
           "local-erase.open": {
             target: "failed",
             actions: assign({
-              removeGeminiApiKey: ({ event }) => event.removeGeminiApiKey,
+              removeReceiptAiKeys: ({ event }) => event.removeReceiptAiKeys,
             }),
           },
           "local-erase.reset": "idle",
@@ -374,7 +374,7 @@ export function persistLocalEraseSnapshot(
     readonly value: unknown;
     readonly context: Pick<
       LocalEraseContext,
-      "removeGeminiApiKey" | "failureOperation"
+      "removeReceiptAiKeys" | "failureOperation"
     >;
   },
   now: () => string,
@@ -394,7 +394,7 @@ export function persistLocalEraseSnapshot(
   if (phase === "failed" && failureOperation === null) return;
   writeLocalEraseProgress({
     phase,
-    removeGeminiApiKey: snapshot.context.removeGeminiApiKey,
+    removeReceiptAiKeys: snapshot.context.removeReceiptAiKeys,
     failureOperation,
     updatedAt: now(),
   }, storage);
@@ -441,7 +441,7 @@ function recoveryFailure(
       return {
         code: "unknown",
         message:
-          "Local data was erased, but the Gemini API key still needs removal. Retry to finish.",
+          "Local data was erased, but the receipt-AI API keys still need removal. Retry to finish.",
         retryable: true,
       };
   }
@@ -461,7 +461,7 @@ export function recoverLocalEraseSnapshot(
   const resolved = machine.resolveState({
     value: stateValueForLocalEraseProgress(progress.phase),
     context: {
-      removeGeminiApiKey: progress.removeGeminiApiKey,
+      removeReceiptAiKeys: progress.removeReceiptAiKeys,
       error: progress.phase === "reviewing" || failureOperation === null
         ? null
         : recoveryFailure(failureOperation),

@@ -525,6 +525,18 @@ export function ReceiptScanScreen({
   const optionsRef = useRef<HTMLDivElement>(null);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
   const previousProviderRef = useRef(activeProvider);
+  const modelRefreshGeneration = useRef(0);
+  const activeProviderRef = useRef(activeProvider);
+  activeProviderRef.current = activeProvider;
+
+  const isCurrentModelRefresh = (request: {
+    readonly generation: number;
+    readonly provider: ReceiptProvider;
+    readonly port: ReceiptProviderPort;
+  }): boolean =>
+    request.generation === modelRefreshGeneration.current &&
+    request.provider === activeProviderRef.current &&
+    request.port === providerPort(dependencies, activeProviderRef.current);
 
   const setPendingScanState = (value: boolean) => {
     pendingScanRef.current = value;
@@ -563,6 +575,7 @@ export function ReceiptScanScreen({
   useEffect(() => {
     if (previousProviderRef.current === activeProvider) return;
     previousProviderRef.current = activeProvider;
+    modelRefreshGeneration.current += 1;
     openSent.current = true;
     send({
       type: "receipt.open",
@@ -611,23 +624,38 @@ export function ReceiptScanScreen({
     };
   }, [activeProviderName, activeProviderPort]);
 
-  const refreshModels = async (): Promise<readonly ReceiptAiModel[]> => {
+  const refreshModels = async (request: {
+    readonly generation: number;
+    readonly provider: ReceiptProvider;
+    readonly port: ReceiptProviderPort;
+  } = {
+    generation: modelRefreshGeneration.current + 1,
+    provider: activeProvider,
+    port: activeProviderPort,
+  }): Promise<readonly ReceiptAiModel[]> => {
+    if (request.generation > modelRefreshGeneration.current) {
+      modelRefreshGeneration.current = request.generation;
+    }
     setModelsLoading(true);
     setModelError(undefined);
     try {
-      const next = await activeProviderPort.listModels(DEFAULT_MODEL_QUERY);
+      const next = await request.port.listModels(DEFAULT_MODEL_QUERY);
+      if (!isCurrentModelRefresh(request)) return [];
       setModels(next);
       return next;
     } catch (error) {
+      if (!isCurrentModelRefresh(request)) return [];
       setModelError(
         messageForError(
           error,
-          `Available ${activeProviderName} models could not be loaded.`,
+          `Available ${
+            RECEIPT_PROVIDER_NAMES[request.provider]
+          } models could not be loaded.`,
         ),
       );
       return [];
     } finally {
-      setModelsLoading(false);
+      if (isCurrentModelRefresh(request)) setModelsLoading(false);
     }
   };
 
@@ -701,9 +729,17 @@ export function ReceiptScanScreen({
     }
     setKeyBusy(true);
     setKeyError(undefined);
+    const request = {
+      generation: modelRefreshGeneration.current + 1,
+      provider: activeProvider,
+      port: activeProviderPort,
+    } as const;
+    modelRefreshGeneration.current = request.generation;
     try {
-      await activeProviderPort.setApiKey(apiKey.trim());
-      const nextModels = await refreshModels();
+      await request.port.setApiKey(apiKey.trim());
+      if (!isCurrentModelRefresh(request)) return;
+      const nextModels = await refreshModels(request);
+      if (!isCurrentModelRefresh(request)) return;
       if (nextModels.length === 0) {
         throw new Error(
           `The key did not return any ${activeProviderName} models.`,
@@ -735,11 +771,13 @@ export function ReceiptScanScreen({
         );
       }
     } catch (error) {
-      setKeyError(
-        messageForError(error, "The API key could not be validated."),
-      );
+      if (isCurrentModelRefresh(request)) {
+        setKeyError(
+          messageForError(error, "The API key could not be validated."),
+        );
+      }
     } finally {
-      setKeyBusy(false);
+      if (isCurrentModelRefresh(request)) setKeyBusy(false);
     }
   };
 
@@ -848,12 +886,16 @@ export function ReceiptScanScreen({
   const changeProvider = (nextProvider: string) => {
     if (nextProvider !== "gemini" && nextProvider !== "openrouter") return;
     if (nextProvider === activeProvider || scanBusy) return;
+    activeProviderRef.current = nextProvider;
+    modelRefreshGeneration.current += 1;
     void onSettingsChange({
       ...settings,
       activeProvider: nextProvider,
     });
     setModels([]);
     setHasKey(false);
+    setKeyBusy(false);
+    setModelsLoading(false);
     setModelError(undefined);
     setOptionsOpen(true);
   };
@@ -1782,6 +1824,12 @@ function endpointSupportsReceiptSchema(endpoint: OpenRouterEndpoint): boolean {
   );
 }
 
+type ReceiptSettingsRefreshRequest = {
+  readonly generation: number;
+  readonly provider: ReceiptProvider;
+  readonly port: ReceiptProviderPort;
+};
+
 export function ReceiptSettingsScreen({
   gemini,
   openrouter,
@@ -1807,17 +1855,42 @@ export function ReceiptSettingsScreen({
   const [endpointLoading, setEndpointLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
+  const refreshGeneration = useRef(0);
+  const activeProviderRef = useRef(activeProvider);
+  activeProviderRef.current = activeProvider;
+
+  const beginRefresh = (
+    provider = activeProvider,
+    port = activeProviderPort,
+  ): ReceiptSettingsRefreshRequest => {
+    const request = {
+      generation: refreshGeneration.current + 1,
+      provider,
+      port,
+    } as const;
+    refreshGeneration.current = request.generation;
+    return request;
+  };
+
+  const isCurrentRefresh = (
+    request: ReceiptSettingsRefreshRequest,
+  ): boolean =>
+    request.generation === refreshGeneration.current &&
+    request.provider === activeProviderRef.current &&
+    request.port ===
+      (activeProviderRef.current === "gemini" ? gemini : openrouter);
 
   const selectedModel = selectedModelFor(settings, activeProvider);
 
   const refreshEndpoints = async (
     providerSettings: DeviceLocalSettings = settings,
+    request: ReceiptSettingsRefreshRequest = beginRefresh(),
   ): Promise<readonly OpenRouterEndpoint[]> => {
     if (
-      activeProvider !== "openrouter" ||
+      !isCurrentRefresh(request) || request.provider !== "openrouter" ||
       !providerSettings.selectedOpenRouterModel
     ) {
-      setEndpoints([]);
+      if (isCurrentRefresh(request)) setEndpoints([]);
       return [];
     }
     setEndpointLoading(true);
@@ -1826,6 +1899,7 @@ export function ReceiptSettingsScreen({
         providerSettings.selectedOpenRouterModel,
       );
       const qualified = next.filter(endpointSupportsReceiptSchema);
+      if (!isCurrentRefresh(request)) return [];
       setEndpoints(qualified);
       const preferredTag = providerSettings.preferredProviderTag;
       if (
@@ -1842,25 +1916,29 @@ export function ReceiptSettingsScreen({
       }
       return qualified;
     } catch (failure) {
-      setError(
-        messageForError(
-          failure,
-          "OpenRouter provider options could not be loaded.",
-        ),
-      );
+      if (isCurrentRefresh(request)) {
+        setError(
+          messageForError(
+            failure,
+            "OpenRouter provider options could not be loaded.",
+          ),
+        );
+      }
       return [];
     } finally {
-      setEndpointLoading(false);
+      if (isCurrentRefresh(request)) setEndpointLoading(false);
     }
   };
 
   const refresh = async (
     providerSettings: DeviceLocalSettings = settings,
+    request: ReceiptSettingsRefreshRequest = beginRefresh(),
   ): Promise<void> => {
     setLoading(true);
     setError(undefined);
     try {
-      const key = await activeProviderPort.getApiKey();
+      const key = await request.port.getApiKey();
+      if (!isCurrentRefresh(request)) return;
       setHasKey(key !== undefined);
       setMaskedKey(key ? `••••••••${key.reveal().slice(-4)}` : "");
       if (!key) {
@@ -1868,13 +1946,14 @@ export function ReceiptSettingsScreen({
         setEndpoints([]);
         return;
       }
-      const nextModels = await activeProviderPort.listModels(
+      const nextModels = await request.port.listModels(
         DEFAULT_MODEL_QUERY,
       );
+      if (!isCurrentRefresh(request)) return;
       setModels(nextModels);
       const configuredModel = selectedModelFor(
         providerSettings,
-        activeProvider,
+        request.provider,
       );
       const configuredModelIsAvailable = configuredModel === undefined ||
         nextModels.some((model) =>
@@ -1884,41 +1963,50 @@ export function ReceiptSettingsScreen({
       if (configuredModel && !configuredModelIsAvailable) {
         effectiveSettings = settingsWithSelectedModel(
           providerSettings,
-          activeProvider,
+          request.provider,
           undefined,
         );
-        if (activeProvider === "openrouter") {
+        if (request.provider === "openrouter") {
           effectiveSettings = {
             ...effectiveSettings,
             preferredProviderTag: undefined,
           };
         }
+        if (!isCurrentRefresh(request)) return;
         onSettingsChange(effectiveSettings);
         setNotice(
-          activeProvider === "openrouter"
-            ? `The saved ${activeProviderName} model is no longer available. Choose another model; the preferred provider was reset to Automatic.`
-            : `The saved ${activeProviderName} model is no longer available. Choose another model.`,
+          request.provider === "openrouter"
+            ? `The saved ${
+              RECEIPT_PROVIDER_NAMES[request.provider]
+            } model is no longer available. Choose another model; the preferred provider was reset to Automatic.`
+            : `The saved ${
+              RECEIPT_PROVIDER_NAMES[request.provider]
+            } model is no longer available. Choose another model.`,
         );
       }
       if (
-        activeProvider === "openrouter" &&
+        request.provider === "openrouter" &&
         effectiveSettings.selectedOpenRouterModel
       ) {
-        await refreshEndpoints(effectiveSettings);
+        await refreshEndpoints(effectiveSettings, request);
       } else {
-        setEndpoints([]);
+        if (isCurrentRefresh(request)) setEndpoints([]);
       }
     } catch (failure) {
-      setError(
-        messageForError(
-          failure,
-          `Available ${activeProviderName} models could not be loaded.`,
-        ),
-      );
-      setModels([]);
-      setEndpoints([]);
+      if (isCurrentRefresh(request)) {
+        setError(
+          messageForError(
+            failure,
+            `Available ${
+              RECEIPT_PROVIDER_NAMES[request.provider]
+            } models could not be loaded.`,
+          ),
+        );
+        setModels([]);
+        setEndpoints([]);
+      }
     } finally {
-      setLoading(false);
+      if (isCurrentRefresh(request)) setLoading(false);
     }
   };
 
@@ -1938,37 +2026,47 @@ export function ReceiptSettingsScreen({
     }
     setLoading(true);
     setError(undefined);
+    const request = beginRefresh();
     try {
-      await activeProviderPort.setApiKey(apiKey.trim());
+      await request.port.setApiKey(apiKey.trim());
+      if (!isCurrentRefresh(request)) return;
       onSettingsChange(settings);
       setApiKey("");
-      await refresh(settings);
+      await refresh(settings, request);
     } catch (failure) {
-      setError(messageForError(failure, "The API key could not be saved."));
+      if (isCurrentRefresh(request)) {
+        setError(messageForError(failure, "The API key could not be saved."));
+      }
     } finally {
-      setLoading(false);
+      if (isCurrentRefresh(request)) setLoading(false);
     }
   };
 
   const removeKey = async () => {
     setLoading(true);
     setError(undefined);
+    const request = beginRefresh();
     try {
-      await activeProviderPort.removeApiKey();
+      await request.port.removeApiKey();
+      if (!isCurrentRefresh(request)) return;
       setHasKey(false);
       setMaskedKey("");
       setModels([]);
       setEndpoints([]);
     } catch (failure) {
-      setError(messageForError(failure, "The API key could not be removed."));
+      if (isCurrentRefresh(request)) {
+        setError(messageForError(failure, "The API key could not be removed."));
+      }
     } finally {
-      setLoading(false);
+      if (isCurrentRefresh(request)) setLoading(false);
     }
   };
 
   const changeProvider = (nextProvider: string) => {
     if (nextProvider !== "gemini" && nextProvider !== "openrouter") return;
     if (nextProvider === activeProvider) return;
+    activeProviderRef.current = nextProvider;
+    refreshGeneration.current += 1;
     onSettingsChange({ ...settings, activeProvider: nextProvider });
   };
 
@@ -1978,9 +2076,13 @@ export function ReceiptSettingsScreen({
       activeProvider,
       modelId,
     );
+    const request = beginRefresh();
     onSettingsChange(nextSettings);
     setNotice(undefined);
-    if (activeProvider === "openrouter") void refreshEndpoints(nextSettings);
+    setEndpoints([]);
+    if (activeProvider === "openrouter") {
+      void refreshEndpoints(nextSettings, request);
+    }
   };
 
   const changePrivacySetting = (
@@ -1992,9 +2094,25 @@ export function ReceiptSettingsScreen({
     >,
   ) => {
     const nextSettings = { ...settings, ...change };
+    const request = beginRefresh();
     onSettingsChange(nextSettings);
     setNotice(undefined);
-    if (activeProvider === "openrouter") void refresh(nextSettings);
+    if (activeProvider === "openrouter") void refresh(nextSettings, request);
+  };
+
+  const changePreferredProvider = (value: string) => {
+    if (activeProvider !== "openrouter") return;
+    const nextSettings = {
+      ...settings,
+      preferredProviderTag: value === "automatic" ? undefined : value,
+    };
+    beginRefresh();
+    onSettingsChange(nextSettings);
+  };
+
+  const changeImagePreparation = (imagePreparationEnabled: boolean) => {
+    refreshGeneration.current += 1;
+    void onSettingsChange({ ...settings, imagePreparationEnabled });
   };
 
   const providerOptions = activeProvider === "openrouter"
@@ -2099,11 +2217,7 @@ export function ReceiptSettingsScreen({
           : null}
         <Switch
           isSelected={settings.imagePreparationEnabled}
-          onChange={(imagePreparationEnabled) =>
-            void onSettingsChange({
-              ...settings,
-              imagePreparationEnabled,
-            })}
+          onChange={changeImagePreparation}
         >
           Prepare image before sending (resize and compress)
         </Switch>
@@ -2120,13 +2234,7 @@ export function ReceiptSettingsScreen({
                   label="Preferred provider"
                   options={providerOptions}
                   value={preferredValue}
-                  onValueChange={(value) =>
-                    void onSettingsChange({
-                      ...settings,
-                      preferredProviderTag: value === "automatic"
-                        ? undefined
-                        : value,
-                    })}
+                  onValueChange={changePreferredProvider}
                   isDisabled={endpointLoading || loading}
                   description="Automatic keeps OpenRouter's normal routing. A selected provider is preferred for this exact model; same-model fallback remains enabled."
                 />

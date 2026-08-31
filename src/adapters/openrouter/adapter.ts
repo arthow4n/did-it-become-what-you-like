@@ -53,6 +53,7 @@ export type OpenRouterClientFactory = (
 ) => OpenRouterBrowserClient;
 
 const SAFE_MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
+const OPENROUTER_AUTO_ROUTER_MODEL_ID = "openrouter/auto";
 const SAFE_LOCALE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/;
 const SAFE_IMAGE_MIME_TYPE = /^image\/[A-Za-z0-9.+-]+$/;
 const REQUIRED_PARAMETERS = [
@@ -86,8 +87,15 @@ function qualifiesModel(model: OpenRouterModel): boolean {
     );
 }
 
+function isDynamicAutoRouterModelId(modelId: string): boolean {
+  return modelId === OPENROUTER_AUTO_ROUTER_MODEL_ID;
+}
+
 function toModel(model: OpenRouterModel): ReceiptAiModel | undefined {
-  if (!SAFE_MODEL_ID.test(model.id) || !qualifiesModel(model)) return undefined;
+  if (
+    !SAFE_MODEL_ID.test(model.id) || isDynamicAutoRouterModelId(model.id) ||
+    !qualifiesModel(model)
+  ) return undefined;
   const displayName = model.name.trim();
   return {
     id: model.id,
@@ -225,7 +233,10 @@ function validateRequest(request: ReceiptExtractionRequest): void {
   if (request.instructionVersion !== RECEIPT_INSTRUCTION_VERSION) {
     throw adapterError("invalid-request", "openrouter.extract");
   }
-  if (!SAFE_MODEL_ID.test(request.modelId)) {
+  if (
+    !SAFE_MODEL_ID.test(request.modelId) ||
+    isDynamicAutoRouterModelId(request.modelId)
+  ) {
     throw adapterError("invalid-request", "openrouter.extract");
   }
   if (!SAFE_LOCALE.test(request.locale)) {
@@ -374,7 +385,9 @@ export class OpenRouterAdapter implements ReceiptAiPort {
     modelId: string,
     options?: OperationOptions,
   ): Promise<readonly OpenRouterEndpoint[]> {
-    if (!SAFE_MODEL_ID.test(modelId)) {
+    if (
+      !SAFE_MODEL_ID.test(modelId) || isDynamicAutoRouterModelId(modelId)
+    ) {
       throw adapterError("invalid-request", "openrouter.listEndpoints");
     }
     const path = modelPath(modelId);

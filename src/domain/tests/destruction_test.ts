@@ -4,11 +4,11 @@ import {
   type DestructionStorage,
   LOCAL_ERASE_PROGRESS_KEY,
   readDeleteEverywhereProgress,
-  readLocalEraseGeminiKeyChoice,
   readLocalEraseProgress,
+  readLocalEraseReceiptAiKeysChoice,
   writeDeleteEverywhereProgress,
-  writeLocalEraseGeminiKeyChoice,
   writeLocalEraseProgress,
+  writeLocalEraseReceiptAiKeysChoice,
 } from "../destruction.ts";
 import { isAdapterError } from "../../adapters/ports/index.ts";
 
@@ -123,13 +123,13 @@ Deno.test("delete-everywhere persists a retryable failed operation for reload", 
   );
 });
 
-Deno.test("delete-everywhere local erase choice defaults checked and persists unchecked", () => {
+Deno.test("local erase receipt-AI key choice defaults checked and persists unchecked", () => {
   const storage = memoryStorage();
-  assert(readLocalEraseGeminiKeyChoice(storage));
-  writeLocalEraseGeminiKeyChoice(false, storage);
-  assert(!readLocalEraseGeminiKeyChoice(storage));
-  writeLocalEraseGeminiKeyChoice(true, storage);
-  assert(readLocalEraseGeminiKeyChoice(storage));
+  assert(readLocalEraseReceiptAiKeysChoice(storage));
+  writeLocalEraseReceiptAiKeysChoice(false, storage);
+  assert(!readLocalEraseReceiptAiKeysChoice(storage));
+  writeLocalEraseReceiptAiKeysChoice(true, storage);
+  assert(readLocalEraseReceiptAiKeysChoice(storage));
 });
 
 Deno.test(
@@ -138,13 +138,13 @@ Deno.test(
     const storage = memoryStorage();
     writeLocalEraseProgress({
       phase: "removing-key",
-      removeGeminiApiKey: true,
+      removeReceiptAiKeys: true,
       failureOperation: "remove-key",
       updatedAt: "2026-08-24T18:30:00.000Z",
     }, storage);
     const raw = storage.values.get(LOCAL_ERASE_PROGRESS_KEY) ?? "";
     assert(raw.includes('"phase":"removing-key"'));
-    assert(raw.includes('"removeGeminiApiKey":true'));
+    assert(raw.includes('"removeReceiptAiKeys":true'));
     assert(!raw.includes("AIza"));
     assert(!raw.includes("expense-sensitive"));
     assert(
@@ -152,7 +152,7 @@ Deno.test(
         JSON.stringify({
           version: 1,
           phase: "removing-key",
-          removeGeminiApiKey: true,
+          removeReceiptAiKeys: true,
           failureOperation: "remove-key",
           updatedAt: "2026-08-24T18:30:00.000Z",
         }),
@@ -169,7 +169,7 @@ Deno.test("local erase progress rejects a phase with the wrong retry operation",
     JSON.stringify({
       version: 1,
       phase: "removing-key",
-      removeGeminiApiKey: true,
+      removeReceiptAiKeys: true,
       failureOperation: "erase-local",
       updatedAt: "2026-08-24T18:30:00.000Z",
     }),

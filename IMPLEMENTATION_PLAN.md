@@ -700,7 +700,8 @@ M34-001 -> M34-002 -> R-3410
 
 #### M34-006 — Integrated acceptance and release preflight
 
-- **Status/dependencies:** `READY`; depends on `M34-005`, now complete.
+- **Status/dependencies:** `COMPLETE`; depends on `M34-005`, now complete.
+  Integrated and pushed on `master` as `9e078b2`.
 - **Ownership:** focused integration/E2E seams only where lower-level tests cannot
   prove wiring; release-verification/doc corrections; no unrelated cleanup.
 - **Scope/non-goals:** prove provider selection -> metadata-filtered model list ->
@@ -716,10 +717,18 @@ M34-001 -> M34-002 -> R-3410
   `deno task verify`; run `deno task test:e2e` only for an actually changed
   browser seam. Record exact results and avoid duplicate umbrella constituent
   runs.
+- **Completion evidence:** added one deterministic OpenRouter scan-to-review
+  component integration test covering filtered model refresh, provider/privacy
+  request fields, text-first shared prompt, one base64 image, strict schema,
+  exact model selection, and shared review mapping. Focused receipt UI tests
+  passed 25/25; the M34 boundary suite passed 115/115. The one final
+  `deno task verify` passed 484/484 tests, format, lint, typecheck, build,
+  release verification, frozen audit, and `git diff --check`; no network-enabled
+  tests or provider calls were used.
 
 #### R-3430 — Final M34 release-candidate review
 
-- **Status/dependencies:** `PENDING`; depends on `M34-006`.
+- **Status/dependencies:** `READY`; depends on `M34-006`, now complete.
 - **Reviewer role:** fresh read-only release reviewer.
 - **Audit scope:** entire M34 diff; repo authorities; shared prompt/schema;
   removal of compatibility testing/evidence; Gemini `supportedActions` filter;
@@ -752,10 +761,11 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M34-006` (`READY`).
+- **Active task / gate:** `R-3430` (`READY`).
 - **Planning base:** M34-001, M34-002, R-3410, remediation, M34-003, and
   M34-004 are integrated and pushed on remote `master`; R-3420 remediation is
-  integrated through `0232006`; M34-005 is integrated through `26888be`.
+  integrated through `0232006`; M34-005 is integrated through `26888be`; M34-006
+  is integrated through `9e078b2`.
 - **Verification status:** R-3410 closure audit approved with no residual
   severity 1–3 findings; post-remediation `deno task test:affected`: 382/382
   passed; focused Gemini test: 17/17 passed; integrated M34-003 OpenRouter tests:
@@ -766,8 +776,9 @@ M34-001 -> M34-002 -> R-3410
   default E2E attempt was invalidated before app startup because Playwright
   reused an unrelated server on port 5173; no provider calls were made.
   M34-005's exact full quality gate passed 483/483 after correcting the
-  date-sensitive local UI fixture; Pages run #426's earlier failure is
-  resolved.
+  date-sensitive local UI fixture; M34-006's exact final quality gate passed
+  484/484 after adding the OpenRouter scan-to-review seam; Pages run #426's
+  earlier failure is resolved.
 - **Active / preserved work:** no active M34 implementation worker. Existing
   unrelated worktrees contain preserved untracked progress files and are not
   touched.
@@ -777,9 +788,9 @@ M34-001 -> M34-002 -> R-3410
   `inputModalities`, `outputModalities`, `zdr`, `provider.requireParameters`,
   `provider.dataCollection`, and `responseFormat.jsonSchema`; endpoint methods
   are `endpoints.list({author, slug})` and `endpoints.listZdrEndpoints()`.
-- **Exact next action:** dispatch exactly one write-enabled worker for M34-006.
-  Do not begin R-3430 until M34-006 is integrated, validated, pushed, and
-  checkpointed.
+- **Exact next action:** dispatch exactly one fresh read-only reviewer for
+  R-3430. Do not begin M34-FINAL until R-3430 is reviewed, all severity 1–3
+  findings are closed, and the closure checkpoint is integrated and pushed.
 
 ## Ready-to-Use Orchestration Prompt
 

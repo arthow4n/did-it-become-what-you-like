@@ -14,6 +14,8 @@ source dependencies are published under their own licenses:
 - [Automerge](https://github.com/automerge/automerge) — MIT License
 - [Google Gen AI SDK](https://github.com/googleapis/js-genai) — Apache-2.0
   License
+- [OpenRouter SDK](https://github.com/OpenRouterTeam/typescript-sdk) — Apache-2.0
+  License
 - [Vite](https://github.com/vitejs/vite) — MIT License
 - [vite-plugin-pwa](https://github.com/vite-pwa/vite-plugin-pwa) — MIT License
 

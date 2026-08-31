@@ -67,8 +67,8 @@ semantic tokens
 - Domain composites translate snapshot-derived view models into expense-domain
   presentation.
 - Screens arrange components and bind actor selectors/events.
-- Design-system components never read IndexedDB, call Google APIs or Gemini,
-  perform navigation, or decide business rules.
+- Design-system components never read IndexedDB, call external provider APIs or
+  SDKs, perform navigation, or decide business rules.
 - XState actors own durable workflow state and permitted actions. Components
   receive controlled values, status, and callbacks or typed event dispatchers.
 - Mantine may own ephemeral interaction state such as focus and popover

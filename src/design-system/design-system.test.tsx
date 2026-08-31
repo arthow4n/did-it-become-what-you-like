@@ -4,7 +4,10 @@ declare const Deno: {
 
 import { within } from "@testing-library/dom";
 import { createElement } from "react";
-import { withComponentHarness } from "../test-support/component-harness.tsx";
+import {
+  withAriaGlobals,
+  withComponentHarness,
+} from "../test-support/component-harness.tsx";
 import {
   ActiveFilterChips,
   AdaptiveDialog,
@@ -93,59 +96,6 @@ function assertEqual<T>(
   }
 }
 
-async function withAriaDomGlobals<T>(
-  testWindow: {
-    HTMLButtonElement: unknown;
-    FocusEvent: unknown;
-    HTMLInputElement: unknown;
-    MutationObserver: unknown;
-    NodeFilter: unknown;
-    requestAnimationFrame: unknown;
-    cancelAnimationFrame: unknown;
-    HTMLSelectElement: unknown;
-    SVGElement: unknown;
-    HTMLTextAreaElement: unknown;
-  },
-  callback: () => T | Promise<T>,
-): Promise<T> {
-  const previous = {
-    HTMLButtonElement: globalThis.HTMLButtonElement,
-    FocusEvent: globalThis.FocusEvent,
-    HTMLInputElement: globalThis.HTMLInputElement,
-    MutationObserver: globalThis.MutationObserver,
-    NodeFilter: globalThis.NodeFilter,
-    requestAnimationFrame: globalThis.requestAnimationFrame,
-    cancelAnimationFrame: globalThis.cancelAnimationFrame,
-    HTMLSelectElement: globalThis.HTMLSelectElement,
-    SVGElement: globalThis.SVGElement,
-    HTMLTextAreaElement: globalThis.HTMLTextAreaElement,
-  };
-  const previousCSS = globalThis.CSS;
-  Object.assign(globalThis, {
-    HTMLButtonElement: testWindow.HTMLButtonElement,
-    FocusEvent: testWindow.FocusEvent,
-    HTMLInputElement: testWindow.HTMLInputElement,
-    MutationObserver: testWindow.MutationObserver,
-    NodeFilter: testWindow.NodeFilter,
-    requestAnimationFrame: testWindow.requestAnimationFrame,
-    cancelAnimationFrame: testWindow.cancelAnimationFrame,
-    HTMLSelectElement: testWindow.HTMLSelectElement,
-    SVGElement: testWindow.SVGElement,
-    HTMLTextAreaElement: testWindow.HTMLTextAreaElement,
-    CSS: previousCSS ?? {
-      escape: (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, "\\$&"),
-    },
-  });
-  try {
-    const result = await callback();
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    return result;
-  } finally {
-    Object.assign(globalThis, previous);
-    Object.assign(globalThis, { CSS: previousCSS });
-  }
-}
-
 Deno.test("design-system formats signed large values without numeric coercion", () => {
   assertEqual(
     formatMoney("-999999999999999999999.99", "SEK"),
@@ -156,7 +106,7 @@ Deno.test("design-system formats signed large values without numeric coercion", 
 
 Deno.test("design-system button exposes accessible pending and disabled states", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       const mounted = render(
         createElement(
           Button,
@@ -180,7 +130,7 @@ Deno.test("design-system button exposes accessible pending and disabled states",
 
 Deno.test("design-system fields expose names, descriptions, and invalid semantics", async () => {
   await withComponentHarness(({ window, render }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       const mounted = render(
         createElement(TextField, {
           label: "Merchant",
@@ -204,7 +154,7 @@ Deno.test("design-system fields expose names, descriptions, and invalid semantic
 
 Deno.test("design-system native fields and definition lists expose valid semantics", async () => {
   await withComponentHarness(({ window, render }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       const mounted = render(
         createElement(
           "div",
@@ -258,7 +208,7 @@ Deno.test("design-system native fields and definition lists expose valid semanti
 
 Deno.test("design-system field facades translate Mantine value and file events", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       let merchant = "";
       let date = "";
       let time = "";
@@ -333,7 +283,7 @@ Deno.test("design-system field facades translate Mantine value and file events",
 
 Deno.test("design-system search facade owns uncontrolled clear state", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       const changes: string[] = [];
       const mounted = render(
         createElement(SearchField, {
@@ -360,7 +310,7 @@ Deno.test("design-system search facade owns uncontrolled clear state", async () 
 
 Deno.test("design-system file facade reports rejected files", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       let rejected: File[] = [];
       const mounted = render(
         createElement(FileField, {
@@ -388,7 +338,7 @@ Deno.test("design-system file facade reports rejected files", async () => {
 
 Deno.test("design-system secret facade keeps reveal control keyboard reachable", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       const mounted = render(
         createElement(SecretField, { label: "API key" }),
       );
@@ -413,7 +363,7 @@ Deno.test("design-system secret facade keeps reveal control keyboard reachable",
 
 Deno.test("design-system color and delete-reassign composites expose controlled choices", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       let color = "#78DCCA";
       let replacement = "";
       let cancelled = false;
@@ -474,7 +424,7 @@ Deno.test("design-system color and delete-reassign composites expose controlled 
 
 Deno.test("design-system confirmation facade exposes an explicit cancel action", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       let confirmed = false;
       let cancelled = false;
       const mounted = render(
@@ -500,7 +450,7 @@ Deno.test("design-system confirmation facade exposes an explicit cancel action",
 
 Deno.test("design-system danger confirmation resets its phrase after cancel and reopen", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       const mounted = render(
         createElement(DangerDialog, {
           trigger: createElement(Button, null, "Delete project"),
@@ -541,7 +491,7 @@ Deno.test("design-system danger confirmation resets its phrase after cancel and 
 
 Deno.test("design-system selection and progress remain keyboard-addressable", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       let direction = "spent";
       let archived = false;
       let category = "food";
@@ -610,7 +560,7 @@ Deno.test("design-system selection and progress remain keyboard-addressable", as
 
 Deno.test("design-system select preserves controlled open state and callbacks", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       let nextOpen: boolean | undefined;
       const mounted = render(
         createElement(SelectField, {
@@ -633,7 +583,7 @@ Deno.test("design-system select preserves controlled open state and callbacks", 
 
 Deno.test("M8 provider maps semantic tokens and locks the dark scheme", async () => {
   await withComponentHarness(({ window, renderBare }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       const mounted = renderBare(
         createElement(
           DesignSystemProvider,
@@ -664,7 +614,7 @@ Deno.test("M8 provider maps semantic tokens and locks the dark scheme", async ()
 
 Deno.test("M8 structural facade wrappers retain semantic roots over Mantine", async () => {
   await withComponentHarness(({ window, render }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       let inlineRef: HTMLDivElement | null = null;
       let gridRef: HTMLDivElement | null = null;
       const mounted = render(
@@ -780,7 +730,7 @@ Deno.test("M8 structural facade wrappers retain semantic roots over Mantine", as
 
 Deno.test("design-system dialog uses a named overlay and returns a useful trigger", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       const mounted = render(
         createElement(
           AdaptiveDialog,
@@ -812,7 +762,7 @@ Deno.test("design-system dialog uses a named overlay and returns a useful trigge
 
 Deno.test("M8 overlay facades preserve disclosure and menu contracts", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       let expanded = false;
       let action = "";
       const mounted = render(
@@ -875,7 +825,7 @@ Deno.test("M8 overlay facades preserve disclosure and menu contracts", async () 
 
 Deno.test("M8 feedback facades preserve live regions and notification dismissal", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       let dismissed = 0;
       const mounted = render(
         createElement(
@@ -940,7 +890,7 @@ Deno.test("M8 feedback facades preserve live regions and notification dismissal"
 
 Deno.test("M8 remaining feedback facades preserve progress and state contracts", async () => {
   await withComponentHarness(({ window, render }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       const mounted = render(
         createElement(
           "div",
@@ -1030,7 +980,7 @@ Deno.test("M8 shell facades preserve landmarks and navigation state", async () =
 
 Deno.test("M8 list and form facades preserve native structures", async () => {
   await withComponentHarness(({ window, render }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       const mounted = render(
         createElement(
           "div",
@@ -1093,7 +1043,7 @@ Deno.test("M8 list and form facades preserve native structures", async () => {
 
 Deno.test("M8 filter and status facades preserve grouping and workflow state", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       let removed = 0;
       let applied = 0;
       let reset = 0;
@@ -1184,7 +1134,7 @@ Deno.test("M8 filter and status facades preserve grouping and workflow state", a
 
 Deno.test("design-system page headers can provide the application heading", async () => {
   await withComponentHarness(({ window, render }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       const mounted = render(
         createElement(PageHeader, {
           title: "Expenses",
@@ -1219,7 +1169,7 @@ Deno.test("design-system money summary exposes a valid labeled group", async () 
 
 Deno.test("design-system category totals preserve long identity and signed money", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       let selected = "";
       const categoryName = "Very long category name that must remain readable";
       const mounted = render(
@@ -1258,7 +1208,7 @@ Deno.test("design-system money component keeps sign and currency in accessible t
 
 Deno.test("design-system positive money rows always expose an explicit plus", async () => {
   await withComponentHarness(({ window, render }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       const mounted = render(
         createElement(
           "div",
@@ -1287,7 +1237,7 @@ Deno.test("design-system positive money rows always expose an explicit plus", as
 
 Deno.test("design-system receipt groups show line descriptions", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       let viewed = false;
       const mounted = render(
         createElement(ReceiptGroup, {
@@ -1328,7 +1278,7 @@ Deno.test("design-system receipt groups show line descriptions", async () => {
 
 Deno.test("design-system receipt line management variant removes review selection", async () => {
   await withComponentHarness(({ window, render }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       const mounted = render(
         createElement(ReceiptLineCard, {
           mode: "management",
@@ -1356,7 +1306,7 @@ Deno.test("design-system receipt line management variant removes review selectio
 
 Deno.test("design-system currency search and merchant clearing remain functional", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, () => {
+    withAriaGlobals(window, () => {
       let selectedCurrency = "SEK";
       let merchant = "ICA Maxi";
       const mounted = render(
@@ -1395,7 +1345,7 @@ Deno.test("design-system currency search and merchant clearing remain functional
 
 Deno.test("design-system period picker exposes a controlled custom calendar period", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaDomGlobals(window, async () => {
+    withAriaGlobals(window, async () => {
       let kind = "day";
       let date = "2026-08-24";
       const mounted = render(

@@ -204,9 +204,9 @@ When conducting an audit, follow this standard journey order:
    - Clean form (no premature draft warnings), 2-column Amount/Currency and
      Date/Time desktop rows, full-width mobile action button stack, subdued
      field descriptions.
-6. **Screen 6: AI Receipt Scanning & Gemini Setup** (`/receipt/scan`)
-   - Source picker options, Gemini API key modal with inline eye reveal toggle,
-     natural width "Save and continue" button.
+6. **Screen 6: AI Receipt Scanning & Provider Setup** (`/receipt/scan`)
+   - Source picker options, provider API-key modal with inline eye reveal
+     toggle, natural width "Save and continue" button.
 7. **Screen 7: Populated Expenses View**
    - Non-wrapping tabular money amounts, category badges, baseline-aligned
      filter bar.

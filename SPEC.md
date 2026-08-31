@@ -201,7 +201,7 @@ and multi-device synchronization according to the agreed sync design.
   and selecting/importing an existing image from the device.
 - The LLM should produce draft expense entries for the relevant items on the
   invoice to reduce manual entry.
-- The future extraction prompt and review model must request and preserve the
+- The extraction prompt and review model must request and preserve the
   most specific merchant/shop identity visible on the receipt, including its
   branch or location when available.
 - The AI must suggest a category for every extracted item using only the owner's
@@ -354,10 +354,10 @@ and multi-device synchronization according to the agreed sync design.
   preserving the selected Gemini model. New and migrated OpenRouter preferences
   default to Automatic/unset, with ZDR and data-collection denial both off.
 - Exact preparation dimensions, byte targets, compression quality, and accepted
-  browser-decodable formats are compatibility-tuning outputs rather than owner
-  preferences. The implementation-plan compatibility task must derive them from
-  then-current official Gemini limits and verify them with representative
-  receipt-legibility tests before the scanning feature is accepted.
+  browser-decodable formats are implementation-time tuning outputs rather than
+  owner preferences. The implementation plan must derive them from then-current
+  official Gemini limits and verify them with representative receipt-legibility
+  tests before the scanning feature is accepted.
 
 ### Saved Receipt Management
 
@@ -607,8 +607,8 @@ and multi-device synchronization according to the agreed sync design.
   requirements.
 - [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) defines the shared accessible React
   foundation, semantic dark-theme tokens, reusable component responsibilities,
-  responsive rules, and screen-to-component mapping. Screens must reuse it
-  rather than creating parallel UI patterns.
+  and responsive rules. Screens must reuse it rather than creating parallel UI
+  patterns.
 - Mobile is the primary form factor. Entry, invoice capture, filtering, and
   synchronization status must be comfortable on small touch screens.
 - Desktop browsers must also provide a complete and usable experience.
@@ -951,5 +951,5 @@ and multi-device synchronization according to the agreed sync design.
 - `agent-browser` is installed reproducibly through a Deno-run installer which
   downloads a pinned native release for the current platform, verifies a
   repository-pinned SHA-256, and installs the corresponding Chrome for Testing.
-  Exact implementation-time versions and hashes are compatibility-task outputs;
+  Exact implementation-time versions and hashes are recorded build inputs;
   Node/npm is not a project toolchain.

@@ -792,7 +792,7 @@ Deno.test("local UI add-another notifies sync and retains its actor lifecycle", 
 });
 
 Deno.test("local UI expenses interleaves receipt groups and shows every category", async () => {
-  await withComponentHarness(({ render }) => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     const categories = [
       category,
       {
@@ -874,16 +874,22 @@ Deno.test("local UI expenses interleaves receipt groups and shows every category
       }),
     );
     const view = within(document.body);
-    const feed = document.querySelector<HTMLElement>(
-      '[data-expenses-feed="true"]',
-    );
-    assert(feed);
-    const feedText = feed.textContent ?? "";
     assert(
       (view.getByRole("radio", { name: "Today" }) as HTMLInputElement)
         .checked,
       "the expenses screen should initially filter to the current day",
     );
+    fireEvent.click(view.getByRole("radio", { name: "Custom" }));
+    const customDate = view.getByLabelText("Custom calendar date");
+    fireEvent.change(customDate, { target: { value: "2026-08-30" } });
+    await waitFor(() =>
+      assert(view.getByRole("button", { name: /Receipt after manual/ }))
+    );
+    const feed = document.querySelector<HTMLElement>(
+      '[data-expenses-feed="true"]',
+    );
+    assert(feed);
+    const feedText = feed.textContent ?? "";
     assert(
       view.getByRole("button", { name: /Receipt after manual/ }).getAttribute(
         "aria-expanded",

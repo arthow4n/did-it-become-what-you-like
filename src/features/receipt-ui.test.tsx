@@ -22,6 +22,15 @@ import {
   ReceiptSourcePicker,
 } from "../design-system/index.ts";
 import {
+  createOpenRouterAdapter,
+  type OpenRouterBrowserClient,
+  type OpenRouterChatRequest,
+} from "../adapters/openrouter/index.ts";
+import {
+  buildReceiptPrompt,
+  RECEIPT_INSTRUCTION_VERSION,
+} from "../adapters/receipt-ai/schema.ts";
+import {
   DeviceLocalSettingsSchema,
   type ProjectCategoryState,
 } from "../domain/index.ts";
@@ -44,6 +53,7 @@ import {
 import {
   createFakeImagePreparationPort,
   createFakeLocalPort,
+  createFakeSecretStoragePort,
 } from "../test-support/fakes/ports.ts";
 
 declare const Deno: {
@@ -880,6 +890,183 @@ Deno.test(
           imageReleased = true;
         }
         assert(imageReleased, "Unmount cleanup should release the image");
+      });
+    });
+  },
+);
+
+Deno.test(
+  "receipt-ui routes an explicit OpenRouter scan through the shared review flow",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(async () => {
+        const model = {
+          id: "openai/receipt-model",
+          canonicalSlug: "openai/receipt-model",
+          name: "OpenRouter receipt model",
+          architecture: {
+            inputModalities: ["image", "text"],
+            outputModalities: ["text"],
+          },
+          supportedParameters: ["structured_outputs", "response_format"],
+        } as const;
+        const responseText = JSON.stringify({
+          currency: "SEK",
+          date: "2026-08-31",
+          lines: [{
+            amount: "2",
+            categoryId: "category-uncategorized",
+            description: "OpenRouter item",
+            direction: "outflow",
+            kind: "purchase",
+            rationale: "The visible product row is a purchase outflow.",
+            selected: true,
+          }],
+          merchant: "OpenRouter Market",
+          mismatch: null,
+          printedTotal: "2",
+          schemaVersion: "receipt.v2",
+          uncertainty: [],
+        });
+        const secretStorage = createFakeSecretStoragePort();
+        await secretStorage.set(
+          "openrouter-api-key",
+          SecretValue.from("sk-or-v1.component-test"),
+        );
+        const modelRequests: unknown[] = [];
+        const chatRequests: OpenRouterChatRequest[] = [];
+        const client: OpenRouterBrowserClient = {
+          models: {
+            list: (request) => {
+              modelRequests.push(request);
+              return Promise.resolve((async function* () {
+                yield { models: [model] };
+              })());
+            },
+          },
+          endpoints: {
+            list: () => Promise.resolve({ modelId: model.id, endpoints: [] }),
+            listZdrEndpoints: () => Promise.resolve([]),
+          },
+          chat: {
+            send: (request) => {
+              chatRequests.push(request);
+              return Promise.resolve({ text: responseText });
+            },
+          },
+        };
+        const openrouter = createOpenRouterAdapter({
+          secretStorage,
+          createClient: () => client,
+          getRoutingOptions: () => ({
+            preferredProviderTag: "provider-alpha",
+            requireZdr: true,
+            denyProviderDataCollection: true,
+          }),
+          isOnline: () => true,
+        });
+        const gemini = createSettingsProvider({
+          key: "AIza.gemini-not-selected",
+          models: [],
+        });
+        const imageStore = new ReceiptImageStore();
+        const dependencies: ReceiptUiDependencies = {
+          ai: openrouter,
+          gemini,
+          openrouter,
+          imagePreparation: createFakeImagePreparationPort(),
+          resolveImage: (ref) => imageStore.resolve(ref),
+          releaseImage: (ref) => imageStore.releaseForRetry(ref),
+        };
+        const settings = DeviceLocalSettingsSchema.parse({
+          activeProvider: "openrouter",
+          selectedOpenRouterModel: model.id,
+          preferredProviderTag: "provider-alpha",
+          requireZdr: true,
+          denyProviderDataCollection: true,
+          imagePreparationEnabled: true,
+        });
+        let review: ReceiptReviewDraft | undefined;
+        render(
+          createElement(ReceiptScanScreen, {
+            dependencies,
+            imageStore,
+            state: defaultTestState,
+            settings,
+            offline: false,
+            onSettingsChange: () => undefined,
+            onReview: (nextReview) => review = nextReview,
+            onClose: () => undefined,
+            onOpenSettings: () => undefined,
+          }),
+        );
+        const view = within(document.body);
+        await waitFor(() => {
+          assert(view.getByRole("button", { name: "Continue to scan" }));
+          assert(modelRequests.length === 1);
+        });
+        assertEquals(gemini.modelRefreshes(), 0);
+        assertEquals(chatRequests.length, 0);
+        fireEvent.click(view.getByRole("button", { name: "Continue to scan" }));
+        const file = new Blob([new Uint8Array([1, 2, 3])], {
+          type: "image/png",
+        }) as unknown as File;
+        fireEvent.change(view.getByLabelText("Receipt image file"), {
+          target: { files: [file] },
+        });
+        await waitFor(() => {
+          assert(
+            !view.getByRole("button", { name: "Scan with AI" }).hasAttribute(
+              "disabled",
+            ),
+          );
+        });
+        fireEvent.click(view.getByRole("button", { name: "Scan with AI" }));
+        await waitFor(() => assert(review !== undefined));
+
+        assertEquals(modelRequests, [{
+          supportedParameters: "structured_outputs,response_format",
+          inputModalities: "image,text",
+          outputModalities: "text",
+          zdr: "true",
+        }]);
+        assertEquals(chatRequests.length, 1);
+        const request = chatRequests[0]!;
+        assertEquals(request.model, model.id);
+        assert(!("models" in request));
+        assertEquals(request.messages[0]?.content[0], {
+          type: "text",
+          text: buildReceiptPrompt({
+            categories: [{
+              id: defaultTestCategory.id,
+              name: defaultTestCategory.name,
+            }],
+            locale: globalThis.navigator?.language ?? "en-US",
+            currency: "SEK",
+          }),
+        });
+        assert(
+          request.messages[0]?.content[0]?.type === "text" &&
+            request.messages[0].content[0].text.includes(
+              `Instruction version: ${RECEIPT_INSTRUCTION_VERSION}.`,
+            ),
+        );
+        assertEquals(request.messages[0]?.content[1], {
+          type: "image_url",
+          imageUrl: { url: "data:image/png;base64,AQID" },
+        });
+        assertEquals(request.provider, {
+          requireParameters: true,
+          order: ["provider-alpha"],
+          zdr: true,
+          dataCollection: "deny",
+        });
+        assert(request.responseFormat.jsonSchema.strict);
+        assertEquals(review?.parent.merchant, "OpenRouter Market");
+        assertEquals(review?.lines[0]?.description, "OpenRouter item");
+        const firstLine = review?.lines[0];
+        assert(firstLine?.type === "purchase");
+        assertEquals(firstLine.lineTotal, "-2");
       });
     });
   },

@@ -131,12 +131,16 @@ Deno.test("receipt-ui disclosure states the exact permitted and excluded data", 
     let declined = false;
     render(
       createElement(ReceiptDisclosure, {
+        provider: "gemini",
         onAccept: () => accepted = true,
         onDecline: () => declined = true,
       }),
     );
     const view = within(document.body);
     assert(view.getByRole("heading", { name: "Before sending this receipt" }));
+    assert(
+      view.getByText(/Google Gemini receives this allowlisted receipt payload/),
+    );
     assert(view.getByText(/active category IDs and names/));
     assert(view.getByText(/Expense history, project names, Drive data/));
     const continueButton = view.getByRole("button", {
@@ -148,6 +152,31 @@ Deno.test("receipt-ui disclosure states the exact permitted and excluded data", 
     assert(accepted && declined);
   });
 });
+
+Deno.test(
+  "receipt-ui OpenRouter disclosure names the routed endpoint and excludes broad history",
+  async () => {
+    await withComponentHarness(({ render }) => {
+      render(
+        createElement(ReceiptDisclosure, {
+          provider: "openrouter",
+          onAccept: () => undefined,
+          onDecline: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      assert(
+        view.getByText(
+          /passes through OpenRouter to a routed provider endpoint/,
+        ),
+      );
+      assert(view.getByText(/exact selected model/));
+      assert(view.getByText(/not publicly uploaded/));
+      assert(view.getByText(/Expense history, project names, Drive data/));
+      assert(!view.queryByText(/broad expense history sharing/));
+    });
+  },
+);
 
 Deno.test("receipt-ui device settings migrate legacy values and round-trip new values", async () => {
   const local = createFakeLocalPort();
@@ -620,6 +649,8 @@ Deno.test("receipt-ui provider quick setup masks the key and keeps validation vi
       render(
         createElement(ReceiptQuickSetup, {
           providerName: "OpenRouter",
+          providerDisclosure:
+            "For OpenRouter, this allowlisted receipt payload passes through OpenRouter to a routed provider endpoint serving the exact selected model.",
           value: "AIza.test-key",
           onChange: () => undefined,
           onSave: () => saved = true,
@@ -1405,8 +1436,15 @@ Deno.test(
           }));
           await waitFor(() =>
             assert(
-              view.getByText(/ZDR and data-collection controls are separate/),
+              view.getByText(/ZDR applies only when enabled/),
             )
+          );
+          assert(view.getByText(/Deny provider data collection is separate/));
+          assert(view.getByText(/Neither control promises the other policy/));
+          assert(
+            view.getByText(
+              /Either enabled filter can reduce route availability/,
+            ),
           );
           assert(provider.extractionCalls() === 0);
         });

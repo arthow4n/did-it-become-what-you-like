@@ -113,6 +113,16 @@ export const RECEIPT_PROVIDER_NAMES: Record<ReceiptProvider, string> = {
   openrouter: "OpenRouter",
 };
 
+function receiptDisclosureName(provider: ReceiptProvider): string {
+  return provider === "gemini" ? "Google Gemini" : "OpenRouter";
+}
+
+function receiptDisclosureDetails(provider: ReceiptProvider): string {
+  return provider === "openrouter"
+    ? "For OpenRouter, this allowlisted receipt payload passes through OpenRouter to a routed provider endpoint serving the exact selected model. The receipt image is not publicly uploaded."
+    : "Google Gemini receives this allowlisted receipt payload for this explicit scan. The receipt image is not publicly uploaded.";
+}
+
 export type ReceiptUiDependencies = ReceiptScanMachineDependencies & {
   readonly ai: ReceiptAiPort;
   readonly gemini: ReceiptProviderPort;
@@ -367,14 +377,15 @@ function lineViewModel(
 }
 
 export function ReceiptDisclosure({
-  providerName = "your selected receipt-AI provider",
+  provider,
   onAccept,
   onDecline,
 }: {
-  providerName?: string;
+  provider: ReceiptProvider;
   onAccept: () => void;
   onDecline: () => void;
 }) {
+  const providerName = receiptDisclosureName(provider);
   return (
     <>
       <Card as="section">
@@ -385,6 +396,7 @@ export function ReceiptDisclosure({
             category IDs and names, your device locale, and the project currency
             code may be sent to {providerName} for extraction.
           </Text>
+          <Text>{receiptDisclosureDetails(provider)}</Text>
           <Text tone="secondary">
             Expense history, project names, Drive data, other device identifiers
             or details, and sync metadata are excluded. The image remains only
@@ -951,7 +963,7 @@ export function ReceiptScanScreen({
           }
         />
         <ReceiptDisclosure
-          providerName={activeProviderName}
+          provider={activeProvider}
           onAccept={() => {
             setDisclosureAccepted(true);
             send({ type: "receipt.disclosure.accept" });
@@ -1043,8 +1055,11 @@ export function ReceiptScanScreen({
           ? (
             <InlineNotice
               tone="info"
-              title={`Receipt is sent to ${activeProviderName}.`}
+              title={`Receipt is sent to ${
+                receiptDisclosureName(activeProvider)
+              }.`}
             >
+              {receiptDisclosureDetails(activeProvider)}{" "}
               Embedded metadata is always removed before sending. The image
               remains in memory only while this scan is open so you can retry or
               replace it; it is removed when you leave, discard, or complete the
@@ -1195,7 +1210,8 @@ export function ReceiptScanScreen({
           >
             <Stack gap={1} className="receipt-ui-quick-setup">
               <ReceiptQuickSetup
-                providerName={activeProviderName}
+                providerName={receiptDisclosureName(activeProvider)}
+                providerDisclosure={receiptDisclosureDetails(activeProvider)}
                 showHeading={false}
                 autoFocus
                 value={apiKey}
@@ -2191,7 +2207,8 @@ export function ReceiptSettingsScreen({
           )
           : (
             <ReceiptQuickSetup
-              providerName={activeProviderName}
+              providerName={receiptDisclosureName(activeProvider)}
+              providerDisclosure={receiptDisclosureDetails(activeProvider)}
               value={apiKey}
               onChange={setApiKey}
               onSave={() => void saveKey()}
@@ -2266,8 +2283,12 @@ export function ReceiptSettingsScreen({
                   Deny provider data collection
                 </Checkbox>
                 <Text tone="secondary">
-                  ZDR and data-collection controls are separate. Either filter
-                  can reduce route availability and may make this model or a
+                  ZDR applies only when enabled: OpenRouter restricts model
+                  discovery and requests to ZDR-eligible routes. Deny provider
+                  data collection is separate and applies only when enabled by
+                  sending the provider data-collection preference. Neither
+                  control promises the other policy. Either enabled filter can
+                  reduce route availability and may make this model or a
                   preferred provider unavailable.
                 </Text>
               </Stack>

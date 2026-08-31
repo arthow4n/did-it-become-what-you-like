@@ -3,12 +3,14 @@ import { deleteLocalRepositoryDatabase, openLocalRepository } from "./index.ts";
 import { createDatasetChange, mergeCausalSnapshots } from "../sync/causal.ts";
 import type { CausalSnapshot } from "../ports/sync.ts";
 import { createProjectDeletionService } from "../../domain/project-deletion.ts";
+import { SecretValue } from "../ports/index.ts";
 import {
   DATASET_FORMAT,
   parseCurrentDataset,
   type PortableDataset,
   UNCATEGORIZED_CATEGORY_ID,
 } from "../../domain/index.ts";
+import { createFakeSecretStoragePort } from "../../test-support/fakes/ports.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -323,6 +325,29 @@ Deno.test(
         ),
         "unrelated projects must converge",
       );
+    });
+  },
+);
+
+Deno.test(
+  "project deletion leaves both receipt-AI keys intact",
+  async () => {
+    await withRepository(async (repository) => {
+      const secrets = createFakeSecretStoragePort();
+      await secrets.set("gemini-api-key", SecretValue.from("AIza.project"));
+      await secrets.set(
+        "openrouter-api-key",
+        SecretValue.from("sk-or-v1.project"),
+      );
+      const service = createProjectDeletionService(repository, {
+        deviceId: repository.deviceId,
+        now: () => "2026-08-24T18:02:00.000Z",
+      });
+      const target = (await service.preview("project-delete")).target;
+      await service.commit(target);
+
+      assert((await secrets.get("gemini-api-key")) !== undefined);
+      assert((await secrets.get("openrouter-api-key")) !== undefined);
     });
   },
 );

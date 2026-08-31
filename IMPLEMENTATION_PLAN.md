@@ -660,8 +660,9 @@ M34-001 -> M34-002 -> R-3410
 
 #### M34-005 — Secrets, disclosure, and privacy erase generalization
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `R-3420`, now complete.
-  Started from checkpoint `75762e9` with one write-enabled worker.
+- **Status/dependencies:** `COMPLETE`; depends on `R-3420`, now complete.
+  Integrated and pushed on `master` as `26888be` after the worker commit and
+  its focused CI-test correction.
 - **Ownership:** provider-neutral secret adapter extraction if needed,
   `src/adapters/gemini/secrets.ts`, destruction actor/domain/contracts/tests,
   `src/features/destruction-ui.tsx`, `src/features/sync-portability-runtime.tsx`,
@@ -685,10 +686,21 @@ M34-001 -> M34-002 -> R-3410
 - **Verification:** format/lint; focused tests; `deno task test:affected`;
   `git diff --check`; targeted browser check only if privacy/erase interaction
   requires it.
+- **Completion evidence:** the worker's focused suite passed 88/88; its
+  correction kept the default `Today` assertion and explicitly selected the
+  fixed fixture day for the feed assertions. The isolated correction test
+  passed 1/1 and the complete `local-ui` file passed 37/37. The exact
+  `deno task verify` gate then passed 483/483 tests, format (211 files), lint
+  (202 files), typecheck, build, release verification, frozen audit, and
+  `git diff --check`; no provider calls or network-enabled tests were used.
+  The Pages run `#426` quality job had failed on `944167d` at that same
+  date-sensitive assertion; the failure was therefore a real CI defect, not an
+  expected Pages deployment condition, and is resolved by `d414ee9` (integrated
+  as `26888be`).
 
 #### M34-006 — Integrated acceptance and release preflight
 
-- **Status/dependencies:** `PENDING`; depends on `M34-005`.
+- **Status/dependencies:** `READY`; depends on `M34-005`, now complete.
 - **Ownership:** focused integration/E2E seams only where lower-level tests cannot
   prove wiring; release-verification/doc corrections; no unrelated cleanup.
 - **Scope/non-goals:** prove provider selection -> metadata-filtered model list ->
@@ -740,10 +752,10 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `M34-005` (`IN_PROGRESS`).
+- **Active task / gate:** `M34-006` (`READY`).
 - **Planning base:** M34-001, M34-002, R-3410, remediation, M34-003, and
   M34-004 are integrated and pushed on remote `master`; R-3420 remediation is
-  integrated through `0232006`.
+  integrated through `0232006`; M34-005 is integrated through `26888be`.
 - **Verification status:** R-3410 closure audit approved with no residual
   severity 1–3 findings; post-remediation `deno task test:affected`: 382/382
   passed; focused Gemini test: 17/17 passed; integrated M34-003 OpenRouter tests:
@@ -753,6 +765,9 @@ M34-001 -> M34-002 -> R-3410
   isolated receipt E2E: 1/1 passed; `git diff --check`: passed. The first
   default E2E attempt was invalidated before app startup because Playwright
   reused an unrelated server on port 5173; no provider calls were made.
+  M34-005's exact full quality gate passed 483/483 after correcting the
+  date-sensitive local UI fixture; Pages run #426's earlier failure is
+  resolved.
 - **Active / preserved work:** no active M34 implementation worker. Existing
   unrelated worktrees contain preserved untracked progress files and are not
   touched.
@@ -762,8 +777,8 @@ M34-001 -> M34-002 -> R-3410
   `inputModalities`, `outputModalities`, `zdr`, `provider.requireParameters`,
   `provider.dataCollection`, and `responseFormat.jsonSchema`; endpoint methods
   are `endpoints.list({author, slug})` and `endpoints.listZdrEndpoints()`.
-- **Exact next action:** dispatch exactly one write-enabled worker for M34-005.
-  Do not begin M34-006 until M34-005 is integrated, validated, pushed, and
+- **Exact next action:** dispatch exactly one write-enabled worker for M34-006.
+  Do not begin R-3430 until M34-006 is integrated, validated, pushed, and
   checkpointed.
 
 ## Ready-to-Use Orchestration Prompt

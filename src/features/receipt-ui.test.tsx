@@ -1285,6 +1285,54 @@ Deno.test(
 );
 
 Deno.test(
+  "receipt-ui ignores a settings refresh that resolves after unmount",
+  async () => {
+    await withComponentHarness(async ({ render, waitFor }) => {
+      await withAriaGlobals(() => {
+        const models = deferred<readonly ReceiptAiModel[]>();
+        let refreshes = 0;
+        let changes = 0;
+        const provider: ReceiptOpenRouterPort = {
+          getApiKey: () => Promise.resolve(SecretValue.from("key")),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+          listModels: () => {
+            refreshes += 1;
+            return models.promise;
+          },
+          listEndpoints: () => Promise.resolve([]),
+          extractReceipt: () => Promise.reject(new Error("unused")),
+        };
+        const rendered = render(
+          createElement(ReceiptSettingsScreen, {
+            gemini: provider,
+            openrouter: provider,
+            settings: DeviceLocalSettingsSchema.parse({
+              activeProvider: "openrouter",
+              selectedOpenRouterModel: "openai/saved-model",
+              imagePreparationEnabled: true,
+            }),
+            onSettingsChange: () => changes += 1,
+            onClose: () => undefined,
+          }),
+        );
+        const view = within(document.body);
+        return waitFor(() => assert(refreshes === 1)).then(async () => {
+          rendered.unmount();
+          models.resolve([]);
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          assert(
+            changes === 0,
+            "an unmounted refresh must not mutate device settings",
+          );
+          assert(view.queryByRole("heading") === null);
+        });
+      });
+    });
+  },
+);
+
+Deno.test(
   "receipt-ui OpenRouter privacy changes refresh metadata and reset an invalid provider preference",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {

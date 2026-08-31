@@ -1880,6 +1880,10 @@ export function ReceiptSettingsScreen({
     request.port ===
       (activeProviderRef.current === "gemini" ? gemini : openrouter);
 
+  useEffect(() => () => {
+    refreshGeneration.current += 1;
+  }, []);
+
   const selectedModel = selectedModelFor(settings, activeProvider);
 
   const refreshEndpoints = async (

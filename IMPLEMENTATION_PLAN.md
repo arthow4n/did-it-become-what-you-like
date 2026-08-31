@@ -631,6 +631,19 @@ M34-001 -> M34-002 -> R-3410
   asynchronous state; and an in-flight scan model refresh can cross provider
   boundaries after a provider switch. The reviewer found no authority conflict,
   made no edits, and made no provider calls.
+- **Remediation evidence:** primary integration recovered the rate-limited
+  worker's uncommitted changes after the required repository recovery audit,
+  added immediate provider-generation invalidation and deterministic ordering
+  tests, generalized receipt-AI key erase to Gemini plus OpenRouter, and
+  rejected `openrouter/auto` at list, endpoint, and extraction boundaries.
+  Integrated and pushed as `4f9caa4`.
+- **Remediation validation:** focused adapter/destruction/receipt/runtime tests
+  passed 84/84; `deno task fmt:check` passed (211 files); `deno task lint`
+  passed (202 files); `deno task typecheck` passed; `git diff --check` passed;
+  no provider calls were made. `deno task test:affected` passed 203 tests but
+  also reported one pre-existing date-sensitive `local-ui` test failure whose
+  fixed 2026-08-30 data is outside the current 2026-08-31 Today filter; no
+  local-ui implementation file changed.
 
 #### M34-005 — Secrets, disclosure, and privacy erase generalization
 
@@ -715,9 +728,9 @@ M34-001 -> M34-002 -> R-3410
 
 - **Active task / gate:** `R-3420` (`IN_PROGRESS`, remediation after initial
   review findings).
-- **Planning base:** M34-001, M34-002, R-3410, remediation, and M34-003 are
-  integrated and pushed on remote `master`; M34-004 is integrated and pushed as
-  `fe8b9a7`.
+- **Planning base:** M34-001, M34-002, R-3410, remediation, M34-003, and
+  M34-004 are integrated and pushed on remote `master`; R-3420 remediation is
+  integrated as `4f9caa4`.
 - **Verification status:** R-3410 closure audit approved with no residual
   severity 1–3 findings; post-remediation `deno task test:affected`: 382/382
   passed; focused Gemini test: 17/17 passed; integrated M34-003 OpenRouter tests:
@@ -736,10 +749,9 @@ M34-001 -> M34-002 -> R-3410
   `inputModalities`, `outputModalities`, `zdr`, `provider.requireParameters`,
   `provider.dataCollection`, and `responseFormat.jsonSchema`; endpoint methods
   are `endpoints.list({author, slug})` and `endpoints.listZdrEndpoints()`.
-- **Exact next action:** commit and push this findings checkpoint, then dispatch
-  exactly one write-enabled remediation worker for the four R-3420 findings.
-  Do not begin M34-005 until the fixes are integrated, validated, and a fresh
-  read-only R-3420 closure review approves them.
+- **Exact next action:** commit and push this remediation checkpoint, then
+  dispatch exactly one fresh read-only reviewer for R-3420 closure. Do not
+  begin M34-005 until the fresh closure review approves the integrated fixes.
 
 ## Ready-to-Use Orchestration Prompt
 

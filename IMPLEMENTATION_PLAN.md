@@ -613,9 +613,9 @@ M34-001 -> M34-002 -> R-3410
 
 #### R-3420 — SDK routing and provider UX review
 
-- **Status/dependencies:** `IN_PROGRESS`; depends on `M34-004`. Initial fresh
-  review returned `APPROVE WITH FINDINGS`; remediation is required before
-  closure and M34-005.
+- **Status/dependencies:** `COMPLETE`; depends on `M34-004`. Fresh closure
+  review approved the integrated remediation with no residual severity 1–3
+  findings.
 - **Reviewer role:** fresh read-only OpenRouter/UI reviewer.
 - **Audit scope:** exact package/version; pinned SDK type usage; OpenRouter model
   prefilter arguments; client-side structured-output/image verification;
@@ -650,10 +650,17 @@ M34-001 -> M34-002 -> R-3410
   a late response to call `onSettingsChange` after navigation. The reviewer
   made no edits or provider calls; primary remediation is required before gate
   closure.
+- **Closure evidence:** the final fresh closure review verified the unmount
+  generation invalidation and returned `APPROVE`; no severity 1–3 findings or
+  authority conflicts remain. It confirmed exact SDK fields, shared contracts,
+  auto-router rejection, both-key erase, provider/privacy routing, no live
+  provider calls, and no facade/compatibility violations. Focused reviewer
+  checks passed 97/97; format, lint, and typecheck passed; `git diff --check`
+  passed.
 
 #### M34-005 — Secrets, disclosure, and privacy erase generalization
 
-- **Status/dependencies:** `PENDING`; depends on `R-3420`.
+- **Status/dependencies:** `READY`; depends on `R-3420`, now complete.
 - **Ownership:** provider-neutral secret adapter extraction if needed,
   `src/adapters/gemini/secrets.ts`, destruction actor/domain/contracts/tests,
   `src/features/destruction-ui.tsx`, `src/features/sync-portability-runtime.tsx`,
@@ -732,8 +739,7 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-3420` (`IN_PROGRESS`, unmount-freshness
-  remediation after closure review finding).
+- **Active task / gate:** `M34-005` (`READY`).
 - **Planning base:** M34-001, M34-002, R-3410, remediation, M34-003, and
   M34-004 are integrated and pushed on remote `master`; R-3420 remediation is
   integrated as `4f9caa4`.
@@ -755,10 +761,9 @@ M34-001 -> M34-002 -> R-3410
   `inputModalities`, `outputModalities`, `zdr`, `provider.requireParameters`,
   `provider.dataCollection`, and `responseFormat.jsonSchema`; endpoint methods
   are `endpoints.list({author, slug})` and `endpoints.listZdrEndpoints()`.
-- **Exact next action:** commit and push this closure-finding checkpoint, then
-  implement and validate the settings unmount freshness fix as primary owner.
-  Dispatch exactly one fresh read-only reviewer for R-3420 closure afterward;
-  do not begin M34-005 until that review approves the integrated fixes.
+- **Exact next action:** commit and push this closure checkpoint, then dispatch
+  exactly one write-enabled worker for M34-005. Do not begin M34-006 until
+  M34-005 is integrated, validated, pushed, and checkpointed.
 
 ## Ready-to-Use Orchestration Prompt
 

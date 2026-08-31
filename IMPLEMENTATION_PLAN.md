@@ -728,7 +728,9 @@ M34-001 -> M34-002 -> R-3410
 
 #### R-3430 — Final M34 release-candidate review
 
-- **Status/dependencies:** `READY`; depends on `M34-006`, now complete.
+- **Status/dependencies:** `COMPLETE`; depends on `M34-006`, now complete.
+  Fresh read-only review approved on the pushed candidate at `9cc0c70` with no
+  Severity 1–4 findings.
 - **Reviewer role:** fresh read-only release reviewer.
 - **Audit scope:** entire M34 diff; repo authorities; shared prompt/schema;
   removal of compatibility testing/evidence; Gemini `supportedActions` filter;
@@ -738,10 +740,18 @@ M34-001 -> M34-002 -> R-3410
 - **Remediation loop:** resolve all severity 1–3 findings; rerun only affected
   validation plus full quality gate if shared/cross-cutting code changed after
   the recorded preflight; obtain closure before M34-FINAL.
+- **Closure evidence:** the reviewer audited the full 41-file M34 diff, found
+  no compatibility APIs/probes/persistence, fallback model arrays, auto-router
+  usage, debug logging, facade violations, or provider calls; confirmed a clean
+  synchronized `master`, matching strict shared/Gemini schemas, and trusted the
+  recorded 25/25 focused receipt tests, 115/115 boundary tests, and 484/484
+  final quality gate. No remediation was required.
 
 #### M34-FINAL — Milestone closure, ledger archive, and repo hygiene
 
-- **Status/dependencies:** `PENDING`; depends on `R-3430`.
+- **Status/dependencies:** `IN_PROGRESS`; depends on `R-3430`, now complete.
+  Started from checkpoint `9cc0c70`; the primary remains the sole integration
+  owner.
 - **Ownership:** `IMPLEMENTATION_PLAN.md`, `SPEC.md`, `DESIGN_SYSTEM.md` only if
   reviewed design docs changed, and files identified by repo-hygiene audit.
 - **Scope/non-goals:** record final pre-pruning commit, fold M34 into Released
@@ -761,11 +771,11 @@ M34-001 -> M34-002 -> R-3410
 
 ## Current Checkpoint
 
-- **Active task / gate:** `R-3430` (`READY`).
+- **Active task / gate:** `M34-FINAL` (`IN_PROGRESS`).
 - **Planning base:** M34-001, M34-002, R-3410, remediation, M34-003, and
   M34-004 are integrated and pushed on remote `master`; R-3420 remediation is
   integrated through `0232006`; M34-005 is integrated through `26888be`; M34-006
-  is integrated through `9e078b2`.
+  is integrated through `9e078b2`; R-3430 approved the candidate at `9cc0c70`.
 - **Verification status:** R-3410 closure audit approved with no residual
   severity 1–3 findings; post-remediation `deno task test:affected`: 382/382
   passed; focused Gemini test: 17/17 passed; integrated M34-003 OpenRouter tests:
@@ -788,9 +798,11 @@ M34-001 -> M34-002 -> R-3410
   `inputModalities`, `outputModalities`, `zdr`, `provider.requireParameters`,
   `provider.dataCollection`, and `responseFormat.jsonSchema`; endpoint methods
   are `endpoints.list({author, slug})` and `endpoints.listZdrEndpoints()`.
-- **Exact next action:** dispatch exactly one fresh read-only reviewer for
-  R-3430. Do not begin M34-FINAL until R-3430 is reviewed, all severity 1–3
-  findings are closed, and the closure checkpoint is integrated and pushed.
+- **Exact next action:** perform the M34-FINAL hygiene audit with the two
+  read-only specialist audits required by
+  `.agents/skills/repo-hygiene-pruning/SKILL.md`; do not call M34 released until
+  archive/hygiene pruning, required validation, and the final synchronized
+  `master` checkpoint are complete.
 
 ## Ready-to-Use Orchestration Prompt
 

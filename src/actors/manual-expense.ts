@@ -217,6 +217,17 @@ function normalizeManualExpenseDraft(
   };
 }
 
+function draftForEditing(draft: ManualExpenseDraft): ManualExpenseDraft {
+  const normalized = normalizeManualExpenseDraft(draft);
+  return {
+    ...normalized,
+    // Text fields stay lossless while they are controlled by the form. Their
+    // normalized values are still used for validation and commit.
+    merchant: draft.merchant,
+    description: draft.description,
+  };
+}
+
 function basicValidation(
   draft: ManualExpenseDraft,
 ): ManualExpenseValidationErrors {
@@ -480,10 +491,9 @@ async function hydrateExpense(
       const values = await tx.query<JsonValue>("records");
       return {
         revision: snapshot.revision,
-        // Keep the draft exactly as entered while the form is editable. The
-        // normalized value is used for validation and commit, not for
-        // re-rendering a controlled input after every keystroke.
-        draft: storageDraft(candidate),
+        // Keep text fields exactly as entered while the form is editable. The
+        // other draft values retain their existing normalization behavior.
+        draft: draftForEditing(candidate),
         originalExpense,
         suggestions: merchantSuggestionsFromValues(
           values,
@@ -643,7 +653,9 @@ const manualExpenseSetup = setup({
   actions: {
     persistDraftChange: assign({
       draft: ({ context, event }) =>
-        event.type === "expense.change" ? event.draft : context.draft,
+        event.type === "expense.change"
+          ? draftForEditing(event.draft)
+          : context.draft,
       validation: () => ({}),
       error: () => null,
       persistenceRevision: ({ context }) => context.persistenceRevision + 1,
@@ -813,6 +825,8 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           { target: "saving", guard: "hasValidDraft" },
           {
             actions: assign({
+              draft: ({ context }) =>
+                context.draft === null ? null : draftForEditing(context.draft),
               validation: ({ context }) =>
                 context.draft === null
                   ? { amount: "Amount is required." }
@@ -824,6 +838,8 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           { target: "savingForAnother", guard: "hasValidDraft" },
           {
             actions: assign({
+              draft: ({ context }) =>
+                context.draft === null ? null : draftForEditing(context.draft),
               validation: ({ context }) =>
                 context.draft === null
                   ? { amount: "Amount is required." }

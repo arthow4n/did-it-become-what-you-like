@@ -489,6 +489,59 @@ Deno.test("manual-expense: merchant suggestions can be chosen and cleared", asyn
   actor.stop();
 });
 
+Deno.test(
+  "manual-expense: preserves spaces while editing and normalizes only on save",
+  async () => {
+    const harness = await createHarness();
+    const first = createExpenseActor(harness, "workflow:spaces");
+    first.send({ type: "expense.open" });
+    await settle();
+    const initial = first.getSnapshot().context.draft;
+    assert(initial !== null);
+
+    first.send({
+      type: "expense.change",
+      draft: draftWith(initial, {
+        amount: "12.50",
+        merchant: "Local",
+        description: "Lunch",
+      }),
+    });
+    await settle();
+    first.send({
+      type: "expense.change",
+      draft: draftWith(first.getSnapshot().context.draft!, {
+        merchant: "Local ",
+        description: "Lunch ",
+      }),
+    });
+    await settle();
+
+    assertEquals(first.getSnapshot().context.draft?.merchant, "Local ");
+    assertEquals(first.getSnapshot().context.draft?.description, "Lunch ");
+    first.stop();
+
+    const reloaded = createExpenseActor(harness, "workflow:spaces");
+    reloaded.send({ type: "expense.hydrate" });
+    await settle();
+    assertEquals(reloaded.getSnapshot().context.draft?.merchant, "Local ");
+    assertEquals(reloaded.getSnapshot().context.draft?.description, "Lunch ");
+
+    reloaded.send({ type: "expense.submit" });
+    await settle();
+    assertEquals(reloaded.getSnapshot().value, "saved");
+    assertEquals(
+      reloaded.getSnapshot().context.result?.expense.merchant,
+      "Local",
+    );
+    assertEquals(
+      reloaded.getSnapshot().context.result?.expense.description,
+      "Lunch",
+    );
+    reloaded.stop();
+  },
+);
+
 Deno.test("manual-expense: draft survives reload and discard confirmation clears it", async () => {
   const harness = await createHarness();
   const first = createExpenseActor(harness, "workflow:reload");

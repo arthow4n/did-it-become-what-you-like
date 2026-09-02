@@ -12,12 +12,13 @@ const head = 'a'.repeat(40);
 const base = 'b'.repeat(40);
 const repo = 'owner/repo';
 
-async function resolve({ kind = 'issue_comment', body = `/ci build ${head}`, permission = 'write', state = 'open', fork = false, current = head, status = 200, inputs } = {}) {
+async function resolve({ kind = 'issue_comment', body = `/ci build ${head}`, permission = 'write', state = 'open', fork = false, current = head, status = 200, inputs, deleted = false } = {}) {
   const event = {
     comment: { body, user: { login: 'owner' } },
     issue: { number: 12 }, sender: { login: 'owner' },
     pull_request: { number: 12, head: { sha: head } },
-    inputs: inputs || { pr: '12', profile: 'build', sha: head },
+    inputs: inputs || { branch: 'agent-validation/build/test', profile: 'build', sha: head },
+    repository: { default_branch: 'master' }, ref: 'refs/heads/agent-validation/build/test', after: head, deleted,
   };
   const output = {};
   const process = { env: { GITHUB_EVENT_PATH: 'event', GITHUB_REPOSITORY: repo, GITHUB_EVENT_NAME: kind,
@@ -30,7 +31,7 @@ async function resolve({ kind = 'issue_comment', body = `/ci build ${head}`, per
       return { readFileSync: () => JSON.stringify(event), appendFileSync: (file, data) => { output[file] = (output[file] || '') + data; } };
     },
     fetch: async url => ({ ok: status === 200, status,
-      json: async () => url.includes('/permission') ? { permission } : {
+      json: async () => url.includes('/permission') ? { permission } : url.includes('/branches/') ? { commit: { sha: url.endsWith('/master') ? base : current } } : {
         state, head: { sha: current, repo: { full_name: fork ? 'other/repo' : repo } },
         base: { sha: base, repo: { full_name: repo } },
       },
@@ -49,13 +50,15 @@ for (const [name, options] of Object.entries({
   'read-only requester': { permission: 'read' },
   'stale revision': { current: 'c'.repeat(40) },
   'fork source': { fork: true },
+  'stale push': { kind: 'push', current: 'c'.repeat(40) },
+  'deleted branch': { kind: 'push', deleted: true },
   'closed PR': { state: 'closed' },
   'API failure': { status: 403 },
   'shell injection': { body: `/ci build ${head}; echo injected` },
   'missing revision': { body: '/ci build' },
   'unknown profile': { body: `/ci shell ${head}` },
   'multiline request': { body: `/ci build ${head}\necho injected` },
-  'dispatch injection': { kind: 'workflow_dispatch', inputs: { pr: '12/../../x', profile: 'full', sha: head } },
+  'dispatch injection': { kind: 'workflow_dispatch', inputs: { branch: 'bad\nbranch', profile: 'full', sha: head } },
 })) {
   test(`rejects ${name} without execution outputs`, async () => {
     const result = await resolve(options);
@@ -64,6 +67,11 @@ for (const [name, options] of Object.entries({
     assert.equal(result.errors.length, 1);
   });
 }
+test('push and dispatch need no PR', async () => {
+  const result = await resolve({ kind: 'push' });
+  assert.equal(result.code, 0);
+  assert.equal(result.output.out, `sha=${head}\nbase=${base}\nprofile=build\npr=agent-validation/build/test\n`);
+});
 test('dispatch and automatic runner PR check resolve the requested revision', async () => {
   assert.equal((await resolve({ kind: 'workflow_dispatch' })).code, 0);
   const result = await resolve({ kind: 'pull_request', permission: 'read' });

@@ -5,33 +5,41 @@ as a remote executor. Do not treat a blocked local command as passing. Choose th
 narrowest profile that covers the change; import-graph tests do not cover CSS,
 HTML, build/deployment configuration, or browser integration.
 
-## Request a run
+## Request a run without a PR (preferred)
 
-1. Commit and push to a branch, then open or reuse a draft PR in this repository.
-2. Obtain the full current PR head SHA. Post a new PR conversation comment:
-   `/ci affected <40-character-head-sha>` (replace the placeholder).
-3. Open **Actions → Agent validation** and find the run for that PR/comment.
-   Inspect the `resolve` job for the frozen head/base/profile, then the
-   `validate` job for actual commands and results. Use the Actions run/jobs/logs
-   API when available. The issue-comment run's own `head_sha` refers to the
-   default branch, so do not discover these runs only by the tested commit SHA.
+1. Work on a branch named `agent-validation/<profile>/<task>`, for example
+   `agent-validation/affected/fix-total`. Commit and push normally. Every push
+   runs the selected profile against that exact pushed SHA; no PR is required.
+2. Use `affected`, `build`, `full`, `e2e`, or `gallery` as the profile segment.
+   To select another profile for the same commit, push it to another validation
+   branch, for example `git push origin HEAD:agent-validation/build/fix-total`.
+3. Find the **Agent validation** run in Actions or list workflow runs by the
+   pushed SHA. Inspect the resolver's frozen head/base/profile and the execution
+   job's commands and conclusion. The comparison base is the default branch's
+   SHA at resolution time. A superseded branch-head request is rejected.
 4. Record the run URL, tested SHA, base SHA, profile, exact commands, and outcome.
-   A queued, skipped, cancelled, timed-out, rejected, or missing run is not a pass.
-   Check the current PR head again before claiming the evidence covers it.
-5. On failure, read the failing step's logs, fix the cause, push a new commit,
-   and request the narrowest appropriate profile for the new SHA. Avoid repeating
-   an umbrella suite and its constituents against the same revision. Wait with
-   substantial backoff or a completion notification; do not poll rapidly.
+   Queued, skipped, cancelled, timed-out, rejected, or missing runs are not passes.
+   After fixes, push a new commit and validate that SHA. Wait with substantial
+   backoff or a completion notification rather than rapid polling.
 
-The comment listener becomes available after this workflow is merged into the
-default branch. Changes to the runner workflow/tests automatically exercise
-`affected` on same-repository PRs before merge. For manual invocation after
-installation, **Actions → Agent validation → Run workflow** accepts `pr`,
-`profile`, and `sha`; select the default branch for the workflow definition.
-Editing an existing comment does not trigger another run; post a new request.
+After installation on the default branch, **Actions → Agent validation → Run
+workflow** can validate any same-repository branch: select the default branch
+as the workflow definition and enter `branch`, `profile`, and its exact `sha`.
+This manual route also requires no PR. Prefer it when the environment can
+invoke workflow dispatch; branch pushes work with the GitHub connector too.
 
-If the environment cannot push, comment, or read Actions results, report that
-specific blocker and the required command rather than claiming validation.
+## Optional PR comment route
+
+On an open same-repository PR, post a new comment:
+`/ci affected <40-character-head-sha>` (replace the placeholder).
+The listener becomes active after merge into the default branch. Editing an
+existing comment does not retrigger it. Find the run by PR/comment in Actions;
+issue-comment runs have the default branch as their own `head_sha`, not the
+PR SHA. Read the frozen SHA from the resolver and validation job instead.
+Changes to this workflow or its tests also run `affected` on PRs before merge.
+
+If the environment cannot push/dispatch or read Actions results, report that
+specific blocker and required command rather than claiming validation.
 
 ## Profiles
 
@@ -47,17 +55,19 @@ base/head merge-base. Exact commands are logged by the execution step.
 | `gallery` | Install Chromium OS dependencies, then `deno task gallery:verify` (builds the gallery and installs its pinned browser itself) |
 
 Unlike the local `test:affected` task, the remote test command explicitly supplies
-the frozen PR base SHA to `--changed`. A clean checkout without that reference
-would not select the PR's committed changes. Zero selected tests are possible
+the frozen comparison base SHA to `--changed`. A clean checkout without that reference
+would not select the branch's committed changes. Zero selected tests are possible
 for non-module edits and are not proof of their behavior: select additional
 checks according to risk. Browser outputs remain in the job workspace; this
 workflow does not publish screenshots, traces, or application artifacts.
 
 ## Trust and final acceptance
 
-Explicit requests require current repository write, maintain, or admin permission.
-Only open same-repository PRs are accepted, and the requested SHA must match the
-current head at resolution time. Fork PR commands are rejected. API errors fail
+Comment and manual requests require current repository write, maintain, or admin
+permission. Push requests rely on GitHub repository push permissions.
+Branch requests need no PR. PR requests require an open same-repository PR.
+The requested SHA must match the current head at resolution time. Fork PR
+commands are rejected. API errors fail
 closed. Profiles accept no arbitrary commands, paths, or shell fragments.
 
 Authorization runs in a separate job without checking out PR code. The execution
@@ -67,16 +77,17 @@ runners. Do not add write tokens or secrets to this job. The PR code still runs
 with normal hosted-runner capabilities; this workflow is not a stronger sandbox
 for malicious code.
 
-A new request cancels older execution for the same PR/profile. Evidence belongs
+A new request cancels older execution for the same branch-or-PR/profile. Evidence belongs
 to the frozen SHA/base and never automatically transfers to a later revision.
 The workflow uses normal failure status; it does not mask failures to mute alerts.
 Results live in Actions logs and summaries without automatic PR comment replies.
 
 Ordinary draft PRs use on-demand profiles. CI runs full `deno task verify` when a
 PR opens ready for review, becomes ready, reopens, or receives new commits while
-ready. Branch-only pushes do not run CI. The Pages deployment quality gate is
+ready. Ordinary branch pushes retain full CI. Validation branches skip that duplicate
+full run and execute only their selected profile. The Pages deployment quality gate is
 unchanged. Before final acceptance, inspect the successful full CI result for
-the current PR revision; lightweight validation is not a release gate.
+the current revision (or run the `full` profile when working without a PR); lightweight validation is not a release gate.
 
 ## Notifications
 

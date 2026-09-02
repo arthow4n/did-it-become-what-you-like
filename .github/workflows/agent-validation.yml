@@ -1,13 +1,16 @@
 name: Agent validation
-run-name: Agent validation • PR ${{ github.event.issue.number || github.event.pull_request.number || inputs.pr }} • ${{ inputs.profile || github.event.comment.body || 'affected' }}
+run-name: Agent validation • ${{ github.event.issue.number || github.event.pull_request.number || inputs.branch || github.ref_name }} • ${{ inputs.profile || github.event.comment.body || 'affected' }}
 
 on:
+  push:
+    branches:
+      - agent-validation/**
   issue_comment:
     types: [created]
   workflow_dispatch:
     inputs:
-      pr:
-        description: Open same-repository PR number
+      branch:
+        description: Same-repository branch to validate (no PR required)
         required: true
       profile:
         description: Validation profile
@@ -15,7 +18,7 @@ on:
         options: [affected, build, full, e2e, gallery]
         required: true
       sha:
-        description: Exact current PR head SHA (40 lowercase hex characters)
+        description: Exact current branch head SHA (40 lowercase hex characters)
         required: true
   # Exercise changes to this runner before the comment listener is merged.
   pull_request:
@@ -60,14 +63,20 @@ jobs:
             return response.json();
           }
           async function main() {
-            let pr, profile, requestedSha;
+            let pr, branch, profile, requestedSha;
             if (kind === 'issue_comment') {
               const match = event.comment.body.trim().match(/^\/ci (affected|build|full|e2e|gallery) ([0-9a-f]{40})$/);
               if (!match) throw new Error('Use /ci <affected|build|full|e2e|gallery> <40-character head SHA>');
               [, profile, requestedSha] = match;
               pr = event.issue.number;
             } else if (kind === 'workflow_dispatch') {
-              ({ pr, profile, sha: requestedSha } = event.inputs);
+              ({ branch, profile, sha: requestedSha } = event.inputs);
+            } else if (kind === 'push') {
+              if (event.deleted) throw new Error('Deleted branch');
+              branch = event.ref.replace(/^refs\/heads\//, '');
+              profile = branch.split('/')[1];
+              requestedSha = event.after;
+              if (!branch.startsWith('agent-validation/')) throw new Error('Invalid validation branch');
             } else if (kind === 'pull_request') {
               pr = event.pull_request.number;
               profile = 'affected';
@@ -75,27 +84,38 @@ jobs:
             } else {
               throw new Error('Unsupported event');
             }
-            if (!/^[1-9][0-9]*$/.test(String(pr)) || !profiles.has(profile) || !/^[0-9a-f]{40}$/.test(requestedSha)) {
+            if ((!branch && !/^[1-9][0-9]*$/.test(String(pr))) ||
+                (branch && !/^[A-Za-z0-9._/-]+$/.test(branch)) ||
+                !profiles.has(profile) || !/^[0-9a-f]{40}$/.test(requestedSha)) {
               throw new Error('Invalid PR, profile, or SHA');
             }
             // Automatic PR checks are read-only; explicit commands require write permission.
-            if (kind !== 'pull_request') {
+            if (kind === 'issue_comment' || kind === 'workflow_dispatch') {
               const login = kind === 'issue_comment' ? event.comment.user.login : event.sender.login;
               const permission = await api(`collaborators/${encodeURIComponent(login)}/permission`);
               if (!['admin', 'maintain', 'write'].includes(permission.permission)) {
                 throw new Error('Requester needs repository write permission');
               }
             }
-            const pull = await api(`pulls/${pr}`);
-            if (pull.state !== 'open' || pull.head.repo?.full_name !== repo || pull.base.repo?.full_name !== repo) {
-              throw new Error('Only open same-repository PRs are supported');
+            let baseSha;
+            if (branch) {
+              const source = await api(`branches/${encodeURIComponent(branch)}`);
+              if (source.commit.sha !== requestedSha) throw new Error('Stale request: SHA is no longer the branch head');
+              const target = await api(`branches/${encodeURIComponent(event.repository.default_branch)}`);
+              baseSha = target.commit.sha;
+            } else {
+              const pull = await api(`pulls/${pr}`);
+              if (pull.state !== 'open' || pull.head.repo?.full_name !== repo || pull.base.repo?.full_name !== repo) {
+                throw new Error('Only open same-repository PRs are supported');
+              }
+              if (pull.head.sha !== requestedSha) throw new Error('Stale request: SHA is no longer the PR head');
+              baseSha = pull.base.sha;
             }
-            if (pull.head.sha !== requestedSha) throw new Error('Stale request: SHA is no longer the PR head');
-            if (!/^[0-9a-f]{40}$/.test(pull.base.sha)) throw new Error('Invalid base SHA');
+            if (!/^[0-9a-f]{40}$/.test(baseSha)) throw new Error('Invalid base SHA');
             fs.appendFileSync(process.env.GITHUB_OUTPUT,
-              `sha=${requestedSha}\nbase=${pull.base.sha}\nprofile=${profile}\npr=${pr}\n`);
+              `sha=${requestedSha}\nbase=${baseSha}\nprofile=${profile}\npr=${pr || branch}\n`);
             fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-              `PR: ${pr}\n\nProfile: ${profile}\n\nHead: ${requestedSha}\n\nBase: ${pull.base.sha}\n`);
+              `Target: ${pr || branch}\n\nProfile: ${profile}\n\nHead: ${requestedSha}\n\nBase: ${baseSha}\n`);
           }
           main().catch(error => { console.error(error.message); process.exitCode = 1; });
           NODE

@@ -122,6 +122,11 @@
   and should rerun only risk-selected commands. Do not mechanically repeat the
   implementer's complete command matrix. After a fix, rerun affected validation;
   repeat the CI quality gate only when shared or cross-cutting code changed.
+- If sandbox restrictions prevent required validation, follow
+  `.github/AGENT_VALIDATION.md`: push the exact revision, request the narrowest
+  appropriate remote profile, and inspect its result and failing logs. Never
+  infer success from a blocked command or a different commit. Draft PRs use
+  on-demand validation; ready-for-review PRs run the full CI quality gate.
 - Record exact commands and results. An unsupported summary such as “tests pass”
   is not sufficient evidence, but evidence collection must not cause an
   otherwise identical command to be repeated without a stated risk reason.

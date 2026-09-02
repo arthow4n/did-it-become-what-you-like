@@ -1,0 +1,168 @@
+name: Agent validation
+run-name: Agent validation • PR ${{ github.event.issue.number || github.event.pull_request.number || inputs.pr }} • ${{ inputs.profile || github.event.comment.body || 'affected' }}
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Open same-repository PR number
+        required: true
+      profile:
+        description: Validation profile
+        type: choice
+        options: [affected, build, full, e2e, gallery]
+        required: true
+      sha:
+        description: Exact current PR head SHA (40 lowercase hex characters)
+        required: true
+  # Exercise changes to this runner before the comment listener is merged.
+  pull_request:
+    paths:
+      - .github/workflows/agent-validation.yml
+      - .github/tests/agent-validation.test.cjs
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  resolve:
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.issue.pull_request && startsWith(github.event.comment.body, '/ci '))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.request.outputs.sha }}
+      base: ${{ steps.request.outputs.base }}
+      profile: ${{ steps.request.outputs.profile }}
+      pr: ${{ steps.request.outputs.pr }}
+    steps:
+      - name: Authorize request and freeze revisions
+        id: request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+          const repo = process.env.GITHUB_REPOSITORY;
+          const kind = process.env.GITHUB_EVENT_NAME;
+          const profiles = new Set(['affected', 'build', 'full', 'e2e', 'gallery']);
+          async function api(path) {
+            const response = await fetch(`${process.env.GITHUB_API_URL}/repos/${repo}/${path}`, {
+              headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
+            });
+            if (!response.ok) throw new Error(`GitHub API ${response.status}: ${path}`);
+            return response.json();
+          }
+          async function main() {
+            let pr, profile, requestedSha;
+            if (kind === 'issue_comment') {
+              const match = event.comment.body.trim().match(/^\/ci (affected|build|full|e2e|gallery) ([0-9a-f]{40})$/);
+              if (!match) throw new Error('Use /ci <affected|build|full|e2e|gallery> <40-character head SHA>');
+              [, profile, requestedSha] = match;
+              pr = event.issue.number;
+            } else if (kind === 'workflow_dispatch') {
+              ({ pr, profile, sha: requestedSha } = event.inputs);
+            } else if (kind === 'pull_request') {
+              pr = event.pull_request.number;
+              profile = 'affected';
+              requestedSha = event.pull_request.head.sha;
+            } else {
+              throw new Error('Unsupported event');
+            }
+            if (!/^[1-9][0-9]*$/.test(String(pr)) || !profiles.has(profile) || !/^[0-9a-f]{40}$/.test(requestedSha)) {
+              throw new Error('Invalid PR, profile, or SHA');
+            }
+            // Automatic PR checks are read-only; explicit commands require write permission.
+            if (kind !== 'pull_request') {
+              const login = kind === 'issue_comment' ? event.comment.user.login : event.sender.login;
+              const permission = await api(`collaborators/${encodeURIComponent(login)}/permission`);
+              if (!['admin', 'maintain', 'write'].includes(permission.permission)) {
+                throw new Error('Requester needs repository write permission');
+              }
+            }
+            const pull = await api(`pulls/${pr}`);
+            if (pull.state !== 'open' || pull.head.repo?.full_name !== repo || pull.base.repo?.full_name !== repo) {
+              throw new Error('Only open same-repository PRs are supported');
+            }
+            if (pull.head.sha !== requestedSha) throw new Error('Stale request: SHA is no longer the PR head');
+            if (!/^[0-9a-f]{40}$/.test(pull.base.sha)) throw new Error('Invalid base SHA');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,
+              `sha=${requestedSha}\nbase=${pull.base.sha}\nprofile=${profile}\npr=${pr}\n`);
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+              `PR: ${pr}\n\nProfile: ${profile}\n\nHead: ${requestedSha}\n\nBase: ${pull.base.sha}\n`);
+          }
+          main().catch(error => { console.error(error.message); process.exitCode = 1; });
+          NODE
+
+  validate:
+    needs: resolve
+    name: ${{ needs.resolve.outputs.profile }} • ${{ needs.resolve.outputs.sha }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: agent-validation-${{ needs.resolve.outputs.pr }}-${{ needs.resolve.outputs.profile }}
+      cancel-in-progress: true
+    steps:
+      - name: Check out exact requested revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check runner contracts
+        run: node --test .github/tests/agent-validation.test.cjs
+      - name: Set up Deno
+        uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
+        with:
+          deno-version: v2.9.5
+      - name: Run requested profile
+        env:
+          PROFILE: ${{ needs.resolve.outputs.profile }}
+          HEAD_SHA: ${{ needs.resolve.outputs.sha }}
+          BASE_SHA: ${{ needs.resolve.outputs.base }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          git cat-file -e "$BASE_SHA^{commit}"
+          MERGE_BASE=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
+          printf 'Head: %s\nBase: %s\nMerge base: %s\nProfile: %s\n' \
+            "$HEAD_SHA" "$BASE_SHA" "$MERGE_BASE" "$PROFILE" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Trace the exact commands into the job log; failures remain failures.
+          set -x
+          git diff --check "$MERGE_BASE" "$HEAD_SHA"
+          case "$PROFILE" in
+            affected)
+              deno task fmt:check
+              deno task lint
+              deno test --allow-read --allow-write --allow-run --allow-env --changed="$BASE_SHA"
+              ;;
+            build)
+              deno task typecheck
+              deno task build
+              deno task release:verify
+              ;;
+            full)
+              deno task verify
+              ;;
+            e2e)
+              deno x -p npm:@playwright/test@1.62.1 playwright install --with-deps chromium
+              deno task test:e2e
+              ;;
+            gallery)
+              deno x -p npm:@playwright/test@1.62.1 playwright install-deps chromium
+              deno task gallery:verify
+              ;;
+            *) exit 2 ;;
+          esac
+      - name: Record job outcome
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+        run: 'printf "\nJob result: %s\n" "$RESULT" >> "$GITHUB_STEP_SUMMARY"'

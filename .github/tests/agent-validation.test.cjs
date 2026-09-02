@@ -107,3 +107,8 @@ for (const [profile, expected] of Object.entries({
     }
   });
 }
+
+// Notification smoke test only. Do not merge this branch.
+test('INTENTIONAL FAILURE: verify GitHub Actions notification email', () => {
+  assert.fail('Expected failure requested by the owner to configure a Gmail filter.');
+});

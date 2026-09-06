@@ -2550,7 +2550,7 @@ export function ManualExpenseScreen({
   const completionHandled = useRef(false);
   const usefulActionHandled = useRef(false);
   const notifiedResultId = useRef<string | null>(null);
-  const addAnotherResultId = useRef<string | null>(null);
+  const savedResultId = useRef<string | null>(null);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
   const syncStatus = useSyncStatus();
   const saveMode = useRef<ManualSaveMode>("expenses");
@@ -2572,12 +2572,9 @@ export function ManualExpenseScreen({
       notifiedResultId.current = savedExpense.id;
       syncStatus?.notifyLocalMutation();
     }
-    if (
-      completedSave && saveMode.current === "another" &&
-      addAnotherResultId.current !== savedExpense.id
-    ) {
-      addAnotherResultId.current = savedExpense.id;
-      onSaved(savedExpense, "another");
+    if (completedSave && savedResultId.current !== savedExpense.id) {
+      savedResultId.current = savedExpense.id;
+      onSaved(savedExpense, saveMode.current);
     }
     if (completionHandled.current) return;
     if (snapshot.matches("deleted")) {
@@ -2585,12 +2582,6 @@ export function ManualExpenseScreen({
       return;
     }
     if (
-      snapshot.matches("saved") && snapshot.context.result?.expense &&
-      saveMode.current === "another"
-    ) {
-      completionHandled.current = true;
-      onSaved(snapshot.context.result.expense, saveMode.current);
-    } else if (
       snapshot.matches("discarded") || snapshot.matches("cancelled") ||
       snapshot.matches("deletedOutput") || snapshot.matches("savedOutput") ||
       snapshot.matches("savedUndone")
@@ -3613,7 +3604,20 @@ export function LocalUiRuntime(
                 service={organization}
                 state={state}
                 request={manualRequest}
-                onSaved={() => {
+                onSaved={(expense) => {
+                  setState((current) => {
+                    if (current === null) return current;
+                    const existingIndex = current.expenses.findIndex((entry) =>
+                      entry.id === expense.id
+                    );
+                    const expenses = existingIndex === -1
+                      ? [...current.expenses, expense]
+                      : current.expenses.map((entry, index) =>
+                        index === existingIndex ? expense : entry
+                      );
+                    return { ...current, expenses };
+                  });
+                  sendShell({ type: "shell.repository.refresh" });
                   void organization.getState().then(setState);
                 }}
                 onUsefulAction={() =>

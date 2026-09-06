@@ -594,6 +594,7 @@ Deno.test("local UI manual saves notify when Drive authorization has expired", a
       const { service } = createTestService(state);
       let notices = 0;
       let closed = 0;
+      let saved: Expense | undefined;
       const syncStatus: SyncStatusContextValue = {
         view: {
           mode: "configured",
@@ -617,7 +618,7 @@ Deno.test("local UI manual saves notify when Drive authorization has expired", a
             service,
             state,
             request: { projectId: project.id },
-            onSaved: () => undefined,
+            onSaved: (expense) => saved = expense,
             onClosed: () => closed++,
           }),
         ),
@@ -634,6 +635,7 @@ Deno.test("local UI manual saves notify when Drive authorization has expired", a
         assert(view.getByRole("heading", { name: "Expense saved" }))
       );
       assert(notices === 1, "A successful local save should notify once");
+      assert(saved?.categoryId === category.id);
       assert(closed === 0, "The completion state should remain visible");
     });
   });

@@ -196,12 +196,7 @@ function defaultIds(): Pick<IdPort, "next"> {
 function normalizeManualExpenseDraft(
   draft: ManualExpenseDraft,
 ): ManualExpenseDraft {
-  let amount = draft.amount.trim();
-  try {
-    amount = canonicalDecimal(amount);
-  } catch {
-    // Keep invalid input visible so the field can explain and correct it.
-  }
+  const amount = draft.amount.trim();
   const merchant = draft.merchant?.trim() || undefined;
   const time = draft.time?.trim() || undefined;
   return {
@@ -221,11 +216,24 @@ function draftForEditing(draft: ManualExpenseDraft): ManualExpenseDraft {
   const normalized = normalizeManualExpenseDraft(draft);
   return {
     ...normalized,
-    // Text fields stay lossless while they are controlled by the form. Their
-    // normalized values are still used for validation and commit.
+    // Keep editable fields lossless while they are controlled by the form.
+    // Their normalized values are still used for validation and commit.
+    amount: draft.amount.trim(),
     merchant: draft.merchant,
     description: draft.description,
   };
+}
+
+function canonicalManualExpenseDraft(
+  draft: ManualExpenseDraft,
+): ManualExpenseDraft {
+  const normalized = normalizeManualExpenseDraft(draft);
+  try {
+    return { ...normalized, amount: canonicalDecimal(normalized.amount) };
+  } catch {
+    // Keep invalid input visible so the field can explain and correct it.
+    return normalized;
+  }
 }
 
 function basicValidation(
@@ -304,7 +312,11 @@ export function validateManualExpenseDraft(
   const errors = state === undefined
     ? basicValidation(normalized)
     : stateValidation(normalized, state);
-  return { valid: Object.keys(errors).length === 0, draft: normalized, errors };
+  return {
+    valid: Object.keys(errors).length === 0,
+    draft: canonicalManualExpenseDraft(normalized),
+    errors,
+  };
 }
 
 function draftFromExpense(expense: Expense): ManualExpenseDraft {

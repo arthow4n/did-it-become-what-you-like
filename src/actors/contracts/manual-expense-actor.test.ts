@@ -229,6 +229,32 @@ Deno.test("manual-expense: required and invalid decimals stay editable at the 03
   atActor.stop();
 });
 
+Deno.test("manual-expense: editing preserves trailing decimal zeros", async () => {
+  const harness = await createHarness();
+  const actor = createExpenseActor(harness, "workflow:decimal-editing");
+  actor.send({ type: "expense.open" });
+  await settle();
+  const draft = actor.getSnapshot().context.draft;
+  assert(draft !== null);
+
+  for (const amount of ["1", "12", "120", "120.", "120.0"]) {
+    actor.send({
+      type: "expense.change",
+      draft: draftWith(actor.getSnapshot().context.draft!, { amount }),
+    });
+    await settle();
+    assertEquals(actor.getSnapshot().context.draft?.amount, amount);
+  }
+
+  actor.send({
+    type: "expense.change",
+    draft: draftWith(actor.getSnapshot().context.draft!, { amount: "120.01" }),
+  });
+  await settle();
+  assertEquals(actor.getSnapshot().context.draft?.amount, "120.01");
+  actor.stop();
+});
+
 Deno.test("manual-expense: typed save completion supports add-another and saved undo", async () => {
   const harness = await createHarness();
   const addAnother = createExpenseActor(harness, "workflow:add-another");
@@ -565,7 +591,7 @@ Deno.test("manual-expense: draft survives reload and discard confirmation clears
   reloaded.send({ type: "expense.hydrate" });
   await settle();
   assertEquals(reloaded.getSnapshot().value, "editing");
-  assertEquals(reloaded.getSnapshot().context.draft?.amount, "7.5");
+  assertEquals(reloaded.getSnapshot().context.draft?.amount, "7.50");
   assertEquals(reloaded.getSnapshot().context.draft?.description, "Durable");
   reloaded.send({ type: "expense.back" });
   assertEquals(reloaded.getSnapshot().value, "discardConfirming");
@@ -599,7 +625,7 @@ Deno.test("manual-expense: repository failure retains input and retry saves", as
   await settle();
   assertEquals(actor.getSnapshot().value, "saveFailed");
   assertEquals(actor.getSnapshot().context.error?.code, "offline");
-  assertEquals(actor.getSnapshot().context.draft?.amount, "4");
+  assertEquals(actor.getSnapshot().context.draft?.amount, "4.00");
   harness.local.setScenario({ offline: false });
   actor.send({ type: "expense.retry" });
   await settle();

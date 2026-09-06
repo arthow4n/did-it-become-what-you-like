@@ -391,6 +391,7 @@ Deno.test("local UI hydrated manual drafts expose an in-form discard action", as
       );
       const { service } = createTestService(state);
       let closed = false;
+      let dirty = false;
       render(
         createElement(ManualExpenseScreen, {
           repository: local,
@@ -398,6 +399,7 @@ Deno.test("local UI hydrated manual drafts expose an in-form discard action", as
           state,
           request: {},
           onSaved: () => undefined,
+          onDirtyChange: (nextDirty) => dirty = nextDirty,
           onClosed: () => closed = true,
         }),
       );
@@ -407,6 +409,7 @@ Deno.test("local UI hydrated manual drafts expose an in-form discard action", as
       );
       fireEvent.click(view.getByRole("button", { name: "Discard draft" }));
       await waitFor(() => assert(view.getByText("Discard unsaved changes?")));
+      assert(dirty, "The form must remain guarded while discard is pending");
       fireEvent.click(view.getByRole("button", { name: "Discard changes" }));
       await waitFor(() => assert(closed));
       assertEquals(await local.query("workflow-snapshots"), []);

@@ -595,9 +595,11 @@ Deno.test("manual-expense: draft survives reload and discard confirmation clears
   assertEquals(reloaded.getSnapshot().context.draft?.description, "Durable");
   reloaded.send({ type: "expense.back" });
   assertEquals(reloaded.getSnapshot().value, "discardConfirming");
+  assert(reloaded.getSnapshot().hasTag("dirty"));
   reloaded.send({ type: "expense.keep-editing" });
   assertEquals(reloaded.getSnapshot().value, "editing");
   reloaded.send({ type: "expense.discard" });
+  assert(reloaded.getSnapshot().hasTag("dirty"));
   reloaded.send({ type: "expense.confirm-discard" });
   await settle();
   assertEquals(reloaded.getSnapshot().value, "discarded");

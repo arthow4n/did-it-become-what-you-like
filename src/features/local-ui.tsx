@@ -176,6 +176,11 @@ export function selectedNavigationForPath(
   return "expenses";
 }
 
+function isManualExpensePath(path: string): boolean {
+  return path === "/add" || path === "/expense/new" ||
+    path.startsWith("/expense/edit/");
+}
+
 function shellRouteForPath(path: string): ShellRoute {
   if (path === "/first-use") return "first-use";
   if (path === "/add") return "add";
@@ -2593,8 +2598,9 @@ export function ManualExpenseScreen({
 
   const dirty = snapshot.hasTag("dirty");
   useEffect(() => {
+    if (snapshot.matches("idle")) return;
     onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
+  }, [dirty, onDirtyChange, snapshot]);
 
   useEffect(() => {
     if (
@@ -3010,14 +3016,17 @@ export function LocalUiRuntime(
   const [shellSnapshot, sendShell] = useActor(shellMachine);
   const [state, setState] = useState<ProjectCategoryState | null>(null);
   const [expenseDayBoundary, setExpenseDayBoundary] = useState("03:00");
-  const [path, setPath] = useState(pathFromHash);
+  const initialPath = pathFromHash();
+  const [path, setPath] = useState(initialPath);
   const [projectEditorOpen, setProjectEditorOpen] = useState(false);
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
   const [appNotice, setAppNotice] = useState<string | null>(null);
   const [usefulActionVersion, setUsefulActionVersion] = useState(0);
-  const [workflowDirty, setWorkflowDirty] = useState(false);
+  const [workflowDirty, setWorkflowDirty] = useState(() =>
+    isManualExpensePath(initialPath)
+  );
   const [dirtyNavigationWorkflow, setDirtyNavigationWorkflow] = useState(
-    false,
+    () => isManualExpensePath(initialPath),
   );
   const [dirtyExitOpen, setDirtyExitOpen] = useState(false);
   const [discardRequest, setDiscardRequest] = useState(0);
@@ -3131,6 +3140,12 @@ export function LocalUiRuntime(
 
   useEffect(() => {
     setDirtyDiscardDisabled(false);
+  }, [path]);
+
+  useEffect(() => {
+    if (!isManualExpensePath(path)) return;
+    setWorkflowDirty(true);
+    setDirtyNavigationWorkflow(true);
   }, [path]);
 
   useEffect(() => {
@@ -3604,7 +3619,11 @@ export function LocalUiRuntime(
                 service={organization}
                 state={state}
                 request={manualRequest}
-                onSaved={(expense) => {
+                onSaved={(expense, mode) => {
+                  if (mode === "expenses") {
+                    setWorkflowDirty(false);
+                    setDirtyNavigationWorkflow(false);
+                  }
                   setState((current) => {
                     if (current === null) return current;
                     const existingIndex = current.expenses.findIndex((entry) =>

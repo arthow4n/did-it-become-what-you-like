@@ -714,7 +714,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
       },
     },
     hydrating: {
-      tags: ["loading"],
+      tags: ["dirty", "loading"],
       invoke: {
         src: "hydrateDraft",
         input: ({ context }) => ({ key: context.persistenceKey }),
@@ -763,7 +763,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
       },
     },
     opening: {
-      tags: ["loading"],
+      tags: ["dirty", "loading"],
       invoke: {
         src: "openExpense",
         input: ({ context }) => context.openRequest ?? {},
@@ -1059,7 +1059,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
       },
     },
     openingAnother: {
-      tags: ["loading"],
+      tags: ["dirty", "loading"],
       invoke: {
         src: "openExpense",
         input: ({ context }) => context.openRequest ?? {},
@@ -1240,7 +1240,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
       },
     },
     discardConfirming: {
-      tags: ["confirming-discard"],
+      tags: ["dirty", "confirming-discard"],
       on: {
         "expense.keep-editing": "editing",
         "expense.cancel": "editing",
@@ -1249,7 +1249,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
       },
     },
     discarding: {
-      tags: ["saving"],
+      tags: ["dirty", "saving"],
       invoke: {
         src: "clearDraft",
         input: ({ context }) => ({ key: context.persistenceKey }),

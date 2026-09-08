@@ -4,6 +4,7 @@ import {
   isValidElement,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -3057,6 +3058,100 @@ export function MerchantPicker(
   );
 }
 
+export type CategoryPickerProps = {
+  label?: ReactNode;
+  categories: SelectOption[];
+  value?: string;
+  onValueChange?: (value: string) => void;
+  error?: ReactNode;
+  description?: ReactNode;
+  isDisabled?: boolean;
+  isRequired?: boolean;
+  recentCategoryIds?: string[];
+  maxQuickChips?: number;
+  className?: string;
+};
+
+export function CategoryPicker({
+  label = "Category",
+  categories,
+  value,
+  onValueChange,
+  error,
+  description,
+  isDisabled,
+  isRequired,
+  recentCategoryIds = [],
+  maxQuickChips = 5,
+  className,
+}: CategoryPickerProps) {
+  const activeCategories = categories.filter((c) => !c.disabled);
+  const quickOptions = useMemo(() => {
+    const result: SelectOption[] = [];
+    const addedIds = new Set<string>();
+
+    for (const id of recentCategoryIds) {
+      const match = activeCategories.find((c) => c.id === id);
+      if (match && !addedIds.has(match.id)) {
+        result.push(match);
+        addedIds.add(match.id);
+        if (result.length >= maxQuickChips) break;
+      }
+    }
+
+    if (result.length < maxQuickChips) {
+      for (const cat of activeCategories) {
+        if (!addedIds.has(cat.id)) {
+          result.push(cat);
+          addedIds.add(cat.id);
+          if (result.length >= maxQuickChips) break;
+        }
+      }
+    }
+
+    return result;
+  }, [activeCategories, recentCategoryIds, maxQuickChips]);
+
+  return (
+    <Stack gap={2} className={cx("ds-category-picker", className)}>
+      <SelectField
+        label={label}
+        options={categories}
+        value={value}
+        onValueChange={onValueChange}
+        searchable
+        placeholder="Search or select category"
+        error={error}
+        description={description}
+        isDisabled={isDisabled}
+        isRequired={isRequired}
+      />
+      {quickOptions.length > 0
+        ? (
+          <div
+            className="ds-category-picker__chips"
+            role="group"
+            aria-label="Quick category suggestions"
+          >
+            {quickOptions.map((opt) => (
+              <Button
+                key={opt.id}
+                type="button"
+                variant={opt.id === value ? "primary" : "secondary"}
+                isDisabled={isDisabled}
+                className="ds-category-picker__chip"
+                onPress={() => onValueChange?.(opt.id)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+        )
+        : null}
+    </Stack>
+  );
+}
+
 export type MoneySummaryItem = {
   label: string;
   amount: string;
@@ -3387,6 +3482,7 @@ export function ReceiptLineCard(
     onSelectedChange,
     onEdit,
     editControl,
+    categoryControl,
     onRemove,
   }: {
     line: ReceiptLineViewModel;
@@ -3396,6 +3492,7 @@ export function ReceiptLineCard(
     onSelectedChange?: (selected: boolean) => void;
     onEdit?: () => void;
     editControl?: ReactNode;
+    categoryControl?: ReactNode;
     onRemove?: () => void;
   },
 ) {
@@ -3421,7 +3518,7 @@ export function ReceiptLineCard(
       </Inline>
       <Inline justify="space-between">
         <Stack gap={1}>
-          <Text tone="secondary">{line.category}</Text>
+          {categoryControl ?? <Text tone="secondary">{line.category}</Text>}
           {line.quantity || line.unitPrice
             ? (
               <Text size="label" tone="muted">
@@ -3504,9 +3601,9 @@ export function ReceiptLineEditor(
         value={value.description}
         onChange={(description) => onChange({ ...value, description })}
       />
-      <SelectField
+      <CategoryPicker
         label="Category"
-        options={categories}
+        categories={categories}
         value={value.categoryId}
         onValueChange={(categoryId) => onChange({ ...value, categoryId })}
       />
@@ -3653,17 +3750,26 @@ export function ReceiptQuickSetup(
 }
 
 export function ExpenseForm(
-  { children, status, actions }: {
+  { children, status, actions, stickyActions = false }: {
     children?: ReactNode;
     status?: ReactNode;
     actions?: ReactNode;
+    stickyActions?: boolean;
   },
 ) {
   return (
     <FormLayout>
       {status}
       {children}
-      {actions ? <FormActions>{actions}</FormActions> : null}
+      {actions
+        ? (stickyActions
+          ? (
+            <StickyActionBar className="ds-form-actions--sticky">
+              {actions}
+            </StickyActionBar>
+          )
+          : <FormActions>{actions}</FormActions>)
+        : null}
     </FormLayout>
   );
 }

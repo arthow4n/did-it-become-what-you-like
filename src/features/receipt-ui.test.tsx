@@ -581,6 +581,108 @@ Deno.test("receipt-ui deselecting a purchase unlinks its adjustment", async () =
   });
 });
 
+Deno.test(
+  "receipt-ui review screen enables fast category picking directly on line cards",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(async () => {
+        const local = createFakeLocalPort();
+        const review: ReceiptReviewDraft = {
+          parent: {
+            merchant: "Grocery Store",
+            projectId: "project-receipt-ui-review",
+            date: "2026-08-30",
+            currency: "SEK",
+            printedTotal: "-20",
+          },
+          lines: [
+            {
+              id: "receipt-line-quick-cat",
+              type: "purchase",
+              description: "Apples",
+              categoryId: "category-uncategorized",
+              lineTotal: "-20",
+              selected: true,
+              uncertain: false,
+            },
+          ],
+          uncertainty: [],
+          printedTotalMismatch: false,
+        };
+        const state: ProjectCategoryState = {
+          projects: [{
+            schemaVersion: 1,
+            type: "project",
+            id: "project-receipt-ui-review",
+            name: "Receipt UI Project",
+            defaultCurrency: "SEK",
+            archived: false,
+          }],
+          categories: [
+            {
+              schemaVersion: 1,
+              type: "category",
+              id: "category-uncategorized",
+              name: "Uncategorized",
+              sortOrder: 0,
+              archived: false,
+              system: true,
+            },
+            {
+              schemaVersion: 1,
+              type: "category",
+              id: "category-groceries",
+              name: "Groceries",
+              sortOrder: 1,
+              archived: false,
+              system: false,
+            },
+            {
+              schemaVersion: 1,
+              type: "category",
+              id: "category-dining",
+              name: "Dining",
+              sortOrder: 2,
+              archived: false,
+              system: false,
+            },
+          ],
+          expenses: [],
+          receipts: [],
+          receiptPurchaseLines: [],
+          receiptAdjustments: [],
+          tombstones: [],
+          projectOrder: ["project-receipt-ui-review"],
+        };
+        render(
+          createElement(ReceiptReviewScreen, {
+            local,
+            state,
+            initialReview: review,
+            onClose: () => undefined,
+          }),
+        );
+        const view = within(document.body);
+        await waitFor(() =>
+          assert(view.getByRole("button", { name: /Category: Uncategorized/ }))
+        );
+        fireEvent.click(
+          view.getByRole("button", { name: /Category: Uncategorized/ }),
+        );
+        await waitFor(() =>
+          assert(view.getByRole("dialog", { name: "Change category" }))
+        );
+        const groceriesChip = view.getByRole("button", { name: "Groceries" });
+        assert(groceriesChip);
+        fireEvent.click(groceriesChip);
+        await waitFor(() =>
+          assert(view.getByRole("button", { name: /Category: Groceries/ }))
+        );
+      });
+    });
+  },
+);
+
 Deno.test("receipt-ui line editor cancel leaves the review line unchanged", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(async () => {

@@ -49,11 +49,12 @@ import type {
   ContractFailure,
   ReceiptImageRef,
 } from "../actors/contracts/index.ts";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, X } from "lucide-react";
 import {
   AdaptiveDialog,
   Button,
   Card,
+  CategoryPicker,
   Checkbox,
   ContentContainer,
   ErrorState,
@@ -1377,6 +1378,59 @@ export function LineEditorDialog({
   );
 }
 
+export function QuickCategoryDialog({
+  line,
+  categories,
+  onSelect,
+  isDisabled,
+}: {
+  line: ReceiptDraftLine;
+  categories: readonly Category[];
+  onSelect: (categoryId: string) => void;
+  isDisabled?: boolean;
+}) {
+  const currentCategory =
+    categories.find((c) => c.id === line.categoryId)?.name ??
+      line.categoryId;
+  const options = categoryOptions(categories);
+
+  return (
+    <AdaptiveDialog
+      trigger={
+        <Button
+          variant="quiet"
+          isDisabled={isDisabled}
+          className="ds-receipt-line-category-trigger"
+          aria-label={`Category: ${currentCategory}. Tap to change category.`}
+        >
+          <Inline gap={1}>
+            <span>{currentCategory}</span>
+            <ChevronDown size={14} />
+          </Inline>
+        </Button>
+      }
+      title="Change category"
+    >
+      {(close) => (
+        <Stack gap={4}>
+          <Text size="body" tone="secondary">
+            {line.description || "Unclear item"}
+          </Text>
+          <CategoryPicker
+            label="Category"
+            categories={options}
+            value={line.categoryId}
+            onValueChange={(categoryId) => {
+              onSelect(categoryId);
+              close();
+            }}
+          />
+        </Stack>
+      )}
+    </AdaptiveDialog>
+  );
+}
+
 export function ReceiptReviewScreen({
   local,
   state,
@@ -1687,6 +1741,18 @@ export function ReceiptReviewScreen({
                   lineId: line.id,
                   selected,
                 })}
+              categoryControl={
+                <QuickCategoryDialog
+                  line={line}
+                  categories={categories}
+                  isDisabled={snapshot.hasTag("saving")}
+                  onSelect={(categoryId) =>
+                    sendReview({
+                      type: "receipt.review.edit-line",
+                      line: { ...line, categoryId },
+                    })}
+                />
+              }
               editControl={
                 <LineEditorDialog
                   line={line}

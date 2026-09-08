@@ -48,6 +48,7 @@ import {
   Button,
   Card,
   CategoryBreakdown,
+  CategoryPicker,
   ColorChoiceField,
   ConfirmDialog,
   ContentContainer,
@@ -2562,6 +2563,19 @@ export function ManualExpenseScreen({
   const handledDiscardRequest = useRef(discardRequest ?? 0);
   const syncStatus = useSyncStatus();
   const saveMode = useRef<ManualSaveMode>("expenses");
+  const recentCategoryIds = useMemo(() => {
+    const seen = new Set<string>();
+    const recents: string[] = [];
+    for (let i = state.expenses.length - 1; i >= 0; i--) {
+      const catId = state.expenses[i]?.categoryId;
+      if (catId && !seen.has(catId)) {
+        seen.add(catId);
+        recents.push(catId);
+        if (recents.length >= 5) break;
+      }
+    }
+    return recents;
+  }, [state.expenses]);
 
   useEffect(() => {
     if (!snapshot.context.draft) {
@@ -2733,6 +2747,7 @@ export function ManualExpenseScreen({
           }
         />
         <ExpenseForm
+          stickyActions
           status={failed || deleteFailed || busy || isModified
             ? (
               <DraftStatus
@@ -2834,10 +2849,11 @@ export function ManualExpenseScreen({
             error={validation.description}
             isDisabled={formLocked}
           />
-          <SelectField
+          <CategoryPicker
             label="Category"
-            options={categories}
+            categories={categories}
             value={draft.categoryId}
+            recentCategoryIds={recentCategoryIds}
             onValueChange={(value) => update({ categoryId: value })}
             error={validation.categoryId}
             isDisabled={formLocked}

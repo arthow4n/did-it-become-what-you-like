@@ -12,6 +12,7 @@ import {
   Button,
   Card,
   CategoryBreakdown,
+  CategoryPicker,
   Checkbox,
   Chip,
   ColorChoiceField,
@@ -259,6 +260,27 @@ export function DesignSystemGallery() {
                   label: "Archived project (unavailable)",
                   disabled: true,
                 }]}
+              />
+              <CategoryPicker
+                label="Category"
+                value="groceries"
+                categories={[{ id: "groceries", label: "Groceries" }, {
+                  id: "dining",
+                  label: "Dining",
+                }, {
+                  id: "transport",
+                  label: "Transport",
+                }, {
+                  id: "utilities",
+                  label: "Utilities",
+                }, {
+                  id: "household",
+                  label: "Household",
+                }, {
+                  id: "entertainment",
+                  label: "Entertainment",
+                }]}
+                recentCategoryIds={["dining", "transport"]}
               />
               <PeriodPicker value={period} onValueChange={setPeriod} />
             </section>

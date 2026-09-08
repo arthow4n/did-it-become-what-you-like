@@ -17,6 +17,7 @@ import {
   Button,
   Card,
   CategoryBreakdown,
+  CategoryPicker,
   Checkbox,
   Chip,
   ColorChoiceField,
@@ -33,6 +34,7 @@ import {
   EmptyState,
   ErrorState,
   ErrorSummary,
+  ExpenseForm,
   ExpenseRow,
   FileField,
   FilterBar,
@@ -1370,6 +1372,97 @@ Deno.test("design-system period picker exposes a controlled custom calendar peri
       fireEvent.change(datePicker, { target: { value: "2026-09-03" } });
       assertEqual(kind, "month");
       assertEqual(date, "2026-09-03");
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system category picker prioritizes recents and handles chip selection", async () => {
+  await withComponentHarness(({ window, render, fireEvent }) =>
+    withAriaGlobals(window, async () => {
+      let selectedCategory = "groceries";
+      const mounted = render(
+        createElement(CategoryPicker, {
+          label: "Expense category",
+          categories: [
+            { id: "groceries", label: "Groceries" },
+            { id: "dining", label: "Dining" },
+            { id: "transport", label: "Transport" },
+            { id: "utilities", label: "Utilities" },
+            { id: "household", label: "Household" },
+            { id: "entertainment", label: "Entertainment" },
+          ],
+          recentCategoryIds: ["transport", "dining"],
+          value: selectedCategory,
+          onValueChange: (val) => selectedCategory = val,
+        }),
+      );
+      const view = within(document.body);
+      const chipsGroup = view.getByRole("group", {
+        name: "Quick category suggestions",
+      });
+      assert(chipsGroup, "Quick suggestions chips group must exist");
+
+      // The first chips should be the prioritized recents: Transport, Dining
+      const transportChip = view.getByRole("button", { name: "Transport" });
+      const diningChip = view.getByRole("button", { name: "Dining" });
+      assert(transportChip);
+      assert(diningChip);
+
+      // Click Transport chip
+      fireEvent.click(transportChip);
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      assertEqual(selectedCategory, "transport");
+
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system receipt line card renders categoryControl when provided", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaGlobals(window, () => {
+      const mounted = render(
+        createElement(ReceiptLineCard, {
+          line: {
+            id: "line-1",
+            type: "purchase",
+            description: "Apples",
+            category: "Groceries",
+            amount: "10.00",
+            selected: true,
+            uncertain: false,
+          },
+          currency: "SEK",
+          categoryControl: createElement(
+            "button",
+            { type: "button", "data-testid": "quick-cat-btn" },
+            "Quick Cat",
+          ),
+        }),
+      );
+      const view = within(document.body);
+      assert(view.getByTestId("quick-cat-btn"));
+      assertEqual(view.getByTestId("quick-cat-btn").textContent, "Quick Cat");
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system expense form renders sticky action bar when requested", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaGlobals(window, () => {
+      const mounted = render(
+        createElement(ExpenseForm, {
+          stickyActions: true,
+          actions: createElement(Button, null, "Save expense"),
+        }),
+      );
+      const view = within(document.body);
+      const button = view.getByRole("button", { name: "Save expense" });
+      assert(button);
+      const stickyBar = button.closest(".ds-form-actions--sticky");
+      assert(stickyBar, "Button must be inside .ds-form-actions--sticky");
       mounted.unmount();
     })
   );

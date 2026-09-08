@@ -1205,6 +1205,52 @@
     }
   }
 
+  .ds-form-actions--sticky {
+    margin-top: var(--space-4);
+  }
+
+  @media (max-width: 719px) {
+    .ds-form-actions--sticky {
+      flex-direction: column-reverse;
+      margin-inline: calc(var(--space-4) * -1);
+    }
+  }
+
+  .ds-category-picker__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  .ds-category-picker__chip {
+    border-radius: var(--radius-pill) !important;
+    font-size: var(--font-size-label) !important;
+    min-height: 32px !important;
+    height: auto !important;
+    padding: var(--space-1) var(--space-3) !important;
+  }
+
+  .ds-receipt-line-category-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 28px;
+    height: auto;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-label);
+    background: var(--color-surface-2);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  .ds-receipt-line-category-trigger:hover,
+  .ds-receipt-line-category-trigger:focus-visible {
+    color: var(--color-text-primary);
+    border-color: var(--color-border-strong);
+  }
+
   .ds-error-summary {
     border: 1px solid var(--color-danger);
     border-radius: var(--radius-card);

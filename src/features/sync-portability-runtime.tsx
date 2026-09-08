@@ -57,6 +57,7 @@ import {
 import {
   createDriveAdapter,
   createGoogleIdentityProvider,
+  createServerIdentityProvider,
   type DriveAdapter,
   type DriveAuthorizationOptions,
   type DriveIdentityProvider,
@@ -182,11 +183,39 @@ function browserConfiguredClientId(): string | undefined {
     : undefined;
 }
 
+function browserConfiguredSyncServerUrl(): string | undefined {
+  const env = (import.meta as unknown as {
+    readonly env?: { readonly VITE_SYNC_SERVER_URL?: unknown };
+  }).env;
+  return typeof env?.VITE_SYNC_SERVER_URL === "string"
+    ? env.VITE_SYNC_SERVER_URL
+    : undefined;
+}
+
 export function createConfiguredDriveAdapter(
   boundary: SyncRuntimeBoundary = configuredRuntimeBoundary(),
+  connectionMode: "persisted" | "direct" = "direct",
+  syncServerUrl?: string,
 ): DriveAdapter | null {
   if (boundary.drive !== undefined) return boundary.drive;
   const clientId = boundary.clientId ?? browserConfiguredClientId();
+
+  if (connectionMode === "persisted") {
+    const serverUrl = syncServerUrl ?? browserConfiguredSyncServerUrl();
+    if (serverUrl === undefined || serverUrl.trim().length === 0) return null;
+    try {
+      const identity = boundary.identity ??
+        createServerIdentityProvider({ serverUrl });
+      return createDriveAdapter({
+        clientId: clientId ?? "server-managed",
+        identity,
+        isOnline: () => globalThis.navigator?.onLine !== false,
+      });
+    } catch {
+      return null;
+    }
+  }
+
   if (clientId === undefined || clientId.trim().length === 0) return null;
   try {
     const identity = boundary.identity ?? createGoogleIdentityProvider();
@@ -959,9 +988,106 @@ export function SyncPortabilityRuntime({
 }) {
   const ids = useMemo(createRuntimeIds, []);
   const runtimeBoundary = useMemo(configuredRuntimeBoundary, []);
+
+  const [connectionMode, setConnectionMode] = useState<"persisted" | "direct">(
+    () => {
+      if (typeof globalThis.location !== "undefined") {
+        const url = new URL(globalThis.location.href);
+        if (url.searchParams.get("sync_connected") === "persisted") {
+          return "persisted";
+        }
+        try {
+          const saved = globalThis.localStorage?.getItem(
+            "did_it_drive_connection_mode",
+          );
+          if (saved === "persisted" || saved === "direct") return saved;
+        } catch {
+          // ignore
+        }
+      }
+      return "persisted";
+    },
+  );
+
+  const [syncServerUrl, setSyncServerUrl] = useState<string>(() => {
+    if (typeof globalThis.localStorage !== "undefined") {
+      try {
+        const saved = globalThis.localStorage.getItem("did_it_sync_server_url");
+        if (saved) return saved;
+      } catch {
+        // ignore
+      }
+    }
+    return browserConfiguredSyncServerUrl() ?? "";
+  });
+
+  const [syncError] = useState<string | null>(() => {
+    if (typeof globalThis.location !== "undefined") {
+      const url = new URL(globalThis.location.href);
+      if (url.searchParams.get("sync_error") === "unauthorized_account") {
+        const email = url.searchParams.get("email") ?? "Unknown";
+        return `Access Denied: Google account "${email}" is not authorized on this sync server. Add this email to ALLOWED_GOOGLE_EMAILS on the server to permit synchronization.`;
+      }
+    }
+    return null;
+  });
+
+  const handleConnectionModeChange = useCallback(
+    (nextMode: "persisted" | "direct") => {
+      setConnectionMode(nextMode);
+      try {
+        globalThis.localStorage?.setItem(
+          "did_it_drive_connection_mode",
+          nextMode,
+        );
+      } catch {
+        // ignore
+      }
+    },
+    [],
+  );
+
+  const handleSyncServerUrlChange = useCallback(
+    (nextUrl: string) => {
+      setSyncServerUrl(nextUrl);
+      try {
+        globalThis.localStorage?.setItem("did_it_sync_server_url", nextUrl);
+      } catch {
+        // ignore
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (typeof globalThis.location === "undefined") return;
+    const url = new URL(globalThis.location.href);
+    let changed = false;
+    if (url.searchParams.has("sync_connected")) {
+      url.searchParams.delete("sync_connected");
+      changed = true;
+    }
+    if (url.searchParams.has("sync_error")) {
+      url.searchParams.delete("sync_error");
+      changed = true;
+    }
+    if (url.searchParams.has("email")) {
+      url.searchParams.delete("email");
+      changed = true;
+    }
+    if (changed) {
+      globalThis.history?.replaceState(null, "", url.toString());
+    }
+  }, []);
+
   const driveAdapter = useMemo(
-    () => createConfiguredDriveAdapter(runtimeBoundary),
-    [runtimeBoundary],
+    () =>
+      createConfiguredDriveAdapter(
+        runtimeBoundary,
+        connectionMode,
+        syncServerUrl,
+      ),
+    [runtimeBoundary, connectionMode, syncServerUrl],
   );
   const causal = useMemo(
     () =>
@@ -1654,6 +1780,69 @@ export function SyncPortabilityRuntime({
     });
   };
 
+  const handleConnect = useCallback(
+    (mode: "persisted" | "direct" = connectionMode) => {
+      if (mode === "persisted") {
+        const serverUrl = syncServerUrl || browserConfiguredSyncServerUrl();
+        if (!serverUrl || serverUrl.trim().length === 0) {
+          onNotice("Please specify a valid Sync Server URL before connecting.");
+          return;
+        }
+        const cleanServerUrl = serverUrl.replace(/\/+$/, "");
+        const returnTo = globalThis.location?.href ?? "";
+        if (globalThis.location) {
+          globalThis.location.href =
+            `${cleanServerUrl}/auth/google-drive/login?return_to=${
+              encodeURIComponent(returnTo)
+            }`;
+        }
+      } else {
+        authorizeDrive(false);
+      }
+    },
+    [connectionMode, syncServerUrl, onNotice],
+  );
+
+  useEffect(() => {
+    if (connectionMode !== "persisted" || driveAdapter === null) return;
+    if (typeof globalThis.location !== "undefined") {
+      const url = new URL(globalThis.location.href);
+      if (url.searchParams.get("sync_connected") === "persisted") {
+        authorizeDrive(false);
+        return;
+      }
+    }
+    if (
+      syncView.mode === "configured" &&
+      driveAdapter.status() !== "authorized"
+    ) {
+      authorizeDrive(true);
+    }
+  }, [connectionMode, driveAdapter, syncView.mode]);
+
+  useEffect(() => {
+    if (connectionMode !== "persisted") return;
+    if (typeof document === "undefined") return;
+
+    const handleVisibilityChange = () => {
+      if (syncView.mode !== "configured" || syncView.network !== "online") {
+        return;
+      }
+      if (driveAdapter?.status() !== "authorized") return;
+
+      if (document.visibilityState === "visible") {
+        sendSync({ type: "sync.request", request: { reason: "launch" } });
+      } else if (document.visibilityState === "hidden") {
+        sendSync({ type: "sync.request", request: { reason: "manual" } });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [connectionMode, syncView, driveAdapter, sendSync]);
+
   const requestExport = (delivery: "download" | "share") => {
     const event: ExportEvent = {
       type: "export.request",
@@ -1768,7 +1957,12 @@ export function SyncPortabilityRuntime({
       <GoogleDriveSyncScreen
         view={syncView}
         knownDeviceCount={deviceProjection.devices.length}
-        onConnect={() => authorizeDrive()}
+        connectionMode={connectionMode}
+        syncServerUrl={syncServerUrl}
+        syncError={syncError}
+        onConnectionModeChange={handleConnectionModeChange}
+        onSyncServerUrlChange={handleSyncServerUrlChange}
+        onConnect={handleConnect}
         onRetry={() => sendSync({ type: "sync.retry" })}
         onRecoverCorruptData={() =>
           sendSync({ type: "sync.recover-corrupt-data" })}
@@ -1776,7 +1970,7 @@ export function SyncPortabilityRuntime({
           sendSync({ type: "sync.request", request: { reason: "manual" } })}
         onOpenConflicts={() => onNavigate("/settings/conflicts")}
         onManageDevices={() => onNavigate("/settings/devices")}
-        onSwitchAccount={() => authorizeDrive()}
+        onSwitchAccount={() => handleConnect(connectionMode)}
         onConfirmAccountSwitch={() =>
           sendSync({ type: "sync.account.confirm" })}
         onCancelAccountSwitch={() => sendSync({ type: "sync.account.cancel" })}

@@ -264,3 +264,33 @@ Deno.test(
     assert(refreshRequests === 1);
   },
 );
+
+Deno.test(
+  "createConfiguredDriveAdapter creates server-backed adapter when persisted mode has serverUrl",
+  () => {
+    // 1. Without serverUrl in persisted mode -> null
+    const noUrl = createConfiguredDriveAdapter({}, "persisted", "");
+    assert(noUrl === null);
+
+    // 2. With serverUrl in persisted mode -> DriveAdapter returned
+    const adapter = createConfiguredDriveAdapter(
+      {},
+      "persisted",
+      "https://sync.example.com",
+    );
+    assert(adapter !== null);
+    assert(typeof adapter.authorize === "function");
+    assert(typeof adapter.disconnect === "function");
+    assert(adapter.status() === "signed-out");
+
+    // 3. Direct mode requires clientId
+    const directNoCid = createConfiguredDriveAdapter({}, "direct");
+    assert(directNoCid === null);
+
+    const directWithCid = createConfiguredDriveAdapter({
+      clientId: "test-client-id",
+    }, "direct");
+    // Fails in test environment without GIS, cleanly returns null
+    assert(directWithCid === null);
+  },
+);

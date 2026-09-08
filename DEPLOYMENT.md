@@ -29,22 +29,74 @@ The About screen is the user-facing provenance surface: it shows version
 `0.1.0`, the short Git commit, the exact generative-AI disclosure, license and
 third-party notice links, and the repository source link.
 
-## Google Drive OAuth configuration
+## Google Drive synchronization modes
 
-Configure the public Google OAuth client ID before testing Drive on Pages:
+The application supports two independent Google Drive connection flows:
 
-1. In Google Cloud Console, select the app project and enable the Google Drive
-   API.
-2. Configure the OAuth consent screen. If the app is in Testing, add the Google
-   account used for the smoke test as a test user.
-3. Create an OAuth client ID with application type **Web application**.
-4. Add `https://arthow4n.github.io` as an authorized JavaScript origin. Do not
-   add the repository path.
-5. In GitHub, open **Settings → Secrets and variables → Actions → Variables**,
-   create `VITE_GOOGLE_CLIENT_ID`, and paste the client ID value. This client ID
-   is public; do not create or store a client secret for this static app.
-6. Run the Pages workflow, open the deployed app, and use **Settings → Google
-   Drive and sync → Connect Google Drive**.
+1. **Persisted connection (Server-backed)**:
+   - Uses a Deno Deploy backend server (`server/main.ts`) backed by Deno KV.
+   - Securely stores AES-GCM encrypted OAuth refresh tokens on the server and issues `HttpOnly; Secure; SameSite=None; Partitioned` session cookies to the browser.
+   - Persists connection across app and browser restarts without requiring reconnect clicks.
+   - **Enables automatic background synchronization**: Automatically triggers sync when the app is launched/foregrounded (`visibilitychange` to visible) and minimized/closed (`visibilitychange` to hidden).
+   - Enforces an **authorized user allow-list** (`ALLOWED_GOOGLE_EMAILS`); unlisted accounts receive a clear "Access Denied" error notice.
+
+2. **Direct connection (In-browser GIS)**:
+   - Uses Google Identity Services directly in the browser client.
+   - Access tokens are held in browser memory only and discarded when the tab or PWA closes.
+   - Manual, on-demand synchronization only (no automatic lifecycle-based sync).
+   - Requires clicking Reconnect when returning after app closure.
+
+---
+
+## Google Cloud Console OAuth setup
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/), create or select your project.
+2. Under **APIs & Services → Library**, enable the **Google Drive API**.
+3. Under **APIs & Services → OAuth consent screen**:
+   - Set user type (e.g. External or Internal).
+   - Configure app name and developer contact email.
+   - Add scopes:
+     - `https://www.googleapis.com/auth/drive.appdata` (access to app's private configuration folder)
+     - `https://www.googleapis.com/auth/userinfo.email` (read user's email for allow-list verification)
+   - If the publishing status is "Testing", add your authorized Google account(s) under **Test users**.
+4. Under **APIs & Services → Credentials**, create credentials of type **OAuth client ID**:
+   - Application type: **Web application**.
+   - **Authorized JavaScript origins**:
+     - `https://arthow4n.github.io` (your production frontend origin)
+     - `http://localhost:5173` (optional, for local Vite development)
+   - **Authorized redirect URIs**:
+     - `https://<your-sync-project>.deno.dev/auth/google-drive/callback` (your Deno Deploy server callback URL)
+     - `http://localhost:8000/auth/google-drive/callback` (optional, for local Deno server development)
+5. Save the generated **Client ID** and **Client Secret**.
+
+---
+
+## Deno Deploy backend setup (for Persisted mode)
+
+1. Sign in to [Deno Deploy](https://dash.deno.com/) and create a new project.
+2. Link your GitHub repository and select `server/main.ts` as the entrypoint.
+3. Under your project settings, ensure **Deno KV** is enabled (Deno Deploy includes built-in KV storage).
+4. Configure the following **Environment Variables** in the Deno Deploy dashboard:
+   - `GOOGLE_CLIENT_ID`: The Google OAuth Client ID created above.
+   - `GOOGLE_CLIENT_SECRET`: The Google OAuth Client Secret created above.
+   - `ALLOWED_GOOGLE_EMAILS`: Comma-separated list of allowed Google account emails (e.g. `owner@example.com,spouse@example.com`). If an unlisted user attempts to log in, authorization is blocked with an explicit 403 "Access Denied" message.
+   - `ENCRYPTION_SECRET`: A high-entropy random string (at least 32 characters) used for AES-GCM 256-bit refresh token encryption.
+   - `FRONTEND_ORIGIN`: The origin of your frontend app (e.g. `https://arthow4n.github.io` or `*`).
+   - `SERVER_ORIGIN` *(optional)*: The public origin of your Deno Deploy project (e.g. `https://<your-sync-project>.deno.dev`). If omitted, it is inferred from incoming request URLs.
+
+---
+
+## Frontend build and deployment configuration
+
+1. In your GitHub repository, open **Settings → Secrets and variables → Actions → Variables**:
+   - `VITE_GOOGLE_CLIENT_ID`: The Google OAuth Client ID (used for Direct GIS connection).
+   - `VITE_SYNC_SERVER_URL`: The URL of your Deno Deploy project, e.g. `https://<your-sync-project>.deno.dev` (used as the default server URL for Persisted connection).
+2. Trigger the GitHub Pages deployment workflow.
+3. In the deployed app:
+   - Open **Settings → Google Drive and sync**.
+   - Choose your preferred connection mode (**Persisted** or **Direct**).
+   - If using **Persisted**, verify or customize the Sync Server URL and click **Connect Google Drive**.
+   - If using **Direct**, click **Connect Google Drive** to initiate in-browser GIS consent.
 
 ## Local preflight
 

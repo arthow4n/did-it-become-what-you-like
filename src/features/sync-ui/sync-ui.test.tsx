@@ -605,3 +605,68 @@ Deno.test("known devices keep rename controls ordered after activation", async (
     });
   });
 });
+
+Deno.test("sync screen exposes persisted vs direct mode and sync error notices", async () => {
+  await withComponentHarness(async ({ render, fireEvent }) => {
+    await withAriaGlobals(() => {
+      let selectedMode: "persisted" | "direct" = "persisted";
+      let connectArg: string | undefined = undefined;
+      let urlValue = "https://sync.example.com";
+
+      const { rerender } = render(
+        createElement(GoogleDriveSyncScreen, {
+          view: { mode: "disconnected" },
+          knownDeviceCount: 0,
+          connectionMode: "persisted",
+          syncServerUrl: urlValue,
+          syncError: "Access Denied: test@example.com is not allowed",
+          onConnect: (mode) => {
+            connectArg = mode;
+          },
+          onConnectionModeChange: (mode) => {
+            selectedMode = mode;
+          },
+          onSyncServerUrlChange: (url) => {
+            urlValue = url;
+          },
+        }),
+      );
+      const view = within(document.body);
+
+      // Verify sync error notice
+      assert(view.getByText(/Access Denied: test@example.com is not allowed/));
+      // Verify Sync Server URL field
+      const urlInput = view.getByRole("textbox", { name: "Sync Server URL" });
+      assert(urlInput);
+      assert(selectedMode === "persisted");
+
+      // Click connect in persisted mode
+      fireEvent.click(
+        view.getByRole("button", { name: "Connect Google Drive" }),
+      );
+      assert(connectArg === "persisted");
+
+      // Switch to direct mode
+      rerender(
+        createElement(GoogleDriveSyncScreen, {
+          view: { mode: "disconnected" },
+          knownDeviceCount: 0,
+          connectionMode: "direct",
+          onConnect: (mode) => {
+            connectArg = mode;
+          },
+        }),
+      );
+      assert(view.queryByRole("textbox", { name: "Sync Server URL" }) === null);
+      assert(
+        view.getByText(/Direct mode connects using Google Identity Services/),
+      );
+
+      // Click connect in direct mode
+      fireEvent.click(
+        view.getByRole("button", { name: "Connect Google Drive" }),
+      );
+      assert(connectArg === "direct");
+    });
+  });
+});

@@ -13,10 +13,12 @@ import {
   PageHeader,
   Progress,
   Section,
+  SegmentedControl,
   Stack,
   StatusDot,
   StatusPanel,
   Text,
+  TextField,
 } from "../../design-system/index.ts";
 import {
   canSyncNow,
@@ -31,8 +33,18 @@ function LastSync({ value }: { readonly value: string | null }) {
 }
 
 function DisconnectedPanel(
-  { onConnect }: Pick<SyncAccountPanelProps, "onConnect">,
+  props: Pick<
+    SyncAccountPanelProps,
+    | "onConnect"
+    | "connectionMode"
+    | "syncServerUrl"
+    | "syncError"
+    | "onConnectionModeChange"
+    | "onSyncServerUrlChange"
+  >,
 ) {
+  const mode = props.connectionMode ?? "persisted";
+
   return (
     <Section className="sync-ui-account-panel">
       <Stack gap={4}>
@@ -48,13 +60,64 @@ function DisconnectedPanel(
             </Text>
           </Stack>
         </Inline>
-        <InlineNotice title="Not connected" tone="info">
-          Local expenses remain available without an account. Connection asks
-          only for access to this app's private Drive data.
-        </InlineNotice>
-        <Inline>
-          <Button onPress={() => onConnect()}>Connect Google Drive</Button>
-        </Inline>
+
+        {props.syncError
+          ? (
+            <InlineNotice title="Access Denied" tone="danger">
+              {props.syncError}
+            </InlineNotice>
+          )
+          : null}
+
+        <SegmentedControl
+          fullWidth
+          label="Connection type"
+          value={mode}
+          onChange={(val) =>
+            props.onConnectionModeChange?.(val as "persisted" | "direct")}
+          options={[
+            { id: "persisted", label: "Persisted (Server-backed)" },
+            { id: "direct", label: "Direct (In-Browser)" },
+          ]}
+        />
+
+        {mode === "persisted"
+          ? (
+            <Stack gap={3}>
+              <InlineNotice title="Persisted connection" tone="info">
+                Persisted session stores encrypted refresh tokens on your Deno
+                Deploy sync server using HttpOnly partitioned cookies. Enables
+                automatic background sync on app launch and exit.
+              </InlineNotice>
+              <TextField
+                label="Sync Server URL"
+                value={props.syncServerUrl ?? ""}
+                onChange={(val) => props.onSyncServerUrlChange?.(val)}
+                placeholder="https://your-sync.deno.dev"
+                description="Your Deno Deploy backend URL that dispenses Google Drive tokens."
+              />
+              <Inline>
+                <Button onPress={() => props.onConnect("persisted")}>
+                  Connect Google Drive
+                </Button>
+              </Inline>
+            </Stack>
+          )
+          : (
+            <Stack gap={3}>
+              <InlineNotice title="Direct browser connection" tone="info">
+                Direct mode connects using Google Identity Services client-side.
+                Access tokens stay in browser memory and are lost when the app
+                is closed. Synchronization is on-demand only (no automatic
+                background sync).
+              </InlineNotice>
+              <Inline>
+                <Button onPress={() => props.onConnect("direct")}>
+                  Connect Google Drive
+                </Button>
+              </Inline>
+            </Stack>
+          )}
       </Stack>
     </Section>
   );
@@ -142,6 +205,14 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
 
         <DefinitionList
           items={[
+            ...(props.connectionMode !== undefined
+              ? [{
+                term: "Connection type",
+                description: props.connectionMode === "persisted"
+                  ? "Persisted (Server-backed with auto-sync)"
+                  : "Direct (In-Browser GIS)",
+              }]
+              : []),
             {
               term: "Last successful sync",
               description: <LastSync value={view.lastSyncedAt} />,
@@ -346,7 +417,7 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
 
 export function SyncAccountPanel(props: SyncAccountPanelProps) {
   if (props.view.mode === "disconnected") {
-    return <DisconnectedPanel onConnect={props.onConnect} />;
+    return <DisconnectedPanel {...props} />;
   }
   if (props.view.mode === "connecting") return <ConnectingPanel />;
   if (props.view.mode === "account-switch-confirmation") {

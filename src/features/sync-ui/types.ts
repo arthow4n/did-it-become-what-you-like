@@ -74,7 +74,7 @@ export type DiagnosticDeviceViewModel = KnownDeviceViewModel & {
 };
 
 export type SyncAccountPanelCallbacks = {
-  readonly onConnect: () => void;
+  readonly onConnect: (mode?: "persisted" | "direct") => void;
   readonly onReconnect?: () => void;
   readonly onRetry?: () => void;
   readonly onRecoverCorruptData?: () => void;
@@ -85,11 +85,16 @@ export type SyncAccountPanelCallbacks = {
   readonly onDisconnect?: () => void;
   readonly onConfirmAccountSwitch?: () => void;
   readonly onCancelAccountSwitch?: () => void;
+  readonly onConnectionModeChange?: (mode: "persisted" | "direct") => void;
+  readonly onSyncServerUrlChange?: (url: string) => void;
 };
 
 export type SyncAccountPanelProps = SyncAccountPanelCallbacks & {
   readonly view: SyncConnectionViewModel;
   readonly knownDeviceCount: number;
+  readonly connectionMode?: "persisted" | "direct";
+  readonly syncServerUrl?: string;
+  readonly syncError?: string | null;
 };
 
 export type KnownDeviceListProps = {

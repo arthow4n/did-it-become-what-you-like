@@ -11,6 +11,7 @@ import {
   adapterError,
   type AdapterErrorCode,
   isAdapterError,
+  setAdapterErrorDiagnostic,
 } from "../ports/errors.ts";
 import type {
   DriveAuthorizationPort,
@@ -933,20 +934,18 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
         const cancelled = isAuthorizationCancel(response);
         const denied = isAuthorizationDenied(response);
         const detail = record(response)?.type ?? record(response)?.error;
-        finish(() =>
-          reject(
-            adapterError(
-              cancelled ? "aborted" : denied ? "forbidden" : "unavailable",
-              cancelled
-                ? ADAPTER_DIAGNOSTIC_OPERATIONS.driveAuthPopupClosed
-                : denied
-                ? ADAPTER_DIAGNOSTIC_OPERATIONS.driveAuthAccessDenied
-                : typeof detail === "string" && detail.length > 0
-                ? detail
-                : "drive.authorize",
-            ),
-          )
+        const err = adapterError(
+          cancelled ? "aborted" : denied ? "forbidden" : "unavailable",
+          cancelled
+            ? ADAPTER_DIAGNOSTIC_OPERATIONS.driveAuthPopupClosed
+            : denied
+            ? ADAPTER_DIAGNOSTIC_OPERATIONS.driveAuthAccessDenied
+            : "drive.authorize",
         );
+        if (typeof detail === "string" && detail.length > 0) {
+          setAdapterErrorDiagnostic(err, detail);
+        }
+        finish(() => reject(err));
       };
       optionsForOperation?.signal?.addEventListener("abort", onAbort, {
         once: true,

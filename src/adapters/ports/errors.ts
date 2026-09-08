@@ -291,3 +291,16 @@ export function isAdapterErrorCode(value: unknown): value is AdapterErrorCode {
 export function isAdapterError(error: unknown): error is AdapterError {
   return error instanceof AdapterError;
 }
+
+const DIAGNOSTIC_DETAILS = new WeakMap<object, string>();
+
+export function setAdapterErrorDiagnostic(error: object, detail: string): void {
+  DIAGNOSTIC_DETAILS.set(error, detail);
+}
+
+export function getAdapterErrorDiagnostic(error: unknown): string | undefined {
+  if (typeof error === "object" && error !== null) {
+    return DIAGNOSTIC_DETAILS.get(error);
+  }
+  return undefined;
+}

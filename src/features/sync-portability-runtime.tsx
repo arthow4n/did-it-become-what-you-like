@@ -18,6 +18,7 @@ import {
   adapterError,
   type CausalSyncRecoveryPort,
   type DriveAuthState,
+  getAdapterErrorDiagnostic,
   type SecretStoragePort,
 } from "../adapters/ports/index.ts";
 import {
@@ -1797,11 +1798,17 @@ export function SyncPortabilityRuntime({
         });
       }).catch((err: unknown) => {
         syncAfterAuthorization.current = false;
-        const detail = err instanceof Error
-          ? err.message
-          : typeof err === "object" && err !== null && "operation" in err
-          ? `${(err as { operation: string }).operation}`
-          : "Google Drive authorization failed";
+        const diagnostic = getAdapterErrorDiagnostic(err);
+        let detail = diagnostic ||
+          (err instanceof Error
+            ? err.message
+            : typeof err === "object" && err !== null && "operation" in err
+            ? `${(err as { operation: string }).operation}`
+            : "Google Drive authorization failed");
+        if (detail === "No active session cookie") {
+          detail =
+            "No active session cookie (HTTP 401). Mobile browsers (such as Safari or Chrome on iOS) block third-party cookies across different domains (github.io vs deno.dev).";
+        }
         setSyncError(detail);
         if (!silent) {
           onNotice(

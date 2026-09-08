@@ -5,6 +5,7 @@ import { decryptToken, encryptToken, hashSessionToken } from "./crypto.ts";
 import {
   handleRequest,
   isEmailAllowed,
+  parseAllowedOrigins,
   parseCookies,
   type ServerEnv,
 } from "./server.ts";
@@ -396,6 +397,39 @@ Deno.test("server: api google-drive-token dispenses access token with valid sess
   // After logout, token request is 401
   const afterLogoutRes = await handleRequest(validReq, kv, env);
   assertEquals(afterLogoutRes.status, 401);
+
+  await kv.close();
+});
+
+Deno.test("server: parseAllowedOrigins and CORS headers", async () => {
+  const parsed = parseAllowedOrigins(
+    "https://arthow4n.github.io/did-it-become-what-you-like, http://localhost:5173/",
+  );
+  assertEquals(parsed, [
+    "https://arthow4n.github.io",
+    "http://localhost:5173",
+  ]);
+
+  const kv = await Deno.openKv(":memory:");
+  const env: ServerEnv = {
+    googleClientId: "id",
+    googleClientSecret: "sec",
+    allowedEmails: [],
+    encryptionSecret: "sec",
+    frontendOrigin:
+      "https://arthow4n.github.io/did-it-become-what-you-like, http://localhost:5173",
+  };
+
+  const req = new Request("https://sync.example.com/health", {
+    headers: { Origin: "https://arthow4n.github.io" },
+  });
+  const res = await handleRequest(req, kv, env);
+  assertEquals(
+    res.headers.get("Access-Control-Allow-Origin"),
+    "https://arthow4n.github.io",
+  );
+  assertEquals(res.headers.get("Access-Control-Allow-Credentials"), "true");
+  assertEquals(res.headers.get("Vary"), "Origin");
 
   await kv.close();
 });

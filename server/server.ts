@@ -60,16 +60,58 @@ export function isEmailAllowed(
   );
 }
 
+export function parseAllowedOrigins(frontendOrigin: string): string[] {
+  return frontendOrigin
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean)
+    .map((o) => {
+      if (o === "*") return "*";
+      try {
+        return new URL(o).origin;
+      } catch {
+        return o.replace(/\/+$/, "");
+      }
+    });
+}
+
 function corsHeaders(env: ServerEnv, req: Request): Headers {
   const headers = new Headers();
   const origin = req.headers.get("origin");
-  const allowedOrigin = env.frontendOrigin === "*"
-    ? (origin ?? "*")
-    : env.frontendOrigin;
-  headers.set("Access-Control-Allow-Origin", allowedOrigin);
-  headers.set("Access-Control-Allow-Credentials", "true");
+  const allowedOrigins = parseAllowedOrigins(env.frontendOrigin);
+
+  let allowOrigin = "";
+  if (allowedOrigins.includes("*")) {
+    allowOrigin = origin ?? "*";
+  } else if (origin) {
+    const isAllowed = allowedOrigins.some((allowed) => {
+      if (allowed === origin) return true;
+      try {
+        return new URL(allowed).origin === new URL(origin).origin;
+      } catch {
+        return false;
+      }
+    });
+    if (isAllowed) {
+      allowOrigin = origin;
+    }
+  } else if (allowedOrigins.length > 0 && allowedOrigins[0] !== "*") {
+    allowOrigin = allowedOrigins[0];
+  }
+
+  if (allowOrigin) {
+    headers.set("Access-Control-Allow-Origin", allowOrigin);
+    if (allowOrigin !== "*") {
+      headers.set("Access-Control-Allow-Credentials", "true");
+    }
+  }
   headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  headers.set(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, Cookie",
+  );
+  headers.set("Access-Control-Max-Age", "86400");
+  headers.set("Vary", "Origin");
   return headers;
 }
 

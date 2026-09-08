@@ -989,6 +989,12 @@ export function SyncPortabilityRuntime({
   const ids = useMemo(createRuntimeIds, []);
   const runtimeBoundary = useMemo(configuredRuntimeBoundary, []);
 
+  const returnedFromPersistedAuth = useRef(
+    typeof globalThis.location !== "undefined" &&
+      new URL(globalThis.location.href).searchParams.get("sync_connected") ===
+        "persisted",
+  );
+
   const [connectionMode, setConnectionMode] = useState<"persisted" | "direct">(
     () => {
       if (typeof globalThis.location !== "undefined") {
@@ -1804,6 +1810,18 @@ export function SyncPortabilityRuntime({
           onNotice("Please specify a valid Sync Server URL before connecting.");
           return;
         }
+        try {
+          globalThis.localStorage?.setItem(
+            "did_it_drive_connection_mode",
+            "persisted",
+          );
+          globalThis.localStorage?.setItem(
+            "did_it_sync_server_url",
+            serverUrl,
+          );
+        } catch {
+          // ignore
+        }
         const cleanServerUrl = serverUrl.replace(/\/+$/, "");
         const returnTo = globalThis.location?.href ?? "";
         if (globalThis.location) {
@@ -1838,22 +1856,10 @@ export function SyncPortabilityRuntime({
 
   useEffect(() => {
     if (connectionMode !== "persisted" || driveAdapter === null) return;
-    if (typeof globalThis.location !== "undefined") {
-      try {
-        const url = new URL(globalThis.location.href);
-        if (url.searchParams.get("sync_connected") === "persisted") {
-          url.searchParams.delete("sync_connected");
-          globalThis.history?.replaceState?.(
-            null,
-            "",
-            url.pathname + (url.search ? url.search : "") + url.hash,
-          );
-          authorizeDrive(false, false);
-          return;
-        }
-      } catch {
-        // ignore
-      }
+    if (returnedFromPersistedAuth.current) {
+      returnedFromPersistedAuth.current = false;
+      authorizeDrive(false, false);
+      return;
     }
     if (
       syncView.mode === "configured" &&

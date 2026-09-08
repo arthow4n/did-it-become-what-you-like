@@ -34,6 +34,10 @@ export function createServerIdentityProvider(
 
               if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
+                console.error(
+                  `[Sync Server] /api/google-drive-token failed (${res.status}):`,
+                  errData,
+                );
                 config.error_callback?.({
                   error: errData.error ?? "unauthorized",
                   type: errData.message ?? "session_expired",
@@ -49,6 +53,10 @@ export function createServerIdentityProvider(
                 token_type: "Bearer",
               });
             } catch (err) {
+              console.error(
+                "[Sync Server] Network or CORS error fetching token:",
+                err,
+              );
               config.error_callback?.({
                 error: "network_error",
                 type: err instanceof Error ? err.message : "network_error",

@@ -1774,6 +1774,18 @@ export function SyncPortabilityRuntime({
       });
     }).catch(() => {
       syncAfterAuthorization.current = false;
+      if (connectionMode === "persisted" && reconnect) {
+        const serverUrl = syncServerUrl || browserConfiguredSyncServerUrl();
+        if (serverUrl && serverUrl.trim().length > 0 && globalThis.location) {
+          const cleanServerUrl = serverUrl.replace(/\/+$/, "");
+          const returnTo = globalThis.location.href;
+          globalThis.location.href =
+            `${cleanServerUrl}/auth/google-drive/login?return_to=${
+              encodeURIComponent(returnTo)
+            }`;
+          return;
+        }
+      }
       onNotice(
         "Google Drive authorization was cancelled or unavailable. Local data remains available.",
       );
@@ -1783,6 +1795,15 @@ export function SyncPortabilityRuntime({
   const handleConnect = useCallback(
     (mode: "persisted" | "direct" = connectionMode) => {
       if (mode === "persisted") {
+        setConnectionMode("persisted");
+        try {
+          globalThis.localStorage?.setItem(
+            "did_it_drive_connection_mode",
+            "persisted",
+          );
+        } catch {
+          // ignore
+        }
         const serverUrl = syncServerUrl || browserConfiguredSyncServerUrl();
         if (!serverUrl || serverUrl.trim().length === 0) {
           onNotice("Please specify a valid Sync Server URL before connecting.");
@@ -1797,6 +1818,15 @@ export function SyncPortabilityRuntime({
             }`;
         }
       } else {
+        setConnectionMode("direct");
+        try {
+          globalThis.localStorage?.setItem(
+            "did_it_drive_connection_mode",
+            "direct",
+          );
+        } catch {
+          // ignore
+        }
         authorizeDrive(false);
       }
     },

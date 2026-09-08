@@ -394,6 +394,28 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
             Manage devices ({props.knownDeviceCount})
           </Button>
           <Inline>
+            {props.connectionMode === "direct"
+              ? (
+                <Button
+                  variant="quiet"
+                  onPress={() => props.onConnect("persisted")}
+                >
+                  Switch to Persisted mode
+                </Button>
+              )
+              : props.connectionMode === "persisted"
+              ? (
+                <Button
+                  variant="quiet"
+                  onPress={() => {
+                    props.onConnectionModeChange?.("direct");
+                    props.onConnect("direct");
+                  }}
+                >
+                  Switch to Direct mode
+                </Button>
+              )
+              : null}
             <Button
               variant="quiet"
               onPress={() => props.onSwitchAccount?.()}

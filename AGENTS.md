@@ -157,6 +157,12 @@
   decorative navigation, overlay, expansion, or layout animations. Motion is
   reserved for restrained functional progress feedback and must retain an
   equivalent static reduced-motion presentation.
+- Error visibility on mobile and desktop: Mobile and PWA runtime environments do
+  not have an accessible developer console. All errors—including authentication
+  failures, synchronization errors, server/network rejections, and
+  misconfigurations—must be visibly surfaced to the user in the application UI
+  (via inline notices, error banners, or status panels with descriptive,
+  actionable copy) rather than relying on console logging or silent failures.
 - Git worktrees may be used for concurrent implementation agents when isolation
   materially reduces file collisions or integration risk. Do not create them for
   ordinary documentation, sequential work, or concurrency without genuinely

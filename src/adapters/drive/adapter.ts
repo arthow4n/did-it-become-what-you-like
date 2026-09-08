@@ -932,6 +932,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
       const errorCallback = (response: unknown): void => {
         const cancelled = isAuthorizationCancel(response);
         const denied = isAuthorizationDenied(response);
+        const detail = record(response)?.type ?? record(response)?.error;
         finish(() =>
           reject(
             adapterError(
@@ -940,6 +941,8 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
                 ? ADAPTER_DIAGNOSTIC_OPERATIONS.driveAuthPopupClosed
                 : denied
                 ? ADAPTER_DIAGNOSTIC_OPERATIONS.driveAuthAccessDenied
+                : typeof detail === "string" && detail.length > 0
+                ? detail
                 : "drive.authorize",
             ),
           )

@@ -40,7 +40,7 @@ export function createServerIdentityProvider(
                 );
                 config.error_callback?.({
                   error: errData.error ?? "unauthorized",
-                  type: errData.message ?? "session_expired",
+                  type: errData.message ?? `HTTP ${res.status}`,
                 });
                 return;
               }
@@ -59,7 +59,9 @@ export function createServerIdentityProvider(
               );
               config.error_callback?.({
                 error: "network_error",
-                type: err instanceof Error ? err.message : "network_error",
+                type: err instanceof Error
+                  ? `Network/CORS error: ${err.message}`
+                  : "Network or CORS connection failed",
               });
             }
           })();

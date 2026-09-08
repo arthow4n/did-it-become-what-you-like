@@ -1027,12 +1027,25 @@ export function SyncPortabilityRuntime({
     return browserConfiguredSyncServerUrl() ?? "";
   });
 
-  const [syncError] = useState<string | null>(() => {
+  const [syncError, setSyncError] = useState<string | null>(() => {
     if (typeof globalThis.location !== "undefined") {
       const url = new URL(globalThis.location.href);
-      if (url.searchParams.get("sync_error") === "unauthorized_account") {
-        const email = url.searchParams.get("email") ?? "Unknown";
-        return `Access Denied: Google account "${email}" is not authorized on this sync server. Add this email to ALLOWED_GOOGLE_EMAILS on the server to permit synchronization.`;
+      const err = url.searchParams.get("sync_error");
+      if (err) {
+        if (err === "unauthorized_account") {
+          const email = url.searchParams.get("email") ?? "Unknown";
+          return `Access Denied: Google account "${email}" is not authorized on this sync server. Add this email to ALLOWED_GOOGLE_EMAILS on the server to permit synchronization.`;
+        }
+        if (err === "missing_refresh_token") {
+          return "Google did not return a refresh token. Please remove this app from https://myaccount.google.com/permissions and reconnect.";
+        }
+        if (err === "token_exchange_failed") {
+          return "Sync server failed to exchange authorization code with Google. Check server GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.";
+        }
+        if (err === "profile_fetch_failed") {
+          return "Failed to fetch Google profile. Please try reconnecting.";
+        }
+        return `Authorization error: ${err}`;
       }
     }
     return null;
@@ -1776,16 +1789,23 @@ export function SyncPortabilityRuntime({
         ? reconnectAuthorizationOptions(syncView)
         : undefined;
       void driveAdapter.authorize(authorizationOptions).then((session) => {
+        setSyncError(null);
         sendSync({
           type: "sync.configure",
           accountEmail: session.accountId,
           online: globalThis.navigator?.onLine !== false,
         });
-      }).catch(() => {
+      }).catch((err: unknown) => {
         syncAfterAuthorization.current = false;
+        const detail = err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null && "operation" in err
+          ? `${(err as { operation: string }).operation}`
+          : "Google Drive authorization failed";
+        setSyncError(detail);
         if (!silent) {
           onNotice(
-            "Google Drive authorization was cancelled or unavailable. Local data remains available.",
+            `Google Drive authorization failed: ${detail}. Local data remains available.`,
           );
         }
       });

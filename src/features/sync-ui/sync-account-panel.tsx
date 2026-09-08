@@ -63,7 +63,12 @@ function DisconnectedPanel(
 
         {props.syncError
           ? (
-            <InlineNotice title="Access Denied" tone="danger">
+            <InlineNotice
+              title={props.syncError.startsWith("Access Denied")
+                ? "Access Denied"
+                : "Connection Error"}
+              tone="danger"
+            >
               {props.syncError}
             </InlineNotice>
           )
@@ -123,15 +128,24 @@ function DisconnectedPanel(
   );
 }
 
-function ConnectingPanel() {
+function ConnectingPanel(props: { readonly syncError?: string | null }) {
   return (
     <Section className="sync-ui-account-panel">
-      <StatusPanel
-        title="Connecting to Google Drive"
-        detail="Complete the Google authorization window to continue."
-        tone="info"
-      />
-      <Progress label="Connecting to Google Drive" indeterminate />
+      <Stack gap={4}>
+        <StatusPanel
+          title="Connecting to Google Drive"
+          detail="Complete the Google authorization window to continue."
+          tone="info"
+        />
+        {props.syncError
+          ? (
+            <InlineNotice title="Connection Error" tone="danger">
+              {props.syncError}
+            </InlineNotice>
+          )
+          : null}
+        <Progress label="Connecting to Google Drive" indeterminate />
+      </Stack>
     </Section>
   );
 }
@@ -195,6 +209,14 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
           tone="positive"
           action={<StatusDot tone="positive">Connected</StatusDot>}
         />
+
+        {props.syncError
+          ? (
+            <InlineNotice title="Sync Notice" tone="warning">
+              {props.syncError}
+            </InlineNotice>
+          )
+          : null}
 
         <StatusPanel
           title={`Status: ${configuredModeLabel(view.sync)}`}
@@ -441,7 +463,9 @@ export function SyncAccountPanel(props: SyncAccountPanelProps) {
   if (props.view.mode === "disconnected") {
     return <DisconnectedPanel {...props} />;
   }
-  if (props.view.mode === "connecting") return <ConnectingPanel />;
+  if (props.view.mode === "connecting") {
+    return <ConnectingPanel syncError={props.syncError} />;
+  }
   if (props.view.mode === "account-switch-confirmation") {
     return <AccountSwitchPanel {...props} />;
   }

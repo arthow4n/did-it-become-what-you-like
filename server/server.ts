@@ -181,6 +181,24 @@ export async function handleRequest(
     const oauthError = url.searchParams.get("error");
 
     if (oauthError) {
+      if (state) {
+        const stateEntry = await kv.get<OAuthStateRecord>([
+          "oauth_state",
+          state,
+        ]);
+        if (stateEntry.value?.returnTo) {
+          await kv.delete(["oauth_state", state]);
+          const errorUrl = new URL(stateEntry.value.returnTo);
+          errorUrl.searchParams.set("sync_error", oauthError);
+          return new Response(
+            `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=${errorUrl}"></head><body><h2>Authorization Error</h2><p>${oauthError}</p><p><a href="${errorUrl}">Return to app</a></p></body></html>`,
+            {
+              status: 400,
+              headers: { "Content-Type": "text/html; charset=utf-8" },
+            },
+          );
+        }
+      }
       return new Response(
         `Google authorization error: ${oauthError}`,
         { status: 400, headers: { "Content-Type": "text/plain" } },
@@ -216,9 +234,14 @@ export async function handleRequest(
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
+      const errorUrl = new URL(returnTo);
+      errorUrl.searchParams.set("sync_error", "token_exchange_failed");
       return new Response(
-        `Failed to exchange authorization code: ${errorText}`,
-        { status: 502 },
+        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=${errorUrl}"></head><body><h2>Authorization Failed</h2><p>Failed to exchange authorization code with Google: ${errorText}</p><p><a href="${errorUrl}">Return to app</a></p></body></html>`,
+        {
+          status: 502,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        },
       );
     }
 
@@ -227,9 +250,14 @@ export async function handleRequest(
     const refreshToken = tokenData.refresh_token;
 
     if (!refreshToken) {
+      const errorUrl = new URL(returnTo);
+      errorUrl.searchParams.set("sync_error", "missing_refresh_token");
       return new Response(
-        "Google did not return a refresh token. Please revoke access in your Google Account and try again with prompt=consent.",
-        { status: 400 },
+        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=${errorUrl}"></head><body><h2>Refresh Token Missing</h2><p>Google did not return a refresh token. Please revoke access in your Google Account and try again with prompt=consent.</p><p><a href="${errorUrl}">Return to app</a></p></body></html>`,
+        {
+          status: 400,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        },
       );
     }
 
@@ -239,18 +267,30 @@ export async function handleRequest(
     });
 
     if (!userinfoResponse.ok) {
-      return new Response("Failed to fetch Google user profile", {
-        status: 502,
-      });
+      const errorUrl = new URL(returnTo);
+      errorUrl.searchParams.set("sync_error", "profile_fetch_failed");
+      return new Response(
+        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=${errorUrl}"></head><body><h2>Profile Error</h2><p>Failed to fetch Google user profile.</p><p><a href="${errorUrl}">Return to app</a></p></body></html>`,
+        {
+          status: 502,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        },
+      );
     }
 
     const userData = await userinfoResponse.json();
     const userEmail = userData.email;
 
     if (!userEmail) {
-      return new Response("Unable to determine Google account email", {
-        status: 400,
-      });
+      const errorUrl = new URL(returnTo);
+      errorUrl.searchParams.set("sync_error", "profile_fetch_failed");
+      return new Response(
+        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=${errorUrl}"></head><body><h2>Profile Error</h2><p>Unable to determine Google account email.</p><p><a href="${errorUrl}">Return to app</a></p></body></html>`,
+        {
+          status: 400,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        },
+      );
     }
 
     // Verify Allow-List
@@ -261,11 +301,11 @@ export async function handleRequest(
       return new Response(
         `<!DOCTYPE html>
 <html>
-<head><title>Access Denied</title><style>body{font-family:system-ui,sans-serif;padding:2rem;max-width:500px;margin:auto;line-height:1.5;}</style></head>
+<head><title>Access Denied</title><meta http-equiv="refresh" content="2;url=${errorUrl}"><style>body{font-family:system-ui,sans-serif;padding:2rem;max-width:500px;margin:auto;line-height:1.5;}</style></head>
 <body>
   <h2>Access Denied</h2>
   <p>Google account <strong>${userEmail}</strong> is not authorized to use this sync server.</p>
-  <p><a href="${returnTo}">Return to app</a></p>
+  <p><a href="${errorUrl}">Return to app</a></p>
 </body>
 </html>`,
         {

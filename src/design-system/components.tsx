@@ -1034,15 +1034,14 @@ export function DecimalField(props: DecimalFieldProps) {
 export type MoneyFieldProps = DecimalFieldProps & { currency: string };
 
 export function MoneyField(
-  { currency, description, ...props }: MoneyFieldProps,
+  { currency: _currency, description, ...props }: MoneyFieldProps,
 ) {
   return (
     <TextField
       {...props}
       inputMode="decimal"
       type="text"
-      description={description ??
-        `Amount in ${currency}. Choose Spent or Money back separately.`}
+      description={description}
     />
   );
 }

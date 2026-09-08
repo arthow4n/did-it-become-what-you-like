@@ -489,10 +489,18 @@ Deno.test("local UI isolates edit drafts from the new-expense draft key", async 
       await waitFor(() =>
         assert(view.getByRole("textbox", { name: "Description (optional)" }))
       );
+      const merchant = view.getByRole("searchbox", { name: "Merchant" });
       const description = view.getByRole("textbox", {
         name: "Description (optional)",
       }) as HTMLTextAreaElement;
       assertEquals(description.value, "Existing expense description");
+      assert(
+        Boolean(
+          merchant.compareDocumentPosition(description) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+        "Description input field should follow Merchant input field",
+      );
     });
   });
 });

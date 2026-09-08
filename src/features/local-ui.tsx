@@ -2842,6 +2842,13 @@ export function ManualExpenseScreen({
             suggestions={[...snapshot.context.suggestions]}
             isDisabled={formLocked}
           />
+          <TextArea
+            label="Description (optional)"
+            value={draft.description}
+            onChange={(value) => update({ description: value })}
+            error={validation.description}
+            isDisabled={formLocked}
+          />
           <SelectField
             label="Category"
             options={categories}
@@ -2858,7 +2865,6 @@ export function ManualExpenseScreen({
               onChange={(event) => update({ date: event.currentTarget.value })}
               error={validation.date}
               disabled={formLocked}
-              description="The concrete calendar date is saved exactly as shown."
             />
             <NativeTimeField
               label="Time (optional)"
@@ -2875,31 +2881,24 @@ export function ManualExpenseScreen({
             onValueChange={(value) => update({ projectId: value })}
             isDisabled={formLocked}
           />
-          <TextArea
-            label="Description (optional)"
-            value={draft.description}
-            onChange={(value) => update({ description: value })}
-            error={validation.description}
-            isDisabled={formLocked}
-          />
         </ExpenseForm>
         {snapshot.matches("discardConfirming")
           ? (
             <InlineNotice tone="warning" title="Discard unsaved changes?">
-              <Inline>
-                <Button
-                  variant="quiet"
-                  onPress={() => send({ type: "expense.keep-editing" })}
-                >
-                  Keep editing
-                </Button>
+              <FormActions className="local-ui-delete-actions">
                 <Button
                   variant="danger"
                   onPress={() => send({ type: "expense.confirm-discard" })}
                 >
                   Discard changes
                 </Button>
-              </Inline>
+                <Button
+                  variant="quiet"
+                  onPress={() => send({ type: "expense.keep-editing" })}
+                >
+                  Keep editing
+                </Button>
+              </FormActions>
             </InlineNotice>
           )
           : null}

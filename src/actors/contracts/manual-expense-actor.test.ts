@@ -381,38 +381,19 @@ Deno.test("manual-expense: transient and failed edits retain delete and merchant
       transaction.put("records", expense.id, asExpenseValue(expense)),
   );
 
-  const persisting = createExpenseActor(harness, "workflow:delete-persisting");
-  persisting.send({ type: "expense.open", request: { expense } });
+  const editing = createExpenseActor(harness, "workflow:delete-editing");
+  editing.send({ type: "expense.open", request: { expense } });
   await settle();
-  persisting.send({
+  editing.send({
     type: "expense.change",
-    draft: draftWith(persisting.getSnapshot().context.draft!, {
-      description: "Changed while saving",
+    draft: draftWith(editing.getSnapshot().context.draft!, {
+      description: "Changed while editing",
     }),
   });
-  assertEquals(persisting.getSnapshot().value, "persistingDraft");
-  persisting.send({ type: "expense.delete" });
-  assertEquals(persisting.getSnapshot().value, "deleteConfirming");
-  persisting.stop();
-
-  const draftFailure = createExpenseActor(
-    harness,
-    "workflow:delete-draft-failure",
-  );
-  draftFailure.send({ type: "expense.open", request: { expense } });
-  await settle();
-  harness.local.failNext("quota");
-  draftFailure.send({
-    type: "expense.change",
-    draft: draftWith(draftFailure.getSnapshot().context.draft!, {
-      description: "Draft persistence fails",
-    }),
-  });
-  await settle();
-  assertEquals(draftFailure.getSnapshot().value, "draftSaveFailed");
-  draftFailure.send({ type: "expense.delete" });
-  assertEquals(draftFailure.getSnapshot().value, "deleteConfirming");
-  draftFailure.stop();
+  assertEquals(editing.getSnapshot().value, "editing");
+  editing.send({ type: "expense.delete" });
+  assertEquals(editing.getSnapshot().value, "deleteConfirming");
+  editing.stop();
 
   const saveFailure = createExpenseActor(
     harness,
@@ -545,69 +526,45 @@ Deno.test(
 
     assertEquals(first.getSnapshot().context.draft?.merchant, "Local ");
     assertEquals(first.getSnapshot().context.draft?.description, "Lunch ");
-    first.stop();
 
-    const reloaded = createExpenseActor(harness, "workflow:spaces");
-    reloaded.send({ type: "expense.hydrate" });
+    first.send({ type: "expense.submit" });
     await settle();
-    assertEquals(reloaded.getSnapshot().context.draft?.merchant, "Local ");
-    assertEquals(reloaded.getSnapshot().context.draft?.description, "Lunch ");
-
-    reloaded.send({ type: "expense.submit" });
-    await settle();
-    assertEquals(reloaded.getSnapshot().value, "saved");
+    assertEquals(first.getSnapshot().value, "saved");
     assertEquals(
-      reloaded.getSnapshot().context.result?.expense.merchant,
+      first.getSnapshot().context.result?.expense.merchant,
       "Local",
     );
     assertEquals(
-      reloaded.getSnapshot().context.result?.expense.description,
+      first.getSnapshot().context.result?.expense.description,
       "Lunch",
     );
-    reloaded.stop();
+    first.stop();
   },
 );
 
-Deno.test("manual-expense: draft survives reload and discard confirmation clears it", async () => {
+Deno.test("manual-expense: in-memory draft discard confirmation clears it", async () => {
   const harness = await createHarness();
-  const first = createExpenseActor(harness, "workflow:reload");
-  first.send({ type: "expense.open" });
+  const actor = createExpenseActor(harness, "workflow:discard");
+  actor.send({ type: "expense.open" });
   await settle();
-  const draft = first.getSnapshot().context.draft;
+  const draft = actor.getSnapshot().context.draft;
   assert(draft !== null);
-  first.send({
+  actor.send({
     type: "expense.change",
-    draft: draftWith(draft, { amount: "7.50", description: "Durable" }),
+    draft: draftWith(draft, { amount: "7.50", description: "In-memory" }),
   });
   await settle();
-  assert(
-    harness.local.operations.includes(
-      "put:workflow-snapshots:workflow:reload",
-    ),
-  );
-  first.stop();
-
-  const reloaded = createExpenseActor(harness, "workflow:reload");
-  reloaded.send({ type: "expense.hydrate" });
+  actor.send({ type: "expense.back" });
+  assertEquals(actor.getSnapshot().value, "discardConfirming");
+  assert(actor.getSnapshot().hasTag("dirty"));
+  actor.send({ type: "expense.keep-editing" });
+  assertEquals(actor.getSnapshot().value, "editing");
+  actor.send({ type: "expense.discard" });
+  assert(actor.getSnapshot().hasTag("dirty"));
+  actor.send({ type: "expense.confirm-discard" });
   await settle();
-  assertEquals(reloaded.getSnapshot().value, "editing");
-  assertEquals(reloaded.getSnapshot().context.draft?.amount, "7.50");
-  assertEquals(reloaded.getSnapshot().context.draft?.description, "Durable");
-  reloaded.send({ type: "expense.back" });
-  assertEquals(reloaded.getSnapshot().value, "discardConfirming");
-  assert(reloaded.getSnapshot().hasTag("dirty"));
-  reloaded.send({ type: "expense.keep-editing" });
-  assertEquals(reloaded.getSnapshot().value, "editing");
-  reloaded.send({ type: "expense.discard" });
-  assert(reloaded.getSnapshot().hasTag("dirty"));
-  reloaded.send({ type: "expense.confirm-discard" });
-  await settle();
-  assertEquals(reloaded.getSnapshot().value, "discarded");
-  assertEquals(
-    await harness.local.query("workflow-snapshots"),
-    [],
-  );
-  reloaded.stop();
+  assertEquals(actor.getSnapshot().value, "discarded");
+  actor.stop();
 });
 
 Deno.test("manual-expense: repository failure retains input and retry saves", async () => {

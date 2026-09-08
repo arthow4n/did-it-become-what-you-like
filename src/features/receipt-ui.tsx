@@ -1317,6 +1317,11 @@ export function LineEditorDialog({
 }) {
   const [value, setValue] = useState(editorValue(line));
   const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    setValue(editorValue(line));
+    setError(undefined);
+  }, [line]);
   return (
     <AdaptiveDialog
       trigger={
@@ -1393,7 +1398,9 @@ export function ReceiptReviewScreen({
     () => createReceiptReviewMachine({ local, organization: local }),
     [local],
   );
-  const [snapshot, send] = useActor(machine, { input: {} });
+  const [snapshot, send] = useActor(machine, {
+    input: initialReview ? { initialReview } : {},
+  });
   const [openSent, setOpenSent] = useState(false);
   const [metadataOpen, setMetadataOpen] = useState(false);
   const [metadataError, setMetadataError] = useState<string>();
@@ -1421,9 +1428,9 @@ export function ReceiptReviewScreen({
   useEffect(() => {
     if (openSent) return;
     setOpenSent(true);
-    if (initialReview) {
-      send({ type: "receipt.review.open", review: initialReview });
-    } else send({ type: "receipt.review.hydrate" });
+    if (!initialReview) {
+      send({ type: "receipt.review.hydrate" });
+    }
   }, [initialReview, openSent, send]);
 
   const dirty = snapshot.hasTag("dirty");
@@ -1459,20 +1466,13 @@ export function ReceiptReviewScreen({
     }
   }, [onClose, snapshot, syncStatus]);
 
-  if (
-    snapshot.matches("hydrating") || snapshot.matches("persisting") ||
-    snapshot.matches("saving") || snapshot.matches("clearing")
-  ) {
+  if (snapshot.matches("hydrating") && !snapshot.context.review) {
     return (
       <ContentContainer size="review">
         <PageHeader title="Review receipt" headingLevel={1} />
         <StatusPanel
-          title={snapshot.matches("saving")
-            ? "Saving receipt"
-            : "Saving receipt review locally"}
-          detail={snapshot.matches("saving")
-            ? "The receipt is being committed to this device."
-            : "The structured draft stays on this device."}
+          title="Loading receipt review"
+          detail="Opening the receipt review draft."
         />
       </ContentContainer>
     );

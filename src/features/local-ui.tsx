@@ -25,6 +25,7 @@ import {
 } from "../domain/index.ts";
 import {
   createManualExpenseMachine,
+  isDraftModified,
   type ManualExpenseDraft,
   type ManualExpenseEvent,
   type ManualExpenseOpenRequest,
@@ -2551,7 +2552,9 @@ export function ManualExpenseScreen({
       createManualExpenseMachine({ local: repository, organization: service }),
     [repository, service, machineKey],
   );
-  const [snapshot, send] = useActor(machine, { input: { persistenceKey } });
+  const [snapshot, send] = useActor(machine, {
+    input: { persistenceKey, request },
+  });
   const completionHandled = useRef(false);
   const usefulActionHandled = useRef(false);
   const notifiedResultId = useRef<string | null>(null);
@@ -2561,13 +2564,10 @@ export function ManualExpenseScreen({
   const saveMode = useRef<ManualSaveMode>("expenses");
 
   useEffect(() => {
-    if (request.expense) {
-      send({ type: "expense.open", request });
-    } else {
-      send({ type: "expense.hydrate" });
+    if (!snapshot.context.draft) {
       send({ type: "expense.open", request });
     }
-  }, [machineKey, request, send]);
+  }, [machineKey, request, send, snapshot.context.draft]);
 
   useEffect(() => {
     const savedExpense = snapshot.context.result?.expense;
@@ -2596,7 +2596,11 @@ export function ManualExpenseScreen({
     }
   }, [onClosed, onSaved, send, snapshot, syncStatus]);
 
-  const dirty = snapshot.hasTag("dirty");
+  const isModified = isDraftModified(
+    snapshot.context.draft,
+    snapshot.context.originalExpense,
+  );
+  const dirty = snapshot.hasTag("dirty") && isModified;
   useEffect(() => {
     if (snapshot.matches("idle")) return;
     onDirtyChange?.(dirty);
@@ -2678,10 +2682,7 @@ export function ManualExpenseScreen({
       />
     );
   }
-  if (
-    snapshot.matches("hydrating") || snapshot.matches("opening") ||
-    draft === null
-  ) {
+  if (draft === null) {
     return (
       <LoadingScreen title={request.expense ? "Edit expense" : "New expense"} />
     );
@@ -2732,36 +2733,20 @@ export function ManualExpenseScreen({
           }
         />
         <ExpenseForm
-          status={failed || deleteFailed || busy ||
-              snapshot.hasTag("draft-saving") ||
-              (snapshot.hasTag("dirty") &&
-                Boolean(
-                  draft.amount.trim() || draft.merchant?.trim() ||
-                    draft.description?.trim() ||
-                    snapshot.context.originalExpense,
-                ))
+          status={failed || deleteFailed || busy || isModified
             ? (
               <DraftStatus
                 state={failed || deleteFailed
                   ? "failed"
                   : busy
                   ? "saving"
-                  : snapshot.hasTag("draft-saving")
-                  ? "saving"
                   : "dirty"}
                 detail={failed || deleteFailed
                   ? snapshot.context.error?.message
-                  : "Your unfinished form is saved on this device."}
-                action={draftSaveFailed
-                  ? (
-                    <Button
-                      variant="secondary"
-                      onPress={() => send({ type: "expense.retry-draft" })}
-                    >
-                      Retry draft save
-                    </Button>
-                  )
-                  : saveFailed
+                  : busy
+                  ? "Saving expense…"
+                  : undefined}
+                action={saveFailed
                   ? (
                     <Button
                       variant="secondary"
@@ -2770,7 +2755,7 @@ export function ManualExpenseScreen({
                       Retry save
                     </Button>
                   )
-                  : snapshot.hasTag("dirty") && !formLocked
+                  : isModified && !formLocked
                   ? (
                     <Button
                       variant="quiet"

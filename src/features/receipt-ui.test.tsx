@@ -574,16 +574,9 @@ Deno.test("receipt-ui deselecting a purchase unlinks its adjustment", async () =
       const view = within(document.body);
       await waitFor(() => assert(view.getAllByRole("checkbox").length === 2));
       fireEvent.click(view.getAllByRole("checkbox")[0]!);
-      await waitFor(async () => {
-        const snapshots = await local.query("workflow-snapshots");
-        const snapshot = snapshots[0]?.value as {
-          review?: { lines?: Array<{ id?: string; lineId?: string }> };
-        } | undefined;
-        const adjustment = snapshot?.review?.lines?.find((line) =>
-          line.id === "receipt-adjustment-ui-review"
-        );
-        assert(adjustment && adjustment.lineId === undefined);
-      });
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: /Save 1 selected entry/ }))
+      );
     });
   });
 });

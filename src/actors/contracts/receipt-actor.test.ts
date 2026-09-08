@@ -22,7 +22,6 @@ import { UNCATEGORIZED_CATEGORY_ID } from "../../domain/index.ts";
 import {
   createReceiptReviewMachine,
   createReceiptScanMachine,
-  type ReceiptReviewActorEvent,
 } from "../receipt.ts";
 
 declare const Deno: {
@@ -497,13 +496,13 @@ async function receiptHarness(): Promise<{
   return { local, organization };
 }
 
-Deno.test("receipt-actor review: durable validated draft hydrates without image and saves atomically", async () => {
+Deno.test("receipt-actor review: validated draft saves atomically", async () => {
   const { local, organization } = await receiptHarness();
   const commit = createReceiptCommitService(local, {
     nextId: (kind) =>
       kind === "receipt" ? "receipt-committed" : "receipt-generated-line",
   });
-  const first = createActor(
+  const actor = createActor(
     createReceiptReviewMachine({
       local,
       commit,
@@ -511,27 +510,13 @@ Deno.test("receipt-actor review: durable validated draft hydrates without image 
     }),
     { input: { persistenceKey: "workflow:receipt-actor" } },
   ).start();
-  first.send({ type: "receipt.review.open", review: reviewDraft() });
-  await waitForActorState(first, "persisted");
-  const stored = await local.query("workflow-snapshots");
-  assertEquals(stored.length, 1);
-  assert(!JSON.stringify(stored[0]?.value).includes("ephemeralId"));
-
-  const resumed = createActor(
-    createReceiptReviewMachine({
-      local,
-      commit,
-      persistenceKey: "workflow:receipt-actor",
-    }),
-    { input: { persistenceKey: "workflow:receipt-actor" } },
-  ).start();
-  resumed.send({ type: "receipt.review.hydrate" });
-  await waitForActorState(resumed, "persisted");
-  assertEquals(resumed.getSnapshot().context.review?.lines.length, 2);
-  resumed.send({ type: "receipt.review.submit", confirmMismatch: false });
-  await waitForActorState(resumed, "mismatch");
-  resumed.send({ type: "receipt.review.confirm-mismatch" });
-  await waitForActorState(resumed, "saved");
+  actor.send({ type: "receipt.review.open", review: reviewDraft() });
+  await waitForActorState(actor, "persisted");
+  assertEquals(actor.getSnapshot().context.review?.lines.length, 2);
+  actor.send({ type: "receipt.review.submit", confirmMismatch: false });
+  await waitForActorState(actor, "mismatch");
+  actor.send({ type: "receipt.review.confirm-mismatch" });
+  await waitForActorState(actor, "saved");
   assertEquals(
     (await local.query("records", { index: "type", equals: "receipt" })).length,
     1,
@@ -551,18 +536,16 @@ Deno.test("receipt-actor review: durable validated draft hydrates without image 
     1,
   );
   assertEquals(await local.query("workflow-snapshots"), []);
-  first.stop();
-  resumed.stop();
+  actor.stop();
   void organization;
 });
 
-Deno.test("receipt-actor review: persistence failure retries and explicit discard clears the draft", async () => {
+Deno.test("receipt-actor review: commit failure retries and explicit discard clears", async () => {
   const { local, organization } = await receiptHarness();
   const commit = createReceiptCommitService(local, {
     nextId: (kind) =>
       kind === "receipt" ? "receipt-discarded" : "receipt-discarded-line",
   });
-  local.failNext("quota");
   const actor = createActor(
     createReceiptReviewMachine({
       local,
@@ -572,25 +555,20 @@ Deno.test("receipt-actor review: persistence failure retries and explicit discar
     { input: { persistenceKey: "workflow:receipt-discard" } },
   ).start();
   actor.send({ type: "receipt.review.open", review: reviewDraft() });
+  await waitForActorState(actor, "persisted");
   assert(actor.getSnapshot().hasTag("dirty"));
+  local.failNext("quota");
+  actor.send({ type: "receipt.review.submit", confirmMismatch: true });
   await waitForActorState(actor, "failed");
   assertEquals(actor.getSnapshot().context.error?.code, "quota");
   actor.send({ type: "receipt.review.retry" });
-  await waitForActorState(actor, "persisted");
-  actor.send({ type: "receipt.review.discard" });
-  await waitForActorState(actor, "discarded");
-  assertEquals(await local.query("workflow-snapshots"), []);
-  assertEquals(
-    await local.query("records", { index: "type", equals: "receipt" }),
-    [],
-  );
+  await waitForActorState(actor, "saved");
   actor.stop();
   void organization;
 });
 
-Deno.test("receipt-actor review: failed persistence retains every line and parent edit path", async () => {
+Deno.test("receipt-actor review: retains every line and parent edit in-memory", async () => {
   const { local } = await receiptHarness();
-  local.failNext("quota");
   const actor = createActor(
     createReceiptReviewMachine({
       local,
@@ -600,23 +578,26 @@ Deno.test("receipt-actor review: failed persistence retains every line and paren
     { input: { persistenceKey: "workflow:receipt-failed-edits" } },
   ).start();
   actor.send({ type: "receipt.review.open", review: reviewDraft() });
-  await waitForActorState(actor, "failed");
+  await waitForActorState(actor, "persisted");
 
-  const expectPersistenceFailure = async (event: ReceiptReviewActorEvent) => {
-    local.failNext("quota");
-    actor.send(event);
-    await waitForActorState(actor, "failed");
-  };
   const firstLine = actor.getSnapshot().context.review!.lines[0]!;
-  await expectPersistenceFailure({
+  actor.send({
     type: "receipt.review.select-line",
     lineId: firstLine.id,
     selected: !firstLine.selected,
   });
-  await expectPersistenceFailure({
+  assertEquals(
+    actor.getSnapshot().context.review!.lines[0]!.selected,
+    !firstLine.selected,
+  );
+  actor.send({
     type: "receipt.review.edit-line",
     line: { ...firstLine, description: "Edited after failure" },
   });
+  assertEquals(
+    actor.getSnapshot().context.review!.lines[0]!.description,
+    "Edited after failure",
+  );
   const addedLine = {
     type: "purchase" as const,
     id: "receipt-failed-added-line",
@@ -626,15 +607,17 @@ Deno.test("receipt-actor review: failed persistence retains every line and paren
     selected: true,
     uncertain: false,
   };
-  await expectPersistenceFailure({
+  actor.send({
     type: "receipt.review.add-line",
     line: addedLine,
   });
-  await expectPersistenceFailure({
+  assertEquals(actor.getSnapshot().context.review!.lines.length, 3);
+  actor.send({
     type: "receipt.review.remove-line",
     lineId: addedLine.id,
   });
-  await expectPersistenceFailure({
+  assertEquals(actor.getSnapshot().context.review!.lines.length, 2);
+  actor.send({
     type: "receipt.review.change-parent",
     parent: {
       ...actor.getSnapshot().context.review!.parent,

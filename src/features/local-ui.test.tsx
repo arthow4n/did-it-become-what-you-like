@@ -367,28 +367,10 @@ Deno.test("local UI manual deletion reports a deleted completion status", async 
   });
 });
 
-Deno.test("local UI hydrated manual drafts expose an in-form discard action", async () => {
+Deno.test("local UI manual form exposes an in-form discard action", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
-      await local.transaction(
-        "readwrite",
-        (transaction) =>
-          transaction.put("workflow-snapshots", "workflow:manual-expense", {
-            version: 1,
-            kind: "manual-expense-draft",
-            revision: 1,
-            draft: {
-              projectId: project.id,
-              categoryId: category.id,
-              date: "2026-08-30",
-              amount: "4",
-              currency: "SEK",
-              description: "Restored draft",
-              direction: "spent",
-            },
-          } as never),
-      );
       const { service } = createTestService(state);
       let closed = false;
       let dirty = false;
@@ -397,13 +379,19 @@ Deno.test("local UI hydrated manual drafts expose an in-form discard action", as
           repository: local,
           service,
           state,
-          request: {},
+          request: { projectId: project.id },
           onSaved: () => undefined,
           onDirtyChange: (nextDirty) => dirty = nextDirty,
           onClosed: () => closed = true,
         }),
       );
       const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("textbox", { name: "Amount" }))
+      );
+      fireEvent.input(view.getByRole("textbox", { name: "Amount" }), {
+        target: { value: "4" },
+      });
       await waitFor(() =>
         assert(view.getByRole("button", { name: "Discard draft" }))
       );
@@ -412,7 +400,6 @@ Deno.test("local UI hydrated manual drafts expose an in-form discard action", as
       assert(dirty, "The form must remain guarded while discard is pending");
       fireEvent.click(view.getByRole("button", { name: "Discard changes" }));
       await waitFor(() => assert(closed));
-      assertEquals(await local.query("workflow-snapshots"), []);
     });
   });
 });
@@ -707,7 +694,7 @@ Deno.test("local UI locks manual controls while a save is in flight", async () =
   });
 });
 
-Deno.test("local UI exposes draft persistence retry without discarding input", async () => {
+Deno.test("local UI exposes save failure retry without discarding input", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -726,21 +713,17 @@ Deno.test("local UI exposes draft persistence retry without discarding input", a
       await waitFor(() =>
         assert(view.getByRole("textbox", { name: "Amount" }))
       );
-      local.failNext("quota");
       fireEvent.input(view.getByRole("textbox", { name: "Amount" }), {
         target: { value: "4" },
       });
+      local.failNext("quota");
+      fireEvent.click(view.getByRole("button", { name: "Save expense" }));
       await waitFor(() =>
-        assert(view.getByRole("button", { name: "Retry draft save" }))
+        assert(view.getByRole("button", { name: "Retry save" }))
       );
-      fireEvent.click(view.getByRole("button", { name: "Retry draft save" }));
+      fireEvent.click(view.getByRole("button", { name: "Retry save" }));
       await waitFor(() =>
-        assert(view.getByRole("button", { name: "Discard draft" }))
-      );
-      assertEquals(
-        (view.getByRole("textbox", { name: "Amount" }) as HTMLInputElement)
-          .value,
-        "4",
+        assert(view.getByRole("heading", { name: "Expense saved" }))
       );
     });
   });

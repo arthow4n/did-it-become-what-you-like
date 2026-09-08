@@ -1755,42 +1755,37 @@ export function SyncPortabilityRuntime({
     }
   }, [sendSync, syncSnapshot]);
 
-  const authorizeDrive = (reconnect = false) => {
-    if (driveAdapter === null) {
-      onNotice(
-        "Google Drive is unavailable until OAuth client configuration is provided.",
-      );
-      return;
-    }
-    syncAfterAuthorization.current = true;
-    const authorizationOptions = reconnect
-      ? reconnectAuthorizationOptions(syncView)
-      : undefined;
-    void driveAdapter.authorize(authorizationOptions).then((session) => {
-      sendSync({
-        type: "sync.configure",
-        accountEmail: session.accountId,
-        online: globalThis.navigator?.onLine !== false,
-      });
-    }).catch(() => {
-      syncAfterAuthorization.current = false;
-      if (connectionMode === "persisted" && reconnect) {
-        const serverUrl = syncServerUrl || browserConfiguredSyncServerUrl();
-        if (serverUrl && serverUrl.trim().length > 0 && globalThis.location) {
-          const cleanServerUrl = serverUrl.replace(/\/+$/, "");
-          const returnTo = globalThis.location.href;
-          globalThis.location.href =
-            `${cleanServerUrl}/auth/google-drive/login?return_to=${
-              encodeURIComponent(returnTo)
-            }`;
-          return;
+  const authorizeDrive = useCallback(
+    (reconnect = false, silent = false) => {
+      if (driveAdapter === null) {
+        if (!silent) {
+          onNotice(
+            "Google Drive is unavailable until OAuth client configuration is provided.",
+          );
         }
+        return;
       }
-      onNotice(
-        "Google Drive authorization was cancelled or unavailable. Local data remains available.",
-      );
-    });
-  };
+      syncAfterAuthorization.current = true;
+      const authorizationOptions = reconnect
+        ? reconnectAuthorizationOptions(syncView)
+        : undefined;
+      void driveAdapter.authorize(authorizationOptions).then((session) => {
+        sendSync({
+          type: "sync.configure",
+          accountEmail: session.accountId,
+          online: globalThis.navigator?.onLine !== false,
+        });
+      }).catch(() => {
+        syncAfterAuthorization.current = false;
+        if (!silent) {
+          onNotice(
+            "Google Drive authorization was cancelled or unavailable. Local data remains available.",
+          );
+        }
+      });
+    },
+    [driveAdapter, onNotice, sendSync, syncView],
+  );
 
   const handleConnect = useCallback(
     (mode: "persisted" | "direct" = connectionMode) => {
@@ -1830,25 +1825,43 @@ export function SyncPortabilityRuntime({
         authorizeDrive(false);
       }
     },
-    [connectionMode, syncServerUrl, onNotice],
+    [connectionMode, syncServerUrl, onNotice, authorizeDrive],
   );
+
+  const handleReconnect = useCallback(() => {
+    if (connectionMode === "persisted") {
+      handleConnect("persisted");
+    } else {
+      authorizeDrive(true, false);
+    }
+  }, [connectionMode, handleConnect, authorizeDrive]);
 
   useEffect(() => {
     if (connectionMode !== "persisted" || driveAdapter === null) return;
     if (typeof globalThis.location !== "undefined") {
-      const url = new URL(globalThis.location.href);
-      if (url.searchParams.get("sync_connected") === "persisted") {
-        authorizeDrive(false);
-        return;
+      try {
+        const url = new URL(globalThis.location.href);
+        if (url.searchParams.get("sync_connected") === "persisted") {
+          url.searchParams.delete("sync_connected");
+          globalThis.history?.replaceState?.(
+            null,
+            "",
+            url.pathname + (url.search ? url.search : "") + url.hash,
+          );
+          authorizeDrive(false, false);
+          return;
+        }
+      } catch {
+        // ignore
       }
     }
     if (
       syncView.mode === "configured" &&
       driveAdapter.status() !== "authorized"
     ) {
-      authorizeDrive(true);
+      authorizeDrive(true, true);
     }
-  }, [connectionMode, driveAdapter, syncView.mode]);
+  }, [connectionMode, driveAdapter, syncView.mode, authorizeDrive]);
 
   useEffect(() => {
     if (connectionMode !== "persisted") return;
@@ -2013,7 +2026,7 @@ export function SyncPortabilityRuntime({
             sendSync({ type: "sync.disconnect" });
           }).catch(() => onNotice("Google Drive could not be disconnected."));
         }}
-        onReconnect={() => authorizeDrive(true)}
+        onReconnect={handleReconnect}
         onBack={() => onNavigate("/settings")}
       />
     )
@@ -2157,7 +2170,7 @@ export function SyncPortabilityRuntime({
         value={{
           view: syncView,
           onOpenSync: () => onNavigate("/settings/sync"),
-          onReconnect: () => authorizeDrive(true),
+          onReconnect: handleReconnect,
           notifyLocalMutation: () => {
             if (
               syncView.mode === "configured" &&

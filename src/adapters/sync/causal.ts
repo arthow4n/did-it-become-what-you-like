@@ -946,6 +946,8 @@ export function createDriveCausalSyncPort(
 ): DriveCausalSyncPort {
   const fileName = options.fileName ?? CAUSAL_SYNC_FILE_NAME;
   let knownFile: DriveFile | undefined;
+  let knownSnapshot: CausalSnapshot | undefined;
+
   const readRemote = async (
     operationOptions?: OperationOptions,
   ): Promise<CausalSnapshot> => {
@@ -953,9 +955,11 @@ export function createDriveCausalSyncPort(
     if (marker !== undefined) throw adapterError("retired", "sync.remote-read");
     const file = await options.drive.readAppData(fileName, operationOptions);
     knownFile = file;
-    return file === undefined
+    const snapshot = file === undefined
       ? initialSnapshot(options.initialSnapshot)
       : parseEnvelope(file.body);
+    knownSnapshot = snapshot;
+    return cloneSnapshot(snapshot);
   };
 
   return {
@@ -972,20 +976,29 @@ export function createDriveCausalSyncPort(
       packet,
       operationOptions,
     ): Promise<CausalApplyResult> => {
-      const remote = await readRemote(operationOptions);
+      const remote = knownSnapshot !== undefined
+        ? cloneSnapshot(knownSnapshot)
+        : await readRemote(operationOptions);
+      knownSnapshot = undefined;
       const incoming = snapshotFromPacket(remote, packet);
       const merged = mergeCausalSnapshots(remote, incoming);
-      const written = await options.drive.writeAppData({
-        name: fileName,
-        body: envelopeBody(merged.snapshot),
-        ...(knownFile === undefined ? {} : { expectedEtag: knownFile.etag }),
-      }, operationOptions);
-      knownFile = written;
-      return {
-        snapshot: cloneSnapshot(merged.snapshot),
-        appliedChangeIds: merged.appliedChangeIds,
-        conflicts: merged.conflicts,
-      };
+      try {
+        const written = await options.drive.writeAppData({
+          name: fileName,
+          body: envelopeBody(merged.snapshot),
+          ...(knownFile === undefined ? {} : { expectedEtag: knownFile.etag }),
+        }, operationOptions);
+        knownFile = written;
+        return {
+          snapshot: cloneSnapshot(merged.snapshot),
+          appliedChangeIds: merged.appliedChangeIds,
+          conflicts: merged.conflicts,
+        };
+      } catch (error) {
+        knownFile = undefined;
+        knownSnapshot = undefined;
+        throw error;
+      }
     },
     resetRemoteSyncFile: async (operationOptions) => {
       const marker = await options.drive.readRetirementMarker(operationOptions);
@@ -1000,6 +1013,7 @@ export function createDriveCausalSyncPort(
       );
       if (files.length === 0) {
         knownFile = undefined;
+        knownSnapshot = undefined;
         // Another authorized device may have removed the malformed file
         // between the visible error and this explicit recovery action. The
         // desired postcondition already holds, so continue with a fresh sync.
@@ -1013,6 +1027,7 @@ export function createDriveCausalSyncPort(
         );
       }
       knownFile = undefined;
+      knownSnapshot = undefined;
     },
   };
 }

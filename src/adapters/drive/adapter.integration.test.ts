@@ -931,3 +931,44 @@ Deno.test("drive-adapter: abort signals stop operations and retry delays", async
     "aborted",
   );
 });
+
+Deno.test("drive-adapter: listAppData avoids N+1 metadata calls and memoizes retirement reads", async () => {
+  const { adapter, endpoint } = fixture();
+  endpoint.seed("a.json", "{}");
+  endpoint.seed("b.json", "{}");
+  endpoint.seed("c.json", "{}");
+  await authorized(adapter);
+
+  const initialCallCount = endpoint.calls.length;
+  await adapter.listAppData();
+  // Expect 1 list call + 3 media body downloads = 4 calls (0 separate metadata GETs)
+  const listCalls = endpoint.calls.slice(initialCallCount);
+  const metadataCalls = listCalls.filter(
+    (call) =>
+      call.method === "GET" &&
+      !call.path.endsWith("/files") &&
+      call.alt !== "media",
+  );
+  assertEquals(
+    metadataCalls.length,
+    0,
+    "No separate metadata GET calls should be made",
+  );
+
+  // Verify retirement marker read memoization
+  const beforeRetirement = endpoint.calls.length;
+  await adapter.readRetirementMarker();
+  const callsAfterFirst = endpoint.calls.length;
+  assert(
+    callsAfterFirst > beforeRetirement,
+    "First read should query the endpoint",
+  );
+  await adapter.readRetirementMarker();
+  await adapter.readRetirementMarker();
+  // Only the first readRetirementMarker should hit the network; subsequent reads hit cache
+  assertEquals(
+    endpoint.calls.length,
+    callsAfterFirst,
+    "Repeated retirement marker reads must be memoized and make 0 additional calls",
+  );
+});

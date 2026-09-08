@@ -127,7 +127,6 @@ const SAFE_ACCOUNT_ID = /^[^\s\0]{1,320}$/u;
 const SAFE_TOKEN_TYPE = "Bearer";
 const DRIVE_METADATA_FIELDS =
   "nextPageToken,files(id,name,mimeType,modifiedTime,version)";
-const DRIVE_FILE_METADATA_FIELDS = "id,name,mimeType,modifiedTime,version";
 const DRIVE_MUTATION_FIELDS = "id,name,mimeType,modifiedTime,version";
 const DIAGNOSTIC_OPERATIONS = new Set<string>(
   Object.values(ADAPTER_DIAGNOSTIC_OPERATIONS),
@@ -438,9 +437,15 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
   let accessToken: AccessToken | undefined;
   let authorizationInFlight = false;
 
+  let cachedRetirementMarker: {
+    readonly marker: DriveRetirementMarker | undefined;
+    readonly checkedAt: number;
+  } | undefined;
+
   const clearToken = (): void => {
     accessToken = undefined;
     authState = "signed-out";
+    cachedRetirementMarker = undefined;
   };
 
   const tokenIsUsable = (): boolean => {
@@ -592,32 +597,6 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
     }
   }
 
-  async function metadataFor(
-    listed: { readonly id: string; readonly name: string },
-    optionsForOperation: OperationOptions | undefined,
-  ): Promise<AppDataMetadata> {
-    const token = requireToken("drive.metadata");
-    const response = await withRetry(
-      "drive.metadata",
-      optionsForOperation,
-      () =>
-        responseJson(
-          token,
-          {
-            path: `files/${encodeURIComponent(listed.id)}`,
-            parameters: { fields: DRIVE_FILE_METADATA_FIELDS },
-          },
-          "drive.metadata",
-          optionsForOperation,
-        ),
-    );
-    const metadata = appDataMetadata(response.value, "drive.metadata");
-    if (metadata.id !== listed.id || metadata.name !== listed.name) {
-      throw adapterError("corrupt-data", "drive.metadata");
-    }
-    return metadata;
-  }
-
   async function listMetadata(
     optionsForOperation: OperationOptions | undefined,
   ): Promise<readonly AppDataMetadata[]> {
@@ -649,20 +628,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
         throw adapterError("corrupt-data", "drive.list");
       }
       for (const item of response.files) {
-        const listed = metadataValue(item, "drive.list");
-        const listedId = listed.id;
-        const listedName = listed.name;
-        if (
-          typeof listedId !== "string" || listedId.length === 0 ||
-          typeof listedName !== "string"
-        ) {
-          throw adapterError("corrupt-data", "drive.list");
-        }
-        validFileName(listedName, "drive.list");
-        const metadata = await metadataFor(
-          { id: listedId, name: listedName },
-          optionsForOperation,
-        );
+        const metadata = appDataMetadata(item, "drive.list");
         result.push(metadata);
       }
       if (response.nextPageToken === undefined) return result;
@@ -864,18 +830,30 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
   async function readRetirementMarker(
     optionsForOperation?: OperationOptions,
   ): Promise<DriveRetirementMarker | undefined> {
+    const nowMs = Date.parse(clock.now());
+    if (
+      cachedRetirementMarker !== undefined &&
+      nowMs - cachedRetirementMarker.checkedAt < 5_000
+    ) {
+      return cachedRetirementMarker.marker;
+    }
     const file = await readAppDataInternal(
       DRIVE_RETIREMENT_MARKER_NAME,
       optionsForOperation,
     );
-    if (file === undefined) return undefined;
+    if (file === undefined) {
+      cachedRetirementMarker = { marker: undefined, checkedAt: nowMs };
+      return undefined;
+    }
     let parsed: unknown;
     try {
       parsed = JSON.parse(file.body) as unknown;
     } catch {
       throw adapterError("corrupt-data", "drive.retirement.read");
     }
-    return markerValue(parsed, "drive.retirement.read");
+    const marker = markerValue(parsed, "drive.retirement.read");
+    cachedRetirementMarker = { marker, checkedAt: nowMs };
+    return marker;
   }
 
   function configuredMarker(): DriveRetirementMarker {
@@ -892,6 +870,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
     marker: DriveRetirementMarker,
     optionsForOperation?: OperationOptions,
   ): Promise<DriveFile> {
+    cachedRetirementMarker = undefined;
     const normalized = markerValue(marker, "drive.retirement.publish");
     const existing = await readAppDataInternal(
       DRIVE_RETIREMENT_MARKER_NAME,
@@ -1085,6 +1064,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
 
     deleteEverywhere: async (optionsForOperation) => {
       throwIfAborted(optionsForOperation?.signal);
+      cachedRetirementMarker = undefined;
       const marker = configuredMarker();
       const prior = await readRetirementMarker(optionsForOperation);
       if (prior !== undefined && prior.generation !== marker.generation) {

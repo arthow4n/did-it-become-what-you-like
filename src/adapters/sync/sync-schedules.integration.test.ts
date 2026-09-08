@@ -264,6 +264,46 @@ Deno.test(
 );
 
 Deno.test(
+  "sync-schedules: drive causal port reuses snapshot from preceding read without duplicate download in applyPacket",
+  async () => {
+    const fakeDrive = createFakeDrivePorts();
+    await fakeDrive.authorize();
+    const drive = createDriveCausalSyncPort({
+      drive: {
+        ...fakeDrive,
+        readRetirementMarker: () => Promise.resolve(undefined),
+      },
+    });
+    // 1. Initial read:
+    await drive.read();
+    const readsAfterFirstRead = fakeDrive.requests.filter(
+      (r) => r.operation === "read",
+    ).length;
+    assertEquals(readsAfterFirstRead, 1);
+
+    // 2. Apply packet immediately after read:
+    const change = createDatasetChange({
+      id: "change-1",
+      actorId: "device-1",
+      sequence: 1,
+      parents: [],
+      dataset: emptyPortableDataset(),
+    });
+    await drive.applyPacket({
+      generation: 1,
+      heads: [change.id],
+      changes: [change],
+    });
+
+    // Expect no additional remote read was issued by applyPacket
+    const readsAfterApply = fakeDrive.requests.filter(
+      (r) => r.operation === "read",
+    ).length;
+    assertEquals(readsAfterApply, 1);
+  },
+);
+
+Deno.test(
   "sync-schedules: coordinator reports same-record same-field conflicts with record identity",
   async () => {
     const baseline = datasetWithExpense(

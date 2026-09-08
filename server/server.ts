@@ -124,7 +124,7 @@ export async function handleRequest(
   const path = url.pathname;
   const method = req.method;
   const fetcher = env.fetch ?? globalThis.fetch;
-  const serverOrigin = env.serverOrigin ?? url.origin;
+  const serverOrigin = (env.serverOrigin ?? url.origin).replace(/\/+$/, "");
 
   // Handle CORS Preflight
   if (method === "OPTIONS") {
@@ -159,8 +159,18 @@ export async function handleRequest(
     await kv.set(["oauth_state", state], stateRecord, { expireIn: 600_000 }); // 10 mins
 
     const redirectUri = `${serverOrigin}/auth/google-drive/callback`;
+    const cleanClientId = env.googleClientId.trim().replace(
+      /^["']|["']$/g,
+      "",
+    );
+    if (!cleanClientId) {
+      return new Response(
+        "Missing GOOGLE_CLIENT_ID environment variable on server.",
+        { status: 500, headers: { "Content-Type": "text/plain" } },
+      );
+    }
     const googleAuthUrl = new URL(GOOGLE_AUTH_URL);
-    googleAuthUrl.searchParams.set("client_id", env.googleClientId);
+    googleAuthUrl.searchParams.set("client_id", cleanClientId);
     googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
     googleAuthUrl.searchParams.set("response_type", "code");
     googleAuthUrl.searchParams.set(
@@ -225,8 +235,11 @@ export async function handleRequest(
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         code,
-        client_id: env.googleClientId,
-        client_secret: env.googleClientSecret,
+        client_id: env.googleClientId.trim().replace(/^["']|["']$/g, ""),
+        client_secret: env.googleClientSecret.trim().replace(
+          /^["']|["']$/g,
+          "",
+        ),
         redirect_uri: redirectUri,
         grant_type: "authorization_code",
       }).toString(),

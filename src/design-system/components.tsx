@@ -23,8 +23,10 @@ import {
   ChevronRight,
   CircleAlert,
   CircleCheck,
+  Pencil,
   Plus,
   Sparkles,
+  Trash2,
   X,
 } from "lucide-react";
 import {
@@ -3457,7 +3459,16 @@ export function ReceiptMetadata(
             {metadata.time ? ` · ${metadata.time}` : ""} · {metadata.currency}
           </Text>
         </Stack>
-        {onEdit ? <Button variant="quiet" onPress={onEdit}>Edit</Button> : null}
+        {onEdit
+          ? (
+            <IconButton
+              icon={<Pencil size={18} />}
+              aria-label="Edit"
+              variant="quiet"
+              onPress={onEdit}
+            />
+          )
+          : null}
       </Inline>
       <Inline justify="space-between">
         <Text tone="secondary">Receipt total</Text>
@@ -3546,24 +3557,28 @@ export function ReceiptLineCard(
             )
             : null}
         </Stack>
-        <Inline>
+        <Inline gap={1}>
           {editControl}
           {editControl === undefined && onEdit
             ? (
-              <Button variant="quiet" isDisabled={isDisabled} onPress={onEdit}>
-                Edit
-              </Button>
+              <IconButton
+                icon={<Pencil size={18} />}
+                aria-label="Edit"
+                variant="quiet"
+                isDisabled={isDisabled}
+                onPress={onEdit}
+              />
             )
             : null}
           {onRemove
             ? (
-              <Button
+              <IconButton
+                icon={<Trash2 size={18} />}
+                aria-label="Remove"
                 variant="quiet"
                 isDisabled={isDisabled}
                 onPress={onRemove}
-              >
-                Remove
-              </Button>
+              />
             )
             : null}
         </Inline>

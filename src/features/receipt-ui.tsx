@@ -49,7 +49,7 @@ import type {
   ContractFailure,
   ReceiptImageRef,
 } from "../actors/contracts/index.ts";
-import { ArrowLeft, ChevronDown, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, Trash2, X } from "lucide-react";
 import {
   AdaptiveDialog,
   Button,
@@ -2256,13 +2256,13 @@ export function ReceiptSettingsScreen({
                     <Heading size="sm">API key</Heading>
                     <Text tone="secondary">{maskedKey}</Text>
                   </Stack>
-                  <Button
+                  <IconButton
+                    icon={<Trash2 size={18} />}
+                    aria-label="Remove"
                     variant="quiet"
                     isDisabled={loading}
                     onPress={() => void removeKey()}
-                  >
-                    Remove
-                  </Button>
+                  />
                 </Inline>
                 <Text tone="secondary">
                   Stored only on this device. It is not a browser secret and can

@@ -1,6 +1,6 @@
 import { useActor } from "@xstate/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, SlidersHorizontal, X } from "lucide-react";
+import { ArrowLeft, Pencil, SlidersHorizontal, X } from "lucide-react";
 import {
   createProjectCategoryService,
   type ProjectCategoryService,
@@ -88,7 +88,6 @@ import {
   Skeleton,
   Stack,
   Text,
-  TextArea,
   TextField,
   Toast,
 } from "../design-system/index.ts";
@@ -1541,13 +1540,13 @@ export function ProjectManager({
                       <strong>{current.name}</strong>
                       <Text tone="secondary">{current.defaultCurrency}</Text>
                     </Stack>
-                    <Button
+                    <IconButton
+                      icon={<Pencil size={18} />}
+                      aria-label="Edit"
                       variant="quiet"
                       onPress={() =>
                         openEditor({ kind: "edit", record: current })}
-                    >
-                      Edit
-                    </Button>
+                    />
                   </Inline>
                 </ListRow>
               </List>
@@ -1572,6 +1571,13 @@ export function ProjectManager({
                       <strong>{project.name}</strong>
                       <Text tone="secondary">{project.defaultCurrency}</Text>
                     </Stack>
+                    <IconButton
+                      icon={<Pencil size={18} />}
+                      aria-label="Edit"
+                      variant="quiet"
+                      onPress={() =>
+                        openEditor({ kind: "edit", record: project })}
+                    />
                   </Inline>
                   <div className="local-ui-card-actions--primary-stack">
                     <Button
@@ -1585,13 +1591,6 @@ export function ProjectManager({
                       Use
                     </Button>
                     <div className="local-ui-card-actions--grid">
-                      <Button
-                        variant="quiet"
-                        onPress={() =>
-                          openEditor({ kind: "edit", record: project })}
-                      >
-                        Edit
-                      </Button>
                       <Button
                         variant="quiet"
                         isDisabled={index === 0 || snapshot.hasTag("saving")}
@@ -1685,10 +1684,21 @@ export function ProjectManager({
                 {archived.map((project) => (
                   <ListRow key={project.id} trailing={<Badge>Archived</Badge>}>
                     <Stack gap={2}>
-                      <Stack gap={1}>
-                        <strong>{project.name}</strong>
-                        <Text tone="secondary">{project.defaultCurrency}</Text>
-                      </Stack>
+                      <Inline justify="space-between">
+                        <Stack gap={1}>
+                          <strong>{project.name}</strong>
+                          <Text tone="secondary">
+                            {project.defaultCurrency}
+                          </Text>
+                        </Stack>
+                        <IconButton
+                          icon={<Pencil size={18} />}
+                          aria-label="Edit"
+                          variant="quiet"
+                          onPress={() =>
+                            openEditor({ kind: "edit", record: project })}
+                        />
+                      </Inline>
                       <div className="local-ui-card-actions--grid">
                         <Button
                           variant="secondary"
@@ -1702,13 +1712,6 @@ export function ProjectManager({
                             })}
                         >
                           Restore
-                        </Button>
-                        <Button
-                          variant="quiet"
-                          onPress={() =>
-                            openEditor({ kind: "edit", record: project })}
-                        >
-                          Edit
                         </Button>
                         {isProjectEmpty(state, project.id)
                           ? (
@@ -2287,13 +2290,13 @@ export function CategoryManager({
               <Stack gap={2}>
                 <Inline justify="space-between">
                   <strong>{category.name}</strong>
-                  <Button
+                  <IconButton
+                    icon={<Pencil size={18} />}
+                    aria-label="Edit"
                     variant="quiet"
                     onPress={() =>
                       openEditor({ kind: "edit", record: category })}
-                  >
-                    Edit
-                  </Button>
+                  />
                 </Inline>
                 <div className="local-ui-card-actions--grid">
                   <Button
@@ -2374,10 +2377,19 @@ export function CategoryManager({
                 {archived.map((category) => (
                   <ListRow key={category.id}>
                     <Stack gap={2}>
-                      <Stack gap={1}>
-                        <strong>{category.name}</strong>
-                        <Text tone="secondary">Archived</Text>
-                      </Stack>
+                      <Inline justify="space-between">
+                        <Stack gap={1}>
+                          <strong>{category.name}</strong>
+                          <Text tone="secondary">Archived</Text>
+                        </Stack>
+                        <IconButton
+                          icon={<Pencil size={18} />}
+                          aria-label="Edit"
+                          variant="quiet"
+                          onPress={() =>
+                            openEditor({ kind: "edit", record: category })}
+                        />
+                      </Inline>
                       <div className="local-ui-card-actions--grid">
                         <Button
                           variant="secondary"
@@ -2391,13 +2403,6 @@ export function CategoryManager({
                             })}
                         >
                           Restore
-                        </Button>
-                        <Button
-                          variant="quiet"
-                          onPress={() =>
-                            openEditor({ kind: "edit", record: category })}
-                        >
-                          Edit
                         </Button>
                       </div>
                     </Stack>
@@ -2731,21 +2736,23 @@ export function ManualExpenseScreen({
   return (
     <ContentContainer size="form">
       <Stack gap={5}>
-        <PageHeader
-          headingLevel={1}
-          title={snapshot.context.originalExpense
-            ? "Edit expense"
-            : "New expense"}
-          leading={
-            <IconButton
-              icon={<X />}
-              aria-label="Close"
-              variant="quiet"
-              isDisabled={formLocked}
-              onPress={() => send({ type: "expense.back" })}
+        {snapshot.context.originalExpense
+          ? (
+            <PageHeader
+              headingLevel={1}
+              title="Edit expense"
+              leading={
+                <IconButton
+                  icon={<X />}
+                  aria-label="Close"
+                  variant="quiet"
+                  isDisabled={formLocked}
+                  onPress={() => send({ type: "expense.back" })}
+                />
+              }
             />
-          }
-        />
+          )
+          : null}
         <ExpenseForm
           stickyActions
           status={failed || deleteFailed || busy || isModified
@@ -2803,18 +2810,19 @@ export function ManualExpenseScreen({
           }
         >
           {errors.length ? <ErrorSummary errors={errors} /> : null}
-          <SegmentedControl
-            fullWidth
-            label="Direction"
-            value={draft.direction}
-            isDisabled={formLocked}
-            onChange={(value) =>
-              update({ direction: value as ManualExpenseDraft["direction"] })}
-            options={[{ id: "spent", label: "Spent" }, {
-              id: "money-back",
-              label: "Money back",
-            }]}
-          />
+          <div className="local-ui-direction-row">
+            <SegmentedControl
+              label="Direction"
+              value={draft.direction}
+              isDisabled={formLocked}
+              onChange={(value) =>
+                update({ direction: value as ManualExpenseDraft["direction"] })}
+              options={[{ id: "spent", label: "Spent" }, {
+                id: "money-back",
+                label: "Money back",
+              }]}
+            />
+          </div>
           <div className="local-ui-form-row local-ui-form-row--amount-currency">
             <MoneyField
               label="Amount"
@@ -2842,7 +2850,7 @@ export function ManualExpenseScreen({
             suggestions={[...snapshot.context.suggestions]}
             isDisabled={formLocked}
           />
-          <TextArea
+          <TextField
             label="Description (optional)"
             value={draft.description}
             onChange={(value) => update({ description: value })}

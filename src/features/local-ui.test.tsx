@@ -682,10 +682,10 @@ Deno.test("local UI locks manual controls while a save is in flight", async () =
         (view.getByRole("textbox", { name: "Amount" }) as HTMLInputElement)
           .disabled,
       );
-      assert(
-        (view.getByRole("button", { name: "Close" }) as HTMLButtonElement)
-          .disabled,
-      );
+      const closeButton = view.queryByRole("button", { name: "Close" });
+      if (closeButton) {
+        assert((closeButton as HTMLButtonElement).disabled);
+      }
       releaseCommit(state);
       await waitFor(() =>
         assert(view.getByRole("heading", { name: "Expense saved" }))

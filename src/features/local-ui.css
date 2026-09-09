@@ -167,6 +167,12 @@
     min-width: 0;
   }
 
+  .local-ui-direction-row {
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+  }
+
   @media (min-width: 720px) {
     .local-ui-form-row {
       gap: var(--space-4);

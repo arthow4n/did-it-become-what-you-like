@@ -184,13 +184,17 @@ function browserConfiguredClientId(): string | undefined {
     : undefined;
 }
 
-function browserConfiguredSyncServerUrl(): string | undefined {
+export const DEFAULT_SYNC_SERVER_URL =
+  "https://did-it-become-what-you-like.arthow4n.deno.net";
+
+function browserConfiguredSyncServerUrl(): string {
   const env = (import.meta as unknown as {
     readonly env?: { readonly VITE_SYNC_SERVER_URL?: unknown };
   }).env;
-  return typeof env?.VITE_SYNC_SERVER_URL === "string"
-    ? env.VITE_SYNC_SERVER_URL
-    : undefined;
+  return typeof env?.VITE_SYNC_SERVER_URL === "string" &&
+      env.VITE_SYNC_SERVER_URL.trim().length > 0
+    ? env.VITE_SYNC_SERVER_URL.trim()
+    : DEFAULT_SYNC_SERVER_URL;
 }
 
 export function createConfiguredDriveAdapter(
@@ -202,8 +206,12 @@ export function createConfiguredDriveAdapter(
   const clientId = boundary.clientId ?? browserConfiguredClientId();
 
   if (connectionMode === "persisted") {
-    const serverUrl = syncServerUrl ?? browserConfiguredSyncServerUrl();
-    if (serverUrl === undefined || serverUrl.trim().length === 0) return null;
+    const rawUrl = (syncServerUrl ?? browserConfiguredSyncServerUrl()).trim();
+    if (rawUrl.length === 0) return null;
+    const serverUrl =
+      !rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")
+        ? `https://${rawUrl}`
+        : rawUrl;
     try {
       const identity = boundary.identity ??
         createServerIdentityProvider({ serverUrl });
@@ -1832,10 +1840,17 @@ export function SyncPortabilityRuntime({
         } catch {
           // ignore
         }
-        const serverUrl = syncServerUrl || browserConfiguredSyncServerUrl();
-        if (!serverUrl || serverUrl.trim().length === 0) {
+        const rawServerUrl = (syncServerUrl || browserConfiguredSyncServerUrl())
+          .trim();
+        if (!rawServerUrl || rawServerUrl.length === 0) {
           onNotice("Please specify a valid Sync Server URL before connecting.");
           return;
+        }
+        let serverUrl = rawServerUrl.replace(/\/+$/, "");
+        if (
+          !serverUrl.startsWith("http://") && !serverUrl.startsWith("https://")
+        ) {
+          serverUrl = `https://${serverUrl}`;
         }
         try {
           globalThis.localStorage?.setItem(
@@ -1849,11 +1864,10 @@ export function SyncPortabilityRuntime({
         } catch {
           // ignore
         }
-        const cleanServerUrl = serverUrl.replace(/\/+$/, "");
         const returnTo = globalThis.location?.href ?? "";
         if (globalThis.location) {
           globalThis.location.href =
-            `${cleanServerUrl}/auth/google-drive/login?return_to=${
+            `${serverUrl}/auth/google-drive/login?return_to=${
               encodeURIComponent(returnTo)
             }`;
         }

@@ -98,7 +98,7 @@ function DisconnectedPanel(
                 label="Sync Server URL"
                 value={props.syncServerUrl ?? ""}
                 onChange={(val) => props.onSyncServerUrlChange?.(val)}
-                placeholder="https://your-sync.deno.dev"
+                placeholder="https://did-it-become-what-you-like.arthow4n.deno.net"
                 description="Your Deno Deploy backend URL that dispenses Google Drive tokens."
               />
               <Inline>

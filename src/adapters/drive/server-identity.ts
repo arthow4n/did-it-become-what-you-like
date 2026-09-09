@@ -19,7 +19,11 @@ export function createServerIdentityProvider(
   options: ServerIdentityOptions,
 ): DriveIdentityProvider {
   const fetcher = options.fetch ?? globalThis.fetch;
-  const baseUrl = options.serverUrl.replace(/\/+$/, "");
+  let raw = options.serverUrl.trim().replace(/\/+$/, "");
+  if (!raw.startsWith("http://") && !raw.startsWith("https://")) {
+    raw = `https://${raw}`;
+  }
+  const baseUrl = raw;
 
   return {
     initTokenClient: (config: DriveTokenClientConfig): DriveTokenClient => {

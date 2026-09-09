@@ -25,6 +25,8 @@ export const CSP_DIRECTIVES = {
     "https://www.googleapis.com",
     "https://generativelanguage.googleapis.com",
     "https://*.deno.dev",
+    "https://*.deno.net",
+    "https://did-it-become-what-you-like.arthow4n.deno.net",
   ],
   "default-src": ["'self'"],
   "font-src": ["'self'"],

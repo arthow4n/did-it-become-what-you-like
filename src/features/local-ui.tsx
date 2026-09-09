@@ -1684,12 +1684,12 @@ export function ProjectManager({
               <List>
                 {archived.map((project) => (
                   <ListRow key={project.id} trailing={<Badge>Archived</Badge>}>
-                    <Inline justify="space-between">
+                    <Stack gap={2}>
                       <Stack gap={1}>
                         <strong>{project.name}</strong>
                         <Text tone="secondary">{project.defaultCurrency}</Text>
                       </Stack>
-                      <Inline>
+                      <div className="local-ui-card-actions--grid">
                         <Button
                           variant="secondary"
                           onPress={() =>
@@ -1746,8 +1746,8 @@ export function ProjectManager({
                               Deletion unavailable.
                             </Text>
                           )}
-                      </Inline>
-                    </Inline>
+                      </div>
+                    </Stack>
                   </ListRow>
                 ))}
               </List>
@@ -2373,12 +2373,12 @@ export function CategoryManager({
               <List label="Archived categories">
                 {archived.map((category) => (
                   <ListRow key={category.id}>
-                    <Inline justify="space-between">
+                    <Stack gap={2}>
                       <Stack gap={1}>
                         <strong>{category.name}</strong>
                         <Text tone="secondary">Archived</Text>
                       </Stack>
-                      <Inline>
+                      <div className="local-ui-card-actions--grid">
                         <Button
                           variant="secondary"
                           onPress={() =>
@@ -2399,8 +2399,8 @@ export function CategoryManager({
                         >
                           Edit
                         </Button>
-                      </Inline>
-                    </Inline>
+                      </div>
+                    </Stack>
                   </ListRow>
                 ))}
               </List>

@@ -3082,7 +3082,7 @@ export function CategoryPicker({
   isDisabled,
   isRequired,
   recentCategoryIds = [],
-  maxQuickChips = 5,
+  maxQuickChips = 15,
   className,
 }: CategoryPickerProps) {
   const activeCategories = categories.filter((c) => !c.disabled);

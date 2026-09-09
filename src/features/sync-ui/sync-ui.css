@@ -83,6 +83,24 @@
     width: min(100%, var(--form-max));
   }
 
+  @media (max-width: 719px) {
+    .sync-ui-account-panel .ds-inline,
+    .sync-ui-device-list .ds-inline {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+      gap: var(--space-2);
+    }
+
+    .sync-ui-account-panel .ds-button:not(.ds-icon-button),
+    .sync-ui-account-panel button:not(.ds-icon-button),
+    .sync-ui-device-list .ds-button:not(.ds-icon-button),
+    .sync-ui-device-list button:not(.ds-icon-button) {
+      width: 100%;
+    }
+  }
+
   @media (max-width: 479px) {
     .ds-page-header__actions > .ds-button.sync-ui-status-indicator {
       width: 100%;

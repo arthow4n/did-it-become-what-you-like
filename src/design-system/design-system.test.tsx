@@ -1419,6 +1419,32 @@ Deno.test("design-system category picker prioritizes recents and handles chip se
   );
 });
 
+Deno.test("design-system category picker renders up to 15 quick chips", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaGlobals(window, () => {
+      const categories = Array.from({ length: 20 }, (_, i) => ({
+        id: `cat-${i + 1}`,
+        label: `Category ${i + 1}`,
+      }));
+      const mounted = render(
+        createElement(CategoryPicker, {
+          label: "Category",
+          categories,
+          value: "cat-1",
+        }),
+      );
+      const view = within(document.body);
+      const chipsGroup = view.getByRole("group", {
+        name: "Quick category suggestions",
+      });
+      assert(chipsGroup);
+      const chipButtons = chipsGroup.querySelectorAll("button");
+      assertEqual(chipButtons.length, 15);
+      mounted.unmount();
+    })
+  );
+});
+
 Deno.test("design-system receipt line card renders categoryControl when provided", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {

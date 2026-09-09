@@ -192,7 +192,7 @@ for (const vp of VIEWPORTS) {
       await expect(page.getByRole("heading", { name: "Edit project" }))
         .toBeVisible();
       await snap("13-project-editor");
-      await page.getByRole("button", { name: "Back" }).click();
+      await page.getByRole("button", { name: "Cancel" }).click();
 
       // 14. Project Delete Dialog
       // First create a second project so we can delete the empty one or test deletion

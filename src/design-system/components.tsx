@@ -3249,6 +3249,13 @@ export function ExpenseRow(
     onSelect?: (id: string) => void;
   },
 ) {
+  const primaryText = expense.description?.trim() || expense.merchant?.trim() ||
+    "Untitled expense";
+  const hasDistinctMerchant = Boolean(
+    expense.merchant?.trim() && expense.description?.trim() &&
+      expense.merchant?.trim() !== expense.description?.trim(),
+  );
+
   return (
     <ListRow
       trailing={
@@ -3265,9 +3272,14 @@ export function ExpenseRow(
         onPress={() => onSelect?.(expense.id)}
       >
         <Stack gap={1}>
-          <strong>
-            {expense.merchant || expense.description || "Untitled expense"}
-          </strong>
+          <strong>{primaryText}</strong>
+          {hasDistinctMerchant
+            ? (
+              <Text size="label" tone="secondary">
+                {expense.merchant}
+              </Text>
+            )
+            : null}
           <Text size="label" tone="secondary">
             {expense.category} · {expense.date}
             {expense.time ? ` · ${expense.time}` : ""}

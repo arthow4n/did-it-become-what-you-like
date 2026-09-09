@@ -1237,6 +1237,32 @@ Deno.test("design-system positive money rows always expose an explicit plus", as
   );
 });
 
+Deno.test("design-system expense row renders description as primary text with subtle merchant text", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaGlobals(window, () => {
+      const mounted = render(
+        createElement(ExpenseRow, {
+          expense: {
+            id: "expense-grocery",
+            merchant: "ICA Maxi",
+            description: "Weekly groceries",
+            category: "Food",
+            amount: "-450.00",
+            currency: "SEK",
+            date: "2026-09-01",
+          },
+        }),
+      );
+      const view = within(document.body);
+      const strong = document.querySelector("strong");
+      assertEqual(strong?.textContent, "Weekly groceries");
+      assert(view.getByText("ICA Maxi"));
+      assert(view.getByText(/Food · 2026-09-01/));
+      mounted.unmount();
+    })
+  );
+});
+
 Deno.test("design-system receipt groups show line descriptions", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {

@@ -2257,7 +2257,7 @@ export function ReceiptSettingsScreen({
                     <Text tone="secondary">{maskedKey}</Text>
                   </Stack>
                   <Button
-                    variant="danger"
+                    variant="quiet"
                     isDisabled={loading}
                     onPress={() => void removeKey()}
                   >

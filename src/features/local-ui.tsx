@@ -1012,7 +1012,7 @@ function ProjectDeletionReview({
 
   return (
     <AdaptiveDialog
-      trigger={<Button variant="danger">Delete project</Button>}
+      trigger={<Button variant="quiet">Delete project</Button>}
       title={`Delete ${project.name}?`}
       isOpen={isOpen}
       onOpenChange={(next) => {
@@ -1629,7 +1629,7 @@ export function ProjectManager({
                         ? (
                           <ConfirmDialog
                             trigger={
-                              <Button variant="danger">Delete empty</Button>
+                              <Button variant="quiet">Delete empty</Button>
                             }
                             title={`Delete ${project.name}?`}
                             description="This empty project will be removed locally. This action cannot be undone from the project list."
@@ -1714,7 +1714,7 @@ export function ProjectManager({
                           ? (
                             <ConfirmDialog
                               trigger={
-                                <Button variant="danger">Delete empty</Button>
+                                <Button variant="quiet">Delete empty</Button>
                               }
                               title={`Delete ${project.name}?`}
                               description="This archived project is empty and will be removed locally. This action cannot be undone from the project list."
@@ -2324,7 +2324,7 @@ export function CategoryManager({
                   />
                   <DeleteAndReassign
                     trigger={
-                      <Button variant="danger">Delete and reassign</Button>
+                      <Button variant="quiet">Delete and reassign</Button>
                     }
                     title={`Delete ${category.name}?`}
                     description="Choose the category which should receive every reference to this category."
@@ -2915,18 +2915,19 @@ export function ManualExpenseScreen({
             </InlineNotice>
           )
           : null}
-        {snapshot.context.originalExpense
+        {snapshot.context.originalExpense &&
+            !snapshot.matches("deleteConfirming") &&
+            !deleteFailed
           ? (
-            <InlineNotice tone="danger" title="Delete expense">
+            <FormActions className="local-ui-delete-actions">
               <Button
-                variant="danger"
-                fullWidth
+                variant="quiet"
                 isDisabled={formLocked}
                 onPress={() => send({ type: "expense.delete" })}
               >
                 Delete this expense
               </Button>
-            </InlineNotice>
+            </FormActions>
           )
           : null}
         {snapshot.matches("deleteConfirming")

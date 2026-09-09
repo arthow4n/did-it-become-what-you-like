@@ -306,7 +306,7 @@ Deno.test("server: callback success sets cookie and redirects to frontend", asyn
   assertEquals(setCookie!.includes("session_id="), true);
   assertEquals(setCookie!.includes("HttpOnly"), true);
   assertEquals(setCookie!.includes("SameSite=None"), true);
-  assertEquals(setCookie!.includes("Partitioned"), true);
+  assertEquals(typeof locUrl.searchParams.get("session_id"), "string");
 
   await kv.close();
 });

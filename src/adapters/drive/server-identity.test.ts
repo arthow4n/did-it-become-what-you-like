@@ -120,3 +120,37 @@ Deno.test("server-identity: revoke calls logout endpoint", async () => {
   await provider.revoke("any-token");
   assertEquals(logoutCalled, true);
 });
+
+Deno.test("server-identity: forwards sessionToken as Bearer Authorization header", async () => {
+  let authHeaderValue: string | undefined;
+  const mockFetch: typeof fetch = (_input, init) => {
+    const headers = init?.headers as Record<string, string> | undefined;
+    authHeaderValue = headers?.["Authorization"];
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({
+          accessToken: "sample-token",
+          expiresIn: 3600,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  };
+
+  const provider = createServerIdentityProvider({
+    serverUrl: "https://sync.example.com",
+    sessionToken: "my-session-uuid",
+    fetch: mockFetch,
+  });
+
+  const client = provider.initTokenClient({
+    client_id: "test-client",
+    scope: DRIVE_APP_DATA_SCOPE,
+    callback: () => {},
+  });
+
+  client.requestAccessToken();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  assertEquals(authHeaderValue, "Bearer my-session-uuid");
+});

@@ -201,6 +201,7 @@ export function createConfiguredDriveAdapter(
   boundary: SyncRuntimeBoundary = configuredRuntimeBoundary(),
   connectionMode: "persisted" | "direct" = "direct",
   syncServerUrl?: string,
+  sessionToken?: string | null | (() => string | null | undefined),
 ): DriveAdapter | null {
   if (boundary.drive !== undefined) return boundary.drive;
   const clientId = boundary.clientId ?? browserConfiguredClientId();
@@ -214,7 +215,7 @@ export function createConfiguredDriveAdapter(
         : rawUrl;
     try {
       const identity = boundary.identity ??
-        createServerIdentityProvider({ serverUrl });
+        createServerIdentityProvider({ serverUrl, sessionToken });
       return createDriveAdapter({
         clientId: clientId ?? "server-managed",
         identity,
@@ -1060,6 +1061,34 @@ export function SyncPortabilityRuntime({
     return null;
   });
 
+  const [syncSessionToken, setSyncSessionToken] = useState<string | null>(
+    () => {
+      if (typeof globalThis.location !== "undefined") {
+        const url = new URL(globalThis.location.href);
+        const token = url.searchParams.get("session_id");
+        if (token) {
+          try {
+            globalThis.sessionStorage?.setItem(
+              "did_it_sync_session_token",
+              token,
+            );
+          } catch {
+            // ignore
+          }
+          return token;
+        }
+      }
+      if (typeof globalThis.sessionStorage !== "undefined") {
+        try {
+          return globalThis.sessionStorage.getItem("did_it_sync_session_token");
+        } catch {
+          // ignore
+        }
+      }
+      return null;
+    },
+  );
+
   const handleConnectionModeChange = useCallback(
     (nextMode: "persisted" | "direct") => {
       setConnectionMode(nextMode);
@@ -1103,6 +1132,10 @@ export function SyncPortabilityRuntime({
       url.searchParams.delete("email");
       changed = true;
     }
+    if (url.searchParams.has("session_id")) {
+      url.searchParams.delete("session_id");
+      changed = true;
+    }
     if (changed) {
       globalThis.history?.replaceState(null, "", url.toString());
     }
@@ -1114,8 +1147,9 @@ export function SyncPortabilityRuntime({
         runtimeBoundary,
         connectionMode,
         syncServerUrl,
+        syncSessionToken,
       ),
-    [runtimeBoundary, connectionMode, syncServerUrl],
+    [runtimeBoundary, connectionMode, syncServerUrl, syncSessionToken],
   );
   const causal = useMemo(
     () =>
@@ -1784,8 +1818,21 @@ export function SyncPortabilityRuntime({
   }, [sendSync, syncSnapshot]);
 
   const authorizeDrive = useCallback(
-    (reconnect = false, silent = false) => {
-      if (driveAdapter === null) {
+    (
+      reconnect = false,
+      silent = false,
+      modeOverride?: "persisted" | "direct",
+    ) => {
+      const adapter =
+        modeOverride !== undefined && modeOverride !== connectionMode
+          ? createConfiguredDriveAdapter(
+            runtimeBoundary,
+            modeOverride,
+            syncServerUrl,
+            syncSessionToken,
+          )
+          : driveAdapter;
+      if (adapter === null) {
         if (!silent) {
           onNotice(
             "Google Drive is unavailable until OAuth client configuration is provided.",
@@ -1797,7 +1844,7 @@ export function SyncPortabilityRuntime({
       const authorizationOptions = reconnect
         ? reconnectAuthorizationOptions(syncView)
         : undefined;
-      void driveAdapter.authorize(authorizationOptions).then((session) => {
+      void adapter.authorize(authorizationOptions).then((session) => {
         setSyncError(null);
         sendSync({
           type: "sync.configure",
@@ -1813,9 +1860,12 @@ export function SyncPortabilityRuntime({
             : typeof err === "object" && err !== null && "operation" in err
             ? `${(err as { operation: string }).operation}`
             : "Google Drive authorization failed");
-        if (detail === "No active session cookie") {
+        if (
+          detail.includes("No active session cookie") ||
+          detail.includes("401")
+        ) {
           detail =
-            "No active session cookie (HTTP 401). Mobile browsers (such as Safari or Chrome on iOS) block third-party cookies across different domains (github.io vs deno.dev).";
+            "No active sync session. Please tap 'Connect Google Drive' to sign in with your Google account.";
         }
         setSyncError(detail);
         if (!silent) {
@@ -1825,7 +1875,16 @@ export function SyncPortabilityRuntime({
         }
       });
     },
-    [driveAdapter, onNotice, sendSync, syncView],
+    [
+      driveAdapter,
+      onNotice,
+      sendSync,
+      syncView,
+      connectionMode,
+      runtimeBoundary,
+      syncServerUrl,
+      syncSessionToken,
+    ],
   );
 
   const handleConnect = useCallback(
@@ -1881,7 +1940,7 @@ export function SyncPortabilityRuntime({
         } catch {
           // ignore
         }
-        authorizeDrive(false);
+        authorizeDrive(false, false, "direct");
       }
     },
     [connectionMode, syncServerUrl, onNotice, authorizeDrive],
@@ -2065,6 +2124,12 @@ export function SyncPortabilityRuntime({
           sendSync({ type: "sync.account.confirm" })}
         onCancelAccountSwitch={() => sendSync({ type: "sync.account.cancel" })}
         onDisconnect={() => {
+          try {
+            globalThis.sessionStorage?.removeItem("did_it_sync_session_token");
+          } catch {
+            // ignore
+          }
+          setSyncSessionToken(null);
           if (driveAdapter === null) {
             sendSync({ type: "sync.disconnect" });
             return;

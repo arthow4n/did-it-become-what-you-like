@@ -201,7 +201,6 @@ export function createConfiguredDriveAdapter(
   boundary: SyncRuntimeBoundary = configuredRuntimeBoundary(),
   connectionMode: "persisted" | "direct" = "direct",
   syncServerUrl?: string,
-  sessionToken?: string | null | (() => string | null | undefined),
 ): DriveAdapter | null {
   if (boundary.drive !== undefined) return boundary.drive;
   const clientId = boundary.clientId ?? browserConfiguredClientId();
@@ -215,7 +214,7 @@ export function createConfiguredDriveAdapter(
         : rawUrl;
     try {
       const identity = boundary.identity ??
-        createServerIdentityProvider({ serverUrl, sessionToken });
+        createServerIdentityProvider({ serverUrl });
       return createDriveAdapter({
         clientId: clientId ?? "server-managed",
         identity,
@@ -1061,34 +1060,6 @@ export function SyncPortabilityRuntime({
     return null;
   });
 
-  const [syncSessionToken, setSyncSessionToken] = useState<string | null>(
-    () => {
-      if (typeof globalThis.location !== "undefined") {
-        const url = new URL(globalThis.location.href);
-        const token = url.searchParams.get("session_id");
-        if (token) {
-          try {
-            globalThis.sessionStorage?.setItem(
-              "did_it_sync_session_token",
-              token,
-            );
-          } catch {
-            // ignore
-          }
-          return token;
-        }
-      }
-      if (typeof globalThis.sessionStorage !== "undefined") {
-        try {
-          return globalThis.sessionStorage.getItem("did_it_sync_session_token");
-        } catch {
-          // ignore
-        }
-      }
-      return null;
-    },
-  );
-
   const handleConnectionModeChange = useCallback(
     (nextMode: "persisted" | "direct") => {
       setConnectionMode(nextMode);
@@ -1132,10 +1103,6 @@ export function SyncPortabilityRuntime({
       url.searchParams.delete("email");
       changed = true;
     }
-    if (url.searchParams.has("session_id")) {
-      url.searchParams.delete("session_id");
-      changed = true;
-    }
     if (changed) {
       globalThis.history?.replaceState(null, "", url.toString());
     }
@@ -1147,9 +1114,8 @@ export function SyncPortabilityRuntime({
         runtimeBoundary,
         connectionMode,
         syncServerUrl,
-        syncSessionToken,
       ),
-    [runtimeBoundary, connectionMode, syncServerUrl, syncSessionToken],
+    [runtimeBoundary, connectionMode, syncServerUrl],
   );
   const causal = useMemo(
     () =>
@@ -1829,7 +1795,6 @@ export function SyncPortabilityRuntime({
             runtimeBoundary,
             modeOverride,
             syncServerUrl,
-            syncSessionToken,
           )
           : driveAdapter;
       if (adapter === null) {
@@ -1883,7 +1848,6 @@ export function SyncPortabilityRuntime({
       connectionMode,
       runtimeBoundary,
       syncServerUrl,
-      syncSessionToken,
     ],
   );
 
@@ -2124,12 +2088,6 @@ export function SyncPortabilityRuntime({
           sendSync({ type: "sync.account.confirm" })}
         onCancelAccountSwitch={() => sendSync({ type: "sync.account.cancel" })}
         onDisconnect={() => {
-          try {
-            globalThis.sessionStorage?.removeItem("did_it_sync_session_token");
-          } catch {
-            // ignore
-          }
-          setSyncSessionToken(null);
           if (driveAdapter === null) {
             sendSync({ type: "sync.disconnect" });
             return;

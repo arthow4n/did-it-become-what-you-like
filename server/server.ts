@@ -352,7 +352,6 @@ export async function handleRequest(
     const redirectTarget = new URL(returnTo);
     redirectTarget.searchParams.set("sync_connected", "persisted");
     redirectTarget.searchParams.set("email", userEmail);
-    redirectTarget.searchParams.set("session_id", sessionId);
 
     return new Response(null, {
       status: 302,
@@ -365,12 +364,8 @@ export async function handleRequest(
 
   // Step 3: Dispense fresh Google Drive Access Token
   if (path === "/api/google-drive-token" && method === "GET") {
-    const authHeader = req.headers.get("authorization");
-    const bearerSession = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7).trim()
-      : undefined;
     const cookies = parseCookies(req.headers.get("cookie"));
-    const sessionId = bearerSession || cookies["session_id"];
+    const sessionId = cookies["session_id"];
     const headers = corsHeaders(env, req);
     headers.set("Content-Type", "application/json");
 
@@ -378,7 +373,7 @@ export async function handleRequest(
       return new Response(
         JSON.stringify({
           error: "unauthorized",
-          message: "No active session cookie or authorization token",
+          message: "No active session cookie",
         }),
         { status: 401, headers },
       );
@@ -448,12 +443,8 @@ export async function handleRequest(
     path === "/auth/google-drive/logout" &&
     (method === "POST" || method === "GET")
   ) {
-    const authHeader = req.headers.get("authorization");
-    const bearerSession = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7).trim()
-      : undefined;
     const cookies = parseCookies(req.headers.get("cookie"));
-    const sessionId = bearerSession || cookies["session_id"];
+    const sessionId = cookies["session_id"];
     const headers = corsHeaders(env, req);
     headers.set("Content-Type", "application/json");
 

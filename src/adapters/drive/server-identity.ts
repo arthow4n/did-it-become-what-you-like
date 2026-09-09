@@ -8,13 +8,12 @@ import {
 
 export type ServerIdentityOptions = {
   readonly serverUrl: string;
-  readonly sessionToken?: string | null | (() => string | null | undefined);
   readonly fetch?: typeof fetch;
 };
 
 /**
  * Adapter that provides Google Drive access tokens dispensed by the
- * Deno Deploy backend server using an HttpOnly session cookie or Bearer token.
+ * Deno Deploy backend server using an HttpOnly session cookie.
  */
 export function createServerIdentityProvider(
   options: ServerIdentityOptions,
@@ -26,27 +25,15 @@ export function createServerIdentityProvider(
   }
   const baseUrl = raw;
 
-  const resolveToken = (): string | null | undefined => {
-    return typeof options.sessionToken === "function"
-      ? options.sessionToken()
-      : options.sessionToken;
-  };
-
   return {
     initTokenClient: (config: DriveTokenClientConfig): DriveTokenClient => {
       return {
         requestAccessToken: () => {
           void (async () => {
             try {
-              const headers: Record<string, string> = {};
-              const token = resolveToken();
-              if (token) {
-                headers["Authorization"] = `Bearer ${token}`;
-              }
               const res = await fetcher(`${baseUrl}/api/google-drive-token`, {
                 method: "GET",
                 credentials: "include",
-                headers,
               });
 
               if (!res.ok) {
@@ -93,15 +80,9 @@ export function createServerIdentityProvider(
         throw new DOMException("Aborted", "AbortError");
       }
       try {
-        const headers: Record<string, string> = {};
-        const token = resolveToken();
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
         await fetcher(`${baseUrl}/auth/google-drive/logout`, {
           method: "POST",
           credentials: "include",
-          headers,
           signal: opOptions?.signal,
         });
       } catch (_err) {

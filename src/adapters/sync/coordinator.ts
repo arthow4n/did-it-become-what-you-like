@@ -13,10 +13,12 @@ import type { Device, PortableDataset, StableId } from "../../domain/index.ts";
 import {
   CAUSAL_STATE_KEY,
   CAUSAL_STATE_VERSION,
+  compactCausalSnapshot,
   createDatasetChange,
   datasetEntries,
   datasetFingerprint,
   datasetFromEntries,
+  expandCausalSnapshot,
   initialCausalSnapshot,
   mergeCausalSnapshots,
   parseCausalSnapshot,
@@ -56,12 +58,14 @@ function parsePersistedState(value: unknown): CausalSnapshot {
   const object = asObject(value);
   if (
     object?.type !== "s402-causal-state" ||
-    object.version !== CAUSAL_STATE_VERSION ||
+    (object.version !== 1 && object.version !== 2) ||
     object.snapshot === undefined
   ) {
     throw adapterError("corrupt-data", "sync.causal-state");
   }
-  return parseCausalSnapshot(object.snapshot);
+  return object.version === 2
+    ? expandCausalSnapshot(object.snapshot)
+    : parseCausalSnapshot(object.snapshot);
 }
 
 async function readPersistedSnapshot(
@@ -86,8 +90,14 @@ async function persistSnapshot(
   const value: PersistedCausalState = {
     type: "s402-causal-state",
     version: CAUSAL_STATE_VERSION,
-    snapshot: structuredClone(snapshot),
+    snapshot: compactCausalSnapshot(snapshot),
   };
+  const existing = await transaction.get(
+    "sync-metadata",
+    CAUSAL_STATE_KEY,
+    options,
+  );
+  if (JSON.stringify(existing) === JSON.stringify(value)) return;
   await transaction.put(
     "sync-metadata",
     CAUSAL_STATE_KEY,
@@ -202,10 +212,17 @@ async function reconcileLocalTransaction(
     const merged = mergeCausalSnapshots(currentSnapshot, remoteSnapshot);
     reconciled = merged.snapshot;
     const nextEntries = datasetEntries(reconciled.dataset);
+    const nextKeys = new Set(nextEntries.map((entry) => entry.key));
+    const existing = new Map(entries.map((entry) => [entry.key, entry.value]));
     for (const entry of entries) {
-      await transaction.delete("records", entry.key, operationOptions);
+      if (!nextKeys.has(entry.key)) {
+        await transaction.delete("records", entry.key, operationOptions);
+      }
     }
     for (const entry of nextEntries) {
+      if (
+        JSON.stringify(existing.get(entry.key)) === JSON.stringify(entry.value)
+      ) continue;
       await transaction.put(
         "records",
         entry.key,
@@ -222,6 +239,7 @@ export async function runCausalExchange(
   options: CausalExchangeOptions,
   operationOptions?: OperationOptions,
 ): Promise<CausalExchangeResult> {
+  operationOptions = { ...operationOptions, origin: "sync" };
   const localDataset = withDeviceRecords(
     await readLocalDataset(options.local, operationOptions),
     options.deviceRecords?.(),
@@ -247,10 +265,9 @@ export async function runCausalExchange(
   // This is deliberately a separate read from the upload. The remote state
   // is always observed before a packet containing local changes is pushed.
   const remoteBefore = await options.remote.read(operationOptions);
+  const knownIds = new Set(localSnapshot.changes.map((change) => change.id));
   const pulled = remoteBefore.changes
-    .filter((change) =>
-      !localSnapshot.changes.some((known) => known.id === change.id)
-    )
+    .filter((change) => !knownIds.has(change.id))
     .map((change) => change.id);
   const pulledLocal = await reconcileLocalTransaction(
     options,

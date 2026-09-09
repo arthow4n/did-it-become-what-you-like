@@ -15,6 +15,8 @@ export type RetryPolicy = {
 };
 
 export type OperationOptions = {
+  /** Remote reconciliation must not trigger another local-save sync. */
+  readonly origin?: "sync";
   readonly signal?: AbortSignal;
   readonly retry?: RetryPolicy;
 };

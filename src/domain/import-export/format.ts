@@ -110,7 +110,6 @@ function parseHistoryChanges(
     if (
       payload.type !== "causal-dataset" ||
       payload.schemaVersion !== 1 ||
-      typeof payload.fingerprint !== "string" ||
       payload.dataset === undefined
     ) {
       throw new ImportExportDomainError(
@@ -227,7 +226,6 @@ function canonicalChange(change: CanonicalExportChange): CanonicalExportChange {
   if (
     payload.type !== "causal-dataset" ||
     payload.schemaVersion !== 1 ||
-    typeof payload.fingerprint !== "string" ||
     payload.dataset === undefined
   ) {
     throw new ImportExportDomainError(

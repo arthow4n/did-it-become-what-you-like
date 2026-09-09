@@ -427,3 +427,44 @@ Deno.test("sync-actor: known devices travel through causal data without entering
   first.stop();
   second.stop();
 });
+
+Deno.test("sync-actor: last-seen is throttled and uploaded in the current exchange", async () => {
+  let now = Date.parse("2026-08-24T10:00:00.000Z");
+  const remote = createInMemoryCausalSyncPort();
+  const deps = createDefaultSyncDependencies({
+    local: createFakeLocalPort(),
+    causal: remote,
+    deviceId: "device-heartbeat",
+    ids: createFakeIdPort("heartbeat"),
+    clock: { now: () => new Date(now).toISOString() },
+  });
+  const actor = createSyncActor(deps).start();
+  try {
+    await waitFor(() => actor.getSnapshot().matches("unconfigured"));
+    actor.send({
+      type: "sync.configure",
+      accountEmail: "owner@example.test",
+      online: true,
+    });
+    await waitFor(() => actor.getSnapshot().matches("idle"));
+    const sync = async () => {
+      actor.send({ type: "sync.request", request: { reason: "manual" } });
+      await waitFor(() => actor.getSnapshot().matches("idle"));
+      return await remote.read();
+    };
+    const first = await sync();
+    now += 30_000;
+    assertEquals((await sync()).changes.length, first.changes.length);
+    now += 30_000;
+    const heartbeat = await sync();
+    assertEquals(heartbeat.changes.length, first.changes.length + 1);
+    assertEquals(
+      heartbeat.dataset.devices[0].lastSeenAt,
+      new Date(now).toISOString(),
+    );
+    now += 1000;
+    assertEquals((await sync()).changes.length, heartbeat.changes.length);
+  } finally {
+    actor.stop();
+  }
+});

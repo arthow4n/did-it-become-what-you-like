@@ -10,6 +10,9 @@ async function installFakeDrive(
   options: { readonly withConflict?: boolean } = {},
 ): Promise<void> {
   await page.addInitScript(({ boundaryKey, withConflict }) => {
+    // This fixture exercises the injected browser authorization boundary, not
+    // the persisted-session server redirect.
+    localStorage.setItem("did_it_drive_connection_mode", "direct");
     let authorizationCount = 0;
     let authorized = false;
     let writeCount = 0;
@@ -199,10 +202,10 @@ test("conflict-resolution routes field candidates and clears the global banner o
   await page.goto("/#/settings/sync");
   await page.getByRole("button", { name: "Connect Google Drive" }).click();
   await expect(page.getByText("first@example.com")).toBeVisible();
-  await page.getByRole("button", { name: "Sync now" }).click();
-  await expect(page.getByText("Conflicts need review")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Conflicts need review" }))
+    .toBeVisible();
 
-  await page.goto("/#/settings/conflicts");
+  await page.getByRole("button", { name: "Review conflicts" }).click();
   await page.getByRole("button", { name: /Expense record/ }).click();
   await expect(page.getByText("Conflicting field: Merchant")).toBeVisible();
   await expect(page.getByRole("button", { name: "Choose this value" }))
@@ -211,7 +214,7 @@ test("conflict-resolution routes field candidates and clears the global banner o
   await page.getByRole("button", { name: "Save and review next" }).click();
   await expect(page.getByText("No conflicts need review")).toBeVisible();
 
-  await page.goto("/#/settings/sync");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.getByText("Connected account")).toBeVisible();
   await expect(page.getByText("Conflicts need review")).toHaveCount(0);
 });

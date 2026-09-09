@@ -646,3 +646,167 @@ Deno.test("sync-schedules: offline, authorization, retirement, and registry rest
   retired.retire();
   await assertRejects(() => exchange(current, retired), "retired");
 });
+
+Deno.test("sync-schedules: unchanged exchanges write neither Drive nor local records", async () => {
+  const fakeDrive = createFakeDrivePorts();
+  await fakeDrive.authorize();
+  const remote = createDriveCausalSyncPort({
+    drive: {
+      ...fakeDrive,
+      readRetirementMarker: () => Promise.resolve(undefined),
+    },
+  });
+  const current = await client(
+    "device-noop",
+    datasetWithProject("project-noop"),
+  );
+  await exchange(current, remote);
+  const writesBefore =
+    fakeDrive.requests.filter((entry) => entry.operation === "write").length;
+  const operationsBefore = current.local.operations.length;
+  await exchange(current, remote);
+  assertEquals(
+    fakeDrive.requests.filter((entry) => entry.operation === "write").length,
+    writesBefore,
+  );
+  assertEquals(
+    current.local.operations.slice(operationsBefore).filter((entry) =>
+      /^(put|delete):/.test(entry)
+    ),
+    [],
+  );
+});
+
+Deno.test("sync-schedules: compact history retains ancestry and shares unchanged record versions", async () => {
+  const { compactCausalSnapshot, expandCausalSnapshot } = await import(
+    "./causal.ts"
+  );
+  const baseline = datasetWithProject("project-0");
+  const projects = Array.from({ length: 100 }, (_, index) => ({
+    ...baseline.projects[0],
+    id: `project-${index}`,
+    name: `Project ${index}`,
+  }));
+  let snapshot = initialCausalSnapshot({ ...baseline, projects });
+  for (let index = 0; index < 20; index += 1) {
+    const dataset = {
+      ...snapshot.dataset,
+      projects: snapshot.dataset.projects.map((project, recordIndex) =>
+        recordIndex === 0 ? { ...project, name: `Edit ${index}` } : project
+      ),
+    };
+    const change = createDatasetChange({
+      id: `change-${index}`,
+      actorId: "device-compact",
+      sequence: index + 1,
+      parents: snapshot.heads,
+      dataset,
+    });
+    snapshot = {
+      ...snapshot,
+      dataset,
+      heads: [change.id],
+      changes: [...snapshot.changes, change],
+    };
+  }
+  const packed = compactCausalSnapshot(snapshot);
+  assertEquals(expandCausalSnapshot(packed), snapshot);
+  const compactBytes = JSON.stringify(packed).length;
+  const previousBytes = JSON.stringify(snapshot).length;
+  assert(
+    compactBytes < previousBytes / 5,
+    `Expected >80% size reduction; ${compactBytes}/${previousBytes}`,
+  );
+  await assertRejects(
+    () =>
+      Promise.resolve(
+        expandCausalSnapshot({ ...packed as object, dataset: [-1] }),
+      ),
+    "corrupt-data",
+  );
+});
+
+Deno.test("sync-schedules: legacy Drive state migrates on edit and survives a new client", async () => {
+  const fakeDrive = createFakeDrivePorts();
+  await fakeDrive.authorize();
+  const dataset = datasetWithProject("project-legacy");
+  const change = createDatasetChange({
+    id: "change-legacy",
+    actorId: "device-legacy",
+    sequence: 1,
+    parents: [],
+    dataset,
+  });
+  const legacy = {
+    generation: 1,
+    heads: [change.id],
+    changes: [{
+      ...change,
+      payload: {
+        ...change.payload as object,
+        fingerprint: JSON.stringify(dataset),
+      },
+    }],
+    dataset,
+  };
+  await fakeDrive.writeAppData({
+    name: "__did-it-become-what-you-like.sync.json",
+    body: JSON.stringify({
+      schemaVersion: 1,
+      type: "causal-sync-envelope",
+      snapshot: legacy,
+    }),
+  });
+  const drive = {
+    ...fakeDrive,
+    readRetirementMarker: () => Promise.resolve(undefined),
+  };
+  const current = await client("device-migrate", emptyPortableDataset());
+  await exchange(current, createDriveCausalSyncPort({ drive }));
+  await writeLocalDataset(
+    current.local,
+    datasetWithProject("project-legacy", "Renamed"),
+  );
+  await exchange(current, createDriveCausalSyncPort({ drive }));
+  const file = await fakeDrive.readAppData(
+    "__did-it-become-what-you-like.sync.json",
+  );
+  assertEquals(JSON.parse(file!.body).schemaVersion, 2);
+  assert(!file!.body.includes("fingerprint"));
+  const restarted = await client("device-fresh", emptyPortableDataset());
+  await exchange(restarted, createDriveCausalSyncPort({ drive }));
+  assertEquals(
+    (await readLocalDataset(restarted.local)).projects[0].name,
+    "Renamed",
+  );
+});
+
+Deno.test("sync-schedules: local edit during upload stays pending for the next exchange", async () => {
+  const current = await client(
+    "device-upload",
+    datasetWithProject("project-upload"),
+  );
+  let edited = false;
+  const remote = createInMemoryCausalSyncPort({
+    beforeOperation: async (operation) => {
+      if (operation === "apply" && !edited) {
+        edited = true;
+        await writeLocalDataset(
+          current.local,
+          datasetWithProject("project-upload", "Edited during upload"),
+        );
+      }
+    },
+  });
+  const first = await exchange(current, remote);
+  assert(first.pendingChangeCount > 0);
+  assertEquals(
+    (await readLocalDataset(current.local)).projects[0].name,
+    "Edited during upload",
+  );
+  await exchange(current, remote);
+  assertEquals(
+    (await remote.read()).dataset.projects[0].name,
+    "Edited during upload",
+  );
+});

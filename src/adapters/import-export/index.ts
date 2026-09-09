@@ -31,11 +31,13 @@ import type { PortableDataset, StableId } from "../../domain/index.ts";
 import {
   CAUSAL_STATE_KEY,
   CAUSAL_STATE_VERSION,
+  compactCausalSnapshot,
   createDatasetChange,
   datasetEntries,
   datasetFingerprint,
   datasetFromEntries,
   emptyPortableDataset,
+  expandCausalSnapshot,
   initialCausalSnapshot,
   parseCausalSnapshot,
   readLocalDataset,
@@ -49,7 +51,7 @@ export const IMPORT_EXPORT_MIME_TYPE = "application/json";
 type CausalState = {
   readonly type: "s402-causal-state";
   readonly version: typeof CAUSAL_STATE_VERSION;
-  readonly snapshot: CausalSnapshot;
+  readonly snapshot: JsonValue;
 };
 
 type ReplacePacket = {
@@ -124,11 +126,13 @@ function causalState(value: unknown): CausalSnapshot | undefined {
   const object = asRecord(value);
   if (
     object?.type !== "s402-causal-state" ||
-    object.version !== CAUSAL_STATE_VERSION ||
+    (object.version !== 1 && object.version !== CAUSAL_STATE_VERSION) ||
     object.snapshot === undefined
   ) return undefined;
   try {
-    return parseCausalSnapshot(object.snapshot);
+    return object.version === 1
+      ? parseCausalSnapshot(object.snapshot)
+      : expandCausalSnapshot(object.snapshot);
   } catch {
     throw adapterError("corrupt-data", "import-export.causal-state");
   }
@@ -170,7 +174,7 @@ function pendingSnapshotValue(snapshot: CausalSnapshot): JsonValue {
   const value: CausalState = {
     type: "s402-causal-state",
     version: CAUSAL_STATE_VERSION,
-    snapshot: clone(snapshot),
+    snapshot: compactCausalSnapshot(snapshot),
   };
   return asJsonValue(value);
 }

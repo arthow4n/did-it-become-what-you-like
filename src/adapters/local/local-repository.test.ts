@@ -56,6 +56,7 @@ async function withRepository<T>(
     repository: Awaited<ReturnType<typeof openLocalRepository>>,
     name: string,
   ) => Promise<T>,
+  beforeRequest?: (operation: string) => void,
 ): Promise<T> {
   const name = databaseName();
   await deleteLocalRepositoryDatabase(name, indexedDB).catch(() => undefined);
@@ -65,6 +66,7 @@ async function withRepository<T>(
     indexedDB,
     keyRange: IDBKeyRange,
     now: () => "2026-08-24T02:40:00.000Z",
+    beforeRequest,
   });
   try {
     return await run(repository, name);
@@ -432,5 +434,90 @@ Deno.test("local-repository: projection rebuild is deterministic", async () => {
       })).map((entry) => entry.key),
       ["expense-a", "expense-b"],
     );
+  });
+});
+
+Deno.test("local repository notifies record commits only after success and excludes sync writes", async () => {
+  await withRepository(async (repository) => {
+    let commits = 0;
+    const unsubscribe = repository.subscribeRecords!(() => {
+      commits += 1;
+    });
+    await repository.transaction("readwrite", async (transaction) => {
+      await transaction.put(
+        "records",
+        "expense-commit",
+        expense("expense-commit"),
+      );
+      assertEquals(commits, 0);
+    });
+    assertEquals(commits, 1);
+    await repository.transaction(
+      "readwrite",
+      (transaction) => transaction.put("sync-metadata", "metadata", {}),
+    );
+    await repository.transaction(
+      "readwrite",
+      (transaction) =>
+        transaction.put("records", "expense-sync", expense("expense-sync")),
+      { origin: "sync" },
+    );
+    try {
+      await repository.transaction("readwrite", async (transaction) => {
+        await transaction.put(
+          "records",
+          "expense-abort",
+          expense("expense-abort"),
+        );
+        throw new Error("rollback");
+      });
+    } catch { /* Expected rollback. */ }
+    assertEquals(commits, 1);
+    unsubscribe();
+    await repository.transaction(
+      "readwrite",
+      (transaction) => transaction.delete("records", "expense-commit"),
+    );
+    assertEquals(commits, 1);
+  });
+});
+
+Deno.test("local repository serializes the document once per record transaction and skips metadata reads", async () => {
+  const operations: string[] = [];
+  await withRepository(async (repository) => {
+    operations.length = 0;
+    await repository.transaction("readwrite", async (transaction) => {
+      await transaction.put(
+        "records",
+        "expense-first",
+        expense("expense-first"),
+      );
+      await transaction.put(
+        "records",
+        "expense-second",
+        expense("expense-second"),
+      );
+    });
+    assertEquals(
+      operations.filter((operation) => operation === "local.document.put")
+        .length,
+      1,
+    );
+    assertEquals(
+      operations.filter((operation) => operation === "local.document.get")
+        .length,
+      1,
+    );
+    operations.length = 0;
+    await repository.transaction(
+      "readonly",
+      (transaction) => transaction.get("sync-metadata", "missing"),
+    );
+    assert(!operations.includes("local.document.get"));
+    assert(!operations.includes("local.document.put"));
+    const document = await repository.loadDocument();
+    assertEquals(Object.keys(document.records).length, 2);
+  }, (operation) => {
+    operations.push(operation);
   });
 });

@@ -437,6 +437,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
   let accountId: string | undefined;
   let accessToken: AccessToken | undefined;
   let authorizationInFlight = false;
+  const cachedFiles = new Map<string, DriveFile>();
 
   let cachedRetirementMarker: {
     readonly marker: DriveRetirementMarker | undefined;
@@ -444,6 +445,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
   } | undefined;
 
   const clearToken = (): void => {
+    cachedFiles.clear();
     accessToken = undefined;
     authState = "signed-out";
     cachedRetirementMarker = undefined;
@@ -600,6 +602,7 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
 
   async function listMetadata(
     optionsForOperation: OperationOptions | undefined,
+    name?: string,
   ): Promise<readonly AppDataMetadata[]> {
     const token = requireToken("drive.list");
     const result: AppDataMetadata[] = [];
@@ -615,6 +618,11 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
               path: "files",
               parameters: {
                 spaces: "appDataFolder",
+                ...(name === undefined ? {} : {
+                  q: `name = '${
+                    name.replace(/\\/g, "\\\\").replace(/'/g, "\\'")
+                  }' and trashed = false`,
+                }),
                 pageSize: String(pageSize),
                 fields: DRIVE_METADATA_FIELDS,
                 ...(pageToken === undefined ? {} : { pageToken }),
@@ -650,9 +658,9 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
     operation: string,
     optionsForOperation: OperationOptions | undefined,
   ): Promise<AppDataMetadata | undefined> {
-    const matches = (await listMetadata(optionsForOperation)).filter((item) =>
-      item.name === name
-    );
+    const matches = (await listMetadata(optionsForOperation, name)).filter((
+      item,
+    ) => item.name === name);
     if (matches.length > 1) {
       throw adapterError("corrupt-data", operation);
     }
@@ -686,9 +694,18 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
       "drive.read",
       optionsForOperation,
     );
-    if (metadata === undefined) return undefined;
+    if (metadata === undefined) {
+      cachedFiles.delete(name);
+      return undefined;
+    }
+    const cached = cachedFiles.get(name);
+    if (cached?.id === metadata.id && cached.etag === metadata.etag) {
+      return { ...cached };
+    }
     const response = await bodyFor(metadata, optionsForOperation);
-    return metadataToFile(metadata, response.body, response.etag);
+    const file = metadataToFile(metadata, response.body, response.etag);
+    cachedFiles.set(name, file);
+    return { ...file };
   }
 
   function writeRaw(
@@ -773,7 +790,9 @@ export function createDriveAdapter(options: DriveAdapterOptions): DriveAdapter {
           response.value,
           ADAPTER_DIAGNOSTIC_OPERATIONS.driveUploadFailed,
         );
-        return metadataToFile(next, request.body);
+        const file = metadataToFile(next, request.body);
+        cachedFiles.set(request.name, file);
+        return { ...file };
       },
     );
   }

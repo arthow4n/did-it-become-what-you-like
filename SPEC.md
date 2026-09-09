@@ -420,6 +420,20 @@ and multi-device synchronization according to the agreed sync design.
 - Local changes must be saved to IndexedDB first and remain successful even when
   Drive is unavailable. Synchronization must then be attempted after changes, on
   app launch, when connectivity returns, and through a manual sync action.
+- Automatic sync coalesces local record commits for 300 ms, checks remote
+  changes every 30 seconds while visible and idle, and refreshes on returning
+  to the app. Import and destructive workflows retain their own sync boundaries.
+  Remote reconciliation must not trigger another local-save sync.
+- Unchanged syncs must avoid uploads and record rewrites. Device last-seen
+  updates are limited to once per minute and included in that exchange.
+- Internal sync storage uses version-2 JSON: a table of distinct record values,
+  dataset arrays of table indexes, and causal changes retaining IDs, actor IDs,
+  sequence numbers, parents, and their dataset indexes. The same compact form
+  is used for local causal metadata. Revision ancestry and tombstones are not
+  pruned. Version-1 internal state remains readable and is compacted on the next
+  write; all devices must run the updated app before writing version-2 state.
+  User JSON exports remain complete, independent, readable documents; the
+  redundant historical dataset fingerprint is no longer required.
 - Deletions must synchronize as tombstones rather than immediate physical
   removal, preventing an offline device from accidentally restoring deleted
   data. Tombstones are retained indefinitely in the initial release; later

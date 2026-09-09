@@ -61,6 +61,7 @@ Deno.test(
     const drive: DriveAdapter = createFakeDrivePorts();
     await drive.authorize();
     const causal = createInMemoryCausalSyncPort();
+    let syncCompletions = 0;
 
     const boundaryKey = "__DID_IT_BECAME_WHAT_YOU_LIKE_SYNC_BOUNDARY__";
     const globalRecord = globalThis as unknown as Record<string, unknown>;
@@ -78,6 +79,9 @@ Deno.test(
                   screen: "devices",
                   onNavigate: () => undefined,
                   onNotice: () => undefined,
+                  onSyncCompleted: () => {
+                    syncCompletions += 1;
+                  },
                   secretStorage: createFakeSecretStoragePort(),
                   children: createElement("span", null, "fallback"),
                 }),
@@ -100,6 +104,27 @@ Deno.test(
               );
               assert(progress.knownDeviceCount === 2);
               assert(progress.acknowledgedDeviceCount === 1);
+              const beforeSync = syncCompletions;
+              await repository.transaction(
+                "readwrite",
+                (transaction) =>
+                  transaction.put("records", "project-auto-sync", {
+                    schemaVersion: 1,
+                    type: "project",
+                    id: "project-auto-sync",
+                    name: "Automatic sync",
+                    defaultCurrency: "SEK",
+                    archived: false,
+                  }),
+              );
+              await waitFor(() => assert(syncCompletions > beforeSync));
+              await waitFor(async () =>
+                assert(
+                  (await causal.read()).dataset.projects.some((project) =>
+                    project.id === "project-auto-sync"
+                  ),
+                )
+              );
               mounted.unmount();
               await new Promise<void>((resolve) => setTimeout(resolve, 0));
             },

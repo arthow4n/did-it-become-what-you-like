@@ -61,7 +61,6 @@ export type CausalDatasetPayload = {
   readonly type: "causal-dataset";
   readonly schemaVersion: typeof CAUSAL_SYNC_SCHEMA_VERSION;
   readonly dataset: PortableDataset;
-  readonly fingerprint: string;
 };
 
 export type CausalConflict = {
@@ -112,12 +111,6 @@ type AutomergeDatasetDocument = {
 
 type MutableAutomergeDatasetDocument = {
   records: Record<string, JsonValue>;
-};
-
-type CausalEnvelope = {
-  readonly schemaVersion: typeof CAUSAL_SYNC_SCHEMA_VERSION;
-  readonly type: "causal-sync-envelope";
-  readonly snapshot: CausalSnapshot;
 };
 
 function asJsonValue(value: unknown): JsonValue {
@@ -275,12 +268,12 @@ export function datasetEntries(
 }
 
 export const CAUSAL_STATE_KEY = "s402:causal-snapshot";
-export const CAUSAL_STATE_VERSION = 1 as const;
+export const CAUSAL_STATE_VERSION = 2 as const;
 
 export type PersistedCausalState = {
   readonly type: "s402-causal-state";
   readonly version: typeof CAUSAL_STATE_VERSION;
-  readonly snapshot: CausalSnapshot;
+  readonly snapshot: JsonValue;
 };
 
 export function initialCausalSnapshot(
@@ -330,7 +323,6 @@ export function createDatasetChange(input: {
     type: "causal-dataset",
     schemaVersion: CAUSAL_SYNC_SCHEMA_VERSION,
     dataset: input.dataset,
-    fingerprint: datasetFingerprint(input.dataset),
   };
   return {
     id: input.id,
@@ -349,7 +341,6 @@ function datasetPayload(
   if (
     object?.type !== "causal-dataset" ||
     object.schemaVersion !== CAUSAL_SYNC_SCHEMA_VERSION ||
-    typeof object.fingerprint !== "string" ||
     object.dataset === null || typeof object.dataset !== "object" ||
     Array.isArray(object.dataset)
   ) {
@@ -360,7 +351,6 @@ function datasetPayload(
       type: "causal-dataset",
       schemaVersion: CAUSAL_SYNC_SCHEMA_VERSION,
       dataset: parseCurrentDataset(object.dataset),
-      fingerprint: object.fingerprint,
     };
   } catch {
     throw adapterError("corrupt-data", operation);
@@ -672,7 +662,9 @@ function mergeDatasets(
   readonly dataset: PortableDataset;
   readonly conflicts: readonly CausalConflict["conflict"][];
 } {
-  const automerged = automergeDatasetMerge(current, incoming, base).records;
+  // Most syncs are sequential or touch disjoint records. Build the expensive
+  // Automerge document only when a record actually has concurrent edits.
+  let automerged: AutomergeDatasetDocument["records"] | undefined;
   const currentMap = recordMap(current);
   const incomingMap = recordMap(incoming);
   const baseMap = recordMap(base);
@@ -711,6 +703,7 @@ function mergeDatasets(
     const incomingObject = asJsonRecord(incomingValue);
     const baseObject = asJsonRecord(baseValue);
     if (currentObject && incomingObject) {
+      automerged ??= automergeDatasetMerge(current, incoming, base).records;
       const result = mergeRecords(
         currentObject,
         incomingObject,
@@ -741,16 +734,20 @@ function changeDepth(
   change: CausalChange,
   changes: ReadonlyMap<StableId, CausalChange>,
   visiting = new Set<StableId>(),
+  depths = new Map<StableId, number>(),
 ): number {
+  const cached = depths.get(change.id);
+  if (cached !== undefined) return cached;
   if (visiting.has(change.id)) return 0;
   visiting.add(change.id);
   const parentDepth = change.parents.reduce((maximum, parentId) => {
     const parent = changes.get(parentId);
     return parent === undefined
       ? maximum
-      : Math.max(maximum, changeDepth(parent, changes, visiting));
+      : Math.max(maximum, changeDepth(parent, changes, visiting, depths));
   }, 0);
   visiting.delete(change.id);
+  depths.set(change.id, parentDepth + 1);
   return parentDepth + 1;
 }
 
@@ -811,13 +808,13 @@ export function mergeCausalSnapshots(
       allChanges.set(change.id, structuredClone(change));
     }
   }
+  const knownIds = new Set(current.changes.map((change) => change.id));
+  const depths = new Map<StableId, number>();
   const orderedIncoming = incoming.changes
-    .filter((change) =>
-      !current.changes.some((known) => known.id === change.id)
-    )
+    .filter((change) => !knownIds.has(change.id))
     .sort((left, right) => {
-      const depth = changeDepth(left, allChanges) -
-        changeDepth(right, allChanges);
+      const depth = changeDepth(left, allChanges, new Set(), depths) -
+        changeDepth(right, allChanges, new Set(), depths);
       return depth === 0 ? compareCodeUnits(left.id, right.id) : depth;
     });
   let dataset = current.dataset;
@@ -917,13 +914,104 @@ function initialSnapshot(
     : cloneSnapshot(snapshot);
 }
 
-function envelopeBody(snapshot: CausalSnapshot): string {
-  const envelope: CausalEnvelope = {
-    schemaVersion: CAUSAL_SYNC_SCHEMA_VERSION,
-    type: "causal-sync-envelope",
-    snapshot,
+/** Version 2 stores each distinct record value once, retaining all ancestry. */
+export function compactCausalSnapshot(snapshot: CausalSnapshot): JsonValue {
+  const records: JsonValue[] = [];
+  const indexes = new Map<string, number>();
+  const pack = (dataset: PortableDataset): number[] =>
+    datasetValues(dataset).map((record) => {
+      const key = JSON.stringify(record);
+      let index = indexes.get(key);
+      if (index === undefined) {
+        index = records.length;
+        indexes.set(key, index);
+        records.push(record);
+      }
+      return index;
+    });
+  const changes = snapshot.changes.map((change) => ({
+    id: change.id,
+    actorId: change.actorId,
+    sequence: change.sequence,
+    parents: change.parents,
+    records: pack(datasetPayload(change, "sync.pack").dataset),
+  }));
+  const dataset = pack(snapshot.dataset);
+  return asJsonValue({
+    generation: snapshot.generation,
+    heads: snapshot.heads,
+    records,
+    changes,
+    dataset,
+  });
+}
+
+export function expandCausalSnapshot(value: unknown): CausalSnapshot {
+  const object = asJsonRecord(value);
+  if (
+    !object || !Array.isArray(object.records) || !Array.isArray(object.changes)
+  ) {
+    throw adapterError("corrupt-data", "sync.compact-snapshot");
+  }
+  const records = object.records;
+  const unpack = (references: unknown): PortableDataset => {
+    if (!Array.isArray(references)) {
+      throw adapterError("corrupt-data", "sync.compact-snapshot");
+    }
+    const entries = references.map((index: unknown) => {
+      if (
+        typeof index !== "number" || !Number.isSafeInteger(index) ||
+        index < 0 || index >= records.length
+      ) {
+        throw adapterError("corrupt-data", "sync.compact-snapshot");
+      }
+      const record = asJsonRecord(records[index]);
+      if (!record || typeof record.id !== "string") {
+        throw adapterError("corrupt-data", "sync.compact-snapshot");
+      }
+      return { key: record.id, value: record };
+    });
+    const dataset = datasetFromEntries(entries);
+    // Do not silently repair missing system records or ignore unknown records
+    // in a remote format that promises a complete, lossless dataset.
+    const decoded = datasetValues(dataset);
+    const keys = new Set(entries.map((entry) => recordKey(entry.value)));
+    if (
+      decoded.length !== entries.length || keys.size !== entries.length ||
+      decoded.some((record) => !keys.has(recordKey(record)))
+    ) {
+      throw adapterError("corrupt-data", "sync.compact-snapshot");
+    }
+    return dataset;
   };
-  return JSON.stringify(envelope);
+  return parseCausalSnapshot({
+    generation: object.generation,
+    heads: object.heads,
+    dataset: unpack(object.dataset),
+    changes: object.changes.map((raw) => {
+      const change = asJsonRecord(raw);
+      if (!change) throw adapterError("corrupt-data", "sync.compact-snapshot");
+      return {
+        id: change.id,
+        actorId: change.actorId,
+        sequence: change.sequence,
+        parents: change.parents,
+        payload: {
+          type: "causal-dataset",
+          schemaVersion: CAUSAL_SYNC_SCHEMA_VERSION,
+          dataset: unpack(change.records),
+        },
+      };
+    }),
+  });
+}
+
+function envelopeBody(snapshot: CausalSnapshot): string {
+  return JSON.stringify({
+    schemaVersion: 2,
+    type: "causal-sync-envelope",
+    snapshot: compactCausalSnapshot(snapshot),
+  });
 }
 
 function parseEnvelope(body: string): CausalSnapshot {
@@ -931,10 +1019,12 @@ function parseEnvelope(body: string): CausalSnapshot {
     const parsed = JSON.parse(body) as unknown;
     const object = asJsonRecord(parsed);
     if (
-      object?.schemaVersion !== CAUSAL_SYNC_SCHEMA_VERSION ||
+      (object?.schemaVersion !== 1 && object?.schemaVersion !== 2) ||
       object.type !== "causal-sync-envelope"
     ) throw new Error("invalid envelope");
-    return parseCausalSnapshot(object.snapshot);
+    return object.schemaVersion === 2
+      ? expandCausalSnapshot(object.snapshot)
+      : parseCausalSnapshot(object.snapshot);
   } catch (error) {
     if (error instanceof Error && error.name === "AdapterError") throw error;
     throw adapterError("corrupt-data", "sync.remote-envelope");
@@ -983,6 +1073,17 @@ export function createDriveCausalSyncPort(
       const incoming = snapshotFromPacket(remote, packet);
       const merged = mergeCausalSnapshots(remote, incoming);
       try {
+        if (
+          knownFile !== undefined &&
+          merged.snapshot.generation === remote.generation &&
+          merged.appliedChangeIds.length === 0
+        ) {
+          return {
+            snapshot: cloneSnapshot(merged.snapshot),
+            appliedChangeIds: [],
+            conflicts: merged.conflicts,
+          };
+        }
         const written = await options.drive.writeAppData({
           name: fileName,
           body: envelopeBody(merged.snapshot),

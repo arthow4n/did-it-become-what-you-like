@@ -67,6 +67,7 @@ type SyntheticCall = {
   readonly method: string;
   readonly path: string;
   readonly spaces?: string;
+  readonly q?: string;
   readonly pageToken?: string;
   readonly fields?: string;
   readonly uploadType?: string;
@@ -160,6 +161,9 @@ class SyntheticDriveEndpoint {
       method,
       path,
       hasBearerHeader,
+      ...(requestUrl.searchParams.has("q")
+        ? { q: requestUrl.searchParams.get("q")! }
+        : {}),
       ...(requestUrl.searchParams.get("spaces") === null
         ? {}
         : { spaces: requestUrl.searchParams.get("spaces")! }),
@@ -224,11 +228,19 @@ class SyntheticDriveEndpoint {
         requestUrl.searchParams.get("pageSize") ?? "1000",
       );
       const offset = Number(requestUrl.searchParams.get("pageToken") ?? "0");
-      const files = [...this.files.values()].slice(offset, offset + pageSize);
+      const query = requestUrl.searchParams.get("q");
+      const encodedName = query?.match(
+        /^name = '((?:\\.|[^'])*)' and trashed = false$/,
+      )?.[1];
+      const name = encodedName?.replace(/\\([\\'])/g, "$1");
+      const matching = [...this.files.values()].filter((file) =>
+        name === undefined || file.name === name
+      );
+      const files = matching.slice(offset, offset + pageSize);
       const nextOffset = offset + files.length;
       return this.json({
         files: files.map((file) => this.metadata(file)),
-        ...(nextOffset < this.files.size
+        ...(nextOffset < matching.length
           ? { nextPageToken: String(nextOffset) }
           : {}),
       }, `"list-${this.revision}"`);
@@ -971,4 +983,32 @@ Deno.test("drive-adapter: listAppData avoids N+1 metadata calls and memoizes ret
     callsAfterFirst,
     "Repeated retirement marker reads must be memoized and make 0 additional calls",
   );
+});
+
+Deno.test("drive-adapter: fresh versions reuse bodies and invalidation downloads updated data", async () => {
+  const { adapter, endpoint } = fixture();
+  endpoint.seed("cached.json", '{"version":1}');
+  await adapter.authorize();
+  const first = await adapter.readAppData("cached.json");
+  assert(
+    endpoint.calls.some((call) =>
+      call.q === "name = 'cached.json' and trashed = false"
+    ),
+  );
+  const mediaCount = () =>
+    endpoint.calls.filter((call) => call.alt === "media").length;
+  const before = mediaCount();
+  assertEquals(await adapter.readAppData("cached.json"), first);
+  assertEquals(mediaCount(), before);
+  await adapter.deleteAppData("cached.json", first!.etag);
+  endpoint.seed("cached.json", '{"version":2}');
+  assertEquals(
+    (await adapter.readAppData("cached.json"))!.body,
+    '{"version":2}',
+  );
+  assertEquals(mediaCount(), before + 1);
+  await adapter.disconnect();
+  await adapter.authorize();
+  await adapter.readAppData("cached.json");
+  assertEquals(mediaCount(), before + 2);
 });

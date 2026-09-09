@@ -131,6 +131,7 @@ export type LocalRepository = LocalPort & {
   readonly databaseName: string;
   readonly deviceId: string;
   readonly recovery: LocalRecoveryState;
+  subscribeRecords?(listener: () => void): () => void;
   loadDocument(): Promise<Automerge.Doc<LocalDocument>>;
   rebuildProjections(options?: OperationOptions): Promise<void>;
   exportDataset(options?: OperationOptions): Promise<string>;
@@ -636,6 +637,14 @@ class IndexedDbLocalRepository implements LocalRepository {
   private readonly database: IDBDatabase;
   private readonly options: LocalRepositoryOptions;
   private closed = false;
+  private readonly recordListeners = new Set<() => void>();
+
+  subscribeRecords(listener: () => void): () => void {
+    this.recordListeners.add(listener);
+    return () => {
+      this.recordListeners.delete(listener);
+    };
+  }
   private recoveryState: LocalRecoveryState = {
     recovered: false,
     source: "none",
@@ -1011,20 +1020,6 @@ class IndexedDbLocalRepository implements LocalRepository {
       value,
       undefined,
     );
-    if (collection === RECORD_STORE) {
-      await request(
-        transaction.objectStore(DOCUMENT_STORE).put(
-          {
-            key: LOCAL_DOCUMENT_KEY,
-            schemaVersion: LOCAL_SCHEMA_VERSION,
-            savedAt: recordedAt,
-            bytes: documentBytes(context.document),
-          } satisfies StoredDocument,
-        ),
-        "local.document.put",
-        this.options.beforeRequest,
-      );
-    }
   }
 
   private async deleteValue(
@@ -1128,20 +1123,6 @@ class IndexedDbLocalRepository implements LocalRepository {
       undefined,
       tombstone,
     );
-    if (collection === RECORD_STORE) {
-      await request(
-        transaction.objectStore(DOCUMENT_STORE).put(
-          {
-            key: LOCAL_DOCUMENT_KEY,
-            schemaVersion: LOCAL_SCHEMA_VERSION,
-            savedAt: deletedAt,
-            bytes: documentBytes(context.document),
-          } satisfies StoredDocument,
-        ),
-        "local.document.put",
-        this.options.beforeRequest,
-      );
-    }
   }
 
   private async makeTransaction(
@@ -1159,21 +1140,30 @@ class IndexedDbLocalRepository implements LocalRepository {
       mode,
     );
     const done = idbDone(idbTransaction);
-    let document = emptyDocument(this.deviceId);
+    let recordsChanged = false;
+    const context: MutableTransactionContext = {
+      document: emptyDocument(this.deviceId),
+      backupWritten: false,
+      backupSequence: 0,
+    };
+    let documentLoading: Promise<void> | undefined;
+    const loadDocumentForWrite = (): Promise<void> => {
+      documentLoading ??= (async () => {
+        const current = await request(
+          idbTransaction.objectStore(DOCUMENT_STORE).get(LOCAL_DOCUMENT_KEY),
+          "local.document.get",
+          this.options.beforeRequest,
+        ) as StoredDocument | undefined;
+        if (current) {
+          context.document = loadAutomergeDocument(
+            current.bytes,
+            "local.document.load",
+          );
+        }
+      })();
+      return documentLoading;
+    };
     try {
-      const current = await request(
-        idbTransaction.objectStore(DOCUMENT_STORE).get(LOCAL_DOCUMENT_KEY),
-        "local.document.get",
-        this.options.beforeRequest,
-      ) as StoredDocument | undefined;
-      if (current) {
-        document = loadAutomergeDocument(current.bytes, "local.document.load");
-      }
-      const context: MutableTransactionContext = {
-        document,
-        backupWritten: false,
-        backupSequence: 0,
-      };
       const localTransaction: LocalTransaction = {
         get: async <T extends JsonValue = JsonValue>(
           collection: LocalCollection,
@@ -1201,6 +1191,10 @@ class IndexedDbLocalRepository implements LocalRepository {
           if (mode === "readonly") {
             throw adapterError("forbidden", "local.write-in-readonly");
           }
+          if (collection === "records") {
+            await loadDocumentForWrite();
+            recordsChanged = true;
+          }
           await this.writeValue(
             idbTransaction,
             context,
@@ -1219,6 +1213,10 @@ class IndexedDbLocalRepository implements LocalRepository {
           assertKey(key);
           if (mode === "readonly") {
             throw adapterError("forbidden", "local.write-in-readonly");
+          }
+          if (collection === "records") {
+            await loadDocumentForWrite();
+            recordsChanged = true;
           }
           await this.deleteValue(
             idbTransaction,
@@ -1243,7 +1241,26 @@ class IndexedDbLocalRepository implements LocalRepository {
         },
       };
       const result = await work(localTransaction);
+      if (recordsChanged) {
+        await request(
+          idbTransaction.objectStore(DOCUMENT_STORE).put(
+            {
+              key: LOCAL_DOCUMENT_KEY,
+              schemaVersion: LOCAL_SCHEMA_VERSION,
+              savedAt: this.now(),
+              bytes: documentBytes(context.document),
+            } satisfies StoredDocument,
+          ),
+          "local.document.put",
+          this.options.beforeRequest,
+        );
+      }
       await done;
+      if (recordsChanged && options?.origin !== "sync") {
+        // A subscriber failure cannot turn an already committed save into a
+        // reported transaction failure.
+        for (const listener of this.recordListeners) queueMicrotask(listener);
+      }
       return result;
     } catch (error) {
       try {
@@ -1440,6 +1457,7 @@ class IndexedDbLocalRepository implements LocalRepository {
   close(): void {
     if (this.closed) return;
     this.closed = true;
+    this.recordListeners.clear();
     this.database.close();
   }
 }

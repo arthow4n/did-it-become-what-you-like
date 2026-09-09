@@ -1175,7 +1175,6 @@ export function SyncPortabilityRuntime({
           await syncDependencies.registry.merge(
             result.snapshot.dataset.devices,
           );
-          await syncDependencies.registry.touch();
         },
       }),
     [causal, driveAdapter, ids, repository, syncDependencies],
@@ -1391,6 +1390,9 @@ export function SyncPortabilityRuntime({
     };
     const onOnline = () => {
       sendSync({ type: "sync.network.online" });
+      if (screen !== "import-export" && screen !== "privacy") {
+        sendSync({ type: "sync.request", request: { reason: "reconnect" } });
+      }
       sendImport({ type: "import.network.online" });
     };
     globalThis.addEventListener("offline", onOffline);
@@ -1399,7 +1401,7 @@ export function SyncPortabilityRuntime({
       globalThis.removeEventListener("offline", onOffline);
       globalThis.removeEventListener("online", onOnline);
     };
-  }, [sendImport, sendSync]);
+  }, [screen, sendImport, sendSync]);
 
   useEffect(() => {
     const previous = previousScreen.current;
@@ -1775,13 +1777,53 @@ export function SyncPortabilityRuntime({
   const sendImportEvent = (event: ImportEvent) => sendImport(event);
   const sendExportEvent = (event: ExportEvent) => sendExport(event);
 
-  const syncAfterAuthorization = useRef(false);
+  const [localCommitVersion, setLocalCommitVersion] = useState(0);
+  const requestedCommitVersion = useRef(0);
+  useEffect(() =>
+    repository.subscribeRecords?.(() => {
+      setLocalCommitVersion((version) => version + 1);
+    }), [repository]);
+
+  // Import/destruction own their exchange boundaries. A save during an exchange
+  // remains pending until idle; reconciliation writes do not emit local commits.
+  const automaticSyncAllowed = syncSnapshot.matches("idle") &&
+    screen !== "import-export" && screen !== "privacy" &&
+    driveAdapter?.status() === "authorized";
   useEffect(() => {
-    if (syncAfterAuthorization.current && syncSnapshot.matches("idle")) {
+    if (
+      !automaticSyncAllowed ||
+      localCommitVersion === requestedCommitVersion.current
+    ) return;
+    const timer = setTimeout(() => {
+      requestedCommitVersion.current = localCommitVersion;
+      sendSync({ type: "sync.request", request: { reason: "local-change" } });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [automaticSyncAllowed, localCommitVersion, sendSync]);
+
+  useEffect(() => {
+    if (!automaticSyncAllowed) return;
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        sendSync({ type: "sync.request", request: { reason: "launch" } });
+      }
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [automaticSyncAllowed, sendSync]);
+
+  const syncAfterAuthorization = useRef(false);
+  const launchedAdapter = useRef<DriveAdapter | null>(null);
+  useEffect(() => {
+    if (
+      automaticSyncAllowed && driveAdapter !== null &&
+      (syncAfterAuthorization.current ||
+        launchedAdapter.current !== driveAdapter)
+    ) {
+      launchedAdapter.current = driveAdapter;
       syncAfterAuthorization.current = false;
       sendSync({ type: "sync.request", request: { reason: "reconnect" } });
     }
-  }, [sendSync, syncSnapshot]);
+  }, [automaticSyncAllowed, driveAdapter, sendSync]);
 
   const authorizeDrive = useCallback(
     (
@@ -1934,27 +1976,16 @@ export function SyncPortabilityRuntime({
   }, [connectionMode, driveAdapter, syncView.mode, authorizeDrive]);
 
   useEffect(() => {
-    if (connectionMode !== "persisted") return;
-    if (typeof document === "undefined") return;
-
+    if (!automaticSyncAllowed || typeof document === "undefined") return;
     const handleVisibilityChange = () => {
-      if (syncView.mode !== "configured" || syncView.network !== "online") {
-        return;
-      }
-      if (driveAdapter?.status() !== "authorized") return;
-
       if (document.visibilityState === "visible") {
         sendSync({ type: "sync.request", request: { reason: "launch" } });
-      } else if (document.visibilityState === "hidden") {
-        sendSync({ type: "sync.request", request: { reason: "manual" } });
       }
     };
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
+    return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [connectionMode, syncView, driveAdapter, sendSync]);
+  }, [automaticSyncAllowed, sendSync]);
 
   const requestExport = (delivery: "download" | "share") => {
     const event: ExportEvent = {

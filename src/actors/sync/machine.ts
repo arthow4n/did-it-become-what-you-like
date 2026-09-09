@@ -159,6 +159,16 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
           input: SyncActorDependencies;
           signal: AbortSignal;
         }): Promise<CausalExchangeResult> => {
+          const device = input.registry.portableDevices().find((entry) =>
+            entry.id === input.deviceId
+          );
+          if (
+            device === undefined ||
+            Date.parse(input.clock.now()) - Date.parse(device.lastSeenAt) >=
+              60_000
+          ) {
+            await input.registry.touch();
+          }
           const result = await runCausalExchange(
             {
               local: input.local,
@@ -171,7 +181,6 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
             { signal },
           );
           await input.registry.merge(result.snapshot.dataset.devices);
-          await input.registry.touch();
           return result;
         },
       ),

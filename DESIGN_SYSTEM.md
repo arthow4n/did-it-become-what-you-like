@@ -219,9 +219,11 @@ flexbox abuse, all components and screens must follow these rules:
      (`width: 100%`) and stack vertically (`flex-direction: column-reverse`)
      with the primary action on top. On desktop, action buttons retain natural
      width (right-aligned).
-   - Sticky form actions (`.ds-form-actions--sticky` in `ExpenseForm`) dock
-     persistently above the mobile navigation bar so saves never require
-     scrolling on small viewports.
+   - Sticky form actions (`.ds-form-actions--sticky` in `ExpenseForm` and
+     `.ds-sticky-action-bar`) use in-flow `position: sticky` (docking above the
+     mobile navigation bar with full-width spanning on `< 720px`, and retaining
+     natural form alignment on desktop) so saves remain immediately accessible
+     without occluding sibling content or inputs.
    - Category selection (`CategoryPicker`) pairs a searchable `SelectField` with
      an immediate quick-suggestion chip row (`.ds-category-picker__chips`)
      prioritizing recent/frequent categories for one-tap selection on mobile.
@@ -302,9 +304,11 @@ flexbox abuse, all components and screens must follow these rules:
    - Bottom sheets (e.g. `FilterSheet` or modal dialogs) must include bottom
      safe-area clearance
      (`padding-bottom: max(var(--space-5), env(safe-area-inset-bottom))`).
-   - Content container `<main>` must maintain bottom padding
-     (`padding-bottom: calc(var(--control-height) + var(--space-8) + env(safe-area-inset-bottom, 0px))`)
-     so scrolled content is never clipped behind the fixed navigation bar.
+   - Content container `<main>` must maintain bottom clearance
+     (`padding-bottom: var(--sticky-bar-clearance-mobile)` on mobile,
+     `var(--sticky-bar-clearance-desktop)` on desktop) and interactive fields
+     must set `scroll-margin-bottom` so scrolled content and focused inputs are
+     never occluded behind sticky action bars or the fixed navigation bar.
    - Touch targets must meet the minimum 44px boundary.
 
 7. **Dialogs and Form State Hygiene:**

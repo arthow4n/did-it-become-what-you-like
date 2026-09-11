@@ -111,6 +111,8 @@ export type ReceiptOpenRouterPort = ReceiptProviderPort & {
 
 export type ReceiptProvider = "gemini" | "openrouter";
 
+export type ReceiptReviewMode = "scanned" | "manual";
+
 export const RECEIPT_PROVIDER_NAMES: Record<ReceiptProvider, string> = {
   gemini: "Gemini",
   openrouter: "OpenRouter",
@@ -1234,7 +1236,16 @@ export function ReceiptScanScreen({
   );
 }
 
-function editorValue(line: ReceiptDraftLine): {
+function unsignedDecimal(value: string): string {
+  return value.startsWith("-") ? value.slice(1) : value;
+}
+
+function outflowDecimal(value: string): string {
+  const unsigned = unsignedDecimal(value);
+  return unsigned === "0" ? "0" : `-${unsigned}`;
+}
+
+function editorValue(line: ReceiptDraftLine, manual = false): {
   type: "purchase" | "adjustment";
   description: string;
   categoryId: string;
@@ -1248,7 +1259,7 @@ function editorValue(line: ReceiptDraftLine): {
       type: line.type,
       description: line.description,
       categoryId: line.categoryId,
-      amount: line.lineTotal,
+      amount: manual ? unsignedDecimal(line.lineTotal) : line.lineTotal,
       quantity: line.quantity,
       unitPrice: line.unitPrice,
     }
@@ -1264,6 +1275,7 @@ function editorValue(line: ReceiptDraftLine): {
 function updatedLine(
   line: ReceiptDraftLine,
   value: ReturnType<typeof editorValue>,
+  manual = false,
 ): ReceiptDraftLine | undefined {
   const amount = CanonicalDecimalSchema.safeParse(value.amount);
   if (!amount.success) return undefined;
@@ -1280,7 +1292,7 @@ function updatedLine(
       ...line,
       description: value.description,
       categoryId: StableIdSchema.parse(value.categoryId),
-      lineTotal: amount.data,
+      lineTotal: manual ? outflowDecimal(amount.data) : amount.data,
       ...(quantity ? { quantity } : { quantity: undefined }),
       ...(unitPrice ? { unitPrice } : { unitPrice: undefined }),
     };
@@ -1308,6 +1320,8 @@ export function LineEditorDialog({
   triggerLabel,
   triggerVariant = "quiet",
   fullWidth,
+  dialogTitle,
+  manual = false,
 }: {
   line: ReceiptDraftLine;
   categories: readonly Category[];
@@ -1317,14 +1331,16 @@ export function LineEditorDialog({
   triggerLabel: string;
   triggerVariant?: "primary" | "secondary" | "quiet" | "danger";
   fullWidth?: boolean;
+  dialogTitle?: string;
+  manual?: boolean;
 }) {
-  const [value, setValue] = useState(editorValue(line));
+  const [value, setValue] = useState(editorValue(line, manual));
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    setValue(editorValue(line));
+    setValue(editorValue(line, manual));
     setError(undefined);
-  }, [line]);
+  }, [line, manual]);
   return (
     <AdaptiveDialog
       trigger={
@@ -1332,7 +1348,8 @@ export function LineEditorDialog({
           {triggerLabel}
         </Button>
       }
-      title={line.type === "purchase" ? "Edit receipt line" : "Edit adjustment"}
+      title={dialogTitle ??
+        (line.type === "purchase" ? "Edit receipt line" : "Edit adjustment")}
     >
       {(close) => (
         <Stack gap={4}>
@@ -1340,6 +1357,7 @@ export function LineEditorDialog({
             value={value}
             categories={categoryOptions(categories)}
             linkOptions={linkOptions}
+            manual={manual}
             onChange={(next) => {
               setValue(next);
               setError(undefined);
@@ -1359,7 +1377,7 @@ export function LineEditorDialog({
             <Button
               isDisabled={value.description.trim().length === 0}
               onPress={() => {
-                const next = updatedLine(line, value);
+                const next = updatedLine(line, value, manual);
                 if (!next) {
                   setError(
                     "Enter valid decimal values before saving this line.",
@@ -1437,6 +1455,8 @@ export function ReceiptReviewScreen({
   local,
   state,
   initialReview,
+  mode = "scanned",
+  persistenceKey,
   onDirtyChange,
   onDiscardDisabledChange,
   discardRequest,
@@ -1445,17 +1465,25 @@ export function ReceiptReviewScreen({
   local: LocalPort;
   state: ProjectCategoryState;
   initialReview?: ReceiptReviewDraft;
+  mode?: ReceiptReviewMode;
+  persistenceKey?: string;
   onDirtyChange?: (dirty: boolean) => void;
   onDiscardDisabledChange?: (disabled: boolean) => void;
   discardRequest?: number;
   onClose: () => void;
 }) {
+  const isManual = mode === "manual";
+  const pageTitle = isManual ? "Enter receipt manually" : "Review receipt";
   const machine = useMemo(
     () => createReceiptReviewMachine({ local, organization: local }),
     [local],
   );
   const [snapshot, send] = useActor(machine, {
-    input: initialReview ? { initialReview } : {},
+    input: {
+      ...(initialReview ? { initialReview } : {}),
+      ...(persistenceKey ? { persistenceKey } : {}),
+      ...(isManual ? { restoreExisting: true } : {}),
+    },
   });
   const [openSent, setOpenSent] = useState(false);
   const [metadataOpen, setMetadataOpen] = useState(false);
@@ -1489,7 +1517,19 @@ export function ReceiptReviewScreen({
     }
   }, [initialReview, openSent, send]);
 
-  const dirty = snapshot.hasTag("dirty");
+  const reviewChanged = (review: ReceiptReviewDraft | null): boolean => {
+    if (!review) return false;
+    if (!initialReview) return true;
+    return JSON.stringify({
+      parent: review.parent,
+      lines: review.lines,
+    }) !== JSON.stringify({
+      parent: initialReview.parent,
+      lines: initialReview.lines,
+    });
+  };
+  const dirty = snapshot.hasTag("dirty") &&
+    (!isManual || reviewChanged(snapshot.context.review));
   useDirtyBeforeUnload(dirty);
 
   useEffect(() => {
@@ -1525,7 +1565,7 @@ export function ReceiptReviewScreen({
   if (snapshot.matches("hydrating") && !snapshot.context.review) {
     return (
       <ContentContainer size="review">
-        <PageHeader title="Review receipt" headingLevel={1} />
+        <PageHeader title={pageTitle} headingLevel={1} />
         <StatusPanel
           title="Loading receipt review"
           detail="Opening the receipt review draft."
@@ -1537,7 +1577,7 @@ export function ReceiptReviewScreen({
     return (
       <ContentContainer size="review">
         <Stack gap={4}>
-          <PageHeader title="Review receipt" headingLevel={1} />
+          <PageHeader title={pageTitle} headingLevel={1} />
           <Text>There is no receipt review to restore.</Text>
         </Stack>
       </ContentContainer>
@@ -1547,7 +1587,7 @@ export function ReceiptReviewScreen({
     return (
       <ContentContainer size="review">
         <Stack gap={4}>
-          <PageHeader title="Review receipt" headingLevel={1} />
+          <PageHeader title={pageTitle} headingLevel={1} />
           <ErrorState
             title="Receipt review needs recovery"
             action={
@@ -1579,7 +1619,7 @@ export function ReceiptReviewScreen({
     return (
       <ContentContainer size="review">
         <Stack gap={4}>
-          <PageHeader title="Review receipt" headingLevel={1} />
+          <PageHeader title={pageTitle} headingLevel={1} />
           <ErrorState title="Receipt review unavailable">
             The validated receipt draft could not be opened.
           </ErrorState>
@@ -1626,14 +1666,25 @@ export function ReceiptReviewScreen({
     selected: false,
     uncertain: false,
   } satisfies ReceiptDraftLine;
+  const closeReview = () => {
+    if (snapshot.hasTag("saving")) return;
+    if (isManual && !dirty) {
+      send({ type: "receipt.review.discard" });
+      return;
+    }
+    onClose();
+  };
 
   return (
     <ContentContainer size="review">
       <Stack gap={5}>
         <PageHeader
-          title="Review receipt"
+          title={pageTitle}
+          description={isManual
+            ? "Add the items from a restaurant or café purchase, then check the total paid."
+            : undefined}
           headingLevel={1}
-          leading={snapshot.hasTag("dirty")
+          leading={dirty
             ? (
               <AdaptiveDialog
                 trigger={
@@ -1671,12 +1722,14 @@ export function ReceiptReviewScreen({
                 icon={<X />}
                 aria-label="Close"
                 variant="quiet"
-                onPress={onClose}
+                isDisabled={snapshot.hasTag("saving")}
+                onPress={closeReview}
               />
             )}
         />
         <ReceiptMetadata
           metadata={review.parent}
+          totalLabel={isManual ? "Total paid" : undefined}
           onEdit={openMetadata}
         />
         <ReceiptReconciliation
@@ -1684,8 +1737,13 @@ export function ReceiptReviewScreen({
           selected={selectedTotal}
           difference={difference}
           currency={review.parent.currency}
+          printedLabel={isManual ? "Total paid" : undefined}
+          selectedLabel={isManual ? "Items total" : undefined}
+          mismatchMessage={isManual
+            ? "The item total does not yet match the total paid."
+            : undefined}
         />
-        {review.uncertainty.length
+        {review.uncertainty.length && !isManual
           ? (
             <InlineNotice tone="warning" title="AI review notes">
               <List label="AI review notes">
@@ -1700,10 +1758,13 @@ export function ReceiptReviewScreen({
           ? (
             <InlineNotice
               tone="warning"
-              title="Confirm the printed-total mismatch"
+              title={isManual
+                ? "Confirm the total mismatch"
+                : "Confirm the printed-total mismatch"}
             >
-              The selected entries differ from the printed total. You can go
-              back and edit them, or explicitly confirm this mismatch.
+              {isManual
+                ? "The item total differs from the total paid. You can go back and edit the items or total, or explicitly confirm this mismatch."
+                : "The selected entries differ from the printed total. You can go back and edit them, or explicitly confirm this mismatch."}
               <Button
                 onPress={() =>
                   send({ type: "receipt.review.confirm-mismatch" })}
@@ -1734,13 +1795,54 @@ export function ReceiptReviewScreen({
             </InlineNotice>
           )
           : null}
-        <Stack gap={3}>
+        <Stack
+          gap={3}
+          as="section"
+          aria-label={isManual ? "Items" : undefined}
+        >
+          {isManual
+            ? (
+              <Inline justify="space-between">
+                <Stack gap={1}>
+                  <Heading level={2} size="md">Items</Heading>
+                  <Text tone="secondary">
+                    Add each purchased item as its own line.
+                  </Text>
+                </Stack>
+                <LineEditorDialog
+                  line={newLine}
+                  categories={categories}
+                  linkOptions={links}
+                  triggerLabel="Add item"
+                  triggerVariant="secondary"
+                  dialogTitle="Add receipt item"
+                  manual
+                  onSave={(line) =>
+                    sendReview({
+                      type: "receipt.review.add-line",
+                      line: { ...line, selected: true },
+                    })}
+                />
+              </Inline>
+            )
+            : null}
+          {isManual && review.lines.length === 0
+            ? (
+              <Card>
+                <Text tone="secondary">
+                  No items yet. Add the dishes, drinks, or other purchases from
+                  this visit.
+                </Text>
+              </Card>
+            )
+            : null}
           {review.lines.map((line) => (
             <ReceiptLineCard
               key={line.id}
               line={lineViewModel(line, categories)}
               currency={review.parent.currency}
-              onSelectedChange={(selected) =>
+              mode={isManual ? "manual" : "review"}
+              onSelectedChange={isManual ? undefined : (selected) =>
                 sendReview({
                   type: "receipt.review.select-line",
                   lineId: line.id,
@@ -1769,6 +1871,7 @@ export function ReceiptReviewScreen({
                       type: "receipt.review.edit-line",
                       line: next,
                     })}
+                  manual={isManual}
                 />
               }
               onRemove={() =>
@@ -1779,16 +1882,20 @@ export function ReceiptReviewScreen({
             />
           ))}
         </Stack>
-        <LineEditorDialog
-          line={newLine}
-          categories={categories}
-          linkOptions={links}
-          triggerLabel="Add missing line"
-          triggerVariant="secondary"
-          fullWidth
-          onSave={(line) =>
-            sendReview({ type: "receipt.review.add-line", line })}
-        />
+        {!isManual
+          ? (
+            <LineEditorDialog
+              line={newLine}
+              categories={categories}
+              linkOptions={links}
+              triggerLabel="Add missing line"
+              triggerVariant="secondary"
+              fullWidth
+              onSave={(line) =>
+                sendReview({ type: "receipt.review.add-line", line })}
+            />
+          )
+          : null}
         <StickyActionBar>
           <Button
             pending={snapshot.matches("saving")}
@@ -1797,8 +1904,11 @@ export function ReceiptReviewScreen({
             onPress={() =>
               send({ type: "receipt.review.submit", confirmMismatch: false })}
           >
-            Save {selectedCount} selected{" "}
-            {selectedCount === 1 ? "entry" : "entries"}
+            {isManual
+              ? "Save receipt with " + selectedCount + " " +
+                (selectedCount === 1 ? "item" : "items")
+              : "Save " + selectedCount + " selected " +
+                (selectedCount === 1 ? "entry" : "entries")}
           </Button>
         </StickyActionBar>
       </Stack>
@@ -1809,6 +1919,7 @@ export function ReceiptReviewScreen({
             onSave={updateParent}
             error={metadataError}
             onClose={closeMetadata}
+            manual={isManual}
           />
         )
         : null}
@@ -1821,17 +1932,21 @@ export function ReceiptMetadataEditor({
   onSave,
   onClose,
   error,
+  manual = false,
 }: {
   parent: ReceiptReviewDraft["parent"];
   onSave: (parent: ReceiptReviewDraft["parent"]) => void;
   onClose: () => void;
   error?: string;
+  manual?: boolean;
 }) {
   const [merchant, setMerchant] = useState(parent.merchant ?? "");
   const [date, setDate] = useState(parent.date);
   const [time, setTime] = useState(parent.time ?? "");
   const [currency, setCurrency] = useState(parent.currency);
-  const [printedTotal, setPrintedTotal] = useState(parent.printedTotal);
+  const [printedTotal, setPrintedTotal] = useState(
+    manual ? unsignedDecimal(parent.printedTotal) : parent.printedTotal,
+  );
   return (
     <AdaptiveDialog
       trigger={
@@ -1871,9 +1986,12 @@ export function ReceiptMetadataEditor({
         </div>
         <TextField label="Currency" value={currency} onChange={setCurrency} />
         <TextField
-          label="Printed receipt total"
+          label={manual ? "Total paid" : "Printed receipt total"}
           value={printedTotal}
           onChange={setPrintedTotal}
+          description={manual
+            ? "Enter the positive total paid for this visit; purchases are stored as outflows."
+            : undefined}
         />
         {error
           ? (
@@ -1894,7 +2012,9 @@ export function ReceiptMetadataEditor({
                 date,
                 time: time.trim() || undefined,
                 currency,
-                printedTotal,
+                printedTotal: manual
+                  ? outflowDecimal(printedTotal)
+                  : printedTotal,
               })}
           >
             Save details

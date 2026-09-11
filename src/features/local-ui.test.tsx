@@ -427,6 +427,35 @@ Deno.test("local UI opens a blank manual form after empty draft hydration", asyn
   });
 });
 
+Deno.test("local UI manual form offers manual receipt entry", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      const { service } = createTestService(state);
+      let opened = 0;
+      render(
+        createElement(ManualExpenseScreen, {
+          repository: local,
+          service,
+          state,
+          request: { projectId: project.id },
+          onSaved: () => undefined,
+          onManualReceipt: () => opened++,
+          onClosed: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: "Enter receipt manually" }))
+      );
+      fireEvent.click(
+        view.getByRole("button", { name: "Enter receipt manually" }),
+      );
+      assertEquals(opened, 1);
+    });
+  });
+});
+
 Deno.test("local UI isolates edit drafts from the new-expense draft key", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
@@ -938,6 +967,7 @@ Deno.test("local UI shell navigation routes directly to manual and scan scenes",
 Deno.test("local UI associates receipt detail with expenses navigation", () => {
   const editPath: LocalUiPath = "/expense/edit/expense-typed";
   assertEquals(selectedNavigationForPath(editPath), "manual");
+  assertEquals(selectedNavigationForPath("/receipt/manual"), "manual");
   assertEquals(
     selectedNavigationForPath("/receipt/detail/receipt-123?line=line-456"),
     "expenses",

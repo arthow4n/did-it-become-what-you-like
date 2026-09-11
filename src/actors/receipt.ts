@@ -208,6 +208,8 @@ type ReceiptReviewFailureOperation = "hydrate" | "persist" | "save" | "clear";
 
 export type ReceiptReviewActorContext = {
   readonly persistenceKey: string;
+  /** A new review used only when no durable draft exists yet. */
+  readonly seedReview: ReceiptReviewDraft | null;
   readonly review: ReceiptReviewDraft | null;
   readonly result: ReceiptCommitResult | null;
   readonly outcome: ReceiptReviewOutputEvent | null;
@@ -219,6 +221,8 @@ export type ReceiptReviewActorContext = {
 export type ReceiptReviewActorInput = {
   readonly persistenceKey?: string;
   readonly initialReview?: ReceiptReviewDraft;
+  /** Hydrate an existing durable draft before falling back to initialReview. */
+  readonly restoreExisting?: boolean;
 };
 
 export type ReceiptReviewActorEvent =
@@ -348,7 +352,12 @@ export function createReceiptReviewMachine(
     context: ({ input }) => ({
       persistenceKey: input?.persistenceKey ?? dependencies.persistenceKey ??
         "workflow:receipt-review",
-      review: input?.initialReview
+      seedReview: input?.initialReview
+        ? validateReceiptReviewDraft(input.initialReview)
+        : null,
+      review: input?.restoreExisting
+        ? null
+        : input?.initialReview
         ? validateReceiptReviewDraft(input.initialReview)
         : null,
       result: null,
@@ -361,14 +370,19 @@ export function createReceiptReviewMachine(
       closed: {
         always: [
           {
-            target: "persisted",
+            target: "hydrating",
+            guard: ({ context }) =>
+              context.review === null && context.seedReview !== null,
+          },
+          {
+            target: "persisting",
             guard: ({ context }) => context.review !== null,
           },
         ],
         on: {
           "receipt.review.hydrate": "hydrating",
           "receipt.review.open": {
-            target: "persisted",
+            target: "persisting",
             actions: assign({
               review: ({ event }) => validateReceiptReviewDraft(event.review),
               result: () => null,
@@ -391,6 +405,15 @@ export function createReceiptReviewMachine(
               actions: assign({
                 review: ({ event }) => event.output!.review,
                 persistenceRevision: ({ event }) => event.output!.revision,
+                error: () => null,
+                failureOperation: () => null,
+              }),
+            },
+            {
+              target: "persisting",
+              guard: ({ context }) => context.seedReview !== null,
+              actions: assign({
+                review: ({ context }) => context.seedReview,
                 error: () => null,
                 failureOperation: () => null,
               }),
@@ -448,17 +471,18 @@ export function createReceiptReviewMachine(
             }),
           },
         },
-      },
-      persisted: {
-        tags: ["review-ready", "dirty"],
         on: {
           "receipt.review.change": {
+            target: "persisting",
+            reenter: true,
             actions: assign({
               review: ({ event }) => validateReceiptReviewDraft(event.review),
               error: () => null,
             }),
           },
           "receipt.review.select-line": {
+            target: "persisting",
+            reenter: true,
             actions: assign({
               review: ({ context, event }) =>
                 setReceiptLineSelected(
@@ -470,6 +494,8 @@ export function createReceiptReviewMachine(
             }),
           },
           "receipt.review.edit-line": {
+            target: "persisting",
+            reenter: true,
             actions: assign({
               review: ({ context, event }) =>
                 editReceiptLine(context.review!, event.line),
@@ -477,6 +503,8 @@ export function createReceiptReviewMachine(
             }),
           },
           "receipt.review.add-line": {
+            target: "persisting",
+            reenter: true,
             actions: assign({
               review: ({ context, event }) =>
                 addReceiptLine(context.review!, event.line),
@@ -484,6 +512,8 @@ export function createReceiptReviewMachine(
             }),
           },
           "receipt.review.remove-line": {
+            target: "persisting",
+            reenter: true,
             actions: assign({
               review: ({ context, event }) =>
                 removeReceiptLine(context.review!, event.lineId),
@@ -491,6 +521,64 @@ export function createReceiptReviewMachine(
             }),
           },
           "receipt.review.change-parent": {
+            target: "persisting",
+            reenter: true,
+            actions: assign({
+              review: ({ context, event }) =>
+                editReceiptParent(context.review!, event.parent),
+              error: () => null,
+            }),
+          },
+        },
+      },
+      persisted: {
+        tags: ["review-ready", "dirty"],
+        on: {
+          "receipt.review.change": {
+            target: "persisting",
+            actions: assign({
+              review: ({ event }) => validateReceiptReviewDraft(event.review),
+              error: () => null,
+            }),
+          },
+          "receipt.review.select-line": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                setReceiptLineSelected(
+                  context.review!,
+                  event.lineId,
+                  event.selected,
+                ),
+              error: () => null,
+            }),
+          },
+          "receipt.review.edit-line": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                editReceiptLine(context.review!, event.line),
+              error: () => null,
+            }),
+          },
+          "receipt.review.add-line": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                addReceiptLine(context.review!, event.line),
+              error: () => null,
+            }),
+          },
+          "receipt.review.remove-line": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                removeReceiptLine(context.review!, event.lineId),
+              error: () => null,
+            }),
+          },
+          "receipt.review.change-parent": {
+            target: "persisting",
             actions: assign({
               review: ({ context, event }) =>
                 editReceiptParent(context.review!, event.parent),
@@ -532,12 +620,14 @@ export function createReceiptReviewMachine(
               event.type === "receipt.review.submit" && event.confirmMismatch,
           },
           "receipt.review.change": {
+            target: "persisting",
             actions: assign({
               review: ({ event }) => validateReceiptReviewDraft(event.review),
               error: () => null,
             }),
           },
           "receipt.review.select-line": {
+            target: "persisting",
             actions: assign({
               review: ({ context, event }) =>
                 setReceiptLineSelected(
@@ -549,6 +639,7 @@ export function createReceiptReviewMachine(
             }),
           },
           "receipt.review.edit-line": {
+            target: "persisting",
             actions: assign({
               review: ({ context, event }) =>
                 editReceiptLine(context.review!, event.line),
@@ -556,6 +647,7 @@ export function createReceiptReviewMachine(
             }),
           },
           "receipt.review.add-line": {
+            target: "persisting",
             actions: assign({
               review: ({ context, event }) =>
                 addReceiptLine(context.review!, event.line),
@@ -563,6 +655,7 @@ export function createReceiptReviewMachine(
             }),
           },
           "receipt.review.remove-line": {
+            target: "persisting",
             actions: assign({
               review: ({ context, event }) =>
                 removeReceiptLine(context.review!, event.lineId),
@@ -570,6 +663,7 @@ export function createReceiptReviewMachine(
             }),
           },
           "receipt.review.change-parent": {
+            target: "persisting",
             actions: assign({
               review: ({ context, event }) =>
                 editReceiptParent(context.review!, event.parent),

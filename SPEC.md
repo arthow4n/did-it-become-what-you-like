@@ -77,6 +77,10 @@ and multi-device synchronization according to the agreed sync design.
 - A standalone manually created expense may have an empty description. A saved
   receipt purchase or adjustment line instead requires a non-empty line
   description so an expanded receipt remains understandable.
+- Manual entry must also offer an optional receipt mode for purchases without a
+  scan. It lets the owner enter merchant/date/time/currency/total once and add
+  multiple categorized purchase lines; it commits the receipt parent and lines
+  atomically using the same receipt model.
 - Merchant/shop and description are separate optional fields. Merchant/shop
   should preserve the exact merchant branch or location when known rather than
   reducing it to only a generic chain name.

@@ -540,6 +540,65 @@ Deno.test("receipt-actor review: validated draft saves atomically", async () => 
   void organization;
 });
 
+Deno.test(
+  "receipt-actor review: manual seeds restore existing drafts before defaults",
+  async () => {
+    const { local } = await receiptHarness();
+    const persistenceKey = "workflow:manual-receipt-restore";
+    const seed = reviewDraft({ lines: [] });
+    const first = createActor(
+      createReceiptReviewMachine({
+        local,
+        commit: createReceiptCommitService(local),
+        persistenceKey,
+      }),
+      {
+        input: {
+          persistenceKey,
+          initialReview: seed,
+          restoreExisting: true,
+        },
+      },
+    ).start();
+    await waitForActorState(first, "persisted");
+    first.send({
+      type: "receipt.review.add-line",
+      line: {
+        type: "purchase",
+        id: "receipt-line-restore",
+        description: "Coffee",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        lineTotal: "-3",
+        selected: true,
+        uncertain: false,
+      },
+    });
+    await waitForActorState(first, "persisted");
+    first.stop();
+
+    const restored = createActor(
+      createReceiptReviewMachine({
+        local,
+        commit: createReceiptCommitService(local),
+        persistenceKey,
+      }),
+      {
+        input: {
+          persistenceKey,
+          initialReview: seed,
+          restoreExisting: true,
+        },
+      },
+    ).start();
+    await waitForActorState(restored, "persisted");
+    assertEquals(
+      restored.getSnapshot().context.review?.lines[0]?.description,
+      "Coffee",
+    );
+    restored.stop();
+  },
+);
+
 Deno.test("receipt-actor review: commit failure retries and explicit discard clears", async () => {
   const { local, organization } = await receiptHarness();
   const commit = createReceiptCommitService(local, {

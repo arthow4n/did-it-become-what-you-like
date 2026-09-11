@@ -3365,21 +3365,32 @@ export function ReceiptGroup(
 }
 
 export function ReceiptReconciliation(
-  { printed, selected, difference, currency }: {
+  {
+    printed,
+    selected,
+    difference,
+    currency,
+    printedLabel = "Receipt total",
+    selectedLabel = "Selected lines",
+    mismatchMessage = "The selected lines do not yet match the printed total.",
+  }: {
     printed: string;
     selected: string;
     difference: string;
     currency: string;
+    printedLabel?: ReactNode;
+    selectedLabel?: ReactNode;
+    mismatchMessage?: ReactNode;
   },
 ) {
   return (
     <Card>
       <DefinitionList
         items={[{
-          term: "Receipt total",
+          term: printedLabel,
           description: <MoneyText amount={printed} currency={currency} />,
         }, {
-          term: "Selected lines",
+          term: selectedLabel,
           description: <MoneyText amount={selected} currency={currency} />,
         }, {
           term: "Difference",
@@ -3395,7 +3406,7 @@ export function ReceiptReconciliation(
       {difference !== "0"
         ? (
           <InlineNotice tone="warning" title="Review totals before saving">
-            The selected lines do not yet match the printed total.
+            {mismatchMessage}
           </InlineNotice>
         )
         : null}
@@ -3444,9 +3455,10 @@ export type ReceiptMetadataViewModel = {
 };
 
 export function ReceiptMetadata(
-  { metadata, onEdit }: {
+  { metadata, onEdit, totalLabel = "Receipt total" }: {
     metadata: ReceiptMetadataViewModel;
     onEdit?: () => void;
+    totalLabel?: ReactNode;
   },
 ) {
   return (
@@ -3471,7 +3483,7 @@ export function ReceiptMetadata(
           : null}
       </Inline>
       <Inline justify="space-between">
-        <Text tone="secondary">Receipt total</Text>
+        <Text tone="secondary">{totalLabel}</Text>
         <MoneyText
           amount={metadata.printedTotal}
           currency={metadata.currency}
@@ -3510,7 +3522,7 @@ export function ReceiptLineCard(
   }: {
     line: ReceiptLineViewModel;
     currency: string;
-    mode?: "review" | "management";
+    mode?: "review" | "management" | "manual";
     isDisabled?: boolean;
     onSelectedChange?: (selected: boolean) => void;
     onEdit?: () => void;
@@ -3522,7 +3534,7 @@ export function ReceiptLineCard(
   return (
     <Card as="section">
       <Inline justify="space-between">
-        {mode === "management"
+        {mode === "management" || mode === "manual"
           ? <strong>{line.description || "Unclear item"}</strong>
           : (
             <Checkbox
@@ -3613,11 +3625,12 @@ export type ReceiptLineEditorValue = {
 };
 
 export function ReceiptLineEditor(
-  { value, categories, linkOptions = [], onChange }: {
+  { value, categories, linkOptions = [], onChange, manual = false }: {
     value: ReceiptLineEditorValue;
     categories: SelectOption[];
     linkOptions?: SelectOption[];
     onChange: (value: ReceiptLineEditorValue) => void;
+    manual?: boolean;
   },
 ) {
   return (
@@ -3635,12 +3648,18 @@ export function ReceiptLineEditor(
         onValueChange={(categoryId) => onChange({ ...value, categoryId })}
       />
       <TextField
-        label={value.type === "adjustment" ? "Signed adjustment" : "Line total"}
+        label={manual
+          ? value.type === "adjustment" ? "Adjustment" : "Amount paid"
+          : value.type === "adjustment"
+          ? "Signed adjustment"
+          : "Line total"}
         value={value.amount}
         onChange={(amount) => onChange({ ...value, amount })}
         inputMode="decimal"
         type="text"
-        description="Enter the signed amount exactly as printed."
+        description={manual
+          ? "Enter the positive amount paid for this item."
+          : "Enter the signed amount exactly as printed."}
       />
       {value.type === "purchase"
         ? (

@@ -227,9 +227,10 @@ flexbox abuse, all components and screens must follow these rules:
    - Category selection (`CategoryPicker`) pairs a searchable `SelectField` with
      an immediate quick-suggestion chip row (`.ds-category-picker__chips`)
      prioritizing recent/frequent categories for one-tap selection on mobile.
-   - Scanned receipt items (`ReceiptLineCard`) support an inline category
-     control (`categoryControl`) for rapid category switching without opening
-     the full line editor dialog.
+   - Receipt items (`ReceiptLineCard`) support an inline category control
+     (`categoryControl`) for rapid category switching without opening the full
+     line editor dialog. Scanned review cards expose selection; manually
+     entered receipt cards omit that review-only checkbox.
    - Embedded input adornments (search clear buttons, select chevrons like
      `CurrencyPicker`, secret reveal toggles) must be enclosed inside
      `.ds-field-control-wrap` with `position: relative` so icons anchor neatly

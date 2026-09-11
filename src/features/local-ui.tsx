@@ -8,6 +8,7 @@ import {
 } from "../domain/organization.ts";
 import {
   compareExpenseTimelineEntries,
+  expenseDateForLocalNow,
   type ExpensePeriod,
   type ExpenseQueryResult,
   queryExpenses,
@@ -146,6 +147,7 @@ export type LocalUiPath =
   | "/settings/preferences"
   | "/settings/about"
   | "/receipt/scan"
+  | "/receipt/manual"
   | "/receipt/review"
   | `/receipt/detail/${string}`;
 
@@ -164,9 +166,12 @@ export function selectedNavigationForPath(
   ) {
     return "manual";
   }
-  if (activePath === "/receipt/scan" || activePath === "/receipt/review") {
+  if (
+    activePath === "/receipt/scan" || activePath === "/receipt/review"
+  ) {
     return "scan";
   }
+  if (activePath === "/receipt/manual") return "manual";
   if (
     activePath.startsWith("/organize") || activePath === "/projects" ||
     activePath === "/categories"
@@ -187,6 +192,7 @@ function shellRouteForPath(path: string): ShellRoute {
   if (path === "/add") return "add";
   if (path.startsWith("/expense/")) return "expense-form";
   if (path === "/receipt/scan") return "receipt-scan";
+  if (path === "/receipt/manual") return "receipt-review";
   if (path === "/receipt/review") return "receipt-review";
   if (path.startsWith("/receipt/detail/")) return "receipt-detail";
   if (path === "/organize") return "organize";
@@ -440,6 +446,28 @@ function localCalendarDate(now = new Date()): string {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function manualReceiptReviewForState(
+  state: ProjectCategoryState,
+  expenseDayBoundary: string,
+): ReceiptReviewDraft | undefined {
+  const project =
+    state.projects.find((candidate) =>
+      candidate.id === state.selectedProjectId && !candidate.archived
+    ) ?? state.projects.find((candidate) => !candidate.archived);
+  if (!project) return undefined;
+  return {
+    parent: {
+      projectId: project.id,
+      date: expenseDateForLocalNow(new Date(), expenseDayBoundary),
+      currency: project.defaultCurrency,
+      printedTotal: "0",
+    },
+    lines: [],
+    uncertainty: [],
+    printedTotalMismatch: false,
+  };
 }
 
 function periodForValue(
@@ -2534,6 +2562,7 @@ export function ManualExpenseScreen({
   state,
   request,
   onSaved,
+  onManualReceipt,
   onUsefulAction,
   onDirtyChange,
   discardRequest,
@@ -2544,6 +2573,7 @@ export function ManualExpenseScreen({
   state: ProjectCategoryState;
   request: ManualExpenseOpenRequest;
   onSaved: (expense: Expense, mode: ManualSaveMode) => void;
+  onManualReceipt?: () => void;
   onUsefulAction?: () => void;
   onDirtyChange?: (dirty: boolean) => void;
   discardRequest?: number;
@@ -2752,7 +2782,23 @@ export function ManualExpenseScreen({
               }
             />
           )
-          : null}
+          : (
+            <PageHeader
+              headingLevel={1}
+              title="New expense"
+              description="Capture one standalone expense."
+              actions={onManualReceipt
+                ? (
+                  <Button
+                    variant="secondary"
+                    onPress={onManualReceipt}
+                  >
+                    Enter receipt manually
+                  </Button>
+                )
+                : undefined}
+            />
+          )}
         <ExpenseForm
           stickyActions
           status={failed || deleteFailed || busy || isModified
@@ -3409,6 +3455,13 @@ export function LocalUiRuntime(
         : { projectId: state?.selectedProjectId },
     [selectedExpense, state?.selectedProjectId],
   );
+  const manualReceiptReview = useMemo(
+    () =>
+      state === null
+        ? undefined
+        : manualReceiptReviewForState(state, expenseDayBoundary),
+    [expenseDayBoundary, state],
+  );
 
   if (shellSnapshot.matches("booting") || state === null) {
     return <LoadingScreen />;
@@ -3599,6 +3652,27 @@ export function LocalUiRuntime(
                 onOpenSettings={() => navigate("/settings/gemini")}
               />
             )
+            : contentPath === "/receipt/manual"
+            ? (
+              <ReceiptReviewScreen
+                local={repository}
+                state={state}
+                mode="manual"
+                persistenceKey="workflow:manual-receipt"
+                initialReview={manualReceiptReview}
+                onDirtyChange={(dirty) => {
+                  setWorkflowDirty(dirty);
+                  setDirtyNavigationWorkflow(dirty);
+                }}
+                onDiscardDisabledChange={setDirtyDiscardDisabled}
+                discardRequest={discardRequest}
+                onClose={() => {
+                  void organization.getState().then(setState);
+                  setWorkflowDirty(false);
+                  finishDirtyNavigation("/expenses");
+                }}
+              />
+            )
             : contentPath === "/receipt/review"
             ? (
               <ReceiptReviewScreen
@@ -3648,6 +3722,7 @@ export function LocalUiRuntime(
                   sendShell({ type: "shell.repository.refresh" });
                   void organization.getState().then(setState);
                 }}
+                onManualReceipt={() => requestNavigation("/receipt/manual")}
                 onUsefulAction={() =>
                   setUsefulActionVersion((value) => value + 1)}
                 onDirtyChange={(dirty) => {

@@ -35,13 +35,14 @@ import {
   type ProjectCategoryState,
 } from "../domain/index.ts";
 import type { ReceiptReviewDraft } from "../domain/receipt.ts";
-import type {
-  ReceiptAiModel,
-  ReceiptAiPort,
-  ReceiptExtractionDraft,
+import {
+  type JsonValue,
+  type ReceiptAiModel,
+  type ReceiptAiPort,
+  type ReceiptExtractionDraft,
+  SecretValue,
 } from "../adapters/ports/index.ts";
 import type { OpenRouterEndpoint } from "../adapters/openrouter/index.ts";
-import { SecretValue } from "../adapters/ports/index.ts";
 import type {
   ContractFailure,
   ReceiptImageRef,
@@ -433,6 +434,113 @@ Deno.test("receipt-ui review reports its actor-owned dirty state", async () => {
     await waitFor(() => assert(dirtyStates.includes(true)));
   });
 });
+
+Deno.test(
+  "receipt-ui manual mode adds items without selection review and saves atomically",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      const local = createFakeLocalPort();
+      await local.transaction("readwrite", async (transaction) => {
+        await transaction.put(
+          "records",
+          defaultTestProject.id,
+          defaultTestProject as never,
+        );
+        await transaction.put(
+          "records",
+          defaultTestCategory.id,
+          defaultTestCategory as never,
+        );
+      });
+      let closed = 0;
+      render(
+        createElement(ReceiptReviewScreen, {
+          local,
+          state: defaultTestState,
+          mode: "manual",
+          persistenceKey: "workflow:manual-receipt-ui",
+          initialReview: {
+            parent: {
+              projectId: defaultTestProject.id,
+              date: "2026-08-30",
+              currency: "SEK",
+              printedTotal: "-5",
+            },
+            lines: [],
+            uncertainty: [],
+            printedTotalMismatch: false,
+          },
+          onClose: () => closed++,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => {
+        assert(view.getByRole("heading", { name: "Enter receipt manually" }));
+        assert(view.getByText(/No items yet\./));
+        assert(view.getAllByText("Total paid").length >= 1);
+      });
+      assert(view.queryByRole("checkbox") === null);
+      fireEvent.click(view.getByRole("button", { name: "Edit" }));
+      const metadataDialog = await waitFor(() =>
+        view.getByRole("dialog", { name: "Edit receipt details" })
+      );
+      assertEquals(
+        (within(metadataDialog).getByRole("textbox", {
+          name: "Total paid",
+        }) as HTMLInputElement).value,
+        "5",
+      );
+      fireEvent.click(
+        within(metadataDialog).getByRole("button", { name: "Cancel" }),
+      );
+      fireEvent.click(view.getByRole("button", { name: "Add item" }));
+      const dialog = await waitFor(() =>
+        view.getByRole("dialog", { name: "Add receipt item" })
+      );
+      fireEvent.input(
+        within(dialog).getByRole("textbox", { name: /Description/ }),
+        {
+          target: { value: "Coffee" },
+        },
+      );
+      fireEvent.input(
+        within(dialog).getByRole("textbox", { name: /Amount paid/ }),
+        {
+          target: { value: "5" },
+        },
+      );
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Save line" }),
+      );
+      await waitFor(() => {
+        assert(view.getByText("Coffee"));
+        const save = view.getByRole("button", {
+          name: "Save receipt with 1 item",
+        });
+        assert(!(save as HTMLButtonElement).disabled);
+      });
+      fireEvent.click(
+        view.getByRole("button", { name: "Save receipt with 1 item" }),
+      );
+      await waitFor(() => assert(closed === 1));
+      assert(
+        (await local.query("records", {
+          index: "type",
+          equals: "receipt",
+        })).length === 1,
+      );
+      const purchaseLines = await local.query<JsonValue>("records", {
+        index: "type",
+        equals: "receipt-purchase-line",
+      });
+      assertEquals(purchaseLines.length, 1);
+      assertEquals(
+        (purchaseLines[0]?.value as Record<string, JsonValue>).lineTotal,
+        "-5",
+      );
+    });
+  },
+);
 
 Deno.test("receipt-ui source picker exposes native capture actions and ephemeral removal", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {

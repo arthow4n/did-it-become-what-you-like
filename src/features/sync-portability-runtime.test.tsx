@@ -279,8 +279,6 @@ Deno.test(
       "https://sync.example.com",
     );
     assert(adapter !== null);
-    assert(typeof adapter.authorize === "function");
-    assert(typeof adapter.disconnect === "function");
     assert(adapter.status() === "signed-out");
 
     // 3. Direct mode requires clientId

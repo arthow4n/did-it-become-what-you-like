@@ -1,6 +1,6 @@
 import { adapterError, type CausalSyncPort } from "../ports/index.ts";
 import type { PortableDataset } from "../../domain/index.ts";
-import { createTestClock } from "../../test-support/clock.ts";
+import { assertRejects, createTestClock } from "../../test-support/index.ts";
 import {
   createFakeDrivePorts,
   createFakeIdPort,
@@ -39,23 +39,6 @@ function assertEquals<T>(actual: T, expected: T): void {
       `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
     );
   }
-}
-
-async function assertRejects(
-  operation: () => Promise<unknown>,
-  code: string,
-): Promise<void> {
-  try {
-    await operation();
-  } catch (error) {
-    assert(
-      error !== null && typeof error === "object" &&
-        (error as { readonly code?: unknown }).code === code,
-      `Expected ${code} failure, got ${String(error)}`,
-    );
-    return;
-  }
-  throw new Error(`Expected ${code} failure`);
 }
 
 function datasetWithProject(

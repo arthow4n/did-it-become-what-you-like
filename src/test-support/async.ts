@@ -53,3 +53,32 @@ export async function waitFor(
   if (predicate()) return;
   throw new Error(message);
 }
+
+export async function assertRejects(
+  operation: () => unknown | Promise<unknown>,
+  expected?: string | ((error: unknown) => boolean),
+): Promise<unknown> {
+  try {
+    await operation();
+  } catch (error) {
+    if (typeof expected === "function") {
+      if (!expected(error)) {
+        throw new Error(
+          `Expected error to satisfy predicate, got ${String(error)}`,
+        );
+      }
+    } else if (typeof expected === "string") {
+      const code = (error as { readonly code?: unknown })?.code;
+      const message = error instanceof Error ? error.message : String(error);
+      if (code !== expected && !message.includes(expected)) {
+        throw new Error(
+          `Expected error code to be "${expected}" or message to include "${expected}", got code="${
+            String(code)
+          }" message="${message}"`,
+        );
+      }
+    }
+    return error;
+  }
+  throw new Error("Expected operation to reject");
+}

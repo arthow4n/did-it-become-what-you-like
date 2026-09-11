@@ -7,8 +7,11 @@ import {
   createFakeIdPort,
   createFakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
-import { createTestClock } from "../../test-support/clock.ts";
-import { settle } from "../../test-support/index.ts";
+import {
+  assertRejects,
+  createTestClock,
+  settle,
+} from "../../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -93,20 +96,6 @@ async function settleActor(
 ): Promise<void> {
   await settle();
   assert(actor.getSnapshot().status !== "error");
-}
-
-async function assertRejects(
-  operation: () => Promise<unknown>,
-  code: string,
-): Promise<void> {
-  try {
-    await operation();
-  } catch (error) {
-    assert(error !== null && typeof error === "object");
-    assertEquals((error as { readonly code?: unknown }).code, code);
-    return;
-  }
-  throw new Error(`Expected ${code} failure`);
 }
 
 Deno.test("conflict: local commit is authoritative and preserves every parent reference", async () => {

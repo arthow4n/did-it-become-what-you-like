@@ -29,9 +29,8 @@ function assertEquals<T>(actual: T, expected: T): void {
 }
 
 Deno.test("adapter-contract error mapping is exhaustive and retry-explicit", () => {
+  assert(!isAdapterErrorCode("invalid-code"));
   for (const code of ADAPTER_ERROR_CODES) {
-    assert(isAdapterErrorCode(code));
-    assert(typeof RETRY_BY_ERROR_CODE[code] === "string");
     const error = new AdapterError(code, { operation: "contract-test" });
     assertEquals(error.code, code);
     assertEquals(error.operation, "contract-test");

@@ -10,12 +10,14 @@ import {
   recoverLocalEraseSnapshot,
 } from "../destruction.ts";
 import {
-  type DestructionStorage,
   readDeleteEverywhereProgress,
   readLocalEraseProgress,
   writeDeleteEverywhereProgress,
 } from "../../domain/destruction.ts";
-import { settle } from "../../test-support/index.ts";
+import {
+  createMemoryStorage as memoryStorage,
+  settle,
+} from "../../test-support/index.ts";
 import { createFakeSecretStoragePort } from "../../test-support/fakes/ports.ts";
 
 declare const Deno: {
@@ -27,18 +29,6 @@ function assert(
   message = "Expected condition",
 ): asserts condition {
   if (!condition) throw new Error(message);
-}
-
-function memoryStorage(): DestructionStorage & {
-  readonly values: Map<string, string>;
-} {
-  const values = new Map<string, string>();
-  return {
-    values,
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, value),
-    removeItem: (key) => values.delete(key),
-  };
 }
 
 function deleteDependencies(options: {

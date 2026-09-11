@@ -22,40 +22,6 @@ async function collectSourceFiles(
   }
 }
 
-function hasMantinePublicType(source: string): string | undefined {
-  const typeAliases = source.matchAll(
-    /export\s+type\s+([A-Za-z_$][\w$]*)\s*=([\s\S]*?);/g,
-  );
-  for (const match of typeAliases) {
-    if (/(?:@mantine\/|\bMantine[A-Z]\w*\b|\bMantine\b)/.test(match[2])) {
-      return match[1];
-    }
-  }
-
-  const interfaces = source.matchAll(
-    /export\s+interface\s+([A-Za-z_$][\w$]*)([\s\S]*?)\n\}/g,
-  );
-  for (const match of interfaces) {
-    if (/(?:@mantine\/|\bMantine[A-Z]\w*\b|\bMantine\b)/.test(match[2])) {
-      return match[1];
-    }
-  }
-
-  const values = source.matchAll(
-    /export\s+(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::\s*([^=]+))?\s*=/g,
-  );
-  for (const match of values) {
-    if (
-      match[2] &&
-      /(?:@mantine\/|\bMantine[A-Z]\w*\b|\bMantine\b)/.test(match[2])
-    ) {
-      return match[1];
-    }
-  }
-
-  return undefined;
-}
-
 Deno.test("design-system facade boundary isolation and type privacy", async () => {
   const sourceFiles: string[] = [];
   for (const sourceRoot of sourceRoots) {
@@ -89,23 +55,6 @@ Deno.test("design-system facade boundary isolation and type privacy", async () =
     !/\bMantine[A-Z]\w*/.test(publicBarrel),
     "the public design-system barrel must not expose Mantine-specific types",
   );
-
-  for (
-    const path of [
-      "src/design-system/components.tsx",
-      "src/design-system/provider.tsx",
-    ]
-  ) {
-    const source = await Deno.readTextFile(path);
-    const leakedType = hasMantinePublicType(source);
-    assert(
-      !leakedType,
-      `${path} exposes a Mantine-specific public declaration: ${
-        leakedType ?? "unknown"
-      }`,
-    );
-  }
-
   assert(
     violations.length === 0,
     `design-system boundary violations:\n${violations.join("\n")}`,

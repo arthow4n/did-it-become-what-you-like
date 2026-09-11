@@ -583,7 +583,7 @@ Deno.test("design-system select preserves controlled open state and callbacks", 
   );
 });
 
-Deno.test("M8 provider maps semantic tokens and locks the dark scheme", async () => {
+Deno.test("design-system: provider maps semantic tokens and locks the dark scheme", async () => {
   await withComponentHarness(({ window, renderBare }) =>
     withAriaGlobals(window, () => {
       const mounted = renderBare(
@@ -614,7 +614,7 @@ Deno.test("M8 provider maps semantic tokens and locks the dark scheme", async ()
   );
 });
 
-Deno.test("M8 structural facade wrappers retain semantic roots over Mantine", async () => {
+Deno.test("design-system: structural facade wrappers retain semantic roots over Mantine", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       let inlineRef: HTMLDivElement | null = null;
@@ -762,7 +762,7 @@ Deno.test("design-system dialog uses a named overlay and returns a useful trigge
   );
 });
 
-Deno.test("M8 overlay facades preserve disclosure and menu contracts", async () => {
+Deno.test("design-system: overlay facades preserve disclosure and menu contracts", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       let expanded = false;
@@ -825,7 +825,7 @@ Deno.test("M8 overlay facades preserve disclosure and menu contracts", async () 
   );
 });
 
-Deno.test("M8 feedback facades preserve live regions and notification dismissal", async () => {
+Deno.test("design-system: feedback facades preserve live regions and notification dismissal", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       let dismissed = 0;
@@ -890,7 +890,7 @@ Deno.test("M8 feedback facades preserve live regions and notification dismissal"
   );
 });
 
-Deno.test("M8 remaining feedback facades preserve progress and state contracts", async () => {
+Deno.test("design-system: remaining feedback facades preserve progress and state contracts", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -942,7 +942,7 @@ Deno.test("M8 remaining feedback facades preserve progress and state contracts",
   );
 });
 
-Deno.test("M8 shell facades preserve landmarks and navigation state", async () => {
+Deno.test("design-system: shell facades preserve landmarks and navigation state", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let selected = "";
     const mounted = render(
@@ -980,7 +980,7 @@ Deno.test("M8 shell facades preserve landmarks and navigation state", async () =
   });
 });
 
-Deno.test("M8 list and form facades preserve native structures", async () => {
+Deno.test("design-system: list and form facades preserve native structures", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -1043,7 +1043,7 @@ Deno.test("M8 list and form facades preserve native structures", async () => {
   );
 });
 
-Deno.test("M8 filter and status facades preserve grouping and workflow state", async () => {
+Deno.test("design-system: filter and status facades preserve grouping and workflow state", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       let removed = 0;

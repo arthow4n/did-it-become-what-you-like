@@ -1,7 +1,6 @@
 import {
   clearDeleteEverywhereProgress,
   clearLocalEraseProgress,
-  type DestructionStorage,
   LOCAL_ERASE_PROGRESS_KEY,
   readDeleteEverywhereProgress,
   readLocalEraseProgress,
@@ -11,6 +10,7 @@ import {
   writeLocalEraseReceiptAiKeysChoice,
 } from "../destruction.ts";
 import { isAdapterError } from "../../adapters/ports/index.ts";
+import { createMemoryStorage as memoryStorage } from "../../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -21,18 +21,6 @@ function assert(
   message = "Expected condition",
 ): asserts condition {
   if (!condition) throw new Error(message);
-}
-
-function memoryStorage(): DestructionStorage & {
-  readonly values: Map<string, string>;
-} {
-  const values = new Map<string, string>();
-  return {
-    values,
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, value),
-    removeItem: (key) => values.delete(key),
-  };
 }
 
 Deno.test(

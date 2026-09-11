@@ -24,6 +24,11 @@ import {
   isAdapterError,
   type ReceiptExtractionRequest,
 } from "../ports/index.ts";
+import {
+  assertRejects,
+  createMemoryStorage as memoryStorage,
+  type MemoryStorage,
+} from "../../test-support/index.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -42,39 +47,6 @@ function assertEquals<T>(actual: T, expected: T): void {
       `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
     );
   }
-}
-
-async function assertRejects(
-  operation: () => Promise<unknown>,
-): Promise<unknown> {
-  try {
-    await operation();
-  } catch (error) {
-    return error;
-  }
-  throw new Error("Expected operation to reject");
-}
-
-type MemoryStorage = {
-  readonly values: Map<string, string>;
-  readonly storage: Storage;
-};
-
-function memoryStorage(): MemoryStorage {
-  const values = new Map<string, string>();
-  return {
-    values,
-    storage: {
-      clear: () => values.clear(),
-      getItem: (key) => values.get(key) ?? null,
-      key: (index) => [...values.keys()][index] ?? null,
-      get length() {
-        return values.size;
-      },
-      removeItem: (key) => values.delete(key),
-      setItem: (key, value) => values.set(key, value),
-    },
-  } as MemoryStorage;
 }
 
 const MODEL_ID = "google/gemini-2.5-flash";

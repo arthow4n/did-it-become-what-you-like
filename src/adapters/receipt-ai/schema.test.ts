@@ -11,6 +11,8 @@ import {
   validateReceiptOutput,
 } from "./schema.ts";
 
+import { assertRejects } from "../../test-support/index.ts";
+
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
 };
@@ -28,17 +30,6 @@ function assertEquals<T>(actual: T, expected: T): void {
       `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
     );
   }
-}
-
-async function assertRejects(
-  operation: () => unknown | Promise<unknown>,
-): Promise<unknown> {
-  try {
-    await operation();
-  } catch (error) {
-    return error;
-  }
-  throw new Error("Expected operation to reject");
 }
 
 const promptRequest = {
@@ -153,28 +144,18 @@ Deno.test("shared schema and parser normalize time and map it to draft", () => {
   assertEquals(draft.time, "14:35");
 
   // Localized and alternate time formats normalize cleanly
-  const localized1 = normalizeReceiptOutput({
-    ...validOutput,
-    time: "9:05",
-  }) as { time?: string };
-  assertEquals(localized1.time, "09:05");
-  const localized2 = normalizeReceiptOutput({
-    ...validOutput,
-    time: "14.35",
-  }) as { time?: string };
-  assertEquals(localized2.time, "14:35");
-  const localized3 = normalizeReceiptOutput({
-    ...validOutput,
-    time: "2:30 pm",
-  }) as { time?: string };
-  assertEquals(localized3.time, "14:30");
-  const localized4 = normalizeReceiptOutput({
-    ...validOutput,
-    time: "12:15 am",
-  }) as { time?: string };
-  assertEquals(localized4.time, "00:15");
-  const emptyTime = normalizeReceiptOutput({ ...validOutput, time: "   " }) as {
-    time?: string;
-  };
-  assertEquals(emptyTime.time, null);
+  const timeCases = [
+    { input: "9:05", expected: "09:05" },
+    { input: "14.35", expected: "14:35" },
+    { input: "2:30 pm", expected: "14:30" },
+    { input: "12:15 am", expected: "00:15" },
+    { input: "   ", expected: null },
+  ] as const;
+  for (const { input, expected } of timeCases) {
+    const normalized = normalizeReceiptOutput({
+      ...validOutput,
+      time: input,
+    }) as { time?: string | null };
+    assertEquals(normalized.time, expected);
+  }
 });

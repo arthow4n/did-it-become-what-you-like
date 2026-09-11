@@ -23,6 +23,7 @@ import {
   ReceiptPurchaseLineSchema,
   type StableId,
   StableIdSchema,
+  type TimeOfDay,
   TimeOfDaySchema,
   TombstoneSchema,
   UNCATEGORIZED_CATEGORY_ID,
@@ -87,6 +88,7 @@ export type ReceiptExtractionDraftLike = {
   readonly merchant?: unknown;
   readonly currency?: unknown;
   readonly date?: unknown;
+  readonly time?: unknown;
   readonly printedTotal?: unknown;
   readonly lines?: unknown;
   readonly uncertainty?: unknown;
@@ -620,6 +622,16 @@ export function normalizeReceiptExtractionDraft(
   if (!CalendarDateSchema.safeParse(date).success) {
     invalid("Receipt extraction returned an invalid date.");
   }
+  let time: TimeOfDay | undefined;
+  if (value.time !== undefined && value.time !== null && value.time !== "") {
+    if (
+      typeof value.time !== "string" ||
+      !TimeOfDaySchema.safeParse(value.time.trim()).success
+    ) {
+      invalid("Receipt extraction returned an invalid time.");
+    }
+    time = value.time.trim() as TimeOfDay;
+  }
   if (printedTotal === undefined) {
     invalid("Receipt extraction did not return a printed total.");
   }
@@ -755,6 +767,7 @@ export function normalizeReceiptExtractionDraft(
     parent: {
       projectId: input.projectId,
       date: date as CalendarDate,
+      ...(time !== undefined ? { time } : {}),
       ...(safeText(value.merchant) === ""
         ? {}
         : { merchant: safeText(value.merchant) }),

@@ -30,6 +30,7 @@ import {
   type DeviceLocalSettings,
   parseDeviceLocalSettings,
   StableIdSchema,
+  TimeOfDaySchema,
 } from "../domain/index.ts";
 import {
   type ReceiptDraftLine,
@@ -68,6 +69,7 @@ import {
   ListRow,
   ModelPicker,
   NativeDateField,
+  NativeTimeField,
   PageHeader,
   ReceiptLineCard,
   ReceiptLineEditor,
@@ -1601,10 +1603,13 @@ export function ReceiptReviewScreen({
   const updateParent = (parent: ReceiptReviewDraft["parent"]) => {
     if (
       !CalendarDateSchema.safeParse(parent.date).success ||
+      (parent.time && !TimeOfDaySchema.safeParse(parent.time).success) ||
       !CurrencyCodeSchema.safeParse(parent.currency).success ||
       !CanonicalDecimalSchema.safeParse(parent.printedTotal).success
     ) {
-      setMetadataError("Enter a valid date, currency, and printed total.");
+      setMetadataError(
+        "Enter a valid date, time, currency, and printed total.",
+      );
       return;
     }
     setMetadataError(undefined);
@@ -1824,6 +1829,7 @@ export function ReceiptMetadataEditor({
 }) {
   const [merchant, setMerchant] = useState(parent.merchant ?? "");
   const [date, setDate] = useState(parent.date);
+  const [time, setTime] = useState(parent.time ?? "");
   const [currency, setCurrency] = useState(parent.currency);
   const [printedTotal, setPrintedTotal] = useState(parent.printedTotal);
   return (
@@ -1851,11 +1857,18 @@ export function ReceiptMetadataEditor({
           value={merchant}
           onChange={setMerchant}
         />
-        <NativeDateField
-          label="Date"
-          value={date}
-          onChange={(event) => setDate(event.currentTarget.value)}
-        />
+        <div className="local-ui-form-row local-ui-form-row--date-time">
+          <NativeDateField
+            label="Date"
+            value={date}
+            onChange={(event) => setDate(event.currentTarget.value)}
+          />
+          <NativeTimeField
+            label="Time (optional)"
+            value={time}
+            onChange={(event) => setTime(event.currentTarget.value)}
+          />
+        </div>
         <TextField label="Currency" value={currency} onChange={setCurrency} />
         <TextField
           label="Printed receipt total"
@@ -1879,6 +1892,7 @@ export function ReceiptMetadataEditor({
                 ...parent,
                 merchant: merchant.trim() || undefined,
                 date,
+                time: time.trim() || undefined,
                 currency,
                 printedTotal,
               })}

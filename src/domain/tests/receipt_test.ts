@@ -1659,3 +1659,51 @@ Deno.test("receipt-actor domain: hostile extraction remains reviewable but inval
     }))
   );
 });
+
+Deno.test("receipt-actor domain: receipt extraction preserves time and rejects invalid time", () => {
+  const normalized = normalizeReceiptExtractionDraft({
+    merchant: "Shop",
+    currency: "SEK",
+    date: "2026-08-24",
+    time: "14:35",
+    printedTotal: "8",
+    uncertainty: [],
+    mismatches: [],
+    lines: [{
+      description: "Coffee",
+      amount: "8",
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      kind: "purchase",
+      direction: "outflow",
+      selected: true,
+      rationale: "Coffee is a purchased product line.",
+    }],
+  }, {
+    projectId: "project-receipt-domain",
+    currency: "SEK",
+    categoryCatalogue: [{
+      id: UNCATEGORIZED_CATEGORY_ID,
+      name: "Uncategorized",
+    }],
+    nextId: () => "line-positive-total",
+  });
+  assertEquals(normalized.parent.time, "14:35");
+
+  rejects(() =>
+    normalizeReceiptExtractionDraft({
+      merchant: "Shop",
+      currency: "SEK",
+      date: "2026-08-24",
+      time: "invalid-time",
+      printedTotal: "8",
+      uncertainty: [],
+      mismatches: [],
+      lines: [],
+    }, {
+      projectId: "project-receipt-domain",
+      currency: "SEK",
+      categoryCatalogue: [],
+      nextId: () => "line-1",
+    })
+  );
+});

@@ -2,6 +2,7 @@ import type {
   CalendarDate,
   CurrencyCode,
   StableId,
+  TimeOfDay,
 } from "../../domain/index.ts";
 import type { OperationOptions } from "./common.ts";
 import type { PreparedImage } from "./image.ts";
@@ -63,6 +64,7 @@ export type ReceiptExtractionDraft = {
   readonly merchant?: string;
   readonly currency: CurrencyCode;
   readonly date: CalendarDate;
+  readonly time?: TimeOfDay;
   /** Canonical decimal transcription with the sign shown on the receipt. */
   readonly printedTotal?: string;
   readonly lines: readonly ReceiptExtractionLine[];

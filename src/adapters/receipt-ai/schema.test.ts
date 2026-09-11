@@ -139,3 +139,42 @@ Deno.test("shared mapper preserves receipt semantics and flags unavailable categ
   assertEquals(draft.lines[0]?.direction, "outflow");
   assertEquals(draft.mismatches, []);
 });
+
+Deno.test("shared schema and parser normalize time and map it to draft", () => {
+  const withTime = {
+    ...validOutput,
+    time: "14:35",
+  };
+  const parsed = parseReceiptOutput(JSON.stringify(withTime));
+  assertEquals(parsed.time, "14:35");
+  const draft = mapReceiptOutputToDraft(parsed, {
+    categories: [{ id: "category-groceries", name: "Groceries" }],
+  });
+  assertEquals(draft.time, "14:35");
+
+  // Localized and alternate time formats normalize cleanly
+  const localized1 = normalizeReceiptOutput({
+    ...validOutput,
+    time: "9:05",
+  }) as { time?: string };
+  assertEquals(localized1.time, "09:05");
+  const localized2 = normalizeReceiptOutput({
+    ...validOutput,
+    time: "14.35",
+  }) as { time?: string };
+  assertEquals(localized2.time, "14:35");
+  const localized3 = normalizeReceiptOutput({
+    ...validOutput,
+    time: "2:30 pm",
+  }) as { time?: string };
+  assertEquals(localized3.time, "14:30");
+  const localized4 = normalizeReceiptOutput({
+    ...validOutput,
+    time: "12:15 am",
+  }) as { time?: string };
+  assertEquals(localized4.time, "00:15");
+  const emptyTime = normalizeReceiptOutput({ ...validOutput, time: "   " }) as {
+    time?: string;
+  };
+  assertEquals(emptyTime.time, null);
+});

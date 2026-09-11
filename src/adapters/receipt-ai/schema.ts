@@ -6,6 +6,7 @@ import {
   CurrencyCodeSchema,
   type StableId,
   StableIdSchema,
+  TimeOfDaySchema,
 } from "../../domain/schema/primitives.ts";
 import type {
   ReceiptExtractionDraft,
@@ -14,7 +15,7 @@ import type {
 
 export const RECEIPT_SCHEMA_VERSION = "receipt.v2" as const;
 export const RECEIPT_SCHEMA_VERSION_NUMBER = 2 as const;
-export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v6" as const;
+export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v7" as const;
 
 const CanonicalDecimalTextSchema = z.string().regex(
   /^-?(0|[1-9]\d*)(\.\d+)?$/,
@@ -51,6 +52,7 @@ const ReceiptLineOutputSchema = z.strictObject({
 export const ReceiptOutputSchema = z.strictObject({
   currency: CurrencyCodeSchema,
   date: CalendarDateSchema,
+  time: TimeOfDaySchema.nullable().optional(),
   lines: z.array(ReceiptLineOutputSchema),
   merchant: z.string().trim().min(1).max(500),
   mismatch: z.strictObject({
@@ -114,6 +116,7 @@ export function buildReceiptPrompt(
     "Tips, fees, surcharges, and other extra charges have direction outflow and kind adjustment because they increase the amount owed.",
     "For every line, provide a concise rationale (one short sentence) naming the receipt evidence used for its category and direction. This is evidence, not hidden chain-of-thought.",
     "When a purchased line explicitly shows a quantity and unit price (for example, `2 st x 16,99`), populate quantity and unitPrice and set amount to the printed line total.",
+    "When a transaction or purchase time is printed on the receipt, set time in 24-hour format HH:mm or HH:mm:ss (for example, `14:35`); if no time is visible on the receipt, set time to null.",
     "Do not return payment/tender amounts, subtotals, tax summaries, receipt totals, or quantity-only rows as line items; do not duplicate a product line for its quantity.",
     "Set printedTotal to the amount exactly as printed. Before returning JSON, use the direction field to verify every selected line contributes once to the owner's signed total; preserve a mismatch explanation when the image cannot be reconciled.",
     "Return JSON only and preserve uncertainty.",
@@ -152,7 +155,53 @@ function normalizeDecimalText(value: unknown): unknown {
   }
 }
 
-/** Normalize model-produced localized decimal text before strict validation. */
+/**
+ * Normalize model-produced time text (e.g. `9:05`, `14.35`, `2:35 PM`, or empty strings)
+ * into canonical 24-hour TimeOfDay format before strict validation.
+ */
+function normalizeTimeText(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  const ampmMatch = /^(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*(am|pm)$/i.exec(
+    trimmed,
+  );
+  if (ampmMatch) {
+    let hour = parseInt(ampmMatch[1], 10);
+    const minute = ampmMatch[2];
+    const second = ampmMatch[3];
+    const period = ampmMatch[4].toLowerCase();
+    if (hour >= 1 && hour <= 12) {
+      if (period === "pm" && hour < 12) hour += 12;
+      if (period === "am" && hour === 12) hour = 0;
+      const hh = String(hour).padStart(2, "0");
+      return second !== undefined
+        ? `${hh}:${minute}:${second}`
+        : `${hh}:${minute}`;
+    }
+  }
+  const match = /^(\d{1,2})[:.](\d{2})(?:[:.](\d{2})(?:\.(\d{1,3}))?)?$/.exec(
+    trimmed,
+  );
+  if (match) {
+    const hour = parseInt(match[1], 10);
+    if (hour >= 0 && hour <= 23) {
+      const hh = String(hour).padStart(2, "0");
+      const minute = match[2];
+      const second = match[3];
+      const ms = match[4];
+      if (second !== undefined) {
+        return ms !== undefined
+          ? `${hh}:${minute}:${second}.${ms}`
+          : `${hh}:${minute}:${second}`;
+      }
+      return `${hh}:${minute}`;
+    }
+  }
+  return trimmed;
+}
+
+/** Normalize model-produced localized decimal and time text before strict validation. */
 export function normalizeReceiptOutput(value: unknown): unknown {
   if (!isSchemaRecord(value)) return value;
   const lines = Array.isArray(value.lines)
@@ -176,6 +225,7 @@ export function normalizeReceiptOutput(value: unknown): unknown {
   return {
     ...value,
     printedTotal: normalizeDecimalText(value.printedTotal),
+    time: normalizeTimeText(value.time),
     lines,
     mismatch,
   };
@@ -189,6 +239,13 @@ function assertOutputSemantics(output: ReceiptOutput): ReceiptOutput {
   }
   if (!CalendarDateSchema.safeParse(output.date).success) {
     throw new Error("receipt output date is invalid");
+  }
+  if (
+    output.time !== undefined &&
+    output.time !== null &&
+    !TimeOfDaySchema.safeParse(output.time).success
+  ) {
+    throw new Error("receipt output time is invalid");
   }
   return output;
 }
@@ -240,6 +297,7 @@ export function mapReceiptOutputToDraft(
     merchant: output.merchant,
     currency: output.currency,
     date: output.date,
+    ...(output.time ? { time: output.time } : {}),
     printedTotal: output.printedTotal,
     lines: output.lines.map((line) => {
       const categoryAvailable = categories.has(line.categoryId);

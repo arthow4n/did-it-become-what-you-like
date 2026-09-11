@@ -747,6 +747,41 @@ Deno.test("receipt-ui metadata editor cancel preserves the parent draft", async 
   });
 });
 
+Deno.test("receipt-ui metadata editor edits and saves receipt time", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    await withAriaGlobals(async () => {
+      let savedParent: unknown;
+      render(
+        createElement(ReceiptMetadataEditor, {
+          parent: {
+            projectId: "project-receipt-time",
+            date: "2026-08-24",
+            time: "12:00",
+            merchant: "Market branch",
+            currency: "SEK",
+            printedTotal: "-4",
+          },
+          onSave: (parent) => {
+            savedParent = parent;
+          },
+          onClose: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => assert(view.getByRole("dialog")));
+      const timeInput = view.getByLabelText("Time (optional)");
+      assert(timeInput);
+      assertEquals((timeInput as HTMLInputElement).value, "12:00");
+      fireEvent.change(timeInput, {
+        target: { value: "14:35" },
+      });
+      fireEvent.click(view.getByRole("button", { name: "Save details" }));
+      await waitFor(() => assert(savedParent !== undefined));
+      assertEquals((savedParent as { time?: string }).time, "14:35");
+    });
+  });
+});
+
 Deno.test("receipt-ui provider quick setup masks the key and keeps validation visible", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {

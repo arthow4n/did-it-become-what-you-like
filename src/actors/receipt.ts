@@ -192,6 +192,7 @@ export type ReceiptReviewActorFailure =
       | "corrupt-data";
     readonly message: string;
     readonly retryable: false;
+    readonly operation?: string;
   };
 
 function actorFailure(
@@ -199,9 +200,16 @@ function actorFailure(
   fallback: ContractFailure,
 ): ReceiptReviewActorFailure {
   if (isReceiptDomainError(error)) {
-    return { code: error.code, message: error.message, retryable: false };
+    return {
+      code: error.code,
+      message: error.message,
+      retryable: false,
+      ...(fallback.operation === undefined
+        ? {}
+        : { operation: fallback.operation }),
+    };
   }
-  return contractFailureFromError(error, fallback);
+  return contractFailureFromError(error, fallback, { preserveOperation: true });
 }
 
 type ReceiptReviewFailureOperation = "hydrate" | "persist" | "save" | "clear";
@@ -435,6 +443,7 @@ export function createReceiptReviewMachine(
                   code: "corrupt-data",
                   message: "Unable to restore the receipt review.",
                   retryable: true,
+                  operation: "receipt.review.hydrate",
                 }),
               failureOperation: () => "hydrate" as const,
             }),
@@ -466,6 +475,7 @@ export function createReceiptReviewMachine(
                   code: "unknown",
                   message: "Unable to save the receipt review draft.",
                   retryable: true,
+                  operation: "receipt.review.persist",
                 }),
               failureOperation: () => "persist" as const,
             }),
@@ -711,6 +721,7 @@ export function createReceiptReviewMachine(
                   code: "unknown",
                   message: "Receipt was not saved.",
                   retryable: true,
+                  operation: "receipt.review.save",
                 }),
               failureOperation: () => "save" as const,
             }),
@@ -731,6 +742,7 @@ export function createReceiptReviewMachine(
                   code: "unknown",
                   message: "Receipt review cleanup failed.",
                   retryable: true,
+                  operation: "receipt.review.clear",
                 }),
               failureOperation: () => "clear" as const,
             }),

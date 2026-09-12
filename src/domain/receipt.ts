@@ -555,9 +555,15 @@ function normalizedDraft(
     }
     if (line.type === "purchase") {
       return {
-        ...line,
+        type: line.type,
+        id: line.id,
         description,
+        categoryId: line.categoryId,
         lineTotal: ensureOutflowSign(line.lineTotal),
+        selected: line.selected,
+        uncertain: line.uncertain,
+        ...(line.quantity === undefined ? {} : { quantity: line.quantity }),
+        ...(line.unitPrice === undefined ? {} : { unitPrice: line.unitPrice }),
         ...(line.selectionReason === undefined
           ? {}
           : { selectionReason: line.selectionReason.trim() }),
@@ -567,8 +573,14 @@ function normalizedDraft(
       };
     }
     return {
-      ...line,
+      type: line.type,
+      id: line.id,
       description,
+      categoryId: line.categoryId,
+      amount: line.amount,
+      selected: line.selected,
+      uncertain: line.uncertain,
+      ...(line.lineId === undefined ? {} : { lineId: line.lineId }),
       ...(line.selectionReason === undefined
         ? {}
         : { selectionReason: line.selectionReason.trim() }),
@@ -577,21 +589,26 @@ function normalizedDraft(
         : { classificationReason: line.classificationReason.trim() }),
     };
   });
+  // Rebuild the optional fields instead of spreading the incoming object.
+  // Form controls represent cleared values as `undefined`, but Automerge
+  // rejects assigning an own property whose value is undefined. Keeping the
+  // canonical draft sparse also makes persisted reviews stable across edits.
   const parent = {
-    ...review.parent,
+    projectId: review.parent.projectId,
+    date: review.parent.date,
+    currency: review.parent.currency,
     printedTotal: receiptTotalWithLineDirection(
       review.parent.printedTotal,
       lines,
     ),
+    ...(review.parent.time === undefined ? {} : { time: review.parent.time }),
+    ...(review.parent.merchant === undefined
+      ? {}
+      : { merchant: review.parent.merchant.trim() }),
   };
   const mismatch = mismatchFields(parent, lines, review.mismatchExplanation);
   return {
-    parent: {
-      ...parent,
-      ...(parent.merchant === undefined
-        ? {}
-        : { merchant: parent.merchant.trim() }),
-    },
+    parent,
     lines,
     uncertainty: review.uncertainty.map((item) => item.trim()),
     ...mismatch,

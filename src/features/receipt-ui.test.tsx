@@ -400,6 +400,8 @@ Deno.test(
       fireEvent.click(view.getByRole("button", { name: saveName }));
       await waitFor(() => {
         assert(view.getByText("Receipt was not saved"));
+        assert(view.getByText(/Error code: quota/));
+        assert(view.getByText(/Operation: local/));
         assert(
           view.getByRole("button", { name: saveName }).hasAttribute("disabled"),
         );

@@ -3,6 +3,7 @@ import {
   createReceiptCommitService,
   createReceiptManagementService,
   editReceiptLine,
+  editReceiptParent,
   normalizeReceiptExtractionDraft,
   type ReceiptIdGenerator,
   receiptMismatchDifference,
@@ -859,6 +860,75 @@ Deno.test(
       tombstones.length >= 5,
       "parent and all aggregate records are tombstoned",
     );
+  },
+);
+
+Deno.test(
+  "receipt commit tolerates optional metadata cleared by the review form",
+  async () => {
+    const local = createFakeLocalPort();
+    await local.transaction("readwrite", async (transaction) => {
+      await transaction.put("records", "project-receipt-optional-metadata", {
+        schemaVersion: 1,
+        type: "project",
+        id: "project-receipt-optional-metadata",
+        name: "Receipt project",
+        defaultCurrency: "SEK",
+        archived: false,
+      });
+      await transaction.put("records", UNCATEGORIZED_CATEGORY_ID, {
+        schemaVersion: 1,
+        type: "category",
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+        sortOrder: 0,
+        archived: false,
+        system: true,
+      });
+    });
+    const initial = review({
+      parent: {
+        projectId: "project-receipt-optional-metadata",
+        date: "2026-08-24",
+        currency: "SEK",
+        printedTotal: "-8",
+      },
+      lines: [{
+        type: "purchase",
+        id: "line-optional-metadata",
+        description: "Coffee",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        lineTotal: "-8",
+        quantity: undefined,
+        unitPrice: undefined,
+        selected: true,
+        uncertain: false,
+      }],
+    });
+    const edited = editReceiptParent(initial, {
+      ...initial.parent,
+      merchant: "Edited shop",
+      time: undefined,
+    });
+    assertEquals(edited.parent.merchant, "Edited shop");
+    assertEquals(edited.parent.time, undefined);
+    assert(!Object.prototype.hasOwnProperty.call(edited.parent, "time"));
+    assert(!Object.prototype.hasOwnProperty.call(edited.lines[0], "quantity"));
+    assert(!Object.prototype.hasOwnProperty.call(edited.lines[0], "unitPrice"));
+
+    const commit = createReceiptCommitService(local, {
+      nextId: (kind) =>
+        kind === "receipt"
+          ? "receipt-optional-metadata"
+          : "line-optional-metadata-generated",
+    });
+    const result = await commit.commit({
+      review: edited,
+      confirmMismatch: false,
+    });
+    assertEquals(result.receipt.merchant, "Edited shop");
+    assertEquals(result.receipt.time, undefined);
+    assert(!Object.prototype.hasOwnProperty.call(result.receipt, "time"));
   },
 );
 

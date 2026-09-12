@@ -1778,6 +1778,12 @@ export function ReceiptReviewScreen({
           ? (
             <InlineNotice tone="danger" title="Receipt was not saved">
               {snapshot.context.error?.message ?? "Try again."}
+              <Text size="caption" tone="secondary">
+                Error code: {snapshot.context.error?.code ?? "unknown"}
+                {snapshot.context.error?.operation
+                  ? ` · Operation: ${snapshot.context.error.operation}`
+                  : ""}
+              </Text>
               <Inline>
                 <Button
                   variant="secondary"

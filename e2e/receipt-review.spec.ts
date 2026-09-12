@@ -86,6 +86,15 @@ test(
                         rationale:
                           "The second visible product row is a purchase outflow.",
                         selected: true,
+                      }, {
+                        amount: "0",
+                        categoryId: "category-uncategorized",
+                        description: "Freight",
+                        direction: "outflow",
+                        kind: "purchase",
+                        rationale:
+                          "The freight row is present on the receipt and may be removed during review.",
+                        selected: true,
                       }],
                       merchant: "Fake Receipt Market",
                       mismatch: null,
@@ -210,10 +219,27 @@ test(
       .toBeVisible();
     await expect(page.getByText("Fake receipt item")).toBeVisible();
     await expect(page.getByText("Second fake item")).toBeVisible();
+    await expect(page.getByText("Freight", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Edit" }).first().click();
+    const metadataEditor = page.getByRole("dialog", {
+      name: "Edit receipt details",
+    });
+    await expect(metadataEditor).toBeVisible();
+    await metadataEditor.getByLabel("Merchant").fill("Edited Receipt Market");
+    await metadataEditor.getByRole("button", { name: "Save details" }).click();
+    await expect(page.getByRole("heading", { name: "Edited Receipt Market" }))
+      .toBeVisible();
+
+    const freightLine = page.getByText("Freight", { exact: true }).locator(
+      "xpath=ancestor::section[1]",
+    );
+    await freightLine.getByRole("button", { name: "Remove" }).click();
+    await expect(page.getByText("Freight", { exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "Save 2 selected entries" }).click();
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();
-    await expect(page.getByText("Fake Receipt Market").first()).toBeVisible();
+    await expect(page.getByText("Edited Receipt Market").first()).toBeVisible();
     const receiptGroup = page.locator("[data-receipt-group-id]");
     const ensureReceiptGroupExpanded = async () => {
       const viewReceipt = receiptGroup.getByRole("button", {
@@ -221,7 +247,7 @@ test(
       });
       if (!(await viewReceipt.isVisible())) {
         await receiptGroup.getByRole("button", {
-          name: /Fake Receipt Market/,
+          name: /Edited Receipt Market/,
         }).click();
       }
       await expect(viewReceipt).toBeVisible();
@@ -231,7 +257,7 @@ test(
 
     await receiptGroup.getByRole("button", { name: "View receipt" }).click();
     await expect(
-      page.getByRole("heading", { name: "Fake Receipt Market", level: 1 }),
+      page.getByRole("heading", { name: "Edited Receipt Market", level: 1 }),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Back to expenses" }).click();
@@ -250,7 +276,7 @@ test(
       name: /Fake receipt item Uncategorized/,
     }).click();
     await expect(
-      page.getByRole("heading", { name: "Fake Receipt Market", level: 1 }),
+      page.getByRole("heading", { name: "Edited Receipt Market", level: 1 }),
     ).toBeVisible();
     await expect.poll(() =>
       page.evaluate(() =>
@@ -282,7 +308,7 @@ test(
       name: /Updated fake receipt item Uncategorized/,
     }).click();
     await expect(
-      page.getByRole("heading", { name: "Fake Receipt Market", level: 1 }),
+      page.getByRole("heading", { name: "Edited Receipt Market", level: 1 }),
     ).toBeVisible();
     const updatedLine = page.locator("[data-receipt-line-id]").filter({
       hasText: "Updated fake receipt item",

@@ -63,6 +63,27 @@ test.describe("local-first-manual journey", () => {
     await expect(page.getByRole("heading", { name: "New expense", level: 1 }))
       .toBeVisible();
     await page.goBack();
+    await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
+      .toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Unsaved changes" }))
+      .toHaveCount(0);
+
+    await page.getByRole("button", { name: "Manual" }).click();
+    await expect(page.getByRole("textbox", { name: "Amount" })).toBeVisible();
+    await page.getByRole("textbox", { name: "Amount" }).fill("2.00");
+    await page.goBack();
+    await expect(page.getByRole("dialog", { name: "Unsaved changes" }))
+      .toBeVisible();
+    await page.getByRole("button", { name: "Discard changes" }).click();
+    await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
+      .toBeVisible();
+
+    await page.getByRole("button", { name: "Manual" }).click();
+    await expect(page.getByRole("textbox", { name: "Amount" })).toBeVisible();
+    await page.getByRole("textbox", { name: "Amount" }).fill("3.00");
+    await page.getByRole("button", { name: "Discard draft" }).click();
+    await expect(page.getByText("Discard unsaved changes?"))
+      .toBeVisible();
     await page.getByRole("button", { name: "Discard changes" }).click();
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();

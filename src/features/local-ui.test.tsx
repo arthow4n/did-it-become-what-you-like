@@ -398,8 +398,55 @@ Deno.test("local UI manual form exposes an in-form discard action", async () => 
       fireEvent.click(view.getByRole("button", { name: "Discard draft" }));
       await waitFor(() => assert(view.getByText("Discard unsaved changes?")));
       assert(dirty, "The form must remain guarded while discard is pending");
+      const confirmation = view.getByText("Discard unsaved changes?");
+      const amount = view.getByRole("textbox", { name: "Amount" });
+      assert(
+        Boolean(
+          confirmation.compareDocumentPosition(amount) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+        "Discard confirmation should appear before the form fields",
+      );
       fireEvent.click(view.getByRole("button", { name: "Discard changes" }));
       await waitFor(() => assert(closed));
+    });
+  });
+});
+
+Deno.test("local UI manual form completes discard requested while opening", async () => {
+  await withComponentHarness(async ({ window, render, waitFor }) => {
+    await withAriaDomGlobals(window, async () => {
+      const local = createFakeLocalPort();
+      let resolveOrganizationState!: (value: ProjectCategoryState) => void;
+      const organizationState = new Promise<ProjectCategoryState>((resolve) => {
+        resolveOrganizationState = resolve;
+      });
+      const { service } = createTestService(state, () => organizationState);
+      let closed = false;
+      const dirtyChanges: boolean[] = [];
+      const renderForm = (discardRequest: number) =>
+        createElement(ManualExpenseScreen, {
+          repository: local,
+          service,
+          state,
+          request: { projectId: project.id },
+          onSaved: () => undefined,
+          onDirtyChange: (dirty) => dirtyChanges.push(dirty),
+          discardRequest,
+          onClosed: () => closed = true,
+        });
+      const mounted = render(renderForm(0));
+      const view = within(document.body);
+      assert(view.getByRole("heading", { name: "New expense" }));
+      assert(
+        dirtyChanges.includes(false),
+        "Opening an untouched manual form must not count as dirty",
+      );
+
+      mounted.rerender(renderForm(1));
+      await waitFor(() => assert(closed));
+      resolveOrganizationState(state);
+      mounted.unmount();
     });
   });
 });

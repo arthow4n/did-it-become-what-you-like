@@ -803,6 +803,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         },
       },
       on: {
+        "expense.discard": "discarding",
         "expense.open": {
           actions: assign({
             openRequest: ({ event }) => event.request ?? {},
@@ -869,7 +870,10 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           }),
         },
       },
-      on: { "expense.cancel": "cancelled" },
+      on: {
+        "expense.cancel": "cancelled",
+        "expense.discard": "discarding",
+      },
     },
     openFailed: {
       tags: ["error"],
@@ -1171,6 +1175,10 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           }),
         },
       },
+      on: {
+        "expense.cancel": "savedOutput",
+        "expense.discard": "savedOutput",
+      },
     },
     openingAnotherFailed: {
       tags: ["error"],
@@ -1179,6 +1187,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         "expense.retry-draft": "openingAnother",
         "expense.finish-save": "savedOutput",
         "expense.cancel": "savedOutput",
+        "expense.discard": "savedOutput",
         "expense.back": "savedOutput",
       },
     },

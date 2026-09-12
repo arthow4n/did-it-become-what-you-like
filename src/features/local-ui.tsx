@@ -1,5 +1,5 @@
 import { useActor } from "@xstate/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Pencil, SlidersHorizontal, X } from "lucide-react";
 import {
   createProjectCategoryService,
@@ -180,11 +180,6 @@ export function selectedNavigationForPath(
   }
   if (activePath.startsWith("/settings")) return "settings";
   return "expenses";
-}
-
-function isManualExpensePath(path: string): boolean {
-  return path === "/add" || path === "/expense/new" ||
-    path.startsWith("/expense/edit/");
 }
 
 function shellRouteForPath(path: string): ShellRoute {
@@ -2613,10 +2608,10 @@ export function ManualExpenseScreen({
   }, [state.expenses]);
 
   useEffect(() => {
-    if (!snapshot.context.draft) {
+    if (snapshot.matches("idle") && !snapshot.context.draft) {
       send({ type: "expense.open", request });
     }
-  }, [machineKey, request, send, snapshot.context.draft]);
+  }, [machineKey, request, send, snapshot]);
 
   useEffect(() => {
     const savedExpense = snapshot.context.result?.expense;
@@ -2650,7 +2645,7 @@ export function ManualExpenseScreen({
     snapshot.context.originalExpense,
   );
   const dirty = snapshot.hasTag("dirty") && isModified;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (snapshot.matches("idle")) return;
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange, snapshot]);
@@ -2801,7 +2796,26 @@ export function ManualExpenseScreen({
           )}
         <ExpenseForm
           stickyActions
-          status={failed || deleteFailed || busy || isModified
+          status={snapshot.matches("discardConfirming")
+            ? (
+              <InlineNotice tone="warning" title="Discard unsaved changes?">
+                <FormActions className="local-ui-delete-actions">
+                  <Button
+                    variant="danger"
+                    onPress={() => send({ type: "expense.confirm-discard" })}
+                  >
+                    Discard changes
+                  </Button>
+                  <Button
+                    variant="quiet"
+                    onPress={() => send({ type: "expense.keep-editing" })}
+                  >
+                    Keep editing
+                  </Button>
+                </FormActions>
+              </InlineNotice>
+            )
+            : failed || deleteFailed || busy || isModified
             ? (
               <DraftStatus
                 state={failed || deleteFailed
@@ -2937,26 +2951,6 @@ export function ManualExpenseScreen({
             isDisabled={formLocked}
           />
         </ExpenseForm>
-        {snapshot.matches("discardConfirming")
-          ? (
-            <InlineNotice tone="warning" title="Discard unsaved changes?">
-              <FormActions className="local-ui-delete-actions">
-                <Button
-                  variant="danger"
-                  onPress={() => send({ type: "expense.confirm-discard" })}
-                >
-                  Discard changes
-                </Button>
-                <Button
-                  variant="quiet"
-                  onPress={() => send({ type: "expense.keep-editing" })}
-                >
-                  Keep editing
-                </Button>
-              </FormActions>
-            </InlineNotice>
-          )
-          : null}
         {snapshot.matches("discardFailed")
           ? (
             <InlineNotice tone="danger" title="Changes were not discarded">
@@ -3077,12 +3071,8 @@ export function LocalUiRuntime(
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
   const [appNotice, setAppNotice] = useState<string | null>(null);
   const [usefulActionVersion, setUsefulActionVersion] = useState(0);
-  const [workflowDirty, setWorkflowDirty] = useState(() =>
-    isManualExpensePath(initialPath)
-  );
-  const [dirtyNavigationWorkflow, setDirtyNavigationWorkflow] = useState(
-    () => isManualExpensePath(initialPath),
-  );
+  const [workflowDirty, setWorkflowDirty] = useState(false);
+  const [dirtyNavigationWorkflow, setDirtyNavigationWorkflow] = useState(false);
   const [dirtyExitOpen, setDirtyExitOpen] = useState(false);
   const [discardRequest, setDiscardRequest] = useState(0);
   const [dirtyDiscardDisabled, setDirtyDiscardDisabled] = useState(false);
@@ -3195,12 +3185,6 @@ export function LocalUiRuntime(
 
   useEffect(() => {
     setDirtyDiscardDisabled(false);
-  }, [path]);
-
-  useEffect(() => {
-    if (!isManualExpensePath(path)) return;
-    setWorkflowDirty(true);
-    setDirtyNavigationWorkflow(true);
   }, [path]);
 
   useEffect(() => {

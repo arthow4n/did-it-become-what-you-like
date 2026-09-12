@@ -12,6 +12,11 @@ export const DEFAULT_BROWSER_IMAGE_MIME_TYPES = [
   "image/webp",
 ] as const;
 
+export const DEFAULT_BROWSER_DOCUMENT_MIME_TYPES = [
+  ...DEFAULT_BROWSER_IMAGE_MIME_TYPES,
+  "application/pdf",
+] as const;
+
 export const IMAGE_LIMITS = {
   inlineRequestBytes: 20_000_000,
   localPreparedJpegQuality: 0.85,
@@ -218,6 +223,93 @@ export function stripWebpMetadata(bytes: Uint8Array): Uint8Array {
   return Uint8Array.from(kept);
 }
 
+const PDF_SIGNATURE = Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d]); // "%PDF-"
+
+/**
+ * Remove embedded PDF metadata, including /Info dictionaries, /Metadata XMP
+ * streams, standard document info entries, and private application metadata,
+ * preserving exact byte positions and offsets for xref tables.
+ */
+export function stripPdfMetadata(bytes: Uint8Array): Uint8Array {
+  if (!matchesPrefix(bytes, PDF_SIGNATURE)) {
+    throw new Error("image bytes are not a PDF");
+  }
+  const latin1 = new TextDecoder("latin1").decode(bytes);
+  const out = bytes.slice();
+
+  function blank(start: number, end: number) {
+    const bound = Math.min(end, out.length);
+    for (let i = start; i < bound; i++) {
+      out[i] = 0x20;
+    }
+  }
+
+  // Blank XMP packets anywhere in the document
+  const xmpRegex =
+    /<\?xpacket begin=[\s\S]*?\?xpacket end=['"][ra-z0-9]*['"]\s*\?>|<x:xmpmeta[\s\S]*?<\/x:xmpmeta>/g;
+  let match: RegExpExecArray | null;
+  while ((match = xmpRegex.exec(latin1)) !== null) {
+    blank(match.index, match.index + match[0].length);
+  }
+
+  // Blank /Metadata reference in catalog / dictionaries
+  const metadataRefRegex = /\/Metadata\s+\d+\s+\d+\s+R/g;
+  while ((match = metadataRefRegex.exec(latin1)) !== null) {
+    blank(match.index, match.index + match[0].length);
+  }
+
+  // Blank indirect objects that are /Type /Metadata
+  const metadataObjRegex =
+    /\d+\s+\d+\s+obj\s*<<[\s\S]*?\/Type\s*\/Metadata[\s\S]*?>>(?:\s*stream[\s\S]*?endstream)?\s*endobj/g;
+  while ((match = metadataObjRegex.exec(latin1)) !== null) {
+    const objStr = match[0];
+    const dictStart = match.index + objStr.indexOf("<<");
+    const dictEnd = match.index + objStr.lastIndexOf(">>") + 2;
+    blank(dictStart + 2, dictEnd - 2);
+    const streamStart = objStr.indexOf("stream");
+    const streamEnd = objStr.lastIndexOf("endstream");
+    if (streamStart !== -1 && streamEnd !== -1) {
+      blank(match.index + streamStart + 6, match.index + streamEnd);
+    }
+  }
+
+  // Blank /Info reference in trailer / dictionaries and blank its referenced object
+  const infoRefRegex = /\/Info\s+(\d+)\s+(\d+)\s+R/g;
+  const infoObjIds = new Set<string>();
+  while ((match = infoRefRegex.exec(latin1)) !== null) {
+    infoObjIds.add(match[1]);
+    blank(match.index, match.index + match[0].length);
+  }
+
+  for (const objId of infoObjIds) {
+    const infoObjPattern = new RegExp(
+      `${objId}\\s+\\d+\\s+obj\\s*<<[\\s\\S]*?>>\\s*endobj`,
+      "g",
+    );
+    while ((match = infoObjPattern.exec(latin1)) !== null) {
+      const objStr = match[0];
+      const dictStart = match.index + objStr.indexOf("<<");
+      const dictEnd = match.index + objStr.lastIndexOf(">>") + 2;
+      blank(dictStart + 2, dictEnd - 2);
+    }
+  }
+
+  // Blank standard docinfo keys across dictionaries
+  const docInfoRegex =
+    /\/(?:Title|Author|Subject|Keywords|Creator|Producer|CreationDate|ModDate|Trapped)\s*(?:\((?:[^()\\]|\\.)*\)|<[0-9a-fA-F\s]*>|\/[A-Za-z0-9]+)/g;
+  while ((match = docInfoRegex.exec(latin1)) !== null) {
+    blank(match.index, match.index + match[0].length);
+  }
+
+  // Blank PieceInfo private vendor metadata
+  const pieceInfoRegex = /\/PieceInfo\s*<<[\s\S]*?>>/g;
+  while ((match = pieceInfoRegex.exec(latin1)) !== null) {
+    blank(match.index, match.index + match[0].length);
+  }
+
+  return out;
+}
+
 export function stripImageMetadata(input: ImageInput): MetadataStripResult {
   const bytes = input.bytes.slice();
   switch (input.mimeType) {
@@ -227,6 +319,8 @@ export function stripImageMetadata(input: ImageInput): MetadataStripResult {
       return { bytes: stripPngMetadata(bytes), metadataRemoved: true };
     case "image/webp":
       return { bytes: stripWebpMetadata(bytes), metadataRemoved: true };
+    case "application/pdf":
+      return { bytes: stripPdfMetadata(bytes), metadataRemoved: true };
     default:
       throw new Error("image format is not supported by the browser sanitizer");
   }
@@ -330,8 +424,8 @@ export async function prepareImage(
 ): Promise<PreparedImage> {
   throwIfAborted(options.signal);
   if (
-    !DEFAULT_BROWSER_IMAGE_MIME_TYPES.includes(
-      input.mimeType as typeof DEFAULT_BROWSER_IMAGE_MIME_TYPES[number],
+    !DEFAULT_BROWSER_DOCUMENT_MIME_TYPES.includes(
+      input.mimeType as typeof DEFAULT_BROWSER_DOCUMENT_MIME_TYPES[number],
     )
   ) {
     throw adapterError("unsupported", "image.prepare");
@@ -341,7 +435,7 @@ export async function prepareImage(
   }
   const stripped = operations.stripMetadata(input);
   const sanitized: ImageInput = { ...input, bytes: stripped.bytes };
-  if (!options.enabled) {
+  if (input.mimeType === "application/pdf" || !options.enabled) {
     return {
       ...sanitized,
       metadataSanitized: true,

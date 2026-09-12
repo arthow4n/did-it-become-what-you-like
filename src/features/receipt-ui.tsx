@@ -50,7 +50,7 @@ import type {
   ContractFailure,
   ReceiptImageRef,
 } from "../actors/contracts/index.ts";
-import { ArrowLeft, ChevronDown, Trash2, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, FileText, Trash2, X } from "lucide-react";
 import {
   AdaptiveDialog,
   Button,
@@ -140,6 +140,12 @@ type ReceiptImageEntry = {
   bytes?: Uint8Array;
 };
 
+export function fileMediaType(file: File): string {
+  if (file.type) return file.type;
+  if (file.name.toLowerCase().endsWith(".pdf")) return "application/pdf";
+  return "";
+}
+
 export class ReceiptImageStore {
   readonly #entries = new Map<string, ReceiptImageEntry>();
 
@@ -152,7 +158,7 @@ export class ReceiptImageStore {
     this.#entries.set(ephemeralId, { file, previewUrl });
     return {
       ephemeralId,
-      mediaType: file.type,
+      mediaType: fileMediaType(file),
       byteLength: file.size,
       previewUrl,
     };
@@ -168,7 +174,7 @@ export class ReceiptImageStore {
     const dimensions = await imageDimensions(entry.file);
     return {
       bytes: bytes.slice(),
-      mimeType: entry.file.type,
+      mimeType: fileMediaType(entry.file),
       width: dimensions.width,
       height: dimensions.height,
     };
@@ -701,12 +707,17 @@ export function ReceiptScanScreen({
 
   const chooseFile = (file: File | undefined) => {
     if (!file) return;
+    const mediaType = fileMediaType(file);
     if (
-      !(["image/jpeg", "image/png", "image/webp"] as string[]).includes(
-        file.type,
-      )
+      !([
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "application/pdf",
+      ] as string[])
+        .includes(mediaType)
     ) {
-      setModelError("Choose a JPEG, PNG, or WebP receipt image.");
+      setModelError("Choose a JPEG, PNG, WebP, or PDF receipt file.");
       return;
     }
     // The picker remains available while a scan is running. Cancel the
@@ -1015,7 +1026,7 @@ export function ReceiptScanScreen({
     <ContentContainer size="form">
       <FileField
         label="Receipt image file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp,application/pdf"
         capture={captureMode ? "environment" : undefined}
         multiple={false}
         className="receipt-ui-file-field"
@@ -1038,11 +1049,33 @@ export function ReceiptScanScreen({
         <ReceiptSourcePicker
           preview={selectedImage
             ? (
-              <img
-                src={selectedImage.previewUrl}
-                alt="Selected receipt preview"
-                className="receipt-ui-preview"
-              />
+              selectedImage.mediaType === "application/pdf"
+                ? (
+                  <div
+                    className="receipt-ui-preview receipt-ui-preview--pdf"
+                    role="region"
+                    aria-label="Selected receipt preview"
+                  >
+                    <object
+                      data={selectedImage.previewUrl}
+                      type="application/pdf"
+                      title="Selected receipt preview"
+                      className="receipt-ui-preview-pdf-object"
+                    >
+                      <div className="receipt-ui-preview-pdf-fallback">
+                        <FileText size={48} aria-hidden="true" />
+                        <Text>PDF receipt document</Text>
+                      </div>
+                    </object>
+                  </div>
+                )
+                : (
+                  <img
+                    src={selectedImage.previewUrl}
+                    alt="Selected receipt preview"
+                    className="receipt-ui-preview"
+                  />
+                )
             )
             : undefined}
           onTakePhoto={() => startFilePicker(true)}

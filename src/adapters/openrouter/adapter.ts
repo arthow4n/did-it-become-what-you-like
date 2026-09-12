@@ -55,7 +55,8 @@ export type OpenRouterClientFactory = (
 const SAFE_MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
 const OPENROUTER_AUTO_ROUTER_MODEL_ID = "openrouter/auto";
 const SAFE_LOCALE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/;
-const SAFE_IMAGE_MIME_TYPE = /^image\/[A-Za-z0-9.+-]+$/;
+const SAFE_IMAGE_OR_DOCUMENT_MIME_TYPE =
+  /^(?:image\/[A-Za-z0-9.+-]+|application\/pdf)$/;
 const REQUIRED_PARAMETERS = [
   "structured_outputs",
   "response_format",
@@ -242,7 +243,7 @@ function validateRequest(request: ReceiptExtractionRequest): void {
   if (!SAFE_LOCALE.test(request.locale)) {
     throw adapterError("invalid-request", "openrouter.extract");
   }
-  if (!SAFE_IMAGE_MIME_TYPE.test(request.image.mimeType)) {
+  if (!SAFE_IMAGE_OR_DOCUMENT_MIME_TYPE.test(request.image.mimeType)) {
     throw adapterError("invalid-request", "openrouter.extract");
   }
   if (!request.image.metadataSanitized) {

@@ -201,8 +201,9 @@ and multi-device synchronization according to the agreed sync design.
 
 - The application must provide LLM-assisted entry from a scanned or photographed
   invoice.
-- The PWA must support both capturing a new receipt image with the device camera
-  and selecting/importing an existing image from the device.
+- The PWA must support capturing a new receipt image with the device camera,
+  selecting/importing an existing image from the device (JPEG, PNG, WebP), and
+  selecting a digital receipt or invoice in PDF format.
 - The LLM should produce draft expense entries for the relevant items on the
   invoice to reduce manual entry.
 - The extraction prompt and review model must request and preserve the
@@ -336,11 +337,12 @@ and multi-device synchronization according to the agreed sync design.
   unreliable redactor could either leak content or remove information required
   for extraction. The owner must see the selected image before transmission and
   may use it, choose another image, or retake the photo.
-- Image privacy sanitization is mandatory and separate from optional image
-  preparation. EXIF and other embedded metadata, including location and device
-  details, must always be removed in memory before transmission. Turning
-  preparation off preserves the source pixel dimensions and avoids optional
-  resize/compression, but it never disables metadata removal.
+- Document and image privacy sanitization is mandatory and separate from optional
+  image preparation. EXIF and other embedded metadata, including location, device
+  details, and PDF document info / XMP metadata, must always be removed in memory
+  before transmission. Turning preparation off preserves the source pixel
+  dimensions and avoids optional resize/compression, but it never disables
+  metadata removal.
 - A model whose returned metadata does not establish every required receipt
   capability is not presented as proven compatible. It remains a candidate when
   the provider's metadata is incomplete and is checked only by the real,

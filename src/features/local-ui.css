@@ -28,6 +28,32 @@
     background: var(--color-surface-2);
   }
 
+  .receipt-ui-preview--pdf {
+    min-height: 16rem;
+    height: 24rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .receipt-ui-preview-pdf-object {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: var(--radius-control);
+  }
+
+  .receipt-ui-preview-pdf-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    color: var(--color-text-secondary);
+  }
+
   .receipt-ui-quick-setup {
     isolation: isolate;
   }

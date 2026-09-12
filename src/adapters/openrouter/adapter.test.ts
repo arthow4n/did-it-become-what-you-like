@@ -525,6 +525,48 @@ Deno.test("model discovery maps provider failures without retaining raw payloads
   assert(!JSON.stringify(error).includes(secret));
 });
 
+Deno.test("OpenRouter extractReceipt supports application/pdf and rejects unsupported MIME types", async () => {
+  let captured: OpenRouterChatRequest | undefined;
+  const fixture = createFixture({
+    onChat: (request) => {
+      captured = request;
+    },
+  });
+  await fixture.adapter.setApiKey("sk-or-v1.test-pdf-key");
+
+  const pdfBytes = new TextEncoder().encode("%PDF-1.4 test receipt");
+  const request = {
+    ...extractionRequest(pdfBytes),
+    image: {
+      bytes: pdfBytes,
+      height: 1,
+      metadataSanitized: true as const,
+      mimeType: "application/pdf",
+      preparationApplied: false,
+      width: 1,
+    },
+  };
+
+  const draft = await fixture.adapter.extractReceipt(request);
+  assert(draft);
+  assert(captured);
+  const imagePart = captured.messages[0].content[1];
+  assert(imagePart.type === "image_url");
+  assert(imagePart.imageUrl.url.startsWith("data:application/pdf;base64,"));
+
+  const unsupportedError = await assertRejects(() =>
+    fixture.adapter.extractReceipt({
+      ...request,
+      image: {
+        ...request.image,
+        mimeType: "text/plain",
+      },
+    })
+  );
+  assert(isAdapterError(unsupportedError));
+  assertEquals(unsupportedError.code, "invalid-request");
+});
+
 async function errorCode(operation: Promise<unknown>): Promise<string> {
   const error = await assertRejects(() => operation);
   assert(isAdapterError(error));

@@ -1,6 +1,7 @@
 import { within } from "@testing-library/dom";
 import { createElement, useState } from "react";
 import {
+  fileMediaType,
   LineEditorDialog,
   modelOptions,
   readDeviceLocalSettings,
@@ -1879,3 +1880,163 @@ Deno.test(
     });
   },
 );
+
+Deno.test("fileMediaType detects application/pdf from type or extension", () => {
+  const pdfBlob = new Blob([], { type: "application/pdf" }) as unknown as File;
+  assertEquals(fileMediaType(pdfBlob), "application/pdf");
+
+  const pdfByName = new File([], "invoice.pdf");
+  assertEquals(fileMediaType(pdfByName), "application/pdf");
+
+  const pngBlob = new Blob([], { type: "image/png" }) as unknown as File;
+  assertEquals(fileMediaType(pngBlob), "image/png");
+
+  const unknownFile = new File([], "unknown.bin");
+  assertEquals(fileMediaType(unknownFile), "");
+});
+
+Deno.test("ReceiptImageStore stores and resolves PDF documents as application/pdf", async () => {
+  const store = new ReceiptImageStore();
+  const pdfBytes = new TextEncoder().encode("%PDF-1.4 synthetic pdf receipt");
+  const pdfFile = new Blob([pdfBytes], {
+    type: "application/pdf",
+  }) as unknown as File;
+  const ref = store.add(pdfFile);
+
+  assertEquals(ref.mediaType, "application/pdf");
+  assertEquals(ref.byteLength, pdfBytes.byteLength);
+
+  const input = await store.resolve(ref);
+  assertEquals(input.mimeType, "application/pdf");
+  assertEquals(input.bytes.length, pdfBytes.byteLength);
+  assertEquals(input.width, 1);
+  assertEquals(input.height, 1);
+
+  store.clear();
+});
+
+Deno.test("receipt-ui supports selecting and scanning PDF receipts, and rejects unsupported files", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    await withAriaGlobals(async () => {
+      const model: ReceiptAiModel = {
+        id: "models/gemini-2.5-flash",
+        displayName: "Gemini 2.5 Flash",
+        lifecycle: "active",
+        capabilities: {
+          "image-input": true,
+          "content-generation": true,
+          "structured-output": true,
+        },
+      };
+      let extractedMimeType: string | undefined;
+      const fakeAi: ReceiptAiPort = {
+        listModels: () => Promise.resolve([model]),
+        extractReceipt: (request) => {
+          extractedMimeType = request.image.mimeType;
+          const draft: ReceiptExtractionDraft = {
+            currency: "SEK",
+            date: "2026-09-12",
+            merchant: "PDF Supplier",
+            printedTotal: "150.00",
+            lines: [{
+              kind: "purchase",
+              description: "PDF Invoice Item",
+              amount: "150.00",
+              categoryId: defaultTestCategory.id,
+              direction: "outflow",
+              selected: true,
+              rationale: "Synthetic line from PDF",
+            }],
+            uncertainty: [],
+            mismatches: [],
+          };
+          return Promise.resolve(draft);
+        },
+      };
+
+      const gemini = {
+        ...fakeAi,
+        getApiKey: () => Promise.resolve(SecretValue.from("AIza.test")),
+        setApiKey: () => Promise.resolve(),
+        removeApiKey: () => Promise.resolve(),
+      };
+      const openrouter = createSettingsProvider({
+        key: "sk-or-v1.test",
+        models: [model],
+      });
+      const imageStore = new ReceiptImageStore();
+      const dependencies: ReceiptUiDependencies = {
+        ai: fakeAi,
+        gemini,
+        openrouter,
+        imagePreparation: createFakeImagePreparationPort(),
+        resolveImage: (ref) => imageStore.resolve(ref),
+        releaseImage: (ref) => imageStore.releaseForRetry(ref),
+      };
+
+      const settings = DeviceLocalSettingsSchema.parse({
+        activeProvider: "gemini",
+        selectedGeminiModel: model.id,
+        imagePreparationEnabled: true,
+      });
+
+      let reviewed: ReceiptReviewDraft | undefined;
+      render(
+        createElement(ReceiptScanScreen, {
+          dependencies,
+          imageStore,
+          state: defaultTestState,
+          settings,
+          offline: false,
+          onSettingsChange: () => undefined,
+          onReview: (draft) => reviewed = draft,
+          onClose: () => undefined,
+          onOpenSettings: () => undefined,
+        }),
+      );
+
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: "Continue to scan" }))
+      );
+      fireEvent.click(view.getByRole("button", { name: "Continue to scan" }));
+
+      // Test unsupported file type shows error
+      const txtFile = new Blob(["text"], {
+        type: "text/plain",
+      }) as unknown as File;
+      fireEvent.change(view.getByLabelText("Receipt image file"), {
+        target: { files: [txtFile] },
+      });
+      await waitFor(() =>
+        assert(view.getByText("That file type is not accepted."))
+      );
+
+      // Test selecting a PDF receipt file
+      const pdfBytes = new TextEncoder().encode("%PDF-1.4 invoice receipt");
+      const pdfFile = new Blob([pdfBytes], {
+        type: "application/pdf",
+      }) as unknown as File;
+      fireEvent.change(view.getByLabelText("Receipt image file"), {
+        target: { files: [pdfFile] },
+      });
+
+      // PDF preview object is rendered
+      await waitFor(() => {
+        assert(view.getByRole("region", { name: "Selected receipt preview" }));
+        assert(view.getByText("PDF receipt document"));
+        const scanBtn = view.getByRole("button", { name: "Scan with AI" });
+        assert(!scanBtn.hasAttribute("disabled"));
+      });
+
+      // Scanning triggers AI extraction and transitions to review
+      fireEvent.click(view.getByRole("button", { name: "Scan with AI" }));
+      await waitFor(() => assert(reviewed !== undefined));
+
+      assertEquals(extractedMimeType, "application/pdf");
+      assertEquals(reviewed?.parent.merchant, "PDF Supplier");
+      assertEquals(reviewed?.lines[0]?.description, "PDF Invoice Item");
+      imageStore.clear();
+    });
+  });
+});

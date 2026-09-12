@@ -9,11 +9,13 @@ import {
 import {
   createEphemeralObjectUrl,
   createImagePreparationPort,
+  DEFAULT_BROWSER_DOCUMENT_MIME_TYPES,
   IMAGE_LIMITS,
   type ImagePreparationOperations,
   prepareImage,
   stripImageMetadata,
   stripJpegMetadata,
+  stripPdfMetadata,
   withEphemeralImage,
 } from "./image.ts";
 import {
@@ -933,4 +935,85 @@ Deno.test("A-301 object URL and byte cleanup run once after success, failure, an
       })).catch(() => undefined);
     assertEquals([...bytes], [0, 0, 0]);
   }
+});
+
+Deno.test("A-301 PDF metadata stripping sanitizes Info, Metadata, and XMP while preserving length", async () => {
+  const samplePdf = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /Metadata 5 0 R >>
+endobj
+5 0 obj
+<< /Type /Metadata /Length 50 >>
+stream
+<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta>Secret XMP</x:xmpmeta><?xpacket end="w"?>
+endstream
+endobj
+6 0 obj
+<< /Author (Alice Smith) /Title (Secret Receipt) /CreationDate (D:20260912120000) /CustomKey (Private) >>
+endobj
+trailer
+<< /Root 1 0 R /Info 6 0 R >>
+%%EOF`;
+
+  const inputBytes = new TextEncoder().encode(samplePdf);
+  const stripped = stripPdfMetadata(inputBytes);
+  const text = new TextDecoder().decode(stripped);
+
+  assertEquals(stripped.length, inputBytes.length);
+  assertEquals(text.startsWith("%PDF-1.4"), true);
+  assertEquals(text.endsWith("%%EOF"), true);
+  assertEquals(text.includes("Alice Smith"), false);
+  assertEquals(text.includes("Secret Receipt"), false);
+  assertEquals(text.includes("Secret XMP"), false);
+  assertEquals(text.includes("/Info 6 0 R"), false);
+  assertEquals(text.includes("/Metadata 5 0 R"), false);
+  assertEquals(text.includes("/Type /Metadata"), false);
+
+  await assertRejects(
+    () => {
+      stripPdfMetadata(new Uint8Array([1, 2, 3, 4, 5]));
+    },
+    "image bytes are not a PDF",
+  );
+});
+
+Deno.test("A-301 prepareImage sanitizes PDF metadata without raster resize", async () => {
+  assert(DEFAULT_BROWSER_DOCUMENT_MIME_TYPES.includes("application/pdf"));
+
+  const samplePdf = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+trailer
+<< /Root 1 0 R /Info << /Author (Bob) >> >>
+%%EOF`;
+  const pdfBytes = new TextEncoder().encode(samplePdf);
+
+  const prepared = await prepareImage({
+    bytes: pdfBytes,
+    height: 1,
+    mimeType: "application/pdf",
+    width: 1,
+  }, { enabled: true });
+
+  assertEquals(prepared.mimeType, "application/pdf");
+  assertEquals(prepared.metadataSanitized, true);
+  assertEquals(prepared.preparationApplied, false);
+  assertEquals(prepared.bytes.length, pdfBytes.length);
+  const text = new TextDecoder().decode(prepared.bytes);
+  assertEquals(text.includes("Bob"), false);
+
+  // Over-quota PDF is rejected
+  const hugePdf = new Uint8Array(IMAGE_LIMITS.inlineRequestBytes + 1);
+  hugePdf.set(new TextEncoder().encode("%PDF-"));
+  await assertRejects(
+    () =>
+      prepareImage({
+        bytes: hugePdf,
+        height: 1,
+        mimeType: "application/pdf",
+        width: 1,
+      }, { enabled: false }),
+    "quota",
+  );
 });

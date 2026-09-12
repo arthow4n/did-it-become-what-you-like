@@ -3428,7 +3428,8 @@ export function ReceiptSourcePicker(
         ? <Card>{preview}</Card>
         : (
           <EmptyState title="No receipt selected">
-            Choose an image or take a photo to preview it before sending.
+            Choose an image or PDF, or take a photo to preview it before
+            sending.
           </EmptyState>
         )}
       <div className="ds-receipt-source-picker__actions">

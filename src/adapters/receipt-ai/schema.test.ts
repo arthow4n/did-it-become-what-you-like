@@ -75,6 +75,38 @@ Deno.test("shared receipt prompt has one stable instruction identity and version
   );
 });
 
+Deno.test("shared receipt prompt attaches category description when present and omits when absent", () => {
+  const promptWithDesc = buildReceiptPrompt({
+    ...promptRequest,
+    categories: [
+      {
+        id: "category-food",
+        name: "Food",
+        description: "Supermarket, snacks, coffee",
+      },
+      {
+        id: "category-rent",
+        name: "Rent",
+      },
+    ],
+  });
+  assert(
+    promptWithDesc.includes(
+      '{"id":"category-food","name":"Food","description":"Supermarket, snacks, coffee"}',
+    ),
+  );
+  assert(
+    promptWithDesc.includes(
+      '{"id":"category-rent","name":"Rent"}',
+    ),
+  );
+  assert(
+    !promptWithDesc.includes(
+      '"id":"category-rent","name":"Rent","description"',
+    ),
+  );
+});
+
 Deno.test("shared schema and parser normalize and validate provider output", async () => {
   const localized = {
     ...validOutput,

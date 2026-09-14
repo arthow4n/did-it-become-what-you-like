@@ -2040,3 +2040,165 @@ Deno.test("receipt-ui supports selecting and scanning PDF receipts, and rejects 
     });
   });
 });
+
+Deno.test("receipt scan attaches category descriptions in AI extraction request", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    await withAriaGlobals(window, async () => {
+      const model: ReceiptAiModel = {
+        id: "models/gemini-2.5-flash",
+        displayName: "Gemini Flash",
+        lifecycle: "active",
+        capabilities: {
+          "image-input": true,
+          "content-generation": true,
+          "structured-output": true,
+        },
+      };
+      let receivedCategories:
+        | readonly { id: string; name: string; description?: string }[]
+        | undefined;
+      const fakeAi: ReceiptAiPort = {
+        listModels: () => Promise.resolve([model]),
+        extractReceipt: (request) => {
+          receivedCategories = request.categories;
+          const draft: ReceiptExtractionDraft = {
+            currency: "SEK",
+            date: "2026-09-12",
+            merchant: "Store",
+            printedTotal: "20.00",
+            lines: [{
+              kind: "purchase",
+              description: "Apples",
+              amount: "20.00",
+              categoryId: "cat-groceries",
+              direction: "outflow",
+              selected: true,
+              rationale: "Food purchase",
+            }],
+            uncertainty: [],
+            mismatches: [],
+          };
+          return Promise.resolve(draft);
+        },
+      };
+
+      const gemini = {
+        ...fakeAi,
+        getApiKey: () => Promise.resolve(SecretValue.from("AIza.test")),
+        setApiKey: () => Promise.resolve(),
+        removeApiKey: () => Promise.resolve(),
+      };
+      const openrouter = createSettingsProvider({
+        key: "sk-or-v1.test",
+        models: [model],
+      });
+      const imageStore = new ReceiptImageStore();
+      const dependencies: ReceiptUiDependencies = {
+        ai: fakeAi,
+        gemini,
+        openrouter,
+        imagePreparation: createFakeImagePreparationPort(),
+        resolveImage: (ref) => imageStore.resolve(ref),
+        releaseImage: (ref) => imageStore.releaseForRetry(ref),
+      };
+
+      const settings = DeviceLocalSettingsSchema.parse({
+        activeProvider: "gemini",
+        selectedGeminiModel: model.id,
+        imagePreparationEnabled: true,
+      });
+
+      const describedCategory = {
+        schemaVersion: 1 as const,
+        type: "category" as const,
+        id: "cat-groceries",
+        name: "Groceries",
+        description: "Supermarket, snacks, fruit",
+        sortOrder: 1,
+        archived: false,
+        system: false,
+      };
+
+      const undescribedCategory = {
+        schemaVersion: 1 as const,
+        type: "category" as const,
+        id: "cat-transport",
+        name: "Transport",
+        sortOrder: 2,
+        archived: false,
+        system: false,
+      };
+
+      const customState: ProjectCategoryState = {
+        ...emptyState,
+        projects: [{
+          schemaVersion: 1,
+          type: "project",
+          id: "project-1",
+          name: "Default",
+          defaultCurrency: "SEK",
+          archived: false,
+        }],
+        categories: [describedCategory, undescribedCategory],
+        projectOrder: ["project-1"],
+        selectedProjectId: "project-1",
+        firstProjectId: "project-1",
+        defaultProjectId: "project-1",
+      };
+
+      render(
+        createElement(ReceiptScanScreen, {
+          dependencies,
+          imageStore,
+          state: customState,
+          settings,
+          offline: false,
+          onSettingsChange: () => undefined,
+          onReview: () => undefined,
+          onClose: () => undefined,
+          onOpenSettings: () => undefined,
+        }),
+      );
+
+      const view = within(document.body);
+      const continueBtn = view.queryByRole("button", {
+        name: "Continue to scan",
+      });
+      if (continueBtn) {
+        fireEvent.click(continueBtn);
+      }
+
+      await waitFor(() => {
+        assert(view.getByLabelText("Receipt image file"));
+      });
+
+      const file = new Blob([new Uint8Array([1, 2, 3])], {
+        type: "image/png",
+      }) as unknown as File;
+      fireEvent.change(view.getByLabelText("Receipt image file"), {
+        target: { files: [file] },
+      });
+
+      await waitFor(() => {
+        const scanBtn = view.getByRole("button", { name: "Scan with AI" });
+        assert(!scanBtn.hasAttribute("disabled"));
+      });
+
+      fireEvent.click(view.getByRole("button", { name: "Scan with AI" }));
+
+      await waitFor(() => assert(receivedCategories !== undefined));
+      assertEquals(receivedCategories, [
+        {
+          id: "cat-groceries",
+          name: "Groceries",
+          description: "Supermarket, snacks, fruit",
+        },
+        {
+          id: "cat-transport",
+          name: "Transport",
+        },
+      ]);
+      imageStore.clear();
+    });
+  });
+});

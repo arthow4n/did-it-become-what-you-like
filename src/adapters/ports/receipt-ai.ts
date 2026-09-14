@@ -33,7 +33,11 @@ export type ReceiptExtractionRequest = {
   readonly image: PreparedImage;
   readonly schemaVersion: number;
   readonly instructionVersion: string;
-  readonly categories: readonly { id: StableId; name: string }[];
+  readonly categories: readonly {
+    id: StableId;
+    name: string;
+    description?: string;
+  }[];
   readonly locale: string;
   readonly currency: CurrencyCode;
 };

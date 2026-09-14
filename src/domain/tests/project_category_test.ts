@@ -380,6 +380,64 @@ Deno.test("organization: category rename updates, preserves, and clears color", 
   );
 });
 
+Deno.test("organization: category create and rename updates, preserves, and clears description", async () => {
+  const { service } = createService();
+  await service.commitCategory({
+    type: "create",
+    category: {
+      ...food,
+      description: "Supermarket purchases, groceries, pantry snacks",
+    },
+  });
+
+  let state = await service.getState();
+  assertEquals(
+    state.categories.find((candidate) => candidate.id === food.id)?.description,
+    "Supermarket purchases, groceries, pantry snacks",
+  );
+
+  // Preserve description when renaming without mentioning description
+  await service.commitCategory({
+    type: "rename",
+    categoryId: food.id,
+    name: "Groceries",
+  });
+  state = await service.getState();
+  assertEquals(
+    state.categories.find((candidate) => candidate.id === food.id)?.description,
+    "Supermarket purchases, groceries, pantry snacks",
+  );
+
+  // Update description
+  await service.commitCategory({
+    type: "rename",
+    categoryId: food.id,
+    name: "Groceries",
+    description: "Food and drinks from supermarket",
+  });
+  state = await service.getState();
+  assertEquals(
+    state.categories.find((candidate) => candidate.id === food.id)?.description,
+    "Food and drinks from supermarket",
+  );
+
+  // Explicitly clear description with undefined or empty string
+  await service.commitCategory({
+    type: "rename",
+    categoryId: food.id,
+    name: "Groceries",
+    description: "",
+  });
+  state = await service.getState();
+  assert(
+    !Object.prototype.hasOwnProperty.call(
+      state.categories.find((candidate) => candidate.id === food.id),
+      "description",
+    ),
+    "clearing description removes the optional stored property",
+  );
+});
+
 Deno.test("organization: delete-and-reassign atomically updates every category reference", async () => {
   const { local, service } = createService();
   await seed(local, [projectOne, food, travel, expense("expense-food")]);

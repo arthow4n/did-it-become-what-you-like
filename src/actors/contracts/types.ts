@@ -181,7 +181,10 @@ export type ReceiptScanInput = {
   readonly projectId: StableId;
   readonly currency: CurrencyCode;
   readonly locale: string;
-  readonly categoryCatalogue: readonly Pick<Category, "id" | "name">[];
+  readonly categoryCatalogue: readonly Pick<
+    Category,
+    "id" | "name" | "description"
+  >[];
   readonly model: string;
   readonly prepareImage: boolean;
   /** Optional proof that the approved transmission disclosure was accepted. */
@@ -224,6 +227,8 @@ export type CategoryCommand =
     readonly name: string;
     /** Omit to preserve the current color; pass undefined to clear it. */
     readonly color?: string;
+    /** Omit to preserve the current description; pass undefined to clear it. */
+    readonly description?: string;
   }
   | { readonly type: "archive"; readonly categoryId: StableId }
   | { readonly type: "restore"; readonly categoryId: StableId }

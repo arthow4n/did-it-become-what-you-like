@@ -89,6 +89,7 @@ import {
   Skeleton,
   Stack,
   Text,
+  TextArea,
   TextField,
   Toast,
 } from "../design-system/index.ts";
@@ -1999,6 +2000,7 @@ export function CategoryManager({
   );
   const [name, setName] = useState("");
   const [color, setColor] = useState<string | undefined>(undefined);
+  const [description, setDescription] = useState("");
   const [search, setSearch] = useState("");
   const [recordDeleted, setRecordDeleted] = useState(false);
   const handledInitialCreate = useRef(false);
@@ -2042,15 +2044,18 @@ export function CategoryManager({
     if (editor.kind === "create") {
       setName("");
       setColor(undefined);
+      setDescription("");
     } else {
       setName(editor.record.name);
       setColor(editor.record.color);
+      setDescription(editor.record.description ?? "");
     }
   }, [editor]);
 
   const submitEditor = () => {
     if (!name.trim() || !snapshot.matches("ready")) return;
     isSubmittingRef.current = true;
+    const trimmedDescription = description.trim() || undefined;
     if (editor?.kind === "create") {
       send({
         type: "category.command",
@@ -2062,6 +2067,7 @@ export function CategoryManager({
             id: idFor("category"),
             name: name.trim(),
             ...(color ? { color } : {}),
+            ...(trimmedDescription ? { description: trimmedDescription } : {}),
             sortOrder: state.categories.length + 1,
             archived: false,
             system: false,
@@ -2076,6 +2082,7 @@ export function CategoryManager({
           categoryId: editor.record.id,
           name: name.trim(),
           color,
+          description: trimmedDescription,
         },
       });
     }
@@ -2096,8 +2103,10 @@ export function CategoryManager({
 
   const dirty = editor !== null && (
     editor.kind === "create"
-      ? name.length > 0 || color !== undefined
-      : name !== editor.record.name || color !== editor.record.color
+      ? name.length > 0 || color !== undefined || description.length > 0
+      : name !== editor.record.name || color !== editor.record.color ||
+        (description.trim() || undefined) !==
+          (editor.record.description ?? undefined)
   );
 
   useEffect(() => {
@@ -2119,6 +2128,7 @@ export function CategoryManager({
     if (!dirty) {
       setName(freshRecord.name);
       setColor(freshRecord.color);
+      setDescription(freshRecord.description ?? "");
     }
   }, [dirty, editor, state.categories]);
 
@@ -2181,6 +2191,13 @@ export function CategoryManager({
                   </Button>
                 )
                 : null}
+              <TextArea
+                label="AI matching description (optional)"
+                placeholder="e.g., Groceries, pantry items, coffee beans, snacks"
+                description="Used by AI receipt scanning to match receipt items. Never shown in expense views."
+                value={description}
+                onChange={setDescription}
+              />
               {recordDeleted
                 ? (
                   <InlineNotice

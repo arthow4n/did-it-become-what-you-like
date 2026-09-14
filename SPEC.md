@@ -130,12 +130,12 @@ and multi-device synchronization according to the agreed sync design.
   expense views but does not create a separate category catalogue.
 - Active categories have a global custom order used by manual pickers and the
   active receipt-AI provider's category catalogue. A category requires a
-  case-insensitively unique
-  trimmed active name, may have an optional color which is never its sole
-  identifier, and does not require an icon in the initial release.
+  case-insensitively unique trimmed active name, may have an optional color
+  which is never its sole identifier, may have an optional description used
+  solely for receipt-AI matching and not displayed in expense views, and does
+  not require an icon in the initial release.
 - Archiving a category preserves historical relationships while excluding it
-  from new-entry and receipt-AI choices. Empty custom categories can be
-  deleted.
+  from new-entry and receipt-AI choices. Empty custom categories can be deleted.
   Deleting a used category requires atomic reassignment of all references across
   all projects to an explicitly selected replacement, defaulting to
   `Uncategorized`, followed by a synchronized tombstone for the old category.
@@ -206,9 +206,9 @@ and multi-device synchronization according to the agreed sync design.
   selecting a digital receipt or invoice in PDF format.
 - The LLM should produce draft expense entries for the relevant items on the
   invoice to reduce manual entry.
-- The extraction prompt and review model must request and preserve the
-  most specific merchant/shop identity visible on the receipt, including its
-  branch or location when available.
+- The extraction prompt and review model must request and preserve the most
+  specific merchant/shop identity visible on the receipt, including its branch
+  or location when available.
 - The AI must suggest a category for every extracted item using only the owner's
   existing category catalogue.
 - The AI must never create categories. When no existing category can be chosen
@@ -286,8 +286,8 @@ and multi-device synchronization according to the agreed sync design.
   provider's model-list metadata to prefilter candidates where that metadata
   permits, but a model list is not a compatibility guarantee or a quota
   guarantee. There is no manual configuration or compatibility test. An
-  unsupported model instead produces an actionable error from the real,
-  explicit **Scan with AI** request, and no data is saved.
+  unsupported model instead produces an actionable error from the real, explicit
+  **Scan with AI** request, and no data is saved.
 - Gemini model discovery uses the SDK's model-listing API. When returned
   `supportedActions` metadata is present, a model must include
   `generateContent`; when it is absent, the model remains a candidate rather
@@ -328,21 +328,22 @@ and multi-device synchronization according to the agreed sync design.
   deprecated model, quota/rate limiting, offline state, and unknown service
   failure.
 - A receipt request may send only the selected receipt image, the versioned
-  extraction instructions/schema, active category stable IDs and names, device
-  locale, and the current project's default currency code. The API credential is
-  necessarily used to authorize that request. Expense history, project names,
-  merchant history, Google Drive contents, other device identifiers or details,
-  and sync metadata must never be included.
+  extraction instructions/schema, active category stable IDs, names, and
+  optional matching descriptions, device locale, and the current project's
+  default currency code. The API credential is necessarily used to authorize
+  that request. Expense history, project names, merchant history, Google Drive
+  contents, other device identifiers or details, and sync metadata must never be
+  included.
 - The application does not attempt automatic visual redaction because an
   unreliable redactor could either leak content or remove information required
   for extraction. The owner must see the selected image before transmission and
   may use it, choose another image, or retake the photo.
-- Document and image privacy sanitization is mandatory and separate from optional
-  image preparation. EXIF and other embedded metadata, including location, device
-  details, and PDF document info / XMP metadata, must always be removed in memory
-  before transmission. Turning preparation off preserves the source pixel
-  dimensions and avoids optional resize/compression, but it never disables
-  metadata removal.
+- Document and image privacy sanitization is mandatory and separate from
+  optional image preparation. EXIF and other embedded metadata, including
+  location, device details, and PDF document info / XMP metadata, must always be
+  removed in memory before transmission. Turning preparation off preserves the
+  source pixel dimensions and avoids optional resize/compression, but it never
+  disables metadata removal.
 - A model whose returned metadata does not establish every required receipt
   capability is not presented as proven compatible. It remains a candidate when
   the provider's metadata is incomplete and is checked only by the real,
@@ -353,9 +354,9 @@ and multi-device synchronization according to the agreed sync design.
   provider data collection** controls, and the selected OpenRouter model. A
   preferred tag is sent first while same-model provider fallback remains
   enabled. ZDR and data-collection are separate constraints and either may
-  reduce route availability. If a saved preferred provider becomes invalid
-  after a model or privacy change, the application resets it to Automatic and
-  explains why; it never silently chooses a different preference.
+  reduce route availability. If a saved preferred provider becomes invalid after
+  a model or privacy change, the application resets it to Automatic and explains
+  why; it never silently chooses a different preference.
 - Existing device settings migrate to Gemini as the active provider while
   preserving the selected Gemini model. New and migrated OpenRouter preferences
   default to Automatic/unset, with ZDR and data-collection denial both off.
@@ -427,15 +428,15 @@ and multi-device synchronization according to the agreed sync design.
   Drive is unavailable. Synchronization must then be attempted after changes, on
   app launch, when connectivity returns, and through a manual sync action.
 - Automatic sync coalesces local record commits for 300 ms, checks remote
-  changes every 30 seconds while visible and idle, and refreshes on returning
-  to the app. Import and destructive workflows retain their own sync boundaries.
+  changes every 30 seconds while visible and idle, and refreshes on returning to
+  the app. Import and destructive workflows retain their own sync boundaries.
   Remote reconciliation must not trigger another local-save sync.
 - Unchanged syncs must avoid uploads and record rewrites. Device last-seen
   updates are limited to once per minute and included in that exchange.
 - Internal sync storage uses version-2 JSON: a table of distinct record values,
   dataset arrays of table indexes, and causal changes retaining IDs, actor IDs,
-  sequence numbers, parents, and their dataset indexes. The same compact form
-  is used for local causal metadata. Revision ancestry and tombstones are not
+  sequence numbers, parents, and their dataset indexes. The same compact form is
+  used for local causal metadata. Revision ancestry and tombstones are not
   pruned. Version-1 internal state remains readable and is compacted on the next
   write; all devices must run the updated app before writing version-2 state.
   User JSON exports remain complete, independent, readable documents; the
@@ -819,9 +820,9 @@ and multi-device synchronization according to the agreed sync design.
 
 - Expense-day boundary is a synchronized personal domain preference and belongs
   to the portable dataset. Last-selected project, OAuth tokens, device-specific
-  UI state, receipt-AI API keys, active provider, each provider's selected model,
-  OpenRouter routing/privacy preferences, and image-preparation preference remain
-  device-local.
+  UI state, receipt-AI API keys, active provider, each provider's selected
+  model, OpenRouter routing/privacy preferences, and image-preparation
+  preference remain device-local.
 - IndexedDB is required for all locally persisted application data, including
   expenses, categories, projects, settings, sync metadata, migrations,
   device-local workflow drafts/snapshots, and extracted receipt records. Source

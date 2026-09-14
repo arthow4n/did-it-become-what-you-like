@@ -824,7 +824,11 @@ export function ReceiptScanScreen({
   const categoryCatalogue = state.categories.filter((category) =>
     !category.archived
   )
-    .map((category) => ({ id: category.id, name: category.name }));
+    .map((category) => ({
+      id: category.id,
+      name: category.name,
+      ...(category.description ? { description: category.description } : {}),
+    }));
   const makeScanInput = (model: string) =>
     selectedImage && project
       ? {

@@ -36,6 +36,7 @@ export const CategorySchema = z.object({
   ...recordBase("category"),
   name: NonEmptyTextSchema.max(120),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  description: z.string().trim().optional(),
   sortOrder: z.number().int().nonnegative(),
   archived: z.boolean(),
   system: z.boolean(),

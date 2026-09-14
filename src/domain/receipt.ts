@@ -101,6 +101,7 @@ export type ReceiptReviewInput = {
   readonly categoryCatalogue: readonly {
     readonly id: StableId;
     readonly name: string;
+    readonly description?: string;
   }[];
   readonly nextId: () => StableId;
 };

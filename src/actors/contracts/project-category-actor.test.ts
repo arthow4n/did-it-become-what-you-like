@@ -281,3 +281,38 @@ Deno.test("project-category actor: category color mutation is committed", async 
   );
   actor.stop();
 });
+
+Deno.test("project-category actor: category description mutation is committed", async () => {
+  const { service } = createService();
+  const category: Category = {
+    schemaVersion: 1,
+    type: "category",
+    id: "category-actor-desc",
+    name: "Food",
+    description: "Groceries and meal ingredients",
+    sortOrder: 1,
+    archived: false,
+    system: false,
+  };
+  await service.commitCategory({ type: "create", category });
+  const actor = createActor(createCategoryOrganizationMachine(service)).start();
+  actor.send({ type: "category.open", state: await service.getState() });
+  actor.send({
+    type: "category.command",
+    command: {
+      type: "rename",
+      categoryId: category.id,
+      name: category.name,
+      description: "Supermarket receipts and dining out",
+    },
+  });
+  await settle();
+  assertEquals(actor.getSnapshot().value, "ready");
+  assertEquals(
+    actor.getSnapshot().context.state?.categories.find((candidate) =>
+      candidate.id === category.id
+    )?.description,
+    "Supermarket receipts and dining out",
+  );
+  actor.stop();
+});

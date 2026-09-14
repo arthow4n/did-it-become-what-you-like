@@ -1318,10 +1318,73 @@ Deno.test("local UI category editor keeps built-in Uncategorized protected", asy
         assert(view.getByRole("heading", { name: "Create category" }))
       );
       assert(view.getByRole("textbox", { name: "Category name" }));
+      assert(
+        view.getByRole("textbox", {
+          name: "AI matching description (optional)",
+        }),
+      );
       assert(view.getByRole("group", { name: "Category color (optional)" }));
       assert(
         view.getByLabelText("Choose custom Category color (optional)"),
         "category color should expose a custom value control",
+      );
+    });
+  });
+});
+
+Deno.test("local UI category manager creates and updates category with AI matching description", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    let committedCommand: CategoryOrganizationCommand | null = null;
+    const { service } = createTestService(categoryState);
+    const trackingService: ProjectCategoryService = {
+      ...service,
+      commitCategory: (command) => {
+        committedCommand = command;
+        return service.commitCategory(command);
+      },
+    };
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(CategoryManager, {
+          service: trackingService,
+          state: categoryState,
+          initialCreate: true,
+          onStateChange: () => undefined,
+          onNavigate: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Create category" }))
+      );
+      const nameInput = view.getByRole("textbox", { name: "Category name" });
+      const descInput = view.getByRole("textbox", {
+        name: "AI matching description (optional)",
+      });
+      fireEvent.change(nameInput, { target: { value: "Groceries" } });
+      fireEvent.change(descInput, {
+        target: { value: "Food, snacks, and household essentials" },
+      });
+      fireEvent.click(view.getByRole("button", { name: "Save category" }));
+      await waitFor(() => assert(committedCommand !== null));
+      assert(committedCommand !== null);
+      assertEquals(
+        (committedCommand as Extract<
+          CategoryOrganizationCommand,
+          { type: "create" }
+        >)
+          .category
+          .name,
+        "Groceries",
+      );
+      assertEquals(
+        (committedCommand as Extract<
+          CategoryOrganizationCommand,
+          { type: "create" }
+        >)
+          .category
+          .description,
+        "Food, snacks, and household essentials",
       );
     });
   });

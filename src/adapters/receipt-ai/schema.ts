@@ -100,6 +100,7 @@ export function buildReceiptPrompt(
   const categories = request.categories.map((category) => ({
     id: category.id,
     name: category.name,
+    ...(category.description ? { description: category.description } : {}),
   }));
   return [
     `Extract the selected receipt image into exactly schema ${RECEIPT_SCHEMA_VERSION}.`,

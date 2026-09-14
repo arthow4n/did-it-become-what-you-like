@@ -106,6 +106,8 @@ export type CategoryOrganizationCommand =
     readonly name: string;
     /** Omit to preserve the current color; pass undefined to clear it. */
     readonly color?: string;
+    /** Omit to preserve the current description; pass undefined to clear it. */
+    readonly description?: string;
   }
   | { readonly type: "archive"; readonly categoryId: StableId }
   | { readonly type: "restore"; readonly categoryId: StableId }
@@ -1016,8 +1018,14 @@ export function createProjectCategoryService(
             (maximum, candidate) => Math.max(maximum, candidate.sortOrder),
             0,
           );
+          const {
+            description: _rawDescription,
+            ...categoryWithoutDescription
+          } = category;
+          const trimmedDescription = category.description?.trim();
           const created = CategorySchema.parse({
-            ...category,
+            ...categoryWithoutDescription,
+            ...(trimmedDescription ? { description: trimmedDescription } : {}),
             sortOrder: category.archived
               ? category.sortOrder
               : maxSortOrder + 1,
@@ -1038,15 +1046,27 @@ export function createProjectCategoryService(
           if (!category.archived) {
             assertActiveNameUnique(state.categories, command.name, category.id);
           }
-          const { color: _currentColor, ...categoryWithoutColor } = category;
+          const {
+            color: _currentColor,
+            description: _currentDescription,
+            ...categoryBase
+          } = category;
+          const trimmedCommandDescription = command.description?.trim();
           const renamed = CategorySchema.parse({
-            ...categoryWithoutColor,
+            ...categoryBase,
             name: command.name,
             ...("color" in command
               ? (command.color === undefined ? {} : { color: command.color })
               : category.color === undefined
               ? {}
               : { color: category.color }),
+            ...("description" in command
+              ? (trimmedCommandDescription
+                ? { description: trimmedCommandDescription }
+                : {})
+              : category.description === undefined
+              ? {}
+              : { description: category.description }),
           });
           await transaction.put(
             "records",

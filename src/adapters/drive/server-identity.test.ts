@@ -1,5 +1,6 @@
 import { createServerIdentityProvider } from "./server-identity.ts";
 import { DRIVE_APP_DATA_SCOPE } from "./browser.ts";
+import { settle } from "../../test-support/async.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -49,7 +50,7 @@ Deno.test("server-identity: successful token request invokes callback", async ()
   client.requestAccessToken();
 
   // Wait for async fetch
-  await new Promise((resolve) => setTimeout(resolve, 10));
+  await settle();
 
   assertEquals(successResult, {
     access_token: "sample-access-token",
@@ -89,7 +90,7 @@ Deno.test("server-identity: unauthorized response invokes error_callback", async
 
   client.requestAccessToken();
 
-  await new Promise((resolve) => setTimeout(resolve, 10));
+  await settle();
 
   assertEquals(errorResult, {
     error: "unauthorized",

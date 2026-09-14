@@ -1420,14 +1420,15 @@ Deno.test("local UI category conflict is anchored to the category name field", a
       const input = view.getByRole("textbox", { name: "Category name" });
       fireEvent.change(input, { target: { value: "Food" } });
       fireEvent.click(view.getByRole("button", { name: "Save category" }));
-      await new Promise<void>((resolve) => setTimeout(resolve, 100));
-      const currentInput = view.getByRole("textbox", {
-        name: "Category name",
+      await waitFor(() => {
+        const currentInput = view.getByRole("textbox", {
+          name: "Category name",
+        });
+        assert(
+          currentInput.getAttribute("aria-invalid") === "true",
+          "conflict should mark the category name field invalid",
+        );
       });
-      assert(
-        currentInput.getAttribute("aria-invalid") === "true",
-        "conflict should mark the category name field invalid",
-      );
       assert(
         view.getAllByText("Active category names must be unique.").length === 2,
         "the conflict should be exposed by both the field and summary",

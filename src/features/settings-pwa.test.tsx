@@ -14,7 +14,7 @@ declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
 };
 
-Deno.test("settings-final preference screen shows a live day-boundary example", async () => {
+Deno.test("settings: preference screen shows a live day-boundary example", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -46,7 +46,7 @@ Deno.test("settings-final preference screen shows a live day-boundary example", 
   });
 });
 
-Deno.test("settings-final preferences discard restores the saved boundary", async () => {
+Deno.test("settings: preferences discard restores the saved boundary", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -95,7 +95,7 @@ Deno.test("settings-final preferences discard restores the saved boundary", asyn
   });
 });
 
-Deno.test("settings-final preferences retry preserves a failed save draft", async () => {
+Deno.test("settings: preferences retry preserves a failed save draft", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -132,7 +132,7 @@ Deno.test("settings-final preferences retry preserves a failed save draft", asyn
 });
 
 Deno.test(
-  "settings-final failed preference saves remain dirty and support discard",
+  "settings: failed preference saves remain dirty and support discard",
   async () => {
     await withComponentHarness(
       async ({ window, render, fireEvent, waitFor }) => {
@@ -192,7 +192,7 @@ Deno.test(
   },
 );
 
-Deno.test("settings-final preferences reset CTA restores and saves 03:00", async () => {
+Deno.test("settings: preferences reset CTA restores and saves 03:00", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -232,7 +232,7 @@ Deno.test("settings-final preferences reset CTA restores and saves 03:00", async
   });
 });
 
-Deno.test("settings-final About exposes exact disclosure and build metadata", async () => {
+Deno.test("settings: About exposes exact disclosure and build metadata", async () => {
   await withComponentHarness(({ render }) => {
     render(
       createElement(AboutScreen, {
@@ -268,7 +268,7 @@ Deno.test("settings-final About exposes exact disclosure and build metadata", as
   });
 });
 
-Deno.test("settings-final install offer defers startup checks and supports later", async () => {
+Deno.test("settings: install offer defers startup checks and supports later", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const basePort = createFakeUpdateInstallPort();
@@ -322,7 +322,7 @@ for (
     },
   ]
 ) {
-  Deno.test(`settings-final ${description}`, async () => {
+  Deno.test(`settings: ${description}`, async () => {
     await withComponentHarness(async ({ window, render, waitFor }) => {
       await withAriaGlobals(window, async () => {
         render(
@@ -345,7 +345,7 @@ for (
   });
 }
 
-Deno.test("settings-final labels native app installation separately", async () => {
+Deno.test("settings: labels native app installation separately", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const port = createFakeUpdateInstallPort();
@@ -383,7 +383,7 @@ Deno.test("settings-final labels native app installation separately", async () =
   });
 });
 
-Deno.test("settings-final update protects dirty input and exposes offline status", async () => {
+Deno.test("settings: update protects dirty input and exposes offline status", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const port = createFakeUpdateInstallPort();
@@ -420,7 +420,7 @@ Deno.test("settings-final update protects dirty input and exposes offline status
   });
 });
 
-Deno.test("settings-final checks for updates when the app becomes active", async () => {
+Deno.test("settings: checks for updates when the app becomes active", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const basePort = createFakeUpdateInstallPort();
@@ -450,7 +450,7 @@ Deno.test("settings-final checks for updates when the app becomes active", async
   });
 });
 
-Deno.test("settings-final startup check exposes a waiting update", async () => {
+Deno.test("settings: startup check exposes a waiting update", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const port = createFakeUpdateInstallPort();
@@ -480,7 +480,7 @@ Deno.test("settings-final startup check exposes a waiting update", async () => {
   });
 });
 
-Deno.test("settings-final offline update status explains reconnecting", async () => {
+Deno.test("settings: offline update status explains reconnecting", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaGlobals(window, async () => {
       Object.defineProperty(window.navigator, "onLine", {

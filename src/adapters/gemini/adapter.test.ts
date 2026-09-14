@@ -391,7 +391,7 @@ async function errorCode(operation: Promise<unknown>): Promise<string> {
   return error.code;
 }
 
-Deno.test("A-301 key storage is namespaced, removable, and opaque", async () => {
+Deno.test("gemini adapter: key storage is namespaced, removable, and opaque", async () => {
   const memory = memoryStorage();
   const storage = createLocalStorageSecretStorage(memory.storage);
   const secret = "AIza.synthetic-do-not-log";
@@ -425,7 +425,7 @@ Deno.test("A-301 key storage is namespaced, removable, and opaque", async () => 
   assertEquals(memory.values.has(OPENROUTER_API_KEY_STORAGE_KEY), false);
 });
 
-Deno.test("A-301 Gemini model refresh filters only explicit unsupported actions", async () => {
+Deno.test("gemini adapter: Gemini model refresh filters only explicit unsupported actions", async () => {
   let generateCalls = 0;
   const modelWithoutActions: GeminiRawModel = {
     baseModelId: "gemini-metadata-unknown",
@@ -456,7 +456,7 @@ Deno.test("A-301 Gemini model refresh filters only explicit unsupported actions"
   assertEquals(generateCalls, 0);
 });
 
-Deno.test("A-301 extraction sends only permitted context, maps validated output, and clears bytes", async () => {
+Deno.test("gemini adapter: extraction sends only permitted context, maps validated output, and clears bytes", async () => {
   const { adapter, requests } = createStorageAndAdapter((captured) =>
     clientWithModels(
       [MODEL_WITH_UNKNOWN_METADATA],
@@ -533,7 +533,7 @@ Deno.test("A-301 extraction sends only permitted context, maps validated output,
   assertEquals(requests[0].config.responseJsonSchema, RECEIPT_JSON_SCHEMA);
 });
 
-Deno.test("A-301 extraction preserves explicit quantity and unit price", async () => {
+Deno.test("gemini adapter: extraction preserves explicit quantity and unit price", async () => {
   const { adapter, requests } = createStorageAndAdapter((captured) =>
     clientWithModels(
       [MODEL_WITH_UNKNOWN_METADATA],
@@ -558,7 +558,7 @@ Deno.test("A-301 extraction preserves explicit quantity and unit price", async (
   );
 });
 
-Deno.test("A-301 output rejects quantity fields on adjustment lines", async () => {
+Deno.test("gemini adapter: output rejects quantity fields on adjustment lines", async () => {
   const source = JSON.parse(RECEIPT_QUANTITY_OUTPUT) as {
     readonly [key: string]: unknown;
     readonly lines: readonly Record<string, unknown>[];
@@ -573,7 +573,7 @@ Deno.test("A-301 output rejects quantity fields on adjustment lines", async () =
   assert(error instanceof ReceiptOutputError);
 });
 
-Deno.test("A-301 signed receipt fixture reconciles a discount adjustment", async () => {
+Deno.test("gemini adapter: signed receipt fixture reconciles a discount adjustment", async () => {
   const { adapter } = createStorageAndAdapter(() =>
     clientWithModels([MODEL_WITH_UNKNOWN_METADATA], {
       text: RECEIPT_DISCOUNT_OUTPUT,
@@ -598,7 +598,7 @@ Deno.test("A-301 signed receipt fixture reconciles a discount adjustment", async
   );
 });
 
-Deno.test("A-301 localized receipt decimals are canonicalized before validation", async () => {
+Deno.test("gemini adapter: localized receipt decimals are canonicalized before validation", async () => {
   const localized = JSON.stringify({
     currency: "SEK",
     date: "2026-08-29",
@@ -635,7 +635,7 @@ Deno.test("A-301 localized receipt decimals are canonicalized before validation"
   assertEquals(draft.lines[1]?.amount, "-15.76");
 });
 
-Deno.test("A-301 unavailable model categories remain reviewable", async () => {
+Deno.test("gemini adapter: unavailable model categories remain reviewable", async () => {
   const unknownCategory = RECEIPT_OUTPUT.replace(
     "category-groceries",
     "category-not-in-catalogue",
@@ -653,7 +653,7 @@ Deno.test("A-301 unavailable model categories remain reviewable", async () => {
   );
 });
 
-Deno.test("A-301 fenced JSON output is accepted only after strict parsing", async () => {
+Deno.test("gemini adapter: fenced JSON output is accepted only after strict parsing", async () => {
   const { adapter } = createStorageAndAdapter(() =>
     clientWithModels([MODEL_WITH_UNKNOWN_METADATA], {
       text: `Here is the receipt:\n\`\`\`json\n${RECEIPT_OUTPUT}\n\`\`\``,
@@ -664,7 +664,7 @@ Deno.test("A-301 fenced JSON output is accepted only after strict parsing", asyn
   assertEquals(draft.lines[0]?.amount, "10");
 });
 
-Deno.test("A-301 malformed decimal grouping remains rejected", async () => {
+Deno.test("gemini adapter: malformed decimal grouping remains rejected", async () => {
   const { adapter } = createStorageAndAdapter(() =>
     clientWithModels([MODEL_WITH_UNKNOWN_METADATA], {
       text: RECEIPT_OUTPUT.replace('"10"', '"1 2"'),
@@ -677,7 +677,7 @@ Deno.test("A-301 malformed decimal grouping remains rejected", async () => {
   );
 });
 
-Deno.test("A-301 malformed or hostile model output is rejected and redacted", async () => {
+Deno.test("gemini adapter: malformed or hostile model output is rejected and redacted", async () => {
   const hostile = "<script>credential=AIza.hostile-output</script>";
   const { adapter } = createStorageAndAdapter(() =>
     clientWithModels([MODEL_WITH_UNKNOWN_METADATA], {
@@ -705,7 +705,7 @@ Deno.test("A-301 malformed or hostile model output is rejected and redacted", as
   assert(!JSON.stringify(error).includes(hostile));
 });
 
-Deno.test("A-301 malformed provider JSON reports the response parsing phase", async () => {
+Deno.test("gemini adapter: malformed provider JSON reports the response parsing phase", async () => {
   const { adapter } = createStorageAndAdapter(() =>
     clientWithModels([MODEL_WITH_UNKNOWN_METADATA], { text: "not-json" })
   );
@@ -718,7 +718,7 @@ Deno.test("A-301 malformed provider JSON reports the response parsing phase", as
   assertEquals(error.operation, "gemini.extract.output.json");
 });
 
-Deno.test("A-301 maps invalid, quota, offline, and abort failures to typed redacted errors", async () => {
+Deno.test("gemini adapter: maps invalid, quota, offline, and abort failures to typed redacted errors", async () => {
   const scenarios: Array<[string, unknown, string]> = [
     ["invalid", { status: 400, message: "AIza.invalid" }, "invalid-request"],
     ["quota", { status: 429, message: "secret quota detail" }, "quota"],
@@ -774,7 +774,7 @@ Deno.test("A-301 maps invalid, quota, offline, and abort failures to typed redac
   assertEquals(bytes.every((byte) => byte === 0), true);
 });
 
-Deno.test("A-301 schema source rejects hostile extra fields and preserves schema equivalence", () => {
+Deno.test("gemini adapter: schema source rejects hostile extra fields and preserves schema equivalence", () => {
   const output = parseReceiptOutput(RECEIPT_OUTPUT);
   assertEquals(output.schemaVersion, RECEIPT_SCHEMA_VERSION);
   const schema = RECEIPT_JSON_SCHEMA as {
@@ -845,7 +845,7 @@ const fakeOperations: ImagePreparationOperations = {
   compress: (input) => ({ ...input, bytes: input.bytes.slice(0, 3) }),
 };
 
-Deno.test("A-301 always strips metadata while preparation off preserves dimensions", async () => {
+Deno.test("gemini adapter: always strips metadata while preparation off preserves dimensions", async () => {
   const input = {
     bytes: JPEG_WITH_EXIF,
     height: 3_500,
@@ -886,7 +886,7 @@ Deno.test("A-301 always strips metadata while preparation off preserves dimensio
   assertEquals(IMAGE_LIMITS.localPreparedMaxDimension, 4_096);
 });
 
-Deno.test("A-301 image port maps invalid preparation and cancellation to typed errors", async () => {
+Deno.test("gemini adapter: image port maps invalid preparation and cancellation to typed errors", async () => {
   const port = createImagePreparationPort({
     ...fakeOperations,
     stripMetadata: () => {
@@ -915,7 +915,7 @@ Deno.test("A-301 image port maps invalid preparation and cancellation to typed e
   );
 });
 
-Deno.test("A-301 object URL and byte cleanup run once after success, failure, and cancel", async () => {
+Deno.test("gemini adapter: object URL and byte cleanup run once after success, failure, and cancel", async () => {
   const revoked: string[] = [];
   const resource = createEphemeralObjectUrl(new Blob(["synthetic"]), {
     createObjectURL: () => "blob:synthetic",
@@ -937,7 +937,7 @@ Deno.test("A-301 object URL and byte cleanup run once after success, failure, an
   }
 });
 
-Deno.test("A-301 PDF metadata stripping sanitizes Info, Metadata, and XMP while preserving length", async () => {
+Deno.test("gemini adapter: PDF metadata stripping sanitizes Info, Metadata, and XMP while preserving length", async () => {
   const samplePdf = `%PDF-1.4
 1 0 obj
 << /Type /Catalog /Pages 2 0 R /Metadata 5 0 R >>
@@ -977,7 +977,7 @@ trailer
   );
 });
 
-Deno.test("A-301 prepareImage sanitizes PDF metadata without raster resize", async () => {
+Deno.test("gemini adapter: prepareImage sanitizes PDF metadata without raster resize", async () => {
   assert(DEFAULT_BROWSER_DOCUMENT_MIME_TYPES.includes("application/pdf"));
 
   const samplePdf = `%PDF-1.4

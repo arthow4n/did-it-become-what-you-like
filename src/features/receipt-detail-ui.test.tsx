@@ -235,8 +235,9 @@ Deno.test("receipt detail exposes scoped line and whole-receipt confirmations", 
       fireEvent.click(
         within(lineDialog).getByRole("button", { name: "Cancel" }),
       );
-      await new Promise<void>((resolve) => setTimeout(resolve, 20));
-      assert(!view.queryByRole("dialog", { name: "Delete this line?" }));
+      await waitFor(() => {
+        assert(!view.queryByRole("dialog", { name: "Delete this line?" }));
+      });
 
       fireEvent.click(view.getByRole("button", { name: "Delete receipt" }));
       const receiptDialog = view.getByRole("dialog", {
@@ -249,7 +250,6 @@ Deno.test("receipt detail exposes scoped line and whole-receipt confirmations", 
         within(receiptDialog).getByRole("button", { name: "Delete receipt" }),
       );
       await waitFor(() => assert(output?.status === "deleted"));
-      await new Promise<void>((resolve) => setTimeout(resolve, 20));
     });
   });
 });

@@ -23,6 +23,7 @@ import {
   ChevronRight,
   CircleAlert,
   CircleCheck,
+  Minus,
   Pencil,
   Plus,
   Sparkles,
@@ -3415,31 +3416,55 @@ export function ReceiptReconciliation(
 }
 
 export function ReceiptSourcePicker(
-  { preview, onTakePhoto, onChooseImage, onRemove }: {
+  {
+    preview,
+    previews,
+    onTakePhoto,
+    onChooseImage,
+    onRemove,
+    emptyTitle = "No receipt selected",
+    emptyDescription =
+      "Choose an image or PDF, or take a photo to preview it before sending.",
+    takePhotoLabel = "Take photo",
+    chooseImageLabel = "Choose image",
+  }: {
     preview?: ReactNode;
+    previews?: readonly ReactNode[];
     onTakePhoto?: () => void;
     onChooseImage?: () => void;
     onRemove?: () => void;
+    emptyTitle?: string;
+    emptyDescription?: ReactNode;
+    takePhotoLabel?: ReactNode;
+    chooseImageLabel?: ReactNode;
   },
 ) {
+  const hasPreviews = previews && previews.length > 0;
   return (
     <Stack gap={4}>
-      {preview
+      {hasPreviews
+        ? (
+          <ResponsiveGrid columns={previews.length === 1 ? 1 : 2} gap={3}>
+            {previews}
+          </ResponsiveGrid>
+        )
+        : preview
         ? <Card>{preview}</Card>
         : (
-          <EmptyState title="No receipt selected">
-            Choose an image or PDF, or take a photo to preview it before
-            sending.
+          <EmptyState title={emptyTitle}>
+            {emptyDescription}
           </EmptyState>
         )}
       <div className="ds-receipt-source-picker__actions">
         <div className="ds-receipt-source-picker__primary-actions">
-          <Button variant="secondary" onPress={onTakePhoto}>Take photo</Button>
+          <Button variant="secondary" onPress={onTakePhoto}>
+            {takePhotoLabel}
+          </Button>
           <Button variant="secondary" onPress={onChooseImage}>
-            Choose image
+            {chooseImageLabel}
           </Button>
         </div>
-        {preview
+        {(preview || hasPreviews) && onRemove
           ? <Button variant="quiet" onPress={onRemove}>Remove</Button>
           : null}
       </div>
@@ -3516,6 +3541,7 @@ export function ReceiptLineCard(
     mode = "review",
     isDisabled,
     onSelectedChange,
+    onQuantityChange,
     onEdit,
     editControl,
     categoryControl,
@@ -3523,9 +3549,10 @@ export function ReceiptLineCard(
   }: {
     line: ReceiptLineViewModel;
     currency: string;
-    mode?: "review" | "management" | "manual";
+    mode?: "review" | "management" | "manual" | "menu";
     isDisabled?: boolean;
     onSelectedChange?: (selected: boolean) => void;
+    onQuantityChange?: (quantity: string) => void;
     onEdit?: () => void;
     editControl?: ReactNode;
     categoryControl?: ReactNode;
@@ -3571,6 +3598,61 @@ export function ReceiptLineCard(
             : null}
         </Stack>
         <Inline gap={1}>
+          {onQuantityChange && line.type === "purchase"
+            ? (
+              <Inline gap={1} className="ds-quantity-stepper">
+                <IconButton
+                  icon={<Minus size={16} />}
+                  aria-label={`Decrease quantity of ${
+                    line.description || "item"
+                  }`}
+                  variant="quiet"
+                  isDisabled={isDisabled || !line.selected}
+                  onPress={() => {
+                    const current = parseInt(line.quantity ?? "1", 10);
+                    if (isNaN(current) || current <= 1) {
+                      onSelectedChange?.(false);
+                      onQuantityChange("0");
+                    } else {
+                      onQuantityChange(String(current - 1));
+                    }
+                  }}
+                />
+                <Text
+                  style={{
+                    minWidth: "1.25rem",
+                    textAlign: "center",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {line.selected ? (line.quantity ?? "1") : "0"}
+                </Text>
+                <IconButton
+                  icon={<Plus size={16} />}
+                  aria-label={`Increase quantity of ${
+                    line.description || "item"
+                  }`}
+                  variant="quiet"
+                  isDisabled={isDisabled}
+                  onPress={() => {
+                    if (!line.selected) {
+                      onSelectedChange?.(true);
+                      onQuantityChange(
+                        line.quantity && line.quantity !== "0"
+                          ? line.quantity
+                          : "1",
+                      );
+                    } else {
+                      const current = parseInt(line.quantity ?? "1", 10);
+                      onQuantityChange(
+                        String(isNaN(current) ? 1 : current + 1),
+                      );
+                    }
+                  }}
+                />
+              </Inline>
+            )
+            : null}
           {editControl}
           {editControl === undefined && onEdit
             ? (

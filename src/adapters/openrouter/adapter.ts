@@ -9,6 +9,7 @@ import {
   throwIfAborted,
 } from "../ports/index.ts";
 import type {
+  PreparedImage,
   ReceiptAiModel,
   ReceiptAiModelQuery,
   ReceiptAiPort,
@@ -24,7 +25,7 @@ import {
   RECEIPT_SCHEMA_VERSION_NUMBER,
   ReceiptOutputError,
 } from "../receipt-ai/schema.ts";
-import { withEphemeralImage } from "../gemini/image.ts";
+import { withEphemeralImages } from "../gemini/image.ts";
 import {
   createOpenRouterClient,
   type OpenRouterBrowserClient,
@@ -227,6 +228,14 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+function extractionImages(
+  request: ReceiptExtractionRequest,
+): readonly PreparedImage[] {
+  return request.images && request.images.length > 0
+    ? request.images
+    : [request.image];
+}
+
 function validateRequest(request: ReceiptExtractionRequest): void {
   if (request.schemaVersion !== RECEIPT_SCHEMA_VERSION_NUMBER) {
     throw adapterError("invalid-request", "openrouter.extract");
@@ -243,16 +252,21 @@ function validateRequest(request: ReceiptExtractionRequest): void {
   if (!SAFE_LOCALE.test(request.locale)) {
     throw adapterError("invalid-request", "openrouter.extract");
   }
-  if (!SAFE_IMAGE_OR_DOCUMENT_MIME_TYPE.test(request.image.mimeType)) {
-    throw adapterError("invalid-request", "openrouter.extract");
+  const images = extractionImages(request);
+  let totalBytes = 0;
+  for (const image of images) {
+    if (!SAFE_IMAGE_OR_DOCUMENT_MIME_TYPE.test(image.mimeType)) {
+      throw adapterError("invalid-request", "openrouter.extract");
+    }
+    if (!image.metadataSanitized) {
+      throw adapterError("invalid-request", "openrouter.extract");
+    }
+    if (image.bytes.byteLength === 0) {
+      throw adapterError("invalid-request", "openrouter.extract");
+    }
+    totalBytes += image.bytes.byteLength;
   }
-  if (!request.image.metadataSanitized) {
-    throw adapterError("invalid-request", "openrouter.extract");
-  }
-  if (request.image.bytes.byteLength === 0) {
-    throw adapterError("invalid-request", "openrouter.extract");
-  }
-  if (request.image.bytes.byteLength > 20_000_000) {
+  if (totalBytes > 20_000_000) {
     throw adapterError("quota", "openrouter.extract");
   }
   const ids = new Set<string>();
@@ -283,17 +297,20 @@ function requestForExtraction(
   routing: ReturnType<typeof routingOptions>,
 ): OpenRouterChatRequest {
   const prompt = buildReceiptPrompt(request);
-  const imageUrl = `data:${request.image.mimeType};base64,${
-    bytesToBase64(request.image.bytes)
-  }`;
+  const images = extractionImages(request);
   return {
     model: request.modelId,
     messages: [{
       role: "user",
-      content: [{ type: "text", text: prompt }, {
-        type: "image_url",
-        imageUrl: { url: imageUrl },
-      }],
+      content: [
+        { type: "text", text: prompt },
+        ...images.map((image) => ({
+          type: "image_url" as const,
+          imageUrl: {
+            url: `data:${image.mimeType};base64,${bytesToBase64(image.bytes)}`,
+          },
+        })),
+      ],
     }],
     responseFormat: {
       type: "json_schema",
@@ -419,40 +436,44 @@ export class OpenRouterAdapter implements ReceiptAiPort {
     options?: OperationOptions,
   ): Promise<ReceiptExtractionDraft> {
     validateRequest(request);
+    const images = extractionImages(request);
     try {
-      return await withEphemeralImage(request.image.bytes, async () => {
-        if (!this.#isOnline()) {
-          throw adapterError("offline", "openrouter.extract");
-        }
-        throwIfAborted(options?.signal);
-        const client = await this.#client(options, "openrouter.extract");
-        throwIfAborted(options?.signal);
-        const routing = routingOptions(this.#getRoutingOptions);
-        const response = await client.chat.send(
-          requestForExtraction(request, routing),
-          options,
-        );
-        if (typeof response.text !== "string") {
-          throw adapterError("invalid-output", "openrouter.extract.response");
-        }
-        let output;
-        try {
-          output = parseReceiptOutput(response.text);
-        } catch (error) {
-          const phase = error instanceof ReceiptOutputError
-            ? error.phase
-            : "schema";
-          throw adapterError(
-            "invalid-output",
-            `openrouter.extract.output.${phase}`,
+      return await withEphemeralImages(
+        images.map((image) => image.bytes),
+        async () => {
+          if (!this.#isOnline()) {
+            throw adapterError("offline", "openrouter.extract");
+          }
+          throwIfAborted(options?.signal);
+          const client = await this.#client(options, "openrouter.extract");
+          throwIfAborted(options?.signal);
+          const routing = routingOptions(this.#getRoutingOptions);
+          const response = await client.chat.send(
+            requestForExtraction(request, routing),
+            options,
           );
-        }
-        try {
-          return mapReceiptOutputToDraft(output, request);
-        } catch {
-          throw adapterError("invalid-output", "openrouter.extract.mapping");
-        }
-      });
+          if (typeof response.text !== "string") {
+            throw adapterError("invalid-output", "openrouter.extract.response");
+          }
+          let output;
+          try {
+            output = parseReceiptOutput(response.text);
+          } catch (error) {
+            const phase = error instanceof ReceiptOutputError
+              ? error.phase
+              : "schema";
+            throw adapterError(
+              "invalid-output",
+              `openrouter.extract.output.${phase}`,
+            );
+          }
+          try {
+            return mapReceiptOutputToDraft(output, request);
+          } catch {
+            throw adapterError("invalid-output", "openrouter.extract.mapping");
+          }
+        },
+      );
     } catch (error) {
       throw mapOpenRouterError(error, "openrouter.extract");
     }

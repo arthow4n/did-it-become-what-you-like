@@ -94,7 +94,7 @@ export const RECEIPT_OUTPUT_JSON_SCHEMA = RECEIPT_JSON_SCHEMA;
 export function buildReceiptPrompt(
   request: Pick<
     ReceiptExtractionRequest,
-    "categories" | "locale" | "currency"
+    "categories" | "locale" | "currency" | "documentType"
   >,
 ): string {
   const categories = request.categories.map((category) => ({
@@ -102,6 +102,28 @@ export function buildReceiptPrompt(
     name: category.name,
     ...(category.description ? { description: category.description } : {}),
   }));
+  if (request.documentType === "menu") {
+    return [
+      `Extract the selected restaurant menu images into exactly schema ${RECEIPT_SCHEMA_VERSION}.`,
+      `Instruction version: ${RECEIPT_INSTRUCTION_VERSION}.`,
+      `Device locale: ${request.locale}.`,
+      `Project default currency: ${request.currency}.`,
+      `Active category catalogue (use an existing id only; never create a category): ${
+        JSON.stringify(categories)
+      }.`,
+      "Document type: restaurant menu. The images show pages or sections of a food/drink menu.",
+      "Extract every menu item, dish, meal, drink, or beverage with its printed unit price as a line item.",
+      "Item price transcription rules: copy each numeric unit price exactly as printed; use a period as the decimal separator and omit digit-grouping separators; do not convert it to the owner's ledger sign.",
+      "Every menu item has direction outflow and kind purchase.",
+      "All extracted menu items must have selected set to false by default (the customer will opt in to only the items they ordered).",
+      "For every menu item, set unitPrice to the printed price, quantity to '1', and amount to the printed unit price.",
+      "For every line, provide a concise rationale (one short sentence) naming the menu section or evidence used for its category and direction.",
+      "Do not invent items that are not on the menu. If an item has multiple sizes/prices, list them as distinct items (for example, 'Coffee (Regular)' and 'Coffee (Large)').",
+      "If a restaurant or venue name is visible on the menu, set merchant to that name. If not visible, set merchant to 'Restaurant'.",
+      "Restaurant menus do not print transaction totals, dates, or purchase times: set printedTotal to '0', set time to null, set mismatch to null, and set date to the current date based on the device locale.",
+      "Return JSON only and preserve uncertainty.",
+    ].join("\n");
+  }
   return [
     `Extract the selected receipt image into exactly schema ${RECEIPT_SCHEMA_VERSION}.`,
     `Instruction version: ${RECEIPT_INSTRUCTION_VERSION}.`,

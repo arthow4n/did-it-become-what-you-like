@@ -27,6 +27,7 @@ export type ReceiptScanEvent =
 type ReceiptScanContext = {
   readonly review: ReceiptReviewDraft | null;
   readonly error: ContractFailure | null;
+  readonly scanMode?: "receipt" | "menu";
 };
 
 function receiptInputFromEvent(event: ReceiptScanEvent): ReceiptScanInput {
@@ -37,7 +38,11 @@ function receiptInputFromEvent(event: ReceiptScanEvent): ReceiptScanInput {
 }
 
 export type ReceiptScanOutputEvent =
-  | { readonly status: "review-ready"; readonly review: ReceiptReviewDraft }
+  | {
+    readonly status: "review-ready";
+    readonly review: ReceiptReviewDraft;
+    readonly scanMode?: "receipt" | "menu";
+  }
   | { readonly status: "cancelled" }
   | { readonly status: "manual-entry" };
 
@@ -147,6 +152,7 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
           target: "validating",
           actions: assign({
             review: ({ event }) => event.output.review,
+            scanMode: ({ event }) => event.output.scanMode,
             error: () => null,
           }),
         },
@@ -166,7 +172,11 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
       on: {
         "receipt.replace-image": {
           target: "selecting",
-          actions: assign({ review: () => null, error: () => null }),
+          actions: assign({
+            review: () => null,
+            error: () => null,
+            scanMode: () => undefined,
+          }),
         },
         "receipt.network.offline": "offline",
         "receipt.network.online": {},
@@ -182,6 +192,7 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
           target: "validating",
           actions: assign({
             review: ({ event }) => event.output.review,
+            scanMode: ({ event }) => event.output.scanMode,
             error: () => null,
           }),
         },

@@ -25,7 +25,9 @@ import {
   type ReceiptCommitResult,
   type ReceiptDraftLine,
   type ReceiptReviewDraft,
+  receiptSelectedTotal,
   removeReceiptLine,
+  setReceiptLineQuantity,
   setReceiptLineSelected,
   toDurableReceiptReview,
   validateReceiptReviewDraft,
@@ -92,29 +94,49 @@ async function extractReview(
   let output: ReceiptScanOutput | undefined;
   let failure: unknown;
   let failed = false;
+  const imageRefs = input.images && input.images.length > 0
+    ? input.images
+    : input.image
+    ? [input.image]
+    : [];
+  if (imageRefs.length === 0) {
+    throw scanStepError(
+      new Error("No receipt image selected."),
+      "invalid-request",
+      "receipt.image.resolve",
+    );
+  }
   try {
-    let image: ImageInput;
-    try {
-      image = await dependencies.resolveImage(input.image, signal);
-    } catch (error) {
-      throw scanStepError(error, "not-found", "receipt.image.resolve");
-    }
+    const preparedImages: Awaited<
+      ReturnType<ImagePreparationPort["prepare"]>
+    >[] = [];
+    for (const ref of imageRefs) {
+      let image: ImageInput;
+      try {
+        image = await dependencies.resolveImage(ref, signal);
+      } catch (error) {
+        throw scanStepError(error, "not-found", "receipt.image.resolve");
+      }
 
-    let prepared: Awaited<ReturnType<ImagePreparationPort["prepare"]>>;
-    try {
-      prepared = await dependencies.imagePreparation.prepare(image, {
-        enabled: input.prepareImage,
-        signal,
-      });
-    } catch (error) {
-      throw scanStepError(error, "invalid-request", "image.prepare");
+      let prepared: Awaited<ReturnType<ImagePreparationPort["prepare"]>>;
+      try {
+        prepared = await dependencies.imagePreparation.prepare(image, {
+          enabled: input.prepareImage,
+          signal,
+        });
+      } catch (error) {
+        throw scanStepError(error, "invalid-request", "image.prepare");
+      }
+      preparedImages.push(prepared);
     }
 
     let draft: Awaited<ReturnType<ReceiptAiPort["extractReceipt"]>>;
     try {
       draft = await dependencies.ai.extractReceipt({
         modelId: input.model,
-        image: prepared,
+        image: preparedImages[0]!,
+        images: preparedImages,
+        documentType: input.scanMode ?? "receipt",
         schemaVersion: RECEIPT_SCHEMA_VERSION_NUMBER,
         instructionVersion: RECEIPT_INSTRUCTION_VERSION,
         categories: input.categoryCatalogue,
@@ -136,20 +158,22 @@ async function extractReview(
     } catch (error) {
       throw scanStepError(error, "invalid-request", "receipt.normalize");
     }
-    output = { review };
+    output = { review, scanMode: input.scanMode ?? "receipt" };
   } catch (error) {
     failed = true;
     failure = error;
   }
 
-  try {
-    await dependencies.releaseImage?.(input.image);
-  } catch (error) {
-    // A best-effort cleanup failure must never hide the actionable failure
-    // from image resolution, preparation, extraction, or normalization.
-    if (!failed) {
-      failed = true;
-      failure = scanStepError(error, "unknown", "receipt.image.release");
+  for (const ref of imageRefs) {
+    try {
+      await dependencies.releaseImage?.(ref);
+    } catch (error) {
+      // A best-effort cleanup failure must never hide the actionable failure
+      // from image resolution, preparation, extraction, or normalization.
+      if (!failed) {
+        failed = true;
+        failure = scanStepError(error, "unknown", "receipt.image.release");
+      }
     }
   }
 
@@ -240,6 +264,11 @@ export type ReceiptReviewActorEvent =
     readonly type: "receipt.review.select-line";
     readonly lineId: StableId;
     readonly selected: boolean;
+  }
+  | {
+    readonly type: "receipt.review.set-line-quantity";
+    readonly lineId: StableId;
+    readonly quantity: string;
   }
   | {
     readonly type: "receipt.review.edit-line";
@@ -342,8 +371,13 @@ export function createReceiptReviewMachine(
     },
     guards: {
       hasMismatch: ({ context }) =>
-        Boolean(context.review?.printedTotalMismatch),
-      noMismatch: ({ context }) => !context.review?.printedTotalMismatch,
+        Boolean(
+          context.review?.printedTotalMismatch &&
+            context.review.parent.printedTotal !== "0",
+        ),
+      noMismatch: ({ context }) =>
+        !context.review?.printedTotalMismatch ||
+        context.review.parent.printedTotal === "0",
       hasSavedOutcome: ({ context }) => context.outcome?.status === "saved",
       hasDiscardedOutcome: ({ context }) =>
         context.outcome?.status === "discarded",
@@ -503,6 +537,19 @@ export function createReceiptReviewMachine(
               error: () => null,
             }),
           },
+          "receipt.review.set-line-quantity": {
+            target: "persisting",
+            reenter: true,
+            actions: assign({
+              review: ({ context, event }) =>
+                setReceiptLineQuantity(
+                  context.review!,
+                  event.lineId,
+                  event.quantity,
+                ),
+              error: () => null,
+            }),
+          },
           "receipt.review.edit-line": {
             target: "persisting",
             reenter: true,
@@ -559,6 +606,18 @@ export function createReceiptReviewMachine(
                   context.review!,
                   event.lineId,
                   event.selected,
+                ),
+              error: () => null,
+            }),
+          },
+          "receipt.review.set-line-quantity": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                setReceiptLineQuantity(
+                  context.review!,
+                  event.lineId,
+                  event.quantity,
                 ),
               error: () => null,
             }),
@@ -648,6 +707,18 @@ export function createReceiptReviewMachine(
               error: () => null,
             }),
           },
+          "receipt.review.set-line-quantity": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                setReceiptLineQuantity(
+                  context.review!,
+                  event.lineId,
+                  event.quantity,
+                ),
+              error: () => null,
+            }),
+          },
           "receipt.review.edit-line": {
             target: "persisting",
             actions: assign({
@@ -696,10 +767,23 @@ export function createReceiptReviewMachine(
         tags: ["saving", "dirty"],
         invoke: {
           src: "commitReceipt",
-          input: ({ context }) => ({
-            review: context.review!,
-            confirmMismatch: true,
-          }),
+          input: ({ context }) => {
+            const review = context.review!;
+            if (review.parent.printedTotal === "0") {
+              const selectedTotal = receiptSelectedTotal(review);
+              return {
+                review: editReceiptParent(review, {
+                  ...review.parent,
+                  printedTotal: selectedTotal,
+                }),
+                confirmMismatch: true,
+              };
+            }
+            return {
+              review,
+              confirmMismatch: true,
+            };
+          },
           onDone: {
             target: "clearing",
             actions: assign({
@@ -781,6 +865,19 @@ export function createReceiptReviewMachine(
                   context.review!,
                   event.lineId,
                   event.selected,
+                ),
+              error: () => null,
+              failureOperation: () => "persist" as const,
+            }),
+          },
+          "receipt.review.set-line-quantity": {
+            target: "persisting",
+            actions: assign({
+              review: ({ context, event }) =>
+                setReceiptLineQuantity(
+                  context.review!,
+                  event.lineId,
+                  event.quantity,
                 ),
               error: () => null,
               failureOperation: () => "persist" as const,

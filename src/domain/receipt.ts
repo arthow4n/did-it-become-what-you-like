@@ -32,6 +32,7 @@ import {
   moneyAdd,
   moneyCompare,
   moneyDivide,
+  moneyMultiply,
   moneySubtract,
 } from "./money/index.ts";
 import type {
@@ -811,9 +812,23 @@ export function setReceiptLineSelected(
   selected: boolean,
 ): ReceiptReviewDraft {
   const target = review.lines.find((line) => line.id === lineId);
-  const lines = review.lines.map((line) =>
-    line.id === lineId ? { ...line, selected } : line
-  );
+  const lines = review.lines.map((line) => {
+    if (line.id !== lineId) return line;
+    if (
+      selected && line.type === "purchase" &&
+      (!line.quantity || line.quantity === "0")
+    ) {
+      const unitPrice = line.unitPrice ?? ensureInflowSign(line.lineTotal);
+      return {
+        ...line,
+        selected: true,
+        quantity: "1",
+        unitPrice,
+        lineTotal: ensureOutflowSign(unitPrice),
+      };
+    }
+    return { ...line, selected };
+  });
   if (!selected && target?.type === "purchase") {
     return withChangedLines(
       review,
@@ -828,6 +843,37 @@ export function setReceiptLineSelected(
     review,
     lines,
   );
+}
+
+export function setReceiptLineQuantity(
+  review: ReceiptReviewDraft,
+  lineId: StableId,
+  quantity: CanonicalDecimal,
+): ReceiptReviewDraft {
+  const line = review.lines.find((candidate) => candidate.id === lineId);
+  if (!line) {
+    invalid("The receipt line to edit was not found.");
+  }
+  if (line.type !== "purchase") {
+    return review;
+  }
+  const isZero = moneyCompare(quantity, "0") <= 0;
+  const currentQuantity = line.quantity ?? "1";
+  const unitPrice = line.unitPrice ?? (
+    moneyCompare(currentQuantity, "0") > 0
+      ? moneyDivide(ensureInflowSign(line.lineTotal), currentQuantity)
+      : ensureInflowSign(line.lineTotal)
+  );
+  const nextQuantity = isZero ? "0" : quantity;
+  const lineTotal = ensureOutflowSign(moneyMultiply(nextQuantity, unitPrice));
+  const selected = !isZero;
+  return editReceiptLine(review, {
+    ...line,
+    quantity: isZero ? undefined : nextQuantity,
+    unitPrice,
+    lineTotal: isZero ? ensureOutflowSign(unitPrice) : lineTotal,
+    selected,
+  });
 }
 
 export function editReceiptLine(

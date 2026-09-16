@@ -57,7 +57,7 @@ export type OpenRouterMessage = {
   readonly role: "user";
   readonly content: readonly [
     OpenRouterTextContent,
-    OpenRouterImageContent,
+    ...OpenRouterImageContent[],
   ];
 };
 

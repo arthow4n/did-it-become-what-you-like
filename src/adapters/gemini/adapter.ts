@@ -8,6 +8,7 @@ import {
   throwIfAborted,
 } from "../ports/index.ts";
 import type {
+  PreparedImage,
   ReceiptAiCapability,
   ReceiptAiModel,
   ReceiptAiModelQuery,
@@ -24,7 +25,7 @@ import {
   RECEIPT_SCHEMA_VERSION_NUMBER,
   ReceiptOutputError,
 } from "../receipt-ai/schema.ts";
-import { withEphemeralImage } from "./image.ts";
+import { withEphemeralImages } from "./image.ts";
 
 export { REQUIRED_RECEIPT_AI_CAPABILITIES } from "../receipt-ai/capabilities.ts";
 
@@ -257,6 +258,14 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+function extractionImages(
+  request: ReceiptExtractionRequest,
+): readonly PreparedImage[] {
+  return request.images && request.images.length > 0
+    ? request.images
+    : [request.image];
+}
+
 function validateRequest(request: ReceiptExtractionRequest): void {
   if (request.schemaVersion !== RECEIPT_SCHEMA_VERSION_NUMBER) {
     throw adapterError("invalid-request", "gemini.extract");
@@ -270,13 +279,18 @@ function validateRequest(request: ReceiptExtractionRequest): void {
   if (!SAFE_LOCALE.test(request.locale)) {
     throw adapterError("invalid-request", "gemini.extract");
   }
-  if (!request.image.metadataSanitized) {
-    throw adapterError("invalid-request", "gemini.extract");
+  const images = extractionImages(request);
+  let totalBytes = 0;
+  for (const image of images) {
+    if (!image.metadataSanitized) {
+      throw adapterError("invalid-request", "gemini.extract");
+    }
+    if (image.bytes.byteLength === 0) {
+      throw adapterError("invalid-request", "gemini.extract");
+    }
+    totalBytes += image.bytes.byteLength;
   }
-  if (request.image.bytes.byteLength === 0) {
-    throw adapterError("invalid-request", "gemini.extract");
-  }
-  if (request.image.bytes.byteLength > 20_000_000) {
+  if (totalBytes > 20_000_000) {
     throw adapterError("quota", "gemini.extract");
   }
   const ids = new Set<string>();
@@ -371,51 +385,55 @@ export class GeminiAdapter implements ReceiptAiPort {
     if (!this.#isOnline()) throw adapterError("offline", "gemini.extract");
     throwIfAborted(options?.signal);
     const prompt = buildReceiptPrompt(request);
+    const images = extractionImages(request);
     try {
-      return await withEphemeralImage(request.image.bytes, async () => {
-        const client = await this.#client(options, "gemini.extract");
-        throwIfAborted(options?.signal);
-        const response = await client.models.generateContent({
-          model: request.modelId,
-          contents: [
-            { text: prompt },
-            {
-              inlineData: {
-                data: bytesToBase64(request.image.bytes),
-                mimeType: request.image.mimeType,
-              },
+      return await withEphemeralImages(
+        images.map((image) => image.bytes),
+        async () => {
+          const client = await this.#client(options, "gemini.extract");
+          throwIfAborted(options?.signal);
+          const response = await client.models.generateContent({
+            model: request.modelId,
+            contents: [
+              { text: prompt },
+              ...images.map((image) => ({
+                inlineData: {
+                  data: bytesToBase64(image.bytes),
+                  mimeType: image.mimeType,
+                },
+              })),
+            ],
+            config: {
+              responseMimeType: "application/json",
+              responseJsonSchema: GEMINI_RECEIPT_JSON_SCHEMA,
+              systemInstruction: prompt,
             },
-          ],
-          config: {
-            responseMimeType: "application/json",
-            responseJsonSchema: GEMINI_RECEIPT_JSON_SCHEMA,
-            systemInstruction: prompt,
-          },
-        }, options);
-        let output;
-        let text: string;
-        try {
-          text = responseText(response);
-        } catch {
-          throw adapterError("invalid-output", "gemini.extract.response");
-        }
-        try {
-          output = parseReceiptOutput(text);
-        } catch (error) {
-          const phase = error instanceof ReceiptOutputError
-            ? error.phase
-            : "schema";
-          throw adapterError(
-            "invalid-output",
-            `gemini.extract.output.${phase}`,
-          );
-        }
-        try {
-          return mapReceiptOutputToDraft(output, request);
-        } catch {
-          throw adapterError("invalid-output", "gemini.extract.mapping");
-        }
-      });
+          }, options);
+          let output;
+          let text: string;
+          try {
+            text = responseText(response);
+          } catch {
+            throw adapterError("invalid-output", "gemini.extract.response");
+          }
+          try {
+            output = parseReceiptOutput(text);
+          } catch (error) {
+            const phase = error instanceof ReceiptOutputError
+              ? error.phase
+              : "schema";
+            throw adapterError(
+              "invalid-output",
+              `gemini.extract.output.${phase}`,
+            );
+          }
+          try {
+            return mapReceiptOutputToDraft(output, request);
+          } catch {
+            throw adapterError("invalid-output", "gemini.extract.mapping");
+          }
+        },
+      );
     } catch (error) {
       throw mapGeminiError(error, "gemini.extract");
     }

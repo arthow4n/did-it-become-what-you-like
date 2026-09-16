@@ -97,6 +97,7 @@ import {
   createDefaultReceiptUiDependencies,
   readDeviceLocalSettings,
   ReceiptImageStore,
+  type ReceiptReviewMode,
   ReceiptReviewScreen,
   ReceiptScanScreen,
   ReceiptSettingsScreen,
@@ -3113,6 +3114,9 @@ export function LocalUiRuntime(
   const [syncSummary, setSyncSummary] = useState("Not connected");
   const [receiptSummary, setReceiptSummary] = useState("Not configured");
   const [receiptReview, setReceiptReview] = useState<ReceiptReviewDraft>();
+  const [receiptReviewMode, setReceiptReviewMode] = useState<ReceiptReviewMode>(
+    "scanned",
+  );
   const imageStore = useMemo(() => new ReceiptImageStore(), []);
   const deviceSettingsRef = useRef(DEFAULT_DEVICE_LOCAL_SETTINGS);
   deviceSettingsRef.current = deviceSettings;
@@ -3640,8 +3644,9 @@ export function LocalUiRuntime(
                 onDiscardDisabledChange={setDirtyDiscardDisabled}
                 discardRequest={discardRequest}
                 onDirtyDiscarded={() => finishDirtyNavigation("/expenses")}
-                onReview={(review) => {
+                onReview={(review, mode) => {
                   setReceiptReview(review);
+                  setReceiptReviewMode(mode ?? "scanned");
                   navigate("/receipt/review");
                 }}
                 onClose={() => {
@@ -3679,6 +3684,7 @@ export function LocalUiRuntime(
               <ReceiptReviewScreen
                 local={repository}
                 state={state}
+                mode={receiptReviewMode}
                 initialReview={receiptReview}
                 onDirtyChange={(dirty) => {
                   setWorkflowDirty(dirty);
@@ -3689,6 +3695,7 @@ export function LocalUiRuntime(
                 onClose={() => {
                   void organization.getState().then(setState);
                   setReceiptReview(undefined);
+                  setReceiptReviewMode("scanned");
                   setWorkflowDirty(false);
                   finishDirtyNavigation("/expenses");
                 }}

@@ -10,6 +10,7 @@ import {
   type ReceiptReviewDraft,
   receiptSelectedTotal,
   removeReceiptLine,
+  setReceiptLineQuantity,
   setReceiptLineSelected,
   validateReceiptReviewDraft,
 } from "../receipt.ts";
@@ -1776,4 +1777,68 @@ Deno.test("receipt-actor domain: receipt extraction preserves time and rejects i
       nextId: () => "line-1",
     })
   );
+});
+
+Deno.test("setReceiptLineQuantity adjusts item quantity, line total, and selection state", () => {
+  const draft: ReceiptReviewDraft = {
+    parent: {
+      projectId: "project-1",
+      date: "2026-09-16",
+      merchant: "Restaurant",
+      currency: "EUR",
+      printedTotal: "0",
+    },
+    lines: [
+      {
+        id: "line-dish-1",
+        type: "purchase",
+        description: "Pasta Carbonara",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        unitPrice: "-14.50",
+        quantity: "1",
+        lineTotal: "-14.50",
+        selected: false,
+        uncertain: false,
+      },
+      {
+        id: "line-dish-2",
+        type: "purchase",
+        description: "Tiramisu",
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        unitPrice: "-6.00",
+        quantity: "0",
+        lineTotal: "0",
+        selected: false,
+        uncertain: false,
+      },
+    ],
+    uncertainty: [],
+    printedTotalMismatch: false,
+  };
+
+  // Selecting an unselected item with quantity "0" automatically sets quantity to "1"
+  const selectedTiramisu = setReceiptLineSelected(draft, "line-dish-2", true);
+  const tiramisuLine = selectedTiramisu.lines.find((l) =>
+    l.id === "line-dish-2"
+  );
+  assert(tiramisuLine?.type === "purchase");
+  assert(tiramisuLine.selected);
+  assertEquals(tiramisuLine.quantity, "1");
+  assertEquals(tiramisuLine.lineTotal, "-6");
+
+  // Setting quantity to 3 multiplies unitPrice by 3
+  const tripledPasta = setReceiptLineQuantity(draft, "line-dish-1", "3");
+  const pastaLine = tripledPasta.lines.find((l) => l.id === "line-dish-1");
+  assert(pastaLine?.type === "purchase");
+  assert(pastaLine.selected, "Setting positive quantity selects the line");
+  assertEquals(pastaLine.quantity, "3");
+  assertEquals(pastaLine.lineTotal, "-43.5");
+
+  // Setting quantity to "0" deselects the line and preserves single-unit price
+  const zeroedPasta = setReceiptLineQuantity(tripledPasta, "line-dish-1", "0");
+  const zeroPastaLine = zeroedPasta.lines.find((l) => l.id === "line-dish-1");
+  assert(zeroPastaLine?.type === "purchase");
+  assert(!zeroPastaLine.selected, "Zero quantity unselects the line");
+  assertEquals(zeroPastaLine.quantity, undefined);
+  assertEquals(zeroPastaLine.lineTotal, "-14.5");
 });

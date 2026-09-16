@@ -1,5 +1,5 @@
 import { useActor } from "@xstate/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createGeminiAdapter,
   createGoogleGenAiClient,
@@ -77,6 +77,7 @@ import {
   ReceiptQuickSetup,
   ReceiptReconciliation,
   ReceiptSourcePicker,
+  SegmentedControl,
   SelectField,
   Stack,
   StatusPanel,
@@ -111,7 +112,7 @@ export type ReceiptOpenRouterPort = ReceiptProviderPort & {
 
 export type ReceiptProvider = "gemini" | "openrouter";
 
-export type ReceiptReviewMode = "scanned" | "manual";
+export type ReceiptReviewMode = "scanned" | "manual" | "menu";
 
 export const RECEIPT_PROVIDER_NAMES: Record<ReceiptProvider, string> = {
   gemini: "Gemini",
@@ -508,7 +509,7 @@ export function ReceiptScanScreen({
   onDiscardDisabledChange?: (disabled: boolean) => void;
   discardRequest?: number;
   onDirtyDiscarded?: () => void;
-  onReview: (review: ReceiptReviewDraft) => void;
+  onReview: (review: ReceiptReviewDraft, mode?: ReceiptReviewMode) => void;
   onClose: () => void;
   onOpenSettings: () => void;
 }) {
@@ -524,9 +525,10 @@ export function ReceiptScanScreen({
     [scanDependencies],
   );
   const [snapshot, send] = useActor(machine, { input: {} });
-  const [selectedImage, setSelectedImage] = useState<
-    (ReceiptImageRef & { readonly previewUrl: string }) | null
-  >(null);
+  const [scanMode, setScanMode] = useState<"receipt" | "menu">("receipt");
+  const [selectedImages, setSelectedImages] = useState<
+    ReadonlyArray<ReceiptImageRef & { readonly previewUrl: string }>
+  >([]);
   const [disclosureAccepted, setDisclosureAccepted] = useState(false);
   const [quickSetupOpen, setQuickSetupOpen] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -542,7 +544,9 @@ export function ReceiptScanScreen({
   const sourceInputRef = useRef<HTMLInputElement>(null);
   const openSent = useRef(false);
   const reviewSent = useRef(false);
-  const selectedImageRef = useRef(selectedImage);
+  const selectedImagesRef = useRef(selectedImages);
+  selectedImagesRef.current = selectedImages;
+  const selectedImage = selectedImages[0] ?? null;
   const pendingScanRef = useRef(false);
   const quickSetupReturnFocusRef = useRef<HTMLElement | null>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
@@ -566,23 +570,42 @@ export function ReceiptScanScreen({
     setPendingScan(value);
   };
 
-  const clearSelectedImage = () => {
-    if (selectedImageRef.current) imageStore.remove(selectedImageRef.current);
-    selectedImageRef.current = null;
-    setSelectedImage(null);
+  const clearSelectedImages = useCallback(() => {
+    if (selectedImagesRef.current.length > 0) {
+      for (const image of selectedImagesRef.current) {
+        imageStore.remove(image);
+      }
+      selectedImagesRef.current = [];
+      setSelectedImages([]);
+    }
     if (sourceInputRef.current) sourceInputRef.current.value = "";
-  };
+  }, [imageStore]);
+  const clearSelectedImage = clearSelectedImages;
 
-  useEffect(() => {
-    selectedImageRef.current = selectedImage;
-  }, [selectedImage]);
+  const removeImage = (ref: ReceiptImageRef) => {
+    imageStore.remove(ref);
+    const nextImages = selectedImagesRef.current.filter(
+      (candidate) => candidate.ephemeralId !== ref.ephemeralId,
+    );
+    selectedImagesRef.current = nextImages;
+    setSelectedImages(nextImages);
+    if (nextImages.length === 0) {
+      if (scanBusy || snapshot.matches("failed")) {
+        send({ type: "receipt.replace-image" });
+      }
+      setPendingScanState(false);
+      setModelError(undefined);
+    }
+  };
 
   useEffect(() => () => {
     // Stop the invoked scan before its in-memory image reference is removed.
     // This also covers route changes and component teardown that bypass the
     // visible close button.
     send({ type: "receipt.cancel" });
-    if (selectedImageRef.current) imageStore.remove(selectedImageRef.current);
+    for (const image of selectedImagesRef.current) {
+      imageStore.remove(image);
+    }
     imageStore.clear();
   }, [imageStore, send]);
 
@@ -693,42 +716,61 @@ export function ReceiptScanScreen({
       !reviewSent.current
     ) {
       reviewSent.current = true;
-      clearSelectedImage();
-      onReview(snapshot.context.review);
+      clearSelectedImages();
+      onReview(
+        snapshot.context.review,
+        scanMode === "menu" ? "menu" : "scanned",
+      );
     }
-  }, [imageStore, onReview, snapshot]);
+  }, [clearSelectedImages, onReview, scanMode, snapshot]);
 
   useEffect(() => {
     if (snapshot.matches("cancelled") || snapshot.matches("manualEntry")) {
-      clearSelectedImage();
+      clearSelectedImages();
       onClose();
     }
-  }, [onClose, snapshot]);
+  }, [clearSelectedImages, onClose, snapshot]);
 
-  const chooseFile = (file: File | undefined) => {
-    if (!file) return;
-    const mediaType = fileMediaType(file);
-    if (
-      !([
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "application/pdf",
-      ] as string[])
-        .includes(mediaType)
-    ) {
-      setModelError("Choose a JPEG, PNG, WebP, or PDF receipt file.");
-      return;
+  const chooseFiles = (files: readonly File[]) => {
+    if (files.length === 0) return;
+    const validFiles: File[] = [];
+    for (const file of files) {
+      const mediaType = fileMediaType(file);
+      if (
+        !([
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "application/pdf",
+        ] as string[]).includes(mediaType)
+      ) {
+        setModelError(
+          scanMode === "menu"
+            ? "Choose JPEG, PNG, WebP, or PDF menu files."
+            : "Choose a JPEG, PNG, WebP, or PDF receipt file.",
+        );
+        continue;
+      }
+      validFiles.push(file);
     }
-    // The picker remains available while a scan is running. Cancel the
-    // current invocation before removing its ephemeral source so a resolver
-    // cannot report `receipt.image.resolve not-found` for the old image.
+    if (validFiles.length === 0) return;
+
     const needsSelectionReset = scanBusy || snapshot.matches("failed");
     if (needsSelectionReset) send({ type: "receipt.replace-image" });
-    if (selectedImage) imageStore.remove(selectedImage);
-    const next = imageStore.add(file);
-    setSelectedImage(next);
-    selectedImageRef.current = next;
+
+    if (scanMode === "receipt") {
+      for (const image of selectedImagesRef.current) {
+        imageStore.remove(image);
+      }
+      const next = imageStore.add(validFiles[0]!);
+      selectedImagesRef.current = [next];
+      setSelectedImages([next]);
+    } else {
+      const added = validFiles.map((file) => imageStore.add(file));
+      const nextList = [...selectedImagesRef.current, ...added];
+      selectedImagesRef.current = nextList;
+      setSelectedImages(nextList);
+    }
     reviewSent.current = false;
     if (needsSelectionReset || snapshot.matches("selecting")) {
       send({ type: "receipt.image-selected" });
@@ -814,9 +856,6 @@ export function ReceiptScanScreen({
   const selectedOption = configuredModel
     ? availableModelOptions.find((option) => option.id === configuredModel)
     : undefined;
-  const selectedModel = selectedOption && selectedOption.disabled !== true
-    ? selectedOption.id
-    : undefined;
   const project =
     state.projects.find((candidate) =>
       candidate.id === state.selectedProjectId
@@ -830,9 +869,11 @@ export function ReceiptScanScreen({
       ...(category.description ? { description: category.description } : {}),
     }));
   const makeScanInput = (model: string) =>
-    selectedImage && project
+    selectedImages.length > 0 && project
       ? {
-        image: selectedImage,
+        image: selectedImages[0]!,
+        images: selectedImages,
+        scanMode,
         projectId: project.id,
         currency: project.defaultCurrency,
         locale: globalThis.navigator?.language ?? "en-US",
@@ -845,7 +886,6 @@ export function ReceiptScanScreen({
         },
       }
       : null;
-  const scanInput = selectedModel ? makeScanInput(selectedModel) : null;
   const selectModel = (modelId: string) => {
     const option = availableModelOptions.find((candidate) =>
       candidate.id === modelId
@@ -866,7 +906,7 @@ export function ReceiptScanScreen({
     }
   };
   const scan = () => {
-    if (!selectedImage) return;
+    if (selectedImages.length === 0) return;
     // A discard can reset the actor before React has finished tearing down the
     // screen. Keep the visible selected image and actor state in sync instead
     // of silently sending a scan event that `idle`/`selecting` cannot handle.
@@ -899,15 +939,20 @@ export function ReceiptScanScreen({
       );
       return;
     }
-    if (!scanInput) {
-      setModelError(`The selected ${activeProviderName} model is unavailable.`);
+    const input = makeScanInput(configuredModel);
+    if (!input) {
+      setModelError(
+        scanMode === "menu"
+          ? "The menu images are missing."
+          : "The receipt image is missing.",
+      );
       return;
     }
     setPendingScanState(false);
     send(
       snapshot.matches("failed")
-        ? { type: "receipt.retry", input: scanInput }
-        : { type: "receipt.scan", input: scanInput },
+        ? { type: "receipt.retry", input }
+        : { type: "receipt.scan", input },
     );
   };
 
@@ -931,7 +976,7 @@ export function ReceiptScanScreen({
     setModelError(undefined);
     setOptionsOpen(true);
   };
-  const dirty = selectedImage !== null || scanBusy || quickSetupOpen ||
+  const dirty = selectedImages.length > 0 || scanBusy || quickSetupOpen ||
     pendingScan;
   useDirtyBeforeUnload(dirty);
 
@@ -1029,17 +1074,22 @@ export function ReceiptScanScreen({
   return (
     <ContentContainer size="form">
       <FileField
-        label="Receipt image file"
+        label={scanMode === "menu" ? "Menu image files" : "Receipt image file"}
         accept="image/jpeg,image/png,image/webp,application/pdf"
         capture={captureMode ? "environment" : undefined}
-        multiple={false}
+        multiple={scanMode === "menu"}
         className="receipt-ui-file-field"
         inputRef={sourceInputRef}
-        onChange={(event) => void chooseFile(event.currentTarget.files?.[0])}
+        onChange={(event) => {
+          const files = event.currentTarget.files;
+          if (files && files.length > 0) {
+            chooseFiles(Array.from(files));
+          }
+        }}
       />
       <Stack gap={5}>
         <PageHeader
-          title="Scan receipt"
+          title={scanMode === "menu" ? "Scan restaurant menu" : "Scan receipt"}
           headingLevel={1}
           leading={
             <IconButton
@@ -1050,8 +1100,71 @@ export function ReceiptScanScreen({
             />
           }
         />
+        <SegmentedControl
+          label="Scan document type"
+          value={scanMode}
+          onChange={(val) => {
+            const nextMode = val as "receipt" | "menu";
+            setScanMode(nextMode);
+            if (scanBusy || snapshot.matches("failed")) {
+              send({ type: "receipt.replace-image" });
+            }
+            clearSelectedImages();
+            setPendingScanState(false);
+            setModelError(undefined);
+          }}
+          options={[
+            { id: "receipt", label: "Receipt" },
+            { id: "menu", label: "Restaurant Menu" },
+          ]}
+        />
         <ReceiptSourcePicker
-          preview={selectedImage
+          previews={scanMode === "menu" && selectedImages.length > 0
+            ? selectedImages.map((image, index) => (
+              <Card key={image.ephemeralId}>
+                <Stack gap={2}>
+                  <Inline justify="space-between">
+                    <Text size="label">Page {index + 1}</Text>
+                    <IconButton
+                      icon={<Trash2 size={16} />}
+                      aria-label={`Remove page ${index + 1}`}
+                      variant="quiet"
+                      onPress={() =>
+                        removeImage(image)}
+                    />
+                  </Inline>
+                  {image.mediaType === "application/pdf"
+                    ? (
+                      <div
+                        className="receipt-ui-preview receipt-ui-preview--pdf"
+                        role="region"
+                        aria-label={`Page ${index + 1} preview`}
+                      >
+                        <object
+                          data={image.previewUrl}
+                          type="application/pdf"
+                          title={`Page ${index + 1} preview`}
+                          className="receipt-ui-preview-pdf-object"
+                        >
+                          <div className="receipt-ui-preview-pdf-fallback">
+                            <FileText size={48} aria-hidden="true" />
+                            <Text>PDF menu document</Text>
+                          </div>
+                        </object>
+                      </div>
+                    )
+                    : (
+                      <img
+                        src={image.previewUrl}
+                        alt={`Page ${index + 1} preview`}
+                        className="receipt-ui-preview"
+                      />
+                    )}
+                </Stack>
+              </Card>
+            ))
+            : undefined}
+          preview={scanMode === "receipt" && selectedImage
             ? (
               selectedImage.mediaType === "application/pdf"
                 ? (
@@ -1082,24 +1195,38 @@ export function ReceiptScanScreen({
                 )
             )
             : undefined}
+          emptyTitle={scanMode === "menu"
+            ? "No menu pages selected"
+            : "No receipt selected"}
+          emptyDescription={scanMode === "menu"
+            ? "Take photos or choose images of each page of the menu before extracting items."
+            : "Choose an image or PDF, or take a photo to preview it before sending."}
+          takePhotoLabel={scanMode === "menu" && selectedImages.length > 0
+            ? "Add photo"
+            : "Take photo"}
+          chooseImageLabel={scanMode === "menu" && selectedImages.length > 0
+            ? "Add image"
+            : "Choose image"}
           onTakePhoto={() => startFilePicker(true)}
           onChooseImage={() => startFilePicker(false)}
-          onRemove={() => {
-            if (scanBusy || snapshot.matches("failed")) {
-              send({ type: "receipt.replace-image" });
+          onRemove={selectedImages.length > 0
+            ? () => {
+              if (scanBusy || snapshot.matches("failed")) {
+                send({ type: "receipt.replace-image" });
+              }
+              clearSelectedImages();
+              setPendingScanState(false);
+              setModelError(undefined);
             }
-            clearSelectedImage();
-            setPendingScanState(false);
-            setModelError(undefined);
-          }}
+            : undefined}
         />
-        {selectedImage
+        {selectedImages.length > 0
           ? (
             <InlineNotice
               tone="info"
-              title={`Receipt is sent to ${
-                receiptDisclosureName(activeProvider)
-              }.`}
+              title={`${
+                scanMode === "menu" ? "Menu is" : "Receipt is"
+              } sent to ${receiptDisclosureName(activeProvider)}.`}
             >
               {receiptDisclosureDetails(activeProvider)}{" "}
               Embedded metadata is always removed before sending. The image
@@ -1192,7 +1319,7 @@ export function ReceiptScanScreen({
           ? (
             <ReceiptScanFailureNotice
               failure={actorFailure}
-              canRetry={Boolean(selectedImage)}
+              canRetry={selectedImages.length > 0}
               onRetry={scan}
               onChooseAnotherImage={() => startFilePicker(false)}
               onUseManualEntry={() => send({ type: "receipt.use-manual" })}
@@ -1202,7 +1329,9 @@ export function ReceiptScanScreen({
         {scanBusy
           ? (
             <StatusPanel
-              title="Scanning receipt"
+              title={scanMode === "menu"
+                ? "Extracting menu items"
+                : "Scanning receipt"}
               detail="This can take a moment."
               action={
                 <Button
@@ -1218,10 +1347,12 @@ export function ReceiptScanScreen({
         <StickyActionBar>
           <Button
             pending={scanBusy}
-            isDisabled={scanBusy || !selectedImage || offline}
+            isDisabled={scanBusy || selectedImages.length === 0 || offline}
             onPress={scan}
           >
-            Scan with AI
+            {scanMode === "menu"
+              ? (scanBusy ? "Extracting menu items…" : "Extract menu items")
+              : (scanBusy ? "Scanning receipt…" : "Scan with AI")}
           </Button>
         </StickyActionBar>
       </Stack>
@@ -1510,7 +1641,12 @@ export function ReceiptReviewScreen({
   onClose: () => void;
 }) {
   const isManual = mode === "manual";
-  const pageTitle = isManual ? "Enter receipt manually" : "Review receipt";
+  const isMenu = mode === "menu";
+  const pageTitle = isManual
+    ? "Enter receipt manually"
+    : isMenu
+    ? "Review menu items"
+    : "Review receipt";
   const machine = useMemo(
     () => createReceiptReviewMachine({ local, organization: local }),
     [local],
@@ -1719,6 +1855,8 @@ export function ReceiptReviewScreen({
           title={pageTitle}
           description={isManual
             ? "Add the items from a restaurant or café purchase, then check the total paid."
+            : isMenu
+            ? "Select the items and quantities you ordered from the menu."
             : undefined}
           headingLevel={1}
           leading={dirty
@@ -1766,18 +1904,38 @@ export function ReceiptReviewScreen({
         />
         <ReceiptMetadata
           metadata={review.parent}
-          totalLabel={isManual ? "Total paid" : undefined}
+          totalLabel={isManual
+            ? "Total paid"
+            : isMenu
+            ? "Bill total"
+            : undefined}
           onEdit={openMetadata}
         />
         <ReceiptReconciliation
-          printed={review.parent.printedTotal}
+          printed={isMenu && review.parent.printedTotal === "0"
+            ? selectedTotal
+            : review.parent.printedTotal}
           selected={selectedTotal}
-          difference={difference}
+          difference={isMenu && review.parent.printedTotal === "0"
+            ? "0"
+            : difference}
           currency={review.parent.currency}
-          printedLabel={isManual ? "Total paid" : undefined}
-          selectedLabel={isManual ? "Items total" : undefined}
+          printedLabel={isManual
+            ? "Total paid"
+            : isMenu
+            ? (review.parent.printedTotal === "0"
+              ? "Bill total (optional)"
+              : "Bill total")
+            : undefined}
+          selectedLabel={isManual
+            ? "Items total"
+            : isMenu
+            ? "Selected items"
+            : undefined}
           mismatchMessage={isManual
             ? "The item total does not yet match the total paid."
+            : isMenu
+            ? "The selected items do not match the bill total."
             : undefined}
         />
         {review.uncertainty.length && !isManual
@@ -1797,10 +1955,14 @@ export function ReceiptReviewScreen({
               tone="warning"
               title={isManual
                 ? "Confirm the total mismatch"
+                : isMenu
+                ? "Confirm the bill-total mismatch"
                 : "Confirm the printed-total mismatch"}
             >
               {isManual
                 ? "The item total differs from the total paid. You can go back and edit the items or total, or explicitly confirm this mismatch."
+                : isMenu
+                ? "The selected items differ from the bill total. You can go back and edit them, or explicitly confirm this mismatch."
                 : "The selected entries differ from the printed total. You can go back and edit them, or explicitly confirm this mismatch."}
               <Button
                 onPress={() =>
@@ -1884,13 +2046,21 @@ export function ReceiptReviewScreen({
               key={line.id}
               line={lineViewModel(line, categories)}
               currency={review.parent.currency}
-              mode={isManual ? "manual" : "review"}
+              mode={isManual ? "manual" : isMenu ? "menu" : "review"}
               onSelectedChange={isManual ? undefined : (selected) =>
                 sendReview({
                   type: "receipt.review.select-line",
                   lineId: line.id,
                   selected,
                 })}
+              onQuantityChange={line.type === "purchase"
+                ? (quantity) =>
+                  sendReview({
+                    type: "receipt.review.set-line-quantity",
+                    lineId: line.id,
+                    quantity,
+                  })
+                : undefined}
               categoryControl={
                 <QuickCategoryDialog
                   line={line}
@@ -1950,6 +2120,9 @@ export function ReceiptReviewScreen({
             {isManual
               ? "Save receipt with " + selectedCount + " " +
                 (selectedCount === 1 ? "item" : "items")
+              : isMenu
+              ? "Save " + selectedCount + " selected " +
+                (selectedCount === 1 ? "item" : "items")
               : "Save " + selectedCount + " selected " +
                 (selectedCount === 1 ? "entry" : "entries")}
           </Button>
@@ -1963,6 +2136,7 @@ export function ReceiptReviewScreen({
             error={metadataError}
             onClose={closeMetadata}
             manual={isManual}
+            menu={isMenu}
           />
         )
         : null}
@@ -1976,19 +2150,27 @@ export function ReceiptMetadataEditor({
   onClose,
   error,
   manual = false,
+  menu = false,
 }: {
   parent: ReceiptReviewDraft["parent"];
   onSave: (parent: ReceiptReviewDraft["parent"]) => void;
   onClose: () => void;
   error?: string;
   manual?: boolean;
+  menu?: boolean;
 }) {
   const [merchant, setMerchant] = useState(parent.merchant ?? "");
   const [date, setDate] = useState(parent.date);
   const [time, setTime] = useState(parent.time ?? "");
   const [currency, setCurrency] = useState(parent.currency);
   const [printedTotal, setPrintedTotal] = useState(
-    manual ? unsignedDecimal(parent.printedTotal) : parent.printedTotal,
+    menu
+      ? (parent.printedTotal === "0"
+        ? ""
+        : unsignedDecimal(parent.printedTotal))
+      : manual
+      ? unsignedDecimal(parent.printedTotal)
+      : parent.printedTotal,
   );
   return (
     <AdaptiveDialog
@@ -2003,7 +2185,11 @@ export function ReceiptMetadataEditor({
         </Button>
       }
       isOpen
-      title="Edit receipt details"
+      title={manual
+        ? "Edit receipt details"
+        : menu
+        ? "Edit restaurant details"
+        : "Edit receipt details"}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
@@ -2029,11 +2215,17 @@ export function ReceiptMetadataEditor({
         </div>
         <TextField label="Currency" value={currency} onChange={setCurrency} />
         <TextField
-          label={manual ? "Total paid" : "Printed receipt total"}
+          label={manual
+            ? "Total paid"
+            : menu
+            ? "Bill total (optional)"
+            : "Printed receipt total"}
           value={printedTotal}
           onChange={setPrintedTotal}
           description={manual
             ? "Enter the positive total paid for this visit; purchases are stored as outflows."
+            : menu
+            ? "Optional. Leave blank to automatically use the sum of your selected items."
             : undefined}
         />
         {error
@@ -2057,6 +2249,8 @@ export function ReceiptMetadataEditor({
                 currency,
                 printedTotal: manual
                   ? outflowDecimal(printedTotal)
+                  : menu
+                  ? (!printedTotal.trim() ? "0" : outflowDecimal(printedTotal))
                   : printedTotal,
               })}
           >

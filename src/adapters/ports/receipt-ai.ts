@@ -6,6 +6,7 @@ import type {
 } from "../../domain/index.ts";
 import type { OperationOptions } from "./common.ts";
 import type { PreparedImage } from "./image.ts";
+export type { PreparedImage };
 
 export type ReceiptAiCapability =
   | "image-input"
@@ -28,9 +29,13 @@ export type ReceiptAiModelQuery = {
   readonly requiredCapabilities: readonly ReceiptAiCapability[];
 };
 
+export type ReceiptDocumentType = "receipt" | "menu";
+
 export type ReceiptExtractionRequest = {
   readonly modelId: string;
   readonly image: PreparedImage;
+  readonly images?: readonly PreparedImage[];
+  readonly documentType?: ReceiptDocumentType;
   readonly schemaVersion: number;
   readonly instructionVersion: string;
   readonly categories: readonly {

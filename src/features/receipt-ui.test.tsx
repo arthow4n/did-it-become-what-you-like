@@ -2202,3 +2202,230 @@ Deno.test("receipt scan attaches category descriptions in AI extraction request"
     });
   });
 });
+
+Deno.test(
+  "receipt-ui menu scan mode extracts unselected items, allows quantity adjustment, and commits cleanly",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(async () => {
+        const imageStore = new ReceiptImageStore();
+        const model = {
+          id: "fake-gemini-model",
+          displayName: "Fake Gemini Model",
+          lifecycle: "active" as const,
+          capabilities: {
+            "image-input": true,
+            "content-generation": true,
+            "structured-output": true,
+          },
+        };
+        let extractedDocumentType: string | undefined;
+        let extractedImageCount = 0;
+        const menuDraft: ReceiptExtractionDraft = {
+          merchant: "Trattoria Bella",
+          currency: "EUR",
+          date: "2026-09-16",
+          printedTotal: "0",
+          lines: [
+            {
+              description: "Margherita Pizza",
+              amount: "12",
+              categoryId: "category-uncategorized",
+              kind: "purchase",
+              direction: "outflow",
+              selected: false,
+              quantity: "1",
+              unitPrice: "12",
+              rationale: "Main dishes section.",
+            },
+            {
+              description: "House Red Wine",
+              amount: "6",
+              categoryId: "category-uncategorized",
+              kind: "purchase",
+              direction: "outflow",
+              selected: false,
+              quantity: "1",
+              unitPrice: "6",
+              rationale: "Beverages section.",
+            },
+          ],
+          uncertainty: [],
+          mismatches: [],
+        };
+        const ai: ReceiptAiPort = {
+          listModels: () => Promise.resolve([model]),
+          extractReceipt: (request) => {
+            extractedDocumentType = request.documentType;
+            extractedImageCount = (request.images ?? [request.image]).length;
+            return Promise.resolve(menuDraft);
+          },
+        };
+        const gemini = {
+          ...ai,
+          getApiKey: () => Promise.resolve(SecretValue.from("AIza.test")),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+        };
+        const dependencies: ReceiptUiDependencies = {
+          ai,
+          gemini,
+          openrouter: {
+            ...ai,
+            getApiKey: () =>
+              Promise.resolve(SecretValue.from("openrouter.test")),
+            setApiKey: () => Promise.resolve(),
+            removeApiKey: () => Promise.resolve(),
+            listEndpoints: () => Promise.resolve([]),
+          },
+          imagePreparation: createFakeImagePreparationPort(),
+          resolveImage: (ref) => imageStore.resolve(ref),
+          releaseImage: (ref) => imageStore.releaseForRetry(ref),
+        };
+        const local = createFakeLocalPort();
+        await local.transaction("readwrite", async (transaction) => {
+          await transaction.put(
+            "records",
+            defaultTestProject.id,
+            defaultTestProject as never,
+          );
+          await transaction.put(
+            "records",
+            defaultTestCategory.id,
+            defaultTestCategory as never,
+          );
+        });
+        const state = defaultTestState;
+        const settings = DeviceLocalSettingsSchema.parse({
+          imagePreparationEnabled: false,
+          selectedGeminiModel: model.id,
+        });
+
+        let reviewResult: ReceiptReviewDraft | undefined;
+        let reviewMode: string | undefined;
+
+        const rendered = render(
+          createElement(ReceiptScanScreen, {
+            dependencies,
+            imageStore,
+            state,
+            settings,
+            offline: false,
+            onSettingsChange: () => undefined,
+            onReview: (draft, mode) => {
+              reviewResult = draft;
+              reviewMode = mode;
+            },
+            onClose: () => undefined,
+            onOpenSettings: () => undefined,
+          }),
+        );
+
+        const view = within(document.body);
+        const continueBtn = view.queryByRole("button", {
+          name: "Continue to scan",
+        });
+        if (continueBtn) {
+          fireEvent.click(continueBtn);
+        }
+
+        // Switch to Restaurant Menu mode
+        await waitFor(() => assert(view.getByText("Restaurant Menu")));
+        fireEvent.click(view.getByText("Restaurant Menu"));
+
+        // Add 2 menu image files
+        await waitFor(() => {
+          assert(view.getByLabelText("Menu image files"));
+        });
+        const file1 = new Blob([new Uint8Array([1, 2])], {
+          type: "image/png",
+        }) as unknown as File;
+        const file2 = new Blob([new Uint8Array([3, 4])], {
+          type: "image/png",
+        }) as unknown as File;
+        fireEvent.change(view.getByLabelText("Menu image files"), {
+          target: { files: [file1, file2] },
+        });
+
+        await waitFor(() => {
+          const extractBtn = view.getByRole("button", {
+            name: "Extract menu items",
+          });
+          assert(!extractBtn.hasAttribute("disabled"));
+        });
+
+        fireEvent.click(
+          view.getByRole("button", { name: "Extract menu items" }),
+        );
+
+        await waitFor(() => assert(reviewResult !== undefined));
+        assertEquals(extractedDocumentType, "menu");
+        assertEquals(extractedImageCount, 2);
+        assertEquals(reviewMode, "menu");
+        assertEquals(reviewResult?.parent.merchant, "Trattoria Bella");
+        assertEquals(reviewResult?.lines.length, 2);
+        assert(!reviewResult?.lines[0].selected, "Menu items start unselected");
+        assert(!reviewResult?.lines[1].selected, "Menu items start unselected");
+        rendered.unmount();
+
+        // Now test ReceiptReviewScreen with mode="menu"
+        let reviewClosed = false;
+        const reviewRendered = render(
+          createElement(ReceiptReviewScreen, {
+            local,
+            state,
+            mode: "menu",
+            initialReview: reviewResult,
+            onClose: () => {
+              reviewClosed = true;
+            },
+          }),
+        );
+        const reviewView = within(document.body);
+
+        await waitFor(() => {
+          assert(
+            reviewView.getByRole("heading", { name: "Review menu items" }),
+          );
+          assert(reviewView.getByText("Trattoria Bella"));
+          assert(reviewView.getByText("Margherita Pizza"));
+          assert(reviewView.getByText("House Red Wine"));
+        });
+
+        // Increase quantity of Margherita Pizza: from 0 to 1
+        const increaseButtons = reviewView.getAllByRole("button", {
+          name: /Increase quantity of/,
+        });
+        fireEvent.click(increaseButtons[0]);
+
+        // Save button should now say "Save 1 selected item"
+        await waitFor(() => {
+          assert(
+            reviewView.getByRole("button", { name: "Save 1 selected item" }),
+          );
+        });
+
+        // Click save - should commit without mismatch error
+        fireEvent.click(
+          reviewView.getByRole("button", { name: "Save 1 selected item" }),
+        );
+
+        await waitFor(() => assert(reviewClosed));
+
+        // Verify transaction committed in database
+        const receipts = await local.query<JsonValue>("records", {
+          index: "type",
+          equals: "receipt",
+        });
+        assertEquals(receipts.length, 1);
+        assertEquals(
+          (receipts[0]?.value as Record<string, JsonValue>).printedTotal,
+          "-12",
+        );
+
+        imageStore.clear();
+        reviewRendered.unmount();
+      });
+    });
+  },
+);

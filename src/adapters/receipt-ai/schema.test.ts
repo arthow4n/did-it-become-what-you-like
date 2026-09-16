@@ -191,3 +191,14 @@ Deno.test("shared schema and parser normalize time and map it to draft", () => {
     assertEquals(normalized.time, expected);
   }
 });
+
+Deno.test("buildReceiptPrompt tailors instructions when documentType is menu", () => {
+  const prompt = buildReceiptPrompt({
+    ...promptRequest,
+    documentType: "menu",
+  });
+  assert(prompt.includes("Document type: restaurant menu."));
+  assert(prompt.includes("selected set to false"));
+  assert(prompt.includes("set printedTotal to '0'"));
+  assert(prompt.includes("set unitPrice to the printed price"));
+});

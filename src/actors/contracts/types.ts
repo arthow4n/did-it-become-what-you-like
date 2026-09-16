@@ -177,7 +177,9 @@ export type ReceiptDisclosure = {
 };
 
 export type ReceiptScanInput = {
-  readonly image: ReceiptImageRef;
+  readonly image?: ReceiptImageRef;
+  readonly images?: readonly ReceiptImageRef[];
+  readonly scanMode?: "receipt" | "menu";
   readonly projectId: StableId;
   readonly currency: CurrencyCode;
   readonly locale: string;
@@ -193,6 +195,7 @@ export type ReceiptScanInput = {
 
 export type ReceiptScanOutput = {
   readonly review: ReceiptReviewDraft;
+  readonly scanMode?: "receipt" | "menu";
 };
 
 export type ReceiptCommitInput = {

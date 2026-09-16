@@ -525,3 +525,17 @@ export async function withEphemeralImage<T>(
     release?.();
   }
 }
+
+/** Ensure temporary bytes for multiple images are released on every path. */
+export async function withEphemeralImages<T>(
+  images: readonly Uint8Array[],
+  operation: () => Promise<T>,
+  release?: () => void,
+): Promise<T> {
+  try {
+    return await operation();
+  } finally {
+    for (const bytes of images) bytes.fill(0);
+    release?.();
+  }
+}

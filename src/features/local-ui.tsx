@@ -2019,6 +2019,7 @@ export function CategoryManager({
 
   useEffect(() => {
     if (
+      !isSubmittingRef.current &&
       (snapshot.matches("ready") || snapshot.matches("failed")) &&
       snapshot.context.state !== state
     ) {
@@ -2164,7 +2165,15 @@ export function CategoryManager({
                 icon={<ArrowLeft />}
                 aria-label="Back"
                 variant="quiet"
-                onPress={() => onNavigate("/categories")}
+                onPress={() => {
+                  if (dirty) {
+                    onNavigate("/categories");
+                  } else {
+                    send({ type: "category.cancel" });
+                    setEditor(null);
+                    onComplete?.();
+                  }
+                }}
               />
             }
           />
@@ -3802,10 +3811,9 @@ export function LocalUiRuntime(
                 discardRequest={discardRequest}
                 onDirtyDiscarded={() => finishDirtyNavigation("/categories")}
                 onComplete={() => {
-                  if (categoryEditorOpen) {
-                    setCategoryEditorOpen(false);
-                    navigate("/organize");
-                  }
+                  setCategoryEditorOpen(false);
+                  setWorkflowDirty(false);
+                  setDirtyNavigationWorkflow(false);
                 }}
               />
             )

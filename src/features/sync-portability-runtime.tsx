@@ -127,6 +127,61 @@ export type SyncPortabilityScreen =
   | "privacy"
   | null;
 
+export const AUTOMATIC_SYNC_COOLDOWN_MS = 60 * 60 * 1_000;
+
+type AutomaticSyncState = {
+  readonly lastSuccessfulSyncAt: string | null;
+  readonly pendingLocalChanges: boolean;
+};
+
+export const AUTOMATIC_SYNC_STATE_KEY = "did_it_automatic_sync_state";
+const EMPTY_AUTOMATIC_SYNC_STATE: AutomaticSyncState = {
+  lastSuccessfulSyncAt: null,
+  pendingLocalChanges: false,
+};
+
+export function automaticSyncDelay(
+  lastSuccessfulSyncAt: string | null,
+  now = Date.now(),
+): number {
+  if (lastSuccessfulSyncAt === null) return 0;
+  const lastSuccessful = Date.parse(lastSuccessfulSyncAt);
+  if (!Number.isFinite(lastSuccessful)) return 0;
+  return Math.max(
+    0,
+    lastSuccessful + AUTOMATIC_SYNC_COOLDOWN_MS - now,
+  );
+}
+
+function readAutomaticSyncState(): AutomaticSyncState {
+  try {
+    const value = globalThis.localStorage?.getItem(AUTOMATIC_SYNC_STATE_KEY);
+    if (value === null || value === undefined) {
+      return EMPTY_AUTOMATIC_SYNC_STATE;
+    }
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    return {
+      lastSuccessfulSyncAt: typeof parsed.lastSuccessfulSyncAt === "string"
+        ? parsed.lastSuccessfulSyncAt
+        : null,
+      pendingLocalChanges: parsed.pendingLocalChanges === true,
+    };
+  } catch {
+    return EMPTY_AUTOMATIC_SYNC_STATE;
+  }
+}
+
+function writeAutomaticSyncState(state: AutomaticSyncState): void {
+  try {
+    globalThis.localStorage?.setItem(
+      AUTOMATIC_SYNC_STATE_KEY,
+      JSON.stringify(state),
+    );
+  } catch {
+    // Automatic sync still works for this session when storage is unavailable.
+  }
+}
+
 type RuntimeIds = {
   readonly next: (kind: string) => StableId;
 };
@@ -1210,6 +1265,9 @@ export function SyncPortabilityRuntime({
   const [syncSnapshot, sendSync] = useActor(syncMachine, {
     input: syncDependencies,
   });
+  const [automaticSyncState, setAutomaticSyncState] = useState(
+    readAutomaticSyncState,
+  );
   const [conflictSnapshot, sendConflict] = useActor(conflictMachine, {
     input: {},
   });
@@ -1390,9 +1448,6 @@ export function SyncPortabilityRuntime({
     };
     const onOnline = () => {
       sendSync({ type: "sync.network.online" });
-      if (screen !== "import-export" && screen !== "privacy") {
-        sendSync({ type: "sync.request", request: { reason: "reconnect" } });
-      }
       sendImport({ type: "import.network.online" });
     };
     globalThis.addEventListener("offline", onOffline);
@@ -1401,7 +1456,7 @@ export function SyncPortabilityRuntime({
       globalThis.removeEventListener("offline", onOffline);
       globalThis.removeEventListener("online", onOnline);
     };
-  }, [screen, sendImport, sendSync]);
+  }, [sendImport, sendSync]);
 
   useEffect(() => {
     const previous = previousScreen.current;
@@ -1499,6 +1554,10 @@ export function SyncPortabilityRuntime({
     sendSync({
       type: "sync.resolve-conflicts",
       conflictIds,
+    });
+    sendSync({
+      type: "sync.request",
+      request: { reason: "local-change" },
     });
   }, [conflictSnapshot, sendSync, syncSnapshot]);
 
@@ -1778,52 +1837,84 @@ export function SyncPortabilityRuntime({
   const sendExportEvent = (event: ExportEvent) => sendExport(event);
 
   const [localCommitVersion, setLocalCommitVersion] = useState(0);
-  const requestedCommitVersion = useRef(0);
+  const syncStartCommitVersion = useRef<number | null>(null);
+  const handledAutomaticSyncCompletion = useRef<string | null>(null);
   useEffect(() =>
     repository.subscribeRecords?.(() => {
+      setAutomaticSyncState((current) => {
+        const pendingState = {
+          ...current,
+          pendingLocalChanges: true,
+        };
+        writeAutomaticSyncState(pendingState);
+        return pendingState;
+      });
       setLocalCommitVersion((version) => version + 1);
     }), [repository]);
+
+  useEffect(() => {
+    if (
+      syncSnapshot.matches("synchronizing") &&
+      syncStartCommitVersion.current === null
+    ) {
+      syncStartCommitVersion.current = localCommitVersion;
+    }
+    const completedAt = syncSnapshot.context.lastSyncedAt;
+    if (
+      completedAt === null ||
+      completedAt === handledAutomaticSyncCompletion.current
+    ) return;
+    handledAutomaticSyncCompletion.current = completedAt;
+    const nextState = {
+      lastSuccessfulSyncAt: completedAt,
+      pendingLocalChanges: syncStartCommitVersion.current !== null &&
+        localCommitVersion > syncStartCommitVersion.current,
+    };
+    writeAutomaticSyncState(nextState);
+    setAutomaticSyncState(nextState);
+    syncStartCommitVersion.current = syncSnapshot.matches("synchronizing")
+      ? localCommitVersion
+      : null;
+  }, [localCommitVersion, syncSnapshot]);
 
   // Import/destruction own their exchange boundaries. A save during an exchange
   // remains pending until idle; reconciliation writes do not emit local commits.
   const automaticSyncAllowed = syncSnapshot.matches("idle") &&
     screen !== "import-export" && screen !== "privacy" &&
     driveAdapter?.status() === "authorized";
-  useEffect(() => {
-    if (
-      !automaticSyncAllowed ||
-      localCommitVersion === requestedCommitVersion.current
-    ) return;
-    const timer = setTimeout(() => {
-      requestedCommitVersion.current = localCommitVersion;
-      sendSync({ type: "sync.request", request: { reason: "local-change" } });
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [automaticSyncAllowed, localCommitVersion, sendSync]);
-
-  useEffect(() => {
-    if (!automaticSyncAllowed) return;
-    const timer = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        sendSync({ type: "sync.request", request: { reason: "launch" } });
-      }
-    }, 30_000);
-    return () => clearInterval(timer);
-  }, [automaticSyncAllowed, sendSync]);
 
   const syncAfterAuthorization = useRef(false);
   const launchedAdapter = useRef<DriveAdapter | null>(null);
   useEffect(() => {
-    if (
-      automaticSyncAllowed && driveAdapter !== null &&
-      (syncAfterAuthorization.current ||
-        launchedAdapter.current !== driveAdapter)
-    ) {
+    if (!automaticSyncAllowed || driveAdapter === null) return;
+    const launchRequested = syncAfterAuthorization.current ||
+      launchedAdapter.current !== driveAdapter;
+    if (launchRequested) {
       launchedAdapter.current = driveAdapter;
       syncAfterAuthorization.current = false;
-      sendSync({ type: "sync.request", request: { reason: "reconnect" } });
     }
-  }, [automaticSyncAllowed, driveAdapter, sendSync]);
+    const delay = automaticSyncDelay(
+      automaticSyncState.lastSuccessfulSyncAt,
+    );
+    if (
+      delay === 0 && (launchRequested || automaticSyncState.pendingLocalChanges)
+    ) {
+      sendSync({
+        type: "sync.request",
+        request: {
+          reason: automaticSyncState.pendingLocalChanges
+            ? "local-change"
+            : "launch",
+        },
+      });
+      return;
+    }
+    if (!automaticSyncState.pendingLocalChanges) return;
+    const timer = setTimeout(() => {
+      sendSync({ type: "sync.request", request: { reason: "local-change" } });
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [automaticSyncAllowed, automaticSyncState, driveAdapter, sendSync]);
 
   const authorizeDrive = useCallback(
     (
@@ -1974,18 +2065,6 @@ export function SyncPortabilityRuntime({
       authorizeDrive(true, true);
     }
   }, [connectionMode, driveAdapter, syncView.mode, authorizeDrive]);
-
-  useEffect(() => {
-    if (!automaticSyncAllowed || typeof document === "undefined") return;
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        sendSync({ type: "sync.request", request: { reason: "launch" } });
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [automaticSyncAllowed, sendSync]);
 
   const requestExport = (delivery: "download" | "share") => {
     const event: ExportEvent = {

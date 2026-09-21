@@ -1,4 +1,6 @@
 import {
+  AUTOMATIC_SYNC_COOLDOWN_MS,
+  automaticSyncDelay,
   conflictIdsForResolution,
   conflictIdsForResolutions,
   createConfiguredDriveAdapter,
@@ -20,6 +22,26 @@ function assert(
 ): asserts condition {
   if (!condition) throw new Error(message);
 }
+
+Deno.test("automatic sync waits one hour after the last successful exchange", () => {
+  const lastSuccessful = "2026-09-21T10:00:00.000Z";
+  const halfway = Date.parse("2026-09-21T10:30:00.000Z");
+  assert(
+    automaticSyncDelay(lastSuccessful, halfway) ===
+      AUTOMATIC_SYNC_COOLDOWN_MS / 2,
+  );
+  assert(
+    automaticSyncDelay(
+      lastSuccessful,
+      Date.parse("2026-09-21T11:00:00.000Z"),
+    ) === 0,
+  );
+});
+
+Deno.test("automatic sync is immediately eligible without a valid history", () => {
+  assert(automaticSyncDelay(null, 0) === 0);
+  assert(automaticSyncDelay("not-a-date", 0) === 0);
+});
 
 Deno.test("sync runtime expands complete conflicts into field observations", () => {
   const observations = observationsFromSyncConflicts([{

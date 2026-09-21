@@ -703,12 +703,7 @@ export function AboutScreen({
                   Install app
                 </Button>
               )
-              : (
-                <Text tone="secondary">
-                  App installation is not offered by this browser. You can
-                  continue using the web app.
-                </Text>
-              )}
+              : null}
           </Stack>
         </Card>
         <Card as="section">
@@ -717,8 +712,8 @@ export function AboutScreen({
               Generative AI usage disclosure
             </Heading>
             <Text>
-              This application is 100% vibe-coded using ChatGPT Codex and Google
-              Antigravity.
+              This app was created with AI-assisted development using ChatGPT
+              Codex and Google Antigravity.
             </Text>
           </Stack>
         </Card>

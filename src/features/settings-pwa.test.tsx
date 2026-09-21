@@ -245,8 +245,12 @@ Deno.test("settings: About exposes exact disclosure and build metadata", async (
     assert(view.getByText("development"));
     assert(
       view.getByText(
-        "This application is 100% vibe-coded using ChatGPT Codex and Google Antigravity.",
+        "This app was created with AI-assisted development using ChatGPT Codex and Google Antigravity.",
       ),
+    );
+    assert(
+      !viewText().includes("App installation is not offered by this browser"),
+      "About should not describe an unavailable install prompt as browser incompatibility",
     );
     assert(view.getByRole("link", { name: "View source on GitHub" }));
     const license = view.getByRole("link", {

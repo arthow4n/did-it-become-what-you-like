@@ -212,10 +212,12 @@ flexbox abuse, all components and screens must follow these rules:
    - Multi-segment controls (e.g. Period selector) on narrow viewports
      (`< 360px` or compact mobile) enable horizontal swipe scrolling with hidden
      scrollbars to prevent label clipping.
-   - The expense period selector pairs its compact unit choices with a
-     full-width previous / concrete-period / next navigator. Arrow controls use
-     the standard touch target and accessible names; the contextual return-to-
-     current action occupies its own centered row when present.
+   - The expense period selector pairs its compact unit choice with a previous /
+     concrete-period / next navigator. Wide layouts keep them on one row.
+     Compact layouts place the unit choice above a full-width navigation row so
+     the concrete date remains completely readable between standard touch-target
+     arrows. The concrete date doubles as the contextual return-to-current
+     action when needed.
    - Tightly coupled fields (`[Amount + Currency]`, `[Date + Time]`) pair into
      responsive two-column rows on desktop (`@media (min-width: 720px)`),
      collapsing to a single column on mobile.

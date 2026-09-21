@@ -1269,6 +1269,29 @@
     align-self: end;
   }
 
+  @media (max-width: 719px) {
+    .ds-period-picker__navigator {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .ds-period-picker__mode {
+      grid-column: 1 / -1;
+    }
+
+    .ds-period-picker__label {
+      align-self: center;
+      overflow: visible;
+      padding-inline: var(--space-1);
+      line-height: var(--line-height-tight);
+      text-overflow: clip;
+      white-space: normal;
+    }
+
+    .ds-period-picker__navigator > .ds-icon-button {
+      align-self: center;
+    }
+  }
+
   .ds-form-layout {
     width: min(100%, var(--form-max));
   }

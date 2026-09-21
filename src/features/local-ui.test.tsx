@@ -949,12 +949,15 @@ Deno.test("local UI expenses interleaves receipt groups and shows every category
       }),
     );
     const view = within(document.body);
+    const periodPicker = view.getByRole("combobox", { name: "Period" });
     assert(
-      (view.getByRole("radio", { name: "Day" }) as HTMLInputElement)
-        .checked,
+      (periodPicker as HTMLInputElement).value === "Day",
       "the expenses screen should initially filter to the current day",
     );
-    fireEvent.click(view.getByRole("radio", { name: "Custom" }));
+    fireEvent.click(periodPicker);
+    fireEvent.click(
+      await waitFor(() => view.getByRole("option", { name: "Custom" })),
+    );
     const customDate = view.getByLabelText("Custom calendar date");
     fireEvent.change(customDate, { target: { value: "2026-08-30" } });
     await waitFor(() =>
@@ -993,9 +996,15 @@ Deno.test("local UI expenses interleaves receipt groups and shows every category
       "category breakdown should show every category with spending",
     );
     fireEvent.change(customDate, { target: { value: "2025-08-30" } });
-    fireEvent.click(view.getByRole("radio", { name: "Month" }));
+    fireEvent.click(periodPicker);
+    fireEvent.click(
+      await waitFor(() => view.getByRole("option", { name: "Month" })),
+    );
     await waitFor(() => assert(view.getByText("August 2025")));
-    fireEvent.click(view.getByRole("radio", { name: "Year" }));
+    fireEvent.click(periodPicker);
+    fireEvent.click(
+      await waitFor(() => view.getByRole("option", { name: "Year" })),
+    );
     await waitFor(() => assert(view.getByText("2025")));
   });
 });

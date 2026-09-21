@@ -1244,21 +1244,29 @@
 
   .ds-period-picker__navigator {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(5.5rem, auto) auto minmax(0, 1fr) auto;
     gap: var(--space-2);
-    align-items: center;
+    align-items: end;
     width: 100%;
+  }
+
+  .ds-period-picker__mode {
+    min-width: 0;
   }
 
   .ds-period-picker__label {
     min-width: 0;
+    min-height: var(--control-height);
+    align-self: end;
+    overflow: hidden;
     text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
 
-  .ds-period-picker__navigator > .ds-button {
-    grid-column: 1 / -1;
-    justify-self: center;
+  .ds-period-picker__navigator > .ds-icon-button {
+    align-self: end;
   }
 
   .ds-form-layout {

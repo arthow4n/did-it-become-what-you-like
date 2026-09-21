@@ -2936,27 +2936,40 @@ export function PeriodPicker({
   );
   return (
     <Stack gap={2} className="ds-period-picker">
-      <SegmentedControl
-        label="Period"
-        value={value}
-        onChange={(next) => onValueChange?.(next)}
-        options={[
-          { id: "today", label: "Day" },
-          { id: "month", label: "Month" },
-          { id: "year", label: "Year" },
-          { id: "custom", label: "Custom" },
-        ]}
-      />
       {showsNavigator
         ? (
           <div className="ds-period-picker__navigator">
+            <SelectField
+              className="ds-period-picker__mode"
+              label="Period"
+              value={value}
+              onValueChange={(next) => onValueChange?.(next)}
+              options={[
+                { id: "today", label: "Day" },
+                { id: "month", label: "Month" },
+                { id: "year", label: "Year" },
+                { id: "custom", label: "Custom" },
+              ]}
+            />
             <IconButton
               icon={<ChevronLeft />}
               aria-label={previousLabel!}
               variant="secondary"
               onPress={onPrevious}
             />
-            <Text className="ds-period-picker__label">{periodLabel}</Text>
+            {onReturnToCurrent && returnToCurrentLabel
+              ? (
+                <Button
+                  className="ds-period-picker__label"
+                  variant="quiet"
+                  onPress={onReturnToCurrent}
+                  aria-label={returnToCurrentLabel}
+                  title={returnToCurrentLabel}
+                >
+                  {periodLabel}
+                </Button>
+              )
+              : <Text className="ds-period-picker__label">{periodLabel}</Text>}
             <IconButton
               icon={<ChevronRight />}
               aria-label={nextLabel!}
@@ -2964,16 +2977,21 @@ export function PeriodPicker({
               isDisabled={isNextDisabled}
               onPress={onNext}
             />
-            {onReturnToCurrent && returnToCurrentLabel
-              ? (
-                <Button variant="quiet" onPress={onReturnToCurrent}>
-                  {returnToCurrentLabel}
-                </Button>
-              )
-              : null}
           </div>
         )
-        : null}
+        : (
+          <SelectField
+            label="Period"
+            value={value}
+            onValueChange={(next) => onValueChange?.(next)}
+            options={[
+              { id: "today", label: "Day" },
+              { id: "month", label: "Month" },
+              { id: "year", label: "Year" },
+              { id: "custom", label: "Custom" },
+            ]}
+          />
+        )}
       {value === "custom"
         ? (
           <Inline gap={2}>

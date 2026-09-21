@@ -15,6 +15,7 @@ import {
   OrganizeScreen,
   ProjectManager,
   SavedExpenseCompletionScreen,
+  scrollToTopOnNavigationChange,
   selectedNavigationForPath,
   SettingsScreen,
 } from "./local-ui.tsx";
@@ -1031,6 +1032,28 @@ Deno.test("local UI associates receipt detail with expenses navigation", () => {
     selectedNavigationForPath("/receipt/detail/receipt-123?line=line-456"),
     "expenses",
   );
+});
+
+Deno.test("local UI scrolls to the top when the main navigation tab changes", () => {
+  const calls: ScrollToOptions[] = [];
+  const viewport = {
+    scrollTo: (options: ScrollToOptions) => calls.push(options),
+  };
+  let previous = scrollToTopOnNavigationChange(
+    "expenses",
+    "/settings",
+    viewport,
+  );
+  assertEquals(previous, "settings");
+  assertEquals(calls, [{ top: 0, left: 0, behavior: "auto" }]);
+
+  previous = scrollToTopOnNavigationChange(
+    previous,
+    "/settings/preferences",
+    viewport,
+  );
+  assertEquals(previous, "settings");
+  assertEquals(calls.length, 1);
 });
 
 Deno.test("local UI null-draft recovery exposes retry and back actions", async () => {

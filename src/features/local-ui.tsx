@@ -184,6 +184,22 @@ export function selectedNavigationForPath(
   return "expenses";
 }
 
+type ScrollViewport = {
+  readonly scrollTo?: (options: ScrollToOptions) => void;
+};
+
+export function scrollToTopOnNavigationChange(
+  previous: LocalUiNavigation | null,
+  activePath: string,
+  viewport: ScrollViewport = globalThis,
+): LocalUiNavigation {
+  const next = selectedNavigationForPath(activePath);
+  if (previous !== null && previous !== next) {
+    viewport.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+  }
+  return next;
+}
+
 function shellRouteForPath(path: string): ShellRoute {
   if (path === "/first-use") return "first-use";
   if (path === "/add") return "add";
@@ -3206,6 +3222,9 @@ export function LocalUiRuntime(
   const [discardRequest, setDiscardRequest] = useState(0);
   const [dirtyDiscardDisabled, setDirtyDiscardDisabled] = useState(false);
   const pendingNavigationRef = useRef<LocalUiPendingNavigation | null>(null);
+  const previousNavigationRef = useRef<LocalUiNavigation | null>(
+    selectedNavigationForPath(initialPath),
+  );
   const currentHistoryRef = useRef<LocalUiHistoryEntry | null>(null);
   const historyTransitionRef = useRef<LocalUiHistoryTransition | null>(null);
   const receiptReturnFocusRef = useRef<
@@ -3317,6 +3336,13 @@ export function LocalUiRuntime(
 
   useEffect(() => {
     setDirtyDiscardDisabled(false);
+  }, [path]);
+
+  useEffect(() => {
+    previousNavigationRef.current = scrollToTopOnNavigationChange(
+      previousNavigationRef.current,
+      path,
+    );
   }, [path]);
 
   useEffect(() => {

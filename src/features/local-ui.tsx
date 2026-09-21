@@ -441,6 +441,88 @@ function localCalendarDate(now = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
+function periodUnitForValue(
+  value: string,
+  customKind: CustomPeriodKind,
+): CustomPeriodKind {
+  if (value === "today") return "day";
+  if (value === "month" || value === "year") return value;
+  return customKind;
+}
+
+function shiftCalendarPeriod(
+  date: string,
+  unit: CustomPeriodKind,
+  amount: -1 | 1,
+): string {
+  const parsed = CalendarDateSchema.safeParse(date);
+  const safeDate = parsed.success ? parsed.data : localCalendarDate();
+  const [year, month, day] = safeDate.split("-").map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1, day));
+  if (unit === "day") shifted.setUTCDate(shifted.getUTCDate() + amount);
+  if (unit === "month") {
+    shifted.setUTCDate(1);
+    shifted.setUTCMonth(shifted.getUTCMonth() + amount);
+    shifted.setUTCDate(
+      Math.min(
+        day,
+        new Date(Date.UTC(
+          shifted.getUTCFullYear(),
+          shifted.getUTCMonth() + 1,
+          0,
+        )).getUTCDate(),
+      ),
+    );
+  }
+  if (unit === "year") {
+    shifted.setUTCDate(1);
+    shifted.setUTCFullYear(shifted.getUTCFullYear() + amount);
+    shifted.setUTCMonth(month - 1);
+    shifted.setUTCDate(
+      Math.min(day, new Date(Date.UTC(year + amount, month, 0)).getUTCDate()),
+    );
+  }
+  const shiftedYear = shifted.getUTCFullYear().toString().padStart(4, "0");
+  const shiftedMonth = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const shiftedDay = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${shiftedYear}-${shiftedMonth}-${shiftedDay}`;
+}
+
+function formatPeriodLabel(date: string, unit: CustomPeriodKind): string {
+  const safeDate = CalendarDateSchema.safeParse(date);
+  const [year, month, day] =
+    (safeDate.success ? safeDate.data : localCalendarDate()).split("-").map(
+      Number,
+    );
+  const options: Intl.DateTimeFormatOptions = unit === "day"
+    ? { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }
+    : unit === "month"
+    ? { month: "long", year: "numeric", timeZone: "UTC" }
+    : { year: "numeric", timeZone: "UTC" };
+  return new Intl.DateTimeFormat(undefined, options).format(
+    new Date(Date.UTC(year, month - 1, day)),
+  );
+}
+
+function isSamePeriod(
+  left: string,
+  right: string,
+  unit: CustomPeriodKind,
+): boolean {
+  if (unit === "year") return left.slice(0, 4) === right.slice(0, 4);
+  if (unit === "month") return left.slice(0, 7) === right.slice(0, 7);
+  return left === right;
+}
+
+function isPeriodAtOrAfter(
+  left: string,
+  right: string,
+  unit: CustomPeriodKind,
+): boolean {
+  const length = unit === "year" ? 4 : unit === "month" ? 7 : 10;
+  return left.slice(0, length) >= right.slice(0, length);
+}
+
 function manualReceiptReviewForState(
   state: ProjectCategoryState,
   expenseDayBoundary: string,
@@ -468,23 +550,12 @@ function periodForValue(
   customKind: CustomPeriodKind,
   customDate: string,
 ): ExpensePeriod {
-  if (value === "today") {
-    return { kind: "current", unit: "day", now: new Date() };
-  }
-  if (value === "year") {
-    return { kind: "current", unit: "year", now: new Date() };
-  }
-  if (value === "month") {
-    return { kind: "current", unit: "month", now: new Date() };
-  }
-  if (value !== "custom") {
-    return { kind: "current", unit: "month", now: new Date() };
-  }
   const parsedDate = CalendarDateSchema.safeParse(customDate);
   const date = parsedDate.success ? parsedDate.data : localCalendarDate();
-  if (customKind === "day") return { kind: "day", date };
+  const unit = periodUnitForValue(value, customKind);
+  if (unit === "day") return { kind: "day", date };
   const [year, month] = date.split("-").map(Number);
-  return customKind === "month"
+  return unit === "month"
     ? { kind: "month", year, month }
     : { kind: "year", year };
 }
@@ -661,6 +732,22 @@ export function ExpensesScreen({
   const removeCategory = () => setCategoryId("");
   const removeCurrency = () => setCurrency("");
   const removeSearch = () => setSearch("");
+  const currentCalendarDate = localCalendarDate();
+  const activePeriodUnit = periodUnitForValue(period, customPeriodKind);
+  const isCurrentPeriod = isSamePeriod(
+    customPeriodDate,
+    currentCalendarDate,
+    activePeriodUnit,
+  );
+  const navigatePeriod = (amount: -1 | 1) => {
+    setCustomPeriodDate((date) =>
+      shiftCalendarPeriod(date, activePeriodUnit, amount)
+    );
+  };
+  const returnToCurrentPeriod = () => {
+    setCustomPeriodDate(currentCalendarDate);
+    setPeriod(activePeriodUnit === "day" ? "today" : activePeriodUnit);
+  };
 
   return (
     <ContentContainer>
@@ -702,11 +789,35 @@ export function ExpensesScreen({
             <FilterBar className="local-ui-expenses-filter-bar">
               <PeriodPicker
                 value={period}
-                onValueChange={setPeriod}
+                onValueChange={(value) => {
+                  setPeriod(value);
+                  if (value === "custom") {
+                    setCustomPeriodKind(activePeriodUnit);
+                  }
+                }}
                 customKind={customPeriodKind}
                 customDate={customPeriodDate}
                 onCustomKindChange={setCustomPeriodKind}
                 onCustomDateChange={setCustomPeriodDate}
+                periodLabel={formatPeriodLabel(
+                  customPeriodDate,
+                  activePeriodUnit,
+                )}
+                previousLabel={`Previous ${activePeriodUnit}`}
+                nextLabel={`Next ${activePeriodUnit}`}
+                onPrevious={() => navigatePeriod(-1)}
+                onNext={() => navigatePeriod(1)}
+                isNextDisabled={isPeriodAtOrAfter(
+                  customPeriodDate,
+                  currentCalendarDate,
+                  activePeriodUnit,
+                )}
+                onReturnToCurrent={isCurrentPeriod
+                  ? undefined
+                  : returnToCurrentPeriod}
+                returnToCurrentLabel={activePeriodUnit === "day"
+                  ? "Today"
+                  : `Current ${activePeriodUnit}`}
               />
               <SelectField
                 label="Category"

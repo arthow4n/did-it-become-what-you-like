@@ -1376,6 +1376,7 @@ Deno.test("design-system period picker exposes a controlled custom calendar peri
     withAriaGlobals(window, async () => {
       let kind = "day";
       let date = "2026-08-24";
+      let navigation = "";
       const mounted = render(
         createElement(PeriodPicker, {
           value: "custom",
@@ -1383,6 +1384,13 @@ Deno.test("design-system period picker exposes a controlled custom calendar peri
           customDate: date,
           onCustomKindChange: (value) => kind = value,
           onCustomDateChange: (value) => date = value,
+          periodLabel: "August 24, 2026",
+          previousLabel: "Previous day",
+          nextLabel: "Next day",
+          onPrevious: () => navigation = "previous",
+          onNext: () => navigation = "next",
+          onReturnToCurrent: () => navigation = "current",
+          returnToCurrentLabel: "Today",
         }),
       );
       const view = within(document.body);
@@ -1391,6 +1399,13 @@ Deno.test("design-system period picker exposes a controlled custom calendar peri
       });
       const datePicker = view.getByLabelText("Custom calendar date");
       assertEqual((datePicker as HTMLInputElement).value, "2026-08-24");
+      assert(view.getByText("August 24, 2026"));
+      fireEvent.click(view.getByRole("button", { name: "Previous day" }));
+      assertEqual(navigation, "previous");
+      fireEvent.click(view.getByRole("button", { name: "Next day" }));
+      assertEqual(navigation, "next");
+      fireEvent.click(view.getByRole("button", { name: "Today" }));
+      assertEqual(navigation, "current");
       fireEvent.click(kindPicker);
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
       fireEvent.click(view.getByRole("option", { name: "Month" }));

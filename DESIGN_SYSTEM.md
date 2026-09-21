@@ -212,6 +212,10 @@ flexbox abuse, all components and screens must follow these rules:
    - Multi-segment controls (e.g. Period selector) on narrow viewports
      (`< 360px` or compact mobile) enable horizontal swipe scrolling with hidden
      scrollbars to prevent label clipping.
+   - The expense period selector pairs its compact unit choices with a
+     full-width previous / concrete-period / next navigator. Arrow controls use
+     the standard touch target and accessible names; the contextual return-to-
+     current action occupies its own centered row when present.
    - Tightly coupled fields (`[Amount + Currency]`, `[Date + Time]`) pair into
      responsive two-column rows on desktop (`@media (min-width: 720px)`),
      collapsing to a single column on mobile.
@@ -229,8 +233,8 @@ flexbox abuse, all components and screens must follow these rules:
      prioritizing recent/frequent categories for one-tap selection on mobile.
    - Receipt items (`ReceiptLineCard`) support an inline category control
      (`categoryControl`) for rapid category switching without opening the full
-     line editor dialog. Scanned review cards expose selection; manually
-     entered receipt cards omit that review-only checkbox.
+     line editor dialog. Scanned review cards expose selection; manually entered
+     receipt cards omit that review-only checkbox.
    - Embedded input adornments (search clear buttons, select chevrons like
      `CurrencyPicker`, secret reveal toggles) must be enclosed inside
      `.ds-field-control-wrap` with `position: relative` so icons anchor neatly

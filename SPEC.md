@@ -152,6 +152,11 @@ and multi-device synchronization according to the agreed sync design.
   local calendar period. Custom selection chooses one specific calendar day,
   month, or year. Rolling periods such as “last 30 days” are not part of the
   initial release.
+- The expense period picker provides previous and next navigation in the active
+  day, month, or year unit, shows the concrete selected period, and offers a
+  direct return to the corresponding current period after browsing history.
+  Changing the active unit preserves the selected anchor date; Custom remains
+  available for jumping directly to a distant calendar period.
 - Day, month, and year filters operate directly on each record's stored calendar
   date; they do not reinterpret those dates across timezones.
 - Within the currently selected project, a period can be combined with one

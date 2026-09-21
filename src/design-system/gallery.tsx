@@ -282,7 +282,19 @@ export function DesignSystemGallery() {
                 }]}
                 recentCategoryIds={["dining", "transport"]}
               />
-              <PeriodPicker value={period} onValueChange={setPeriod} />
+              <PeriodPicker
+                value={period}
+                onValueChange={setPeriod}
+                customKind="month"
+                customDate="2026-08-24"
+                periodLabel="August 2026"
+                previousLabel="Previous month"
+                nextLabel="Next month"
+                onPrevious={() => undefined}
+                onNext={() => undefined}
+                onReturnToCurrent={() => undefined}
+                returnToCurrentLabel="Current month"
+              />
             </section>
           </ResponsiveGrid>
 

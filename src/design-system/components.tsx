@@ -20,6 +20,7 @@ import type {
   Ref,
 } from "react";
 import {
+  ChevronLeft,
   ChevronRight,
   CircleAlert,
   CircleCheck,
@@ -2906,6 +2907,14 @@ export function PeriodPicker({
   customDate = "",
   onCustomKindChange,
   onCustomDateChange,
+  periodLabel,
+  previousLabel,
+  nextLabel,
+  onPrevious,
+  onNext,
+  onReturnToCurrent,
+  returnToCurrentLabel,
+  isNextDisabled = false,
 }: {
   value?: string;
   onValueChange?: (value: string) => void;
@@ -2913,20 +2922,58 @@ export function PeriodPicker({
   customDate?: string;
   onCustomKindChange?: (value: "day" | "month" | "year") => void;
   onCustomDateChange?: (value: string) => void;
+  periodLabel?: string;
+  previousLabel?: string;
+  nextLabel?: string;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  onReturnToCurrent?: () => void;
+  returnToCurrentLabel?: string;
+  isNextDisabled?: boolean;
 }) {
+  const showsNavigator = Boolean(
+    periodLabel && previousLabel && nextLabel && onPrevious && onNext,
+  );
   return (
-    <Stack gap={2}>
+    <Stack gap={2} className="ds-period-picker">
       <SegmentedControl
         label="Period"
         value={value}
         onChange={(next) => onValueChange?.(next)}
         options={[
-          { id: "today", label: "Today" },
-          { id: "month", label: "This month" },
-          { id: "year", label: "This year" },
+          { id: "today", label: "Day" },
+          { id: "month", label: "Month" },
+          { id: "year", label: "Year" },
           { id: "custom", label: "Custom" },
         ]}
       />
+      {showsNavigator
+        ? (
+          <div className="ds-period-picker__navigator">
+            <IconButton
+              icon={<ChevronLeft />}
+              aria-label={previousLabel!}
+              variant="secondary"
+              onPress={onPrevious}
+            />
+            <Text className="ds-period-picker__label">{periodLabel}</Text>
+            <IconButton
+              icon={<ChevronRight />}
+              aria-label={nextLabel!}
+              variant="secondary"
+              isDisabled={isNextDisabled}
+              onPress={onNext}
+            />
+            {onReturnToCurrent && returnToCurrentLabel
+              ? (
+                <Button variant="quiet" onPress={onReturnToCurrent}>
+                  {returnToCurrentLabel}
+                </Button>
+              )
+              : null}
+          </div>
+        )
+        : null}
       {value === "custom"
         ? (
           <Inline gap={2}>

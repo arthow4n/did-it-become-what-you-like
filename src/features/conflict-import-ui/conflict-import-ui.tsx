@@ -1176,7 +1176,6 @@ export function ImportExportScreen({
         <PageHeader
           title="Import & export"
           headingLevel={1}
-          description="Portable JSON data"
           leading={<Button variant="quiet" onPress={onBack}>Back</Button>}
         />
         <ExportPanel

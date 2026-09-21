@@ -325,17 +325,14 @@ export function FirstUseScreen({
         <Stack gap={3}>
           <ActionCard
             title="Create first project"
-            description="Start with local data."
             onPress={onCreateProject}
           />
           <ActionCard
             title="Restore JSON backup"
-            description="Validate and preview before import."
             onPress={onRestoreBackup}
           />
           <ActionCard
             title="Connect Google Drive"
-            description="Continue with synchronized data."
             onPress={onConnectDrive}
           />
         </Stack>
@@ -428,7 +425,6 @@ export function LoadingScreen(props?: LoadingScreenProps) {
         <PageHeader headingLevel={1} title={title} />
         <Skeleton style={{ width: "12rem", height: "2rem" }} />
         <Skeleton style={{ width: "100%", height: "6rem" }} />
-        <Text tone="secondary">Loading local data…</Text>
       </Stack>
     </ContentContainer>
   );
@@ -673,7 +669,6 @@ export function ExpensesScreen({
           headingLevel={1}
           title="Expenses"
           eyebrow={currentProject?.name ?? "Local project"}
-          description="Review the selected project and calendar period."
           status={syncStatus
             ? (
               <SyncStatusIndicator
@@ -837,7 +832,7 @@ export function ExpensesScreen({
                 >
                   {search || categoryId
                     ? "Try removing a filter or choose another period."
-                    : "Your local expense list will appear here after the first save."}
+                    : undefined}
                 </EmptyState>
               )
               : (
@@ -1780,7 +1775,7 @@ export function ProjectManager({
                 ))}
               </List>
             )
-            : <Text tone="secondary">No archived projects.</Text>}
+            : null}
         </Disclosure>
       </Stack>
     </ContentContainer>
@@ -1832,11 +1827,7 @@ export function OrganizeScreen({
             ))}
           </List>
           {!projects.length
-            ? (
-              <EmptyState title="No projects yet">
-                Create a project to begin.
-              </EmptyState>
-            )
+            ? <EmptyState title="No projects yet">{null}</EmptyState>
             : null}
         </section>
         <section
@@ -1894,12 +1885,12 @@ export function SettingsScreen(
   const rows = [
     {
       label: "Google Drive and sync",
-      summary: syncSummary ?? "Open to view current sync status",
+      summary: syncSummary,
       available: Boolean(onSync),
     },
     {
       label: "Receipt scanning",
-      summary: receiptSummary ?? "Open to view key and model status",
+      summary: receiptSummary,
       available: Boolean(onReceipt),
     },
     {
@@ -1909,17 +1900,17 @@ export function SettingsScreen(
     },
     {
       label: "Import and export",
-      summary: "JSON backup workflows",
+      summary: undefined,
       available: Boolean(onImport),
     },
     {
       label: "Data and privacy",
-      summary: "Local data controls",
+      summary: undefined,
       available: Boolean(onPrivacy),
     },
     {
       label: "About and disclosure",
-      summary: "After Midnight",
+      summary: undefined,
       available: Boolean(onAbout),
     },
   ];
@@ -1956,7 +1947,9 @@ export function SettingsScreen(
             >
               <Stack gap={1}>
                 <strong>{row.label}</strong>
-                <Text tone="secondary">{row.summary}</Text>
+                {row.summary
+                  ? <Text tone="secondary">{row.summary}</Text>
+                  : null}
               </Stack>
             </ListRow>
           ))}
@@ -2460,7 +2453,7 @@ export function CategoryManager({
                 ))}
               </List>
             )
-            : <Text tone="secondary">No archived categories.</Text>}
+            : null}
         </Disclosure>
       </Stack>
     </ContentContainer>
@@ -2808,7 +2801,6 @@ export function ManualExpenseScreen({
             <PageHeader
               headingLevel={1}
               title="New expense"
-              description="Capture one standalone expense."
               actions={onManualReceipt
                 ? (
                   <Button

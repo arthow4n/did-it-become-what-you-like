@@ -465,7 +465,6 @@ export function ReceiptDetailScreen({
         <PageHeader
           title={receipt.merchant || "Receipt"}
           eyebrow="Saved receipt"
-          description="Review and manage the saved receipt lines."
           headingLevel={1}
           leading={
             <IconButton

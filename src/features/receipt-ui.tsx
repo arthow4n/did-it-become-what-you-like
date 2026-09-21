@@ -2008,12 +2008,7 @@ export function ReceiptReviewScreen({
           {isManual
             ? (
               <Inline justify="space-between">
-                <Stack gap={1}>
-                  <Heading level={2} size="md">Items</Heading>
-                  <Text tone="secondary">
-                    Add each purchased item as its own line.
-                  </Text>
-                </Stack>
+                <Heading level={2} size="md">Items</Heading>
                 <LineEditorDialog
                   line={newLine}
                   categories={categories}
@@ -2029,16 +2024,6 @@ export function ReceiptReviewScreen({
                     })}
                 />
               </Inline>
-            )
-            : null}
-          {isManual && review.lines.length === 0
-            ? (
-              <Card>
-                <Text tone="secondary">
-                  No items yet. Add the dishes, drinks, or other purchases from
-                  this visit.
-                </Text>
-              </Card>
             )
             : null}
           {review.lines.map((line) => (

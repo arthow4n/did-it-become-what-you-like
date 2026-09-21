@@ -479,7 +479,7 @@ Deno.test(
       const view = within(document.body);
       await waitFor(() => {
         assert(view.getByRole("heading", { name: "Enter receipt manually" }));
-        assert(view.getByText(/No items yet\./));
+        assertEquals(view.queryByText(/No items yet\./), null);
         assert(view.getAllByText("Total paid").length >= 1);
       });
       assert(view.queryByRole("checkbox") === null);

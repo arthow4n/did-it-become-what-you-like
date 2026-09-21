@@ -767,21 +767,13 @@ export function ExpensesScreen({
 
   return (
     <ContentContainer>
-      <Stack gap={5}>
-        <PageHeader
-          headingLevel={1}
-          title="Expenses"
-          eyebrow={currentProject?.name ?? "Local project"}
-          status={syncStatus
-            ? (
-              <SyncStatusIndicator
-                view={syncStatus.view}
-                onOpenSync={syncStatus.onOpenSync}
-                onReconnect={syncStatus.onReconnect}
-              />
-            )
-            : undefined}
-        />
+      <Stack gap={4}>
+        <Heading
+          level={1}
+          className="local-ui-screen-reader-heading"
+        >
+          Expenses
+        </Heading>
         {offline
           ? (
             <Banner tone="warning" title="Offline">
@@ -790,12 +782,23 @@ export function ExpensesScreen({
             </Banner>
           )
           : null}
-        <ProjectPicker
-          className="local-ui-expenses-project-picker"
-          value={currentProject?.id}
-          options={projectOptions}
-          onValueChange={onProjectChange}
-        />
+        <div className="local-ui-expenses-toolbar">
+          <ProjectPicker
+            className="local-ui-expenses-project-picker"
+            value={currentProject?.id}
+            options={projectOptions}
+            onValueChange={onProjectChange}
+          />
+          {syncStatus
+            ? (
+              <SyncStatusIndicator
+                view={syncStatus.view}
+                onOpenSync={syncStatus.onOpenSync}
+                onReconnect={syncStatus.onReconnect}
+              />
+            )
+            : null}
+        </div>
         <ResponsiveGrid
           columns={2}
           gap={5}

@@ -619,7 +619,7 @@ Deno.test("local UI expenses exposes shared filters, empty state, and add event"
   });
 });
 
-Deno.test("local UI expenses places sync status in the page header", async () => {
+Deno.test("local UI expenses keeps project and sync status compact", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let reconnected = 0;
     const syncStatus: SyncStatusContextValue = {
@@ -653,7 +653,9 @@ Deno.test("local UI expenses places sync status in the page header", async () =>
     );
     const view = within(document.body);
     assert(view.getByRole("heading", { name: "Expenses" }));
-    assert(view.getByText("Local only · Tap to reconnect"));
+    assert(view.getByText("Reconnect"));
+    assert(document.querySelector(".local-ui-expenses-toolbar"));
+    assert(document.querySelector(".ds-page-header") === null);
     assert(document.querySelector(".sync-ui-shell-status") === null);
     fireEvent.click(
       view.getByRole("button", { name: "Reconnect Google Drive" }),

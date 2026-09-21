@@ -411,7 +411,7 @@ Deno.test("sync status indicator keeps reconnect and detail actions compact", as
         }),
       );
       const view = within(document.body);
-      assert(view.getByText("Local only · Tap to reconnect"));
+      assert(view.getByText("Reconnect"));
       fireEvent.click(
         view.getByRole("button", { name: "Reconnect Google Drive" }),
       );

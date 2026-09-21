@@ -5,7 +5,6 @@ import {
   StatusDot,
   Text,
 } from "../../design-system/index.ts";
-import { Cloud } from "lucide-react";
 import { syncStatusCopy } from "./sync-status.ts";
 import type { SyncConnectionViewModel } from "./types.ts";
 
@@ -57,7 +56,7 @@ export function syncIndicatorCopy(
     (view.mode === "configured" && view.sync === "authorization-error")
   ) {
     return {
-      label: "Local only · Tap to reconnect",
+      label: "Reconnect",
       tone: "warning",
       action: "reconnect",
     };
@@ -104,7 +103,6 @@ export function SyncStatusIndicator({
       aria-label={actionLabel}
       title={actionLabel}
     >
-      <Cloud aria-hidden="true" size={16} />
       <StatusDot tone={copy.tone}>{copy.label}</StatusDot>
     </Button>
   );

@@ -1,6 +1,15 @@
 import { useActor } from "@xstate/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Pencil, SlidersHorizontal, X } from "lucide-react";
+import {
+  Archive,
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  Pencil,
+  SlidersHorizontal,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   createProjectCategoryService,
   type ProjectCategoryService,
@@ -2456,39 +2465,49 @@ export function CategoryManager({
           : null}
         <List label="Active categories">
           {customActive.map((category, index) => (
-            <ListRow
-              key={category.id}
-              leading={<span aria-hidden="true">≡</span>}
-            >
+            <ListRow key={category.id}>
               <Stack gap={2}>
-                <Inline justify="space-between">
-                  <strong>{category.name}</strong>
+                <strong>{category.name}</strong>
+                <div
+                  className="local-ui-category-actions"
+                  aria-label={`Actions for ${category.name}`}
+                  role="group"
+                >
                   <IconButton
-                    icon={<Pencil size={18} />}
-                    aria-label="Edit"
-                    variant="quiet"
-                    onPress={() =>
-                      openEditor({ kind: "edit", record: category })}
-                  />
-                </Inline>
-                <div className="local-ui-card-actions--grid">
-                  <Button
+                    icon={<ArrowUp size={18} />}
+                    aria-label={`Move ${category.name} up`}
+                    title="Move up"
                     variant="quiet"
                     isDisabled={index === 0 || snapshot.hasTag("saving")}
                     onPress={() => moveCategory(category.id, -1)}
-                  >
-                    Move up
-                  </Button>
-                  <Button
+                  />
+                  <IconButton
+                    icon={<ArrowDown size={18} />}
+                    aria-label={`Move ${category.name} down`}
+                    title="Move down"
                     variant="quiet"
                     isDisabled={index === customActive.length - 1 ||
                       snapshot.hasTag("saving")}
                     onPress={() => moveCategory(category.id, 1)}
-                  >
-                    Move down
-                  </Button>
+                  />
+                  <IconButton
+                    icon={<Pencil size={18} />}
+                    aria-label={`Edit ${category.name}`}
+                    title="Edit"
+                    variant="quiet"
+                    onPress={() =>
+                      openEditor({ kind: "edit", record: category })}
+                  />
                   <ConfirmDialog
-                    trigger={<Button variant="quiet">Archive</Button>}
+                    trigger={
+                      <IconButton
+                        icon={<Archive size={18} />}
+                        aria-label={`Archive ${category.name}`}
+                        title="Archive"
+                        variant="quiet"
+                        isDisabled={snapshot.hasTag("saving")}
+                      />
+                    }
                     title={`Archive ${category.name}?`}
                     description="Existing expenses keep this category, while new entries use active categories."
                     confirmLabel="Archive category"
@@ -2500,7 +2519,13 @@ export function CategoryManager({
                   />
                   <DeleteAndReassign
                     trigger={
-                      <Button variant="quiet">Delete and reassign</Button>
+                      <IconButton
+                        icon={<Trash2 size={18} />}
+                        aria-label={`Delete ${category.name}`}
+                        title="Delete and reassign"
+                        variant="quiet"
+                        isDisabled={snapshot.hasTag("saving")}
+                      />
                     }
                     title={`Delete ${category.name}?`}
                     description="Choose the category which should receive every reference to this category."

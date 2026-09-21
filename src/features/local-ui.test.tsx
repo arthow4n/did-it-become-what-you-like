@@ -1523,6 +1523,18 @@ Deno.test("local UI category manager exposes a level-one page heading", async ()
           }),
         )
       );
+      const foodActions = view.getByRole("group", {
+        name: "Actions for Food",
+      });
+      assert(within(foodActions).getByRole("button", { name: "Move Food up" }));
+      assert(
+        within(foodActions).getByRole("button", { name: "Move Food down" }),
+      );
+      assert(within(foodActions).getByRole("button", { name: "Edit Food" }));
+      assert(
+        within(foodActions).getByRole("button", { name: "Archive Food" }),
+      );
+      assert(within(foodActions).getByRole("button", { name: "Delete Food" }));
     });
   });
 });
@@ -1645,7 +1657,7 @@ for (
       entityName: "category",
       initialState: categoryState,
       fieldName: "Category name",
-      editButtonName: "Edit",
+      editButtonName: "Edit Food",
       headingName: "Edit category",
       draftValue: "My category draft",
       makeManager: (s: ProjectCategoryState, service: ProjectCategoryService) =>
@@ -1797,8 +1809,10 @@ Deno.test("local UI category editor submits the selected replacement color", asy
         }),
       );
       const view = within(document.body);
-      await waitFor(() => assert(view.getByRole("button", { name: "Edit" })));
-      fireEvent.click(view.getByRole("button", { name: "Edit" }));
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: "Edit Food" }))
+      );
+      fireEvent.click(view.getByRole("button", { name: "Edit Food" }));
       await waitFor(() =>
         assert(view.getByRole("heading", { name: "Edit category" }))
       );
@@ -1829,11 +1843,9 @@ Deno.test("local UI category deletion exposes replacement selection and affected
       );
       const view = within(document.body);
       await waitFor(() =>
-        assert(view.getByRole("button", { name: "Delete and reassign" }))
+        assert(view.getByRole("button", { name: "Delete Food" }))
       );
-      fireEvent.click(
-        view.getByRole("button", { name: "Delete and reassign" }),
-      );
+      fireEvent.click(view.getByRole("button", { name: "Delete Food" }));
       const dialog = await waitFor(() =>
         view.getByRole("dialog", { name: "Delete Food?" })
       );

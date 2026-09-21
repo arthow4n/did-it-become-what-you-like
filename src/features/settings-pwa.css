@@ -33,20 +33,19 @@
   }
 
   .settings-pwa-about-links {
-    gap: 0;
-    overflow: hidden;
+    gap: var(--space-2);
+    padding: var(--space-4);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-card);
     background: var(--color-surface-1);
   }
 
   .settings-pwa-about-links .ds-list-row {
+    min-height: auto;
+    padding: 0;
     border: 0;
     border-radius: 0;
-  }
-
-  .settings-pwa-about-links .ds-list-row + .ds-list-row {
-    border-top: 1px solid var(--color-border-subtle);
+    background: transparent;
   }
 
   .settings-pwa-about-links .ds-link-button {

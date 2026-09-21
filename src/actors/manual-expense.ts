@@ -79,8 +79,6 @@ export type ManualExpenseEvent =
     readonly request?: ManualExpenseOpenRequest;
   }
   | { readonly type: "expense.change"; readonly draft: ManualExpenseDraft }
-  | { readonly type: "expense.merchant.choose"; readonly merchant: string }
-  | { readonly type: "expense.merchant.clear" }
   | { readonly type: "expense.submit" }
   | { readonly type: "expense.submit-and-add-another" }
   | { readonly type: "expense.finish-save" }
@@ -114,7 +112,6 @@ export type ManualExpenseContext = {
   readonly draft: ManualExpenseDraft | null;
   readonly originalExpense: Expense | null;
   readonly openRequest: ManualExpenseOpenRequest | null;
-  readonly suggestions: readonly string[];
   readonly validation: ManualExpenseValidationErrors;
   readonly persistenceRevision: number;
   readonly result: ExpenseCommitOutput | null;
@@ -146,7 +143,6 @@ type HydratedManualExpense = {
   readonly revision: number;
   readonly draft: ManualExpenseDraft;
   readonly originalExpense: Expense | null;
-  readonly suggestions: readonly string[];
 };
 
 type PersistDraftInput = {
@@ -402,35 +398,6 @@ function expenseFromValue(value: unknown): Expense | null {
   return parsed.success ? parsed.data : null;
 }
 
-function merchantSuggestionsFromValues(
-  values: readonly { readonly value: JsonValue }[],
-  projectId: string,
-): readonly string[] {
-  const expenses = values
-    .map((entry) => expenseFromValue(entry.value))
-    .filter((expense): expense is Expense =>
-      expense !== null && expense.projectId === projectId &&
-      expense.merchant !== undefined
-    )
-    .sort((left, right) =>
-      `${right.date}T${right.time ?? ""}-${right.id}`.localeCompare(
-        `${left.date}T${left.time ?? ""}-${left.id}`,
-        "en",
-      )
-    );
-  const seen = new Set<string>();
-  const suggestions: string[] = [];
-  for (const expense of expenses) {
-    const merchant = expense.merchant!;
-    const key = merchant.toLocaleLowerCase("en-US");
-    if (seen.has(key)) continue;
-    seen.add(key);
-    suggestions.push(merchant);
-    if (suggestions.length >= 8) break;
-  }
-  return suggestions;
-}
-
 async function expenseDayBoundary(local: LocalPort): Promise<string> {
   const value = await local.transaction(
     "readonly",
@@ -456,21 +423,12 @@ function currentProject(state: ProjectCategoryState, requested?: string) {
   return project;
 }
 
-async function suggestionsFor(
-  local: LocalPort,
-  projectId: string,
-): Promise<readonly string[]> {
-  const entries = await local.query<JsonValue>("records");
-  return merchantSuggestionsFromValues(entries, projectId);
-}
-
 async function openExpense(
   dependencies: ManualExpenseDependencies,
   request: ManualExpenseOpenRequest,
 ): Promise<{
   readonly draft: ManualExpenseDraft;
   readonly originalExpense: Expense | null;
-  readonly suggestions: readonly string[];
 }> {
   const state = await dependencies.organization.getState();
   if (request.expense !== undefined) {
@@ -478,7 +436,6 @@ async function openExpense(
     return {
       draft: draftFromExpense(expense),
       originalExpense: expense,
-      suggestions: await suggestionsFor(dependencies.local, expense.projectId),
     };
   }
   const project = currentProject(state, request.projectId);
@@ -499,7 +456,6 @@ async function openExpense(
       direction: "spent",
     },
     originalExpense: null,
-    suggestions: await suggestionsFor(dependencies.local, project.id),
   };
 }
 
@@ -544,17 +500,12 @@ async function hydrateExpense(
       if (originalExpenseId !== undefined && originalExpense === null) {
         throw adapterError("corrupt-data", "manual-expense.hydrate");
       }
-      const values = await tx.query<JsonValue>("records");
       return {
         revision: snapshot.revision,
         // Keep text fields exactly as entered while the form is editable. The
         // other draft values retain their existing normalization behavior.
         draft: draftForEditing(candidate),
         originalExpense,
-        suggestions: merchantSuggestionsFromValues(
-          values,
-          validation.draft.projectId,
-        ),
       } satisfies HydratedManualExpense;
     },
   );
@@ -687,7 +638,6 @@ const manualExpenseSetup = setup({
       {
         readonly draft: ManualExpenseDraft;
         readonly originalExpense: Expense | null;
-        readonly suggestions: readonly string[];
       }
     >("manual expense open"),
     persistDraft: unwiredPort<PersistDraftInput, void>(
@@ -738,7 +688,6 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
     draft: initialDraftFromRequest(input?.request),
     originalExpense: input?.request?.expense ?? null,
     openRequest: input?.request ?? null,
-    suggestions: [],
     validation: {},
     persistenceRevision: 0,
     result: null,
@@ -781,7 +730,6 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
             actions: assign({
               draft: ({ event }) => event.output!.draft,
               originalExpense: ({ event }) => event.output!.originalExpense,
-              suggestions: ({ event }) => event.output!.suggestions,
               persistenceRevision: ({ event }) => event.output!.revision,
               validation: () => ({}),
               error: () => null,
@@ -852,7 +800,6 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
               return event.output.draft;
             },
             originalExpense: ({ event }) => event.output.originalExpense,
-            suggestions: ({ event }) => event.output.suggestions,
             persistenceRevision: () => 1,
             validation: () => ({}),
             error: () => null,
@@ -888,30 +835,6 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
       on: {
         "expense.change": {
           actions: "persistDraftChange",
-        },
-        "expense.merchant.choose": {
-          actions: assign({
-            draft: ({ context, event }) => ({
-              ...context.draft!,
-              merchant: event.merchant.trim() || undefined,
-            }),
-            validation: () => ({}),
-            error: () => null,
-            persistenceRevision: ({ context }) =>
-              context.persistenceRevision + 1,
-          }),
-        },
-        "expense.merchant.clear": {
-          actions: assign({
-            draft: ({ context }) => ({
-              ...context.draft!,
-              merchant: undefined,
-            }),
-            validation: () => ({}),
-            error: () => null,
-            persistenceRevision: ({ context }) =>
-              context.persistenceRevision + 1,
-          }),
         },
         "expense.submit": [
           { target: "saving", guard: "hasValidDraft" },
@@ -988,30 +911,6 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           actions: "persistDraftChange",
           reenter: true,
         },
-        "expense.merchant.choose": {
-          target: "persistingDraft",
-          reenter: true,
-          actions: assign({
-            draft: ({ context, event }) => ({
-              ...context.draft!,
-              merchant: event.merchant.trim() || undefined,
-            }),
-            persistenceRevision: ({ context }) =>
-              context.persistenceRevision + 1,
-          }),
-        },
-        "expense.merchant.clear": {
-          target: "persistingDraft",
-          reenter: true,
-          actions: assign({
-            draft: ({ context }) => ({
-              ...context.draft!,
-              merchant: undefined,
-            }),
-            persistenceRevision: ({ context }) =>
-              context.persistenceRevision + 1,
-          }),
-        },
         "expense.submit": [
           { target: "saving", guard: "hasValidDraft" },
           {
@@ -1053,30 +952,6 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         "expense.change": {
           target: "persistingDraft",
           actions: "persistDraftChange",
-        },
-        "expense.merchant.choose": {
-          target: "persistingDraft",
-          actions: assign({
-            draft: ({ context, event }) => ({
-              ...context.draft!,
-              merchant: event.merchant.trim() || undefined,
-            }),
-            persistenceRevision: ({ context }) =>
-              context.persistenceRevision + 1,
-            error: () => null,
-          }),
-        },
-        "expense.merchant.clear": {
-          target: "persistingDraft",
-          actions: assign({
-            draft: ({ context }) => ({
-              ...context.draft!,
-              merchant: undefined,
-            }),
-            persistenceRevision: ({ context }) =>
-              context.persistenceRevision + 1,
-            error: () => null,
-          }),
         },
         "expense.submit": [
           { target: "saving", guard: "hasValidDraft" },
@@ -1157,7 +1032,6 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           actions: assign({
             draft: ({ event }) => event.output.draft,
             originalExpense: () => null,
-            suggestions: ({ event }) => event.output.suggestions,
             persistenceRevision: () => 1,
             validation: () => ({}),
             error: () => null,
@@ -1206,34 +1080,6 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           target: "persistingDraft",
           guard: "hasDraft",
           actions: "persistDraftChange",
-        },
-        "expense.merchant.choose": {
-          target: "persistingDraft",
-          guard: "hasDraft",
-          actions: assign({
-            draft: ({ context, event }) => ({
-              ...context.draft!,
-              merchant: event.merchant.trim() || undefined,
-            }),
-            validation: () => ({}),
-            error: () => null,
-            persistenceRevision: ({ context }) =>
-              context.persistenceRevision + 1,
-          }),
-        },
-        "expense.merchant.clear": {
-          target: "persistingDraft",
-          guard: "hasDraft",
-          actions: assign({
-            draft: ({ context }) => ({
-              ...context.draft!,
-              merchant: undefined,
-            }),
-            validation: () => ({}),
-            error: () => null,
-            persistenceRevision: ({ context }) =>
-              context.persistenceRevision + 1,
-          }),
         },
         "expense.delete": {
           target: "deleteConfirming",
@@ -1297,32 +1143,6 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         "expense.change": {
           target: "editing",
           actions: "persistDraftChange",
-        },
-        "expense.merchant.choose": {
-          target: "editing",
-          actions: assign({
-            draft: ({ context, event }) => ({
-              ...context.draft!,
-              merchant: event.merchant.trim() || undefined,
-            }),
-            validation: () => ({}),
-            error: () => null,
-            persistenceRevision: ({ context }) =>
-              context.persistenceRevision + 1,
-          }),
-        },
-        "expense.merchant.clear": {
-          target: "editing",
-          actions: assign({
-            draft: ({ context }) => ({
-              ...context.draft!,
-              merchant: undefined,
-            }),
-            validation: () => ({}),
-            error: () => null,
-            persistenceRevision: ({ context }) =>
-              context.persistenceRevision + 1,
-          }),
         },
         "expense.delete": {
           target: "deleteConfirming",

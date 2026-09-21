@@ -3037,7 +3037,6 @@ export function ManualExpenseScreen({
           <MerchantPicker
             value={draft.merchant ?? ""}
             onValueChange={(value) => update({ merchant: value })}
-            suggestions={[...snapshot.context.suggestions]}
             isDisabled={formLocked}
           />
           <TextField

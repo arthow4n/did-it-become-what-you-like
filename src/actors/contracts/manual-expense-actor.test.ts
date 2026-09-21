@@ -372,7 +372,7 @@ Deno.test("manual-expense: queued open starts after empty draft hydration", asyn
   actor.stop();
 });
 
-Deno.test("manual-expense: transient and failed edits retain delete and merchant actions", async () => {
+Deno.test("manual-expense: transient and failed edits retain delete and field changes", async () => {
   const harness = await createHarness();
   const expense = expenseRecord({ id: "expense-transient-actions" });
   await harness.local.transaction(
@@ -405,11 +405,21 @@ Deno.test("manual-expense: transient and failed edits retain delete and merchant
   saveFailure.send({ type: "expense.submit" });
   await settle();
   assertEquals(saveFailure.getSnapshot().value, "saveFailed");
-  saveFailure.send({ type: "expense.merchant.choose", merchant: " Market " });
+  saveFailure.send({
+    type: "expense.change",
+    draft: draftWith(saveFailure.getSnapshot().context.draft!, {
+      merchant: " Market ",
+    }),
+  });
   await settle();
   assertEquals(saveFailure.getSnapshot().value, "editing");
-  assertEquals(saveFailure.getSnapshot().context.draft?.merchant, "Market");
-  saveFailure.send({ type: "expense.merchant.clear" });
+  assertEquals(saveFailure.getSnapshot().context.draft?.merchant, " Market ");
+  saveFailure.send({
+    type: "expense.change",
+    draft: draftWith(saveFailure.getSnapshot().context.draft!, {
+      merchant: undefined,
+    }),
+  });
   await settle();
   assertEquals(saveFailure.getSnapshot().context.draft?.merchant, undefined);
   harness.local.failNext("quota");
@@ -450,49 +460,6 @@ Deno.test("manual-expense: failed save-and-add-another keeps the draft editable"
     actor.getSnapshot().context.draft?.description,
     "Corrected after failed save",
   );
-  actor.stop();
-});
-
-Deno.test("manual-expense: merchant suggestions can be chosen and cleared", async () => {
-  const harness = await createHarness();
-  await harness.local.transaction("readwrite", async (transaction) => {
-    await transaction.put(
-      "records",
-      "expense-old",
-      asExpenseValue(expenseRecord({
-        id: "expense-old",
-        date: "2026-08-22",
-        merchant: "Market",
-      })),
-    );
-    await transaction.put(
-      "records",
-      "expense-new",
-      asExpenseValue(expenseRecord({
-        id: "expense-new",
-        merchant: "Cafe",
-      })),
-    );
-    await transaction.put(
-      "records",
-      "expense-duplicate",
-      asExpenseValue(expenseRecord({
-        id: "expense-duplicate",
-        date: "2026-08-23",
-        merchant: "cafe",
-      })),
-    );
-  });
-  const actor = createExpenseActor(harness, "workflow:suggestions");
-  actor.send({ type: "expense.open" });
-  await settle();
-  assertEquals(actor.getSnapshot().context.suggestions, ["Cafe", "Market"]);
-  actor.send({ type: "expense.merchant.choose", merchant: " Cafe " });
-  await settle();
-  assertEquals(actor.getSnapshot().context.draft?.merchant, "Cafe");
-  actor.send({ type: "expense.merchant.clear" });
-  await settle();
-  assertEquals(actor.getSnapshot().context.draft?.merchant, undefined);
   actor.stop();
 });
 

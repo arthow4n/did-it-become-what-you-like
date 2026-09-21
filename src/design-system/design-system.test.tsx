@@ -1352,7 +1352,6 @@ Deno.test("design-system currency search and merchant clearing remain functional
           createElement(MerchantPicker, {
             value: merchant,
             onValueChange: (value) => merchant = value,
-            suggestions: ["ICA Maxi"],
           }),
         ),
       );

@@ -321,10 +321,7 @@ export function DesignSystemGallery() {
                 onReset={() => undefined}
               >
                 <Stack gap={4}>
-                  <MerchantPicker
-                    suggestions={["ICA Maxi Solna", "SL"]}
-                    value="ICA"
-                  />
+                  <MerchantPicker value="ICA" />
                   <MoneyField label="Maximum amount" currency="SEK" />
                 </Stack>
               </FilterSheet>

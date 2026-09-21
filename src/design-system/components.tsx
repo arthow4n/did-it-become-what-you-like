@@ -3088,10 +3088,9 @@ export function CurrencyPicker(
 }
 
 export function MerchantPicker(
-  { value, onValueChange, suggestions = [], isDisabled }: {
+  { value, onValueChange, isDisabled }: {
     value?: string;
     onValueChange?: (value: string) => void;
-    suggestions?: string[];
     isDisabled?: boolean;
   },
 ) {
@@ -3101,9 +3100,6 @@ export function MerchantPicker(
       value={value}
       onValueChange={onValueChange}
       isDisabled={isDisabled}
-      description={suggestions.length
-        ? `Suggestions available: ${suggestions.join(", ")}`
-        : undefined}
     />
   );
 }

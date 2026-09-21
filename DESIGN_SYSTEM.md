@@ -216,8 +216,9 @@ flexbox abuse, all components and screens must follow these rules:
      concrete-period / next navigator. Wide layouts keep them on one row.
      Compact layouts place the unit choice above a full-width navigation row so
      the concrete date remains completely readable between standard touch-target
-     arrows. The concrete date doubles as the contextual return-to-current
-     action when needed.
+     arrows. The concrete date is always non-interactive. A dedicated compact
+     current-period control keeps a stable slot before the next arrow; it is
+     disabled when the displayed period is already current.
    - Tightly coupled fields (`[Amount + Currency]`, `[Date + Time]`) pair into
      responsive two-column rows on desktop (`@media (min-width: 720px)`),
      collapsing to a single column on mobile.

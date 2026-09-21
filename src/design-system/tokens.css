@@ -1244,7 +1244,9 @@
 
   .ds-period-picker__navigator {
     display: grid;
-    grid-template-columns: minmax(5.5rem, auto) auto minmax(0, 1fr) auto;
+    grid-template-columns:
+      minmax(5.5rem, auto) auto minmax(0, 1fr) auto
+      auto;
     gap: var(--space-2);
     align-items: end;
     width: 100%;
@@ -1255,9 +1257,12 @@
   }
 
   .ds-period-picker__label {
+    display: flex;
     min-width: 0;
     min-height: var(--control-height);
     align-self: end;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
     text-align: center;
     text-overflow: ellipsis;
@@ -1271,7 +1276,7 @@
 
   @media (max-width: 719px) {
     .ds-period-picker__navigator {
-      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
     }
 
     .ds-period-picker__mode {

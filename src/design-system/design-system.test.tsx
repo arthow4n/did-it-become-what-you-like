@@ -1399,6 +1399,10 @@ Deno.test("design-system period picker exposes a controlled custom calendar peri
       const datePicker = view.getByLabelText("Custom calendar date");
       assertEqual((datePicker as HTMLInputElement).value, "2026-08-24");
       assert(view.getByText("August 24, 2026"));
+      assert(
+        view.queryByRole("button", { name: "August 24, 2026" }) === null,
+        "the displayed period should remain non-interactive",
+      );
       fireEvent.click(view.getByRole("button", { name: "Previous day" }));
       assertEqual(navigation, "previous");
       fireEvent.click(view.getByRole("button", { name: "Next day" }));

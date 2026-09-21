@@ -584,6 +584,11 @@ Deno.test("local UI expenses exposes shared filters, empty state, and add event"
     const view = within(document.body);
     assert(view.getByRole("heading", { name: "Expenses" }));
     assert(view.getByRole("button", { name: /Filters/ }));
+    assert(
+      (view.getByRole("button", { name: "Today" }) as HTMLButtonElement)
+        .disabled,
+      "the stable current-period control should remain present and disabled at today",
+    );
     const searchRow = document.querySelector(
       ".local-ui-expenses-filter-bar__search-row",
     );

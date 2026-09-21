@@ -20,6 +20,7 @@ import type {
   Ref,
 } from "react";
 import {
+  CalendarClock,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
@@ -2957,19 +2958,19 @@ export function PeriodPicker({
               variant="secondary"
               onPress={onPrevious}
             />
-            {onReturnToCurrent && returnToCurrentLabel
+            <Text className="ds-period-picker__label">{periodLabel}</Text>
+            {returnToCurrentLabel
               ? (
-                <Button
-                  className="ds-period-picker__label"
-                  variant="quiet"
-                  onPress={onReturnToCurrent}
+                <IconButton
+                  icon={<CalendarClock size={18} />}
                   aria-label={returnToCurrentLabel}
                   title={returnToCurrentLabel}
-                >
-                  {periodLabel}
-                </Button>
+                  variant="quiet"
+                  isDisabled={!onReturnToCurrent}
+                  onPress={onReturnToCurrent}
+                />
               )
-              : <Text className="ds-period-picker__label">{periodLabel}</Text>}
+              : null}
             <IconButton
               icon={<ChevronRight />}
               aria-label={nextLabel!}

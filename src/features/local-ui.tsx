@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowUp,
   Pencil,
+  ReceiptText,
   SlidersHorizontal,
   Trash2,
   X,
@@ -37,7 +38,6 @@ import {
   createManualExpenseMachine,
   isDraftModified,
   type ManualExpenseDraft,
-  type ManualExpenseEvent,
   type ManualExpenseOpenRequest,
 } from "../actors/manual-expense.ts";
 import {
@@ -59,6 +59,7 @@ import {
   Card,
   CategoryBreakdown,
   CategoryPicker,
+  Checkbox,
   ColorChoiceField,
   ConfirmDialog,
   ContentContainer,
@@ -2615,16 +2616,6 @@ export function CategoryManager({
   );
 }
 
-export type ManualSaveMode = "expenses" | "another";
-
-export function manualExpenseSubmitEvent(
-  mode: ManualSaveMode,
-): ManualExpenseEvent {
-  return mode === "another"
-    ? { type: "expense.submit-and-add-another" }
-    : { type: "expense.submit" };
-}
-
 export function ManualExpenseRecoveryScreen({
   message,
   onRetry,
@@ -2742,7 +2733,7 @@ export function ManualExpenseScreen({
   service: ProjectCategoryService;
   state: ProjectCategoryState;
   request: ManualExpenseOpenRequest;
-  onSaved: (expense: Expense, mode: ManualSaveMode) => void;
+  onSaved: (expense: Expense) => void;
   onManualReceipt?: () => void;
   onUsefulAction?: () => void;
   onDirtyChange?: (dirty: boolean) => void;
@@ -2767,7 +2758,6 @@ export function ManualExpenseScreen({
   const savedResultId = useRef<string | null>(null);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
   const syncStatus = useSyncStatus();
-  const saveMode = useRef<ManualSaveMode>("expenses");
   const recentCategoryIds = useMemo(() => {
     const seen = new Set<string>();
     const recents: string[] = [];
@@ -2791,14 +2781,14 @@ export function ManualExpenseScreen({
   useEffect(() => {
     const savedExpense = snapshot.context.result?.expense;
     const completedSave = savedExpense !== undefined &&
-      (snapshot.matches("saved") || saveMode.current === "another");
+      snapshot.matches("saved");
     if (completedSave && notifiedResultId.current !== savedExpense.id) {
       notifiedResultId.current = savedExpense.id;
       syncStatus?.notifyLocalMutation();
     }
     if (completedSave && savedResultId.current !== savedExpense.id) {
       savedResultId.current = savedExpense.id;
-      onSaved(savedExpense, saveMode.current);
+      onSaved(savedExpense);
     }
     if (completionHandled.current) return;
     if (snapshot.matches("deleted")) {
@@ -2838,7 +2828,7 @@ export function ManualExpenseScreen({
   useEffect(() => {
     if (
       usefulActionHandled.current || !snapshot.context.result?.expense ||
-      !(snapshot.matches("saved") || saveMode.current === "another")
+      !snapshot.matches("saved")
     ) return;
     usefulActionHandled.current = true;
     onUsefulAction?.();
@@ -2928,14 +2918,9 @@ export function ManualExpenseScreen({
     id,
     message,
   }));
-  const submit = (mode: ManualSaveMode) => {
-    saveMode.current = mode;
-    send(manualExpenseSubmitEvent(mode));
-  };
-
   return (
     <ContentContainer size="form">
-      <Stack gap={5}>
+      <Stack gap={3} className="local-ui-manual-expense">
         {snapshot.context.originalExpense
           ? (
             <PageHeader
@@ -2953,177 +2938,169 @@ export function ManualExpenseScreen({
             />
           )
           : (
-            <PageHeader
-              headingLevel={1}
-              title="New expense"
-              actions={onManualReceipt
-                ? (
-                  <Button
-                    variant="secondary"
-                    onPress={onManualReceipt}
-                  >
-                    Enter receipt manually
-                  </Button>
-                )
-                : undefined}
-            />
-          )}
-        <ExpenseForm
-          stickyActions
-          status={snapshot.matches("discardConfirming")
-            ? (
-              <InlineNotice tone="warning" title="Discard unsaved changes?">
-                <FormActions className="local-ui-delete-actions">
-                  <Button
-                    variant="danger"
-                    onPress={() => send({ type: "expense.confirm-discard" })}
-                  >
-                    Discard changes
-                  </Button>
-                  <Button
-                    variant="quiet"
-                    onPress={() => send({ type: "expense.keep-editing" })}
-                  >
-                    Keep editing
-                  </Button>
-                </FormActions>
-              </InlineNotice>
-            )
-            : failed || deleteFailed || busy || isModified
-            ? (
-              <DraftStatus
-                state={failed || deleteFailed
-                  ? "failed"
-                  : busy
-                  ? "saving"
-                  : "dirty"}
-                detail={failed || deleteFailed
-                  ? snapshot.context.error?.message
-                  : busy
-                  ? "Saving expense…"
-                  : undefined}
-                action={saveFailed
+            <div className="local-ui-manual-expense__header">
+              <PageHeader
+                headingLevel={1}
+                title="New expense"
+                actions={onManualReceipt
                   ? (
-                    <Button
-                      variant="secondary"
-                      onPress={() => send({ type: "expense.retry" })}
-                    >
-                      Retry save
-                    </Button>
-                  )
-                  : isModified && !formLocked
-                  ? (
-                    <Button
+                    <IconButton
+                      icon={<ReceiptText size={18} />}
+                      aria-label="Enter receipt manually"
+                      title="Enter receipt manually"
                       variant="quiet"
-                      onPress={() => send({ type: "expense.discard" })}
-                    >
-                      Discard draft
-                    </Button>
+                      onPress={onManualReceipt}
+                    />
                   )
                   : undefined}
               />
-            )
-            : undefined}
-          actions={
-            <>
-              <Button
-                variant="secondary"
-                isDisabled={formLocked}
-                onPress={() => submit("another")}
-              >
-                Save and add another
-              </Button>
+            </div>
+          )}
+        <div className="local-ui-manual-expense__form">
+          <ExpenseForm
+            stickyActions
+            status={snapshot.matches("discardConfirming")
+              ? (
+                <InlineNotice tone="warning" title="Discard unsaved changes?">
+                  <FormActions className="local-ui-delete-actions">
+                    <Button
+                      variant="danger"
+                      onPress={() => send({ type: "expense.confirm-discard" })}
+                    >
+                      Discard changes
+                    </Button>
+                    <Button
+                      variant="quiet"
+                      onPress={() => send({ type: "expense.keep-editing" })}
+                    >
+                      Keep editing
+                    </Button>
+                  </FormActions>
+                </InlineNotice>
+              )
+              : failed || deleteFailed || busy || isModified
+              ? (
+                <DraftStatus
+                  state={failed || deleteFailed
+                    ? "failed"
+                    : busy
+                    ? "saving"
+                    : "dirty"}
+                  detail={failed || deleteFailed
+                    ? snapshot.context.error?.message
+                    : busy
+                    ? "Saving expense…"
+                    : undefined}
+                  action={saveFailed
+                    ? (
+                      <Button
+                        variant="secondary"
+                        onPress={() => send({ type: "expense.retry" })}
+                      >
+                        Retry save
+                      </Button>
+                    )
+                    : isModified && !formLocked
+                    ? (
+                      <Button
+                        variant="quiet"
+                        onPress={() => send({ type: "expense.discard" })}
+                      >
+                        Discard draft
+                      </Button>
+                    )
+                    : undefined}
+                />
+              )
+              : undefined}
+            actions={
               <Button
                 pending={busy}
                 isDisabled={formLocked}
-                onPress={() => submit("expenses")}
+                onPress={() => send({ type: "expense.submit" })}
               >
                 Save expense
               </Button>
-            </>
-          }
-        >
-          {errors.length ? <ErrorSummary errors={errors} /> : null}
-          <div className="local-ui-direction-row">
-            <SegmentedControl
-              label="Direction"
-              value={draft.direction}
-              isDisabled={formLocked}
-              onChange={(value) =>
-                update({ direction: value as ManualExpenseDraft["direction"] })}
-              options={[{ id: "spent", label: "Spent" }, {
-                id: "money-back",
-                label: "Money back",
-              }]}
-            />
-          </div>
-          <div className="local-ui-form-row local-ui-form-row--amount-currency">
-            <MoneyField
-              label="Amount"
-              isRequired
-              value={draft.amount}
-              isDisabled={formLocked}
-              onChange={(value) => update({ amount: value })}
-              currency={draft.currency}
-              error={validation.amount}
-            />
-            <CurrencyPicker
-              value={draft.currency}
-              options={CURRENCY_OPTIONS.map((code) => ({
-                id: code,
-                label: code,
-              }))}
-              onValueChange={(value) =>
-                update({ currency: CurrencyCodeSchema.parse(value) })}
+            }
+          >
+            {errors.length ? <ErrorSummary errors={errors} /> : null}
+            <div className="local-ui-form-row local-ui-form-row--amount-currency">
+              <MoneyField
+                label="Amount"
+                isRequired
+                value={draft.amount}
+                isDisabled={formLocked}
+                onChange={(value) => update({ amount: value })}
+                currency={draft.currency}
+                error={validation.amount}
+              />
+              <CurrencyPicker
+                value={draft.currency}
+                options={CURRENCY_OPTIONS.map((code) => ({
+                  id: code,
+                  label: code,
+                }))}
+                onValueChange={(value) =>
+                  update({ currency: CurrencyCodeSchema.parse(value) })}
+                isDisabled={formLocked}
+              />
+            </div>
+            <MerchantPicker
+              value={draft.merchant ?? ""}
+              onValueChange={(value) => update({ merchant: value })}
               isDisabled={formLocked}
             />
-          </div>
-          <MerchantPicker
-            value={draft.merchant ?? ""}
-            onValueChange={(value) => update({ merchant: value })}
-            isDisabled={formLocked}
-          />
-          <TextField
-            label="Description (optional)"
-            value={draft.description}
-            onChange={(value) => update({ description: value })}
-            error={validation.description}
-            isDisabled={formLocked}
-          />
-          <CategoryPicker
-            label="Category"
-            categories={categories}
-            value={draft.categoryId}
-            recentCategoryIds={recentCategoryIds}
-            onValueChange={(value) => update({ categoryId: value })}
-            error={validation.categoryId}
-            isDisabled={formLocked}
-          />
-          <div className="local-ui-form-row local-ui-form-row--date-time">
-            <NativeDateField
-              label="Date"
-              required
-              value={draft.date}
-              onChange={(event) => update({ date: event.currentTarget.value })}
-              error={validation.date}
-              disabled={formLocked}
+            <TextField
+              label="Description (optional)"
+              value={draft.description}
+              onChange={(value) => update({ description: value })}
+              error={validation.description}
+              isDisabled={formLocked}
             />
-            <NativeTimeField
-              label="Time (optional)"
-              value={draft.time ?? ""}
-              onChange={(event) =>
-                update({ time: event.currentTarget.value || undefined })}
-              error={validation.time}
-              disabled={formLocked}
+            <CategoryPicker
+              label="Category"
+              categories={categories}
+              value={draft.categoryId}
+              recentCategoryIds={recentCategoryIds}
+              onValueChange={(value) => update({ categoryId: value })}
+              error={validation.categoryId}
+              isDisabled={formLocked}
             />
-          </div>
-          <ProjectPicker
-            options={projects}
-            value={draft.projectId}
-            onValueChange={(value) => update({ projectId: value })}
-            isDisabled={formLocked}
-          />
-        </ExpenseForm>
+            <div className="local-ui-form-row local-ui-form-row--date-time">
+              <NativeDateField
+                label="Date"
+                required
+                value={draft.date}
+                onChange={(event) =>
+                  update({ date: event.currentTarget.value })}
+                error={validation.date}
+                disabled={formLocked}
+              />
+              <NativeTimeField
+                label="Time (optional)"
+                value={draft.time ?? ""}
+                onChange={(event) =>
+                  update({ time: event.currentTarget.value || undefined })}
+                error={validation.time}
+                disabled={formLocked}
+              />
+            </div>
+            <ProjectPicker
+              options={projects}
+              value={draft.projectId}
+              onValueChange={(value) => update({ projectId: value })}
+              isDisabled={formLocked}
+            />
+            <Checkbox
+              isSelected={draft.direction === "money-back"}
+              isDisabled={formLocked}
+              onChange={(selected) =>
+                update({ direction: selected ? "money-back" : "spent" })}
+            >
+              Money back
+            </Checkbox>
+          </ExpenseForm>
+        </div>
         {snapshot.matches("discardFailed")
           ? (
             <InlineNotice tone="danger" title="Changes were not discarded">
@@ -3875,11 +3852,9 @@ export function LocalUiRuntime(
                 service={organization}
                 state={state}
                 request={manualRequest}
-                onSaved={(expense, mode) => {
-                  if (mode === "expenses") {
-                    setWorkflowDirty(false);
-                    setDirtyNavigationWorkflow(false);
-                  }
+                onSaved={(expense) => {
+                  setWorkflowDirty(false);
+                  setDirtyNavigationWorkflow(false);
                   setState((current) => {
                     if (current === null) return current;
                     const existingIndex = current.expenses.findIndex((entry) =>

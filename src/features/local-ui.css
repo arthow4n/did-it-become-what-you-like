@@ -211,10 +211,23 @@
     min-width: 0;
   }
 
-  .local-ui-direction-row {
-    display: flex;
-    width: fit-content;
-    max-width: 100%;
+  .local-ui-manual-expense__header .ds-page-header {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+
+  .local-ui-manual-expense__header .ds-page-header__actions {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .local-ui-manual-expense__form > .ds-form-layout > .ds-stack {
+    gap: var(--space-3);
+  }
+
+  .local-ui-manual-expense__form .ds-form-actions--sticky {
+    margin-top: var(--space-3);
+    padding-block: var(--space-2);
   }
 
   @media (min-width: 720px) {

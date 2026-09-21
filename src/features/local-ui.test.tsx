@@ -10,8 +10,6 @@ import {
   type LocalUiPath,
   ManualExpenseRecoveryScreen,
   ManualExpenseScreen,
-  manualExpenseSubmitEvent,
-  type ManualSaveMode,
   OrganizeScreen,
   ProjectManager,
   SavedExpenseCompletionScreen,
@@ -569,18 +567,6 @@ Deno.test("local UI isolates edit drafts from the new-expense draft key", async 
   });
 });
 
-Deno.test("local UI save modes dispatch the typed manual-expense events", () => {
-  assert(
-    manualExpenseSubmitEvent("another").type ===
-      "expense.submit-and-add-another",
-    "Save and add another should use the typed actor event",
-  );
-  assert(
-    manualExpenseSubmitEvent("expenses").type === "expense.submit",
-    "Ordinary save should preserve the ordinary submit event",
-  );
-});
-
 Deno.test("local UI expenses exposes shared filters, empty state, and add event", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let addCount = 0;
@@ -808,13 +794,13 @@ Deno.test("local UI exposes save failure retry without discarding input", async 
   });
 });
 
-Deno.test("local UI add-another notifies sync and retains its actor lifecycle", async () => {
+Deno.test("local UI keeps money back optional and exposes one save action", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
       const { service } = createTestService(state);
       let notices = 0;
-      const saveModes: ManualSaveMode[] = [];
+      let savedExpense: Expense | undefined;
       const syncStatus: SyncStatusContextValue = {
         view: {
           mode: "configured",
@@ -838,7 +824,7 @@ Deno.test("local UI add-another notifies sync and retains its actor lifecycle", 
             service,
             state,
             request: { projectId: project.id },
-            onSaved: (_, mode) => saveModes.push(mode),
+            onSaved: (expense) => savedExpense = expense,
             onClosed: () => undefined,
           }),
         ),
@@ -850,18 +836,29 @@ Deno.test("local UI add-another notifies sync and retains its actor lifecycle", 
       fireEvent.input(view.getByRole("textbox", { name: "Amount" }), {
         target: { value: "4" },
       });
-      fireEvent.click(
-        view.getByRole("button", { name: "Save and add another" }),
+      assert(
+        view.queryByRole("button", { name: "Save and add another" }) === null,
+        "the rare add-another action should not occupy the sticky bar",
       );
-      await waitFor(() =>
-        assert(
-          (view.getByRole("textbox", {
-            name: "Amount",
-          }) as HTMLInputElement).value === "",
-        )
+      assertEquals(
+        view.getAllByRole("button", { name: "Save expense" }).length,
+        1,
       );
+      const moneyBack = view.getByRole("checkbox", { name: "Money back" });
+      const projectPicker = view.getByRole("combobox", { name: "Project" });
+      assert(
+        Boolean(
+          projectPicker.compareDocumentPosition(moneyBack) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+        "Money back should be the final form option after Project",
+      );
+      assert(!(moneyBack as HTMLInputElement).checked);
+      fireEvent.click(moneyBack);
+      fireEvent.click(view.getByRole("button", { name: "Save expense" }));
+      await waitFor(() => assert(savedExpense !== undefined));
       assertEquals(notices, 1);
-      assertEquals(saveModes, ["another"]);
+      assertEquals(savedExpense?.amount, "4");
     });
   });
 });

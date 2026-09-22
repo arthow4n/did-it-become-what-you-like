@@ -45,6 +45,7 @@ export type ReceiptExtractionRequest = {
   }[];
   readonly locale: string;
   readonly currency: CurrencyCode;
+  readonly today?: CalendarDate;
 };
 
 type ReceiptExtractionLineBase = {

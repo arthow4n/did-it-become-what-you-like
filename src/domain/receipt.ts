@@ -105,6 +105,8 @@ export type ReceiptReviewInput = {
     readonly description?: string;
   }[];
   readonly nextId: () => StableId;
+  readonly scanMode?: "receipt" | "menu";
+  readonly today?: CalendarDate;
 };
 
 export type ReceiptCommitResult = {
@@ -604,7 +606,8 @@ function normalizedDraft(
       lines,
     ),
     ...(review.parent.time === undefined ? {} : { time: review.parent.time }),
-    ...(review.parent.merchant === undefined
+    ...(review.parent.merchant === undefined ||
+        review.parent.merchant.trim() === ""
       ? {}
       : { merchant: review.parent.merchant.trim() }),
   };
@@ -633,8 +636,10 @@ export function normalizeReceiptExtractionDraft(
   const currency = typeof value.currency === "string"
     ? value.currency.trim().toUpperCase()
     : "";
-  const date = typeof value.date === "string" ? value.date.trim() : "";
-  const printedTotal = parseDecimal(value.printedTotal);
+  const isMenu = input.scanMode === "menu";
+  const rawDate = typeof value.date === "string" ? value.date.trim() : "";
+  const date = isMenu && input.today ? input.today : rawDate;
+  const printedTotal = isMenu ? "0" : parseDecimal(value.printedTotal);
   if (!CurrencyCodeSchema.safeParse(currency).success) {
     invalid("Receipt extraction returned an invalid currency.");
   }

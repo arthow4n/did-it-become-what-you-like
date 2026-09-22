@@ -22,12 +22,14 @@ import type { ReceiptAiModelQuery } from "../adapters/ports/receipt-ai.ts";
 import type { LocalPort } from "../adapters/ports/local.ts";
 import type { JsonValue } from "../adapters/ports/common.ts";
 import {
+  type CalendarDate,
   CalendarDateSchema,
   CanonicalDecimalSchema,
   type Category,
   CurrencyCodeSchema,
   DEFAULT_DEVICE_LOCAL_SETTINGS,
   type DeviceLocalSettings,
+  moneyCompare,
   parseDeviceLocalSettings,
   StableIdSchema,
   TimeOfDaySchema,
@@ -228,6 +230,13 @@ async function imageDimensions(
   } catch {
     return { width: 1, height: 1 };
   }
+}
+
+function localCalendarDate(now = new Date()): CalendarDate {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}` as CalendarDate;
 }
 
 function messageForError(error: unknown, fallback: string): string {
@@ -874,6 +883,7 @@ export function ReceiptScanScreen({
         image: selectedImages[0]!,
         images: selectedImages,
         scanMode,
+        today: localCalendarDate(),
         projectId: project.id,
         currency: project.defaultCurrency,
         locale: globalThis.navigator?.language ?? "en-US",
@@ -1912,18 +1922,20 @@ export function ReceiptReviewScreen({
           onEdit={openMetadata}
         />
         <ReceiptReconciliation
-          printed={isMenu && review.parent.printedTotal === "0"
+          printed={isMenu &&
+              moneyCompare(review.parent.printedTotal, "0") === 0
             ? selectedTotal
             : review.parent.printedTotal}
           selected={selectedTotal}
-          difference={isMenu && review.parent.printedTotal === "0"
+          difference={isMenu &&
+              moneyCompare(review.parent.printedTotal, "0") === 0
             ? "0"
             : difference}
           currency={review.parent.currency}
           printedLabel={isManual
             ? "Total paid"
             : isMenu
-            ? (review.parent.printedTotal === "0"
+            ? (moneyCompare(review.parent.printedTotal, "0") === 0
               ? "Bill total (optional)"
               : "Bill total")
             : undefined}
@@ -2099,8 +2111,10 @@ export function ReceiptReviewScreen({
             pending={snapshot.matches("saving")}
             isDisabled={snapshot.hasTag("saving") ||
               snapshot.matches("failed") || selectedCount === 0}
-            onPress={() =>
-              send({ type: "receipt.review.submit", confirmMismatch: false })}
+            onPress={() => send({
+              type: "receipt.review.submit",
+              confirmMismatch: isMenu || snapshot.matches("mismatch"),
+            })}
           >
             {isManual
               ? "Save receipt with " + selectedCount + " " +
@@ -2150,7 +2164,7 @@ export function ReceiptMetadataEditor({
   const [currency, setCurrency] = useState(parent.currency);
   const [printedTotal, setPrintedTotal] = useState(
     menu
-      ? (parent.printedTotal === "0"
+      ? (moneyCompare(parent.printedTotal, "0") === 0
         ? ""
         : unsignedDecimal(parent.printedTotal))
       : manual

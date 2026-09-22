@@ -94,7 +94,7 @@ export const RECEIPT_OUTPUT_JSON_SCHEMA = RECEIPT_JSON_SCHEMA;
 export function buildReceiptPrompt(
   request: Pick<
     ReceiptExtractionRequest,
-    "categories" | "locale" | "currency" | "documentType"
+    "categories" | "locale" | "currency" | "documentType" | "today"
   >,
 ): string {
   const categories = request.categories.map((category) => ({
@@ -120,7 +120,11 @@ export function buildReceiptPrompt(
       "For every line, provide a concise rationale (one short sentence) naming the menu section or evidence used for its category and direction.",
       "Do not invent items that are not on the menu. If an item has multiple sizes/prices, list them as distinct items (for example, 'Coffee (Regular)' and 'Coffee (Large)').",
       "If a restaurant or venue name is visible on the menu, set merchant to that name. If not visible, set merchant to 'Restaurant'.",
-      "Restaurant menus do not print transaction totals, dates, or purchase times: set printedTotal to '0', set time to null, set mismatch to null, and set date to the current date based on the device locale.",
+      `Restaurant menus do not print transaction totals, dates, or purchase times: set printedTotal to '0', set time to null, set mismatch to null, and set date to ${
+        request.today
+          ? `'${request.today}'`
+          : "the current date based on the device locale"
+      }.`,
       "Return JSON only and preserve uncertainty.",
     ].join("\n");
   }
@@ -310,18 +314,22 @@ function mismatchText(output: ReceiptOutput): readonly string[] {
 /** Convert the validated provider-neutral response to the receipt port draft. */
 export function mapReceiptOutputToDraft(
   output: ReceiptOutput,
-  request: Pick<ReceiptExtractionRequest, "categories">,
+  request: Pick<
+    ReceiptExtractionRequest,
+    "categories" | "documentType" | "today"
+  >,
 ): ReceiptExtractionDraft {
   const categories = new Set<StableId>(
     request.categories.map((category) => category.id),
   );
+  const isMenu = request.documentType === "menu";
 
   return {
     merchant: output.merchant,
     currency: output.currency,
-    date: output.date,
+    date: isMenu && request.today ? request.today : output.date,
     ...(output.time ? { time: output.time } : {}),
-    printedTotal: output.printedTotal,
+    printedTotal: isMenu ? "0" : output.printedTotal,
     lines: output.lines.map((line) => {
       const categoryAvailable = categories.has(line.categoryId);
       const uncertainty = categoryAvailable ? line.uncertainty : [

@@ -3815,6 +3815,7 @@ export function LocalUiRuntime(
                 onDiscardDisabledChange={setDirtyDiscardDisabled}
                 discardRequest={discardRequest}
                 onClose={() => {
+                  sendShell({ type: "shell.repository.refresh" });
                   void organization.getState().then(setState);
                   setWorkflowDirty(false);
                   finishDirtyNavigation("/expenses");
@@ -3835,6 +3836,7 @@ export function LocalUiRuntime(
                 onDiscardDisabledChange={setDirtyDiscardDisabled}
                 discardRequest={discardRequest}
                 onClose={() => {
+                  sendShell({ type: "shell.repository.refresh" });
                   void organization.getState().then(setState);
                   setReceiptReview(undefined);
                   setReceiptReviewMode("scanned");

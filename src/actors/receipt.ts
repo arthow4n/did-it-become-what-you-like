@@ -43,7 +43,8 @@ import type {
 } from "./contracts/index.ts";
 import { receiptScanMachine } from "./contracts/receipt.ts";
 import { contractFailureFromError } from "./contracts/types.ts";
-import type { StableId } from "../domain/index.ts";
+import { moneyCompare } from "../domain/money/index.ts";
+import type { CalendarDate, StableId } from "../domain/index.ts";
 import type { OrganizationStore } from "../domain/organization.ts";
 import type { JsonValue } from "../adapters/ports/common.ts";
 
@@ -130,6 +131,13 @@ async function extractReview(
       preparedImages.push(prepared);
     }
 
+    const now = new Date();
+    const today = input.today ?? (
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${
+        String(now.getDate()).padStart(2, "0")
+      }` as CalendarDate
+    );
+
     let draft: Awaited<ReturnType<ReceiptAiPort["extractReceipt"]>>;
     try {
       draft = await dependencies.ai.extractReceipt({
@@ -142,6 +150,7 @@ async function extractReview(
         categories: input.categoryCatalogue,
         locale: input.locale,
         currency: input.currency,
+        today,
       }, { signal });
     } catch (error) {
       throw scanStepError(error, "unknown", "receipt.ai.extract");
@@ -154,6 +163,8 @@ async function extractReview(
         currency: input.currency,
         categoryCatalogue: input.categoryCatalogue,
         nextId: dependencies.nextLineId ?? defaultLineId,
+        scanMode: input.scanMode,
+        today,
       });
     } catch (error) {
       throw scanStepError(error, "invalid-request", "receipt.normalize");
@@ -373,11 +384,11 @@ export function createReceiptReviewMachine(
       hasMismatch: ({ context }) =>
         Boolean(
           context.review?.printedTotalMismatch &&
-            context.review.parent.printedTotal !== "0",
+            moneyCompare(context.review.parent.printedTotal, "0") !== 0,
         ),
       noMismatch: ({ context }) =>
         !context.review?.printedTotalMismatch ||
-        context.review.parent.printedTotal === "0",
+        moneyCompare(context.review.parent.printedTotal, "0") === 0,
       hasSavedOutcome: ({ context }) => context.outcome?.status === "saved",
       hasDiscardedOutcome: ({ context }) =>
         context.outcome?.status === "discarded",
@@ -769,7 +780,7 @@ export function createReceiptReviewMachine(
           src: "commitReceipt",
           input: ({ context }) => {
             const review = context.review!;
-            if (review.parent.printedTotal === "0") {
+            if (moneyCompare(review.parent.printedTotal, "0") === 0) {
               const selectedTotal = receiptSelectedTotal(review);
               return {
                 review: editReceiptParent(review, {

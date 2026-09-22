@@ -191,6 +191,7 @@ export type ReceiptScanInput = {
   readonly prepareImage: boolean;
   /** Optional proof that the approved transmission disclosure was accepted. */
   readonly disclosure?: ReceiptDisclosure;
+  readonly today?: CalendarDate;
 };
 
 export type ReceiptScanOutput = {

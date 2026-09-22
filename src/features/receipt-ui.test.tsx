@@ -2429,3 +2429,205 @@ Deno.test(
     });
   },
 );
+
+Deno.test(
+  "receipt-ui menu scan mode normalizes extraction draft and saves selected items via checkbox",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(async () => {
+        const imageStore = new ReceiptImageStore();
+        const model = {
+          id: "fake-gemini-model",
+          displayName: "Fake Gemini Model",
+          lifecycle: "active" as const,
+          capabilities: {
+            "image-input": true,
+            "content-generation": true,
+            "structured-output": true,
+          },
+        };
+        let receivedToday: string | undefined;
+        const rawMenuDraft: ReceiptExtractionDraft = {
+          merchant: "",
+          currency: "EUR",
+          date: "2024-01-01",
+          printedTotal: "24",
+          lines: [
+            {
+              description: "Pasta Carbonara",
+              amount: "15",
+              categoryId: "category-uncategorized",
+              kind: "purchase",
+              direction: "outflow",
+              selected: false,
+              quantity: "0",
+              unitPrice: "15",
+              rationale: "Primi piatti.",
+            },
+          ],
+          uncertainty: [],
+          mismatches: [],
+        };
+        const ai: ReceiptAiPort = {
+          listModels: () => Promise.resolve([model]),
+          extractReceipt: (request) => {
+            receivedToday = request.today;
+            return Promise.resolve(rawMenuDraft);
+          },
+        };
+        const gemini = {
+          ...ai,
+          getApiKey: () => Promise.resolve(SecretValue.from("AIza.test")),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+        };
+        const dependencies: ReceiptUiDependencies = {
+          ai,
+          gemini,
+          openrouter: {
+            ...ai,
+            getApiKey: () =>
+              Promise.resolve(SecretValue.from("openrouter.test")),
+            setApiKey: () => Promise.resolve(),
+            removeApiKey: () => Promise.resolve(),
+            listEndpoints: () => Promise.resolve([]),
+          },
+          imagePreparation: createFakeImagePreparationPort(),
+          resolveImage: (ref) => imageStore.resolve(ref),
+          releaseImage: (ref) => imageStore.releaseForRetry(ref),
+        };
+        const local = createFakeLocalPort();
+        await local.transaction("readwrite", async (transaction) => {
+          await transaction.put(
+            "records",
+            defaultTestProject.id,
+            defaultTestProject as never,
+          );
+          await transaction.put(
+            "records",
+            defaultTestCategory.id,
+            defaultTestCategory as never,
+          );
+        });
+        const state = defaultTestState;
+        const settings = DeviceLocalSettingsSchema.parse({
+          imagePreparationEnabled: false,
+          selectedGeminiModel: model.id,
+        });
+
+        let reviewResult: ReceiptReviewDraft | undefined;
+        let reviewMode: string | undefined;
+
+        const rendered = render(
+          createElement(ReceiptScanScreen, {
+            dependencies,
+            imageStore,
+            state,
+            settings,
+            offline: false,
+            onSettingsChange: () => undefined,
+            onReview: (draft, mode) => {
+              reviewResult = draft;
+              reviewMode = mode;
+            },
+            onClose: () => undefined,
+            onOpenSettings: () => undefined,
+          }),
+        );
+
+        const view = within(document.body);
+        const continueBtn = view.queryByRole("button", {
+          name: "Continue to scan",
+        });
+        if (continueBtn) {
+          fireEvent.click(continueBtn);
+        }
+
+        // Switch to Restaurant Menu mode
+        await waitFor(() => assert(view.getByText("Restaurant Menu")));
+        fireEvent.click(view.getByText("Restaurant Menu"));
+
+        await waitFor(() => {
+          assert(view.getByLabelText("Menu image files"));
+        });
+        const file = new Blob([new Uint8Array([1, 2])], {
+          type: "image/png",
+        }) as unknown as File;
+        fireEvent.change(view.getByLabelText("Menu image files"), {
+          target: { files: [file] },
+        });
+
+        await waitFor(() => {
+          const extractBtn = view.getByRole("button", {
+            name: "Extract menu items",
+          });
+          assert(!extractBtn.hasAttribute("disabled"));
+        });
+
+        fireEvent.click(
+          view.getByRole("button", { name: "Extract menu items" }),
+        );
+
+        await waitFor(() => assert(reviewResult !== undefined));
+        assert(receivedToday !== undefined, "Expected scan to pass today date");
+        assertEquals(reviewMode, "menu");
+        assertEquals(reviewResult?.parent.date, receivedToday);
+        assertEquals(reviewResult?.parent.printedTotal, "0");
+        assertEquals(reviewResult?.parent.merchant, undefined);
+        rendered.unmount();
+
+        // Test ReceiptReviewScreen
+        let reviewClosed = false;
+        const reviewRendered = render(
+          createElement(ReceiptReviewScreen, {
+            local,
+            state,
+            mode: "menu",
+            initialReview: reviewResult,
+            onClose: () => {
+              reviewClosed = true;
+            },
+          }),
+        );
+        const reviewView = within(document.body);
+
+        await waitFor(() => {
+          assert(reviewView.getByText("Pasta Carbonara"));
+        });
+
+        // Select the item via its checkbox
+        const checkbox = reviewView.getByRole("checkbox", {
+          name: "Pasta Carbonara",
+        });
+        fireEvent.click(checkbox);
+
+        await waitFor(() => {
+          assert(
+            reviewView.getByRole("button", { name: "Save 1 selected item" }),
+          );
+        });
+
+        // Click save - should commit without getting stuck in mismatch
+        fireEvent.click(
+          reviewView.getByRole("button", { name: "Save 1 selected item" }),
+        );
+
+        await waitFor(() => assert(reviewClosed));
+
+        // Verify record persisted in database
+        const receipts = await local.query<JsonValue>("records", {
+          index: "type",
+          equals: "receipt",
+        });
+        assertEquals(receipts.length, 1);
+        const savedReceipt = receipts[0]?.value as Record<string, JsonValue>;
+        assertEquals(savedReceipt.date, receivedToday);
+        assertEquals(savedReceipt.printedTotal, "-15");
+        assertEquals(savedReceipt.merchant, undefined);
+
+        imageStore.clear();
+        reviewRendered.unmount();
+      });
+    });
+  },
+);

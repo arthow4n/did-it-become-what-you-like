@@ -724,6 +724,8 @@ export function ReceiptDetailScreen({
               <TextField
                 autoFocus
                 label="Merchant"
+                placeholder="No merchant entered"
+                description="Store, restaurant, or vendor name (optional)"
                 value={snapshot.context.metadataDraft.merchant ?? ""}
                 onChange={(merchant) =>
                   send({

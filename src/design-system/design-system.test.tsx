@@ -60,6 +60,7 @@ import {
   RadioGroup,
   ReceiptGroup,
   ReceiptLineCard,
+  ReceiptMetadata,
   ResponsiveGrid,
   SearchField,
   SecretField,
@@ -1300,6 +1301,44 @@ Deno.test("design-system receipt groups show line descriptions", async () => {
         "View receipt should expose the saved receipt entry point",
       );
       mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system receipt metadata displays merchant name or clearly shows unfilled state", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaGlobals(window, () => {
+      // 1. With merchant name
+      const mountedWithMerchant = render(
+        createElement(ReceiptMetadata, {
+          metadata: {
+            merchant: "Supermarket",
+            date: "2026-09-24",
+            currency: "EUR",
+            printedTotal: "15.00",
+          },
+        }),
+      );
+      const view1 = within(document.body);
+      assert(view1.getByText("Supermarket"));
+      assertEqual(view1.queryByText("Not filled"), null);
+      mountedWithMerchant.unmount();
+
+      // 2. Without merchant name (unfilled)
+      const mountedUnfilled = render(
+        createElement(ReceiptMetadata, {
+          metadata: {
+            merchant: "",
+            date: "2026-09-24",
+            currency: "EUR",
+            printedTotal: "15.00",
+          },
+        }),
+      );
+      const view2 = within(document.body);
+      assert(view2.getByText("No merchant"));
+      assert(view2.getByText("Not filled"));
+      mountedUnfilled.unmount();
     })
   );
 });

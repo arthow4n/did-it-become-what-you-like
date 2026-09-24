@@ -507,12 +507,21 @@ export function mapReceiptOutputToDraft(
   const effectiveDate = isMenu && request.today
     ? request.today
     : (output.date ?? request.today ?? defaultToday());
-  const uncertainty = output.date == null && !isMenu
-    ? [
-      ...output.uncertainty,
-      "The receipt date was missing or unclear; defaulted to today.",
-    ]
-    : output.uncertainty;
+  const dateUncertainty = output.date == null && !isMenu
+    ? ["The receipt date was missing or unclear; defaulted to today."]
+    : [];
+  const hasMerchantUncertainty = output.uncertainty.some((item) =>
+    /merchant/i.test(item)
+  );
+  const merchantUncertainty = !output.merchant?.trim() && !isMenu &&
+      !hasMerchantUncertainty
+    ? ["No merchant name was identified on the receipt."]
+    : [];
+  const uncertainty = [
+    ...output.uncertainty,
+    ...dateUncertainty,
+    ...merchantUncertainty,
+  ];
 
   return {
     merchant: output.merchant?.trim() ? output.merchant.trim() : undefined,

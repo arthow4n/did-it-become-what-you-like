@@ -264,6 +264,12 @@ Deno.test("shared schema and parser accept empty or null merchant and normalize 
   });
   assertEquals(draft1.merchant, undefined);
   assertEquals(draft1.date, "2026-09-24");
+  assert(
+    draft1.uncertainty.some((u) =>
+      u.includes("No merchant name was identified")
+    ),
+    "Expected uncertainty about missing merchant name in draft1",
+  );
 
   // Null merchant and null date fallback to request.today
   const outputNulls = {
@@ -284,6 +290,12 @@ Deno.test("shared schema and parser accept empty or null merchant and normalize 
   assert(
     draft2.uncertainty.some((u) => u.includes("receipt date was missing")),
     "Expected uncertainty about missing receipt date",
+  );
+  assert(
+    draft2.uncertainty.some((u) =>
+      u.includes("No merchant name was identified")
+    ),
+    "Expected uncertainty about missing merchant name in draft2",
   );
 
   // Various date formats normalized

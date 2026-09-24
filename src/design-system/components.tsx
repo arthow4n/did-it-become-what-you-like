@@ -3549,11 +3549,19 @@ export function ReceiptMetadata(
     totalLabel?: ReactNode;
   },
 ) {
+  const merchantName = metadata.merchant?.trim();
   return (
     <Card as="section">
       <Inline justify="space-between">
         <Stack gap={1}>
-          <Heading size="sm">{metadata.merchant || "Receipt"}</Heading>
+          {merchantName
+            ? <Heading size="sm">{merchantName}</Heading>
+            : (
+              <Inline gap={2}>
+                <Heading size="sm">No merchant</Heading>
+                <Badge tone="warning">Not filled</Badge>
+              </Inline>
+            )}
           <Text tone="secondary">
             {metadata.date}
             {metadata.time ? ` · ${metadata.time}` : ""} · {metadata.currency}

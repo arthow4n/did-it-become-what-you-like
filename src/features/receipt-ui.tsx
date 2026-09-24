@@ -2266,6 +2266,8 @@ export function ReceiptMetadataEditor({
         <TextField
           autoFocus
           label="Merchant"
+          placeholder="No merchant entered"
+          description="Store, restaurant, or vendor name (optional)"
           value={merchant}
           onChange={setMerchant}
         />

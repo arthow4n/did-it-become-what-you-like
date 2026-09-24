@@ -246,3 +246,65 @@ Deno.test("shared schema and parser accept null in optional line fields and capt
     );
   }
 });
+
+Deno.test("shared schema and parser accept empty or null merchant and normalize alternative date formats", () => {
+  // Empty merchant string and European date format DD/MM/YYYY
+  const outputEmptyMerchantDmy = {
+    ...validOutput,
+    merchant: "",
+    date: "24/09/2026",
+  };
+  const parsed1 = parseReceiptOutput(JSON.stringify(outputEmptyMerchantDmy));
+  assertEquals(parsed1.merchant, "");
+  assertEquals(parsed1.date, "2026-09-24");
+
+  const draft1 = mapReceiptOutputToDraft(parsed1, {
+    categories: [{ id: "category-groceries", name: "Groceries" }],
+    today: "2026-09-24" as const,
+  });
+  assertEquals(draft1.merchant, undefined);
+  assertEquals(draft1.date, "2026-09-24");
+
+  // Null merchant and null date fallback to request.today
+  const outputNulls = {
+    ...validOutput,
+    merchant: null,
+    date: null,
+  };
+  const parsed2 = parseReceiptOutput(JSON.stringify(outputNulls));
+  assertEquals(parsed2.merchant, null);
+  assertEquals(parsed2.date, null);
+
+  const draft2 = mapReceiptOutputToDraft(parsed2, {
+    categories: [{ id: "category-groceries", name: "Groceries" }],
+    today: "2026-09-24" as const,
+  });
+  assertEquals(draft2.merchant, undefined);
+  assertEquals(draft2.date, "2026-09-24");
+  assert(
+    draft2.uncertainty.some((u) => u.includes("receipt date was missing")),
+    "Expected uncertainty about missing receipt date",
+  );
+
+  // Various date formats normalized
+  const dateScenarios = [
+    ["2026.09.24", "2026-09-24"],
+    ["2026/09/24", "2026-09-24"],
+    ["24-09-2026", "2026-09-24"],
+    ["2026-09-24T14:35:00Z", "2026-09-24"],
+    ["26-09-24", "2026-09-24"],
+    ["24/09/26", "2026-09-24"],
+    ["24 Sep 2026", "2026-09-24"],
+    ["September 24, 2026", "2026-09-24"],
+    ["N/A", null],
+    ["unknown", null],
+    ["", null],
+  ];
+
+  for (const [input, expected] of dateScenarios) {
+    const parsed = parseReceiptOutput(
+      JSON.stringify({ ...validOutput, date: input }),
+    );
+    assertEquals(parsed.date, expected);
+  }
+});

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  type CalendarDate,
   CalendarDateSchema,
   canonicalDecimal,
   CurrencyCodeSchema,
@@ -15,7 +16,7 @@ import type {
 
 export const RECEIPT_SCHEMA_VERSION = "receipt.v2" as const;
 export const RECEIPT_SCHEMA_VERSION_NUMBER = 2 as const;
-export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v7" as const;
+export const RECEIPT_INSTRUCTION_VERSION = "receipt-extraction-v8" as const;
 
 const CanonicalDecimalTextSchema = z.string().regex(
   /^-?(0|[1-9]\d*)(\.\d+)?$/,
@@ -52,10 +53,10 @@ const ReceiptLineOutputSchema = z.strictObject({
 /** The single runtime source of truth for every receipt provider. */
 export const ReceiptOutputSchema = z.strictObject({
   currency: CurrencyCodeSchema,
-  date: CalendarDateSchema,
+  date: CalendarDateSchema.nullable().optional(),
   time: TimeOfDaySchema.nullable().optional(),
   lines: z.array(ReceiptLineOutputSchema),
-  merchant: z.string().trim().min(1).max(500),
+  merchant: z.string().trim().max(500).nullable().optional(),
   mismatch: z.strictObject({
     difference: CanonicalDecimalTextSchema,
     explanation: z.string().trim().min(1).max(1_000),
@@ -151,6 +152,8 @@ export function buildReceiptPrompt(
     "Tips, fees, surcharges, and other extra charges have direction outflow and kind adjustment because they increase the amount owed.",
     "For every line, provide a concise rationale (one short sentence) naming the receipt evidence used for its category and direction. This is evidence, not hidden chain-of-thought.",
     "When a purchased line explicitly shows a quantity and unit price (for example, `2 st x 16,99`), populate quantity and unitPrice and set amount to the printed line total.",
+    "When a store, merchant, or vendor name is printed on the receipt, set merchant to that name (for example, `IKEA`); if no merchant is visible, set merchant to null or an empty string.",
+    "When a transaction or purchase date is printed on the receipt, set date in YYYY-MM-DD calendar-date format (for example, `2026-08-24`); if no date is visible on the receipt or the date is unclear, set date to null.",
     "When a transaction or purchase time is printed on the receipt, set time in 24-hour format HH:mm or HH:mm:ss (for example, `14:35`); if no time is visible on the receipt, set time to null.",
     "Do not return payment/tender amounts, subtotals, tax summaries, receipt totals, or quantity-only rows as line items; do not duplicate a product line for its quantity.",
     "Set printedTotal to the amount exactly as printed. Before returning JSON, use the direction field to verify every selected line contributes once to the owner's signed total; preserve a mismatch explanation when the image cannot be reconciled.",
@@ -245,7 +248,126 @@ function normalizeTimeText(value: unknown): unknown {
   return trimmed;
 }
 
-/** Normalize model-produced localized decimal and time text before strict validation. */
+function isValidCalendarDate(
+  year: number,
+  month: number,
+  day: number,
+): boolean {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+/**
+ * Normalize model-produced date text (e.g. `24/09/2026`, `2026.09.24`, `24 Sep 2026`, ISO strings,
+ * or empty strings/placeholders) into canonical `YYYY-MM-DD` CalendarDate format before strict validation.
+ */
+function normalizeDateText(value: unknown): unknown {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (
+    trimmed === "" ||
+    /^n\/?a$/i.test(trimmed) ||
+    /^unknown$/i.test(trimmed) ||
+    /^none$/i.test(trimmed) ||
+    trimmed === "--" ||
+    trimmed === "----"
+  ) {
+    return null;
+  }
+  // 1. ISO 8601 with optional time: e.g. "2026-09-24", "2026-09-24T14:35:00Z", "2026-09-24 14:35"
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/.exec(trimmed);
+  if (isoMatch) {
+    const y = parseInt(isoMatch[1], 10);
+    const m = parseInt(isoMatch[2], 10);
+    const d = parseInt(isoMatch[3], 10);
+    if (isValidCalendarDate(y, m, d)) {
+      return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+    }
+    return null;
+  }
+  // 2. YYYY/MM/DD or YYYY.MM.DD
+  const ymdMatch = /^(\d{4})[./](\d{1,2})[./](\d{1,2})$/.exec(trimmed);
+  if (ymdMatch) {
+    const y = parseInt(ymdMatch[1], 10);
+    const m = parseInt(ymdMatch[2], 10);
+    const d = parseInt(ymdMatch[3], 10);
+    if (isValidCalendarDate(y, m, d)) {
+      return `${ymdMatch[1]}-${String(m).padStart(2, "0")}-${
+        String(d).padStart(2, "0")
+      }`;
+    }
+    return null;
+  }
+  // 3. DD/MM/YYYY or DD.MM.YYYY or DD-MM-YYYY
+  const dmyMatch = /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/.exec(trimmed);
+  if (dmyMatch) {
+    const p1 = parseInt(dmyMatch[1], 10);
+    const p2 = parseInt(dmyMatch[2], 10);
+    const y = parseInt(dmyMatch[3], 10);
+    if (p1 > 12 && p2 <= 12 && isValidCalendarDate(y, p2, p1)) {
+      return `${y}-${String(p2).padStart(2, "0")}-${
+        String(p1).padStart(2, "0")
+      }`;
+    }
+    if (p2 > 12 && p1 <= 12 && isValidCalendarDate(y, p1, p2)) {
+      return `${y}-${String(p1).padStart(2, "0")}-${
+        String(p2).padStart(2, "0")
+      }`;
+    }
+    if (isValidCalendarDate(y, p2, p1)) {
+      return `${y}-${String(p2).padStart(2, "0")}-${
+        String(p1).padStart(2, "0")
+      }`;
+    }
+    if (isValidCalendarDate(y, p1, p2)) {
+      return `${y}-${String(p1).padStart(2, "0")}-${
+        String(p2).padStart(2, "0")
+      }`;
+    }
+    return null;
+  }
+  // 4. Two digit year: YY-MM-DD or DD/MM/YY
+  const shortMatch = /^(\d{2})([./-])(\d{1,2})\2(\d{1,2})$/.exec(trimmed);
+  if (shortMatch) {
+    const p1 = parseInt(shortMatch[1], 10);
+    const sep = shortMatch[2];
+    const p2 = parseInt(shortMatch[3], 10);
+    const p3 = parseInt(shortMatch[4], 10);
+    if (sep === "/") {
+      if (p3 >= 20 && p3 <= 35 && isValidCalendarDate(2000 + p3, p2, p1)) {
+        return `${2000 + p3}-${String(p2).padStart(2, "0")}-${
+          String(p1).padStart(2, "0")
+        }`;
+      }
+    } else {
+      if (p1 >= 20 && p1 <= 35 && isValidCalendarDate(2000 + p1, p2, p3)) {
+        return `${2000 + p1}-${String(p2).padStart(2, "0")}-${
+          String(p3).padStart(2, "0")
+        }`;
+      }
+    }
+  }
+  // 5. English textual dates: e.g. "24 Sep 2026", "September 24, 2026", "24-Sep-2026"
+  const parsedTime = Date.parse(trimmed.replace(/-/g, " "));
+  if (!isNaN(parsedTime)) {
+    const parsed = new Date(parsedTime);
+    const y = parsed.getFullYear();
+    const m = parsed.getMonth() + 1;
+    const d = parsed.getDate();
+    if (y >= 2000 && y <= 2100 && isValidCalendarDate(y, m, d)) {
+      return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }
+  }
+  return null;
+}
+
+/** Normalize model-produced localized decimal, date, merchant, and time text before strict validation. */
 export function normalizeReceiptOutput(value: unknown): unknown {
   if (!isSchemaRecord(value)) return value;
   const lines = Array.isArray(value.lines)
@@ -271,8 +393,15 @@ export function normalizeReceiptOutput(value: unknown): unknown {
       difference: normalizeDecimalText(value.mismatch.difference),
     }
     : value.mismatch;
+  const merchant = typeof value.merchant === "string"
+    ? value.merchant.trim()
+    : value.merchant == null
+    ? null
+    : value.merchant;
   return {
     ...value,
+    date: normalizeDateText(value.date),
+    merchant,
     printedTotal: normalizeDecimalText(value.printedTotal),
     time: normalizeTimeText(value.time),
     lines,
@@ -288,7 +417,11 @@ function assertOutputSemantics(output: ReceiptOutput): ReceiptOutput {
       `currency "${output.currency}" is not a valid 3-letter currency code`,
     );
   }
-  if (!CalendarDateSchema.safeParse(output.date).success) {
+  if (
+    output.date !== undefined &&
+    output.date !== null &&
+    !CalendarDateSchema.safeParse(output.date).success
+  ) {
     throw new Error(
       `date "${output.date}" is not a valid YYYY-MM-DD calendar date`,
     );
@@ -351,6 +484,14 @@ function mismatchText(output: ReceiptOutput): readonly string[] {
     : [`${output.mismatch.difference}: ${output.mismatch.explanation}`];
 }
 
+function defaultToday(): CalendarDate {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}` as CalendarDate;
+}
+
 /** Convert the validated provider-neutral response to the receipt port draft. */
 export function mapReceiptOutputToDraft(
   output: ReceiptOutput,
@@ -363,11 +504,20 @@ export function mapReceiptOutputToDraft(
     request.categories.map((category) => category.id),
   );
   const isMenu = request.documentType === "menu";
+  const effectiveDate = isMenu && request.today
+    ? request.today
+    : (output.date ?? request.today ?? defaultToday());
+  const uncertainty = output.date == null && !isMenu
+    ? [
+      ...output.uncertainty,
+      "The receipt date was missing or unclear; defaulted to today.",
+    ]
+    : output.uncertainty;
 
   return {
-    merchant: output.merchant,
+    merchant: output.merchant?.trim() ? output.merchant.trim() : undefined,
     currency: output.currency,
-    date: isMenu && request.today ? request.today : output.date,
+    date: effectiveDate,
     ...(output.time ? { time: output.time } : {}),
     printedTotal: isMenu ? "0" : output.printedTotal,
     lines: output.lines.map((line) => {
@@ -400,7 +550,7 @@ export function mapReceiptOutputToDraft(
         }
         : { ...common, kind: line.kind };
     }),
-    uncertainty: output.uncertainty,
+    uncertainty,
     mismatches: mismatchText(output),
   };
 }

@@ -59,6 +59,7 @@ export type ContractFailure = {
   readonly retryable: boolean;
   /** A bounded, non-sensitive adapter boundary identifier for diagnostics. */
   readonly operation?: string;
+  readonly reason?: string;
 };
 
 const PORT_ERROR_MESSAGES: Readonly<Record<PortErrorCode, string>> = {
@@ -135,11 +136,18 @@ export function contractFailureFromError(
     ? operationCandidate
     : undefined;
 
+  const reason = isRecord(error.details) &&
+      typeof error.details.reason === "string" &&
+      error.details.reason.trim().length > 0
+    ? error.details.reason.trim()
+    : undefined;
+
   return {
     code: error.code,
     message,
     retryable,
     ...(operation === undefined ? {} : { operation }),
+    ...(reason === undefined ? {} : { reason }),
   };
 }
 

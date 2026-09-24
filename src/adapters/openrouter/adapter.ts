@@ -462,9 +462,13 @@ export class OpenRouterAdapter implements ReceiptAiPort {
             const phase = error instanceof ReceiptOutputError
               ? error.phase
               : "schema";
+            const details = error instanceof ReceiptOutputError && error.details
+              ? { reason: error.details }
+              : {};
             throw adapterError(
               "invalid-output",
               `openrouter.extract.output.${phase}`,
+              details,
             );
           }
           try {

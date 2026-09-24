@@ -30,15 +30,16 @@ const ReceiptLineOutputSchema = z.strictObject({
   kind: z.enum(["purchase", "adjustment"]),
   rationale: z.string().trim().min(1).max(500),
   selected: z.boolean(),
-  quantity: CanonicalDecimalTextSchema.optional(),
-  unitPrice: CanonicalDecimalTextSchema.optional(),
-  uncertainty: z.string().trim().min(1).max(1_000).optional(),
+  quantity: CanonicalDecimalTextSchema.nullable().optional(),
+  unitPrice: CanonicalDecimalTextSchema.nullable().optional(),
+  uncertainty: z.string().trim().min(1).max(1_000).nullable().optional(),
 }).superRefine((line, context) => {
   // The provider wire schema cannot express this kind-specific relationship.
   // Keep the provider-neutral browser validator strict.
   if (
     line.kind === "adjustment" &&
-    (line.quantity !== undefined || line.unitPrice !== undefined)
+    ((line.quantity !== undefined && line.quantity !== null) ||
+      (line.unitPrice !== undefined && line.unitPrice !== null))
   ) {
     context.addIssue({
       code: "custom",
@@ -72,8 +73,15 @@ export type ReceiptOutputFailurePhase = "json" | "schema";
 export class ReceiptOutputError extends Error {
   override readonly name = "ReceiptOutputError";
 
-  constructor(readonly phase: ReceiptOutputFailurePhase) {
-    super("Receipt output could not be validated.");
+  constructor(
+    readonly phase: ReceiptOutputFailurePhase,
+    readonly details?: string,
+  ) {
+    super(
+      details
+        ? `Receipt output could not be validated (${phase}): ${details}`
+        : "Receipt output could not be validated.",
+    );
   }
 }
 
@@ -187,9 +195,18 @@ function normalizeDecimalText(value: unknown): unknown {
  * into canonical 24-hour TimeOfDay format before strict validation.
  */
 function normalizeTimeText(value: unknown): unknown {
+  if (value === null || value === undefined) return null;
   if (typeof value !== "string") return value;
   const trimmed = value.trim();
-  if (trimmed === "") return null;
+  if (
+    trimmed === "" ||
+    /^n\/?a$/i.test(trimmed) ||
+    /^unknown$/i.test(trimmed) ||
+    /^none$/i.test(trimmed) ||
+    trimmed === "--:--"
+  ) {
+    return null;
+  }
   const ampmMatch = /^(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?\s*(am|pm)$/i.exec(
     trimmed,
   );
@@ -237,8 +254,13 @@ export function normalizeReceiptOutput(value: unknown): unknown {
         ? {
           ...line,
           amount: normalizeDecimalText(line.amount),
-          quantity: normalizeDecimalText(line.quantity),
-          unitPrice: normalizeDecimalText(line.unitPrice),
+          quantity: line.quantity == null
+            ? null
+            : normalizeDecimalText(line.quantity),
+          unitPrice: line.unitPrice == null
+            ? null
+            : normalizeDecimalText(line.unitPrice),
+          uncertainty: line.uncertainty == null ? null : line.uncertainty,
         }
         : line
     )
@@ -262,17 +284,21 @@ function assertOutputSemantics(output: ReceiptOutput): ReceiptOutput {
   // Keep explicit semantic checks at the shared boundary if the validator
   // implementation changes independently of the generated JSON Schema.
   if (!CurrencyCodeSchema.safeParse(output.currency).success) {
-    throw new Error("receipt output currency is invalid");
+    throw new Error(
+      `currency "${output.currency}" is not a valid 3-letter currency code`,
+    );
   }
   if (!CalendarDateSchema.safeParse(output.date).success) {
-    throw new Error("receipt output date is invalid");
+    throw new Error(
+      `date "${output.date}" is not a valid YYYY-MM-DD calendar date`,
+    );
   }
   if (
     output.time !== undefined &&
     output.time !== null &&
     !TimeOfDaySchema.safeParse(output.time).success
   ) {
-    throw new Error("receipt output time is invalid");
+    throw new Error(`time "${output.time}" is not a valid 24-hour time`);
   }
   return output;
 }
@@ -280,11 +306,17 @@ function assertOutputSemantics(output: ReceiptOutput): ReceiptOutput {
 /** Validate untrusted model output without exposing raw provider text. */
 export function validateReceiptOutput(value: unknown): ReceiptOutput {
   const result = ReceiptOutputSchema.safeParse(value);
-  if (!result.success) throw new ReceiptOutputError("schema");
+  if (!result.success) {
+    const details = result.error.issues
+      .map((issue) => `${issue.path.join(".") || "root"}: ${issue.message}`)
+      .join("; ");
+    throw new ReceiptOutputError("schema", details);
+  }
   try {
     return assertOutputSemantics(result.data);
-  } catch {
-    throw new ReceiptOutputError("schema");
+  } catch (error) {
+    const details = error instanceof Error ? error.message : String(error);
+    throw new ReceiptOutputError("schema", details);
   }
 }
 
@@ -295,11 +327,19 @@ export function parseReceiptOutput(text: string): ReceiptOutput {
     value = JSON.parse(text) as unknown;
   } catch {
     const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)?.[1];
-    if (fenced === undefined) throw new ReceiptOutputError("json");
+    if (fenced === undefined) {
+      throw new ReceiptOutputError(
+        "json",
+        "AI response did not contain valid JSON",
+      );
+    }
     try {
       value = JSON.parse(fenced) as unknown;
-    } catch {
-      throw new ReceiptOutputError("json");
+    } catch (error) {
+      const details = error instanceof Error
+        ? error.message
+        : "JSON syntax error";
+      throw new ReceiptOutputError("json", details);
     }
   }
   return validateReceiptOutput(normalizeReceiptOutput(value));
@@ -332,8 +372,11 @@ export function mapReceiptOutputToDraft(
     printedTotal: isMenu ? "0" : output.printedTotal,
     lines: output.lines.map((line) => {
       const categoryAvailable = categories.has(line.categoryId);
-      const uncertainty = categoryAvailable ? line.uncertainty : [
-        line.uncertainty,
+      const uncertainty = line.uncertainty == null
+        ? undefined
+        : line.uncertainty;
+      const effectiveUncertainty = categoryAvailable ? uncertainty : [
+        uncertainty,
         "The suggested category is unavailable; review the category.",
       ].filter((item): item is string => item !== undefined).join(" ");
       const common = {
@@ -343,16 +386,17 @@ export function mapReceiptOutputToDraft(
         direction: line.direction,
         selected: line.selected,
         rationale: line.rationale,
-        ...(uncertainty === undefined ? {} : { uncertainty }),
+        ...(effectiveUncertainty === undefined ||
+            effectiveUncertainty.trim().length === 0
+          ? {}
+          : { uncertainty: effectiveUncertainty }),
       };
       return line.kind === "purchase"
         ? {
           ...common,
           kind: line.kind,
-          ...(line.quantity === undefined ? {} : { quantity: line.quantity }),
-          ...(line.unitPrice === undefined
-            ? {}
-            : { unitPrice: line.unitPrice }),
+          ...(line.quantity == null ? {} : { quantity: line.quantity }),
+          ...(line.unitPrice == null ? {} : { unitPrice: line.unitPrice }),
         }
         : { ...common, kind: line.kind };
     }),

@@ -62,6 +62,13 @@ export type GeminiContent =
     readonly inlineData: { readonly data: string; readonly mimeType: string };
   };
 
+export type GeminiThinkingLevel =
+  | "auto"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high";
+
 export type GeminiGenerateRequest = {
   readonly model: string;
   readonly contents: readonly GeminiContent[];
@@ -69,6 +76,7 @@ export type GeminiGenerateRequest = {
     readonly responseMimeType: "application/json";
     readonly responseJsonSchema: GeminiJsonSchema;
     readonly systemInstruction: string;
+    readonly thinkingLevel?: "MINIMAL" | "LOW" | "MEDIUM" | "HIGH";
   };
 };
 
@@ -93,6 +101,7 @@ export type GeminiClientFactory = (apiKey: string) => GeminiBrowserClient;
 export type GeminiAdapterOptions = {
   readonly secretStorage: SecretStoragePort;
   readonly createClient: GeminiClientFactory;
+  readonly getThinkingLevel?: () => GeminiThinkingLevel | undefined;
   readonly isOnline?: () => boolean;
 };
 
@@ -328,11 +337,15 @@ async function resolveListResult(
 export class GeminiAdapter implements ReceiptAiPort {
   readonly #secretStorage: SecretStoragePort;
   readonly #createClient: GeminiClientFactory;
+  readonly #getThinkingLevel:
+    | (() => GeminiThinkingLevel | undefined)
+    | undefined;
   readonly #isOnline: () => boolean;
 
   constructor(options: GeminiAdapterOptions) {
     this.#secretStorage = options.secretStorage;
     this.#createClient = options.createClient;
+    this.#getThinkingLevel = options.getThinkingLevel;
     this.#isOnline = options.isOnline ??
       (() => typeof navigator === "undefined" || navigator.onLine !== false);
   }
@@ -386,6 +399,17 @@ export class GeminiAdapter implements ReceiptAiPort {
     throwIfAborted(options?.signal);
     const prompt = buildReceiptPrompt(request);
     const images = extractionImages(request);
+    const configuredThinking = this.#getThinkingLevel?.();
+    const thinkingLevel = configuredThinking === "minimal"
+      ? "MINIMAL" as const
+      : configuredThinking === "low"
+      ? "LOW" as const
+      : configuredThinking === "medium"
+      ? "MEDIUM" as const
+      : configuredThinking === "high"
+      ? "HIGH" as const
+      : undefined;
+
     try {
       return await withEphemeralImages(
         images.map((image) => image.bytes),
@@ -407,6 +431,7 @@ export class GeminiAdapter implements ReceiptAiPort {
               responseMimeType: "application/json",
               responseJsonSchema: GEMINI_RECEIPT_JSON_SCHEMA,
               systemInstruction: prompt,
+              ...(thinkingLevel === undefined ? {} : { thinkingLevel }),
             },
           }, options);
           let output;
@@ -422,9 +447,13 @@ export class GeminiAdapter implements ReceiptAiPort {
             const phase = error instanceof ReceiptOutputError
               ? error.phase
               : "schema";
+            const details = error instanceof ReceiptOutputError && error.details
+              ? { reason: error.details }
+              : {};
             throw adapterError(
               "invalid-output",
               `gemini.extract.output.${phase}`,
+              details,
             );
           }
           try {

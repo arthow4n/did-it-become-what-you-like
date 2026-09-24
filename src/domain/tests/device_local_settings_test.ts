@@ -42,6 +42,7 @@ Deno.test("device-local settings round-trip provider and OpenRouter preferences"
     activeProvider: "openrouter",
     selectedGeminiModel: "gemini-2.5-flash",
     selectedOpenRouterModel: "google/gemini-2.5-flash",
+    geminiThinkingLevel: "minimal",
     preferredProviderTag: "google-vertex",
     requireZdr: true,
     denyProviderDataCollection: true,
@@ -86,6 +87,7 @@ Deno.test("device-local settings migration drops old compatibility state and sec
   assertEquals(migrated, {
     activeProvider: "gemini",
     selectedGeminiModel: "gemini-2.0-flash",
+    geminiThinkingLevel: "auto",
     requireZdr: false,
     denyProviderDataCollection: false,
     imagePreparationEnabled: false,

@@ -3265,6 +3265,7 @@ export function LocalUiRuntime(
           denyProviderDataCollection:
             deviceSettingsRef.current.denyProviderDataCollection,
         }),
+        () => deviceSettingsRef.current.geminiThinkingLevel,
       ),
     [imageStore],
   );

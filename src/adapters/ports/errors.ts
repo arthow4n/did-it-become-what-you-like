@@ -105,7 +105,7 @@ const SAFE_OPERATION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$/;
 const SAFE_HTTP_STATUS = 100;
 const MAX_HTTP_STATUS = 599;
 const MAX_RETRY_AFTER_MS = 86_400_000;
-const SAFE_DETAIL_KEYS = ["httpStatus", "providerCode"] as const;
+const SAFE_DETAIL_KEYS = ["httpStatus", "providerCode", "reason"] as const;
 
 const DEFAULT_MESSAGES: Readonly<Record<AdapterErrorCode, string>> = {
   "aborted": "The adapter operation was aborted.",
@@ -165,6 +165,11 @@ function safeDetails(
   const providerCode = details[SAFE_DETAIL_KEYS[1]];
   if (isAdapterErrorCode(providerCode)) {
     retained.providerCode = providerCode;
+  }
+
+  const reason = details[SAFE_DETAIL_KEYS[2]];
+  if (typeof reason === "string" && reason.trim().length > 0) {
+    retained.reason = reason.trim().slice(0, 500);
   }
 
   return Object.freeze(retained);

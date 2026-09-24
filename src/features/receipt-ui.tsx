@@ -29,6 +29,7 @@ import {
   CurrencyCodeSchema,
   DEFAULT_DEVICE_LOCAL_SETTINGS,
   type DeviceLocalSettings,
+  type GeminiThinkingLevel,
   moneyCompare,
   parseDeviceLocalSettings,
   StableIdSchema,
@@ -285,11 +286,13 @@ export async function writeDeviceLocalSettings(
 export function createDefaultReceiptUiDependencies(
   imageStore: ReceiptImageStore,
   getRoutingOptions: () => OpenRouterRoutingOptions = () => ({}),
+  getThinkingLevel: () => GeminiThinkingLevel | undefined = () => undefined,
 ): { dependencies: ReceiptUiDependencies; secretStorage: SecretStoragePort } {
   const secretStorage = createLocalStorageSecretStorage();
   const gemini = createGeminiAdapter({
     secretStorage,
     createClient: createGoogleGenAiClient,
+    getThinkingLevel,
   });
   const openrouter = createOpenRouterAdapter({
     secretStorage,
@@ -357,6 +360,25 @@ export function modelOptions(
         : {}),
     };
   });
+}
+
+export function preferredDefaultModel(
+  models: readonly ReceiptAiModel[],
+  provider: ReceiptProvider,
+): string | undefined {
+  const activeModels = models.filter((model) => model.lifecycle === "active");
+  if (activeModels.length === 0) return undefined;
+  if (provider === "gemini") {
+    const flashLite = activeModels.find((m) =>
+      m.id.toLowerCase().includes("flash-lite")
+    );
+    if (flashLite) return flashLite.id;
+    const flash = activeModels.find((m) =>
+      m.id.toLowerCase().includes("flash")
+    );
+    if (flash) return flash.id;
+  }
+  return activeModels[0]?.id;
 }
 
 function categoryOptions(categories: readonly Category[]) {
@@ -458,6 +480,13 @@ export function ReceiptScanFailureNotice({
   return (
     <InlineNotice tone="danger" title="Receipt scan failed">
       {failure.message}
+      {failure.reason
+        ? (
+          <Text size="caption" tone="secondary">
+            Details: {failure.reason}
+          </Text>
+        )
+        : null}
       <Text size="caption" tone="secondary">
         Error code: {failure.code}
         {failure.operation ? ` · Operation: ${failure.operation}` : ""}
@@ -832,12 +861,21 @@ export function ReceiptScanScreen({
             option.disabled !== true
           )
         ? configuredModel
-        : undefined;
+        : preferredDefaultModel(nextModels, activeProvider);
       setHasKey(true);
       setApiKey("");
       setQuickSetupOpen(false);
       setOptionsOpen(true);
       if (nextSelectedModel) {
+        if (!configuredModel) {
+          void onSettingsChange(
+            settingsWithSelectedModel(
+              settings,
+              activeProvider,
+              nextSelectedModel,
+            ),
+          );
+        }
         const pendingScanInput = makeScanInput(nextSelectedModel);
         if (!pendingScanInput) throw new Error("The receipt image is missing.");
         setPendingScanState(false);
@@ -935,13 +973,18 @@ export function ReceiptScanScreen({
       setQuickSetupOpen(true);
       return;
     }
-    if (!configuredModel) {
+    const effectiveModel = configuredModel ??
+      preferredDefaultModel(models, activeProvider);
+    if (!effectiveModel) {
       setPendingScanState(true);
       setOptionsOpen(true);
       setModelError(`Select a ${activeProviderName} model before scanning.`);
       return;
     }
-    if (!selectedOption || selectedOption.disabled === true) {
+    const effectiveOption = availableModelOptions.find((option) =>
+      option.id === effectiveModel
+    );
+    if (!effectiveOption || effectiveOption.disabled === true) {
       setPendingScanState(true);
       setOptionsOpen(true);
       setModelError(
@@ -949,7 +992,12 @@ export function ReceiptScanScreen({
       );
       return;
     }
-    const input = makeScanInput(configuredModel);
+    if (!configuredModel && effectiveModel) {
+      void onSettingsChange(
+        settingsWithSelectedModel(settings, activeProvider, effectiveModel),
+      );
+    }
+    const input = makeScanInput(effectiveModel);
     if (!input) {
       setModelError(
         scanMode === "menu"
@@ -1294,6 +1342,27 @@ export function ReceiptScanScreen({
                     onValueChange={selectModel}
                     disabled={modelsLoading || models.length === 0}
                   />
+                  {activeProvider === "gemini"
+                    ? (
+                      <SelectField
+                        label="Thinking effort"
+                        options={[
+                          { id: "auto", label: "Model default (recommended)" },
+                          { id: "minimal", label: "Minimal (fastest)" },
+                          { id: "low", label: "Low" },
+                          { id: "medium", label: "Medium" },
+                          { id: "high", label: "High" },
+                        ]}
+                        value={settings.geminiThinkingLevel ?? "auto"}
+                        onValueChange={(level) => {
+                          void onSettingsChange({
+                            ...settings,
+                            geminiThinkingLevel: level as GeminiThinkingLevel,
+                          });
+                        }}
+                      />
+                    )
+                    : null}
                   <Switch
                     isSelected={settings.imagePreparationEnabled}
                     onChange={(imagePreparationEnabled) =>
@@ -2440,6 +2509,21 @@ export function ReceiptSettingsScreen({
             } model is no longer available. Choose another model.`,
         );
       }
+      if (!configuredModel && nextModels.length > 0) {
+        const defaultModel = preferredDefaultModel(
+          nextModels,
+          request.provider,
+        );
+        if (defaultModel) {
+          effectiveSettings = settingsWithSelectedModel(
+            effectiveSettings,
+            request.provider,
+            defaultModel,
+          );
+          if (!isCurrentRefresh(request)) return;
+          onSettingsChange(effectiveSettings);
+        }
+      }
       if (
         request.provider === "openrouter" &&
         effectiveSettings.selectedOpenRouterModel
@@ -2727,6 +2811,33 @@ export function ReceiptSettingsScreen({
                   reduce route availability and may make this model or a
                   preferred provider unavailable.
                 </Text>
+              </Stack>
+            </Card>
+          )
+          : null}
+        {activeProvider === "gemini" && hasKey
+          ? (
+            <Card as="section">
+              <Stack gap={3}>
+                <Heading size="sm">Gemini reasoning</Heading>
+                <SelectField
+                  label="Thinking effort"
+                  options={[
+                    { id: "auto", label: "Model default (recommended)" },
+                    { id: "minimal", label: "Minimal (fastest)" },
+                    { id: "low", label: "Low" },
+                    { id: "medium", label: "Medium" },
+                    { id: "high", label: "High" },
+                  ]}
+                  value={settings.geminiThinkingLevel ?? "auto"}
+                  onValueChange={(level) => {
+                    onSettingsChange({
+                      ...settings,
+                      geminiThinkingLevel: level as GeminiThinkingLevel,
+                    });
+                  }}
+                  description="Controls Gemini's thinking budget. Model default lets the model choose its native effort (e.g. Medium on Flash-Lite, High on Pro). Minimal turns off or minimizes reasoning for lowest latency."
+                />
               </Stack>
             </Card>
           )

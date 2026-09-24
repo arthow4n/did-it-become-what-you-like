@@ -4,6 +4,7 @@ import {
   fileMediaType,
   LineEditorDialog,
   modelOptions,
+  preferredDefaultModel,
   readDeviceLocalSettings,
   ReceiptDisclosure,
   ReceiptImageStore,
@@ -32,6 +33,8 @@ import {
   RECEIPT_INSTRUCTION_VERSION,
 } from "../adapters/receipt-ai/schema.ts";
 import {
+  DEFAULT_DEVICE_LOCAL_SETTINGS,
+  type DeviceLocalSettings,
   DeviceLocalSettingsSchema,
   type ProjectCategoryState,
 } from "../domain/index.ts";
@@ -226,6 +229,7 @@ Deno.test("receipt-ui device settings migrate legacy values and round-trip new v
     activeProvider: "openrouter",
     selectedGeminiModel: "gemini-2.0-flash",
     selectedOpenRouterModel: "openai/gpt-4.1-mini",
+    geminiThinkingLevel: "auto",
     preferredProviderTag: "openai",
     requireZdr: true,
     denyProviderDataCollection: true,
@@ -276,6 +280,34 @@ Deno.test("receipt-ui scan failure notice exposes a safe reportable code", async
     );
     fireEvent.click(view.getByRole("button", { name: "Use manual entry" }));
     assert(retried && choseAnother && usedManualEntry);
+  });
+});
+
+Deno.test("receipt-ui scan failure notice exposes safe error details when present", async () => {
+  await withComponentHarness(({ render }) => {
+    const failure: ContractFailure = {
+      code: "invalid-output",
+      message: "The provider returned an unusable response.",
+      retryable: true,
+      operation: "gemini.extract.output.schema",
+      reason: "schema: total: Expected number, received string",
+    };
+    render(
+      createElement(ReceiptScanFailureNotice, {
+        failure,
+        canRetry: true,
+        onRetry: () => {},
+        onChooseAnotherImage: () => {},
+        onUseManualEntry: () => {},
+      }),
+    );
+    const view = within(document.body);
+    const alert = view.getByRole("alert");
+    assert(
+      alert.textContent?.includes(
+        "Details: schema: total: Expected number, received string",
+      ),
+    );
   });
 });
 
@@ -2631,3 +2663,111 @@ Deno.test(
     });
   },
 );
+
+Deno.test("preferredDefaultModel prioritizes flash-lite for Gemini and first active for others", () => {
+  const models = [
+    {
+      id: "models/gemini-2.5-pro",
+      displayName: "Gemini Pro",
+      lifecycle: "active" as const,
+      capabilities: {
+        "image-input": true,
+        "content-generation": true,
+        "structured-output": true,
+      },
+    },
+    {
+      id: "models/gemini-3.5-flash-lite",
+      displayName: "Gemini 3.5 Flash Lite",
+      lifecycle: "active" as const,
+      capabilities: {
+        "image-input": true,
+        "content-generation": true,
+        "structured-output": true,
+      },
+    },
+    {
+      id: "models/gemini-2.5-flash",
+      displayName: "Gemini Flash",
+      lifecycle: "active" as const,
+      capabilities: {
+        "image-input": true,
+        "content-generation": true,
+        "structured-output": true,
+      },
+    },
+  ];
+  assertEquals(
+    preferredDefaultModel(models, "gemini"),
+    "models/gemini-3.5-flash-lite",
+  );
+  assertEquals(
+    preferredDefaultModel(
+      models.filter((m) => !m.id.includes("flash-lite")),
+      "gemini",
+    ),
+    "models/gemini-2.5-flash",
+  );
+  assertEquals(
+    preferredDefaultModel(models, "openrouter"),
+    "models/gemini-2.5-pro",
+  );
+  assertEquals(preferredDefaultModel([], "gemini"), undefined);
+});
+
+Deno.test("ReceiptSettingsScreen displays Gemini reasoning settings when provider is Gemini", async () => {
+  await withComponentHarness(async ({ render, waitFor }) => {
+    let currentSettings: DeviceLocalSettings = {
+      ...DEFAULT_DEVICE_LOCAL_SETTINGS,
+      activeProvider: "gemini",
+      geminiThinkingLevel: "auto",
+    };
+    const gemini = {
+      getApiKey: () =>
+        Promise.resolve({
+          reveal: () => "AIzaSyFakeKeyForTest1234567890",
+        }),
+      setApiKey: () => Promise.resolve(),
+      removeApiKey: () => Promise.resolve(),
+      listModels: () =>
+        Promise.resolve([
+          {
+            id: "gemini-3.5-flash-lite",
+            displayName: "Gemini 3.5 Flash Lite",
+            lifecycle: "active" as const,
+            capabilities: {
+              "image-input": true,
+              "content-generation": true,
+              "structured-output": true,
+            },
+          },
+        ]),
+      extractReceipt: () => Promise.reject(new Error("unused")),
+    };
+    const openrouter: ReceiptOpenRouterPort = {
+      ...gemini,
+      listEndpoints: () => Promise.resolve([]),
+    };
+    function TestSettings() {
+      const [settings, setSettings] = useState<DeviceLocalSettings>(
+        currentSettings,
+      );
+      return createElement(ReceiptSettingsScreen, {
+        gemini,
+        openrouter,
+        settings,
+        onSettingsChange: (next) => {
+          currentSettings = next;
+          setSettings(next);
+        },
+        onClose: () => {},
+      });
+    }
+    render(createElement(TestSettings));
+    const view = within(document.body);
+    await waitFor(() => {
+      assert(view.getByText("Gemini reasoning"));
+    });
+    assert(view.getByRole("combobox", { name: "Thinking effort" }));
+  });
+});

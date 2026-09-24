@@ -202,3 +202,47 @@ Deno.test("buildReceiptPrompt tailors instructions when documentType is menu", (
   assert(prompt.includes("set printedTotal to '0'"));
   assert(prompt.includes("set unitPrice to the printed price"));
 });
+
+Deno.test("shared schema and parser accept null in optional line fields and capture detailed errors", () => {
+  const outputWithNulls = {
+    ...validOutput,
+    time: "N/A",
+    lines: [{
+      ...validOutput.lines[0],
+      quantity: null,
+      unitPrice: null,
+      uncertainty: null,
+    }],
+  };
+  const parsed = parseReceiptOutput(JSON.stringify(outputWithNulls));
+  assertEquals(parsed.time, null);
+  assertEquals(parsed.lines[0]?.quantity, null);
+  assertEquals(parsed.lines[0]?.unitPrice, null);
+  assertEquals(parsed.lines[0]?.uncertainty, null);
+
+  const draft = mapReceiptOutputToDraft(parsed, {
+    categories: [{ id: "category-groceries", name: "Groceries" }],
+  });
+  const firstLine = draft.lines[0];
+  assert(firstLine?.kind === "purchase");
+  assertEquals(draft.time, undefined);
+  assertEquals(firstLine.quantity, undefined);
+  assertEquals(firstLine.unitPrice, undefined);
+  assertEquals(firstLine.uncertainty, undefined);
+
+  // Detailed validation error capture
+  try {
+    parseReceiptOutput(JSON.stringify({
+      ...validOutput,
+      currency: "INVALID_LONG_CODE",
+    }));
+    assert(false, "Expected validation failure");
+  } catch (error) {
+    assert(error instanceof ReceiptOutputError);
+    assertEquals(error.phase, "schema");
+    assert(
+      error.details?.includes("currency"),
+      "Expected currency in error details",
+    );
+  }
+});

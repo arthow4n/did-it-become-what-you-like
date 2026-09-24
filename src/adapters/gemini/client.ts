@@ -22,6 +22,9 @@ export type GoogleGenAiSdk = {
         readonly responseMimeType: "application/json";
         readonly responseJsonSchema: unknown;
         readonly systemInstruction: string;
+        readonly thinkingConfig?: {
+          readonly thinkingLevel?: "MINIMAL" | "LOW" | "MEDIUM" | "HIGH";
+        };
         readonly abortSignal?: AbortSignal;
       };
     }): Promise<{ readonly text?: string }>;
@@ -63,6 +66,11 @@ export function createGoogleGenAiClient(
             responseMimeType: request.config.responseMimeType,
             responseJsonSchema: request.config.responseJsonSchema,
             systemInstruction: request.config.systemInstruction,
+            ...(request.config.thinkingLevel === undefined ? {} : {
+              thinkingConfig: {
+                thinkingLevel: request.config.thinkingLevel,
+              },
+            }),
             ...(options?.signal === undefined
               ? {}
               : { abortSignal: options.signal }),

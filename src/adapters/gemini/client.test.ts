@@ -104,3 +104,44 @@ Deno.test("Google Gen AI wrapper owns SDK request translation", async () => {
     },
   ]);
 });
+
+Deno.test("Google Gen AI wrapper forwards thinkingLevel in thinkingConfig", async () => {
+  let observedParameters: unknown;
+  const sdk: GoogleGenAiSdk = {
+    models: {
+      list: () =>
+        Promise.resolve({
+          async *[Symbol.asyncIterator]() {
+            yield* [];
+          },
+        }),
+      generateContent: (parameters) => {
+        observedParameters = parameters;
+        return Promise.resolve({ text: "{}" });
+      },
+    },
+  };
+  const client = createGoogleGenAiClient("AIza.test", () => sdk);
+  await client.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: [{ text: "Hello" }],
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: { type: "object" },
+      systemInstruction: "test",
+      thinkingLevel: "LOW",
+    },
+  });
+  assertEquals(observedParameters, {
+    model: "gemini-3-flash-preview",
+    contents: [{ text: "Hello" }],
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: { type: "object" },
+      systemInstruction: "test",
+      thinkingConfig: {
+        thinkingLevel: "LOW",
+      },
+    },
+  });
+});

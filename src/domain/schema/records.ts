@@ -210,11 +210,21 @@ export type PortableSettings = z.infer<typeof PortableSettingsSchema>;
 export const ReceiptAiProviderSchema = z.enum(["gemini", "openrouter"]);
 export type ReceiptAiProvider = z.infer<typeof ReceiptAiProviderSchema>;
 
+export const GeminiThinkingLevelSchema = z.enum([
+  "auto",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+]);
+export type GeminiThinkingLevel = z.infer<typeof GeminiThinkingLevelSchema>;
+
 export const DeviceLocalSettingsSchema = z.object({
   lastSelectedProjectId: StableIdSchema.optional(),
   activeProvider: ReceiptAiProviderSchema.default("gemini"),
   selectedGeminiModel: NonEmptyTextSchema.optional(),
   selectedOpenRouterModel: NonEmptyTextSchema.optional(),
+  geminiThinkingLevel: GeminiThinkingLevelSchema.default("auto"),
   preferredProviderTag: NonEmptyTextSchema.optional(),
   requireZdr: z.boolean().default(false),
   denyProviderDataCollection: z.boolean().default(false),
@@ -224,6 +234,7 @@ export type DeviceLocalSettings = z.infer<typeof DeviceLocalSettingsSchema>;
 
 export const DEFAULT_DEVICE_LOCAL_SETTINGS: DeviceLocalSettings = {
   activeProvider: "gemini",
+  geminiThinkingLevel: "auto",
   requireZdr: false,
   denyProviderDataCollection: false,
   imagePreparationEnabled: true,
@@ -234,6 +245,7 @@ const DEVICE_LOCAL_SETTINGS_KEYS = [
   "activeProvider",
   "selectedGeminiModel",
   "selectedOpenRouterModel",
+  "geminiThinkingLevel",
   "preferredProviderTag",
   "requireZdr",
   "denyProviderDataCollection",

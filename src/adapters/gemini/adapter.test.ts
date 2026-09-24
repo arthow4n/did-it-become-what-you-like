@@ -323,7 +323,16 @@ const MODEL_TEXT_ONLY: GeminiRawModel = {
 
 function createStorageAndAdapter(
   clientFactory: (requests: GeminiGenerateRequest[]) => GeminiBrowserClient,
-  options: { readonly online?: boolean } = {},
+  options: {
+    readonly online?: boolean;
+    readonly getThinkingLevel?: () =>
+      | "auto"
+      | "minimal"
+      | "low"
+      | "medium"
+      | "high"
+      | undefined;
+  } = {},
 ): {
   adapter: ReturnType<typeof createGeminiAdapter>;
   requests: GeminiGenerateRequest[];
@@ -336,6 +345,7 @@ function createStorageAndAdapter(
     createClient: () => clientFactory(requests),
     isOnline: () => options.online ?? true,
     secretStorage,
+    getThinkingLevel: options.getThinkingLevel,
   });
   return { adapter, requests, storage };
 }
@@ -701,8 +711,25 @@ Deno.test("gemini adapter: malformed or hostile model output is rejected and red
   assert(isAdapterError(error));
   assertEquals(error.code, "invalid-output");
   assertEquals(error.operation, "gemini.extract.output.schema");
+  assert(typeof error.details.reason === "string");
   assert(!error.message.includes(hostile));
   assert(!JSON.stringify(error).includes(hostile));
+});
+
+Deno.test("gemini adapter: forwards thinking level to generateContent config", async () => {
+  const { adapter, requests } = createStorageAndAdapter(
+    (captured) =>
+      clientWithModels(
+        [MODEL_WITH_UNKNOWN_METADATA],
+        { text: RECEIPT_OUTPUT },
+        (request) => captured.push(request),
+      ),
+    { getThinkingLevel: () => "high" },
+  );
+  await adapter.setApiKey("AIza.synthetic-thinking-test");
+  await adapter.extractReceipt(extractionRequest());
+  assertEquals(requests.length, 1);
+  assertEquals(requests[0].config.thinkingLevel, "HIGH");
 });
 
 Deno.test("gemini adapter: malformed provider JSON reports the response parsing phase", async () => {
@@ -716,6 +743,7 @@ Deno.test("gemini adapter: malformed provider JSON reports the response parsing 
   assert(isAdapterError(error));
   assertEquals(error.code, "invalid-output");
   assertEquals(error.operation, "gemini.extract.output.json");
+  assert(typeof error.details.reason === "string");
 });
 
 Deno.test("gemini adapter: maps invalid, quota, offline, and abort failures to typed redacted errors", async () => {

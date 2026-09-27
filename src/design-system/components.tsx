@@ -2,6 +2,9 @@ import {
   cloneElement,
   forwardRef,
   isValidElement,
+  memo,
+  startTransition,
+  useCallback,
   useEffect,
   useId,
   useMemo,
@@ -13,6 +16,7 @@ import type {
   ComponentProps,
   CSSProperties,
   ElementType,
+  FocusEvent,
   KeyboardEvent,
   MouseEvent,
   ReactElement,
@@ -1033,23 +1037,56 @@ export type DecimalFieldProps = Omit<
   "inputMode" | "type"
 >;
 
-export function DecimalField(props: DecimalFieldProps) {
-  return <TextField {...props} inputMode="decimal" type="text" />;
+export function DecimalField({
+  value,
+  defaultValue,
+  onChange,
+  onBlur,
+  ...props
+}: DecimalFieldProps) {
+  const [localValue, setLocalValue] = useState(value ?? defaultValue ?? "");
+  const pendingValuesRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    const nextPropValue = value ?? "";
+    if (pendingValuesRef.current.has(nextPropValue)) {
+      pendingValuesRef.current.delete(nextPropValue);
+      return;
+    }
+    pendingValuesRef.current.clear();
+    setLocalValue(nextPropValue);
+  }, [value]);
+
+  const handleChange = useCallback((nextValue: string) => {
+    pendingValuesRef.current.add(nextValue);
+    setLocalValue(nextValue);
+    startTransition(() => {
+      onChange?.(nextValue);
+    });
+  }, [onChange]);
+
+  const handleBlur = useCallback((event: FocusEvent<HTMLInputElement>) => {
+    onBlur?.(event);
+  }, [onBlur]);
+
+  return (
+    <TextField
+      {...props}
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      inputMode="decimal"
+      type="text"
+    />
+  );
 }
 
 export type MoneyFieldProps = DecimalFieldProps & { currency: string };
 
 export function MoneyField(
-  { currency: _currency, description, ...props }: MoneyFieldProps,
+  { currency: _currency, ...props }: MoneyFieldProps,
 ) {
-  return (
-    <TextField
-      {...props}
-      inputMode="decimal"
-      type="text"
-      description={description}
-    />
-  );
+  return <DecimalField {...props} />;
 }
 
 function inputValue(
@@ -3137,7 +3174,7 @@ export type CategoryPickerProps = {
   className?: string;
 };
 
-export function CategoryPicker({
+export const CategoryPicker = memo(function CategoryPicker({
   label = "Category",
   categories,
   value,
@@ -3150,8 +3187,8 @@ export function CategoryPicker({
   maxQuickChips = 15,
   className,
 }: CategoryPickerProps) {
-  const activeCategories = categories.filter((c) => !c.disabled);
   const quickOptions = useMemo(() => {
+    const activeCategories = categories.filter((c) => !c.disabled);
     const result: SelectOption[] = [];
     const addedIds = new Set<string>();
 
@@ -3175,7 +3212,7 @@ export function CategoryPicker({
     }
 
     return result;
-  }, [activeCategories, recentCategoryIds, maxQuickChips]);
+  }, [categories, recentCategoryIds, maxQuickChips]);
 
   return (
     <Stack gap={2} className={cx("ds-category-picker", className)}>
@@ -3215,7 +3252,7 @@ export function CategoryPicker({
         : null}
     </Stack>
   );
-}
+});
 
 export type MoneySummaryItem = {
   label: string;
@@ -3800,7 +3837,7 @@ export function ReceiptLineEditor(
         value={value.categoryId}
         onValueChange={(categoryId) => onChange({ ...value, categoryId })}
       />
-      <TextField
+      <DecimalField
         label={manual
           ? value.type === "adjustment" ? "Adjustment" : "Amount paid"
           : value.type === "adjustment"
@@ -3808,8 +3845,6 @@ export function ReceiptLineEditor(
           : "Line total"}
         value={value.amount}
         onChange={(amount) => onChange({ ...value, amount })}
-        inputMode="decimal"
-        type="text"
         description={manual
           ? "Enter the positive amount paid for this item."
           : "Enter the signed amount exactly as printed."}

@@ -1,5 +1,14 @@
 import { useActor } from "@xstate/react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { SnapshotFrom } from "xstate";
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Archive,
   ArrowDown,
@@ -38,7 +47,9 @@ import {
   createManualExpenseMachine,
   isDraftModified,
   type ManualExpenseDraft,
+  type ManualExpenseEvent,
   type ManualExpenseOpenRequest,
+  type ManualExpenseValidationErrors,
 } from "../actors/manual-expense.ts";
 import {
   createCategoryOrganizationMachine,
@@ -2814,10 +2825,16 @@ export function ManualExpenseScreen({
     snapshot.context.originalExpense,
   );
   const dirty = snapshot.hasTag("dirty") && isModified;
+  const onDirtyChangeRef = useRef(onDirtyChange);
+  onDirtyChangeRef.current = onDirtyChange;
+  const lastDirtyRef = useRef<boolean | null>(null);
   useLayoutEffect(() => {
     if (snapshot.matches("idle")) return;
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange, snapshot]);
+    if (lastDirtyRef.current !== dirty) {
+      lastDirtyRef.current = dirty;
+      onDirtyChangeRef.current?.(dirty);
+    }
+  }, [dirty, snapshot]);
 
   useEffect(() => {
     if (
@@ -2900,15 +2917,113 @@ export function ManualExpenseScreen({
       <LoadingScreen title={request.expense ? "Edit expense" : "New expense"} />
     );
   }
-  const categories = state.categories.filter((category) =>
-    !category.archived || category.id === draft.categoryId
-  ).map((category) => ({ id: category.id, label: category.name }));
-  const projects = state.projects.filter((project) =>
-    !project.archived || project.id === draft.projectId
-  ).map((project) => ({ id: project.id, label: project.name }));
-  const validation = snapshot.context.validation;
-  const update = (changes: Partial<ManualExpenseDraft>) =>
-    send({ type: "expense.change", draft: { ...draft, ...changes } });
+  return (
+    <ManualExpenseFormContent
+      snapshot={snapshot}
+      send={send}
+      state={state}
+      draft={draft}
+      recentCategoryIds={recentCategoryIds}
+      onManualReceipt={onManualReceipt}
+    />
+  );
+}
+
+type ManualExpenseSnapshot = SnapshotFrom<
+  ReturnType<typeof createManualExpenseMachine>
+>;
+
+function ManualExpenseFormContent({
+  snapshot,
+  send,
+  state,
+  draft,
+  recentCategoryIds,
+  onManualReceipt,
+}: {
+  snapshot: ManualExpenseSnapshot;
+  send: (event: ManualExpenseEvent) => void;
+  state: ProjectCategoryState;
+  draft: ManualExpenseDraft;
+  recentCategoryIds: string[];
+  onManualReceipt?: () => void;
+}) {
+  const categories = useMemo(() => {
+    return state.categories.filter((category) =>
+      !category.archived || category.id === draft.categoryId
+    ).map((category) => ({ id: category.id, label: category.name }));
+  }, [state.categories, draft.categoryId]);
+
+  const projects = useMemo(() => {
+    return state.projects.filter((project) =>
+      !project.archived || project.id === draft.projectId
+    ).map((project) => ({ id: project.id, label: project.name }));
+  }, [state.projects, draft.projectId]);
+
+  const currencyOptions = useMemo(
+    () => CURRENCY_OPTIONS.map((code) => ({ id: code, label: code })),
+    [],
+  );
+
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+
+  const update = useCallback((changes: Partial<ManualExpenseDraft>) => {
+    if (draftRef.current) {
+      send({
+        type: "expense.change",
+        draft: { ...draftRef.current, ...changes },
+      });
+    }
+  }, [send]);
+
+  const handleAmountChange = useCallback((value: string) => {
+    update({ amount: value });
+  }, [update]);
+
+  const handleCurrencyChange = useCallback((value: string) => {
+    update({ currency: CurrencyCodeSchema.parse(value) });
+  }, [update]);
+
+  const handleMerchantChange = useCallback((value: string) => {
+    update({ merchant: value });
+  }, [update]);
+
+  const handleDescriptionChange = useCallback((value: string) => {
+    update({ description: value });
+  }, [update]);
+
+  const handleCategoryChange = useCallback((value: string) => {
+    update({ categoryId: value });
+  }, [update]);
+
+  const handleDateChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      update({ date: event.currentTarget.value });
+    },
+    [update],
+  );
+
+  const handleTimeChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      update({ time: event.currentTarget.value || undefined });
+    },
+    [update],
+  );
+
+  const handleProjectChange = useCallback((value: string) => {
+    update({ projectId: value });
+  }, [update]);
+
+  const handleDirectionChange = useCallback((selected: boolean) => {
+    update({ direction: selected ? "money-back" : "spent" });
+  }, [update]);
+  const isModified = isDraftModified(
+    draft,
+    snapshot.context.originalExpense,
+  );
+  const validation = snapshot.context
+    .validation as ManualExpenseValidationErrors;
   const busy = snapshot.hasTag("saving");
   const draftSaveFailed = snapshot.matches("draftSaveFailed");
   const saveFailed = snapshot.matches("saveFailed") ||
@@ -3034,30 +3149,26 @@ export function ManualExpenseScreen({
                 isRequired
                 value={draft.amount}
                 isDisabled={formLocked}
-                onChange={(value) => update({ amount: value })}
+                onChange={handleAmountChange}
                 currency={draft.currency}
                 error={validation.amount}
               />
               <CurrencyPicker
                 value={draft.currency}
-                options={CURRENCY_OPTIONS.map((code) => ({
-                  id: code,
-                  label: code,
-                }))}
-                onValueChange={(value) =>
-                  update({ currency: CurrencyCodeSchema.parse(value) })}
+                options={currencyOptions}
+                onValueChange={handleCurrencyChange}
                 isDisabled={formLocked}
               />
             </div>
             <MerchantPicker
               value={draft.merchant ?? ""}
-              onValueChange={(value) => update({ merchant: value })}
+              onValueChange={handleMerchantChange}
               isDisabled={formLocked}
             />
             <TextField
               label="Description (optional)"
               value={draft.description}
-              onChange={(value) => update({ description: value })}
+              onChange={handleDescriptionChange}
               error={validation.description}
               isDisabled={formLocked}
             />
@@ -3066,7 +3177,7 @@ export function ManualExpenseScreen({
               categories={categories}
               value={draft.categoryId}
               recentCategoryIds={recentCategoryIds}
-              onValueChange={(value) => update({ categoryId: value })}
+              onValueChange={handleCategoryChange}
               error={validation.categoryId}
               isDisabled={formLocked}
             />
@@ -3075,16 +3186,14 @@ export function ManualExpenseScreen({
                 label="Date"
                 required
                 value={draft.date}
-                onChange={(event) =>
-                  update({ date: event.currentTarget.value })}
+                onChange={handleDateChange}
                 error={validation.date}
                 disabled={formLocked}
               />
               <NativeTimeField
                 label="Time (optional)"
                 value={draft.time ?? ""}
-                onChange={(event) =>
-                  update({ time: event.currentTarget.value || undefined })}
+                onChange={handleTimeChange}
                 error={validation.time}
                 disabled={formLocked}
               />
@@ -3092,14 +3201,13 @@ export function ManualExpenseScreen({
             <ProjectPicker
               options={projects}
               value={draft.projectId}
-              onValueChange={(value) => update({ projectId: value })}
+              onValueChange={handleProjectChange}
               isDisabled={formLocked}
             />
             <Checkbox
               isSelected={draft.direction === "money-back"}
               isDisabled={formLocked}
-              onChange={(selected) =>
-                update({ direction: selected ? "money-back" : "spent" })}
+              onChange={handleDirectionChange}
             >
               Money back
             </Checkbox>
@@ -3227,6 +3335,10 @@ export function LocalUiRuntime(
   const [usefulActionVersion, setUsefulActionVersion] = useState(0);
   const [workflowDirty, setWorkflowDirty] = useState(false);
   const [dirtyNavigationWorkflow, setDirtyNavigationWorkflow] = useState(false);
+  const handleWorkflowDirtyChange = useCallback((dirty: boolean) => {
+    setWorkflowDirty(dirty);
+    setDirtyNavigationWorkflow(dirty);
+  }, []);
   const [dirtyExitOpen, setDirtyExitOpen] = useState(false);
   const [discardRequest, setDiscardRequest] = useState(0);
   const [dirtyDiscardDisabled, setDirtyDiscardDisabled] = useState(false);
@@ -3880,10 +3992,7 @@ export function LocalUiRuntime(
                 onManualReceipt={() => requestNavigation("/receipt/manual")}
                 onUsefulAction={() =>
                   setUsefulActionVersion((value) => value + 1)}
-                onDirtyChange={(dirty) => {
-                  setWorkflowDirty(dirty);
-                  setDirtyNavigationWorkflow(dirty);
-                }}
+                onDirtyChange={handleWorkflowDirtyChange}
                 discardRequest={discardRequest}
                 onClosed={(status) => {
                   void organization.getState().then(setState);

@@ -93,6 +93,14 @@ export function expenseDateForLocalNow(
   );
 }
 
+/**
+ * Returns the local wall-clock time formatted as HH:mm for a Date instant.
+ */
+export function expenseTimeForLocalNow(now: Date): string {
+  if (Number.isNaN(now.getTime())) throw new Error("now must be a valid date");
+  return `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
 export function boundsForPeriod(
   period: ExpensePeriod,
   boundary: string,

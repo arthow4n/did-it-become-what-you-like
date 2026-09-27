@@ -15,6 +15,7 @@ import {
   compareExpenseTimelineEntries,
   expenseDateForLocalNow,
   type ExpenseQuerySource,
+  expenseTimeForLocalNow,
   formatDecimal,
   formatMoney,
   formatStoredCalendarDate,
@@ -320,6 +321,73 @@ Deno.test("query: timeline ties keep stable IDs in both sort directions", () => 
       "newest",
     ) < 0,
     true,
+  );
+});
+
+Deno.test("query: expenseTimeForLocalNow formats local time as HH:mm and rejects invalid date", () => {
+  const time = expenseTimeForLocalNow(new Date(2026, 7, 24, 9, 5, 0));
+  assertEquals(time, "09:05");
+  const pmTime = expenseTimeForLocalNow(new Date(2026, 7, 24, 14, 35, 0));
+  assertEquals(pmTime, "14:35");
+  let failed = false;
+  try {
+    expenseTimeForLocalNow(new Date(NaN));
+  } catch {
+    failed = true;
+  }
+  assert(failed, "invalid date must be rejected");
+});
+
+Deno.test("query: timeline ties break alphabetically by merchant or description before stable ID", () => {
+  const bakery = {
+    date: "2026-08-30",
+    time: "10:00",
+    id: "z-id",
+    merchant: "Bakery",
+  };
+  const supermarket = {
+    date: "2026-08-30",
+    time: "10:00",
+    id: "a-id",
+    merchant: "Supermarket",
+  };
+  assert(
+    compareExpenseTimelineEntries(bakery, supermarket, "newest") < 0,
+    "Bakery should sort before Supermarket alphabetically despite having later ID",
+  );
+  assert(
+    compareExpenseTimelineEntries(bakery, supermarket, "oldest") < 0,
+    "Equal timestamps keep alphabetical tie-breaking consistent in both directions",
+  );
+
+  // Fallback to description when merchant is missing
+  const descAlpha = {
+    date: "2026-08-30",
+    time: "10:00",
+    id: "z-id",
+    description: "Apples",
+  };
+  const descBeta = {
+    date: "2026-08-30",
+    time: "10:00",
+    id: "a-id",
+    description: "Bananas",
+  };
+  assert(
+    compareExpenseTimelineEntries(descAlpha, descBeta, "newest") < 0,
+    "Apples should sort before Bananas by description tie-breaker",
+  );
+
+  // Untimed entries sort after timed entries on newest, before on oldest
+  const timed = { date: "2026-08-30", time: "14:00", id: "t" };
+  const untimed = { date: "2026-08-30", id: "u" };
+  assert(
+    compareExpenseTimelineEntries(timed, untimed, "newest") < 0,
+    "Timed entry comes before untimed entry on newest",
+  );
+  assert(
+    compareExpenseTimelineEntries(timed, untimed, "oldest") > 0,
+    "Timed entry comes after untimed entry on oldest",
   );
 });
 

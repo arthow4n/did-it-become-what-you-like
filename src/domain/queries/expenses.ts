@@ -182,7 +182,25 @@ export type ExpenseTimelineEntry = {
   readonly date: string;
   readonly time?: string;
   readonly id: string;
+  readonly merchant?: string;
+  readonly description?: string;
 };
+
+function secondaryLabel(entry: ExpenseTimelineEntry): string {
+  const merchant = entry.merchant?.trim();
+  if (merchant) return merchant;
+  const description = entry.description?.trim();
+  if (description) return description;
+  return "";
+}
+
+function compareTextAlphabetical(left: string, right: string): number {
+  const leftLower = left.toLocaleLowerCase("en-US");
+  const rightLower = right.toLocaleLowerCase("en-US");
+  const difference = compareCodeUnits(leftLower, rightLower);
+  if (difference !== 0) return difference;
+  return compareCodeUnits(left, right);
+}
 
 /** Compare standalone records and receipt groups by one shared timeline rule. */
 export function compareExpenseTimelineEntries(
@@ -196,6 +214,19 @@ export function compareExpenseTimelineEntries(
   }
   if (difference !== 0 && order === "newest") difference = -difference;
   if (difference !== 0) return difference;
+
+  // Secondary deterministic tie-breaker: alphabetical by merchant/description
+  const leftLabel = secondaryLabel(left);
+  const rightLabel = secondaryLabel(right);
+  if (leftLabel && rightLabel) {
+    const labelDifference = compareTextAlphabetical(leftLabel, rightLabel);
+    if (labelDifference !== 0) return labelDifference;
+  } else if (leftLabel) {
+    return -1;
+  } else if (rightLabel) {
+    return 1;
+  }
+
   // Keep equal temporal values deterministic in both directions. The stable
   // ID is not reversed when the owner switches newest/oldest.
   return compareCodeUnits(left.id, right.id);

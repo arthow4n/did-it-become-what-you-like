@@ -1,6 +1,7 @@
 import { createActor } from "xstate";
 import {
   createManualExpenseMachine,
+  isDraftModified,
   type ManualExpenseDraft,
 } from "../manual-expense.ts";
 import {
@@ -113,6 +114,7 @@ Deno.test("manual-expense: defaults, canonical signs, create, edit, and duplicat
   assertEquals(initial.currency, "SEK");
   assertEquals(initial.direction, "spent");
   assertEquals(initial.date, "2026-08-24");
+  assertEquals(initial.time, "12:00");
 
   actor.send({
     type: "expense.change",
@@ -135,6 +137,7 @@ Deno.test("manual-expense: defaults, canonical signs, create, edit, and duplicat
   assertEquals(result.operation, "created");
   assertEquals(result.expense.amount, "-10.9");
   assertEquals(result.expense.merchant, "Shop");
+  assertEquals(result.expense.time, "09:15");
   assertEquals(
     harness.local.operations.filter((operation) =>
       operation === "put:records:expense-created"
@@ -590,6 +593,40 @@ Deno.test("manual-expense: delete and undo restore the local record", async () =
     "-3",
   );
   actor.stop();
+});
+
+Deno.test("manual-expense: auto-fills current time on new expense, preserves explicit time on edit, and detects time modification", async () => {
+  const harness = await createHarness(new Date(2026, 7, 24, 15, 30, 0));
+  const actor = createExpenseActor(harness, "workflow:time-defaults");
+  actor.send({ type: "expense.open" });
+  await settle();
+  const initial = actor.getSnapshot().context.draft;
+  assert(initial !== null);
+  assertEquals(initial.time, "15:30");
+
+  // Opening an existing expense without a time preserves undefined time
+  const existingWithoutTime = expenseRecord({
+    id: "expense-no-time",
+    time: undefined,
+  });
+  const actorExisting = createExpenseActor(harness, "workflow:time-existing");
+  actorExisting.send({
+    type: "expense.open",
+    request: { expense: existingWithoutTime },
+  });
+  await settle();
+  const existingDraft = actorExisting.getSnapshot().context.draft;
+  assert(existingDraft !== null);
+  assertEquals(existingDraft.time, undefined);
+
+  // isDraftModified detects time changes on an existing expense
+  assert(!isDraftModified(existingDraft, existingWithoutTime));
+  assert(
+    isDraftModified({ ...existingDraft, time: "16:00" }, existingWithoutTime),
+  );
+
+  actor.stop();
+  actorExisting.stop();
 });
 
 function asExpenseValue(expense: Expense): JsonValue {

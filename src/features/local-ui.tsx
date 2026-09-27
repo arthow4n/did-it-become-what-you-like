@@ -622,6 +622,8 @@ function compareExpenseFeedEntries(
         date: left.group.receipt.date,
         time: left.group.receipt.time,
         id: left.group.id,
+        merchant: left.group.receipt.merchant,
+        description: left.group.lines[0]?.description,
       }
       : left.item,
     right.kind === "receipt"
@@ -629,6 +631,8 @@ function compareExpenseFeedEntries(
         date: right.group.receipt.date,
         time: right.group.receipt.time,
         id: right.group.id,
+        merchant: right.group.receipt.merchant,
+        description: right.group.lines[0]?.description,
       }
       : right.item,
     order,

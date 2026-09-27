@@ -17,7 +17,10 @@ import {
   TimeOfDaySchema,
   UNCATEGORIZED_CATEGORY_ID,
 } from "../domain/index.ts";
-import { expenseDateForLocalNow } from "../domain/queries/calendar.ts";
+import {
+  expenseDateForLocalNow,
+  expenseTimeForLocalNow,
+} from "../domain/queries/calendar.ts";
 import { moneyCompare, moneySubtract } from "../domain/money/index.ts";
 import type {
   OrganizationCommitOutput,
@@ -352,6 +355,7 @@ export function isDraftModified(
     draft.categoryId !== originalDraft.categoryId ||
     draft.projectId !== originalDraft.projectId ||
     draft.date !== originalDraft.date ||
+    draft.time !== originalDraft.time ||
     draft.direction !== originalDraft.direction ||
     draft.currency !== originalDraft.currency
   );
@@ -364,10 +368,12 @@ function initialDraftFromRequest(
   if (request.expense) {
     return draftFromExpense(request.expense);
   }
+  const now = new Date();
   return {
     projectId: request.projectId ?? "",
     categoryId: UNCATEGORIZED_CATEGORY_ID,
-    date: new Date().toISOString().slice(0, 10),
+    date: now.toISOString().slice(0, 10),
+    time: expenseTimeForLocalNow(now),
     amount: "",
     currency: "EUR",
     description: "",
@@ -441,15 +447,18 @@ async function openExpense(
   const project = currentProject(state, request.projectId);
   const boundary = await expenseDayBoundary(dependencies.local);
   const clock = dependencies.clock ?? defaultClock();
+  const now = new Date(clock.now());
   const date = expenseDateForLocalNow(
-    new Date(clock.now()),
+    now,
     boundary,
   );
+  const time = expenseTimeForLocalNow(now);
   return {
     draft: {
       projectId: project.id,
       categoryId: UNCATEGORIZED_CATEGORY_ID,
       date,
+      time,
       amount: "",
       currency: project.defaultCurrency,
       description: "",

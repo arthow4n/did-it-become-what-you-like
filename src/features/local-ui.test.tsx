@@ -1732,65 +1732,53 @@ for (
   );
 }
 
-Deno.test("local UI category editor cancel button exits back to category list", async () => {
-  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    const { service } = createTestService(categoryState);
-    await withAriaDomGlobals(window, async () => {
-      render(
-        createElement(CategoryManager, {
-          service,
-          state: categoryState,
-          initialCreate: true,
-          onStateChange: () => undefined,
-          onNavigate: () => undefined,
-        }),
+for (
+  const { action, description } of [
+    {
+      action: "Cancel",
+      description: "cancel button exits back to category list",
+    },
+    {
+      action: "Back",
+      description: "back button exits back to category list when clean",
+    },
+  ]
+) {
+  Deno.test(
+    `local UI category editor ${description}`,
+    async () => {
+      await withComponentHarness(
+        async ({ window, render, fireEvent, waitFor }) => {
+          const { service } = createTestService(categoryState);
+          await withAriaDomGlobals(window, async () => {
+            render(
+              createElement(CategoryManager, {
+                service,
+                state: categoryState,
+                initialCreate: true,
+                onStateChange: () => undefined,
+                onNavigate: () => undefined,
+              }),
+            );
+            const view = within(document.body);
+            await waitFor(() =>
+              assert(view.getByRole("heading", { name: "Create category" }))
+            );
+            fireEvent.click(view.getByRole("button", { name: action }));
+            await waitFor(() =>
+              assert(
+                view.getByRole("heading", {
+                  name: "Manage categories",
+                  level: 1,
+                }),
+              )
+            );
+          });
+        },
       );
-      const view = within(document.body);
-      await waitFor(() =>
-        assert(view.getByRole("heading", { name: "Create category" }))
-      );
-      fireEvent.click(view.getByRole("button", { name: "Cancel" }));
-      await waitFor(() =>
-        assert(
-          view.getByRole("heading", {
-            name: "Manage categories",
-            level: 1,
-          }),
-        )
-      );
-    });
-  });
-});
-
-Deno.test("local UI category editor back button exits back to category list when clean", async () => {
-  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    const { service } = createTestService(categoryState);
-    await withAriaDomGlobals(window, async () => {
-      render(
-        createElement(CategoryManager, {
-          service,
-          state: categoryState,
-          initialCreate: true,
-          onStateChange: () => undefined,
-          onNavigate: () => undefined,
-        }),
-      );
-      const view = within(document.body);
-      await waitFor(() =>
-        assert(view.getByRole("heading", { name: "Create category" }))
-      );
-      fireEvent.click(view.getByRole("button", { name: "Back" }));
-      await waitFor(() =>
-        assert(
-          view.getByRole("heading", {
-            name: "Manage categories",
-            level: 1,
-          }),
-        )
-      );
-    });
-  });
-});
+    },
+  );
+}
 
 Deno.test("local UI category editor submits the selected replacement color", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {

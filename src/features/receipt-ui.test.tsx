@@ -146,6 +146,29 @@ function createSettingsProvider({
   };
 }
 
+const openRouterCapabilities: ReceiptAiModel["capabilities"] = {
+  "image-input": true,
+  "content-generation": true,
+  "structured-output": true,
+};
+
+function makeTestModel(
+  id: string,
+  displayName: string,
+  capabilities: ReceiptAiModel["capabilities"] = {
+    "image-input": undefined,
+    "content-generation": undefined,
+    "structured-output": undefined,
+  },
+): ReceiptAiModel {
+  return {
+    id,
+    displayName,
+    lifecycle: "active",
+    capabilities,
+  };
+}
+
 Deno.test("receipt-ui disclosure states the exact permitted and excluded data", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let accepted = false;
@@ -1615,26 +1638,16 @@ Deno.test(
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
       await withAriaGlobals(() => {
-        const geminiModel: ReceiptAiModel = {
-          id: "gemini/receipt-model",
-          displayName: "Gemini receipt model",
-          lifecycle: "active",
-          capabilities: {
-            "image-input": undefined,
-            "content-generation": undefined,
-            "structured-output": undefined,
-          },
-        };
-        const openRouterModel: ReceiptAiModel = {
-          id: "openai/receipt-model",
-          displayName: "OpenRouter receipt model",
-          lifecycle: "active",
-          capabilities: {
-            "image-input": true,
-            "content-generation": true,
-            "structured-output": true,
-          },
-        };
+        const geminiModel = makeTestModel(
+          "gemini/receipt-model",
+          "Gemini receipt model",
+        );
+        const openRouterModel = makeTestModel(
+          "openai/receipt-model",
+          "OpenRouter receipt model",
+          openRouterCapabilities,
+        );
+
         const endpoint: OpenRouterEndpoint = {
           modelId: openRouterModel.id,
           providerName: "Provider Alpha",
@@ -1728,26 +1741,16 @@ Deno.test(
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
       await withAriaGlobals(() => {
-        const geminiModel: ReceiptAiModel = {
-          id: "gemini/stale-model",
-          displayName: "Stale Gemini model",
-          lifecycle: "active",
-          capabilities: {
-            "image-input": undefined,
-            "content-generation": undefined,
-            "structured-output": undefined,
-          },
-        };
-        const openRouterModel: ReceiptAiModel = {
-          id: "openai/current-model",
-          displayName: "Current OpenRouter model",
-          lifecycle: "active",
-          capabilities: {
-            "image-input": true,
-            "content-generation": true,
-            "structured-output": true,
-          },
-        };
+        const geminiModel = makeTestModel(
+          "gemini/stale-model",
+          "Stale Gemini model",
+        );
+        const openRouterModel = makeTestModel(
+          "openai/current-model",
+          "Current OpenRouter model",
+          openRouterCapabilities,
+        );
+
         const geminiModels = deferred<readonly ReceiptAiModel[]>();
         const openRouterModels = deferred<readonly ReceiptAiModel[]>();
         let geminiRefreshes = 0;
@@ -1827,26 +1830,16 @@ Deno.test(
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
       await withAriaGlobals(() => {
-        const geminiModel: ReceiptAiModel = {
-          id: "gemini/stale-scan-model",
-          displayName: "Stale scan Gemini model",
-          lifecycle: "active",
-          capabilities: {
-            "image-input": undefined,
-            "content-generation": undefined,
-            "structured-output": undefined,
-          },
-        };
-        const openRouterModel: ReceiptAiModel = {
-          id: "openai/current-scan-model",
-          displayName: "Current scan OpenRouter model",
-          lifecycle: "active",
-          capabilities: {
-            "image-input": true,
-            "content-generation": true,
-            "structured-output": true,
-          },
-        };
+        const geminiModel = makeTestModel(
+          "gemini/stale-scan-model",
+          "Stale scan Gemini model",
+        );
+        const openRouterModel = makeTestModel(
+          "openai/current-scan-model",
+          "Current scan OpenRouter model",
+          openRouterCapabilities,
+        );
+
         const geminiModels = deferred<readonly ReceiptAiModel[]>();
         const openRouterModels = deferred<readonly ReceiptAiModel[]>();
         let geminiRefreshes = 0;

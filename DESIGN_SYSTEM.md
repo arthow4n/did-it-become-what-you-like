@@ -72,8 +72,7 @@ semantic tokens
 - XState actors own durable workflow state and permitted actions. Components
   receive controlled values, status, and callbacks or typed event dispatchers.
 - Mantine may own ephemeral interaction state such as focus and popover
-  mechanics. It must not become a second source of business truth. The
-  superseded React Aria implementation is not a runtime dependency.
+  mechanics. It must not become a second source of business truth.
 
 ## Design-system facade boundary
 

@@ -80,42 +80,15 @@ field spelling; no substitute SDK or version was introduced.
   inference, compatibility buttons/statuses/evidence, and compatibility-only
   key-revision state are removed. Refresh and settings changes never infer.
 
-### Integrated validation
-
-M34-005 integrated as 26888be and M34-006 as 9e078b2. The Pages quality
-failure in run #426 was a real date-sensitive local-ui fixture defect, not an
-expected Pages condition; the fixture correction preserved the default Today
-assertion and explicitly selected its fixed test day. The final integrated
-quality gate passed 484/484 tests plus formatting, lint, typecheck, build,
-release verification, frozen audit, and diff checks. No provider calls or
-network-enabled automated tests were used.
-
-## M34-FINAL archive and hygiene record
-
-R-3430 approved the complete M34 diff with no Severity 1–4 findings. The
-required documentation/ledger and test/tooling hygiene audits found no safe
-file deletions, no ghost references, no obsolete spikes, no task fragmentation,
-no orphan support files, and no release-blocking test cleanup. They identified
-and resolved only evidence-backed low-risk issues:
-
-- added the pinned OpenRouter SDK to THIRD_PARTY_NOTICES.md;
-- corrected stale compatibility, future-prompt, design-system mapping, and
-  provider-specific wording in living documentation;
-- replaced the duplicated design-system ARIA shim with the canonical
-  test-support harness helper.
-
-Large component-test refactors and stale historical test-description renames
-were explicitly deferred because they are not safe release-scope changes.
-
 ## Current Checkpoint
 
-- Active task/gate: M34-FINAL COMPLETE; M34 is released.
-- Pre-pruning checkpoint: a21877a. Detailed task and review history is retained
-  in Git history.
-- Master is the integration owner branch and must remain synchronized with its
+- Active task/gate: All planned milestones through M34 are COMPLETE; application
+  is released.
+- Current HEAD checkpoint: eb032b2. Detailed task, review, and milestone
+  execution history is retained in Git history.
+- Master is the integration owner branch and remains synchronized with its
   upstream without force-pushes or unrelated overwrites.
-- Final hygiene validation passed: design-system tests 31/31, deno task
-  fmt:check (211 files), deno task lint (202 files), deno task typecheck, and
-  git diff --check.
-- No active M34 worker, reviewer, unresolved finding, dirty worktree, or
-  unpushed M34 commit remains.
+- Repository hygiene: clean formatted files, linting passing, strict typecheck
+  passing, and git diff --check clean.
+- No active milestone worker, reviewer, unresolved finding, or unpushed commit
+  remains.

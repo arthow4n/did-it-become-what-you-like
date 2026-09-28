@@ -95,6 +95,10 @@ export async function withComponentHarness<T>(
   }
 }
 
+/**
+ * Compatibility wrapper for test suites. `withComponentHarness` establishes
+ * all DOM and ARIA globals directly on `globalThis`.
+ */
 export async function withAriaGlobals<T>(
   windowOrCallback: unknown | (() => T | Promise<T>),
   maybeCallback?: () => T | Promise<T>,

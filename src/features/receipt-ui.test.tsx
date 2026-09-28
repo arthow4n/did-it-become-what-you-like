@@ -1,9 +1,12 @@
 import { within } from "@testing-library/dom";
 import { createElement, useState } from "react";
 import {
+  createCachedImagePreparationPort,
+  createImagePreparationPort,
   fileMediaType,
   LineEditorDialog,
   modelOptions,
+  preEncodeImage,
   preferredDefaultModel,
   readDeviceLocalSettings,
   ReceiptDisclosure,
@@ -41,7 +44,9 @@ import {
 } from "../domain/index.ts";
 import type { ReceiptReviewDraft } from "../domain/receipt.ts";
 import {
+  type ImageInput,
   type JsonValue,
+  type PreparedImage,
   type ReceiptAiModel,
   type ReceiptAiPort,
   type ReceiptExtractionDraft,
@@ -2858,6 +2863,80 @@ Deno.test("ReceiptImageStore rotates image in place, preserves preview URL, and 
 
   const input = await store.resolve(ref);
   assert(input.bytes instanceof Uint8Array);
+  store.clear();
+});
+
+Deno.test("ReceiptImageStore pre-converts in background, strips metadata, and caches prepared input", async () => {
+  const store = new ReceiptImageStore();
+  const cache = new WeakMap<ImageInput, PreparedImage>();
+  store.setPreparationCache(cache);
+
+  // Synthetic JPEG with EXIF APP1 marker (0xFF, 0xE1)
+  const jpegWithExif = new Uint8Array([
+    0xff,
+    0xd8, // SOI
+    0xff,
+    0xe1,
+    0x00,
+    0x08,
+    0x45,
+    0x78,
+    0x69,
+    0x66,
+    0x00,
+    0x00, // APP1 Exif
+    0xff,
+    0xdb,
+    0x00,
+    0x04,
+    0x00,
+    0x00, // DQT
+    0xff,
+    0xda,
+    0x00,
+    0x02,
+    0x01,
+    0x02, // SOS
+    0xff,
+    0xd9, // EOI
+  ]);
+  const file = new File([jpegWithExif], "camera.jpg", { type: "image/jpeg" });
+  const ref = store.add(file);
+  assertEquals(ref.rotation, 0);
+
+  // Await resolve to ensure pre-conversion completed
+  const input = await store.resolve(ref);
+  assert(input.bytes instanceof Uint8Array);
+  assertEquals(store.isPrepared(ref), true);
+
+  // Verify EXIF APP1 marker was stripped
+  let hasApp1 = false;
+  for (let i = 0; i < input.bytes.length - 1; i++) {
+    if (input.bytes[i] === 0xff && input.bytes[i + 1] === 0xe1) {
+      hasApp1 = true;
+      break;
+    }
+  }
+  assertEquals(hasApp1, false);
+
+  // CachedImagePreparationPort hits cache without extra work
+  const basePrep = createImagePreparationPort();
+  const cachedPrep = createCachedImagePreparationPort(basePrep, cache);
+  const prepared = await cachedPrep.prepare(input, { enabled: true });
+  assertEquals(prepared.bytes, input.bytes);
+  assertEquals(prepared.preparationApplied, true);
+
+  // Rotating supersedes previous cache and prepares new angle
+  const rotated = store.rotate(ref, 90);
+  assertEquals(rotated.rotation, 90);
+  const rotatedInput = await store.resolve(ref);
+  assert(rotatedInput.bytes instanceof Uint8Array);
+  assertEquals(store.isPrepared(ref), true);
+
+  // preEncodeImage can also be called directly
+  const directEncoded = await preEncodeImage(file, 90);
+  assert(directEncoded.bytes instanceof Uint8Array);
+
   store.clear();
 });
 

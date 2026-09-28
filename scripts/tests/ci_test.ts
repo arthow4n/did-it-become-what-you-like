@@ -12,7 +12,7 @@ Deno.test("CI and Pages workflows follow reviewed security and task policies", a
   for (const [index, workflow] of workflows.entries()) {
     assert(
       workflow.includes(
-        "denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3",
+        "denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5",
       ),
       `workflow ${index + 1} must use the reviewed immutable Deno setup action`,
     );
@@ -78,22 +78,22 @@ Deno.test("CI and Pages workflows follow reviewed security and task policies", a
   );
   assert(
     pages.includes(
-      "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2",
+      "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
     ) &&
       ci.includes(
-        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2",
+        "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
       ),
     "workflows must use the reviewed immutable checkout action",
   );
   assert(
     pages.includes(
-      "actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1",
+      "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0",
     ),
     "Pages deployment must upload the verified dist artifact with the reviewed action",
   );
   assert(
     pages.includes(
-      "actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5",
+      "actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1",
     ),
     "Pages deployment must use the reviewed immutable deployment action",
   );

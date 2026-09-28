@@ -53,7 +53,15 @@ import type {
   ContractFailure,
   ReceiptImageRef,
 } from "../actors/contracts/index.ts";
-import { ArrowLeft, ChevronDown, FileText, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  FileText,
+  RotateCcw,
+  RotateCw,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   AdaptiveDialog,
   Button,
@@ -150,6 +158,130 @@ export function fileMediaType(file: File): string {
   return "";
 }
 
+async function canvasExportBlob(
+  canvas: HTMLCanvasElement | OffscreenCanvas,
+  mimeType: string,
+  quality?: number,
+): Promise<Blob> {
+  if (
+    "convertToBlob" in canvas &&
+    typeof (canvas as OffscreenCanvas).convertToBlob === "function"
+  ) {
+    return await (canvas as OffscreenCanvas).convertToBlob(
+      quality !== undefined ? { type: mimeType, quality } : { type: mimeType },
+    );
+  }
+  if (
+    "toBlob" in canvas &&
+    typeof (canvas as HTMLCanvasElement).toBlob === "function"
+  ) {
+    return await new Promise<Blob>((resolve, reject) => {
+      (canvas as HTMLCanvasElement).toBlob(
+        (blob) => {
+          if (!blob) reject(new Error("Failed to export canvas blob"));
+          else resolve(blob);
+        },
+        mimeType,
+        quality,
+      );
+    });
+  }
+  throw new Error("Canvas blob export is unsupported in this environment.");
+}
+
+function toBlobFile(
+  blob: Blob,
+  name: string,
+  type: string,
+  lastModified = Date.now(),
+): File {
+  try {
+    const file = new File([blob], name, { type, lastModified });
+    if (file instanceof Blob) return file;
+  } catch {
+    // Fall back to runtime Blob augmentation
+  }
+  const fileBlob = blob.slice(0, blob.size, type) as unknown as File;
+  Object.defineProperties(fileBlob, {
+    name: { value: name, configurable: true },
+    lastModified: { value: lastModified, configurable: true },
+    webkitRelativePath: { value: "", configurable: true },
+  });
+  return fileBlob;
+}
+
+export async function rotateImageFile(
+  file: File,
+  degrees: 90 | -90,
+): Promise<File> {
+  const mediaType = fileMediaType(file);
+  const fileName = file.name || "receipt-image";
+  if (mediaType === "application/pdf") return file;
+  if (typeof createImageBitmap !== "function") {
+    return toBlobFile(
+      new Blob([await file.arrayBuffer()], {
+        type: file.type || "image/jpeg",
+      }),
+      fileName,
+      file.type || "image/jpeg",
+    );
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    try {
+      const targetWidth = bitmap.height;
+      const targetHeight = bitmap.width;
+      const canvas = typeof OffscreenCanvas === "function"
+        ? new OffscreenCanvas(targetWidth, targetHeight)
+        : document.createElement("canvas");
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const context = canvas.getContext("2d") as
+        | CanvasRenderingContext2D
+        | OffscreenCanvasRenderingContext2D
+        | null;
+      if (!context || !("drawImage" in context)) {
+        return toBlobFile(
+          new Blob([await file.arrayBuffer()], {
+            type: file.type || "image/jpeg",
+          }),
+          fileName,
+          file.type || "image/jpeg",
+        );
+      }
+      if (degrees === 90) {
+        context.translate(targetWidth, 0);
+        context.rotate(Math.PI / 2);
+      } else {
+        context.translate(0, targetHeight);
+        context.rotate(-Math.PI / 2);
+      }
+      context.drawImage(bitmap, 0, 0);
+
+      const mimeType = file.type === "image/png"
+        ? "image/png"
+        : file.type === "image/webp"
+        ? "image/webp"
+        : "image/jpeg";
+      const quality = mimeType === "image/png" ? undefined : 0.95;
+
+      const blob = await canvasExportBlob(canvas, mimeType, quality);
+      return toBlobFile(blob, fileName, mimeType);
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    return toBlobFile(
+      new Blob([await file.arrayBuffer()], {
+        type: file.type || "image/jpeg",
+      }),
+      fileName,
+      file.type || "image/jpeg",
+    );
+  }
+}
+
 export class ReceiptImageStore {
   readonly #entries = new Map<string, ReceiptImageEntry>();
 
@@ -164,6 +296,34 @@ export class ReceiptImageStore {
       ephemeralId,
       mediaType: fileMediaType(file),
       byteLength: file.size,
+      previewUrl,
+    };
+  }
+
+  getFile(ref: ReceiptImageRef): File | undefined {
+    return this.#entries.get(ref.ephemeralId)?.file;
+  }
+
+  async rotate(
+    ref: ReceiptImageRef,
+    degrees: 90 | -90,
+  ): Promise<ReceiptImageRef & { readonly previewUrl: string }> {
+    const entry = this.#entries.get(ref.ephemeralId);
+    if (!entry) {
+      throw new Error("The selected receipt image is no longer available.");
+    }
+    const rotatedFile = await rotateImageFile(entry.file, degrees);
+    URL.revokeObjectURL(entry.previewUrl);
+    entry.bytes?.fill(0);
+    const previewUrl = URL.createObjectURL(rotatedFile);
+    this.#entries.set(ref.ephemeralId, {
+      file: rotatedFile,
+      previewUrl,
+    });
+    return {
+      ephemeralId: ref.ephemeralId,
+      mediaType: fileMediaType(rotatedFile),
+      byteLength: rotatedFile.size,
       previewUrl,
     };
   }
@@ -563,6 +723,9 @@ export function ReceiptScanScreen({
     [scanDependencies],
   );
   const [snapshot, send] = useActor(machine, { input: {} });
+  const scanBusy = snapshot.matches("preparing") ||
+    snapshot.matches("requesting") ||
+    snapshot.matches("validating");
   const [scanMode, setScanMode] = useState<"receipt" | "menu">("receipt");
   const [selectedImages, setSelectedImages] = useState<
     ReadonlyArray<ReceiptImageRef & { readonly previewUrl: string }>
@@ -579,6 +742,7 @@ export function ReceiptScanScreen({
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState(false);
   const [pendingScan, setPendingScan] = useState(false);
+  const [rotatingId, setRotatingId] = useState<string | null>(null);
   const sourceInputRef = useRef<HTMLInputElement>(null);
   const openSent = useRef(false);
   const reviewSent = useRef(false);
@@ -633,6 +797,26 @@ export function ReceiptScanScreen({
       }
       setPendingScanState(false);
       setModelError(undefined);
+    }
+  };
+
+  const rotateImage = async (image: ReceiptImageRef, degrees: 90 | -90) => {
+    if (scanBusy || rotatingId) return;
+    setRotatingId(image.ephemeralId);
+    try {
+      const rotated = await imageStore.rotate(image, degrees);
+      const nextImages = selectedImagesRef.current.map((item) =>
+        item.ephemeralId === image.ephemeralId ? rotated : item
+      );
+      selectedImagesRef.current = nextImages;
+      setSelectedImages(nextImages);
+      if (snapshot.matches("failed")) {
+        send({ type: "receipt.replace-image" });
+      }
+    } catch {
+      setModelError("Failed to rotate the image.");
+    } finally {
+      setRotatingId(null);
     }
   };
 
@@ -1015,9 +1199,6 @@ export function ReceiptScanScreen({
   };
 
   const actorFailure = snapshot.context.error;
-  const scanBusy = snapshot.matches("preparing") ||
-    snapshot.matches("requesting") ||
-    snapshot.matches("validating");
   const changeProvider = (nextProvider: string) => {
     if (nextProvider !== "gemini" && nextProvider !== "openrouter") return;
     if (nextProvider === activeProvider || scanBusy) return;
@@ -1183,13 +1364,43 @@ export function ReceiptScanScreen({
                 <Stack gap={2}>
                   <Inline justify="space-between">
                     <Text size="label">Page {index + 1}</Text>
-                    <IconButton
-                      icon={<Trash2 size={16} />}
-                      aria-label={`Remove page ${index + 1}`}
-                      variant="quiet"
-                      onPress={() =>
-                        removeImage(image)}
-                    />
+                    <Inline gap={1}>
+                      {image.mediaType !== "application/pdf"
+                        ? (
+                          <>
+                            <IconButton
+                              icon={<RotateCcw size={16} />}
+                              aria-label={`Rotate page ${
+                                index + 1
+                              } counter-clockwise 90 degrees`}
+                              variant="quiet"
+                              isDisabled={scanBusy ||
+                                rotatingId === image.ephemeralId}
+                              onPress={() => rotateImage(image, -90)}
+                            />
+                            <IconButton
+                              icon={<RotateCw size={16} />}
+                              aria-label={`Rotate page ${
+                                index + 1
+                              } clockwise 90 degrees`}
+                              variant="quiet"
+                              isDisabled={scanBusy ||
+                                rotatingId === image.ephemeralId}
+                              onPress={() =>
+                                rotateImage(image, 90)}
+                            />
+                          </>
+                        )
+                        : null}
+                      <IconButton
+                        icon={<Trash2 size={16} />}
+                        aria-label={`Remove page ${index + 1}`}
+                        variant="quiet"
+                        isDisabled={scanBusy ||
+                          rotatingId === image.ephemeralId}
+                        onPress={() => removeImage(image)}
+                      />
+                    </Inline>
                   </Inline>
                   {image.mediaType === "application/pdf"
                     ? (
@@ -1224,33 +1435,57 @@ export function ReceiptScanScreen({
             : undefined}
           preview={scanMode === "receipt" && selectedImage
             ? (
-              selectedImage.mediaType === "application/pdf"
-                ? (
-                  <div
-                    className="receipt-ui-preview receipt-ui-preview--pdf"
-                    role="region"
-                    aria-label="Selected receipt preview"
-                  >
-                    <object
-                      data={selectedImage.previewUrl}
-                      type="application/pdf"
-                      title="Selected receipt preview"
-                      className="receipt-ui-preview-pdf-object"
+              <Stack gap={2}>
+                {selectedImage.mediaType !== "application/pdf"
+                  ? (
+                    <Inline justify="flex-end" gap={1}>
+                      <IconButton
+                        icon={<RotateCcw size={16} />}
+                        aria-label="Rotate receipt counter-clockwise 90 degrees"
+                        variant="quiet"
+                        isDisabled={scanBusy ||
+                          rotatingId === selectedImage.ephemeralId}
+                        onPress={() => rotateImage(selectedImage, -90)}
+                      />
+                      <IconButton
+                        icon={<RotateCw size={16} />}
+                        aria-label="Rotate receipt clockwise 90 degrees"
+                        variant="quiet"
+                        isDisabled={scanBusy ||
+                          rotatingId === selectedImage.ephemeralId}
+                        onPress={() => rotateImage(selectedImage, 90)}
+                      />
+                    </Inline>
+                  )
+                  : null}
+                {selectedImage.mediaType === "application/pdf"
+                  ? (
+                    <div
+                      className="receipt-ui-preview receipt-ui-preview--pdf"
+                      role="region"
+                      aria-label="Selected receipt preview"
                     >
-                      <div className="receipt-ui-preview-pdf-fallback">
-                        <FileText size={48} aria-hidden="true" />
-                        <Text>PDF receipt document</Text>
-                      </div>
-                    </object>
-                  </div>
-                )
-                : (
-                  <img
-                    src={selectedImage.previewUrl}
-                    alt="Selected receipt preview"
-                    className="receipt-ui-preview"
-                  />
-                )
+                      <object
+                        data={selectedImage.previewUrl}
+                        type="application/pdf"
+                        title="Selected receipt preview"
+                        className="receipt-ui-preview-pdf-object"
+                      >
+                        <div className="receipt-ui-preview-pdf-fallback">
+                          <FileText size={48} aria-hidden="true" />
+                          <Text>PDF receipt document</Text>
+                        </div>
+                      </object>
+                    </div>
+                  )
+                  : (
+                    <img
+                      src={selectedImage.previewUrl}
+                      alt="Selected receipt preview"
+                      className="receipt-ui-preview"
+                    />
+                  )}
+              </Stack>
             )
             : undefined}
           emptyTitle={scanMode === "menu"

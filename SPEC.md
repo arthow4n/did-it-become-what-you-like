@@ -209,6 +209,9 @@ and multi-device synchronization according to the agreed sync design.
 - The PWA must support capturing a new receipt image with the device camera,
   selecting/importing an existing image from the device (JPEG, PNG, WebP), and
   selecting a digital receipt or invoice in PDF format.
+- Selected bitmap images (JPEG, PNG, WebP) in receipt and menu scan flows support
+  in-place 90-degree rotation in both directions (counter-clockwise and clockwise)
+  before sending to the AI model. PDFs do not display rotation controls.
 - The LLM should produce draft expense entries for the relevant items on the
   invoice to reduce manual entry.
 - The extraction prompt and review model must request and preserve the most

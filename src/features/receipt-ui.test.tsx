@@ -15,6 +15,7 @@ import {
   ReceiptScanScreen,
   ReceiptSettingsScreen,
   type ReceiptUiDependencies,
+  rotateImageFile,
   writeDeviceLocalSettings,
 } from "./receipt-ui.tsx";
 import {
@@ -2769,5 +2770,234 @@ Deno.test("ReceiptSettingsScreen displays Gemini reasoning settings when provide
       assert(view.getByText("Gemini reasoning"));
     });
     assert(view.getByRole("combobox", { name: "Thinking effort" }));
+  });
+});
+
+Deno.test("rotateImageFile ignores PDF documents and rotates bitmap files with canvas", async () => {
+  const pdf = new File(["pdf-content"], "menu.pdf", {
+    type: "application/pdf",
+  });
+  const rotatedPdf = await rotateImageFile(pdf, 90);
+  assertEquals(rotatedPdf, pdf);
+
+  const origBitmap = globalThis.createImageBitmap;
+  const origCanvas = globalThis.OffscreenCanvas;
+  let translated: [number, number][] = [];
+  let rotated: number[] = [];
+  let drawn = false;
+
+  try {
+    globalThis.createImageBitmap = (() =>
+      Promise.resolve({
+        width: 120,
+        height: 240,
+        close: () => {},
+      })) as unknown as typeof createImageBitmap;
+
+    globalThis.OffscreenCanvas = function (w: number, h: number) {
+      return {
+        width: w,
+        height: h,
+        getContext: () => ({
+          drawImage: () => drawn = true,
+          translate: (x: number, y: number) => translated.push([x, y]),
+          rotate: (rad: number) => rotated.push(rad),
+        }),
+        convertToBlob: (opts: { type: string }) =>
+          Promise.resolve(
+            new Blob([new Uint8Array([7, 8, 9])], { type: opts.type }),
+          ),
+      } as unknown as OffscreenCanvas;
+    } as unknown as typeof OffscreenCanvas;
+
+    const cwFile = await rotateImageFile(
+      new File([new Uint8Array([1])], "test.png", { type: "image/png" }),
+      90,
+    );
+    assertEquals(cwFile.type, "image/png");
+    assertEquals(translated, [[240, 0]]);
+    assertEquals(rotated, [Math.PI / 2]);
+    assert(drawn);
+
+    translated = [];
+    rotated = [];
+    drawn = false;
+
+    const ccwFile = await rotateImageFile(
+      new File([new Uint8Array([1])], "test.jpg", { type: "image/jpeg" }),
+      -90,
+    );
+    assertEquals(ccwFile.type, "image/jpeg");
+    assertEquals(translated, [[0, 120]]);
+    assertEquals(rotated, [-Math.PI / 2]);
+    assert(drawn);
+  } finally {
+    globalThis.createImageBitmap = origBitmap;
+    globalThis.OffscreenCanvas = origCanvas;
+  }
+});
+
+Deno.test("ReceiptImageStore rotates image in place, refreshes preview URL, and clears cached bytes", async () => {
+  const store = new ReceiptImageStore();
+  const file = new File([new Uint8Array([1, 2, 3])], "receipt.png", {
+    type: "image/png",
+  });
+  const ref = store.add(file);
+  const initialPreview = ref.previewUrl;
+
+  const rotatedRef = await store.rotate(ref, 90);
+  assertEquals(rotatedRef.ephemeralId, ref.ephemeralId);
+  assert(rotatedRef.previewUrl !== initialPreview);
+
+  const input = await store.resolve(rotatedRef);
+  assert(input.bytes instanceof Uint8Array);
+  store.clear();
+});
+
+Deno.test("ReceiptScanScreen supports in-place rotation for receipt and menu images", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    await withAriaGlobals(async () => {
+      const model = {
+        id: "fake-gemini-model",
+        displayName: "Fake Gemini Model",
+        lifecycle: "active" as const,
+        capabilities: {
+          "image-input": true,
+          "content-generation": true,
+          "structured-output": true,
+        },
+      };
+      const fakeAi: ReceiptAiPort = {
+        listModels: () => Promise.resolve([model]),
+        extractReceipt: () => Promise.reject(new Error("unused")),
+      };
+      const gemini = {
+        ...fakeAi,
+        getApiKey: () => Promise.resolve(SecretValue.from("AIza.test")),
+        setApiKey: () => Promise.resolve(),
+        removeApiKey: () => Promise.resolve(),
+      };
+      const imageStore = new ReceiptImageStore();
+      const dependencies: ReceiptUiDependencies = {
+        ai: fakeAi,
+        gemini,
+        openrouter: {
+          ...fakeAi,
+          getApiKey: () => Promise.resolve(SecretValue.from("openrouter.test")),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+          listEndpoints: () => Promise.resolve([]),
+        },
+        imagePreparation: createFakeImagePreparationPort(),
+        resolveImage: (ref) => imageStore.resolve(ref),
+        releaseImage: (ref) => imageStore.releaseForRetry(ref),
+      };
+
+      const settings = DeviceLocalSettingsSchema.parse({
+        activeProvider: "gemini",
+        selectedGeminiModel: model.id,
+        imagePreparationEnabled: true,
+      });
+
+      render(
+        createElement(ReceiptScanScreen, {
+          dependencies,
+          imageStore,
+          state: defaultTestState,
+          settings,
+          offline: false,
+          onSettingsChange: () => undefined,
+          onReview: () => undefined,
+          onClose: () => undefined,
+          onOpenSettings: () => undefined,
+        }),
+      );
+
+      const view = within(document.body);
+      await waitFor(() =>
+        assert(view.getByRole("button", { name: "Continue to scan" }))
+      );
+      fireEvent.click(view.getByRole("button", { name: "Continue to scan" }));
+
+      // 1. Single receipt image selection exposes rotate buttons
+      const receiptFile = new Blob([new Uint8Array([1, 2, 3])], {
+        type: "image/png",
+      }) as unknown as File;
+      fireEvent.change(view.getByLabelText("Receipt image file"), {
+        target: { files: [receiptFile] },
+      });
+
+      await waitFor(() => {
+        assert(
+          view.getByRole("button", {
+            name: "Rotate receipt counter-clockwise 90 degrees",
+          }),
+        );
+        assert(
+          view.getByRole("button", {
+            name: "Rotate receipt clockwise 90 degrees",
+          }),
+        );
+      });
+
+      const initialImg = view.getByAltText(
+        "Selected receipt preview",
+      ) as HTMLImageElement;
+      const initialSrc = initialImg.src;
+
+      fireEvent.click(
+        view.getByRole("button", {
+          name: "Rotate receipt clockwise 90 degrees",
+        }),
+      );
+
+      await waitFor(() => {
+        const updatedImg = view.getByAltText(
+          "Selected receipt preview",
+        ) as HTMLImageElement;
+        assert(updatedImg.src !== initialSrc);
+      });
+
+      // 2. Switch to Restaurant Menu mode and verify rotate on menu page cards
+      await waitFor(() => assert(view.getByText("Restaurant Menu")));
+      fireEvent.click(view.getByText("Restaurant Menu"));
+
+      await waitFor(() => {
+        assert(view.getByLabelText("Menu image files"));
+      });
+
+      const page1 = new Blob([new Uint8Array([4, 5, 6])], {
+        type: "image/jpeg",
+      }) as unknown as File;
+      const page2 = new Blob([new Uint8Array([7, 8, 9])], {
+        type: "application/pdf",
+      }) as unknown as File;
+
+      fireEvent.change(view.getByLabelText("Menu image files"), {
+        target: { files: [page1, page2] },
+      });
+
+      await waitFor(() => {
+        // Page 1 is an image: has rotate buttons
+        assert(
+          view.getByRole("button", {
+            name: "Rotate page 1 counter-clockwise 90 degrees",
+          }),
+        );
+        assert(
+          view.getByRole("button", {
+            name: "Rotate page 1 clockwise 90 degrees",
+          }),
+        );
+        // Page 2 is a PDF: does not have rotate buttons
+        assert(
+          !view.queryByRole("button", {
+            name: "Rotate page 2 clockwise 90 degrees",
+          }),
+        );
+      });
+
+      imageStore.clear();
+    });
   });
 });

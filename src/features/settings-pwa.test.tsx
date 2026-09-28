@@ -232,7 +232,7 @@ Deno.test("settings: preferences reset CTA restores and saves 03:00", async () =
   });
 });
 
-Deno.test("settings: About exposes exact disclosure and build metadata", async () => {
+Deno.test("settings: About exposes build metadata and license links", async () => {
   await withComponentHarness(({ render }) => {
     render(
       createElement(AboutScreen, {
@@ -243,11 +243,6 @@ Deno.test("settings: About exposes exact disclosure and build metadata", async (
     const view = within(document.body);
     assert(view.getByText("0.1.0"));
     assert(view.getByText("development"));
-    assert(
-      view.getByText(
-        "This app was created with AI-assisted development using ChatGPT Codex and Google Antigravity.",
-      ),
-    );
     assert(
       !viewText().includes("App installation is not offered by this browser"),
       "About should not describe an unavailable install prompt as browser incompatibility",

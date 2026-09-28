@@ -708,17 +708,6 @@ export function AboutScreen({
         </Card>
         <Card as="section">
           <Stack gap={3}>
-            <Heading level={2} size="sm">
-              Generative AI usage disclosure
-            </Heading>
-            <Text>
-              This app was created with AI-assisted development using ChatGPT
-              Codex and Google Antigravity.
-            </Text>
-          </Stack>
-        </Card>
-        <Card as="section">
-          <Stack gap={3}>
             <Heading level={2} size="sm">Privacy</Heading>
             <Text>
               Local-first · no analytics, advertising, or unrelated tracking.

@@ -244,7 +244,9 @@ Deno.test("receipt detail exposes scoped line and whole-receipt confirmations", 
         name: "Delete this receipt?",
       });
       assert(
-        within(receiptDialog).getByText(/every purchase line and adjustment/),
+        within(receiptDialog).getByText(
+          /permanently delete this receipt and all its items/,
+        ),
       );
       fireEvent.click(
         within(receiptDialog).getByRole("button", { name: "Delete receipt" }),

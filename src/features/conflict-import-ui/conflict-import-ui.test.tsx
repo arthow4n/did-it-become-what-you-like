@@ -598,7 +598,7 @@ Deno.test("safety export has pending, failure/retry, and confirmation states", a
       );
       fireEvent.click(
         within(document.body).getByRole("checkbox", {
-          name: /I have a complete safety export/,
+          name: /I've backed up my data/,
         }),
       );
       assert(confirmation === "confirmed");

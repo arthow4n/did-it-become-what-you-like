@@ -373,10 +373,6 @@ export function FirstUseScreen({
             onPress={onConnectDrive}
           />
         </Stack>
-        <InlineNotice tone="info" title="Local first">
-          You can create and review expenses without an account or internet
-          connection.
-        </InlineNotice>
       </Stack>
     </ContentContainer>
   );
@@ -421,8 +417,7 @@ export function DirtyExitGuard({
       {(close) => (
         <Stack gap={5}>
           <Text>
-            Your changes are saved on this device. Keep editing or discard them
-            before leaving this workflow.
+            You have unsaved changes. Keep editing or discard them?
           </Text>
           <FormActions>
             <Button
@@ -1207,15 +1202,14 @@ function ProjectDeletionReview({
       {(close) => (
         <Stack gap={5}>
           <InlineNotice tone="danger" title="Destructive action">
-            This removes the project and all of its related records from this
-            device using synchronized tombstones. It does not erase Automerge
-            history; recovery is through the safety JSON export.
+            This will permanently delete this project and all its expenses from
+            your devices. Recovery is only possible from a JSON backup.
           </InlineNotice>
           <DefinitionList
             items={[
               { term: "Project", description: project.name },
               { term: "Expenses", description: expenses.length },
-              { term: "Receipt parents", description: receipts.length },
+              { term: "Receipts", description: receipts.length },
               { term: "Purchase lines", description: purchaseLines.length },
               { term: "Adjustments", description: adjustments.length },
               {
@@ -1234,8 +1228,7 @@ function ProjectDeletionReview({
             ? (
               <Stack gap={3}>
                 <Text>
-                  Create a complete canonical JSON safety export before the
-                  destructive confirmation.
+                  Export a safety backup before deleting this project.
                 </Text>
                 <FormActions>
                   <Button variant="quiet" onPress={() => cancel(close)}>
@@ -1307,7 +1300,7 @@ function ProjectDeletionReview({
           {snapshot.matches("deleting")
             ? (
               <InlineNotice tone="info" title="Deleting project">
-                Creating the complete synchronized tombstone set atomically.
+                Deleting project and related records…
               </InlineNotice>
             )
             : null}
@@ -1844,12 +1837,9 @@ export function ProjectManager({
         </section>
         {current
           ? (
-            <InlineNotice tone="info" title="Current project archive guard">
+            <Text tone="secondary">
               Switch to another project before archiving {current.name}.
-              <Button variant="quiet" isDisabled>
-                Archive current project
-              </Button>
-            </InlineNotice>
+            </Text>
           )
           : null}
         <Disclosure title={`Archived projects (${archived.length})`}>
@@ -2109,11 +2099,6 @@ export function SettingsScreen(
             </ListRow>
           ))}
         </List>
-        <InlineNotice tone="info" title="Local settings">
-          Your project selection and unfinished manual expense draft stay on
-          this device. Sync and portability workflows remain available without
-          requiring an account.
-        </InlineNotice>
       </Stack>
     </ContentContainer>
   );
@@ -2340,7 +2325,6 @@ export function CategoryManager({
                 label="Category color (optional)"
                 value={color}
                 onValueChange={setColor}
-                description="Color supplements the category name and is never its only identifier."
               />
               {color
                 ? (
@@ -2352,7 +2336,7 @@ export function CategoryManager({
               <TextArea
                 label="AI matching description (optional)"
                 placeholder="e.g., Groceries, pantry items, coffee beans, snacks"
-                description="Used by AI receipt scanning to match receipt items. Never shown in expense views."
+                description="Helps AI match items to this category."
                 value={description}
                 onChange={setDescription}
               />

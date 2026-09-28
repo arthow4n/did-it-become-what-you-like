@@ -2886,9 +2886,7 @@ export function ReceiptMetadataEditor({
             : "Printed receipt total"}
           value={printedTotal}
           onChange={setPrintedTotal}
-          description={manual
-            ? "Enter the positive total paid for this visit; purchases are stored as outflows."
-            : menu
+          description={menu
             ? "Optional. Leave blank to automatically use the sum of your selected items."
             : undefined}
         />

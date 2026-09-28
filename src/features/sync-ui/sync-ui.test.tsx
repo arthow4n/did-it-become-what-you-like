@@ -322,10 +322,10 @@ Deno.test(
         );
         assert(
           view.getByRole("dialog").textContent?.includes(
-            "deletes the malformed hidden cloud sync file",
+            "deletes the corrupt cloud sync file",
           ),
         );
-        assert(view.getByText(/local IndexedDB data/));
+        assert(view.getByText(/Local data on this device will not be deleted/));
         assert(view.getByText(/other devices may be lost/));
         fireEvent.click(
           view.getByRole("button", { name: "Delete remote sync file" }),

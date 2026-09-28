@@ -90,16 +90,15 @@ function DisconnectedPanel(
           ? (
             <Stack gap={3}>
               <InlineNotice title="Persisted connection" tone="info">
-                Persisted session stores encrypted refresh tokens on your Deno
-                Deploy sync server using HttpOnly partitioned cookies. Enables
-                automatic background sync on app launch and exit.
+                Syncs automatically in the background via your Deno Deploy sync
+                server.
               </InlineNotice>
               <TextField
                 label="Sync Server URL"
                 value={props.syncServerUrl ?? ""}
                 onChange={(val) => props.onSyncServerUrlChange?.(val)}
                 placeholder="https://did-it-become-what-you-like.arthow4n.deno.net"
-                description="Your Deno Deploy backend URL that dispenses Google Drive tokens."
+                description="Your Deno Deploy sync server URL."
               />
               <Inline>
                 <Button onPress={() => props.onConnect("persisted")}>
@@ -326,12 +325,9 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
                         title="Reset hidden Google Drive sync file?"
                         description={
                           <>
-                            This deletes the malformed hidden cloud sync file
-                            only. It does not delete or replace this device's
-                            local IndexedDB data, and it never deletes the
-                            dataset retirement marker. Unsynced changes on other
-                            devices may be lost, so reconnect those devices and
-                            verify their data afterward.
+                            This deletes the corrupt cloud sync file only. Local
+                            data on this device will not be deleted. Unsynced
+                            changes on other devices may be lost.
                           </>
                         }
                         confirmLabel="Delete remote sync file"

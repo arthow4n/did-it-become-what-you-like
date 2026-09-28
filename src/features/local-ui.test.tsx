@@ -255,7 +255,6 @@ Deno.test("local UI first-use screen exposes the three approved entry paths", as
       assert(view.getByRole("button", { name: /Create first project/ }));
       assert(view.getByRole("button", { name: /Restore JSON backup/ }));
       assert(view.getByRole("button", { name: /Connect Google Drive/ }));
-      assert(view.getByRole("status"));
       fireEvent.click(
         view.getByRole("button", { name: /Restore JSON backup/ }),
       );
@@ -1926,8 +1925,8 @@ for (
               view.getByRole("dialog", { name: "Delete Other project?" })
             );
             assert(dialog.textContent?.includes("Expenses"));
-            assert(dialog.textContent?.includes("Receipt parents"));
-            assert(dialog.textContent?.includes("Automerge history"));
+            assert(dialog.textContent?.includes("Receipts"));
+            assert(dialog.textContent?.includes("permanently delete"));
             assert(
               within(dialog).getByRole("button", {
                 name: "Export safety copy",

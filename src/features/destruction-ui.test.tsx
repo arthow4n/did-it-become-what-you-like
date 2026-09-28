@@ -230,13 +230,13 @@ Deno.test("destructive-flow component requires the separate decline confirmation
       const view = within(document.body);
       assert(view.getByText(/No recovery copy will be created/));
       assert(view.getByRole("button", {
-        name: "Confirm intentional permanent deletion",
+        name: "Delete permanently",
       }));
       assert(
         !view.queryByRole("button", { name: "Export complete safety copy" }),
       );
       fireEvent.click(view.getByRole("button", {
-        name: "Confirm intentional permanent deletion",
+        name: "Delete permanently",
       }));
       assert(result.events.join(",") === "confirm-decline");
     });
@@ -284,7 +284,11 @@ Deno.test("destructive-flow component explains inaccessible devices and exposes 
         ),
       );
       const view = within(document.body);
-      assert(view.getByText(/cannot erase a device which never runs/));
+      assert(
+        view.getByText(
+          /Offline devices will be erased next time they reconnect/,
+        ),
+      );
       assert(view.getByText("Current browser"));
       assert(view.getByText("Lost laptop"));
       const acknowledgements = view.getByRole("list", {

@@ -694,7 +694,7 @@ export function ReceiptDetailScreen({
               </Button>
             }
             title="Delete this receipt?"
-            description="This permanently removes the receipt, every purchase line and adjustment, and all receipt-linked expense records from this device. There is no undo after commit."
+            description="This will permanently delete this receipt and all its items."
             confirmLabel="Delete receipt"
             isOpen={snapshot.matches("confirmingReceiptDelete")}
             onOpenChange={(open) => {
@@ -935,7 +935,7 @@ export function ReceiptDetailScreen({
       <ConfirmDialog
         trigger={null}
         title="Discard receipt changes?"
-        description="Your staged receipt changes have not been saved. Keep editing or discard them before leaving this detail view."
+        description="Discard unsaved receipt changes?"
         confirmLabel="Discard changes"
         confirmVariant="danger"
         isOpen={snapshot.matches("confirmingDiscard")}

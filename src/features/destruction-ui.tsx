@@ -235,8 +235,8 @@ export function DataPrivacyScreen({
           <Heading level={2} size="sm">Data actions</Heading>
           <InlineNotice tone="info" title="Choose the scope carefully">
             Disconnect keeps both copies. Local erase removes only this browser.
-            Delete Everywhere retires the synchronized generation for every
-            device that reconnects.
+            Delete Everywhere deletes cloud data from Google Drive and erases
+            this device.
           </InlineNotice>
           <Button
             variant="secondary"
@@ -416,8 +416,8 @@ export function DataPrivacyScreen({
                         tone="warning"
                         title="No recovery copy will be created"
                       >
-                        You explicitly declined the safety export. A separate
-                        confirmation is required for permanent deletion.
+                        No backup was created. Confirm that you want to
+                        permanently delete this data.
                       </InlineNotice>
                       <FormActions>
                         <Button
@@ -427,7 +427,7 @@ export function DataPrivacyScreen({
                           Cancel
                         </Button>
                         <Button variant="danger" onPress={onConfirmDecline}>
-                          Confirm intentional permanent deletion
+                          Delete permanently
                         </Button>
                       </FormActions>
                     </Stack>
@@ -488,10 +488,7 @@ export function DataPrivacyScreen({
                         tone="warning"
                         title="Offline devices cannot be erased yet"
                       >
-                        A browser cannot erase a device which never runs and
-                        reconnects. Its inaccessible local copy remains, but the
-                        retirement marker prevents a later old-generation
-                        upload.
+                        Offline devices will be erased next time they reconnect.
                       </InlineNotice>
                       <DeviceAcknowledgements devices={devices} />
                       <Button variant="danger" onPress={onForceFinalize}>

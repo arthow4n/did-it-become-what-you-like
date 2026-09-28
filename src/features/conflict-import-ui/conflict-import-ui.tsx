@@ -708,7 +708,7 @@ export function ImportPreview({ preview }: ImportPreviewProps) {
     { term: "Categories", description: String(preview.categoryCount) },
     { term: "Expenses", description: String(preview.expenseCount) },
     { term: "Receipts", description: String(preview.receiptCount) },
-    { term: "Causal changes", description: String(preview.changeCount) },
+    { term: "Changes", description: String(preview.changeCount) },
     {
       term: "Migrations",
       description: preview.migrations.length
@@ -777,12 +777,10 @@ export function ImportModeChoice({
         onChange={(next) => onChange(next as ImportMode)}
       />
       <InlineNotice tone="info" title="Recommended: merge">
-        Merge keeps the current dataset, works offline, and sends any resulting
-        conflicts through Conflict Review.
+        Keeps existing data and resolves any conflicts.
       </InlineNotice>
       <InlineNotice tone="danger" title="Replace is destructive">
-        Replace creates a new dataset generation and removes current records
-        after the required safety checks.
+        Replaces all current data with this backup file.
       </InlineNotice>
     </Stack>
   );
@@ -840,8 +838,7 @@ export function SafetyExportStep({
               onChange={(selected) =>
                 onConfirmationChange(selected ? "confirmed" : "unconfirmed")}
             >
-              I have a complete safety export and understand that replacement
-              removes current data.
+              I've backed up my data and confirm replacing all current data.
             </Checkbox>
           )
           : null}

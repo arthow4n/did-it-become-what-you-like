@@ -2837,19 +2837,26 @@ Deno.test("rotateImageFile ignores PDF documents and rotates bitmap files with c
   }
 });
 
-Deno.test("ReceiptImageStore rotates image in place, refreshes preview URL, and clears cached bytes", async () => {
+Deno.test("ReceiptImageStore rotates image in place, preserves preview URL, and clears cached bytes", async () => {
   const store = new ReceiptImageStore();
   const file = new File([new Uint8Array([1, 2, 3])], "receipt.png", {
     type: "image/png",
   });
   const ref = store.add(file);
+  assertEquals(ref.rotation, 0);
   const initialPreview = ref.previewUrl;
 
-  const rotatedRef = await store.rotate(ref, 90);
+  const rotatedRef = store.rotate(ref, 90);
   assertEquals(rotatedRef.ephemeralId, ref.ephemeralId);
-  assert(rotatedRef.previewUrl !== initialPreview);
+  assertEquals(rotatedRef.previewUrl, initialPreview);
+  assertEquals(rotatedRef.rotation, 90);
+  assertEquals(store.getRotation(ref), 90);
 
-  const input = await store.resolve(rotatedRef);
+  const rotatedAgain = store.rotate(ref, -90);
+  assertEquals(rotatedAgain.rotation, 0);
+  assertEquals(store.getRotation(ref), 0);
+
+  const input = await store.resolve(ref);
   assert(input.bytes instanceof Uint8Array);
   store.clear();
 });
@@ -2955,7 +2962,23 @@ Deno.test("ReceiptScanScreen supports in-place rotation for receipt and menu ima
         const updatedImg = view.getByAltText(
           "Selected receipt preview",
         ) as HTMLImageElement;
-        assert(updatedImg.src !== initialSrc);
+        assertEquals(updatedImg.src, initialSrc);
+        assertEquals(updatedImg.getAttribute("data-rotation"), "90");
+        assertEquals(updatedImg.style.transform, "rotate(90deg)");
+      });
+
+      fireEvent.click(
+        view.getByRole("button", {
+          name: "Rotate receipt counter-clockwise 90 degrees",
+        }),
+      );
+
+      await waitFor(() => {
+        const updatedImg = view.getByAltText(
+          "Selected receipt preview",
+        ) as HTMLImageElement;
+        assertEquals(updatedImg.getAttribute("data-rotation"), null);
+        assertEquals(updatedImg.style.transform, "");
       });
 
       // 2. Switch to Restaurant Menu mode and verify rotate on menu page cards
@@ -2995,6 +3018,20 @@ Deno.test("ReceiptScanScreen supports in-place rotation for receipt and menu ima
             name: "Rotate page 2 clockwise 90 degrees",
           }),
         );
+      });
+
+      fireEvent.click(
+        view.getByRole("button", {
+          name: "Rotate page 1 counter-clockwise 90 degrees",
+        }),
+      );
+
+      await waitFor(() => {
+        const page1Img = view.getByAltText(
+          "Page 1 preview",
+        ) as HTMLImageElement;
+        assertEquals(page1Img.getAttribute("data-rotation"), "270");
+        assertEquals(page1Img.style.transform, "rotate(270deg)");
       });
 
       imageStore.clear();

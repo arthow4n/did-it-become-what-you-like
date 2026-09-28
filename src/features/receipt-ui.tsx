@@ -149,6 +149,7 @@ export type ReceiptUiDependencies = ReceiptScanMachineDependencies & {
 type ReceiptImageEntry = {
   readonly file: File;
   readonly previewUrl: string;
+  rotation: number;
   bytes?: Uint8Array;
 };
 
@@ -212,11 +213,12 @@ function toBlobFile(
 
 export async function rotateImageFile(
   file: File,
-  degrees: 90 | -90,
+  degrees: number,
 ): Promise<File> {
   const mediaType = fileMediaType(file);
   const fileName = file.name || "receipt-image";
-  if (mediaType === "application/pdf") return file;
+  const normalizedDegrees = ((degrees % 360) + 360) % 360;
+  if (mediaType === "application/pdf" || normalizedDegrees === 0) return file;
   if (typeof createImageBitmap !== "function") {
     return toBlobFile(
       new Blob([await file.arrayBuffer()], {
@@ -230,8 +232,9 @@ export async function rotateImageFile(
   try {
     const bitmap = await createImageBitmap(file);
     try {
-      const targetWidth = bitmap.height;
-      const targetHeight = bitmap.width;
+      const isSideways = normalizedDegrees === 90 || normalizedDegrees === 270;
+      const targetWidth = isSideways ? bitmap.height : bitmap.width;
+      const targetHeight = isSideways ? bitmap.width : bitmap.height;
       const canvas = typeof OffscreenCanvas === "function"
         ? new OffscreenCanvas(targetWidth, targetHeight)
         : document.createElement("canvas");
@@ -250,10 +253,13 @@ export async function rotateImageFile(
           file.type || "image/jpeg",
         );
       }
-      if (degrees === 90) {
+      if (normalizedDegrees === 90) {
         context.translate(targetWidth, 0);
         context.rotate(Math.PI / 2);
-      } else {
+      } else if (normalizedDegrees === 180) {
+        context.translate(targetWidth, targetHeight);
+        context.rotate(Math.PI);
+      } else if (normalizedDegrees === 270) {
         context.translate(0, targetHeight);
         context.rotate(-Math.PI / 2);
       }
@@ -285,18 +291,22 @@ export async function rotateImageFile(
 export class ReceiptImageStore {
   readonly #entries = new Map<string, ReceiptImageEntry>();
 
-  add(file: File): ReceiptImageRef & { readonly previewUrl: string } {
+  add(file: File): ReceiptImageRef & {
+    readonly previewUrl: string;
+    readonly rotation: number;
+  } {
     const ephemeralId = `receipt-image-${
       globalThis.crypto?.randomUUID?.() ??
         `${Date.now()}-${Math.random()}`
     }`;
     const previewUrl = URL.createObjectURL(file);
-    this.#entries.set(ephemeralId, { file, previewUrl });
+    this.#entries.set(ephemeralId, { file, previewUrl, rotation: 0 });
     return {
       ephemeralId,
       mediaType: fileMediaType(file),
       byteLength: file.size,
       previewUrl,
+      rotation: 0,
     };
   }
 
@@ -304,27 +314,30 @@ export class ReceiptImageStore {
     return this.#entries.get(ref.ephemeralId)?.file;
   }
 
-  async rotate(
+  getRotation(ref: ReceiptImageRef): number {
+    return this.#entries.get(ref.ephemeralId)?.rotation ?? 0;
+  }
+
+  rotate(
     ref: ReceiptImageRef,
     degrees: 90 | -90,
-  ): Promise<ReceiptImageRef & { readonly previewUrl: string }> {
+  ): ReceiptImageRef & {
+    readonly previewUrl: string;
+    readonly rotation: number;
+  } {
     const entry = this.#entries.get(ref.ephemeralId);
     if (!entry) {
       throw new Error("The selected receipt image is no longer available.");
     }
-    const rotatedFile = await rotateImageFile(entry.file, degrees);
-    URL.revokeObjectURL(entry.previewUrl);
-    entry.bytes?.fill(0);
-    const previewUrl = URL.createObjectURL(rotatedFile);
-    this.#entries.set(ref.ephemeralId, {
-      file: rotatedFile,
-      previewUrl,
-    });
+    const nextRotation = ((entry.rotation + degrees) % 360 + 360) % 360;
+    entry.rotation = nextRotation;
+    entry.bytes = undefined;
     return {
       ephemeralId: ref.ephemeralId,
-      mediaType: fileMediaType(rotatedFile),
-      byteLength: rotatedFile.size,
-      previewUrl,
+      mediaType: fileMediaType(entry.file),
+      byteLength: entry.file.size,
+      previewUrl: entry.previewUrl,
+      rotation: nextRotation,
     };
   }
 
@@ -333,12 +346,18 @@ export class ReceiptImageStore {
     if (!entry) {
       throw new Error("The selected receipt image is no longer available.");
     }
-    const bytes = entry.bytes ?? new Uint8Array(await entry.file.arrayBuffer());
+    let targetFile = entry.file;
+    if (
+      entry.rotation !== 0 && fileMediaType(entry.file) !== "application/pdf"
+    ) {
+      targetFile = await rotateImageFile(entry.file, entry.rotation);
+    }
+    const bytes = entry.bytes ?? new Uint8Array(await targetFile.arrayBuffer());
     entry.bytes = bytes;
-    const dimensions = await imageDimensions(entry.file);
+    const dimensions = await imageDimensions(targetFile);
     return {
       bytes: bytes.slice(),
-      mimeType: fileMediaType(entry.file),
+      mimeType: fileMediaType(targetFile),
       width: dimensions.width,
       height: dimensions.height,
     };
@@ -728,7 +747,12 @@ export function ReceiptScanScreen({
     snapshot.matches("validating");
   const [scanMode, setScanMode] = useState<"receipt" | "menu">("receipt");
   const [selectedImages, setSelectedImages] = useState<
-    ReadonlyArray<ReceiptImageRef & { readonly previewUrl: string }>
+    ReadonlyArray<
+      ReceiptImageRef & {
+        readonly previewUrl: string;
+        readonly rotation: number;
+      }
+    >
   >([]);
   const [disclosureAccepted, setDisclosureAccepted] = useState(false);
   const [quickSetupOpen, setQuickSetupOpen] = useState(false);
@@ -742,7 +766,6 @@ export function ReceiptScanScreen({
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState(false);
   const [pendingScan, setPendingScan] = useState(false);
-  const [rotatingId, setRotatingId] = useState<string | null>(null);
   const sourceInputRef = useRef<HTMLInputElement>(null);
   const openSent = useRef(false);
   const reviewSent = useRef(false);
@@ -800,11 +823,10 @@ export function ReceiptScanScreen({
     }
   };
 
-  const rotateImage = async (image: ReceiptImageRef, degrees: 90 | -90) => {
-    if (scanBusy || rotatingId) return;
-    setRotatingId(image.ephemeralId);
+  const rotateImage = (image: ReceiptImageRef, degrees: 90 | -90) => {
+    if (scanBusy) return;
     try {
-      const rotated = await imageStore.rotate(image, degrees);
+      const rotated = imageStore.rotate(image, degrees);
       const nextImages = selectedImagesRef.current.map((item) =>
         item.ephemeralId === image.ephemeralId ? rotated : item
       );
@@ -815,8 +837,6 @@ export function ReceiptScanScreen({
       }
     } catch {
       setModelError("Failed to rotate the image.");
-    } finally {
-      setRotatingId(null);
     }
   };
 
@@ -1374,8 +1394,7 @@ export function ReceiptScanScreen({
                                 index + 1
                               } counter-clockwise 90 degrees`}
                               variant="quiet"
-                              isDisabled={scanBusy ||
-                                rotatingId === image.ephemeralId}
+                              isDisabled={scanBusy}
                               onPress={() => rotateImage(image, -90)}
                             />
                             <IconButton
@@ -1384,8 +1403,7 @@ export function ReceiptScanScreen({
                                 index + 1
                               } clockwise 90 degrees`}
                               variant="quiet"
-                              isDisabled={scanBusy ||
-                                rotatingId === image.ephemeralId}
+                              isDisabled={scanBusy}
                               onPress={() =>
                                 rotateImage(image, 90)}
                             />
@@ -1396,8 +1414,7 @@ export function ReceiptScanScreen({
                         icon={<Trash2 size={16} />}
                         aria-label={`Remove page ${index + 1}`}
                         variant="quiet"
-                        isDisabled={scanBusy ||
-                          rotatingId === image.ephemeralId}
+                        isDisabled={scanBusy}
                         onPress={() => removeImage(image)}
                       />
                     </Inline>
@@ -1423,11 +1440,17 @@ export function ReceiptScanScreen({
                       </div>
                     )
                     : (
-                      <img
-                        src={image.previewUrl}
-                        alt={`Page ${index + 1} preview`}
-                        className="receipt-ui-preview"
-                      />
+                      <div className="receipt-ui-preview-frame">
+                        <img
+                          src={image.previewUrl}
+                          alt={`Page ${index + 1} preview`}
+                          className="receipt-ui-preview"
+                          data-rotation={image.rotation || undefined}
+                          style={image.rotation
+                            ? { transform: `rotate(${image.rotation}deg)` }
+                            : undefined}
+                        />
+                      </div>
                     )}
                 </Stack>
               </Card>
@@ -1443,16 +1466,14 @@ export function ReceiptScanScreen({
                         icon={<RotateCcw size={16} />}
                         aria-label="Rotate receipt counter-clockwise 90 degrees"
                         variant="quiet"
-                        isDisabled={scanBusy ||
-                          rotatingId === selectedImage.ephemeralId}
+                        isDisabled={scanBusy}
                         onPress={() => rotateImage(selectedImage, -90)}
                       />
                       <IconButton
                         icon={<RotateCw size={16} />}
                         aria-label="Rotate receipt clockwise 90 degrees"
                         variant="quiet"
-                        isDisabled={scanBusy ||
-                          rotatingId === selectedImage.ephemeralId}
+                        isDisabled={scanBusy}
                         onPress={() => rotateImage(selectedImage, 90)}
                       />
                     </Inline>
@@ -1479,11 +1500,19 @@ export function ReceiptScanScreen({
                     </div>
                   )
                   : (
-                    <img
-                      src={selectedImage.previewUrl}
-                      alt="Selected receipt preview"
-                      className="receipt-ui-preview"
-                    />
+                    <div className="receipt-ui-preview-frame">
+                      <img
+                        src={selectedImage.previewUrl}
+                        alt="Selected receipt preview"
+                        className="receipt-ui-preview"
+                        data-rotation={selectedImage.rotation || undefined}
+                        style={selectedImage.rotation
+                          ? {
+                            transform: `rotate(${selectedImage.rotation}deg)`,
+                          }
+                          : undefined}
+                      />
+                    </div>
                   )}
               </Stack>
             )

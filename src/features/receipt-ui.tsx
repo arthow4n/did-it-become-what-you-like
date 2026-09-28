@@ -483,8 +483,10 @@ export class ReceiptImageStore {
   readonly #entries = new Map<string, ReceiptImageEntry>();
   #preparationCache: WeakMap<ImageInput, PreparedImage> | null = null;
 
-  setPreparationCache(cache: WeakMap<ImageInput, PreparedImage>): void {
-    this.#preparationCache = cache;
+  setPreparationCache(
+    cache: WeakMap<ImageInput, PreparedImage> | WeakMap<object, unknown>,
+  ): void {
+    this.#preparationCache = cache as WeakMap<ImageInput, PreparedImage>;
   }
 
   #startPreparation(entry: ReceiptImageEntry, degrees: number): void {
@@ -1162,7 +1164,9 @@ export function ReceiptScanScreen({
       "cache" in dependencies.imagePreparation &&
       dependencies.imagePreparation.cache instanceof WeakMap
     ) {
-      imageStore.setPreparationCache(dependencies.imagePreparation.cache);
+      imageStore.setPreparationCache(
+        dependencies.imagePreparation.cache as WeakMap<object, unknown>,
+      );
     }
   }, [dependencies.imagePreparation, imageStore]);
 

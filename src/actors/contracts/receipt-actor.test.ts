@@ -408,6 +408,34 @@ Deno.test("receipt-actor scan: cancellation aborts the request and releases the 
   actor.stop();
 });
 
+Deno.test("receipt-actor scan: cancelling an ongoing scan returns to selected state without exiting", async () => {
+  const gemini = createFakeGeminiPort(extractionDraft());
+  const preparation = createFakeImagePreparationPort();
+  const released: string[] = [];
+  gemini.pauseNext();
+  const actor = createActor(createScanMachine(gemini, preparation, released))
+    .start();
+  actor.send({ type: "receipt.open" });
+  actor.send({ type: "receipt.image-selected" });
+  actor.send({ type: "receipt.scan", input: scanInput });
+  await waitForActorState(actor, "preparing");
+  actor.send({ type: "receipt.cancel-scan" });
+  await waitForActorState(actor, "selected");
+  assertEquals(actor.getSnapshot().value, "selected");
+  assertEquals(actor.getSnapshot().context.error, null);
+  assertEquals(actor.getSnapshot().context.review, null);
+  await settle();
+  assertEquals(released, ["image-memory-only"]);
+
+  // An ongoing scan cancellation does not terminate the workflow; scan can be retried
+  actor.send({ type: "receipt.scan", input: scanInput });
+  await waitForActorState(actor, "preparing");
+  gemini.releasePaused();
+  await waitForActorState(actor, "reviewReady");
+  assertEquals(actor.getSnapshot().value, "reviewReady");
+  actor.stop();
+});
+
 Deno.test("receipt-actor scan: reset aborts an active attempt and clears transient failure state", async () => {
   const gemini = createFakeGeminiPort(extractionDraft());
   const preparation = createFakeImagePreparationPort();

@@ -2009,7 +2009,10 @@ export function ReceiptScanScreen({
               action={
                 <Button
                   variant="quiet"
-                  onPress={() => send({ type: "receipt.cancel" })}
+                  onPress={() => {
+                    setPendingScanState(false);
+                    send({ type: "receipt.cancel-scan" });
+                  }}
                 >
                   Cancel scan
                 </Button>

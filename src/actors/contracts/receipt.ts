@@ -15,6 +15,7 @@ export type ReceiptScanEvent =
   | { readonly type: "receipt.image-selected" }
   | { readonly type: "receipt.scan"; readonly input: ReceiptScanInput }
   | { readonly type: "receipt.retry"; readonly input: ReceiptScanInput }
+  | { readonly type: "receipt.cancel-scan" }
   | { readonly type: "receipt.replace-image" }
   | { readonly type: "receipt.network.offline" }
   | { readonly type: "receipt.network.online" }
@@ -170,6 +171,14 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
         },
       },
       on: {
+        "receipt.cancel-scan": {
+          target: "selected",
+          actions: assign({
+            review: () => null,
+            error: () => null,
+            scanMode: () => undefined,
+          }),
+        },
         "receipt.replace-image": {
           target: "selecting",
           actions: assign({
@@ -210,6 +219,14 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
         },
       },
       on: {
+        "receipt.cancel-scan": {
+          target: "selected",
+          actions: assign({
+            review: () => null,
+            error: () => null,
+            scanMode: () => undefined,
+          }),
+        },
         "receipt.replace-image": {
           target: "selecting",
           actions: assign({ review: () => null, error: () => null }),
@@ -245,6 +262,14 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
         },
       },
       on: {
+        "receipt.cancel-scan": {
+          target: "selected",
+          actions: assign({
+            review: () => null,
+            error: () => null,
+            scanMode: () => undefined,
+          }),
+        },
         "receipt.replace-image": {
           target: "selecting",
           actions: assign({ review: () => null, error: () => null }),

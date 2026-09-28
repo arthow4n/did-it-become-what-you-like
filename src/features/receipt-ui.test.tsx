@@ -1175,6 +1175,161 @@ Deno.test(
 );
 
 Deno.test(
+  "receipt-ui cancelling an ongoing scan does not exit the scan scene and allows re-scanning",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(async () => {
+        const imageStore = new ReceiptImageStore();
+        const model = {
+          id: "fake-gemini-compatible",
+          displayName: "Fake Gemini Compatible",
+          lifecycle: "active" as const,
+          capabilities: {
+            "image-input": true,
+            "content-generation": true,
+            "structured-output": true,
+          },
+        };
+        const draft: ReceiptExtractionDraft = {
+          merchant: "Fake Merchant",
+          currency: "SEK",
+          date: "2026-08-29",
+          printedTotal: "-1",
+          lines: [{
+            description: "Receipt item",
+            amount: "1",
+            categoryId: "category-uncategorized",
+            kind: "purchase",
+            direction: "outflow",
+            selected: true,
+            rationale: "The receipt lists this purchased product line.",
+          }],
+          uncertainty: [],
+          mismatches: [],
+        };
+        let abortCount = 0;
+        let resolveExtraction: (() => void) | undefined;
+        const ai: ReceiptAiPort = {
+          listModels: () => Promise.resolve([model]),
+          extractReceipt: (_request, options) =>
+            new Promise((resolve, reject) => {
+              const signal = options?.signal;
+              const onAbort = () => {
+                abortCount += 1;
+                signal?.removeEventListener("abort", onAbort);
+                reject(new Error("scan aborted"));
+              };
+              signal?.addEventListener("abort", onAbort, { once: true });
+              resolveExtraction = () => {
+                signal?.removeEventListener("abort", onAbort);
+                resolve(draft);
+              };
+            }),
+        };
+        const gemini = {
+          ...ai,
+          getApiKey: () => Promise.resolve(SecretValue.from("AIza.test")),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+        };
+        const dependencies: ReceiptUiDependencies = {
+          ai,
+          gemini,
+          openrouter: {
+            ...ai,
+            getApiKey: () =>
+              Promise.resolve(SecretValue.from("openrouter.test")),
+            setApiKey: () => Promise.resolve(),
+            removeApiKey: () => Promise.resolve(),
+            listEndpoints: () => Promise.resolve([]),
+          },
+          imagePreparation: createFakeImagePreparationPort(),
+          resolveImage: (ref) => imageStore.resolve(ref),
+          releaseImage: (ref) => imageStore.releaseForRetry(ref),
+        };
+        const state = defaultTestState;
+        const settings = DeviceLocalSettingsSchema.parse({
+          imagePreparationEnabled: true,
+          selectedGeminiModel: model.id,
+        });
+        let closed = 0;
+        let reviewed = false;
+        const rendered = render(
+          createElement(ReceiptScanScreen, {
+            dependencies,
+            imageStore,
+            state,
+            settings,
+            offline: false,
+            onSettingsChange: () => undefined,
+            onDirtyChange: () => undefined,
+            onReview: () => reviewed = true,
+            onClose: () => closed += 1,
+            onOpenSettings: () => undefined,
+          }),
+        );
+        const view = within(document.body);
+        await waitFor(() =>
+          assert(view.getByRole("button", { name: "Continue to scan" }))
+        );
+        fireEvent.click(view.getByRole("button", { name: "Continue to scan" }));
+        const file = new Blob([new Uint8Array([1, 2, 3])], {
+          type: "image/png",
+        }) as unknown as File;
+        fireEvent.change(view.getByLabelText("Receipt image file"), {
+          target: { files: [file] },
+        });
+        await waitFor(() => {
+          const button = view.getByRole("button", { name: "Scan with AI" });
+          assert(!button.hasAttribute("disabled"));
+        });
+        fireEvent.click(view.getByRole("button", { name: "Scan with AI" }));
+        await waitFor(() =>
+          assert(view.getByRole("button", { name: "Cancel scan" }))
+        );
+
+        // Click "Cancel scan" - this must NOT exit the scan scene
+        fireEvent.click(view.getByRole("button", { name: "Cancel scan" }));
+        await waitFor(() => assert(abortCount === 1));
+
+        // Screen must remain open (closed is still 0)
+        assert(
+          closed === 0,
+          "Cancelling ongoing scan should not exit the scan scene",
+        );
+        assert(!reviewed);
+
+        // Cancel scan button and scanning status panel must be gone
+        await waitFor(() => {
+          assert(!view.queryByRole("button", { name: "Cancel scan" }));
+          assert(!view.queryByText("Scanning receipt"));
+        });
+
+        // Scan button should be back and ready
+        await waitFor(() => {
+          const button = view.getByRole("button", { name: "Scan with AI" });
+          assert(!button.hasAttribute("disabled"));
+        });
+
+        // The image preview should still be in the scene
+        assert(view.getByAltText("Selected receipt preview"));
+
+        // Now trigger scan again and verify it can complete
+        fireEvent.click(view.getByRole("button", { name: "Scan with AI" }));
+        await waitFor(() =>
+          assert(view.getByRole("button", { name: "Cancel scan" }))
+        );
+        resolveExtraction?.();
+        await waitFor(() => assert(reviewed));
+        assert(closed === 0);
+
+        rendered.unmount();
+      });
+    });
+  },
+);
+
+Deno.test(
   "receipt-ui routes an explicit OpenRouter scan through the shared review flow",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {

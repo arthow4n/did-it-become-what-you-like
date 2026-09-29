@@ -1,11 +1,5 @@
 import { useActor } from "@xstate/react";
 import {
-  type AnyActorLogic,
-  createActor,
-  type Snapshot,
-  type SnapshotFrom,
-} from "xstate";
-import {
   type ReactNode,
   useCallback,
   useEffect,
@@ -56,44 +50,25 @@ import {
   type LocalRepository,
 } from "../adapters/local/index.ts";
 import { runCausalExchange } from "../adapters/sync/coordinator.ts";
-import type { FileSharePort } from "../adapters/ports/index.ts";
-import { type StableId, StableIdSchema } from "../domain/index.ts";
+import { StableIdSchema } from "../domain/index.ts";
 import {
   clearDeleteEverywhereProgress,
   type DeleteEverywhereProgressPhase,
   type DeleteEverywhereProgressRecord,
-  type DestructionStorage,
-  isDestructionStorage,
   readDeleteEverywhereProgress,
   readLocalEraseProgress,
   readLocalEraseReceiptAiKeysChoice,
   writeDeleteEverywhereProgress,
 } from "../domain/destruction.ts";
 import {
-  ConflictReviewScreen,
-  ImportExportScreen,
-  type ImportMode,
   type ReplacementConfirmation,
   type SafetyExportStatus,
 } from "./conflict-import-ui/index.ts";
-import {
-  GoogleDriveSyncScreen,
-  KnownDevicesScreen,
-  SyncStatusProvider,
-} from "./sync-ui/index.ts";
-import {
-  DataPrivacyScreen,
-  type DestructionDeviceView,
-} from "./destruction-ui.tsx";
+import { SyncStatusProvider } from "./sync-ui/index.ts";
+import { type DestructionDeviceView } from "./destruction-ui.tsx";
 
-export type SyncPortabilityScreen =
-  | "sync"
-  | "devices"
-  | "conflicts"
-  | "import-export"
-  | "privacy"
-  | null;
-
+import type { SyncPortabilityScreen } from "./sync-runtime/index.ts";
+export type { SyncPortabilityScreen };
 export * from "./sync-runtime/index.ts";
 import {
   automaticSyncDelay,
@@ -101,11 +76,14 @@ import {
   configuredRuntimeBoundary,
   conflictIdsForResolutions,
   conflictViewFromSnapshot,
+  createBrowserFileShare,
   createConfiguredDriveAdapter,
+  createRuntimeIds,
   deleteEverywhereProgressForDevices,
   deleteEverywhereRecoveryPassedLocalErase,
   deleteEverywhereViewFromProgress,
   deleteEverywhereViewFromSnapshot,
+  destructionStorage,
   deviceViewModels,
   exportViewFromSnapshot,
   importViewFromSnapshot,
@@ -114,141 +92,14 @@ import {
   readAutomaticSyncState,
   reconnectAuthorizationOptions,
   requestLocalShellRefreshAfterSync,
+  runtimeClock,
+  saveDestructionSafetyExport,
   settingsSyncSummary,
+  SyncPortabilityScreenHost,
   syncViewFromSnapshot,
+  useRestartableActor,
   writeAutomaticSyncState,
 } from "./sync-runtime/index.ts";
-
-type RuntimeIds = {
-  readonly next: (kind: string) => StableId;
-};
-
-function createRuntimeIds(): RuntimeIds {
-  let sequence = 0;
-  return {
-    next: (kind) => {
-      sequence += 1;
-      const suffix = globalThis.crypto?.randomUUID?.() ??
-        `${Date.now()}-${sequence}`;
-      return StableIdSchema.parse(`${kind}-${suffix}`);
-    },
-  };
-}
-
-const runtimeClock = {
-  now: () => new Date().toISOString(),
-  delay: async (milliseconds: number, options?: { signal?: AbortSignal }) => {
-    if (options?.signal?.aborted) {
-      throw new DOMException("Aborted", "AbortError");
-    }
-    await new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
-  },
-};
-
-function createBrowserFileShare(): FileSharePort {
-  const save = async (payload: {
-    readonly name: string;
-    readonly mimeType: string;
-    readonly bytes: Uint8Array;
-  }): Promise<void> => {
-    if (
-      globalThis.document === undefined ||
-      globalThis.URL?.createObjectURL === undefined
-    ) {
-      throw { code: "unavailable" };
-    }
-    const blob = new Blob([payload.bytes.slice().buffer as ArrayBuffer], {
-      type: payload.mimeType,
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = payload.name;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    await Promise.resolve();
-  };
-
-  return {
-    save,
-    share: async (payload) => {
-      const share = globalThis.navigator?.share;
-      if (typeof share !== "function" || payload.file === undefined) {
-        throw { code: "unsupported" };
-      }
-      const file = new File(
-        [payload.file.bytes.slice().buffer as ArrayBuffer],
-        payload.file.name,
-        { type: payload.file.mimeType },
-      );
-      if (
-        typeof globalThis.navigator.canShare === "function" &&
-        !globalThis.navigator.canShare({ files: [file] })
-      ) {
-        throw { code: "unsupported" };
-      }
-      await share.call(globalThis.navigator, {
-        title: payload.title,
-        files: [file],
-      });
-      return "shared";
-    },
-  };
-}
-
-async function saveDestructionSafetyExport(json: string): Promise<void> {
-  const bytes = new TextEncoder().encode(json);
-  await createBrowserFileShare().save({
-    name: "did-it-become-what-you-like-delete-everywhere-safety.json",
-    mimeType: "application/json",
-    bytes,
-  });
-}
-
-function destructionStorage(): DestructionStorage | undefined {
-  try {
-    return isDestructionStorage(globalThis.localStorage)
-      ? globalThis.localStorage
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function useRestartableActor<TLogic extends AnyActorLogic>(
-  logic: TLogic,
-  restartKey: number,
-  initialSnapshot?: Snapshot<unknown>,
-): [SnapshotFrom<TLogic>, ReturnType<typeof createActor<TLogic>>["send"]] {
-  const actor = useMemo(
-    () =>
-      createActor(
-        logic,
-        initialSnapshot === undefined
-          ? undefined
-          : ({ snapshot: initialSnapshot } as never),
-      ),
-    [initialSnapshot, logic, restartKey],
-  );
-  useEffect(() => {
-    actor.start();
-    return () => {
-      actor.stop();
-    };
-  }, [actor]);
-  const subscribe = useCallback(
-    (listener: () => void) => {
-      const subscription = actor.subscribe(listener);
-      return () => subscription.unsubscribe();
-    },
-    [actor],
-  );
-  const getSnapshot = useCallback(() => actor.getSnapshot(), [actor]);
-  return [
-    useSyncExternalStore(subscribe, getSnapshot, getSnapshot),
-    actor.send,
-  ];
-}
 
 export function SyncPortabilityRuntime({
   repository,
@@ -1396,174 +1247,71 @@ export function SyncPortabilityRuntime({
     setDeleteFinalizationRetry((retry) => retry + 1);
   };
 
-  const content = screen === "sync"
-    ? (
-      <GoogleDriveSyncScreen
-        view={syncView}
-        knownDeviceCount={deviceProjection.devices.length}
-        connectionMode={connectionMode}
-        syncServerUrl={syncServerUrl}
-        syncError={syncError}
-        onConnectionModeChange={handleConnectionModeChange}
-        onSyncServerUrlChange={handleSyncServerUrlChange}
-        onConnect={handleConnect}
-        onRetry={() => sendSync({ type: "sync.retry" })}
-        onRecoverCorruptData={() =>
-          sendSync({ type: "sync.recover-corrupt-data" })}
-        onSyncNow={() =>
-          sendSync({ type: "sync.request", request: { reason: "manual" } })}
-        onOpenConflicts={() => onNavigate("/settings/conflicts")}
-        onManageDevices={() => onNavigate("/settings/devices")}
-        onSwitchAccount={() => handleConnect(connectionMode)}
-        onConfirmAccountSwitch={() =>
-          sendSync({ type: "sync.account.confirm" })}
-        onCancelAccountSwitch={() => sendSync({ type: "sync.account.cancel" })}
-        onDisconnect={() => {
-          if (driveAdapter === null) {
-            sendSync({ type: "sync.disconnect" });
-            return;
-          }
-          void driveAdapter.disconnect().then(() => {
-            sendSync({ type: "sync.disconnect" });
-          }).catch(() => onNotice("Google Drive could not be disconnected."));
-        }}
-        onReconnect={handleReconnect}
-        onBack={() => onNavigate("/settings")}
-      />
-    )
-    : screen === "devices"
-    ? (
-      <KnownDevicesScreen
-        devices={deviceProjection.devices}
-        technicalDetails={deviceProjection.technical}
-        onRename={async (device) => {
-          const diagnostic = deviceProjection.technical.find((candidate) =>
-            candidate.id === device.stableKey
-          );
-          if (diagnostic === undefined) return;
-          try {
-            await syncDependencies.registry.rename(diagnostic.id, device.label);
-          } catch {
-            onNotice("This device name could not be saved.");
-          }
-        }}
-        onAcknowledgeRetirement={async (device) => {
-          const diagnostic = deviceProjection.technical.find((candidate) =>
-            candidate.id === device.stableKey
-          );
-          if (diagnostic === undefined) return;
-          try {
-            await syncDependencies.registry.acknowledge(diagnostic.id);
-          } catch {
-            onNotice("This device retirement could not be acknowledged.");
-          }
-        }}
-        onBack={() => onNavigate("/settings/sync")}
-      />
-    )
-    : screen === "conflicts"
-    ? (
-      <ConflictReviewScreen
-        viewModel={conflictView}
-        onBack={() => onNavigate("/settings/sync")}
-        onOpenGroup={(groupId) => {
-          setConflictPane("detail");
-          sendConflictEvent({ type: "conflict.open", groupId });
-        }}
-        onShowList={() => setConflictPane("list")}
-        onChooseCandidate={(candidateId) =>
-          sendConflictEvent({ type: "conflict.choose-candidate", candidateId })}
-        onCustomValueChange={(value) => {
-          const groupId = conflictSnapshot.context.activeGroupId;
-          if (groupId !== null) {
-            setCustomValues((current) => ({ ...current, [groupId]: value }));
-          }
-        }}
-        onChooseCustom={(value) =>
-          sendConflictEvent({ type: "conflict.choose-custom", value })}
-        onKeepEdited={() => sendConflictEvent({ type: "conflict.keep-edited" })}
-        onDeleteRecord={() =>
-          sendConflictEvent({ type: "conflict.delete-record" })}
-        onSubmit={() => sendConflictEvent({ type: "conflict.submit" })}
-        onRetry={() => sendConflictEvent({ type: "conflict.retry" })}
-      />
-    )
-    : screen === "import-export"
-    ? (
-      <ImportExportScreen
-        exportModel={exportView}
-        importModel={importView}
-        onBack={closeImportExport}
-        onExport={requestExport}
-        onRetryExport={() => sendExportEvent({ type: "export.retry" })}
-        onCancelExport={() => sendExportEvent({ type: "export.cancel" })}
-        onFileSelected={selectImportFile}
-        onModeChange={(mode: ImportMode) =>
-          sendImportEvent({
-            type: mode === "merge"
-              ? "import.choose-merge"
-              : "import.choose-replace",
-          })}
-        onSafetyExport={() =>
-          sendSafetyExport({ type: "export.request", share: false })}
-        onSafetyExportRetry={() => sendSafetyExport({ type: "export.retry" })}
-        onReplacementConfirmationChange={setReplacementConfirmation}
-        onCommit={() => sendImportEvent({ type: "import.commit" })}
-        onRetryImport={() => sendImportEvent({ type: "import.retry" })}
-        onReviewConflicts={() => onNavigate("/settings/conflicts")}
-        onCancelImport={closeImportExport}
-      />
-    )
-    : screen === "privacy"
-    ? (
-      <DataPrivacyScreen
-        connected={syncView.mode === "configured"}
-        localErase={localEraseView}
-        deleteEverywhere={{
-          ...deleteEverywhereView,
-          revoking: deleteEverywhereRevoking,
-          ...(deleteEverywhereRevocationError === undefined
-            ? {}
-            : { error: deleteEverywhereRevocationError }),
-        }}
-        devices={destructionDevices}
-        onBack={() => onNavigate("/settings")}
-        onDisconnect={() => {
-          if (driveAdapter === null) {
-            sendSync({ type: "sync.disconnect" });
-            return;
-          }
-          void driveAdapter.disconnect().then(() => {
-            sendSync({ type: "sync.disconnect" });
-          }).catch(() => onNotice("Google Drive could not be disconnected."));
-        }}
-        onOpenLocalErase={openLocalErase}
-        onLocalEraseChoice={(removeReceiptAiKeys) =>
-          sendLocalErase({ type: "local-erase.choice", removeReceiptAiKeys })}
-        onConfirmLocalErase={() =>
-          sendLocalErase({ type: "local-erase.confirm" })}
-        onRetryLocalErase={() => sendLocalErase({ type: "local-erase.retry" })}
-        onCancelLocalErase={cancelLocalErase}
-        onOpenDeleteEverywhere={openDeleteEverywhere}
-        onSafetyExport={() =>
-          sendDeleteEverywhere({ type: "delete-everywhere.export-safety" })}
-        onDeclineSafetyExport={() =>
-          sendDeleteEverywhere({
-            type: "delete-everywhere.decline-safety-export",
-          })}
-        onConfirmDecline={() =>
-          sendDeleteEverywhere({ type: "delete-everywhere.confirm-decline" })}
-        onConfirmDeleteEverywhere={() =>
-          sendDeleteEverywhere({ type: "delete-everywhere.confirm" })}
-        onForceFinalize={() =>
-          sendDeleteEverywhere({ type: "delete-everywhere.force-finalize" })}
-        onRetryDeleteEverywhere={() =>
-          sendDeleteEverywhere({ type: "delete-everywhere.retry" })}
-        onRetryFinalization={retryDeleteEverywhereFinalization}
-        onCancelDeleteEverywhere={cancelDeleteEverywhere}
-      />
-    )
-    : children;
+  const content = (
+    <SyncPortabilityScreenHost
+      screen={screen}
+      syncView={syncView}
+      deviceProjection={deviceProjection}
+      connectionMode={connectionMode}
+      syncServerUrl={syncServerUrl}
+      syncError={syncError}
+      handleConnectionModeChange={handleConnectionModeChange}
+      handleSyncServerUrlChange={handleSyncServerUrlChange}
+      handleConnect={handleConnect}
+      sendSync={sendSync}
+      driveAdapter={driveAdapter}
+      handleReconnect={handleReconnect}
+      onNavigate={onNavigate}
+      onNotice={onNotice}
+      syncDependencies={syncDependencies}
+      conflictView={conflictView}
+      onOpenConflictGroup={(groupId) => {
+        setConflictPane("detail");
+        sendConflictEvent({ type: "conflict.open", groupId });
+      }}
+      onShowConflictList={() => setConflictPane("list")}
+      onChooseConflictCandidate={(candidateId) =>
+        sendConflictEvent({ type: "conflict.choose-candidate", candidateId })}
+      onConflictCustomValueChange={(value) => {
+        const groupId = conflictSnapshot.context.activeGroupId;
+        if (groupId !== null) {
+          setCustomValues((current) => ({ ...current, [groupId]: value }));
+        }
+      }}
+      onChooseConflictCustom={(value) =>
+        sendConflictEvent({ type: "conflict.choose-custom", value })}
+      onKeepConflictEdited={() =>
+        sendConflictEvent({ type: "conflict.keep-edited" })}
+      onDeleteConflictRecord={() =>
+        sendConflictEvent({ type: "conflict.delete-record" })}
+      onSubmitConflict={() => sendConflictEvent({ type: "conflict.submit" })}
+      onRetryConflict={() => sendConflictEvent({ type: "conflict.retry" })}
+      exportView={exportView}
+      importView={importView}
+      onRequestExport={requestExport}
+      onRetryExport={() => sendExportEvent({ type: "export.retry" })}
+      onCancelExport={() => sendExportEvent({ type: "export.cancel" })}
+      selectImportFile={selectImportFile}
+      sendImportEvent={sendImportEvent}
+      sendSafetyExport={sendSafetyExport}
+      setReplacementConfirmation={setReplacementConfirmation}
+      closeImportExport={closeImportExport}
+      localEraseView={localEraseView}
+      deleteEverywhereView={deleteEverywhereView}
+      deleteEverywhereRevoking={deleteEverywhereRevoking}
+      deleteEverywhereRevocationError={deleteEverywhereRevocationError}
+      destructionDevices={destructionDevices}
+      openLocalErase={openLocalErase}
+      sendLocalErase={sendLocalErase}
+      cancelLocalErase={cancelLocalErase}
+      openDeleteEverywhere={openDeleteEverywhere}
+      sendDeleteEverywhere={sendDeleteEverywhere}
+      retryDeleteEverywhereFinalization={retryDeleteEverywhereFinalization}
+      cancelDeleteEverywhere={cancelDeleteEverywhere}
+    >
+      {children}
+    </SyncPortabilityScreenHost>
+  );
 
   return (
     <>

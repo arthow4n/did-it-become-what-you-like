@@ -1,46 +1,16 @@
 import { useActor } from "@xstate/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  createGeminiAdapter,
-  createGoogleGenAiClient,
-  createImagePreparationPort,
-  IMAGE_LIMITS,
-  REQUIRED_RECEIPT_AI_CAPABILITIES,
-  scaleDimensions,
-  stripImageMetadata,
-  stripJpegMetadata,
-} from "../adapters/gemini/index.ts";
-export { createImagePreparationPort };
-import {
-  createOpenRouterAdapter,
-  type OpenRouterEndpoint,
-  type OpenRouterRoutingOptions,
-} from "../adapters/openrouter/index.ts";
-import {
-  type ImageInput,
-  type ImagePreparationOptions,
-  type ImagePreparationPort,
-  type PreparedImage,
-  type ReceiptAiModel,
-  type ReceiptAiPort,
-  type SecretStoragePort,
-  throwIfAborted,
-} from "../adapters/ports/index.ts";
-import { createLocalStorageSecretStorage } from "../adapters/gemini/secrets.ts";
-import type { ReceiptAiModelQuery } from "../adapters/ports/receipt-ai.ts";
+import type { ReceiptAiModel } from "../adapters/ports/index.ts";
 import type { LocalPort } from "../adapters/ports/local.ts";
-import type { JsonValue } from "../adapters/ports/common.ts";
 import {
   type CalendarDate,
   CalendarDateSchema,
   CanonicalDecimalSchema,
   type Category,
   CurrencyCodeSchema,
-  DEFAULT_DEVICE_LOCAL_SETTINGS,
   type DeviceLocalSettings,
   type GeminiThinkingLevel,
   moneyCompare,
-  parseDeviceLocalSettings,
   StableIdSchema,
   TimeOfDaySchema,
 } from "../domain/index.ts";
@@ -54,9 +24,7 @@ import type { ProjectCategoryState } from "../domain/organization.ts";
 import {
   createReceiptReviewMachine,
   createReceiptScanMachine,
-  type ReceiptImageResolver,
   type ReceiptReviewActorEvent,
-  type ReceiptScanMachineDependencies,
 } from "../actors/receipt.ts";
 import type {
   ContractFailure,
@@ -108,623 +76,68 @@ import {
 } from "../design-system/index.ts";
 import { useSyncStatus } from "./sync-ui/index.ts";
 
-const DEVICE_SETTINGS_KEY = "settings-device-local";
-const DEFAULT_MODEL_QUERY: ReceiptAiModelQuery = {
-  requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
-};
+export {
+  type CachedImagePreparationPort,
+  createCachedImagePreparationPort,
+  createImagePreparationPort,
+  fileMediaType,
+  preEncodeImage,
+  rotateImageFile,
+} from "./receipt-ui/image.ts";
+export {
+  type ReceiptImageEntry,
+  ReceiptImageStore,
+} from "./receipt-ui/store.ts";
+export {
+  categoryOptions,
+  DEFAULT_MODEL_QUERY,
+  lineViewModel,
+  makeLineId,
+  modelOptions,
+  preferredDefaultModel,
+  providerPort,
+  RECEIPT_PROVIDER_NAMES,
+  receiptDisclosureDetails,
+  receiptDisclosureName,
+  type ReceiptOpenRouterPort,
+  type ReceiptProvider,
+  type ReceiptProviderPort,
+  type ReceiptReviewMode,
+  type ReceiptUiDependencies,
+  selectedModelFor,
+  settingsWithSelectedModel,
+} from "./receipt-ui/types.ts";
+export {
+  createDefaultReceiptUiDependencies,
+} from "./receipt-ui/dependencies.ts";
+export {
+  DEVICE_SETTINGS_KEY,
+  readDeviceLocalSettings,
+  writeDeviceLocalSettings,
+} from "../adapters/local/device-settings.ts";
 
-type ReceiptProviderPort = ReceiptAiPort & {
-  getApiKey(options?: { signal?: AbortSignal }): Promise<
-    {
-      reveal(): string;
-    } | undefined
-  >;
-  setApiKey(value: string, options?: { signal?: AbortSignal }): Promise<void>;
-  removeApiKey(options?: { signal?: AbortSignal }): Promise<void>;
-};
-
-export type ReceiptOpenRouterPort = ReceiptProviderPort & {
-  listEndpoints(
-    modelId: string,
-    options?: { signal?: AbortSignal },
-  ): Promise<readonly OpenRouterEndpoint[]>;
-};
-
-export type ReceiptProvider = "gemini" | "openrouter";
-
-export type ReceiptReviewMode = "scanned" | "manual" | "menu";
-
-export const RECEIPT_PROVIDER_NAMES: Record<ReceiptProvider, string> = {
-  gemini: "Gemini",
-  openrouter: "OpenRouter",
-};
-
-function receiptDisclosureName(provider: ReceiptProvider): string {
-  return provider === "gemini" ? "Google Gemini" : "OpenRouter";
-}
-
-function receiptDisclosureDetails(provider: ReceiptProvider): string {
-  return provider === "openrouter"
-    ? "For OpenRouter, this allowlisted receipt payload passes through OpenRouter to a routed provider endpoint serving the exact selected model. The receipt image is not publicly uploaded."
-    : "Google Gemini receives this allowlisted receipt payload for this explicit scan. The receipt image is not publicly uploaded.";
-}
-
-export type ReceiptUiDependencies = ReceiptScanMachineDependencies & {
-  readonly ai: ReceiptAiPort;
-  readonly gemini: ReceiptProviderPort;
-  readonly openrouter: ReceiptOpenRouterPort;
-};
-
-type ReceiptImageEntry = {
-  readonly file: File;
-  readonly previewUrl: string;
-  rotation: number;
-  prepared?: ImageInput;
-  preparedRotation?: number;
-  pendingPreparation?: Promise<ImageInput>;
-  pendingAbortController?: AbortController;
-};
-
-export function fileMediaType(file: File): string {
-  if (file.type) return file.type;
-  if (file.name.toLowerCase().endsWith(".pdf")) return "application/pdf";
-  return "";
-}
-
-async function canvasExportBlob(
-  canvas: HTMLCanvasElement | OffscreenCanvas,
-  mimeType: string,
-  quality?: number,
-): Promise<Blob> {
-  if (
-    "convertToBlob" in canvas &&
-    typeof (canvas as OffscreenCanvas).convertToBlob === "function"
-  ) {
-    return await (canvas as OffscreenCanvas).convertToBlob(
-      quality !== undefined ? { type: mimeType, quality } : { type: mimeType },
-    );
-  }
-  if (
-    "toBlob" in canvas &&
-    typeof (canvas as HTMLCanvasElement).toBlob === "function"
-  ) {
-    return await new Promise<Blob>((resolve, reject) => {
-      (canvas as HTMLCanvasElement).toBlob(
-        (blob) => {
-          if (!blob) reject(new Error("Failed to export canvas blob"));
-          else resolve(blob);
-        },
-        mimeType,
-        quality,
-      );
-    });
-  }
-  throw new Error("Canvas blob export is unsupported in this environment.");
-}
-
-function toBlobFile(
-  blob: Blob,
-  name: string,
-  type: string,
-  lastModified = Date.now(),
-): File {
-  try {
-    const file = new File([blob], name, { type, lastModified });
-    if (file instanceof Blob) return file;
-  } catch {
-    // Fall back to runtime Blob augmentation
-  }
-  const fileBlob = blob.slice(0, blob.size, type) as unknown as File;
-  Object.defineProperties(fileBlob, {
-    name: { value: name, configurable: true },
-    lastModified: { value: lastModified, configurable: true },
-    webkitRelativePath: { value: "", configurable: true },
-  });
-  return fileBlob;
-}
-
-export async function rotateImageFile(
-  file: File,
-  degrees: number,
-): Promise<File> {
-  const mediaType = fileMediaType(file);
-  const fileName = file.name || "receipt-image";
-  const normalizedDegrees = ((degrees % 360) + 360) % 360;
-  if (mediaType === "application/pdf" || normalizedDegrees === 0) return file;
-  if (typeof createImageBitmap !== "function") {
-    return toBlobFile(
-      new Blob([await file.arrayBuffer()], {
-        type: file.type || "image/jpeg",
-      }),
-      fileName,
-      file.type || "image/jpeg",
-    );
-  }
-
-  try {
-    const bitmap = await createImageBitmap(file);
-    try {
-      const isSideways = normalizedDegrees === 90 || normalizedDegrees === 270;
-      const targetWidth = isSideways ? bitmap.height : bitmap.width;
-      const targetHeight = isSideways ? bitmap.width : bitmap.height;
-      const canvas = typeof OffscreenCanvas === "function"
-        ? new OffscreenCanvas(targetWidth, targetHeight)
-        : document.createElement("canvas");
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      const context = canvas.getContext("2d") as
-        | CanvasRenderingContext2D
-        | OffscreenCanvasRenderingContext2D
-        | null;
-      if (!context || !("drawImage" in context)) {
-        return toBlobFile(
-          new Blob([await file.arrayBuffer()], {
-            type: file.type || "image/jpeg",
-          }),
-          fileName,
-          file.type || "image/jpeg",
-        );
-      }
-      if (normalizedDegrees === 90) {
-        context.translate(targetWidth, 0);
-        context.rotate(Math.PI / 2);
-      } else if (normalizedDegrees === 180) {
-        context.translate(targetWidth, targetHeight);
-        context.rotate(Math.PI);
-      } else if (normalizedDegrees === 270) {
-        context.translate(0, targetHeight);
-        context.rotate(-Math.PI / 2);
-      }
-      context.drawImage(bitmap, 0, 0);
-
-      const mimeType = file.type === "image/png"
-        ? "image/png"
-        : file.type === "image/webp"
-        ? "image/webp"
-        : "image/jpeg";
-      const quality = mimeType === "image/png" ? undefined : 0.95;
-
-      const blob = await canvasExportBlob(canvas, mimeType, quality);
-      return toBlobFile(blob, fileName, mimeType);
-    } finally {
-      bitmap.close();
-    }
-  } catch {
-    return toBlobFile(
-      new Blob([await file.arrayBuffer()], {
-        type: file.type || "image/jpeg",
-      }),
-      fileName,
-      file.type || "image/jpeg",
-    );
-  }
-}
-
-function safeStripJpeg(bytes: Uint8Array): Uint8Array {
-  try {
-    return stripJpegMetadata(bytes);
-  } catch {
-    return bytes;
-  }
-}
-
-function safeStripPdf(bytes: Uint8Array): Uint8Array {
-  try {
-    return stripImageMetadata({
-      bytes,
-      mimeType: "application/pdf",
-      width: 1,
-      height: 1,
-    }).bytes;
-  } catch {
-    return bytes;
-  }
-}
-
-export async function preEncodeImage(
-  file: File,
-  degrees: number,
-  signal?: AbortSignal,
-): Promise<ImageInput> {
-  throwIfAborted(signal);
-  const mediaType = fileMediaType(file);
-  const normalizedDegrees = ((degrees % 360) + 360) % 360;
-
-  if (mediaType === "application/pdf") {
-    const buffer = await file.arrayBuffer();
-    throwIfAborted(signal);
-    const cleanBytes = safeStripPdf(new Uint8Array(buffer));
-    return {
-      bytes: cleanBytes,
-      mimeType: "application/pdf",
-      width: 1,
-      height: 1,
-    };
-  }
-
-  if (typeof createImageBitmap !== "function") {
-    const buffer = await file.arrayBuffer();
-    throwIfAborted(signal);
-    const rawBytes = new Uint8Array(buffer);
-    const cleanBytes = mediaType === "image/jpeg"
-      ? safeStripJpeg(rawBytes)
-      : rawBytes;
-    return {
-      bytes: cleanBytes,
-      mimeType: mediaType || "image/jpeg",
-      width: 1,
-      height: 1,
-    };
-  }
-
-  try {
-    const bitmap = await createImageBitmap(file);
-    try {
-      throwIfAborted(signal);
-      const isSideways = normalizedDegrees === 90 || normalizedDegrees === 270;
-      const unscaledWidth = isSideways ? bitmap.height : bitmap.width;
-      const unscaledHeight = isSideways ? bitmap.width : bitmap.height;
-
-      if (unscaledWidth <= 0 || unscaledHeight <= 0) {
-        const buffer = await file.arrayBuffer();
-        return {
-          bytes: new Uint8Array(buffer),
-          mimeType: mediaType || "image/jpeg",
-          width: 1,
-          height: 1,
-        };
-      }
-
-      const { width: targetWidth, height: targetHeight } = scaleDimensions(
-        unscaledWidth,
-        unscaledHeight,
-        IMAGE_LIMITS.localPreparedMaxDimension,
-      );
-
-      const canvas = typeof OffscreenCanvas === "function"
-        ? new OffscreenCanvas(targetWidth, targetHeight)
-        : document.createElement("canvas");
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      const context = canvas.getContext("2d") as
-        | CanvasRenderingContext2D
-        | OffscreenCanvasRenderingContext2D
-        | null;
-
-      if (!context || !("drawImage" in context)) {
-        const buffer = await file.arrayBuffer();
-        throwIfAborted(signal);
-        return {
-          bytes: new Uint8Array(buffer),
-          mimeType: mediaType || "image/jpeg",
-          width: targetWidth,
-          height: targetHeight,
-        };
-      }
-
-      if (normalizedDegrees === 90) {
-        context.translate(targetWidth, 0);
-        context.rotate(Math.PI / 2);
-        context.drawImage(bitmap, 0, 0, targetHeight, targetWidth);
-      } else if (normalizedDegrees === 180) {
-        context.translate(targetWidth, targetHeight);
-        context.rotate(Math.PI);
-        context.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
-      } else if (normalizedDegrees === 270) {
-        context.translate(0, targetHeight);
-        context.rotate(-Math.PI / 2);
-        context.drawImage(bitmap, 0, 0, targetHeight, targetWidth);
-      } else {
-        context.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
-      }
-
-      throwIfAborted(signal);
-      const blob = await canvasExportBlob(
-        canvas,
-        "image/jpeg",
-        IMAGE_LIMITS.localPreparedJpegQuality,
-      );
-      throwIfAborted(signal);
-      const rawBytes = new Uint8Array(await blob.arrayBuffer());
-      const cleanBytes = safeStripJpeg(rawBytes);
-
-      return {
-        bytes: cleanBytes,
-        mimeType: "image/jpeg",
-        width: targetWidth,
-        height: targetHeight,
-      };
-    } finally {
-      bitmap.close();
-    }
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    const buffer = await file.arrayBuffer();
-    const rawBytes = new Uint8Array(buffer);
-    const cleanBytes = mediaType === "image/jpeg"
-      ? safeStripJpeg(rawBytes)
-      : rawBytes;
-    return {
-      bytes: cleanBytes,
-      mimeType: mediaType || "image/jpeg",
-      width: 1,
-      height: 1,
-    };
-  }
-}
-
-export type CachedImagePreparationPort = ImagePreparationPort & {
-  readonly cache: WeakMap<ImageInput, PreparedImage>;
-};
-
-export function createCachedImagePreparationPort(
-  base: ImagePreparationPort,
-  cache = new WeakMap<ImageInput, PreparedImage>(),
-): CachedImagePreparationPort {
-  return {
-    cache,
-    prepare: async (
-      input: ImageInput,
-      options: ImagePreparationOptions,
-    ): Promise<PreparedImage> => {
-      const cached = cache.get(input);
-      if (cached) {
-        throwIfAborted(options.signal);
-        return options.enabled
-          ? cached
-          : { ...cached, preparationApplied: false };
-      }
-      return await base.prepare(input, options);
-    },
-  };
-}
-
-export class ReceiptImageStore {
-  readonly #entries = new Map<string, ReceiptImageEntry>();
-  #preparationCache: WeakMap<ImageInput, PreparedImage> | null = null;
-
-  setPreparationCache(
-    cache: WeakMap<ImageInput, PreparedImage> | WeakMap<object, unknown>,
-  ): void {
-    this.#preparationCache = cache as WeakMap<ImageInput, PreparedImage>;
-  }
-
-  #startPreparation(entry: ReceiptImageEntry, degrees: number): void {
-    if (entry.pendingAbortController) {
-      entry.pendingAbortController.abort();
-      entry.pendingAbortController = undefined;
-      entry.pendingPreparation = undefined;
-    }
-    const controller = new AbortController();
-    entry.pendingAbortController = controller;
-
-    const promise = (async () => {
-      try {
-        const result = await preEncodeImage(
-          entry.file,
-          degrees,
-          controller.signal,
-        );
-        if (entry.pendingAbortController === controller) {
-          entry.prepared = result;
-          entry.preparedRotation = degrees;
-          entry.pendingPreparation = undefined;
-          entry.pendingAbortController = undefined;
-          this.#preparationCache?.set(result, {
-            ...result,
-            metadataSanitized: true,
-            preparationApplied: true,
-          });
-        }
-        return result;
-      } catch (error) {
-        if (entry.pendingAbortController === controller) {
-          entry.pendingPreparation = undefined;
-          entry.pendingAbortController = undefined;
-        }
-        throw error;
-      }
-    })();
-
-    promise.catch(() => {});
-    entry.pendingPreparation = promise;
-  }
-
-  add(file: File): ReceiptImageRef & {
-    readonly previewUrl: string;
-    readonly rotation: number;
-  } {
-    const ephemeralId = `receipt-image-${
-      globalThis.crypto?.randomUUID?.() ??
-        `${Date.now()}-${Math.random()}`
-    }`;
-    const previewUrl = URL.createObjectURL(file);
-    const entry: ReceiptImageEntry = {
-      file,
-      previewUrl,
-      rotation: 0,
-    };
-    this.#entries.set(ephemeralId, entry);
-    this.#startPreparation(entry, 0);
-    return {
-      ephemeralId,
-      mediaType: fileMediaType(file),
-      byteLength: file.size,
-      previewUrl,
-      rotation: 0,
-    };
-  }
-
-  getFile(ref: ReceiptImageRef): File | undefined {
-    return this.#entries.get(ref.ephemeralId)?.file;
-  }
-
-  getRotation(ref: ReceiptImageRef): number {
-    return this.#entries.get(ref.ephemeralId)?.rotation ?? 0;
-  }
-
-  isPrepared(ref: ReceiptImageRef): boolean {
-    const entry = this.#entries.get(ref.ephemeralId);
-    return Boolean(
-      entry?.prepared && entry.preparedRotation === entry.rotation,
-    );
-  }
-
-  rotate(
-    ref: ReceiptImageRef,
-    degrees: 90 | -90,
-  ): ReceiptImageRef & {
-    readonly previewUrl: string;
-    readonly rotation: number;
-  } {
-    const entry = this.#entries.get(ref.ephemeralId);
-    if (!entry) {
-      throw new Error("The selected receipt image is no longer available.");
-    }
-    const nextRotation = ((entry.rotation + degrees) % 360 + 360) % 360;
-    entry.rotation = nextRotation;
-    if (entry.preparedRotation !== nextRotation) {
-      entry.prepared?.bytes.fill(0);
-      entry.prepared = undefined;
-      entry.preparedRotation = undefined;
-    }
-    this.#startPreparation(entry, nextRotation);
-    return {
-      ephemeralId: ref.ephemeralId,
-      mediaType: fileMediaType(entry.file),
-      byteLength: entry.file.size,
-      previewUrl: entry.previewUrl,
-      rotation: nextRotation,
-    };
-  }
-
-  async resolve(
-    ref: ReceiptImageRef,
-    signal?: AbortSignal,
-  ): Promise<ImageInput> {
-    throwIfAborted(signal);
-    const entry = this.#entries.get(ref.ephemeralId);
-    if (!entry) {
-      throw new Error("The selected receipt image is no longer available.");
-    }
-
-    if (entry.prepared && entry.preparedRotation === entry.rotation) {
-      const output: ImageInput = {
-        bytes: entry.prepared.bytes.slice(),
-        mimeType: entry.prepared.mimeType,
-        width: entry.prepared.width,
-        height: entry.prepared.height,
-      };
-      this.#preparationCache?.set(output, {
-        ...output,
-        metadataSanitized: true,
-        preparationApplied: true,
-      });
-      return output;
-    }
-
-    if (
-      entry.pendingPreparation && !entry.pendingAbortController?.signal.aborted
-    ) {
-      try {
-        if (signal) {
-          const onAbort = () => {
-            entry.pendingAbortController?.abort();
-          };
-          signal.addEventListener("abort", onAbort, { once: true });
-          try {
-            await entry.pendingPreparation;
-          } finally {
-            signal.removeEventListener("abort", onAbort);
-          }
-        } else {
-          await entry.pendingPreparation;
-        }
-      } catch {
-        // Fall through to immediate execution below
-      }
-      throwIfAborted(signal);
-      if (entry.prepared && entry.preparedRotation === entry.rotation) {
-        const output: ImageInput = {
-          bytes: entry.prepared.bytes.slice(),
-          mimeType: entry.prepared.mimeType,
-          width: entry.prepared.width,
-          height: entry.prepared.height,
-        };
-        this.#preparationCache?.set(output, {
-          ...output,
-          metadataSanitized: true,
-          preparationApplied: true,
-        });
-        return output;
-      }
-    }
-
-    throwIfAborted(signal);
-    const result = await preEncodeImage(entry.file, entry.rotation, signal);
-    entry.prepared = result;
-    entry.preparedRotation = entry.rotation;
-    const output: ImageInput = {
-      bytes: result.bytes.slice(),
-      mimeType: result.mimeType,
-      width: result.width,
-      height: result.height,
-    };
-    this.#preparationCache?.set(output, {
-      ...output,
-      metadataSanitized: true,
-      preparationApplied: true,
-    });
-    return output;
-  }
-
-  release(ref: ReceiptImageRef): void {
-    this.remove(ref);
-  }
-
-  /**
-   * Discard decoded bytes after an attempt while retaining the ephemeral file
-   * and preview URL for an in-session retry.
-   */
-  releaseForRetry(ref: ReceiptImageRef): void {
-    const entry = this.#entries.get(ref.ephemeralId);
-    if (!entry) return;
-    entry.pendingAbortController?.abort();
-    entry.pendingAbortController = undefined;
-    entry.pendingPreparation = undefined;
-    if (entry.prepared) {
-      entry.prepared.bytes.fill(0);
-      entry.prepared = undefined;
-      entry.preparedRotation = undefined;
-    }
-  }
-
-  remove(ref: ReceiptImageRef): void {
-    const entry = this.#entries.get(ref.ephemeralId);
-    if (!entry) return;
-    entry.pendingAbortController?.abort();
-    entry.pendingAbortController = undefined;
-    entry.pendingPreparation = undefined;
-    URL.revokeObjectURL(entry.previewUrl);
-    if (entry.prepared) {
-      entry.prepared.bytes.fill(0);
-      entry.prepared = undefined;
-      entry.preparedRotation = undefined;
-    }
-    this.#entries.delete(ref.ephemeralId);
-  }
-
-  clear(): void {
-    for (const entry of this.#entries.values()) {
-      entry.pendingAbortController?.abort();
-      URL.revokeObjectURL(entry.previewUrl);
-      if (entry.prepared) {
-        entry.prepared.bytes.fill(0);
-      }
-    }
-    this.#entries.clear();
-  }
-}
+import { fileMediaType } from "./receipt-ui/image.ts";
+import { ReceiptImageStore } from "./receipt-ui/store.ts";
+import type { OpenRouterEndpoint } from "../adapters/openrouter/index.ts";
+import {
+  categoryOptions,
+  DEFAULT_MODEL_QUERY,
+  lineViewModel,
+  makeLineId,
+  modelOptions,
+  preferredDefaultModel,
+  providerPort,
+  RECEIPT_PROVIDER_NAMES,
+  receiptDisclosureDetails,
+  receiptDisclosureName,
+  type ReceiptOpenRouterPort,
+  type ReceiptProvider,
+  type ReceiptProviderPort,
+  type ReceiptReviewMode,
+  type ReceiptUiDependencies,
+  selectedModelFor,
+  settingsWithSelectedModel,
+} from "./receipt-ui/types.ts";
 
 function localCalendarDate(now = new Date()): CalendarDate {
   const year = now.getFullYear();
@@ -737,184 +150,6 @@ function messageForError(error: unknown, fallback: string): string {
   return error instanceof Error && error.message.trim().length > 0
     ? error.message
     : fallback;
-}
-
-function readJsonRecord(value: JsonValue | undefined): Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : {};
-}
-
-export async function readDeviceLocalSettings(
-  local: LocalPort,
-): Promise<DeviceLocalSettings> {
-  const value = await local.transaction(
-    "readonly",
-    (transaction) =>
-      transaction.get<JsonValue>("settings", DEVICE_SETTINGS_KEY),
-  );
-  try {
-    return parseDeviceLocalSettings(readJsonRecord(value));
-  } catch {
-    return DEFAULT_DEVICE_LOCAL_SETTINGS;
-  }
-}
-
-export async function writeDeviceLocalSettings(
-  local: LocalPort,
-  settings: DeviceLocalSettings,
-): Promise<void> {
-  const safe = parseDeviceLocalSettings(settings);
-  await local.transaction(
-    "readwrite",
-    (transaction) =>
-      transaction.put(
-        "settings",
-        DEVICE_SETTINGS_KEY,
-        safe as unknown as JsonValue,
-      ),
-  );
-}
-
-export function createDefaultReceiptUiDependencies(
-  imageStore: ReceiptImageStore,
-  getRoutingOptions: () => OpenRouterRoutingOptions = () => ({}),
-  getThinkingLevel: () => GeminiThinkingLevel | undefined = () => undefined,
-): { dependencies: ReceiptUiDependencies; secretStorage: SecretStoragePort } {
-  const secretStorage = createLocalStorageSecretStorage();
-  const gemini = createGeminiAdapter({
-    secretStorage,
-    createClient: createGoogleGenAiClient,
-    getThinkingLevel,
-  });
-  const openrouter = createOpenRouterAdapter({
-    secretStorage,
-    getRoutingOptions,
-  });
-  const preparationCache = new WeakMap<ImageInput, PreparedImage>();
-  imageStore.setPreparationCache(preparationCache);
-  const imagePreparation = createCachedImagePreparationPort(
-    createImagePreparationPort(),
-    preparationCache,
-  );
-  const resolveImage: ReceiptImageResolver = (image, signal) =>
-    imageStore.resolve(image, signal);
-  return {
-    secretStorage,
-    dependencies: {
-      ai: gemini,
-      gemini,
-      openrouter,
-      imagePreparation,
-      resolveImage,
-      releaseImage: (image) => imageStore.releaseForRetry(image),
-    },
-  };
-}
-
-function providerPort(
-  dependencies: ReceiptUiDependencies,
-  provider: ReceiptProvider,
-): ReceiptProviderPort {
-  return provider === "gemini" ? dependencies.gemini : dependencies.openrouter;
-}
-
-function selectedModelFor(
-  settings: DeviceLocalSettings,
-  provider: ReceiptProvider,
-): string | undefined {
-  return provider === "gemini"
-    ? settings.selectedGeminiModel
-    : settings.selectedOpenRouterModel;
-}
-
-function settingsWithSelectedModel(
-  settings: DeviceLocalSettings,
-  provider: ReceiptProvider,
-  model: string | undefined,
-): DeviceLocalSettings {
-  return provider === "gemini"
-    ? { ...settings, selectedGeminiModel: model }
-    : { ...settings, selectedOpenRouterModel: model };
-}
-
-export function modelOptions(
-  models: readonly ReceiptAiModel[],
-): Array<{
-  id: string;
-  label: string;
-  disabled?: boolean;
-  reason?: string;
-}> {
-  return models.map((model) => {
-    return {
-      id: model.id,
-      label: model.displayName,
-      disabled: model.lifecycle !== "active",
-      ...(model.lifecycle !== "active"
-        ? {
-          reason: model.lifecycle,
-        }
-        : {}),
-    };
-  });
-}
-
-export function preferredDefaultModel(
-  models: readonly ReceiptAiModel[],
-  provider: ReceiptProvider,
-): string | undefined {
-  const activeModels = models.filter((model) => model.lifecycle === "active");
-  if (activeModels.length === 0) return undefined;
-  if (provider === "gemini") {
-    const flashLite = activeModels.find((m) =>
-      m.id.toLowerCase().includes("flash-lite")
-    );
-    if (flashLite) return flashLite.id;
-    const flash = activeModels.find((m) =>
-      m.id.toLowerCase().includes("flash")
-    );
-    if (flash) return flash.id;
-  }
-  return activeModels[0]?.id;
-}
-
-function categoryOptions(categories: readonly Category[]) {
-  return categories.filter((category) => !category.archived).map((
-    category,
-  ) => ({
-    id: category.id,
-    label: category.name,
-  }));
-}
-
-function makeLineId(): string {
-  return StableIdSchema.parse(
-    `receipt-line-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`,
-  );
-}
-
-function lineViewModel(
-  line: ReceiptDraftLine,
-  categories: readonly Category[],
-) {
-  const category = categories.find((candidate) =>
-    candidate.id === line.categoryId
-  );
-  return {
-    id: line.id,
-    type: line.type,
-    description: line.description,
-    category: category?.name ?? "Uncategorized",
-    amount: line.type === "purchase" ? line.lineTotal : line.amount,
-    selected: line.selected,
-    uncertain: line.uncertain,
-    selectionReason: line.selectionReason,
-    classificationReason: line.classificationReason,
-    ...(line.type === "purchase"
-      ? { quantity: line.quantity, unitPrice: line.unitPrice }
-      : {}),
-  };
 }
 
 export function ReceiptDisclosure({

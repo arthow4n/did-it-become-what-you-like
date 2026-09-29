@@ -1491,3 +1491,5 @@ export function deleteLocalRepositoryDatabase(
 export function localErrorCode(error: unknown): string {
   return isAdapterError(error) ? error.code : "unknown";
 }
+
+export * from "./device-settings.ts";

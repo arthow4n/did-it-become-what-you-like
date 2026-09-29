@@ -116,14 +116,12 @@ import {
 } from "../design-system/index.ts";
 import {
   createDefaultReceiptUiDependencies,
-  readDeviceLocalSettings,
   ReceiptImageStore,
   type ReceiptReviewMode,
   ReceiptReviewScreen,
   ReceiptScanScreen,
   ReceiptSettingsScreen,
   type ReceiptUiDependencies,
-  writeDeviceLocalSettings,
 } from "./receipt-ui.tsx";
 import {
   SyncPortabilityRuntime,
@@ -146,6 +144,8 @@ import type { ShellRoute } from "../actors/contracts/index.ts";
 import {
   type LocalRepository,
   openLocalRepository,
+  readDeviceLocalSettings,
+  writeDeviceLocalSettings,
 } from "../adapters/local/index.ts";
 import type { LocalPort } from "../adapters/ports/local.ts";
 import { hashForRoute, routeFromHash } from "../app/routing.ts";

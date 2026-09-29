@@ -172,6 +172,28 @@
   and preserve every unintegrated change. Never remove a worktree containing
   uncommitted or unmerged work.
 
+### Codebase Decomposition and File Structure
+
+- **One component per file**: Every design-system component must live in its own
+  dedicated file under
+  `src/design-system/components/{primitives,patterns,domain}/<component-name>.tsx`.
+  Category barrels (`primitives.tsx`, `patterns.tsx`, `domain.tsx`) and the root
+  facade (`src/design-system/index.ts`) only re-export individual modules and
+  never define inline component implementations.
+- **Feature and actor modularity**: Do not build monolithic multi-thousand-line
+  files. When complex features, state machines, or screens grow or encompass
+  multiple responsibilities (e.g. data types, pure operations, actor machines,
+  dialogs, and screen hosts), decompose them into a dedicated directory
+  submodule (such as `src/actors/manual-expense/`, `src/actors/receipt/`,
+  `src/features/receipt-detail/`, `src/features/sync-runtime/`).
+- **Backward compatibility and facades**: Submodules must provide an `index.ts`
+  or maintain the legacy entry file as a re-export barrel so existing consumers,
+  routes, and tests continue resolving without breaking imports.
+- **Separation of concerns**: Keep pure business calculations, draft mutations,
+  and view-model projection helpers isolated in dedicated files (e.g.
+  `operations.ts`, `view-models.ts`, `draft.ts`) separate from XState machine
+  definitions and React UI render trees for testability and clarity.
+
 ### Design-system facade boundary
 
 Files under `src/features/**` and `src/app/**` use only the repository

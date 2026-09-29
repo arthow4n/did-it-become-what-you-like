@@ -73,6 +73,12 @@ semantic tokens
   receive controlled values, status, and callbacks or typed event dispatchers.
 - Mantine may own ephemeral interaction state such as focus and popover
   mechanics. It must not become a second source of business truth.
+- **One component per file**: Every design-system component is defined in its
+  own dedicated file within
+  `src/design-system/components/{primitives,patterns,domain}/<component-name>.tsx`.
+  Category barrel files (`primitives.tsx`, `patterns.tsx`, `domain.tsx`) only
+  re-export individual component modules. New components must be introduced in
+  separate files rather than appended into existing component files.
 
 ## Design-system facade boundary
 

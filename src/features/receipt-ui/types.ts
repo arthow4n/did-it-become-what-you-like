@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { OpenRouterEndpoint } from "../../adapters/openrouter/index.ts";
 import type {
   ReceiptAiModel,
@@ -7,11 +8,24 @@ import type {
 import { REQUIRED_RECEIPT_AI_CAPABILITIES } from "../../adapters/gemini/index.ts";
 import type { ReceiptScanMachineDependencies } from "../../actors/receipt.ts";
 import {
+  type CalendarDate,
   type Category,
   type DeviceLocalSettings,
   StableIdSchema,
 } from "../../domain/index.ts";
 import type { ReceiptDraftLine } from "../../domain/receipt.ts";
+
+export function useDirtyBeforeUnload(dirty: boolean): void {
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    globalThis.addEventListener("beforeunload", onBeforeUnload);
+    return () => globalThis.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+}
 
 export const DEFAULT_MODEL_QUERY: ReceiptAiModelQuery = {
   requiredCapabilities: REQUIRED_RECEIPT_AI_CAPABILITIES,
@@ -163,4 +177,17 @@ export function lineViewModel(
       ? { quantity: line.quantity, unitPrice: line.unitPrice }
       : {}),
   };
+}
+
+export function localCalendarDate(now = new Date()): CalendarDate {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}` as CalendarDate;
+}
+
+export function messageForError(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message.trim().length > 0
+    ? error.message
+    : fallback;
 }

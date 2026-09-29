@@ -17,25 +17,20 @@ import {
 import {
   adapterError,
   type CausalSyncRecoveryPort,
-  type DriveAuthState,
   getAdapterErrorDiagnostic,
   type SecretStoragePort,
 } from "../adapters/ports/index.ts";
 import {
   type ConflictActorEvent,
-  createConflictActor,
   createConflictMachine,
 } from "../actors/conflict/index.ts";
 import {
-  createExportActor,
   createExportMachine,
-  createImportActor,
   createImportMachine,
   type ExportEvent,
 } from "../actors/import-export/index.ts";
 import {
   createDefaultSyncDependencies,
-  createSyncActor,
   createSyncMachine,
 } from "../actors/sync/index.ts";
 import {
@@ -55,25 +50,16 @@ import {
   createDriveCausalSyncPort,
   createInMemoryCausalSyncPort,
 } from "../adapters/sync/causal.ts";
-import {
-  createDriveAdapter,
-  createGoogleIdentityProvider,
-  createServerIdentityProvider,
-  type DriveAdapter,
-  type DriveAuthorizationOptions,
-  type DriveIdentityProvider,
-} from "../adapters/drive/index.ts";
+import type { DriveAdapter } from "../adapters/drive/index.ts";
 import {
   deleteLocalRepositoryDatabase,
   type LocalRepository,
 } from "../adapters/local/index.ts";
 import { runCausalExchange } from "../adapters/sync/coordinator.ts";
 import type { FileSharePort } from "../adapters/ports/index.ts";
-import type { CausalSyncPort } from "../adapters/ports/index.ts";
 import { type StableId, StableIdSchema } from "../domain/index.ts";
 import {
   clearDeleteEverywhereProgress,
-  type DeleteEverywhereFailureOperation,
   type DeleteEverywhereProgressPhase,
   type DeleteEverywhereProgressRecord,
   type DestructionStorage,
@@ -84,39 +70,20 @@ import {
   writeDeleteEverywhereProgress,
 } from "../domain/destruction.ts";
 import {
-  groupConflictObservations,
-  observationsFromSyncConflicts as expandSyncConflicts,
-} from "../domain/conflict/merge.ts";
-import {
-  type ConflictChoice,
-  type ConflictGroupViewModel,
   ConflictReviewScreen,
-  type ConflictReviewViewModel,
-  type ExportViewModel,
   ImportExportScreen,
   type ImportMode,
-  type ImportPreviewViewModel,
-  type ImportViewModel,
   type ReplacementConfirmation,
   type SafetyExportStatus,
 } from "./conflict-import-ui/index.ts";
 import {
   GoogleDriveSyncScreen,
   KnownDevicesScreen,
-  type KnownDeviceViewModel,
-  type SyncConnectionViewModel,
-  syncStatusCopy,
   SyncStatusProvider,
 } from "./sync-ui/index.ts";
 import {
-  type DiagnosticDeviceViewModel,
-  type SyncNetworkMode,
-} from "./sync-ui/types.ts";
-import {
   DataPrivacyScreen,
-  type DeleteEverywhereView,
   type DestructionDeviceView,
-  type LocalEraseView,
 } from "./destruction-ui.tsx";
 
 export type SyncPortabilityScreen =
@@ -127,173 +94,34 @@ export type SyncPortabilityScreen =
   | "privacy"
   | null;
 
-export const AUTOMATIC_SYNC_COOLDOWN_MS = 60 * 60 * 1_000;
-
-type AutomaticSyncState = {
-  readonly lastSuccessfulSyncAt: string | null;
-  readonly pendingLocalChanges: boolean;
-};
-
-export const AUTOMATIC_SYNC_STATE_KEY = "did_it_automatic_sync_state";
-const EMPTY_AUTOMATIC_SYNC_STATE: AutomaticSyncState = {
-  lastSuccessfulSyncAt: null,
-  pendingLocalChanges: false,
-};
-
-export function automaticSyncDelay(
-  lastSuccessfulSyncAt: string | null,
-  now = Date.now(),
-): number {
-  if (lastSuccessfulSyncAt === null) return 0;
-  const lastSuccessful = Date.parse(lastSuccessfulSyncAt);
-  if (!Number.isFinite(lastSuccessful)) return 0;
-  return Math.max(
-    0,
-    lastSuccessful + AUTOMATIC_SYNC_COOLDOWN_MS - now,
-  );
-}
-
-function readAutomaticSyncState(): AutomaticSyncState {
-  try {
-    const value = globalThis.localStorage?.getItem(AUTOMATIC_SYNC_STATE_KEY);
-    if (value === null || value === undefined) {
-      return EMPTY_AUTOMATIC_SYNC_STATE;
-    }
-    const parsed = JSON.parse(value) as Record<string, unknown>;
-    return {
-      lastSuccessfulSyncAt: typeof parsed.lastSuccessfulSyncAt === "string"
-        ? parsed.lastSuccessfulSyncAt
-        : null,
-      pendingLocalChanges: parsed.pendingLocalChanges === true,
-    };
-  } catch {
-    return EMPTY_AUTOMATIC_SYNC_STATE;
-  }
-}
-
-function writeAutomaticSyncState(state: AutomaticSyncState): void {
-  try {
-    globalThis.localStorage?.setItem(
-      AUTOMATIC_SYNC_STATE_KEY,
-      JSON.stringify(state),
-    );
-  } catch {
-    // Automatic sync still works for this session when storage is unavailable.
-  }
-}
+export * from "./sync-runtime/index.ts";
+import {
+  automaticSyncDelay,
+  browserConfiguredSyncServerUrl,
+  configuredRuntimeBoundary,
+  conflictIdsForResolutions,
+  conflictViewFromSnapshot,
+  createConfiguredDriveAdapter,
+  deleteEverywhereProgressForDevices,
+  deleteEverywhereRecoveryPassedLocalErase,
+  deleteEverywhereViewFromProgress,
+  deleteEverywhereViewFromSnapshot,
+  deviceViewModels,
+  exportViewFromSnapshot,
+  importViewFromSnapshot,
+  localEraseViewFromSnapshot,
+  observationsFromSyncConflicts,
+  readAutomaticSyncState,
+  reconnectAuthorizationOptions,
+  requestLocalShellRefreshAfterSync,
+  settingsSyncSummary,
+  syncViewFromSnapshot,
+  writeAutomaticSyncState,
+} from "./sync-runtime/index.ts";
 
 type RuntimeIds = {
   readonly next: (kind: string) => StableId;
 };
-
-/**
- * Browser composition stays deliberately small: production can provide a
- * client ID alongside Google Identity Services, while deterministic browser
- * tests can inject the already-typed Drive and causal boundaries before the
- * app boots. No credential or live-service fallback is invented here.
- */
-export type SyncRuntimeBoundary = {
-  readonly drive?: DriveAdapter;
-  readonly causal?: CausalSyncPort;
-  readonly recovery?: CausalSyncRecoveryPort;
-  readonly clientId?: string;
-  readonly identity?: DriveIdentityProvider;
-};
-
-const SYNC_RUNTIME_BOUNDARY_KEY =
-  "__DID_IT_BECAME_WHAT_YOU_LIKE_SYNC_BOUNDARY__";
-
-function configuredRuntimeBoundary(): SyncRuntimeBoundary {
-  const value = (globalThis as unknown as Record<string, unknown>)[
-    SYNC_RUNTIME_BOUNDARY_KEY
-  ];
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-  const candidate = value as Record<string, unknown>;
-  return {
-    ...(candidate.drive === undefined
-      ? {}
-      : { drive: candidate.drive as DriveAdapter }),
-    ...(candidate.causal === undefined
-      ? {}
-      : { causal: candidate.causal as CausalSyncPort }),
-    ...(candidate.recovery === undefined
-      ? {}
-      : { recovery: candidate.recovery as CausalSyncRecoveryPort }),
-    ...(typeof candidate.clientId === "string"
-      ? { clientId: candidate.clientId }
-      : {}),
-    ...(candidate.identity === undefined
-      ? {}
-      : { identity: candidate.identity as DriveIdentityProvider }),
-  };
-}
-
-function browserConfiguredClientId(): string | undefined {
-  const env = (import.meta as unknown as {
-    readonly env?: { readonly VITE_GOOGLE_CLIENT_ID?: unknown };
-  }).env;
-  return typeof env?.VITE_GOOGLE_CLIENT_ID === "string"
-    ? env.VITE_GOOGLE_CLIENT_ID
-    : undefined;
-}
-
-export const DEFAULT_SYNC_SERVER_URL =
-  "https://did-it-become-what-you-like.arthow4n.deno.net";
-
-function browserConfiguredSyncServerUrl(): string {
-  const env = (import.meta as unknown as {
-    readonly env?: { readonly VITE_SYNC_SERVER_URL?: unknown };
-  }).env;
-  return typeof env?.VITE_SYNC_SERVER_URL === "string" &&
-      env.VITE_SYNC_SERVER_URL.trim().length > 0
-    ? env.VITE_SYNC_SERVER_URL.trim()
-    : DEFAULT_SYNC_SERVER_URL;
-}
-
-export function createConfiguredDriveAdapter(
-  boundary: SyncRuntimeBoundary = configuredRuntimeBoundary(),
-  connectionMode: "persisted" | "direct" = "direct",
-  syncServerUrl?: string,
-): DriveAdapter | null {
-  if (boundary.drive !== undefined) return boundary.drive;
-  const clientId = boundary.clientId ?? browserConfiguredClientId();
-
-  if (connectionMode === "persisted") {
-    const rawUrl = (syncServerUrl ?? browserConfiguredSyncServerUrl()).trim();
-    if (rawUrl.length === 0) return null;
-    const serverUrl =
-      !rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")
-        ? `https://${rawUrl}`
-        : rawUrl;
-    try {
-      const identity = boundary.identity ??
-        createServerIdentityProvider({ serverUrl });
-      return createDriveAdapter({
-        clientId: clientId ?? "server-managed",
-        identity,
-        isOnline: () => globalThis.navigator?.onLine !== false,
-      });
-    } catch {
-      return null;
-    }
-  }
-
-  if (clientId === undefined || clientId.trim().length === 0) return null;
-  try {
-    const identity = boundary.identity ?? createGoogleIdentityProvider();
-    return createDriveAdapter({
-      clientId,
-      identity,
-      isOnline: () => globalThis.navigator?.onLine !== false,
-    });
-  } catch {
-    // Missing GIS or an invalid runtime-only configuration is an honest
-    // unavailable boundary, not a reason to make local sync look connected.
-    return null;
-  }
-}
 
 function createRuntimeIds(): RuntimeIds {
   let sequence = 0;
@@ -420,613 +248,6 @@ function useRestartableActor<TLogic extends AnyActorLogic>(
     useSyncExternalStore(subscribe, getSnapshot, getSnapshot),
     actor.send,
   ];
-}
-
-function humanize(value: string): string {
-  return value
-    .replace(/[-_]+/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/^./, (character) => character.toUpperCase());
-}
-
-export function requiresDriveAuthorization(
-  accountEmail: string | null,
-  driveStatus: DriveAuthState | null,
-): boolean {
-  return accountEmail !== null && driveStatus !== "authorized";
-}
-
-export function reconnectAuthorizationOptions(
-  view: SyncConnectionViewModel,
-): DriveAuthorizationOptions {
-  return {
-    prompt: "",
-    ...(view.mode === "configured" ? { loginHint: view.accountEmail } : {}),
-  };
-}
-
-function syncViewFromSnapshot(
-  snapshot: ReturnType<typeof createSyncActor> extends infer Actor
-    ? Actor extends { getSnapshot: () => infer Snapshot } ? Snapshot : never
-    : never,
-  driveStatus: DriveAuthState | null = "authorized",
-  recoveryAvailable = false,
-): SyncConnectionViewModel {
-  const context = snapshot.context;
-  if (snapshot.matches("hydrating") || snapshot.matches("configuring")) {
-    return { mode: "connecting" };
-  }
-  if (
-    snapshot.matches("accountSwitchConfirmation") &&
-    context.accountEmail !== null && context.pendingAccountEmail !== null
-  ) {
-    return {
-      mode: "account-switch-confirmation",
-      currentAccountEmail: context.accountEmail,
-      requestedAccountEmail: context.pendingAccountEmail,
-    };
-  }
-  if (context.accountEmail === null) return { mode: "disconnected" };
-
-  let sync:
-    | "synced"
-    | "syncing"
-    | "conflict"
-    | "authorization-error"
-    | "recovering"
-    | "retryable-error"
-    | "error"
-    | "retired" = "synced";
-  if (snapshot.matches("recovering")) sync = "recovering";
-  else if (snapshot.matches("synchronizing")) sync = "syncing";
-  else if (snapshot.matches("conflict")) sync = "conflict";
-  else if (snapshot.matches("retryableError")) sync = "retryable-error";
-  else if (snapshot.matches("error")) sync = "error";
-  else if (snapshot.matches("retired")) sync = "retired";
-  if (
-    requiresDriveAuthorization(context.accountEmail, driveStatus) ||
-    context.error?.code === "unauthorized" ||
-    context.error?.code === "forbidden"
-  ) sync = "authorization-error";
-
-  return {
-    mode: "configured",
-    accountEmail: context.accountEmail,
-    network: context.online ? "online" : "offline",
-    sync,
-    lastSyncedAt: context.lastSyncedAt,
-    pendingChangeCount: context.pendingChangeCount,
-    unresolvedConflictCount: context.unresolvedConflictCount,
-    ...(context.error === null ? {} : { message: context.error.message }),
-    ...(context.error === null ? {} : { errorCode: context.error.code }),
-    ...(context.error?.operation === undefined
-      ? {}
-      : { diagnosticOperation: context.error.operation }),
-    recoveryAvailable: recoveryAvailable &&
-      context.error?.code === "corrupt-data",
-  };
-}
-
-type SyncCompletionSnapshot = {
-  readonly value: unknown;
-  readonly context: { readonly lastSyncedAt: string | null };
-};
-
-export function completedSyncTimestamp(
-  snapshot: SyncCompletionSnapshot,
-): string | null {
-  if (
-    snapshot.context.lastSyncedAt === null ||
-    (snapshot.value !== "idle" && snapshot.value !== "conflict")
-  ) {
-    return null;
-  }
-  return snapshot.context.lastSyncedAt;
-}
-
-export function requestLocalShellRefreshAfterSync(
-  snapshot: SyncCompletionSnapshot,
-  handled: { current: string | null },
-  onRefresh: () => void,
-): void {
-  const completedAt = completedSyncTimestamp(snapshot);
-  if (completedAt === null || handled.current === completedAt) return;
-  handled.current = completedAt;
-  onRefresh();
-}
-
-function settingsSyncSummary(view: SyncConnectionViewModel): string {
-  const label = syncStatusCopy(view).label;
-  return view.mode === "configured" && view.lastSyncedAt !== null
-    ? `${label} · ${view.lastSyncedAt}`
-    : label;
-}
-
-export function formatApproximateLastSeen(
-  value: string,
-  now = Date.now(),
-): string {
-  const timestamp = Date.parse(value);
-  if (!Number.isFinite(timestamp)) return "recently";
-  const elapsed = Math.max(0, now - timestamp);
-  const minute = 60_000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  if (elapsed < minute) return "just now";
-  if (elapsed < hour) {
-    const count = Math.floor(elapsed / minute);
-    return `${count} minute${count === 1 ? "" : "s"} ago`;
-  }
-  if (elapsed < day) {
-    const count = Math.floor(elapsed / hour);
-    return `${count} hour${count === 1 ? "" : "s"} ago`;
-  }
-  if (elapsed < 2 * day) return "yesterday";
-  const count = Math.floor(elapsed / day);
-  return `${count} days ago`;
-}
-
-export function deviceViewModels(
-  ordinary: readonly {
-    readonly stableKey?: string;
-    readonly label: string;
-    readonly lastSeenAt: string;
-    readonly acknowledged: boolean;
-    readonly current: boolean;
-  }[],
-  diagnostic: readonly DiagnosticDeviceViewModel[],
-): {
-  readonly devices: readonly KnownDeviceViewModel[];
-  readonly technical: readonly DiagnosticDeviceViewModel[];
-} {
-  const devices = ordinary.map((device, index) => ({
-    // The registry exposes the same order in both projections today, but the
-    // diagnostic ID is carried through as the identity so callbacks never
-    // reverse-map a reordered row by position.
-    stableKey: device.stableKey ?? diagnostic[index]?.id ?? `device-${index}`,
-    label: device.label,
-    lastSeenAt: formatApproximateLastSeen(device.lastSeenAt),
-    current: device.current,
-    retirementAcknowledgement: device.acknowledged
-      ? "acknowledged" as const
-      : "pending" as const,
-  }));
-  return {
-    devices,
-    technical: diagnostic.map((device) => ({
-      ...device,
-      lastSeenAt: device.lastSeenAt,
-      exactLastSeenAt: device.lastSeenAt,
-    })),
-  };
-}
-
-export function deleteEverywhereProgressForDevices(
-  devices: readonly Pick<DestructionDeviceView, "acknowledged">[],
-): {
-  readonly knownDeviceCount: number;
-  readonly acknowledgedDeviceCount: number;
-  readonly forcedDeviceCount: number;
-} {
-  const knownDeviceCount = Math.max(1, devices.length);
-  return {
-    knownDeviceCount,
-    acknowledgedDeviceCount: Math.min(
-      knownDeviceCount,
-      devices.filter((device) => device.acknowledged).length,
-    ),
-    forcedDeviceCount: 0,
-  };
-}
-
-function connectivityFor(
-  online: boolean,
-): SyncNetworkMode {
-  return online && globalThis.navigator?.onLine !== false
-    ? "online"
-    : "offline";
-}
-
-function conflictViewFromSnapshot(
-  snapshot: ReturnType<typeof createConflictActor> extends infer Actor
-    ? Actor extends { getSnapshot: () => infer Snapshot } ? Snapshot : never
-    : never,
-  customValues: Readonly<Record<string, string>>,
-  online: boolean,
-  pane: "list" | "detail",
-): ConflictReviewViewModel {
-  const context = snapshot.context;
-  const groups: ConflictGroupViewModel[] = context.state.groups.map((group) => {
-    const selection = context.selection?.groupId === group.id
-      ? context.selection
-      : undefined;
-    const selectedChoice: ConflictChoice | undefined = selection === undefined
-      ? undefined
-      : selection.choice === "candidate"
-      ? { kind: "candidate", candidateId: selection.candidateId }
-      : { kind: selection.choice };
-    return {
-      id: group.id,
-      recordLabel: humanize(group.recordType) + " record",
-      recordTypeLabel: humanize(group.recordType),
-      fieldLabel: humanize(group.field),
-      kind: group.kind,
-      candidates: group.candidates.map((candidate) => ({
-        id: candidate.id,
-        revisionId: candidate.revisionId,
-        value: candidate.value,
-        deleted: candidate.deleted,
-        deviceLabel: candidate.deviceLabel,
-        recordedAt: candidate.recordedAt,
-      })),
-      selectedChoice,
-      customValue: customValues[group.id] ??
-        (selection?.choice === "custom" && typeof selection.value === "string"
-          ? selection.value
-          : ""),
-      discardedEditedValues: group.kind === "delete-versus-edit"
-        ? group.candidates.filter((candidate) => !candidate.deleted).flatMap(
-          (candidate) => candidate.value === undefined ? [] : [candidate.value],
-        )
-        : undefined,
-      technicalDetails: {
-        recordId: group.recordId,
-        groupId: group.id,
-        parentRevisionIds: group.parentRevisionIds,
-        candidateRevisionIds: group.candidates.map((candidate) =>
-          candidate.revisionId
-        ),
-      },
-    };
-  });
-
-  const phase = snapshot.matches("loading") || snapshot.matches("reconciling")
-    ? "loading" as const
-    : snapshot.matches("persisting") || snapshot.matches("committing")
-    ? "saving" as const
-    : snapshot.matches("failed")
-    ? "error" as const
-    : snapshot.matches("resolved")
-    ? "completed" as const
-    : "reviewing" as const;
-  return {
-    phase,
-    connectivity: connectivityFor(online),
-    groups,
-    activeGroupId: context.activeGroupId,
-    pane,
-    completedCount: context.state.progress.completedCount,
-    ...(context.error === null ? {} : {
-      error: {
-        message: context.error.message,
-        retryable: context.error.retryable,
-      },
-    }),
-  };
-}
-
-function importPreviewFromContext(
-  preview: {
-    readonly schemaVersion: number;
-    readonly projectCount: number;
-    readonly categoryCount: number;
-    readonly expenseCount: number;
-    readonly receiptCount: number;
-    readonly migrationRequired: boolean;
-    readonly changeCount?: number;
-    readonly migrations?: readonly string[];
-    readonly warnings?: readonly string[];
-    readonly errors?: readonly string[];
-  } | null,
-  error: { readonly message: string } | null,
-): ImportPreviewViewModel | null {
-  if (preview === null) return null;
-  return {
-    schemaVersion: preview.schemaVersion,
-    migration:
-      preview.migrationRequired || (preview.migrations?.length ?? 0) > 0
-        ? "required"
-        : "not-required",
-    projectCount: preview.projectCount,
-    categoryCount: preview.categoryCount,
-    expenseCount: preview.expenseCount,
-    receiptCount: preview.receiptCount,
-    changeCount: preview.changeCount ?? 0,
-    migrations: preview.migrations ?? [],
-    warnings: preview.warnings ?? [],
-    errors: [
-      ...(preview.errors ?? []),
-      ...(error === null ? [] : [error.message]),
-    ],
-  };
-}
-
-function importViewFromSnapshot(
-  snapshot: ReturnType<typeof createImportActor> extends infer Actor
-    ? Actor extends { getSnapshot: () => infer Snapshot } ? Snapshot : never
-    : never,
-  syncView: SyncConnectionViewModel,
-  fileName: string | undefined,
-  safetyExport: SafetyExportStatus,
-  safetyExportError: string | undefined,
-  replacementConfirmation: ReplacementConfirmation,
-): ImportViewModel {
-  const context = snapshot.context;
-  const phase = snapshot.matches("validating")
-    ? "validating" as const
-    : snapshot.matches("previewing")
-    ? "preview" as const
-    : snapshot.matches("preSyncing")
-    ? "pre-syncing" as const
-    : snapshot.matches("committing")
-    ? "saving" as const
-    : snapshot.matches("conflict")
-    ? "conflict" as const
-    : snapshot.matches("completed")
-    ? "completed" as const
-    : snapshot.matches("failed")
-    ? "error" as const
-    : snapshot.matches("choosing")
-    ? "choosing" as const
-    : "idle" as const;
-  return {
-    phase,
-    connectivity: syncView.mode === "configured"
-      ? syncView.network
-      : connectivityFor(true),
-    drive: syncView.mode === "configured" ? "configured" : "not-configured",
-    fileName,
-    preview: importPreviewFromContext(context.preview, context.error),
-    mode: context.mode,
-    safetyExport,
-    safetyExportError,
-    replacementConfirmation,
-    conflictCount: context.result?.conflictCount ?? 0,
-    generation: context.result?.generation,
-    ...(context.error === null ? {} : {
-      error: {
-        message: context.error.message,
-        retryable: context.error.retryable,
-      },
-    }),
-  };
-}
-
-function exportViewFromSnapshot(
-  snapshot: ReturnType<typeof createExportActor> extends infer Actor
-    ? Actor extends { getSnapshot: () => infer Snapshot } ? Snapshot : never
-    : never,
-): ExportViewModel {
-  const context = snapshot.context;
-  const phase = snapshot.matches("exporting")
-    ? "preparing" as const
-    : snapshot.matches("delivering")
-    ? "delivering" as const
-    : snapshot.matches("completed")
-    ? "completed" as const
-    : snapshot.matches("failed")
-    ? "error" as const
-    : "idle" as const;
-  return {
-    phase,
-    shareAvailability: typeof globalThis.navigator?.share === "function"
-      ? "available"
-      : "unavailable",
-    ...(context.delivery === "shared" ? { delivery: "shared" as const } : {}),
-    ...(context.delivery === "saved"
-      ? { delivery: "downloaded" as const }
-      : {}),
-    ...(context.error === null ? {} : {
-      error: {
-        message: context.error.message,
-        retryable: context.error.retryable,
-      },
-    }),
-  };
-}
-
-export function observationsFromSyncConflicts(
-  conflicts: readonly {
-    readonly id: string;
-    readonly recordType: string;
-    readonly recordId: string;
-    readonly local: unknown;
-    readonly remote: unknown;
-    readonly relatedChangeIds: readonly string[];
-  }[],
-) {
-  return expandSyncConflicts(conflicts);
-}
-
-export function conflictIdsForResolution(
-  conflicts: readonly {
-    readonly id: string;
-    readonly recordType: string;
-    readonly recordId: string;
-    readonly local: unknown;
-    readonly remote: unknown;
-    readonly relatedChangeIds: readonly string[];
-  }[],
-  groupId: string,
-  parentRevisionIds: readonly string[],
-): readonly string[] {
-  const parents = new Set(parentRevisionIds);
-  return conflicts.filter((conflict) => {
-    const groups = groupConflictObservations(
-      observationsFromSyncConflicts([conflict]),
-    );
-    const resolvedGroup = groups.find((group) => group.id === groupId);
-    return resolvedGroup !== undefined &&
-      resolvedGroup.parentRevisionIds.every((parent) => parents.has(parent));
-  }).map((conflict) => conflict.id);
-}
-
-export function conflictIdsForResolutions(
-  conflicts: Parameters<typeof conflictIdsForResolution>[0],
-  resolutions: readonly {
-    readonly groupId: string;
-    readonly parentRevisionIds: readonly string[];
-  }[],
-): readonly string[] {
-  const ids = new Set<string>();
-  for (const resolution of resolutions) {
-    for (
-      const conflictId of conflictIdsForResolution(
-        conflicts,
-        resolution.groupId,
-        resolution.parentRevisionIds,
-      )
-    ) {
-      ids.add(conflictId);
-    }
-  }
-  return [...ids];
-}
-
-function localEraseViewFromSnapshot(snapshot: {
-  readonly value: unknown;
-  readonly context: {
-    readonly removeReceiptAiKeys: boolean;
-    readonly error: { readonly message: string } | null;
-  };
-}): LocalEraseView {
-  const phase = snapshot.value;
-  return {
-    phase: phase === "reviewing"
-      ? "reviewing"
-      : phase === "persistingChoice"
-      ? "saving"
-      : phase === "erasingLocal"
-      ? "erasing"
-      : phase === "removingKey"
-      ? "removing-key"
-      : phase === "failed"
-      ? "failed"
-      : phase === "partial"
-      ? "partial"
-      : phase === "completed"
-      ? "completed"
-      : "idle",
-    removeReceiptAiKeys: snapshot.context.removeReceiptAiKeys,
-    ...(snapshot.context.error === null
-      ? {}
-      : { error: snapshot.context.error.message }),
-  };
-}
-
-function deleteEverywherePhaseFromValue(
-  value: unknown,
-): DeleteEverywhereView["phase"] {
-  switch (value) {
-    case "reviewing":
-      return "reviewing";
-    case "exporting":
-      return "exporting";
-    case "confirmingDecline":
-      return "confirming-decline";
-    case "confirming":
-      return "confirming";
-    case "persistingRetirement":
-    case "publishingRetirement":
-      return "publishing-retirement";
-    case "persistingDriveDeletion":
-    case "deletingDrive":
-      return "deleting-drive";
-    case "persistingLocalErasure":
-    case "erasingLocal":
-      return "erasing-local";
-    case "persistingAwaitingDevices":
-    case "awaitingDevices":
-      return "awaiting-devices";
-    case "persistingForcedFinalization":
-    case "forcedFinalization":
-      return "forced-finalization";
-    case "failed":
-      return "failed";
-    case "persistingCompletion":
-    case "completed":
-      return "completed";
-    default:
-      return "idle";
-  }
-}
-
-function deleteEverywhereFailureIsCancelable(
-  operation: DeleteEverywhereFailureOperation | null | undefined,
-): boolean {
-  return operation === undefined || operation === null ||
-    operation === "exporting" || operation === "persistingRetirement";
-}
-
-function deleteEverywhereRecoveryPassedLocalErase(
-  progress: DeleteEverywhereProgressRecord,
-): boolean {
-  if (
-    progress.phase === "awaiting-devices" ||
-    progress.phase === "forced-finalization" ||
-    progress.phase === "completed"
-  ) return true;
-  return progress.phase === "failed" && (
-    progress.failureOperation === "erasingLocal" ||
-    progress.failureOperation === "persistingAwaitingDevices" ||
-    progress.failureOperation === "persistingForcedFinalization" ||
-    progress.failureOperation === "persistingCompletion"
-  );
-}
-
-function deleteEverywhereViewFromSnapshot(snapshot: {
-  readonly value: unknown;
-  readonly context: {
-    readonly generation: number;
-    readonly progress: {
-      readonly knownDeviceCount: number;
-      readonly acknowledgedDeviceCount: number;
-      readonly forcedDeviceCount: number;
-    };
-    readonly safetyExported: boolean;
-    readonly safetyDeclined: boolean;
-    readonly declineConfirmed: boolean;
-    readonly failureState: DeleteEverywhereFailureOperation | null;
-    readonly error: { readonly message: string } | null;
-  };
-}): DeleteEverywhereView {
-  const phase = deleteEverywherePhaseFromValue(snapshot.value);
-  return {
-    phase,
-    safetyExported: snapshot.context.safetyExported,
-    safetyDeclined: snapshot.context.safetyDeclined,
-    declineConfirmed: snapshot.context.declineConfirmed,
-    generation: snapshot.context.generation,
-    knownDeviceCount: snapshot.context.progress.knownDeviceCount,
-    acknowledgedDeviceCount: snapshot.context.progress.acknowledgedDeviceCount,
-    forcedDeviceCount: snapshot.context.progress.forcedDeviceCount,
-    ...(snapshot.context.error === null
-      ? {}
-      : { error: snapshot.context.error.message }),
-    cancelable: deleteEverywhereFailureIsCancelable(
-      snapshot.context.failureState,
-    ),
-    revoking: false,
-  };
-}
-
-function deleteEverywhereViewFromProgress(
-  progress: DeleteEverywhereProgressRecord,
-): DeleteEverywhereView {
-  return {
-    phase: progress.phase,
-    safetyExported: progress.safetyExported,
-    safetyDeclined: progress.safetyDeclined,
-    declineConfirmed: progress.declineConfirmed,
-    generation: progress.generation,
-    knownDeviceCount: progress.knownDeviceCount,
-    acknowledgedDeviceCount: progress.acknowledgedDeviceCount,
-    forcedDeviceCount: progress.forcedDeviceCount,
-    cancelable: deleteEverywhereFailureIsCancelable(
-      progress.failureOperation,
-    ),
-    revoking: false,
-  };
 }
 
 export function SyncPortabilityRuntime({

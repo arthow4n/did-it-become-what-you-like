@@ -4,7 +4,7 @@ description: >-
   Standardized procedure for auditing, identifying, updating, and pruning stale
   documents, code-mirroring markdown files, obsolete spikes, redundant verification
   scripts, brittle test structures, copy-pasted test harnesses/shims, duplicate fake ports,
-  and misleading test tasks across the repository.
+  monolithic file sprawl, inline barrel implementations, and misleading test tasks across the repository.
 ---
 
 # Repository Hygiene, Documentation & Test Tooling Pruning Workflow
@@ -79,7 +79,7 @@ an **Orchestrator** dispatching two specialized subagents:
            ┌──────────────────────────┴──────────────────────────┐
            ▼                                                     ▼
 ┌──────────────────────────────────────┐      ┌──────────────────────────────────────┐
-│  Section 1: Docs & Ledger Pruning    │      │  Section 2: Test & Tooling Pruning   │
+│  Section 1: Docs & Ledger Pruning    │      │  Section 2: Test & Code Hygiene      │
 ├──────────────────────────────────────┤      ├──────────────────────────────────────┤
 │ • Dangling references & ghost docs   │      │ • Tautological & type-only tests     │
 │ • Code-mirroring markdown & schemas  │      │ • Source AST / string-scraping tests │
@@ -90,6 +90,7 @@ an **Orchestrator** dispatching two specialized subagents:
 │                                      │      │ • Repetitive intra-suite test blocks │
 │                                      │      │ • Component mount & UI test bloat    │
 │                                      │      │ • deno.json task target flaws        │
+│                                      │      │ • Monolithic files & barrel sprawl   │
 └──────────────────────────────────────┘      └──────────────────────────────────────┘
                                       │
                                       ▼
@@ -321,6 +322,32 @@ and tooling task definitions against these dimensions:
     event triggers, and branch coverage while reducing test file line counts and
     execution overhead.
 
+### Dimension 2K: Monolithic File Sprawl & Inline Barrel Implementations
+
+- **What to look for:**
+  - Design-system barrel files (`primitives.tsx`, `patterns.tsx`, `domain.tsx`,
+    `index.ts`) containing inline component declarations instead of
+    single-responsibility re-exports from
+    `components/{primitives,patterns,domain}/<component-name>.tsx`.
+  - Feature, actor, or adapter files ballooning in size (>500–800+ lines) by
+    combining multiple distinct responsibilities (e.g. XState state machines,
+    pure business/draft operations, React screen components, dialogs, and
+    database repository logic) in a single file instead of decomposing into
+    dedicated submodules (such as `src/actors/manual-expense/`,
+    `src/actors/receipt/`, `src/features/receipt-detail/`,
+    `src/features/sync-runtime/`, `src/adapters/local/`).
+  - Missing or broken facade barrels when decomposing submodules, risking broken
+    consumer imports or duplicate import paths.
+- **Remediation:**
+  - Enforce the "One component per file" rule across the design system; move
+    inline components to their dedicated component file.
+  - Decompose overgrown multi-thousand-line feature and actor files into
+    cohesive submodules with isolated `types.ts`, pure calculation
+    `operations.ts` / `draft.ts`, `machine.ts`, and granular UI dialog/screen
+    files.
+  - Provide an `index.ts` re-export facade for all submodules to guarantee 100%
+    backward compatibility with existing tests and imports.
+
 ---
 
 ## 5. Step-by-Step Execution Protocol
@@ -363,7 +390,7 @@ and tooling task definitions against these dimensions:
    1A–1E.
 2. **Dispatch Section 2 Subagent:** Task with evaluating all test files, test
    support fixtures, E2E specs, and `deno.json` task targets against Dimensions
-   2A–2J.
+   2A–2K.
 
 ### Phase 3: Orchestrator Reconciliation & Coordinated File Pruning
 
@@ -448,6 +475,10 @@ Before closing a pruning audit, confirm:
       pruned in favor of `test`, `test:affected`, and composite installers.
 - [ ] Visual audit screenshot capture scripts remain isolated in `e2e/audit/` /
       `scripts/audit-capture.ts`.
+- [ ] Design system enforces one component per file with no inline component
+      definitions in category barrels.
+- [ ] Overgrown monolithic feature/actor files (>500–800 lines) are decomposed
+      into submodules with clean re-export barrels.
 - [ ] No unrelated verify commands or heavy test suites are executed in
       irrelevant environments.
 - [ ] All deleted files were committed with `[archive]` in the commit message.

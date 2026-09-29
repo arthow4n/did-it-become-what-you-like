@@ -12,6 +12,16 @@ export const toneColors: Record<Tone, string> = {
   info: "info",
 };
 
+export const mantineButtonVariants: Record<
+  ButtonVariant,
+  "filled" | "outline" | "subtle"
+> = {
+  primary: "filled",
+  secondary: "outline",
+  quiet: "subtle",
+  danger: "filled",
+};
+
 export function cx(
   ...values: Array<string | false | null | undefined>
 ): string {

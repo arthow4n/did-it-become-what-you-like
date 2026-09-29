@@ -1,4 +1,8 @@
-import type { OrganizationJsonValue } from "../organization.ts";
+import {
+  asOrganizationJsonValue,
+  type OrganizationJsonValue,
+} from "../organization.ts";
+export { asOrganizationJsonValue, type OrganizationJsonValue };
 import {
   CategorySchema,
   type Expense,
@@ -16,10 +20,6 @@ import {
   TombstoneSchema,
 } from "../schema/index.ts";
 import { ReceiptDomainError } from "./types.ts";
-
-export function asOrganizationJsonValue(value: unknown): OrganizationJsonValue {
-  return value as OrganizationJsonValue;
-}
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

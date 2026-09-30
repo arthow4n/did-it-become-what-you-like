@@ -263,6 +263,7 @@ Deno.test("receipt-ui device settings migrate legacy values and round-trip new v
     requireZdr: true,
     denyProviderDataCollection: true,
     imagePreparationEnabled: false,
+    disclosureAccepted: false,
   });
   const stored = await local.transaction(
     "readonly",
@@ -1460,7 +1461,6 @@ Deno.test(
         const view = within(document.body);
         await waitFor(() => {
           assert(view.getByRole("button", { name: "Continue to scan" }));
-          assert(modelRequests.length === 1);
         });
         assertEquals(gemini.modelRefreshes(), 0);
         assertEquals(chatRequests.length, 0);
@@ -1481,12 +1481,7 @@ Deno.test(
         fireEvent.click(view.getByRole("button", { name: "Scan with AI" }));
         await waitFor(() => assert(review !== undefined));
 
-        assertEquals(modelRequests, [{
-          supportedParameters: "structured_outputs,response_format",
-          inputModalities: "image,text",
-          outputModalities: "text",
-          zdr: "true",
-        }]);
+        assertEquals(modelRequests, []);
         assertEquals(chatRequests.length, 1);
         const request = chatRequests[0]!;
         assertEquals(request.model, model.id);
@@ -1897,11 +1892,11 @@ Deno.test(
         }
         render(createElement(ControlledScan));
         const view = within(document.body);
+        fireEvent.click(
+          view.getByRole("button", { name: "Continue to scan" }),
+        );
+        fireEvent.click(view.getByRole("button", { name: "Options" }));
         return waitFor(() => assert(geminiRefreshes === 1)).then(async () => {
-          fireEvent.click(
-            view.getByRole("button", { name: "Continue to scan" }),
-          );
-          fireEvent.click(view.getByRole("button", { name: "Options" }));
           const providerPicker = view.getByRole("combobox", {
             name: "Receipt AI provider",
           });
@@ -3265,3 +3260,59 @@ Deno.test("ReceiptScanScreen supports in-place rotation for receipt and menu ima
     });
   });
 });
+
+Deno.test(
+  "receipt-ui skips disclosure screen when disclosureAccepted is true in device settings",
+  async () => {
+    await withComponentHarness(async ({ render }) => {
+      await withAriaGlobals(() => {
+        const imageStore = new ReceiptImageStore();
+        const settings = DeviceLocalSettingsSchema.parse({
+          disclosureAccepted: true,
+          selectedGeminiModel: "gemini-2.5-flash",
+        });
+        const fakeAi = {
+          listModels: () => Promise.resolve([]),
+          extractReceipt: () => Promise.reject(new Error("unimplemented")),
+        };
+        const gemini = {
+          ...fakeAi,
+          getApiKey: () => Promise.resolve(SecretValue.from("AIza.test")),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+        };
+        const dependencies: ReceiptUiDependencies = {
+          ai: fakeAi,
+          gemini,
+          openrouter: {
+            ...fakeAi,
+            getApiKey: () => Promise.resolve(undefined),
+            setApiKey: () => Promise.resolve(),
+            removeApiKey: () => Promise.resolve(),
+            listEndpoints: () => Promise.resolve([]),
+          },
+          imagePreparation: createFakeImagePreparationPort(),
+          resolveImage: (ref) => imageStore.resolve(ref),
+          releaseImage: (ref) => imageStore.releaseForRetry(ref),
+        };
+        render(
+          createElement(ReceiptScanScreen, {
+            dependencies,
+            imageStore,
+            state: defaultTestState,
+            settings,
+            offline: false,
+            onSettingsChange: () => undefined,
+            onReview: () => undefined,
+            onClose: () => undefined,
+            onOpenSettings: () => undefined,
+          }),
+        );
+        const view = within(document.body);
+        // Does not show "Continue to scan" disclosure button, immediately shows file selector
+        assert(!view.queryByRole("button", { name: "Continue to scan" }));
+        assert(view.getByLabelText("Receipt image file"));
+      });
+    });
+  },
+);

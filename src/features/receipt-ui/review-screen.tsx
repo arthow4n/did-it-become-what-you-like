@@ -225,7 +225,7 @@ export function QuickCategoryDialog({
   onSelect,
   isDisabled,
 }: {
-  line: ReceiptDraftLine;
+  line: { readonly categoryId: string; readonly description?: string };
   categories: readonly Category[];
   onSelect: (categoryId: string) => void;
   isDisabled?: boolean;

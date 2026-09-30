@@ -737,6 +737,7 @@ export function LocalUiRuntime(
                 service={organization}
                 state={state}
                 request={manualRequest}
+                expenseDayBoundary={expenseDayBoundary}
                 onSaved={(expense) => {
                   setWorkflowDirty(false);
                   setDirtyNavigationWorkflow(false);
@@ -754,6 +755,7 @@ export function LocalUiRuntime(
                   });
                   sendShell({ type: "shell.repository.refresh" });
                   void organization.getState().then(setState);
+                  setAppNotice(`${expense.merchant ?? "Expense"} saved.`);
                 }}
                 onManualReceipt={() => requestNavigation("/receipt/manual")}
                 onUsefulAction={() =>

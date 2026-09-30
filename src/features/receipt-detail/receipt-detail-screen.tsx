@@ -1,5 +1,5 @@
 import { useActor } from "@xstate/react";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { ArrowLeft, Plus, RotateCcw, Trash2 } from "lucide-react";
 import {
   moneySubtract,
@@ -37,8 +37,13 @@ import {
   mutationIsLine,
   type ReceiptDetailScreenProps,
 } from "./types.ts";
+import type {
+  ReceiptAdjustment,
+  ReceiptPurchaseLine,
+} from "../../domain/schema/records.ts";
 import { ReceiptMetadataEditorDialog } from "./metadata-dialog.tsx";
 import { ReceiptLineEditorDialog } from "./line-editor-dialog.tsx";
+import { QuickCategoryDialog } from "../receipt-ui/review-screen.tsx";
 
 export function ReceiptDetailScreen({
   service,
@@ -60,6 +65,7 @@ export function ReceiptDetailScreen({
   const completedOutput = useRef<SavedReceiptActorOutput | null>(null);
   const focusedLineRef = useRef<string | undefined>(undefined);
   const pendingAddedLineIds = useRef<Set<string> | null>(null);
+  const quickCategoryIdRef = useRef<string | null>(null);
 
   const pendingMutationKind = snapshot.context.pendingMutation?.kind;
   const mutationFailure = snapshot.matches("failure") &&
@@ -69,7 +75,9 @@ export function ReceiptDetailScreen({
     (snapshot.matches("metadataPristine") ||
       snapshot.matches("metadataDirty") ||
       (mutationFailure && pendingMutationKind === "metadata"));
-  const editingLine = snapshot.context.lineDraft !== null &&
+  const isQuickUpdating = quickCategoryIdRef.current !== null &&
+    !mutationFailure;
+  const editingLine = !isQuickUpdating && snapshot.context.lineDraft !== null &&
     (snapshot.matches("linePristine") || snapshot.matches("lineDirty") ||
       (mutationFailure && mutationIsLine(pendingMutationKind)));
   const editingAddLine = snapshot.context.addLineDraft !== null &&
@@ -78,6 +86,41 @@ export function ReceiptDetailScreen({
       (mutationFailure && pendingMutationKind === "add-line"));
   const dirty = snapshot.hasTag("dirty");
   const canRetry = snapshot.can({ type: "receipt.detail.retry" });
+
+  useEffect(() => {
+    if (snapshot.matches("ready")) {
+      quickCategoryIdRef.current = null;
+    }
+  }, [snapshot]);
+
+  const handleQuickCategorySelect = useCallback(
+    (line: ReceiptPurchaseLine | ReceiptAdjustment, categoryId: string) => {
+      if (categoryId === line.categoryId) return;
+      quickCategoryIdRef.current = line.id;
+      send({ type: "receipt.detail.edit-line", lineId: line.id });
+      send({
+        type: "receipt.detail.change-line",
+        changes: "lineTotal" in line
+          ? {
+            type: "purchase",
+            description: line.description,
+            categoryId,
+            quantity: line.quantity ?? null,
+            unitPrice: line.unitPrice ?? null,
+            lineTotal: line.lineTotal,
+          }
+          : {
+            type: "adjustment",
+            description: line.description,
+            categoryId,
+            amount: line.amount,
+            lineId: line.lineId ?? null,
+          },
+      });
+      send({ type: "receipt.detail.save-line" });
+    },
+    [send],
+  );
 
   useEffect(() => {
     onDirtyChange?.(dirty);
@@ -445,6 +488,15 @@ export function ReceiptDetailScreen({
                     unitPrice: line.unitPrice,
                   }}
                   currency={receipt.currency}
+                  categoryControl={
+                    <QuickCategoryDialog
+                      line={line}
+                      categories={categories}
+                      isDisabled={isMutating}
+                      onSelect={(categoryId) =>
+                        handleQuickCategorySelect(line, categoryId)}
+                    />
+                  }
                   onEdit={() =>
                     send({
                       type: "receipt.detail.edit-line",
@@ -517,6 +569,15 @@ export function ReceiptDetailScreen({
                       : undefined,
                   }}
                   currency={receipt.currency}
+                  categoryControl={
+                    <QuickCategoryDialog
+                      line={line}
+                      categories={categories}
+                      isDisabled={isMutating}
+                      onSelect={(categoryId) =>
+                        handleQuickCategorySelect(line, categoryId)}
+                    />
+                  }
                   onEdit={() =>
                     send({
                       type: "receipt.detail.edit-line",

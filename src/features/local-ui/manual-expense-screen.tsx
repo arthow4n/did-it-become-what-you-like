@@ -159,17 +159,19 @@ export function ManualExpenseScreen({
   onDirtyChange,
   discardRequest,
   onClosed,
+  expenseDayBoundary,
 }: {
   repository: LocalPort;
   service: ProjectCategoryService;
   state: ProjectCategoryState;
   request: ManualExpenseOpenRequest;
+  expenseDayBoundary?: string;
   onSaved: (expense: Expense) => void;
   onManualReceipt?: () => void;
   onUsefulAction?: () => void;
   onDirtyChange?: (dirty: boolean) => void;
   discardRequest?: number;
-  onClosed: (status?: "deleted") => void;
+  onClosed: (status?: "deleted" | "saved") => void;
 }) {
   const [machineKey, setMachineKey] = useState(0);
   const persistenceKey = request.expense
@@ -177,8 +179,12 @@ export function ManualExpenseScreen({
     : undefined;
   const machine = useMemo(
     () =>
-      createManualExpenseMachine({ local: repository, organization: service }),
-    [repository, service, machineKey],
+      createManualExpenseMachine({
+        local: repository,
+        organization: service,
+        expenseDayBoundary,
+      }),
+    [repository, service, expenseDayBoundary, machineKey],
   );
   const [snapshot, send] = useActor(machine, {
     input: { persistenceKey, request },
@@ -202,6 +208,19 @@ export function ManualExpenseScreen({
     }
     return recents;
   }, [state.expenses]);
+  const recentMerchants = useMemo(() => {
+    const seen = new Set<string>();
+    const recents: string[] = [];
+    for (let i = state.expenses.length - 1; i >= 0; i--) {
+      const merchant = state.expenses[i]?.merchant?.trim();
+      if (merchant && !seen.has(merchant.toLowerCase())) {
+        seen.add(merchant.toLowerCase());
+        recents.push(merchant);
+        if (recents.length >= 5) break;
+      }
+    }
+    return recents;
+  }, [state.expenses]);
   useEffect(() => {
     if (snapshot.matches("idle") && !snapshot.context.draft) {
       send({ type: "expense.open", request });
@@ -218,6 +237,7 @@ export function ManualExpenseScreen({
     if (completedSave && savedResultId.current !== savedExpense.id) {
       savedResultId.current = savedExpense.id;
       onSaved(savedExpense);
+      send({ type: "expense.finish-save" });
     }
     if (completionHandled.current) return;
     if (snapshot.matches("deleted")) {
@@ -230,7 +250,13 @@ export function ManualExpenseScreen({
       snapshot.matches("savedUndone")
     ) {
       completionHandled.current = true;
-      onClosed(snapshot.matches("deletedOutput") ? "deleted" : undefined);
+      onClosed(
+        snapshot.matches("deletedOutput")
+          ? "deleted"
+          : snapshot.matches("savedOutput")
+          ? "saved"
+          : undefined,
+      );
     }
   }, [onClosed, onSaved, send, snapshot, syncStatus]);
   const isModified = isDraftModified(
@@ -333,6 +359,7 @@ export function ManualExpenseScreen({
       state={state}
       draft={draft}
       recentCategoryIds={recentCategoryIds}
+      recentMerchants={recentMerchants}
       onManualReceipt={onManualReceipt}
     />
   );
@@ -346,6 +373,7 @@ function ManualExpenseFormContent({
   state,
   draft,
   recentCategoryIds,
+  recentMerchants,
   onManualReceipt,
 }: {
   snapshot: ManualExpenseSnapshot;
@@ -353,6 +381,7 @@ function ManualExpenseFormContent({
   state: ProjectCategoryState;
   draft: ManualExpenseDraft;
   recentCategoryIds: string[];
+  recentMerchants: string[];
   onManualReceipt?: () => void;
 }) {
   const categories = useMemo(() => {
@@ -539,6 +568,7 @@ function ManualExpenseFormContent({
             {errors.length ? <ErrorSummary errors={errors} /> : null}
             <div className="local-ui-form-row local-ui-form-row--amount-currency">
               <MoneyField
+                autoFocus
                 label="Amount"
                 isRequired
                 value={draft.amount}
@@ -558,6 +588,7 @@ function ManualExpenseFormContent({
               value={draft.merchant ?? ""}
               onValueChange={handleMerchantChange}
               isDisabled={formLocked}
+              recentMerchants={recentMerchants}
             />
             <TextField
               label="Description (optional)"

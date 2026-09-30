@@ -229,6 +229,7 @@ export const DeviceLocalSettingsSchema = z.object({
   requireZdr: z.boolean().default(false),
   denyProviderDataCollection: z.boolean().default(false),
   imagePreparationEnabled: z.boolean().default(true),
+  disclosureAccepted: z.boolean().default(false),
 }).strict();
 export type DeviceLocalSettings = z.infer<typeof DeviceLocalSettingsSchema>;
 
@@ -238,6 +239,7 @@ export const DEFAULT_DEVICE_LOCAL_SETTINGS: DeviceLocalSettings = {
   requireZdr: false,
   denyProviderDataCollection: false,
   imagePreparationEnabled: true,
+  disclosureAccepted: false,
 };
 
 const DEVICE_LOCAL_SETTINGS_KEYS = [
@@ -250,6 +252,7 @@ const DEVICE_LOCAL_SETTINGS_KEYS = [
   "requireZdr",
   "denyProviderDataCollection",
   "imagePreparationEnabled",
+  "disclosureAccepted",
 ] as const;
 
 function recordFromUnknown(value: unknown): Record<string, unknown> {

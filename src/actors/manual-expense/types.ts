@@ -111,6 +111,7 @@ export type ManualExpenseDependencies = {
   readonly organization: ProjectCategoryService;
   readonly clock?: Pick<ClockPort, "now">;
   readonly ids?: Pick<IdPort, "next">;
+  readonly expenseDayBoundary?: string;
 };
 
 export type PersistedManualExpense = {

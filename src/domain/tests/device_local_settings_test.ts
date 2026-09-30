@@ -91,6 +91,7 @@ Deno.test("device-local settings migration drops old compatibility state and sec
     requireZdr: false,
     denyProviderDataCollection: false,
     imagePreparationEnabled: false,
+    disclosureAccepted: false,
   });
   assert(!("geminiApiKey" in migrated));
   assert(!("geminiKeyRevision" in migrated));

@@ -158,6 +158,11 @@ function useDirtyBeforeUnload(dirty: boolean): void {
   }, [dirty]);
 }
 
+const modelCache = new WeakMap<
+  ReceiptProviderPort,
+  readonly ReceiptAiModel[]
+>();
+
 export function ReceiptScanScreen({
   dependencies,
   imageStore,
@@ -211,12 +216,16 @@ export function ReceiptScanScreen({
       }
     >
   >([]);
-  const [disclosureAccepted, setDisclosureAccepted] = useState(false);
+  const [disclosureAccepted, setDisclosureAccepted] = useState(
+    Boolean(settings.disclosureAccepted),
+  );
   const [quickSetupOpen, setQuickSetupOpen] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [keyError, setKeyError] = useState<string>();
   const [keyBusy, setKeyBusy] = useState(false);
-  const [models, setModels] = useState<readonly ReceiptAiModel[]>([]);
+  const [models, setModels] = useState<readonly ReceiptAiModel[]>(() =>
+    modelCache.get(activeProviderPort) ?? []
+  );
   const [modelError, setModelError] = useState<string>();
   const [modelsLoading, setModelsLoading] = useState(false);
   const [hasKey, setHasKey] = useState(false);
@@ -397,6 +406,7 @@ export function ReceiptScanScreen({
     try {
       const next = await request.port.listModels(DEFAULT_MODEL_QUERY);
       if (!isCurrentModelRefresh(request)) return [];
+      modelCache.set(request.port, next);
       setModels(next);
       return next;
     } catch (error) {
@@ -415,10 +425,21 @@ export function ReceiptScanScreen({
     }
   };
 
+  const configuredModel = selectedModelFor(settings, activeProvider);
+
   useEffect(() => {
+    // Avoid fetching the model list if not in options editing mode and a model is already configured
+    if (!optionsOpen && Boolean(configuredModel)) return;
     if (!hasKey || offline || models.length > 0) return;
     void refreshModels();
-  }, [activeProviderPort, hasKey, offline, models.length]);
+  }, [
+    activeProviderPort,
+    configuredModel,
+    hasKey,
+    models.length,
+    offline,
+    optionsOpen,
+  ]);
 
   useEffect(() => {
     if (
@@ -571,7 +592,6 @@ export function ReceiptScanScreen({
   };
 
   const availableModelOptions = modelOptions(models);
-  const configuredModel = selectedModelFor(settings, activeProvider);
   const selectedOption = configuredModel
     ? availableModelOptions.find((option) => option.id === configuredModel)
     : undefined;
@@ -653,16 +673,18 @@ export function ReceiptScanScreen({
       setModelError(`Select a ${activeProviderName} model before scanning.`);
       return;
     }
-    const effectiveOption = availableModelOptions.find((option) =>
-      option.id === effectiveModel
-    );
-    if (!effectiveOption || effectiveOption.disabled === true) {
-      setPendingScanState(true);
-      setOptionsOpen(true);
-      setModelError(
-        `Refresh ${activeProviderName} models and select an available model.`,
+    if (models.length > 0) {
+      const effectiveOption = availableModelOptions.find((option) =>
+        option.id === effectiveModel
       );
-      return;
+      if (!effectiveOption || effectiveOption.disabled === true) {
+        setPendingScanState(true);
+        setOptionsOpen(true);
+        setModelError(
+          `Refresh ${activeProviderName} models and select an available model.`,
+        );
+        return;
+      }
     }
     if (!configuredModel && effectiveModel) {
       void onSettingsChange(
@@ -696,7 +718,8 @@ export function ReceiptScanScreen({
       ...settings,
       activeProvider: nextProvider,
     });
-    setModels([]);
+    const nextPort = providerPort(dependencies, nextProvider);
+    setModels(modelCache.get(nextPort) ?? []);
     setHasKey(false);
     setKeyBusy(false);
     setModelsLoading(false);
@@ -758,6 +781,10 @@ export function ReceiptScanScreen({
           provider={activeProvider}
           onAccept={() => {
             setDisclosureAccepted(true);
+            void onSettingsChange({
+              ...settings,
+              disclosureAccepted: true,
+            });
             send({ type: "receipt.disclosure.accept" });
           }}
           onDecline={() => send({ type: "receipt.disclosure.decline" })}

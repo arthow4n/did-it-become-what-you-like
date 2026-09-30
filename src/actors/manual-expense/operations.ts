@@ -112,7 +112,8 @@ export async function openExpense(
     };
   }
   const project = currentProject(state, request.projectId);
-  const boundary = await expenseDayBoundary(dependencies.local);
+  const boundary = dependencies.expenseDayBoundary ??
+    await expenseDayBoundary(dependencies.local);
   const clock = dependencies.clock ?? defaultClock();
   const now = new Date(clock.now());
   const date = expenseDateForLocalNow(

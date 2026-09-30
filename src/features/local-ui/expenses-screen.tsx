@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import {
   compareExpenseTimelineEntries,
@@ -213,94 +213,154 @@ export function ExpensesScreen({
   const [categoryId, setCategoryId] = useState<string>("");
   const [currency, setCurrency] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    if (search === "") {
+      setDebouncedSearch("");
+      return;
+    }
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [search]);
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const [minimum, setMinimum] = useState("");
   const [maximum, setMaximum] = useState("");
-  const result = currentProject
-    ? queryExpenses(
-      {
-        expenses: state.expenses,
-        receipts: state.receipts,
-        receiptPurchaseLines: state.receiptPurchaseLines,
-        receiptAdjustments: state.receiptAdjustments,
-        categories: state.categories,
-        settings: { expenseDayBoundary },
-      },
+  const queryPeriod = useMemo(
+    () => periodForValue(period, customPeriodKind, customPeriodDate),
+    [period, customPeriodKind, customPeriodDate],
+  );
+  const amountRange = useMemo(() => {
+    if (!minimum && !maximum) return undefined;
+    return {
+      ...(minimum ? { min: minimum } : {}),
+      ...(maximum ? { max: maximum } : {}),
+    };
+  }, [minimum, maximum]);
+  const queryState = useMemo(() => ({
+    expenses: state.expenses,
+    receipts: state.receipts,
+    receiptPurchaseLines: state.receiptPurchaseLines,
+    receiptAdjustments: state.receiptAdjustments,
+    categories: state.categories,
+    settings: { expenseDayBoundary },
+  }), [
+    state.expenses,
+    state.receipts,
+    state.receiptPurchaseLines,
+    state.receiptAdjustments,
+    state.categories,
+    expenseDayBoundary,
+  ]);
+  const result = useMemo(() => {
+    if (!currentProject) {
+      return {
+        expenses: [],
+        receiptGroups: [],
+        totals: [],
+        categoryBreakdown: [],
+      };
+    }
+    return queryExpenses(
+      queryState,
       {
         selectedProjectId: currentProject.id,
-        period: periodForValue(
-          period,
-          customPeriodKind,
-          customPeriodDate,
-        ),
+        period: queryPeriod,
         ...(categoryId ? { categoryId } : {}),
         ...(currency ? { currency } : {}),
-        ...(search ? { search } : {}),
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
         sort,
-        ...(minimum || maximum
-          ? {
-            amountRange: {
-              ...(minimum ? { min: minimum } : {}),
-              ...(maximum ? { max: maximum } : {}),
-            },
-          }
-          : {}),
+        ...(amountRange ? { amountRange } : {}),
       },
-    )
-    : { expenses: [], receiptGroups: [], totals: [], categoryBreakdown: [] };
-  const categoryById = new Map(
-    state.categories.map((category) => [category.id, category.name]),
+    );
+  }, [
+    currentProject,
+    queryState,
+    queryPeriod,
+    categoryId,
+    currency,
+    debouncedSearch,
+    sort,
+    amountRange,
+  ]);
+  const categoryById = useMemo(
+    () =>
+      new Map(state.categories.map((category) => [category.id, category.name])),
+    [state.categories],
   );
-  const projectOptions = state.projects.filter((project) => !project.archived)
-    .map((project) => ({ id: project.id, label: project.name }));
-  const activeCategories = state.categories.filter((category) =>
-    !category.archived || category.id === categoryId
+  const projectOptions = useMemo(
+    () =>
+      state.projects.filter((project) => !project.archived).map((project) => ({
+        id: project.id,
+        label: project.name,
+      })),
+    [state.projects],
   );
-  const categories = result.categoryBreakdown.map((category) => ({
-    id: category.categoryId,
-    name: category.categoryName,
-    amount: category.amount,
-    currency: category.currency,
-  }));
-  const totals = result.totals.length
-    ? result.totals.flatMap((total) => [
-      {
-        label: `Net spent · ${total.currency}`,
-        amount: total.net,
-        currency: total.currency,
-        tone: "negative" as const,
-      },
-      {
-        label: `Outflows · ${total.currency}`,
-        amount: total.outflow,
-        currency: total.currency,
-        tone: "negative" as const,
-      },
-      {
-        label: `Money back · ${total.currency}`,
-        amount: total.moneyBack,
-        currency: total.currency,
-        tone: "positive" as const,
-      },
-    ])
-    : [{
-      label: "Net spent",
-      amount: "0",
-      currency: currentProject?.defaultCurrency ?? "SEK",
-      tone: "neutral" as const,
-    }];
-  const expenseFeed: readonly ExpenseFeedEntry[] = [
-    ...result.expenses.filter((item) => item.receiptId === undefined).map((
-      item,
-    ) => ({
-      kind: "expense" as const,
-      item,
-    })),
-    ...result.receiptGroups.map((group) => ({
-      kind: "receipt" as const,
-      group,
-    })),
-  ].sort((left, right) => compareExpenseFeedEntries(left, right, sort));
+  const activeCategories = useMemo(
+    () =>
+      state.categories.filter((category) =>
+        !category.archived || category.id === categoryId
+      ),
+    [state.categories, categoryId],
+  );
+  const categories = useMemo(
+    () =>
+      result.categoryBreakdown.map((category) => ({
+        id: category.categoryId,
+        name: category.categoryName,
+        amount: category.amount,
+        currency: category.currency,
+      })),
+    [result.categoryBreakdown],
+  );
+  const totals = useMemo(
+    () =>
+      result.totals.length
+        ? result.totals.flatMap((total) => [
+          {
+            label: `Net spent · ${total.currency}`,
+            amount: total.net,
+            currency: total.currency,
+            tone: "negative" as const,
+          },
+          {
+            label: `Outflows · ${total.currency}`,
+            amount: total.outflow,
+            currency: total.currency,
+            tone: "negative" as const,
+          },
+          {
+            label: `Money back · ${total.currency}`,
+            amount: total.moneyBack,
+            currency: total.currency,
+            tone: "positive" as const,
+          },
+        ])
+        : [{
+          label: "Net spent",
+          amount: "0",
+          currency: currentProject?.defaultCurrency ?? "SEK",
+          tone: "neutral" as const,
+        }],
+    [result.totals, currentProject?.defaultCurrency],
+  );
+  const expenseFeed: readonly ExpenseFeedEntry[] = useMemo(
+    () =>
+      [
+        ...result.expenses.filter((item) => item.receiptId === undefined).map(
+          (item) => ({
+            kind: "expense" as const,
+            item,
+          }),
+        ),
+        ...result.receiptGroups.map((group) => ({
+          kind: "receipt" as const,
+          group,
+        })),
+      ].sort((left, right) => compareExpenseFeedEntries(left, right, sort)),
+    [result.expenses, result.receiptGroups, sort],
+  );
   const removeCategory = () => setCategoryId("");
   const removeCurrency = () => setCurrency("");
   const removeSearch = () => setSearch("");

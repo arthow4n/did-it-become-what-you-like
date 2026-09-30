@@ -9,6 +9,7 @@ import {
   withAriaGlobals,
   withComponentHarness,
 } from "../test-support/component-harness.tsx";
+import { settle } from "../test-support/async.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -447,6 +448,76 @@ Deno.test(
         });
         fireEvent.click(view.getByRole("button", { name: "Keep receipt" }));
         await waitFor(() => assert(view.getByText("Coffee")));
+      });
+    });
+  },
+);
+
+Deno.test(
+  "receipt detail quickly changes a line category without opening full editor dialog",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(async () => {
+        let updatedChanges: unknown;
+        const secondCategory = {
+          ...category,
+          id: "category-drinks",
+          name: "Drinks",
+        };
+        let currentAggregate = { ...aggregate };
+        const service = createService({
+          get: () => Promise.resolve(currentAggregate),
+          updateLine: (_receiptId, lineId, changes) => {
+            updatedChanges = changes;
+            currentAggregate = {
+              ...currentAggregate,
+              purchaseLines: currentAggregate.purchaseLines.map((l) =>
+                l.id === lineId
+                  ? {
+                    ...l,
+                    categoryId: (changes as { categoryId: string }).categoryId,
+                  }
+                  : l
+              ),
+            };
+            return Promise.resolve(currentAggregate);
+          },
+        });
+        render(
+          createElement(ReceiptDetailScreen, {
+            service,
+            receiptId: aggregate.receipt.id,
+            categories: [category, secondCategory],
+          }),
+        );
+        const view = within(document.body);
+        await waitFor(() => assert(view.getByText("Coffee")));
+        const coffeeLine = document.querySelector<HTMLElement>(
+          '[data-receipt-line-id="line-coffee"]',
+        );
+        assert(coffeeLine);
+        const categoryTrigger = within(coffeeLine).getByRole("button", {
+          name: /Category: Food/i,
+        });
+        fireEvent.click(categoryTrigger);
+        await waitFor(() =>
+          assert(view.getByRole("dialog", { name: "Change category" }))
+        );
+        const drinksChip = view.getByRole("button", { name: "Drinks" });
+        fireEvent.click(drinksChip);
+        await waitFor(() => {
+          assert(updatedChanges !== undefined);
+          assert(
+            within(coffeeLine).getByRole("button", {
+              name: /Category: Drinks/i,
+            }),
+          );
+        });
+        assert(
+          (updatedChanges as { categoryId: string }).categoryId ===
+            "category-drinks",
+        );
+        await settle();
       });
     });
   },

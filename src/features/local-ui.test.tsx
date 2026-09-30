@@ -698,12 +698,9 @@ Deno.test("local UI manual saves notify when Drive authorization has expired", a
         target: { value: "4" },
       });
       fireEvent.click(view.getByRole("button", { name: "Save expense" }));
-      await waitFor(() =>
-        assert(view.getByRole("heading", { name: "Expense saved" }))
-      );
+      await waitFor(() => assert(saved?.categoryId === category.id));
       assert(notices === 1, "A successful local save should notify once");
-      assert(saved?.categoryId === category.id);
-      assert(closed === 0, "The completion state should remain visible");
+      assert(closed === 1, "The form should close immediately upon saving");
     });
   });
 });
@@ -721,14 +718,16 @@ Deno.test("local UI locks manual controls while a save is in flight", async () =
         state,
         () => deferCommit ? pendingCommit : Promise.resolve(state),
       );
+      let savedExpense: Expense | undefined;
+      let closed = 0;
       render(
         createElement(ManualExpenseScreen, {
           repository: local,
           service,
           state,
           request: { projectId: project.id },
-          onSaved: () => undefined,
-          onClosed: () => undefined,
+          onSaved: (expense) => savedExpense = expense,
+          onClosed: () => closed++,
         }),
       );
       const view = within(document.body);
@@ -756,9 +755,7 @@ Deno.test("local UI locks manual controls while a save is in flight", async () =
         assert((closeButton as HTMLButtonElement).disabled);
       }
       releaseCommit(state);
-      await waitFor(() =>
-        assert(view.getByRole("heading", { name: "Expense saved" }))
-      );
+      await waitFor(() => assert(savedExpense !== undefined && closed === 1));
     });
   });
 });
@@ -768,14 +765,16 @@ Deno.test("local UI exposes save failure retry without discarding input", async 
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
       const { service } = createTestService(state);
+      let savedExpense: Expense | undefined;
+      let closed = 0;
       render(
         createElement(ManualExpenseScreen, {
           repository: local,
           service,
           state,
           request: { projectId: project.id },
-          onSaved: () => undefined,
-          onClosed: () => undefined,
+          onSaved: (expense) => savedExpense = expense,
+          onClosed: () => closed++,
         }),
       );
       const view = within(document.body);
@@ -791,9 +790,7 @@ Deno.test("local UI exposes save failure retry without discarding input", async 
         assert(view.getByRole("button", { name: "Retry save" }))
       );
       fireEvent.click(view.getByRole("button", { name: "Retry save" }));
-      await waitFor(() =>
-        assert(view.getByRole("heading", { name: "Expense saved" }))
-      );
+      await waitFor(() => assert(savedExpense !== undefined && closed === 1));
     });
   });
 });

@@ -7,17 +7,18 @@ export type ExpenseViewModel = {
   category: string;
   amount: string;
   currency: string;
-  date: string;
+  date?: string;
   time?: string;
 };
 
 export type ExpenseRowProps = {
   expense: ExpenseViewModel;
+  showDate?: boolean;
   onSelect?: (id: string) => void;
 };
 
 export function ExpenseRow(
-  { expense, onSelect }: ExpenseRowProps,
+  { expense, showDate = true, onSelect }: ExpenseRowProps,
 ) {
   const primaryText = expense.description?.trim() || expense.merchant?.trim() ||
     "Untitled expense";
@@ -25,6 +26,7 @@ export function ExpenseRow(
     expense.merchant?.trim() && expense.description?.trim() &&
       expense.merchant?.trim() !== expense.description?.trim(),
   );
+  const shouldRenderDate = showDate && Boolean(expense.date);
 
   return (
     <ListRow
@@ -51,9 +53,16 @@ export function ExpenseRow(
             )
             : null}
           <Text size="label" tone="secondary">
-            {expense.category} · {expense.date}
-            {expense.time ? ` · ${expense.time}` : ""}
+            {expense.category}
           </Text>
+          {shouldRenderDate
+            ? (
+              <Text size="label" tone="secondary">
+                {expense.date}
+                {expense.time ? ` · ${expense.time}` : ""}
+              </Text>
+            )
+            : null}
         </Stack>
       </Button>
     </ListRow>

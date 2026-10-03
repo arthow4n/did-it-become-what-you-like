@@ -32,9 +32,10 @@ export function ReceiptGroup(
     onViewReceipt,
   }: ReceiptGroupProps,
 ) {
-  // Receipt groups already identify the merchant in their heading. Each
-  // expanded line should therefore lead with its item description; retain a
-  // merchant fallback for incomplete legacy/gallery rows.
+  // Receipt groups already identify the merchant and date in their heading.
+  // Each expanded line should therefore lead with its item description and omit
+  // redundant date rendering; retain a merchant fallback for incomplete
+  // legacy/gallery rows.
   const lineExpenses = lines.map((line) =>
     line.description?.trim() ? { ...line, merchant: undefined } : line
   );
@@ -61,7 +62,11 @@ export function ReceiptGroup(
             </Button>
           )
           : null}
-        <ExpenseList expenses={lineExpenses} onSelect={onSelectLine} />
+        <ExpenseList
+          expenses={lineExpenses}
+          showDate={false}
+          onSelect={onSelectLine}
+        />
       </Stack>
     </Disclosure>
   );

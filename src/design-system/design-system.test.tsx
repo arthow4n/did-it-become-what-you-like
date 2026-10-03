@@ -1238,7 +1238,7 @@ Deno.test("design-system positive money rows always expose an explicit plus", as
   );
 });
 
-Deno.test("design-system expense row renders description as primary text with subtle merchant text", async () => {
+Deno.test("design-system expense row renders description as primary text with subtle merchant text and date in separate row", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -1258,13 +1258,38 @@ Deno.test("design-system expense row renders description as primary text with su
       const strong = document.querySelector("strong");
       assertEqual(strong?.textContent, "Weekly groceries");
       assert(view.getByText("ICA Maxi"));
-      assert(view.getByText(/Food · 2026-09-01/));
+      assert(view.getByText("Food"));
+      assert(view.getByText("2026-09-01"));
       mounted.unmount();
     })
   );
 });
 
-Deno.test("design-system receipt groups show line descriptions", async () => {
+Deno.test("design-system expense row omits date when showDate is false", async () => {
+  await withComponentHarness(({ window, render }) =>
+    withAriaGlobals(window, () => {
+      const mounted = render(
+        createElement(ExpenseRow, {
+          expense: {
+            id: "expense-grocery",
+            description: "Weekly groceries",
+            category: "Food",
+            amount: "-450.00",
+            currency: "SEK",
+            date: "2026-09-01",
+          },
+          showDate: false,
+        }),
+      );
+      const view = within(document.body);
+      assert(view.getByText("Food"));
+      assertEqual(view.queryByText("2026-09-01"), null);
+      mounted.unmount();
+    })
+  );
+});
+
+Deno.test("design-system receipt groups show line descriptions and omit line date", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {
       let viewed = false;
@@ -1294,6 +1319,11 @@ Deno.test("design-system receipt groups show line descriptions", async () => {
         view.getAllByText("Stora Coop Backaplan").length,
         1,
         "The receipt merchant should appear only in the group heading",
+      );
+      assertEqual(
+        view.getAllByText("2026-08-29").length,
+        1,
+        "The receipt date should appear only in the group heading",
       );
       fireEvent.click(view.getByRole("button", { name: "View receipt" }));
       assert(

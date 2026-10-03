@@ -75,6 +75,7 @@ export default defineConfig({
         "favicon.ico",
       ],
       manifest: {
+        id: `${REPOSITORY_BASE_PATH}?app=dibwyl`,
         name: "Did It Become What You Like? · Expenses",
         short_name: "Dibwyl",
         description: "A local-first expense app that works offline.",

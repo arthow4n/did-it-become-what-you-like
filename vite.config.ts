@@ -75,8 +75,8 @@ export default defineConfig({
         "favicon.ico",
       ],
       manifest: {
-        name: "After Midnight · Expenses",
-        short_name: "After Midnight",
+        name: "Did It Become What You Like? · Expenses",
+        short_name: "Dibwyl",
         description: "A local-first expense app that works offline.",
         start_url: REPOSITORY_BASE_PATH,
         scope: REPOSITORY_BASE_PATH,

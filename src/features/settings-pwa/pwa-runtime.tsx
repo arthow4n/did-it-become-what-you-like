@@ -352,8 +352,8 @@ export function PwaRuntime({
             onDismiss={controller.dismissInstall}
           >
             <Text>
-              Keep After Midnight available from your home screen. Installation
-              is optional and does not change local data.
+              Keep Dibwyl available from your home screen. Installation is
+              optional and does not change local data.
             </Text>
             <FormActions>
               <Button variant="quiet" onPress={controller.dismissInstall}>

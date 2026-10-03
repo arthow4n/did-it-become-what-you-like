@@ -187,6 +187,11 @@ for (
     `${DIST}/sw.js`,
     `${DIST}/icons/icon-192.svg`,
     `${DIST}/icons/icon-512.svg`,
+    `${DIST}/icons/icon-192.png`,
+    `${DIST}/icons/icon-512.png`,
+    `${DIST}/icons/icon-maskable-512.png`,
+    `${DIST}/apple-touch-icon.png`,
+    `${DIST}/favicon.ico`,
   ]
 ) {
   await assertFile(path);
@@ -224,13 +229,15 @@ assert(
   "The manifest colors must match the approved dark canvas.",
 );
 assert(
-  manifest.icons?.length === 2 &&
-    manifest.icons.every((icon) => icon.src?.startsWith(BASE_PATH)),
+  (manifest.icons?.length ?? 0) >= 2 &&
+    manifest.icons!.every((icon) => icon.src?.startsWith(BASE_PATH)),
   "Manifest icons must be present and repository-relative.",
 );
-for (const icon of manifest.icons ?? []) {
-  assert(icon.type === "image/svg+xml", "manifest icon type must be SVG");
-}
+const iconTypes = new Set((manifest.icons ?? []).map((icon) => icon.type));
+assert(
+  iconTypes.has("image/png") && iconTypes.has("image/svg+xml"),
+  "manifest icons must include both PNG and SVG formats",
+);
 assert(
   serviceWorker.includes("precacheAndRoute") &&
     serviceWorker.includes(`${BASE_PATH}index.html`) &&

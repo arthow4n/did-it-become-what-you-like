@@ -3316,3 +3316,94 @@ Deno.test(
     });
   },
 );
+
+Deno.test(
+  "ReceiptScanScreen shows selected model name even before model list is loaded",
+  async () => {
+    await withComponentHarness(async ({ render, waitFor }) => {
+      await withAriaGlobals(async () => {
+        const settings = DeviceLocalSettingsSchema.parse({
+          activeProvider: "gemini",
+          selectedGeminiModel: "models/gemini-2.5-flash",
+          disclosureAccepted: true,
+        });
+        const fakeAi: ReceiptAiPort = {
+          listModels: () => Promise.resolve([]),
+          extractReceipt: () => Promise.reject(new Error("unused")),
+        };
+        const gemini = {
+          ...fakeAi,
+          getApiKey: () => Promise.resolve(SecretValue.from("AIza.test")),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+        };
+        const imageStore = new ReceiptImageStore();
+        const dependencies: ReceiptUiDependencies = {
+          ai: fakeAi,
+          gemini,
+          openrouter: {
+            ...fakeAi,
+            getApiKey: () =>
+              Promise.resolve(SecretValue.from("openrouter.test")),
+            setApiKey: () => Promise.resolve(),
+            removeApiKey: () => Promise.resolve(),
+            listEndpoints: () => Promise.resolve([]),
+          },
+          imagePreparation: createFakeImagePreparationPort(),
+          resolveImage: (ref) => imageStore.resolve(ref),
+          releaseImage: (ref) => imageStore.releaseForRetry(ref),
+        };
+        render(
+          createElement(ReceiptScanScreen, {
+            dependencies,
+            imageStore,
+            state: defaultTestState,
+            settings,
+            offline: false,
+            onSettingsChange: () => undefined,
+            onReview: () => undefined,
+            onClose: () => undefined,
+            onOpenSettings: () => undefined,
+          }),
+        );
+        const view = within(document.body);
+        await waitFor(() => {
+          assert(!view.queryByText("Gemini model not selected"));
+          assert(view.getByText("Gemini: gemini-2.5-flash"));
+        });
+      });
+    });
+  },
+);
+
+Deno.test(
+  "ReceiptSourcePicker dropzone supports click and drag-drop selection",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent }) => {
+      await withAriaGlobals(() => {
+        let choseImage = false;
+        let droppedFiles: readonly File[] = [];
+        render(
+          createElement(ReceiptSourcePicker, {
+            onChooseImage: () => choseImage = true,
+            onFilesSelected: (files) => droppedFiles = files,
+          }),
+        );
+        const view = within(document.body);
+        const dropzone = view.getByRole("button", {
+          name: /Click to choose image or drag and drop/,
+        });
+        fireEvent.click(dropzone);
+        assert(choseImage);
+
+        const dummyFile = new Blob(["dummy"], {
+          type: "image/png",
+        }) as unknown as File;
+        fireEvent.drop(dropzone, {
+          dataTransfer: { files: [dummyFile] },
+        });
+        assertEquals(droppedFiles.length, 1);
+      });
+    });
+  },
+);

@@ -1,6 +1,19 @@
-import type { ReactNode } from "react";
-import { Button, Card, ResponsiveGrid, Stack } from "../primitives.tsx";
-import { EmptyState } from "../feedback.tsx";
+import {
+  type DragEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  useState,
+} from "react";
+import { Upload } from "lucide-react";
+import {
+  Button,
+  Card,
+  Heading,
+  ResponsiveGrid,
+  Stack,
+  Text,
+} from "../primitives.tsx";
+import { cx } from "../shared.ts";
 
 export type ReceiptSourcePickerProps = {
   preview?: ReactNode;
@@ -12,6 +25,7 @@ export type ReceiptSourcePickerProps = {
   emptyDescription?: ReactNode;
   takePhotoLabel?: ReactNode;
   chooseImageLabel?: ReactNode;
+  onFilesSelected?: (files: readonly File[]) => void;
 };
 
 export function ReceiptSourcePicker(
@@ -26,9 +40,37 @@ export function ReceiptSourcePicker(
       "Choose an image or PDF, or take a photo to preview it before sending.",
     takePhotoLabel = "Take photo",
     chooseImageLabel = "Choose image",
+    onFilesSelected,
   }: ReceiptSourcePickerProps,
 ) {
+  const [isDragOver, setIsDragOver] = useState(false);
   const hasPreviews = previews && previews.length > 0;
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragOver(false);
+    if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+      onFilesSelected?.(Array.from(event.dataTransfer.files));
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onChooseImage?.();
+    }
+  };
+
   return (
     <Stack gap={4}>
       {hasPreviews
@@ -40,23 +82,61 @@ export function ReceiptSourcePicker(
         : preview
         ? <Card>{preview}</Card>
         : (
-          <EmptyState title={emptyTitle}>
-            {emptyDescription}
-          </EmptyState>
+          <div
+            className={cx(
+              "ds-receipt-source-picker__dropzone",
+              isDragOver && "ds-receipt-source-picker__dropzone--active",
+            )}
+            role="button"
+            tabIndex={0}
+            onClick={() => onChooseImage?.()}
+            onKeyDown={handleKeyDown}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            aria-label={`${emptyTitle}. Click to choose image or drag and drop.`}
+          >
+            <Stack gap={3}>
+              <Upload
+                size={32}
+                className="ds-receipt-source-picker__dropzone-icon"
+                aria-hidden="true"
+              />
+              <Stack gap={1}>
+                <Heading size="sm">{emptyTitle}</Heading>
+                <Text tone="secondary">{emptyDescription}</Text>
+              </Stack>
+              <div
+                className="ds-receipt-source-picker__dropzone-actions"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Button variant="secondary" onPress={onTakePhoto}>
+                  {takePhotoLabel}
+                </Button>
+                <Button variant="secondary" onPress={onChooseImage}>
+                  {chooseImageLabel}
+                </Button>
+              </div>
+            </Stack>
+          </div>
         )}
-      <div className="ds-receipt-source-picker__actions">
-        <div className="ds-receipt-source-picker__primary-actions">
-          <Button variant="secondary" onPress={onTakePhoto}>
-            {takePhotoLabel}
-          </Button>
-          <Button variant="secondary" onPress={onChooseImage}>
-            {chooseImageLabel}
-          </Button>
-        </div>
-        {(preview || hasPreviews) && onRemove
-          ? <Button variant="quiet" onPress={onRemove}>Remove</Button>
-          : null}
-      </div>
+      {preview || hasPreviews
+        ? (
+          <div className="ds-receipt-source-picker__actions">
+            <div className="ds-receipt-source-picker__primary-actions">
+              <Button variant="secondary" onPress={onTakePhoto}>
+                {takePhotoLabel}
+              </Button>
+              <Button variant="secondary" onPress={onChooseImage}>
+                {chooseImageLabel}
+              </Button>
+            </div>
+            {onRemove
+              ? <Button variant="quiet" onPress={onRemove}>Remove</Button>
+              : null}
+          </div>
+        )
+        : null}
     </Stack>
   );
 }

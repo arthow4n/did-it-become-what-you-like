@@ -26,9 +26,9 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    height: 24rem;
-    min-height: 16rem;
-    max-height: 36rem;
+    height: min(20rem, 50vh);
+    min-height: 12rem;
+    max-height: 24rem;
     overflow: hidden;
     border-radius: var(--radius-control);
     background: var(--color-surface-2);
@@ -50,35 +50,35 @@
 
   .receipt-ui-preview-frame > .receipt-ui-preview[data-rotation="90"],
   .receipt-ui-preview-frame > .receipt-ui-preview[data-rotation="270"] {
-    max-width: 24rem;
-    max-height: min(24rem, 100vw, 100%);
-    max-height: min(24rem, 100cqw);
+    max-width: 20rem;
+    max-height: min(20rem, 100vw, 100%);
+    max-height: min(20rem, 100cqw);
   }
 
   .receipt-ui-preview--pdf {
-    min-height: 16rem;
-    height: 24rem;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-  }
-
-  .receipt-ui-preview-pdf-object {
-    width: 100%;
-    height: 100%;
-    border: none;
+    padding: var(--space-3);
+    background: var(--color-surface-2);
     border-radius: var(--radius-control);
   }
 
-  .receipt-ui-preview-pdf-fallback {
+  .receipt-ui-pdf-card {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100%;
-    gap: var(--space-2);
-    padding: var(--space-4);
-    color: var(--color-text-secondary);
+    gap: var(--space-3);
+    padding: var(--space-2);
+  }
+
+  .receipt-ui-pdf-icon {
+    flex-shrink: 0;
+    color: var(--color-primary);
+  }
+
+  .receipt-ui-pdf-info {
+    min-width: 0;
+    overflow: hidden;
   }
 
   .receipt-ui-quick-setup {

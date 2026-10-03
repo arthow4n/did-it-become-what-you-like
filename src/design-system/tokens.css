@@ -1179,6 +1179,40 @@
     }
   }
 
+  .ds-receipt-source-picker__dropzone {
+    border: 2px dashed var(--color-border-subtle);
+    border-radius: var(--radius-card);
+    background: var(--color-surface-2);
+    padding: var(--space-5) var(--space-4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease;
+  }
+
+  .ds-receipt-source-picker__dropzone:hover,
+  .ds-receipt-source-picker__dropzone:focus-visible,
+  .ds-receipt-source-picker__dropzone--active {
+    border-color: var(--color-focus-ring);
+    background: var(--color-surface-3, var(--color-surface-2));
+    outline: none;
+  }
+
+  .ds-receipt-source-picker__dropzone-icon {
+    color: var(--color-text-secondary);
+  }
+
+  .ds-receipt-source-picker__dropzone-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    justify-content: center;
+    margin-top: var(--space-1);
+  }
+
   .ds-receipt-source-picker__actions {
     display: flex;
     flex-wrap: wrap;
@@ -1193,6 +1227,18 @@
   }
 
   @media (max-width: 719px) {
+    .ds-receipt-source-picker__dropzone-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+      width: 100%;
+    }
+
+    .ds-receipt-source-picker__dropzone-actions > .ds-button,
+    .ds-receipt-source-picker__dropzone-actions > button {
+      width: 100%;
+    }
+
     .ds-receipt-source-picker__actions {
       display: grid;
       grid-template-columns: 1fr;

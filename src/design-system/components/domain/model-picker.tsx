@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Stack, Text } from "../primitives.tsx";
 import { SelectField, type SelectOption } from "../fields.tsx";
 
@@ -15,10 +16,23 @@ export type ModelPickerProps = {
 export function ModelPicker(
   { options, value, onValueChange, disabled = false }: ModelPickerProps,
 ) {
+  const effectiveOptions = useMemo(() => {
+    if (value && !options.some((candidate) => candidate.id === value)) {
+      return [
+        {
+          id: value,
+          label: value.replace(/^models\//, ""),
+        },
+        ...options,
+      ];
+    }
+    return options;
+  }, [options, value]);
+
   return (
     <SelectField
       label="Model"
-      options={options.map((option) => ({
+      options={effectiveOptions.map((option) => ({
         id: option.id,
         label: option.label,
         disabled: option.disabled,
@@ -30,7 +44,9 @@ export function ModelPicker(
       placeholder="Search models"
       className="ds-model-picker"
       renderOption={(option) => {
-        const model = options.find((candidate) => candidate.id === option.id);
+        const model = effectiveOptions.find((candidate) =>
+          candidate.id === option.id
+        );
         return (
           <Stack gap={1}>
             <span>{option.label}</span>

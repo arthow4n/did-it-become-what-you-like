@@ -55,6 +55,12 @@ import {
   settingsWithSelectedModel,
 } from "./types.ts";
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function ReceiptDisclosure({
   provider,
   onAccept,
@@ -595,6 +601,25 @@ export function ReceiptScanScreen({
   const selectedOption = configuredModel
     ? availableModelOptions.find((option) => option.id === configuredModel)
     : undefined;
+  const displayModelName = selectedOption?.label ?? selectedOption?.id ??
+    (configuredModel ? configuredModel.replace(/^models\//, "") : undefined);
+  const effectiveModelOptions = useMemo(() => {
+    if (
+      configuredModel &&
+      !availableModelOptions.some((candidate) =>
+        candidate.id === configuredModel
+      )
+    ) {
+      return [
+        {
+          id: configuredModel,
+          label: configuredModel.replace(/^models\//, ""),
+        },
+        ...availableModelOptions,
+      ];
+    }
+    return availableModelOptions;
+  }, [availableModelOptions, configuredModel]);
   const project =
     state.projects.find((candidate) =>
       candidate.id === state.selectedProjectId
@@ -921,17 +946,19 @@ export function ReceiptScanScreen({
                         role="region"
                         aria-label={`Page ${index + 1} preview`}
                       >
-                        <object
-                          data={image.previewUrl}
-                          type="application/pdf"
-                          title={`Page ${index + 1} preview`}
-                          className="receipt-ui-preview-pdf-object"
-                        >
-                          <div className="receipt-ui-preview-pdf-fallback">
-                            <FileText size={48} aria-hidden="true" />
-                            <Text>PDF menu document</Text>
-                          </div>
-                        </object>
+                        <div className="receipt-ui-pdf-card">
+                          <FileText
+                            size={24}
+                            className="receipt-ui-pdf-icon"
+                            aria-hidden="true"
+                          />
+                          <Stack gap={1} className="receipt-ui-pdf-info">
+                            <Text size="label">PDF menu document</Text>
+                            <Text size="caption" tone="secondary">
+                              {formatBytes(image.byteLength)} · Ready to scan
+                            </Text>
+                          </Stack>
+                        </div>
                       </div>
                     )
                     : (
@@ -981,17 +1008,20 @@ export function ReceiptScanScreen({
                       role="region"
                       aria-label="Selected receipt preview"
                     >
-                      <object
-                        data={selectedImage.previewUrl}
-                        type="application/pdf"
-                        title="Selected receipt preview"
-                        className="receipt-ui-preview-pdf-object"
-                      >
-                        <div className="receipt-ui-preview-pdf-fallback">
-                          <FileText size={48} aria-hidden="true" />
-                          <Text>PDF receipt document</Text>
-                        </div>
-                      </object>
+                      <div className="receipt-ui-pdf-card">
+                        <FileText
+                          size={32}
+                          className="receipt-ui-pdf-icon"
+                          aria-hidden="true"
+                        />
+                        <Stack gap={1} className="receipt-ui-pdf-info">
+                          <Text size="label">PDF receipt document</Text>
+                          <Text size="caption" tone="secondary">
+                            {formatBytes(selectedImage.byteLength)}{" "}
+                            · Ready to scan
+                          </Text>
+                        </Stack>
+                      </div>
                     </div>
                   )
                   : (
@@ -1026,6 +1056,7 @@ export function ReceiptScanScreen({
             : "Choose image"}
           onTakePhoto={() => startFilePicker(true)}
           onChooseImage={() => startFilePicker(false)}
+          onFilesSelected={chooseFiles}
           onRemove={selectedImages.length > 0
             ? () => {
               if (scanBusy || snapshot.matches("failed")) {
@@ -1045,17 +1076,14 @@ export function ReceiptScanScreen({
                 scanMode === "menu" ? "Menu is" : "Receipt is"
               } sent to ${receiptDisclosureName(activeProvider)}.`}
             >
-              {receiptDisclosureDetails(activeProvider)}{" "}
-              Embedded metadata is always removed before sending. The image
-              remains in memory only while this scan is open so you can retry or
-              replace it; it is removed when you leave, discard, or complete the
-              scan.
+              In-memory processing only. Embedded metadata is removed before
+              sending.
             </InlineNotice>
           )
           : null}
         <StatusPanel
-          title={selectedOption
-            ? `${activeProviderName}: ${selectedOption.id}`
+          title={displayModelName
+            ? `${activeProviderName}: ${displayModelName}`
             : `${activeProviderName} model not selected`}
           detail={pendingScan
             ? "Select a model to continue this scan"
@@ -1096,10 +1124,11 @@ export function ReceiptScanScreen({
                     not a user-run test.
                   </Text>
                   <ModelPicker
-                    options={availableModelOptions}
+                    options={effectiveModelOptions}
                     value={configuredModel}
                     onValueChange={selectModel}
-                    disabled={modelsLoading || models.length === 0}
+                    disabled={modelsLoading &&
+                      availableModelOptions.length === 0 && !configuredModel}
                   />
                   {activeProvider === "gemini"
                     ? (

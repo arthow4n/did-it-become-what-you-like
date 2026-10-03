@@ -68,8 +68,6 @@ export default defineConfig({
         navigateFallback: `${REPOSITORY_BASE_PATH}index.html`,
       },
       includeAssets: [
-        "icons/icon-192.svg",
-        "icons/icon-512.svg",
         "icons/icon-192.png",
         "icons/icon-512.png",
         "icons/icon-maskable-512.png",
@@ -103,18 +101,6 @@ export default defineConfig({
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
-          },
-          {
-            src: `${REPOSITORY_BASE_PATH}icons/icon-192.svg`,
-            sizes: "192x192",
-            type: "image/svg+xml",
-            purpose: "any",
-          },
-          {
-            src: `${REPOSITORY_BASE_PATH}icons/icon-512.svg`,
-            sizes: "512x512",
-            type: "image/svg+xml",
-            purpose: "any maskable",
           },
         ],
       },

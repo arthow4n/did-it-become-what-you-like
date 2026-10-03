@@ -185,8 +185,6 @@ for (
     `${DIST}/index.html`,
     `${DIST}/manifest.webmanifest`,
     `${DIST}/sw.js`,
-    `${DIST}/icons/icon-192.svg`,
-    `${DIST}/icons/icon-512.svg`,
     `${DIST}/icons/icon-192.png`,
     `${DIST}/icons/icon-512.png`,
     `${DIST}/icons/icon-maskable-512.png`,
@@ -233,11 +231,9 @@ assert(
     manifest.icons!.every((icon) => icon.src?.startsWith(BASE_PATH)),
   "Manifest icons must be present and repository-relative.",
 );
-const iconTypes = new Set((manifest.icons ?? []).map((icon) => icon.type));
-assert(
-  iconTypes.has("image/png") && iconTypes.has("image/svg+xml"),
-  "manifest icons must include both PNG and SVG formats",
-);
+for (const icon of manifest.icons ?? []) {
+  assert(icon.type === "image/png", "manifest icon type must be PNG");
+}
 assert(
   serviceWorker.includes("precacheAndRoute") &&
     serviceWorker.includes(`${BASE_PATH}index.html`) &&

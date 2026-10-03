@@ -1411,7 +1411,7 @@ Deno.test("design-system currency search and merchant clearing remain functional
 
 Deno.test("design-system period picker exposes a controlled custom calendar period", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
-    withAriaGlobals(window, async () => {
+    withAriaGlobals(window, () => {
       let kind = "day";
       let date = "2026-08-24";
       let navigation = "";
@@ -1432,7 +1432,7 @@ Deno.test("design-system period picker exposes a controlled custom calendar peri
         }),
       );
       const view = within(document.body);
-      const kindPicker = view.getByRole("combobox", {
+      const customKindGroup = view.getByRole("radiogroup", {
         name: "Custom period type",
       });
       const datePicker = view.getByLabelText("Custom calendar date");
@@ -1448,10 +1448,10 @@ Deno.test("design-system period picker exposes a controlled custom calendar peri
       assertEqual(navigation, "next");
       fireEvent.click(view.getByRole("button", { name: "Today" }));
       assertEqual(navigation, "current");
-      fireEvent.click(kindPicker);
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
-      fireEvent.click(view.getByRole("option", { name: "Month" }));
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      const monthOption = within(customKindGroup).getByRole("radio", {
+        name: "Month",
+      });
+      fireEvent.click(monthOption);
       fireEvent.change(datePicker, { target: { value: "2026-09-03" } });
       assertEqual(kind, "month");
       assertEqual(date, "2026-09-03");

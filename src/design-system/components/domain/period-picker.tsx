@@ -1,6 +1,6 @@
 import { CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
 import { IconButton, Inline, Stack, Text } from "../primitives.tsx";
-import { NativeDateField, SelectField } from "../fields.tsx";
+import { NativeDateField, SegmentedControl } from "../fields.tsx";
 
 export type PeriodPickerProps = {
   value?: string;
@@ -43,11 +43,12 @@ export function PeriodPicker({
       {showsNavigator
         ? (
           <div className="ds-period-picker__navigator">
-            <SelectField
+            <SegmentedControl
               className="ds-period-picker__mode"
               label="Period"
               value={value}
-              onValueChange={(next) => onValueChange?.(next)}
+              onChange={(next) => onValueChange?.(next)}
+              fullWidth
               options={[
                 { id: "today", label: "Day" },
                 { id: "month", label: "Month" },
@@ -84,10 +85,12 @@ export function PeriodPicker({
           </div>
         )
         : (
-          <SelectField
+          <SegmentedControl
+            className="ds-period-picker__mode"
             label="Period"
             value={value}
-            onValueChange={(next) => onValueChange?.(next)}
+            onChange={(next) => onValueChange?.(next)}
+            fullWidth
             options={[
               { id: "today", label: "Day" },
               { id: "month", label: "Month" },
@@ -99,7 +102,7 @@ export function PeriodPicker({
       {value === "custom"
         ? (
           <Inline gap={2}>
-            <SelectField
+            <SegmentedControl
               label="Custom period type"
               options={[
                 { id: "day", label: "Day" },
@@ -107,7 +110,7 @@ export function PeriodPicker({
                 { id: "year", label: "Year" },
               ]}
               value={customKind}
-              onValueChange={(next) =>
+              onChange={(next) =>
                 onCustomKindChange?.(next as "day" | "month" | "year")}
             />
             <NativeDateField

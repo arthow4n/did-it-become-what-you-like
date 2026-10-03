@@ -1244,15 +1244,14 @@
 
   .ds-period-picker__navigator {
     display: grid;
-    grid-template-columns:
-      minmax(5.5rem, auto) auto minmax(0, 1fr) auto
-      auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
     gap: var(--space-2);
-    align-items: end;
+    align-items: center;
     width: 100%;
   }
 
   .ds-period-picker__mode {
+    grid-column: 1 / -1;
     min-width: 0;
   }
 
@@ -1260,10 +1259,11 @@
     display: flex;
     min-width: 0;
     min-height: var(--control-height);
-    align-self: end;
+    align-self: center;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    padding-inline: var(--space-1);
     text-align: center;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1271,29 +1271,15 @@
   }
 
   .ds-period-picker__navigator > .ds-icon-button {
-    align-self: end;
+    align-self: center;
   }
 
   @media (max-width: 719px) {
-    .ds-period-picker__navigator {
-      grid-template-columns: auto minmax(0, 1fr) auto auto;
-    }
-
-    .ds-period-picker__mode {
-      grid-column: 1 / -1;
-    }
-
     .ds-period-picker__label {
-      align-self: center;
       overflow: visible;
-      padding-inline: var(--space-1);
       line-height: var(--line-height-tight);
       text-overflow: clip;
       white-space: normal;
-    }
-
-    .ds-period-picker__navigator > .ds-icon-button {
-      align-self: center;
     }
   }
 

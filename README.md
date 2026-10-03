@@ -4,7 +4,11 @@ A local-first expense app that works offline.
 
 ## Generative AI Usage Disclosure
 
-This application is 100% vibe-coded using ChatGPT Codex and Google Antigravity.
+- **Code**: This application is 100% vibe-coded using ChatGPT Codex and Google
+  Antigravity.
+- **Brand Artwork & Icon**: The application icon
+  ([`assets/brand/icon-source.png`](assets/brand/icon-source.png)) was generated
+  by ChatGPT.
 
 ## Build and source metadata
 

@@ -1,4 +1,5 @@
 export {
+  APP_FULL_TITLE,
   APP_NAME,
   APP_SHORT_NAME,
   APP_VERSION,

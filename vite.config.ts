@@ -76,7 +76,7 @@ export default defineConfig({
       ],
       manifest: {
         id: `${REPOSITORY_BASE_PATH}?app=dibwyl`,
-        name: "Did It Become What You Like? · Expenses",
+        name: "Dibwyl · Expenses",
         short_name: "Dibwyl",
         description: "A local-first expense app that works offline.",
         start_url: REPOSITORY_BASE_PATH,

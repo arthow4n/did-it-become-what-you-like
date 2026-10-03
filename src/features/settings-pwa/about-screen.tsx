@@ -17,6 +17,7 @@ import {
 } from "../../design-system/index.ts";
 import {
   APP_COMMIT,
+  APP_FULL_TITLE,
   APP_NAME,
   APP_SHORT_NAME,
   APP_VERSION,
@@ -77,6 +78,7 @@ export function AboutScreen({
             <DefinitionList
               items={[
                 { term: "Short name", description: APP_SHORT_NAME },
+                { term: "Full title", description: APP_FULL_TITLE },
                 { term: "Version", description: APP_VERSION },
                 { term: "Build", description: APP_COMMIT },
                 { term: "License", description: LICENSE_NAME },

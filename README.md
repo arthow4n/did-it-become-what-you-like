@@ -8,7 +8,7 @@ A local-first expense app that works offline.
   Antigravity.
 - **Brand Artwork & Icon**: The application icon
   ([`assets/brand/icon-source.png`](assets/brand/icon-source.png)) was generated
-  by ChatGPT.
+  by ChatGPT (ChatGPT Image 2.5).
 
 ## Build and source metadata
 

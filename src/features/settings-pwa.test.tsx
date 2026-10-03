@@ -243,6 +243,7 @@ Deno.test("settings: About exposes build metadata and license links", async () =
     const view = within(document.body);
     assert(view.getByText("0.1.0"));
     assert(view.getByText("development"));
+    assert(view.getByText("Dibwyl"));
     assert(
       !viewText().includes("App installation is not offered by this browser"),
       "About should not describe an unavailable install prompt as browser incompatibility",

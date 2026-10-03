@@ -18,6 +18,7 @@ import {
 import {
   APP_COMMIT,
   APP_NAME,
+  APP_SHORT_NAME,
   APP_VERSION,
   LICENSE_NAME,
   LICENSE_URL,
@@ -75,6 +76,7 @@ export function AboutScreen({
             <Heading level={2} size="sm">{APP_NAME}</Heading>
             <DefinitionList
               items={[
+                { term: "Short name", description: APP_SHORT_NAME },
                 { term: "Version", description: APP_VERSION },
                 { term: "Build", description: APP_COMMIT },
                 { term: "License", description: LICENSE_NAME },

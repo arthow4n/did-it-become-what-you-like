@@ -26,7 +26,7 @@ export function FirstUseScreen({
     <ContentContainer size="readable">
       <Stack gap={8} className="local-ui-first-use">
         <Stack gap={3}>
-          <Text size="label" tone="muted">After Midnight</Text>
+          <Text size="label" tone="muted">Dibwyl</Text>
           <Heading level={1} size="lg">Start tracking expenses</Heading>
           <Text tone="secondary">
             Keep your expense history on this device, with sync and scanning

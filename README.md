@@ -1,4 +1,6 @@
-# did-it-become-what-you-like
+# Did It Become What You Like? (`Dibwyl`)
+
+A local-first expense app that works offline.
 
 ## Generative AI Usage Disclosure
 
@@ -6,6 +8,8 @@ This application is 100% vibe-coded using ChatGPT Codex and Google Antigravity.
 
 ## Build and source metadata
 
+- Name: `Did It Become What You Like? · Expenses`
+- Short Name: `Dibwyl`
 - Version: `0.1.0`
 - Build: the short Git commit is injected into production builds and shown in
   About.

@@ -143,6 +143,14 @@
 
   .local-ui-expenses-toolbar .sync-ui-status-indicator {
     margin-left: auto;
+    flex: 0 0 auto;
+    min-width: 7.5rem;
+    justify-content: center;
+  }
+
+  .local-ui-expenses-toolbar .sync-ui-status-indicator .ds-status-dot {
+    min-width: 5.5rem;
+    justify-content: center;
   }
 
   .local-ui-expenses-layout {

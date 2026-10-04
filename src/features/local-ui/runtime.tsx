@@ -576,6 +576,7 @@ export function LocalUiRuntime(
       <PwaRuntime
         usefulActionVersion={usefulActionVersion}
         dirty={workflowDirty}
+        suppressed={contentPath === "/receipt/scan"}
       >
         <SyncPortabilityRuntime
           repository={repository}

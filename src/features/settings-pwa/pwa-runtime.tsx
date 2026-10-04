@@ -161,11 +161,13 @@ export function PwaRuntime({
   usefulActionVersion,
   dirty,
   port: providedPort,
+  suppressed = false,
 }: {
   readonly children: ReactNode;
   readonly usefulActionVersion: number;
   readonly dirty: boolean;
   readonly port?: BrowserUpdateInstallPort;
+  readonly suppressed?: boolean;
 }) {
   const port = useMemo(
     () => providedPort ?? createBrowserUpdateInstallPort(),
@@ -345,7 +347,7 @@ export function PwaRuntime({
 
   return (
     <PwaContext.Provider value={controller}>
-      {controller.installOfferVisible
+      {controller.installOfferVisible && !suppressed
         ? (
           <PwaNotice
             title="Install app"
@@ -367,32 +369,36 @@ export function PwaRuntime({
           </PwaNotice>
         )
         : null}
-      {status === "update-ready" && !updateNoticeDismissed
+      {status === "update-ready" && !updateNoticeDismissed && !suppressed
         ? (
-          <PwaNotice
-            title="Update ready"
-            onDismiss={() => setUpdateNoticeDismissed(true)}
-          >
-            <Text>
-              A new version is ready. Reload only after saving or discarding
-              unfinished input.
-            </Text>
-            <FormActions>
-              <Button
-                isDisabled={dirty}
-                onPress={controller.reloadToUpdate}
-              >
-                Reload to update
-              </Button>
-              {dirty
-                ? (
-                  <Text tone="secondary">
-                    Save or discard unsaved changes before reloading.
-                  </Text>
-                )
-                : null}
-            </FormActions>
-          </PwaNotice>
+          <StatusMessage className="settings-pwa-toast" tone="info">
+            <Inline justify="space-between" gap={2}>
+              <Stack gap={1}>
+                <strong>Update ready</strong>
+                {dirty
+                  ? (
+                    <Text size="caption" tone="secondary">
+                      Save or discard unsaved changes before reloading.
+                    </Text>
+                  )
+                  : null}
+              </Stack>
+              <Inline gap={1}>
+                <Button
+                  isDisabled={dirty}
+                  onPress={controller.reloadToUpdate}
+                >
+                  Reload to update
+                </Button>
+                <IconButton
+                  icon={<X />}
+                  aria-label="Dismiss notification"
+                  variant="quiet"
+                  onPress={() => setUpdateNoticeDismissed(true)}
+                />
+              </Inline>
+            </Inline>
+          </StatusMessage>
         )
         : null}
       {children}

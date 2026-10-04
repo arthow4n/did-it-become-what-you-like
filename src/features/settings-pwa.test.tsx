@@ -480,6 +480,31 @@ Deno.test("settings: startup check exposes a waiting update", async () => {
   });
 });
 
+Deno.test("settings: update notice is suppressed when suppressed prop is true", async () => {
+  await withComponentHarness(async ({ window, render }) => {
+    await withAriaGlobals(window, () => {
+      const port = createFakeUpdateInstallPort();
+      port.setUpdate();
+      render(
+        createElement(
+          PwaRuntime,
+          {
+            usefulActionVersion: 0,
+            dirty: false,
+            suppressed: true,
+            port,
+            children: createElement(AboutScreen, {
+              onClose: () => undefined,
+              onPrivacy: () => undefined,
+            }),
+          },
+        ),
+      );
+      assert(document.querySelector(".settings-pwa-toast") === null);
+    });
+  });
+});
+
 Deno.test("settings: offline update status explains reconnecting", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaGlobals(window, async () => {

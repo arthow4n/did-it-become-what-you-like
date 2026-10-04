@@ -372,32 +372,30 @@ export function PwaRuntime({
       {status === "update-ready" && !updateNoticeDismissed && !suppressed
         ? (
           <StatusMessage className="settings-pwa-toast" tone="info">
+            <span className="local-ui-screen-reader-heading">Update ready</span>
             <Inline justify="space-between" gap={2}>
-              <Stack gap={1}>
-                <strong>Update ready</strong>
-                {dirty
-                  ? (
-                    <Text size="caption" tone="secondary">
-                      Save or discard unsaved changes before reloading.
-                    </Text>
-                  )
-                  : null}
-              </Stack>
-              <Inline gap={1}>
-                <Button
-                  isDisabled={dirty}
-                  onPress={controller.reloadToUpdate}
-                >
-                  Reload to update
-                </Button>
-                <IconButton
-                  icon={<X />}
-                  aria-label="Dismiss notification"
-                  variant="quiet"
-                  onPress={() => setUpdateNoticeDismissed(true)}
-                />
-              </Inline>
+              <Button
+                isDisabled={dirty}
+                onPress={controller.reloadToUpdate}
+                className="settings-pwa-toast__action"
+              >
+                Reload to update
+              </Button>
+              <IconButton
+                icon={<X size={18} />}
+                aria-label="Dismiss notification"
+                variant="quiet"
+                className="settings-pwa-toast__close"
+                onPress={() => setUpdateNoticeDismissed(true)}
+              />
             </Inline>
+            {dirty
+              ? (
+                <Text size="caption" tone="secondary">
+                  Save or discard unsaved changes before reloading.
+                </Text>
+              )
+              : null}
           </StatusMessage>
         )
         : null}

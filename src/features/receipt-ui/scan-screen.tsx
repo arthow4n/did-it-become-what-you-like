@@ -30,7 +30,6 @@ import {
   SegmentedControl,
   SelectField,
   Stack,
-  StatusPanel,
   StickyActionBar,
   Switch,
   Text,
@@ -851,7 +850,7 @@ export function ReceiptScanScreen({
   }
 
   return (
-    <ContentContainer size="form">
+    <ContentContainer size="form" className="receipt-ui-scan-screen">
       <FileField
         label={scanMode === "menu" ? "Menu image files" : "Receipt image file"}
         accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -866,7 +865,7 @@ export function ReceiptScanScreen({
           }
         }}
       />
-      <Stack gap={5}>
+      <Stack gap={4} className="receipt-ui-scan-stack">
         <PageHeader
           title={scanMode === "menu" ? "Scan restaurant menu" : "Scan receipt"}
           headingLevel={1}
@@ -1046,8 +1045,8 @@ export function ReceiptScanScreen({
             ? "No menu pages selected"
             : "No receipt selected"}
           emptyDescription={scanMode === "menu"
-            ? "Take photos or choose images of each page of the menu before extracting items."
-            : "Choose an image or PDF, or take a photo to preview it before sending."}
+            ? "Take photos or choose menu images before extracting."
+            : "Choose an image, PDF, or take a photo."}
           takePhotoLabel={scanMode === "menu" && selectedImages.length > 0
             ? "Add photo"
             : "Take photo"}
@@ -1081,24 +1080,30 @@ export function ReceiptScanScreen({
             </InlineNotice>
           )
           : null}
-        <StatusPanel
-          title={displayModelName
-            ? `${activeProviderName}: ${displayModelName}`
-            : `${activeProviderName} model not selected`}
-          detail={pendingScan
-            ? "Select a model to continue this scan"
-            : settings.imagePreparationEnabled
-            ? "Image preparation: On"
-            : "Image preparation: Off · privacy sanitization remains on"}
-          action={
+        <div className="receipt-ui-model-row">
+          <Inline justify="space-between">
+            <Stack gap={1}>
+              <Text size="caption" tone="secondary">
+                {displayModelName
+                  ? `${activeProviderName}: ${displayModelName}`
+                  : `${activeProviderName} model not selected`}
+              </Text>
+              {pendingScan
+                ? (
+                  <Text size="caption" tone="secondary">
+                    Select a model to continue this scan
+                  </Text>
+                )
+                : null}
+            </Stack>
             <Button
               variant="quiet"
               onPress={() => setOptionsOpen((open) => !open)}
             >
               {optionsOpen ? "Hide options" : "Options"}
             </Button>
-          }
-        />
+          </Inline>
+        </div>
         {optionsOpen
           ? (
             <Stack
@@ -1107,7 +1112,7 @@ export function ReceiptScanScreen({
               className="receipt-ui-scan-options"
             >
               <Card as="section">
-                <Stack gap={4}>
+                <Stack gap={3}>
                   <SelectField
                     label="Receipt AI provider"
                     options={[
@@ -1193,14 +1198,19 @@ export function ReceiptScanScreen({
             />
           )
           : null}
-        {scanBusy
-          ? (
-            <StatusPanel
-              title={scanMode === "menu"
-                ? "Extracting menu items"
-                : "Scanning receipt"}
-              detail="This can take a moment."
-              action={
+        <StickyActionBar className="receipt-ui-scan-action-bar">
+          {scanBusy
+            ? (
+              <div className="receipt-ui-scan-busy-row">
+                <Button
+                  pending
+                  isDisabled
+                  variant="secondary"
+                >
+                  {scanMode === "menu"
+                    ? "Extracting menu items…"
+                    : "Scanning receipt"}
+                </Button>
                 <Button
                   variant="quiet"
                   onPress={() => {
@@ -1210,20 +1220,16 @@ export function ReceiptScanScreen({
                 >
                   Cancel scan
                 </Button>
-              }
-            />
-          )
-          : null}
-        <StickyActionBar>
-          <Button
-            pending={scanBusy}
-            isDisabled={scanBusy || selectedImages.length === 0 || offline}
-            onPress={scan}
-          >
-            {scanMode === "menu"
-              ? (scanBusy ? "Extracting menu items…" : "Extract menu items")
-              : (scanBusy ? "Scanning receipt…" : "Scan with AI")}
-          </Button>
+              </div>
+            )
+            : (
+              <Button
+                isDisabled={selectedImages.length === 0 || offline}
+                onPress={scan}
+              >
+                {scanMode === "menu" ? "Extract menu items" : "Scan with AI"}
+              </Button>
+            )}
         </StickyActionBar>
       </Stack>
       {quickSetupOpen

@@ -93,6 +93,60 @@
     display: contents;
   }
 
+  .receipt-ui-scan-screen {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: calc(100dvh - var(--space-4) * 2 -
+      var(--nav-bar-height-mobile));
+    margin-bottom: calc(-1 * (var(--sticky-bar-clearance-mobile) -
+      var(--nav-bar-height-mobile)));
+  }
+
+  @media (min-width: 720px) {
+    .receipt-ui-scan-screen {
+      min-height: calc(100dvh - var(--space-7) * 2);
+      margin-bottom: calc(-1 * var(--sticky-bar-clearance-desktop));
+    }
+  }
+
+  .receipt-ui-scan-stack {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .receipt-ui-scan-action-bar {
+    margin-top: auto;
+  }
+
+  .receipt-ui-model-row {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-control);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  .receipt-ui-scan-busy-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: var(--space-3);
+  }
+
+  @media (max-width: 719px) {
+    .receipt-ui-scan-busy-row {
+      flex-direction: column-reverse;
+      gap: var(--space-2);
+    }
+
+    .receipt-ui-scan-busy-row > .ds-button,
+    .receipt-ui-scan-busy-row > button {
+      width: 100%;
+    }
+  }
+
   .receipt-ui-scan-options {
     scroll-margin-block-start: var(--space-4);
   }

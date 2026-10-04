@@ -96,28 +96,30 @@ export function ReceiptSourcePicker(
             onDrop={handleDrop}
             aria-label={`${emptyTitle}. Click to choose image or drag and drop.`}
           >
-            <Stack gap={3}>
+            <div className="ds-receipt-source-picker__dropzone-body">
               <Upload
-                size={32}
+                size={22}
                 className="ds-receipt-source-picker__dropzone-icon"
                 aria-hidden="true"
               />
-              <Stack gap={1}>
+              <div className="ds-receipt-source-picker__dropzone-text">
                 <Heading size="sm">{emptyTitle}</Heading>
-                <Text tone="secondary">{emptyDescription}</Text>
-              </Stack>
-              <div
-                className="ds-receipt-source-picker__dropzone-actions"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <Button variant="secondary" onPress={onTakePhoto}>
-                  {takePhotoLabel}
-                </Button>
-                <Button variant="secondary" onPress={onChooseImage}>
-                  {chooseImageLabel}
-                </Button>
+                {emptyDescription
+                  ? <Text tone="secondary">{emptyDescription}</Text>
+                  : null}
               </div>
-            </Stack>
+            </div>
+            <div
+              className="ds-receipt-source-picker__dropzone-actions"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Button variant="secondary" onPress={onTakePhoto}>
+                {takePhotoLabel}
+              </Button>
+              <Button variant="secondary" onPress={onChooseImage}>
+                {chooseImageLabel}
+              </Button>
+            </div>
           </div>
         )}
       {preview || hasPreviews

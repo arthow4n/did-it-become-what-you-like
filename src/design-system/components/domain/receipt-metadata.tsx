@@ -23,10 +23,16 @@ export type ReceiptMetadataProps = {
   metadata: ReceiptMetadataViewModel;
   onEdit?: () => void;
   totalLabel?: ReactNode;
+  hideTotal?: boolean;
 };
 
 export function ReceiptMetadata(
-  { metadata, onEdit, totalLabel = "Receipt total" }: ReceiptMetadataProps,
+  {
+    metadata,
+    onEdit,
+    totalLabel = "Receipt total",
+    hideTotal = false,
+  }: ReceiptMetadataProps,
 ) {
   const merchantName = metadata.merchant?.trim();
   return (
@@ -57,13 +63,17 @@ export function ReceiptMetadata(
           )
           : null}
       </Inline>
-      <Inline justify="space-between">
-        <Text tone="secondary">{totalLabel}</Text>
-        <MoneyText
-          amount={metadata.printedTotal}
-          currency={metadata.currency}
-        />
-      </Inline>
+      {!hideTotal
+        ? (
+          <Inline justify="space-between">
+            <Text tone="secondary">{totalLabel}</Text>
+            <MoneyText
+              amount={metadata.printedTotal}
+              currency={metadata.currency}
+            />
+          </Inline>
+        )
+        : null}
     </Card>
   );
 }

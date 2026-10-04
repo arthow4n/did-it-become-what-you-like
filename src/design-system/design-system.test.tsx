@@ -1368,7 +1368,25 @@ Deno.test("design-system receipt metadata displays merchant name or clearly show
       const view2 = within(document.body);
       assert(view2.getByText("No merchant"));
       assert(view2.getByText("Not filled"));
+      assert(view2.getByText("Receipt total"));
       mountedUnfilled.unmount();
+
+      // 3. With hideTotal: true
+      const mountedHiddenTotal = render(
+        createElement(ReceiptMetadata, {
+          metadata: {
+            merchant: "Café",
+            date: "2026-09-24",
+            currency: "EUR",
+            printedTotal: "0",
+          },
+          hideTotal: true,
+        }),
+      );
+      const view3 = within(document.body);
+      assert(view3.getByText("Café"));
+      assertEqual(view3.queryByText("Receipt total"), null);
+      mountedHiddenTotal.unmount();
     })
   );
 });

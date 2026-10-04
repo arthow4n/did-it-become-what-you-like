@@ -29,6 +29,7 @@ import {
   ContentContainer,
   ErrorState,
   FormActions,
+  formatMoney,
   Heading,
   IconButton,
   Inline,
@@ -562,37 +563,25 @@ export function ReceiptReviewScreen({
             : isMenu
             ? "Bill total"
             : undefined}
+          hideTotal={isMenu &&
+            moneyCompare(review.parent.printedTotal, "0") === 0}
           onEdit={openMetadata}
         />
-        <ReceiptReconciliation
-          printed={isMenu &&
-              moneyCompare(review.parent.printedTotal, "0") === 0
-            ? selectedTotal
-            : review.parent.printedTotal}
-          selected={selectedTotal}
-          difference={isMenu &&
-              moneyCompare(review.parent.printedTotal, "0") === 0
-            ? "0"
-            : difference}
-          currency={review.parent.currency}
-          printedLabel={isManual
-            ? "Total paid"
-            : isMenu
-            ? (moneyCompare(review.parent.printedTotal, "0") === 0
-              ? "Bill total (optional)"
-              : "Bill total")
-            : undefined}
-          selectedLabel={isManual
-            ? "Items total"
-            : isMenu
-            ? "Selected items"
-            : undefined}
-          mismatchMessage={isManual
-            ? "The item total does not yet match the total paid."
-            : isMenu
-            ? "The selected items do not match the bill total."
-            : undefined}
-        />
+        {!isMenu
+          ? (
+            <ReceiptReconciliation
+              printed={review.parent.printedTotal}
+              selected={selectedTotal}
+              difference={difference}
+              currency={review.parent.currency}
+              printedLabel={isManual ? "Total paid" : undefined}
+              selectedLabel={isManual ? "Items total" : undefined}
+              mismatchMessage={isManual
+                ? "The item total does not yet match the total paid."
+                : undefined}
+            />
+          )
+          : null}
         {review.uncertainty.length && !isManual
           ? (
             <InlineNotice tone="warning" title="AI review notes">
@@ -763,8 +752,14 @@ export function ReceiptReviewScreen({
               ? "Save receipt with " + selectedCount + " " +
                 (selectedCount === 1 ? "item" : "items")
               : isMenu
-              ? "Save " + selectedCount + " selected " +
-                (selectedCount === 1 ? "item" : "items")
+              ? selectedCount === 0
+                ? "Save 0 selected items"
+                : "Save " + selectedCount + " selected " +
+                  (selectedCount === 1 ? "item" : "items") + " · " +
+                  formatMoney(
+                    unsignedDecimal(selectedTotal),
+                    review.parent.currency,
+                  )
               : "Save " + selectedCount + " selected " +
                 (selectedCount === 1 ? "entry" : "entries")}
           </Button>

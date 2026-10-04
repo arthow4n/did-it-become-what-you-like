@@ -2579,16 +2579,23 @@ Deno.test(
         });
         fireEvent.click(increaseButtons[0]);
 
-        // Save button should now say "Save 1 selected item"
+        // Reconciliation summary is omitted in menu mode
+        assertEquals(reviewView.queryByText("Difference"), null);
+
+        // Save button should now include running total: "Save 1 selected item · EUR 12"
         await waitFor(() => {
           assert(
-            reviewView.getByRole("button", { name: "Save 1 selected item" }),
+            reviewView.getByRole("button", {
+              name: "Save 1 selected item · EUR 12",
+            }),
           );
         });
 
         // Click save - should commit without mismatch error
         fireEvent.click(
-          reviewView.getByRole("button", { name: "Save 1 selected item" }),
+          reviewView.getByRole("button", {
+            name: "Save 1 selected item · EUR 12",
+          }),
         );
 
         await waitFor(() => assert(reviewClosed));
@@ -2782,15 +2789,23 @@ Deno.test(
         });
         fireEvent.click(checkbox);
 
+        // Reconciliation summary is omitted in menu mode
+        assertEquals(reviewView.queryByText("Difference"), null);
+
+        // Save button should now include running total: "Save 1 selected item · EUR 15"
         await waitFor(() => {
           assert(
-            reviewView.getByRole("button", { name: "Save 1 selected item" }),
+            reviewView.getByRole("button", {
+              name: "Save 1 selected item · EUR 15",
+            }),
           );
         });
 
         // Click save - should commit without getting stuck in mismatch
         fireEvent.click(
-          reviewView.getByRole("button", { name: "Save 1 selected item" }),
+          reviewView.getByRole("button", {
+            name: "Save 1 selected item · EUR 15",
+          }),
         );
 
         await waitFor(() => assert(reviewClosed));

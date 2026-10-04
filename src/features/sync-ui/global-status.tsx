@@ -79,7 +79,7 @@ export function syncIndicatorCopy(
   if (view.mode === "configured" && view.network !== "online") {
     return { label: "Local only", tone: "warning", action: "details" };
   }
-  return { label: "Sync needs attention", tone: "danger", action: "details" };
+  return { label: "Attention", tone: "danger", action: "details" };
 }
 
 export function SyncStatusIndicator({

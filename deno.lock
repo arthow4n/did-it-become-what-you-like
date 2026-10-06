@@ -2,7 +2,7 @@
   "version": "5",
   "specifiers": {
     "npm:@automerge/automerge@3.5.0": "3.5.0",
-    "npm:@google/genai@2.19.0": "2.19.0",
+    "npm:@google/genai@2.27.0": "2.27.0",
     "npm:@mantine/core@9.5.0": "9.5.0_@mantine+hooks@9.5.0__react@19.2.8_react@19.2.8_react-dom@19.2.8__react@19.2.8_@types+react@19.2.18",
     "npm:@mantine/dates@9.5.0": "9.5.0_@mantine+core@9.5.0__@mantine+hooks@9.5.0___react@19.2.8__react@19.2.8__react-dom@19.2.8___react@19.2.8__@types+react@19.2.18_@mantine+hooks@9.5.0__react@19.2.8_dayjs@1.11.23_react@19.2.8_react-dom@19.2.8__react@19.2.8",
     "npm:@mantine/dropzone@9.5.0": "9.5.0_@mantine+core@9.5.0__@mantine+hooks@9.5.0___react@19.2.8__react@19.2.8__react-dom@19.2.8___react@19.2.8__@types+react@19.2.18_@mantine+hooks@9.5.0__react@19.2.8_react@19.2.8_react-dom@19.2.8__react@19.2.8",
@@ -845,8 +845,8 @@
     "@floating-ui/utils@0.2.12": {
       "integrity": "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="
     },
-    "@google/genai@2.19.0": {
-      "integrity": "sha512-IM3u1FjpOLyOPsPh0smGA6Ntj2olUWCPbTs/WQj7cA/2AKCGw/652W7IaySx0XtwuscFnMYBoraebQusSZ0zSQ==",
+    "@google/genai@2.27.0": {
+      "integrity": "sha512-W6F9Y9d4h7cVQNa85IPCOVVP9PiUzve/ZQPBvQnBmnBJcLvxstEw+R2X/RyCH0SOe0HVDQzeKDpDUf6ZRtbmdQ==",
       "dependencies": [
         "google-auth-library",
         "p-retry",
@@ -3492,7 +3492,7 @@
   "workspace": {
     "dependencies": [
       "npm:@automerge/automerge@3.5.0",
-      "npm:@google/genai@2.19.0",
+      "npm:@google/genai@2.27.0",
       "npm:@mantine/core@9.5.0",
       "npm:@mantine/dates@9.5.0",
       "npm:@mantine/dropzone@9.5.0",

@@ -11,7 +11,7 @@
     "lib": ["DOM", "DOM.Iterable", "ES2022"]
   },
   "imports": {
-    "@google/genai": "npm:@google/genai@2.19.0",
+    "@google/genai": "npm:@google/genai@2.27.0",
     "@openrouter/sdk": "npm:@openrouter/sdk@1.2.82",
     "@mantine/core": "npm:@mantine/core@9.5.0",
     "@mantine/dates": "npm:@mantine/dates@9.5.0",

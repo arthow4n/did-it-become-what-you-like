@@ -303,9 +303,11 @@ export function ProjectManager({
   service,
   state,
   initialCreate = false,
+  isEmbedded = false,
   onStateChange,
   onNavigate,
   onDirtyChange,
+  onEditorOpenChange,
   discardRequest,
   onDirtyDiscarded,
   onComplete,
@@ -314,9 +316,11 @@ export function ProjectManager({
   service: ProjectCategoryService;
   state: ProjectCategoryState;
   initialCreate?: boolean;
+  isEmbedded?: boolean;
   onStateChange: (state: ProjectCategoryState) => void;
   onNavigate: (path: LocalUiPath) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onEditorOpenChange?: (open: boolean) => void;
   discardRequest?: number;
   onDirtyDiscarded?: () => void;
   onComplete?: () => void;
@@ -376,6 +380,9 @@ export function ProjectManager({
     }
     setSaveTarget(null);
   }, [editor]);
+  useEffect(() => {
+    onEditorOpenChange?.(editor !== null);
+  }, [editor, onEditorOpenChange]);
   useEffect(() => {
     if (!saveTarget || !snapshot.context.state || !snapshot.matches("ready")) {
       return;
@@ -622,87 +629,89 @@ export function ProjectManager({
       },
     });
   };
-  return (
-    <ContentContainer>
-      <Stack gap={5}>
-        <PageHeader
-          headingLevel={1}
-          title="Manage projects"
-          leading={
-            <IconButton
-              icon={<ArrowLeft />}
-              aria-label="Back to organize"
-              variant="quiet"
-              onPress={() => onNavigate("/organize")}
-            />
-          }
-          actions={
+  const content = (
+    <Stack gap={5}>
+      {!isEmbedded
+        ? (
+          <PageHeader
+            headingLevel={1}
+            title="Manage projects"
+            leading={
+              <IconButton
+                icon={<ArrowLeft />}
+                aria-label="Back to organize"
+                variant="quiet"
+                onPress={() => onNavigate("/organize")}
+              />
+            }
+            actions={
+              <Button onPress={() => openEditor({ kind: "create" })}>
+                Create project
+              </Button>
+            }
+          />
+        )
+        : (
+          <Inline justify="space-between">
+            <Heading size="sm">Projects</Heading>
             <Button onPress={() => openEditor({ kind: "create" })}>
               Create project
             </Button>
-          }
-        />
-        {snapshot.context.error
+          </Inline>
+        )}
+      {snapshot.context.error
+        ? (
+          <InlineNotice tone="danger" title="Project change failed">
+            {snapshot.context.error.message}
+          </InlineNotice>
+        )
+        : null}
+      <section
+        className="local-ui-management-section"
+        aria-label="Current project"
+      >
+        <Heading size="sm">Current project</Heading>
+        {current
           ? (
-            <InlineNotice tone="danger" title="Project change failed">
-              {snapshot.context.error.message}
-            </InlineNotice>
+            <List>
+              <ListRow trailing={<Badge tone="positive">Current</Badge>}>
+                <Inline justify="space-between">
+                  <Stack gap={1}>
+                    <strong>{current.name}</strong>
+                    <Text tone="secondary">{current.defaultCurrency}</Text>
+                  </Stack>
+                  <IconButton
+                    icon={<Pencil size={18} />}
+                    aria-label="Edit"
+                    variant="quiet"
+                    onPress={() =>
+                      openEditor({ kind: "edit", record: current })}
+                  />
+                </Inline>
+              </ListRow>
+            </List>
           )
-          : null}
-        <section
-          className="local-ui-management-section"
-          aria-label="Current project"
-        >
-          <Heading size="sm">Current project</Heading>
-          {current
-            ? (
-              <List>
-                <ListRow trailing={<Badge tone="positive">Current</Badge>}>
-                  <Inline justify="space-between">
-                    <Stack gap={1}>
-                      <strong>{current.name}</strong>
-                      <Text tone="secondary">{current.defaultCurrency}</Text>
-                    </Stack>
-                    <IconButton
-                      icon={<Pencil size={18} />}
-                      aria-label="Edit"
-                      variant="quiet"
-                      onPress={() =>
-                        openEditor({ kind: "edit", record: current })}
-                    />
-                  </Inline>
-                </ListRow>
-              </List>
-            )
-            : (
-              <EmptyState title="No active project">
-                Create a project to start tracking expenses.
-              </EmptyState>
-            )}
-        </section>
-        <section
-          className="local-ui-management-section"
-          aria-label="Other projects"
-        >
-          <Heading size="sm">Other projects</Heading>
-          <List>
-            {activeOthers.map((project, index) => (
-              <ListRow key={project.id}>
-                <Stack gap={2}>
-                  <Inline justify="space-between">
-                    <Stack gap={1}>
-                      <strong>{project.name}</strong>
-                      <Text tone="secondary">{project.defaultCurrency}</Text>
-                    </Stack>
-                    <IconButton
-                      icon={<Pencil size={18} />}
-                      aria-label="Edit"
-                      variant="quiet"
-                      onPress={() =>
-                        openEditor({ kind: "edit", record: project })}
-                    />
-                  </Inline>
-                  <div className="local-ui-card-actions--primary-stack">
+          : (
+            <EmptyState title="No active project">
+              Create a project to start tracking expenses.
+            </EmptyState>
+          )}
+      </section>
+      <section
+        className="local-ui-management-section"
+        aria-label="Other projects"
+      >
+        <Heading size="sm">Other projects</Heading>
+        <List>
+          {activeOthers.map((project, index) => (
+            <ListRow key={project.id}>
+              <Stack gap={2}>
+                <Inline justify="space-between">
+                  <Stack gap={1}>
+                    <strong>{project.name}</strong>
+                    <Text tone="secondary">{project.defaultCurrency}</Text>
+                  </Stack>
+                  <Inline gap={2}>
                     <Button
                       variant="secondary"
                       onPress={() =>
@@ -713,40 +722,136 @@ export function ProjectManager({
                     >
                       Use
                     </Button>
+                    <IconButton
+                      icon={<Pencil size={18} />}
+                      aria-label="Edit"
+                      variant="quiet"
+                      onPress={() =>
+                        openEditor({ kind: "edit", record: project })}
+                    />
+                  </Inline>
+                </Inline>
+                <div className="local-ui-card-actions--primary-stack">
+                  <div className="local-ui-card-actions--grid">
+                    <Button
+                      variant="quiet"
+                      isDisabled={index === 0 || snapshot.hasTag("saving")}
+                      onPress={() => moveOther(project.id, -1)}
+                    >
+                      Move up
+                    </Button>
+                    <Button
+                      variant="quiet"
+                      isDisabled={index === activeOthers.length - 1 ||
+                        snapshot.hasTag("saving")}
+                      onPress={() => moveOther(project.id, 1)}
+                    >
+                      Move down
+                    </Button>
+                    <ConfirmDialog
+                      trigger={
+                        <Button
+                          variant="quiet"
+                          isDisabled={snapshot.hasTag("saving")}
+                        >
+                          Archive
+                        </Button>
+                      }
+                      title={`Archive ${project.name}?`}
+                      description="The project and its expenses stay on this device and can be restored later."
+                      confirmLabel="Archive project"
+                      onConfirm={() =>
+                        send({
+                          type: "project.command",
+                          command: { type: "archive", projectId: project.id },
+                        })}
+                    />
+                    {isProjectEmpty(state, project.id)
+                      ? (
+                        <ConfirmDialog
+                          trigger={
+                            <Button variant="quiet">Delete empty</Button>
+                          }
+                          title={`Delete ${project.name}?`}
+                          description="This empty project will be removed locally. This action cannot be undone from the project list."
+                          confirmLabel="Delete project"
+                          confirmVariant="danger"
+                          onConfirm={() =>
+                            send({
+                              type: "project.command",
+                              command: {
+                                type: "delete-empty",
+                                projectId: project.id,
+                              },
+                            })}
+                        />
+                      )
+                      : repository
+                      ? (
+                        <ProjectDeletionReview
+                          repository={repository}
+                          state={state}
+                          project={project}
+                          onDeleted={() => {
+                            void service.getState().then(onStateChange);
+                          }}
+                        />
+                      )
+                      : (
+                        <Text size="caption" tone="muted">
+                          Deletion unavailable.
+                        </Text>
+                      )}
+                  </div>
+                </div>
+              </Stack>
+            </ListRow>
+          ))}
+        </List>
+      </section>
+      {current
+        ? (
+          <Text tone="secondary">
+            Switch to another project before archiving {current.name}.
+          </Text>
+        )
+        : null}
+      <Disclosure title={`Archived projects (${archived.length})`}>
+        {archived.length
+          ? (
+            <List>
+              {archived.map((project) => (
+                <ListRow key={project.id} trailing={<Badge>Archived</Badge>}>
+                  <Stack gap={2}>
+                    <Inline justify="space-between">
+                      <Stack gap={1}>
+                        <strong>{project.name}</strong>
+                        <Text tone="secondary">
+                          {project.defaultCurrency}
+                        </Text>
+                      </Stack>
+                      <IconButton
+                        icon={<Pencil size={18} />}
+                        aria-label="Edit"
+                        variant="quiet"
+                        onPress={() =>
+                          openEditor({ kind: "edit", record: project })}
+                      />
+                    </Inline>
                     <div className="local-ui-card-actions--grid">
                       <Button
-                        variant="quiet"
-                        isDisabled={index === 0 || snapshot.hasTag("saving")}
-                        onPress={() => moveOther(project.id, -1)}
-                      >
-                        Move up
-                      </Button>
-                      <Button
-                        variant="quiet"
-                        isDisabled={index === activeOthers.length - 1 ||
-                          snapshot.hasTag("saving")}
-                        onPress={() => moveOther(project.id, 1)}
-                      >
-                        Move down
-                      </Button>
-                      <ConfirmDialog
-                        trigger={
-                          <Button
-                            variant="quiet"
-                            isDisabled={snapshot.hasTag("saving")}
-                          >
-                            Archive
-                          </Button>
-                        }
-                        title={`Archive ${project.name}?`}
-                        description="The project and its expenses stay on this device and can be restored later."
-                        confirmLabel="Archive project"
-                        onConfirm={() =>
+                        variant="secondary"
+                        onPress={() =>
                           send({
                             type: "project.command",
-                            command: { type: "archive", projectId: project.id },
+                            command: {
+                              type: "restore",
+                              projectId: project.id,
+                            },
                           })}
-                      />
+                      >
+                        Restore
+                      </Button>
                       {isProjectEmpty(state, project.id)
                         ? (
                           <ConfirmDialog
@@ -754,7 +859,7 @@ export function ProjectManager({
                               <Button variant="quiet">Delete empty</Button>
                             }
                             title={`Delete ${project.name}?`}
-                            description="This empty project will be removed locally. This action cannot be undone from the project list."
+                            description="This archived project is empty and will be removed locally. This action cannot be undone from the project list."
                             confirmLabel="Delete project"
                             confirmVariant="danger"
                             onConfirm={() =>
@@ -784,100 +889,15 @@ export function ProjectManager({
                           </Text>
                         )}
                     </div>
-                  </div>
-                </Stack>
-              </ListRow>
-            ))}
-          </List>
-        </section>
-        {current
-          ? (
-            <Text tone="secondary">
-              Switch to another project before archiving {current.name}.
-            </Text>
+                  </Stack>
+                </ListRow>
+              ))}
+            </List>
           )
           : null}
-        <Disclosure title={`Archived projects (${archived.length})`}>
-          {archived.length
-            ? (
-              <List>
-                {archived.map((project) => (
-                  <ListRow key={project.id} trailing={<Badge>Archived</Badge>}>
-                    <Stack gap={2}>
-                      <Inline justify="space-between">
-                        <Stack gap={1}>
-                          <strong>{project.name}</strong>
-                          <Text tone="secondary">
-                            {project.defaultCurrency}
-                          </Text>
-                        </Stack>
-                        <IconButton
-                          icon={<Pencil size={18} />}
-                          aria-label="Edit"
-                          variant="quiet"
-                          onPress={() =>
-                            openEditor({ kind: "edit", record: project })}
-                        />
-                      </Inline>
-                      <div className="local-ui-card-actions--grid">
-                        <Button
-                          variant="secondary"
-                          onPress={() =>
-                            send({
-                              type: "project.command",
-                              command: {
-                                type: "restore",
-                                projectId: project.id,
-                              },
-                            })}
-                        >
-                          Restore
-                        </Button>
-                        {isProjectEmpty(state, project.id)
-                          ? (
-                            <ConfirmDialog
-                              trigger={
-                                <Button variant="quiet">Delete empty</Button>
-                              }
-                              title={`Delete ${project.name}?`}
-                              description="This archived project is empty and will be removed locally. This action cannot be undone from the project list."
-                              confirmLabel="Delete project"
-                              confirmVariant="danger"
-                              onConfirm={() =>
-                                send({
-                                  type: "project.command",
-                                  command: {
-                                    type: "delete-empty",
-                                    projectId: project.id,
-                                  },
-                                })}
-                            />
-                          )
-                          : repository
-                          ? (
-                            <ProjectDeletionReview
-                              repository={repository}
-                              state={state}
-                              project={project}
-                              onDeleted={() => {
-                                void service.getState().then(onStateChange);
-                              }}
-                            />
-                          )
-                          : (
-                            <Text size="caption" tone="muted">
-                              Deletion unavailable.
-                            </Text>
-                          )}
-                      </div>
-                    </Stack>
-                  </ListRow>
-                ))}
-              </List>
-            )
-            : null}
-        </Disclosure>
-      </Stack>
-    </ContentContainer>
+      </Disclosure>
+    </Stack>
   );
+
+  return isEmbedded ? content : <ContentContainer>{content}</ContentContainer>;
 }

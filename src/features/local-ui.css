@@ -377,9 +377,9 @@
 
   .local-ui-card-actions--primary-stack {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: var(--space-2);
-    align-items: center;
+    width: 100%;
   }
 
   .local-ui-card-actions--grid {
@@ -387,13 +387,45 @@
     flex-wrap: wrap;
     gap: var(--space-2);
     align-items: center;
+    width: 100%;
+    padding-top: var(--space-1);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  .local-ui-category-row-inner {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .local-ui-category-swatch {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-border-subtle);
+    flex-shrink: 0;
   }
 
   .local-ui-category-actions {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
     align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+  }
+
+  .local-ui-category-actions__reorder {
+    display: inline-flex;
+    align-items: center;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-full);
+    padding: 1px;
+  }
+
+  .local-ui-category-actions__manage {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
   }
 
   .local-ui-delete-actions {
@@ -434,16 +466,15 @@
     }
 
     .local-ui-card-actions--primary-stack {
-      display: grid;
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
       gap: var(--space-2);
       width: 100%;
     }
 
-    .local-ui-card-actions--primary-stack > .ds-button,
-    .local-ui-card-actions--primary-stack > button,
-    .local-ui-card-actions--primary-stack > * {
-      width: 100%;
+    .local-ui-category-row-inner {
+      flex-wrap: wrap;
+      gap: var(--space-2);
     }
 
     .local-ui-management-section > .ds-inline {

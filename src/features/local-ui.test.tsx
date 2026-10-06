@@ -1227,6 +1227,49 @@ Deno.test("local UI organize screen displays all active categories and projects 
   });
 });
 
+Deno.test("local UI unified organize screen toggles between projects and categories via segmented control", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    const { service } = createTestService(populatedOrganizedState);
+    const repository = {
+      deviceId: "0123456789abcdef0123456789abcdef",
+    } as never;
+    let navigatedPath: string | null = null;
+    await withAriaDomGlobals(window, async () => {
+      render(
+        createElement(OrganizeScreen, {
+          state: populatedOrganizedState,
+          service,
+          repository,
+          onNavigate: (path) => {
+            navigatedPath = path;
+          },
+        }),
+      );
+      const view = within(document.body);
+      assert(view.getByRole("heading", { name: "Organize", level: 1 }));
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Current project" }))
+      );
+      assert(view.getByRole("button", { name: "Create project" }));
+
+      const categoriesRadio = view.getByRole("radio", { name: "Categories" });
+      fireEvent.click(categoriesRadio);
+      await waitFor(() =>
+        assert(view.getByRole("searchbox", { name: "Search categories" }))
+      );
+      assert(view.getByRole("button", { name: "Create category" }));
+      assertEquals(navigatedPath, "/categories");
+
+      const projectsRadio = view.getByRole("radio", { name: "Projects" });
+      fireEvent.click(projectsRadio);
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Current project" }))
+      );
+      assertEquals(navigatedPath, "/projects");
+    });
+  });
+});
+
 Deno.test("local UI project editor and manager expose safe ordering and confirmations", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service, commits } = createTestService(organizedState);

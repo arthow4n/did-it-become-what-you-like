@@ -25,6 +25,7 @@ import {
   Disclosure,
   EmptyState,
   FormActions,
+  Heading,
   IconButton,
   Inline,
   InlineNotice,
@@ -42,9 +43,11 @@ export function CategoryManager({
   service,
   state,
   initialCreate = false,
+  isEmbedded = false,
   onStateChange,
   onNavigate,
   onDirtyChange,
+  onEditorOpenChange,
   discardRequest,
   onDirtyDiscarded,
   onComplete,
@@ -52,9 +55,11 @@ export function CategoryManager({
   service: ProjectCategoryService;
   state: ProjectCategoryState;
   initialCreate?: boolean;
+  isEmbedded?: boolean;
   onStateChange: (state: ProjectCategoryState) => void;
   onNavigate: (path: LocalUiPath) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onEditorOpenChange?: (open: boolean) => void;
   discardRequest?: number;
   onDirtyDiscarded?: () => void;
   onComplete?: () => void;
@@ -115,6 +120,9 @@ export function CategoryManager({
       setDescription(editor.record.description ?? "");
     }
   }, [editor]);
+  useEffect(() => {
+    onEditorOpenChange?.(editor !== null);
+  }, [editor, onEditorOpenChange]);
   const submitEditor = () => {
     if (!name.trim() || !snapshot.matches("ready")) return;
     isSubmittingRef.current = true;
@@ -349,48 +357,77 @@ export function CategoryManager({
       !candidate.archived && candidate.id !== uncategorized?.id
     )
     .concat(uncategorized ? [uncategorized] : []);
-  return (
-    <ContentContainer>
-      <Stack gap={5}>
-        <PageHeader
-          headingLevel={1}
-          title="Manage categories"
-          leading={
-            <IconButton
-              icon={<ArrowLeft />}
-              aria-label="Back to organize"
-              variant="quiet"
-              onPress={() => onNavigate("/organize")}
-            />
-          }
-          actions={
+  const listContent = (
+    <Stack gap={5}>
+      {!isEmbedded
+        ? (
+          <PageHeader
+            headingLevel={1}
+            title="Manage categories"
+            leading={
+              <IconButton
+                icon={<ArrowLeft />}
+                aria-label="Back to organize"
+                variant="quiet"
+                onPress={() => onNavigate("/organize")}
+              />
+            }
+            actions={
+              <Button onPress={() => openEditor({ kind: "create" })}>
+                Create category
+              </Button>
+            }
+          />
+        )
+        : (
+          <Inline justify="space-between">
+            <Heading size="sm">Categories</Heading>
             <Button onPress={() => openEditor({ kind: "create" })}>
               Create category
             </Button>
-          }
-        />
-        <SearchField
-          label="Search categories"
-          placeholder="Find an active or archived category"
-          value={search}
-          onValueChange={setSearch}
-        />
-        {snapshot.context.error
-          ? (
-            <InlineNotice tone="danger" title="Category change failed">
-              {snapshot.context.error.message}
-            </InlineNotice>
-          )
-          : null}
-        <List label="Active categories">
-          {customActive.map((category, index) => (
-            <ListRow key={category.id}>
-              <Stack gap={2}>
+          </Inline>
+        )}
+      <SearchField
+        label="Search categories"
+        placeholder="Find an active or archived category"
+        value={search}
+        onValueChange={setSearch}
+      />
+      {snapshot.context.error
+        ? (
+          <InlineNotice tone="danger" title="Category change failed">
+            {snapshot.context.error.message}
+          </InlineNotice>
+        )
+        : null}
+      <List label="Active categories">
+        {customActive.map((category, index) => (
+          <ListRow key={category.id}>
+            <Inline
+              justify="space-between"
+              className="local-ui-category-row-inner"
+            >
+              <Inline gap={2}>
+                {category.color
+                  ? (
+                    <span
+                      className="local-ui-category-swatch"
+                      style={{ backgroundColor: category.color }}
+                      aria-hidden="true"
+                    />
+                  )
+                  : null}
                 <strong>{category.name}</strong>
+              </Inline>
+              <div
+                className="local-ui-category-actions"
+                aria-label={`Actions for ${category.name}`}
+                role="group"
+              >
                 <div
-                  className="local-ui-category-actions"
-                  aria-label={`Actions for ${category.name}`}
+                  className="local-ui-category-actions__reorder"
                   role="group"
+                  aria-label="Reorder"
                 >
                   <IconButton
                     icon={<ArrowUp size={18} />}
@@ -409,6 +446,8 @@ export function CategoryManager({
                       snapshot.hasTag("saving")}
                     onPress={() => moveCategory(category.id, 1)}
                   />
+                </div>
+                <div className="local-ui-category-actions__manage">
                   <IconButton
                     icon={<Pencil size={18} />}
                     aria-label={`Edit ${category.name}`}
@@ -469,67 +508,73 @@ export function CategoryManager({
                       })}
                   />
                 </div>
-              </Stack>
-            </ListRow>
-          ))}
-          {uncategorized && matches(uncategorized)
-            ? (
-              <ListRow trailing={<Badge>Built-in</Badge>}>
-                <strong>{uncategorized.name}</strong>
-              </ListRow>
-            )
-            : null}
-        </List>
-        {!active.length
+              </div>
+            </Inline>
+          </ListRow>
+        ))}
+        {uncategorized && matches(uncategorized)
           ? (
-            <EmptyState title="No matching active categories">
-              Create a category or clear the search.
-            </EmptyState>
+            <ListRow trailing={<Badge>Built-in</Badge>}>
+              <strong>{uncategorized.name}</strong>
+            </ListRow>
           )
           : null}
-        <Disclosure title={`Archived categories (${archived.length})`}>
-          {archived.length
-            ? (
-              <List label="Archived categories">
-                {archived.map((category) => (
-                  <ListRow key={category.id}>
-                    <Stack gap={2}>
-                      <Inline justify="space-between">
-                        <Stack gap={1}>
-                          <strong>{category.name}</strong>
-                          <Text tone="secondary">Archived</Text>
-                        </Stack>
-                        <IconButton
-                          icon={<Pencil size={18} />}
-                          aria-label="Edit"
-                          variant="quiet"
-                          onPress={() =>
-                            openEditor({ kind: "edit", record: category })}
-                        />
-                      </Inline>
-                      <div className="local-ui-card-actions--grid">
-                        <Button
-                          variant="secondary"
-                          onPress={() =>
-                            send({
-                              type: "category.command",
-                              command: {
-                                type: "restore",
-                                categoryId: category.id,
-                              },
-                            })}
-                        >
-                          Restore
-                        </Button>
-                      </div>
-                    </Stack>
-                  </ListRow>
-                ))}
-              </List>
-            )
-            : null}
-        </Disclosure>
-      </Stack>
+      </List>
+      {!active.length
+        ? (
+          <EmptyState title="No matching active categories">
+            Create a category or clear the search.
+          </EmptyState>
+        )
+        : null}
+      <Disclosure title={`Archived categories (${archived.length})`}>
+        {archived.length
+          ? (
+            <List label="Archived categories">
+              {archived.map((category) => (
+                <ListRow key={category.id}>
+                  <Stack gap={2}>
+                    <Inline justify="space-between">
+                      <Stack gap={1}>
+                        <strong>{category.name}</strong>
+                        <Text tone="secondary">Archived</Text>
+                      </Stack>
+                      <IconButton
+                        icon={<Pencil size={18} />}
+                        aria-label="Edit"
+                        variant="quiet"
+                        onPress={() =>
+                          openEditor({ kind: "edit", record: category })}
+                      />
+                    </Inline>
+                    <div className="local-ui-card-actions--grid">
+                      <Button
+                        variant="secondary"
+                        onPress={() =>
+                          send({
+                            type: "category.command",
+                            command: {
+                              type: "restore",
+                              categoryId: category.id,
+                            },
+                          })}
+                      >
+                        Restore
+                      </Button>
+                    </div>
+                  </Stack>
+                </ListRow>
+              ))}
+            </List>
+          )
+          : null}
+      </Disclosure>
+    </Stack>
+  );
+
+  return isEmbedded ? listContent : (
+    <ContentContainer>
+      {listContent}
     </ContentContainer>
   );
 }

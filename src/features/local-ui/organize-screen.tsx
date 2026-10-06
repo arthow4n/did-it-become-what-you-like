@@ -1,4 +1,9 @@
-import type { ProjectCategoryState } from "../../domain/organization.ts";
+import { useEffect, useState } from "react";
+import type { LocalRepository } from "../../adapters/local/index.ts";
+import type {
+  ProjectCategoryService,
+  ProjectCategoryState,
+} from "../../domain/organization.ts";
 import {
   Badge,
   Button,
@@ -9,11 +14,36 @@ import {
   List,
   ListRow,
   PageHeader,
+  SegmentedControl,
   Stack,
   Text,
 } from "../../design-system/index.ts";
+import { type LocalUiPath } from "./types.ts";
+import { ProjectManager } from "./project-manager.tsx";
+import { CategoryManager } from "./category-manager.tsx";
 
-export function OrganizeScreen({
+export type OrganizeScreenProps = {
+  state: ProjectCategoryState;
+  service?: ProjectCategoryService;
+  repository?: LocalRepository;
+  initialSection?: "projects" | "categories";
+  projectEditorOpen?: boolean;
+  categoryEditorOpen?: boolean;
+  onStateChange?: (state: ProjectCategoryState) => void;
+  onNavigate?: (path: LocalUiPath) => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  discardRequest?: number;
+  onDirtyDiscarded?: () => void;
+  onCompleteProject?: () => void;
+  onCompleteCategory?: () => void;
+  // Legacy / fallback props
+  onProjects?: () => void;
+  onCategories?: () => void;
+  onNewProject?: () => void;
+  onNewCategory?: () => void;
+};
+
+function LegacyOrganizeOverview({
   state,
   onProjects,
   onCategories,
@@ -21,10 +51,10 @@ export function OrganizeScreen({
   onNewCategory,
 }: {
   state: ProjectCategoryState;
-  onProjects: () => void;
-  onCategories: () => void;
-  onNewProject: () => void;
-  onNewCategory: () => void;
+  onProjects?: () => void;
+  onCategories?: () => void;
+  onNewProject?: () => void;
+  onNewCategory?: () => void;
 }) {
   const projects = state.projects.filter((project) => !project.archived);
   const categories = state.categories.filter((category) => !category.archived);
@@ -85,6 +115,113 @@ export function OrganizeScreen({
             ))}
           </List>
         </section>
+      </Stack>
+    </ContentContainer>
+  );
+}
+
+export function OrganizeScreen({
+  state,
+  service,
+  repository,
+  initialSection = "projects",
+  projectEditorOpen = false,
+  categoryEditorOpen = false,
+  onStateChange,
+  onNavigate,
+  onDirtyChange,
+  discardRequest,
+  onDirtyDiscarded,
+  onCompleteProject,
+  onCompleteCategory,
+  onProjects,
+  onCategories,
+  onNewProject,
+  onNewCategory,
+}: OrganizeScreenProps) {
+  if (!service) {
+    return (
+      <LegacyOrganizeOverview
+        state={state}
+        onProjects={onProjects}
+        onCategories={onCategories}
+        onNewProject={onNewProject}
+        onNewCategory={onNewCategory}
+      />
+    );
+  }
+
+  const [section, setSection] = useState<"projects" | "categories">(
+    initialSection,
+  );
+  const [isEditing, setIsEditing] = useState(
+    projectEditorOpen || categoryEditorOpen,
+  );
+
+  useEffect(() => {
+    if (initialSection) {
+      setSection(initialSection);
+    }
+  }, [initialSection]);
+
+  const handleSectionChange = (val: string) => {
+    const nextSection = val as "projects" | "categories";
+    setSection(nextSection);
+    onNavigate?.(nextSection === "categories" ? "/categories" : "/projects");
+  };
+
+  const projectManagerNode = (
+    <ProjectManager
+      repository={repository}
+      service={service}
+      state={state}
+      initialCreate={projectEditorOpen}
+      isEmbedded
+      onStateChange={onStateChange ?? (() => undefined)}
+      onNavigate={onNavigate ?? (() => undefined)}
+      onDirtyChange={onDirtyChange}
+      onEditorOpenChange={setIsEditing}
+      discardRequest={discardRequest}
+      onDirtyDiscarded={onDirtyDiscarded}
+      onComplete={onCompleteProject}
+    />
+  );
+
+  const categoryManagerNode = (
+    <CategoryManager
+      service={service}
+      state={state}
+      initialCreate={categoryEditorOpen}
+      isEmbedded
+      onStateChange={onStateChange ?? (() => undefined)}
+      onNavigate={onNavigate ?? (() => undefined)}
+      onDirtyChange={onDirtyChange}
+      onEditorOpenChange={setIsEditing}
+      discardRequest={discardRequest}
+      onDirtyDiscarded={onDirtyDiscarded}
+      onComplete={onCompleteCategory}
+    />
+  );
+
+  if (isEditing) {
+    return section === "projects" ? projectManagerNode : categoryManagerNode;
+  }
+
+  return (
+    <ContentContainer>
+      <Stack gap={5}>
+        <PageHeader title="Organize" headingLevel={1} />
+        <SegmentedControl
+          label="Organize view"
+          options={[
+            { id: "projects", label: "Projects" },
+            { id: "categories", label: "Categories" },
+          ]}
+          value={section}
+          onChange={handleSectionChange}
+          fullWidth
+        />
+        {section === "projects" ? projectManagerNode : categoryManagerNode}
       </Stack>
     </ContentContainer>
   );

@@ -81,10 +81,8 @@ import {
   LoadingScreen,
 } from "./navigation.tsx";
 import { ExpensesScreen } from "./expenses-screen.tsx";
-import { ProjectManager } from "./project-manager.tsx";
 import { OrganizeScreen } from "./organize-screen.tsx";
 import { SettingsScreen } from "./settings-screen.tsx";
-import { CategoryManager } from "./category-manager.tsx";
 import { ManualExpenseScreen } from "./manual-expense-screen.tsx";
 function FoundationExpensesPlaceholder() {
   return (
@@ -771,29 +769,18 @@ export function LocalUiRuntime(
                 }}
               />
             )
-            : contentPath === "/organize"
+            : contentPath === "/organize" || contentPath === "/projects" ||
+                contentPath === "/categories"
             ? (
               <OrganizeScreen
                 state={state}
-                onProjects={() => navigate("/projects")}
-                onCategories={() => navigate("/categories")}
-                onNewProject={() => {
-                  setProjectEditorOpen(true);
-                  navigate("/projects");
-                }}
-                onNewCategory={() => {
-                  setCategoryEditorOpen(true);
-                  navigate("/categories");
-                }}
-              />
-            )
-            : contentPath === "/projects"
-            ? (
-              <ProjectManager
-                repository={repository}
                 service={organization}
-                state={state}
-                initialCreate={projectEditorOpen}
+                repository={repository}
+                initialSection={contentPath === "/categories"
+                  ? "categories"
+                  : "projects"}
+                projectEditorOpen={projectEditorOpen}
+                categoryEditorOpen={categoryEditorOpen}
                 onStateChange={setState}
                 onNavigate={requestNavigation}
                 onDirtyChange={(dirty) => {
@@ -801,8 +788,9 @@ export function LocalUiRuntime(
                   setDirtyNavigationWorkflow(dirty);
                 }}
                 discardRequest={discardRequest}
-                onDirtyDiscarded={() => finishDirtyNavigation("/projects")}
-                onComplete={() => {
+                onDirtyDiscarded={() =>
+                  finishDirtyNavigation(contentPath as LocalUiPath)}
+                onCompleteProject={() => {
                   if (projectEditorOpen) {
                     setProjectEditorOpen(false);
                     setWorkflowDirty(false);
@@ -810,23 +798,7 @@ export function LocalUiRuntime(
                     navigate("/expenses");
                   }
                 }}
-              />
-            )
-            : contentPath === "/categories"
-            ? (
-              <CategoryManager
-                service={organization}
-                state={state}
-                initialCreate={categoryEditorOpen}
-                onStateChange={setState}
-                onNavigate={requestNavigation}
-                onDirtyChange={(dirty) => {
-                  setWorkflowDirty(dirty);
-                  setDirtyNavigationWorkflow(dirty);
-                }}
-                discardRequest={discardRequest}
-                onDirtyDiscarded={() => finishDirtyNavigation("/categories")}
-                onComplete={() => {
+                onCompleteCategory={() => {
                   setCategoryEditorOpen(false);
                   setWorkflowDirty(false);
                   setDirtyNavigationWorkflow(false);

@@ -26,7 +26,7 @@
     "@types/big.js": "npm:@types/big.js@7.0.0",
     "xstate": "npm:xstate@5.33.2",
     "@xstate/react": "npm:@xstate/react@6.1.0",
-    "lucide-react": "npm:lucide-react@1.33.0",
+    "lucide-react": "npm:lucide-react@1.52.0",
     "zod": "npm:zod@4.6.5",
     "big.js": "npm:big.js@7.0.1",
     "@automerge/automerge": "npm:@automerge/automerge@3.5.0",

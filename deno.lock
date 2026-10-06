@@ -15,7 +15,7 @@
     "npm:@types/big.js@7.0.0": "7.0.0",
     "npm:@types/react-dom@19.2.4": "19.2.4_@types+react@19.2.18",
     "npm:@types/react@19.2.18": "19.2.18",
-    "npm:@vitejs/plugin-react@6.1.0": "6.1.0_vite@8.2.2",
+    "npm:@vitejs/plugin-react@6.1.2": "6.1.2_vite@8.2.2",
     "npm:@xstate/react@6.1.0": "6.1.0_react@19.2.8_xstate@5.32.5",
     "npm:axe-core@4.11.0": "4.11.0",
     "npm:big.js@7.0.1": "7.0.1",
@@ -1447,8 +1447,8 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
-    "@vitejs/plugin-react@6.1.0_vite@8.2.2": {
-      "integrity": "sha512-qd2BzUBehkov86WFhg0JkEFEYyCLG9uPCe6qWTY/kRlss9OvJrOF2UbIWT7p+8IzZHkEu0DNGHc4HSv+JdDLsw==",
+    "@vitejs/plugin-react@6.1.2_vite@8.2.2": {
+      "integrity": "sha512-fhJNGUdscQa4HkI0xFxwonWyhnVReCPDbXI7FH7jmzpnVCrFQI7PRrhWecO263610vOrs9tr2Y4xcf8uAdFxbw==",
       "dependencies": [
         "@rolldown/pluginutils",
         "vite"
@@ -3513,7 +3513,7 @@
       "npm:@types/big.js@7.0.0",
       "npm:@types/react-dom@19.2.4",
       "npm:@types/react@19.2.18",
-      "npm:@vitejs/plugin-react@6.1.0",
+      "npm:@vitejs/plugin-react@6.1.2",
       "npm:@xstate/react@6.1.0",
       "npm:axe-core@4.11.0",
       "npm:big.js@7.0.1",

@@ -17,10 +17,10 @@
     "npm:@types/react@19.2.18": "19.2.18",
     "npm:@vitejs/plugin-react@6.1.2": "6.1.2_vite@8.2.2",
     "npm:@xstate/react@6.1.0": "6.1.0_react@19.2.8_xstate@5.32.5",
-    "npm:axe-core@4.11.0": "4.11.0",
+    "npm:axe-core@4.14.0": "4.14.0",
     "npm:big.js@7.0.1": "7.0.1",
     "npm:fake-indexeddb@6.2.5": "6.2.5",
-    "npm:happy-dom@20.11.6": "20.11.6",
+    "npm:happy-dom@20.14.5": "20.14.5",
     "npm:lucide-react@1.33.0": "1.33.0_react@19.2.8",
     "npm:react-dom@19.2.8": "19.2.8_react@19.2.8",
     "npm:react@19.2.8": "19.2.8",
@@ -1341,8 +1341,8 @@
     "@types/whatwg-mimetype@3.0.2": {
       "integrity": "sha512-c2AKvDT8ToxLIOUlN51gTiHXflsfIFisS4pO7pDPoKouJCESkhZnEy623gwP9laCy5lnLDAw1vAzu2vM2YLOrA=="
     },
-    "@types/ws@8.18.1": {
-      "integrity": "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==",
+    "@types/ws@8.18.2": {
+      "integrity": "sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==",
       "dependencies": [
         "@types/node"
       ]
@@ -1531,8 +1531,8 @@
         "possible-typed-array-names"
       ]
     },
-    "axe-core@4.11.0": {
-      "integrity": "sha512-ilYanEU8vxxBexpJd8cWM4ElSQq4QctCLKih0TSfjIfCQTeyH/6zVrmIJfLPrKTKJRbiG+cfnZbQIjAlJmF1jQ=="
+    "axe-core@4.14.0": {
+      "integrity": "sha512-9WTZxEjsZ7b13TH8JPmbV2z8CHbl80/2hm3XPEG4JgNdQLK81IBRXmSxHfMAOkSqQeRxT/0dwNDz2GOm3zzpcQ=="
     },
     "babel-plugin-polyfill-corejs2@0.4.17_@babel+core@7.29.7": {
       "integrity": "sha512-aTyf30K/rqAsNwN76zYrdtx8obu0E4KoUME29B1xj+B3WxgvWkp943vYQ+z8Mv3lw9xHXMHpvSPOBxzAkIa94w==",
@@ -2082,8 +2082,8 @@
     "graceful-fs@4.2.11": {
       "integrity": "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ=="
     },
-    "happy-dom@20.11.6": {
-      "integrity": "sha512-Hldbg8AdAa5a5oDcZpjqnGitp7JB0hqWmfv/8qr+kft4vzSD8BHsbdRfzYvL/0QcbKcURC/yyoygbeDQarPvYg==",
+    "happy-dom@20.14.5": {
+      "integrity": "sha512-x/RzkpWO40bTjIoT30iQtt64FLLmH/iRcUCN2X//bLx7H3ifkdfPXyqsro/OYtqzIAhiLMMA7mmiOR9C3NOKjQ==",
       "dependencies": [
         "@types/node",
         "@types/whatwg-mimetype",
@@ -3515,10 +3515,10 @@
       "npm:@types/react@19.2.18",
       "npm:@vitejs/plugin-react@6.1.2",
       "npm:@xstate/react@6.1.0",
-      "npm:axe-core@4.11.0",
+      "npm:axe-core@4.14.0",
       "npm:big.js@7.0.1",
       "npm:fake-indexeddb@6.2.5",
-      "npm:happy-dom@20.11.6",
+      "npm:happy-dom@20.14.5",
       "npm:lucide-react@1.33.0",
       "npm:react-dom@19.2.8",
       "npm:react@19.2.8",

@@ -37,8 +37,8 @@
     "@playwright/test": "npm:@playwright/test@1.62.1",
     "@testing-library/react": "npm:@testing-library/react@16.3.3",
     "@testing-library/dom": "npm:@testing-library/dom@10.4.2",
-    "axe-core": "npm:axe-core@4.11.0",
-    "happy-dom": "npm:happy-dom@20.11.6"
+    "axe-core": "npm:axe-core@4.14.0",
+    "happy-dom": "npm:happy-dom@20.14.5"
   },
   "tasks": {
     "dev": "deno run -A npm:vite@8.2.2 --host 127.0.0.1",

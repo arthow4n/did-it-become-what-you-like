@@ -1,7 +1,7 @@
 {
   "version": "5",
   "specifiers": {
-    "npm:@automerge/automerge@3.4.1": "3.4.1",
+    "npm:@automerge/automerge@3.5.0": "3.5.0",
     "npm:@google/genai@2.19.0": "2.19.0",
     "npm:@mantine/core@9.5.0": "9.5.0_@mantine+hooks@9.5.0__react@19.2.8_react@19.2.8_react-dom@19.2.8__react@19.2.8_@types+react@19.2.18",
     "npm:@mantine/dates@9.5.0": "9.5.0_@mantine+core@9.5.0__@mantine+hooks@9.5.0___react@19.2.8__react@19.2.8__react-dom@19.2.8___react@19.2.8__@types+react@19.2.18_@mantine+hooks@9.5.0__react@19.2.8_dayjs@1.11.23_react@19.2.8_react-dom@19.2.8__react@19.2.8",
@@ -39,8 +39,8 @@
         "leven"
       ]
     },
-    "@automerge/automerge@3.4.1": {
-      "integrity": "sha512-zsZpbs/iDPvp+ZojIYd+gxmbcPVz2Xbkcx778G8zrt3E0zS+6saHJOm666lOuZyNRlTV4wHw9qzGTKueedeCsQ=="
+    "@automerge/automerge@3.5.0": {
+      "integrity": "sha512-ejbqJWfXWM2QbTcUK/5ugYiQiyOP7LYVAp/RuSvthCc07oek0FClMxEuouuhjrLjVPDSI34RP1ftGc45PF7WRA=="
     },
     "@babel/code-frame@7.29.7": {
       "integrity": "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==",
@@ -3491,7 +3491,7 @@
   },
   "workspace": {
     "dependencies": [
-      "npm:@automerge/automerge@3.4.1",
+      "npm:@automerge/automerge@3.5.0",
       "npm:@google/genai@2.19.0",
       "npm:@mantine/core@9.5.0",
       "npm:@mantine/dates@9.5.0",

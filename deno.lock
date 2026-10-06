@@ -9,7 +9,7 @@
     "npm:@mantine/hooks@9.5.0": "9.5.0_react@19.2.8",
     "npm:@mantine/notifications@9.5.0": "9.5.0_@mantine+core@9.5.0__@mantine+hooks@9.5.0___react@19.2.8__react@19.2.8__react-dom@19.2.8___react@19.2.8__@types+react@19.2.18_@mantine+hooks@9.5.0__react@19.2.8_react@19.2.8_react-dom@19.2.8__react@19.2.8_@types+react@19.2.18",
     "npm:@openrouter/sdk@1.2.82": "1.2.82",
-    "npm:@playwright/test@1.62.1": "1.62.1",
+    "npm:@playwright/test@1.63.0": "1.63.0",
     "npm:@testing-library/dom@10.4.2": "10.4.2",
     "npm:@testing-library/react@16.3.3": "16.3.3_@testing-library+dom@10.4.2_@types+react@19.2.18_@types+react-dom@19.2.4__@types+react@19.2.18_react@19.2.8_react-dom@19.2.8__react@19.2.8",
     "npm:@types/big.js@7.0.0": "7.0.0",
@@ -964,8 +964,8 @@
     "@oxc-project/types@0.146.0": {
       "integrity": "sha512-XC0QsnnhVe7sLIWmYmdPw7x5P0h4W8vUU3Nv1ySgWXtvCz8NizoAEpGXA0sOYoJQV2Rl13LgURAHQ5cI5ILCSA=="
     },
-    "@playwright/test@1.62.1": {
-      "integrity": "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==",
+    "@playwright/test@1.63.0": {
+      "integrity": "sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==",
       "dependencies": [
         "playwright"
       ],
@@ -1954,11 +1954,6 @@
         "universalify"
       ]
     },
-    "fsevents@2.3.2": {
-      "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
-      "os": ["darwin"],
-      "scripts": true
-    },
     "fsevents@2.3.3": {
       "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
       "os": ["darwin"],
@@ -2580,17 +2575,14 @@
     "picomatch@4.0.5": {
       "integrity": "sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A=="
     },
-    "playwright-core@1.62.1": {
-      "integrity": "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==",
+    "playwright-core@1.63.0": {
+      "integrity": "sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==",
       "bin": true
     },
-    "playwright@1.62.1": {
-      "integrity": "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==",
+    "playwright@1.63.0": {
+      "integrity": "sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==",
       "dependencies": [
         "playwright-core"
-      ],
-      "optionalDependencies": [
-        "fsevents@2.3.2"
       ],
       "bin": true
     },
@@ -2853,7 +2845,7 @@
         "@rollup/rollup-win32-ia32-msvc",
         "@rollup/rollup-win32-x64-gnu",
         "@rollup/rollup-win32-x64-msvc",
-        "fsevents@2.3.3"
+        "fsevents"
       ],
       "bin": true
     },
@@ -3278,7 +3270,7 @@
         "tinyglobby"
       ],
       "optionalDependencies": [
-        "fsevents@2.3.3"
+        "fsevents"
       ],
       "bin": true
     },
@@ -3507,7 +3499,7 @@
       "npm:@mantine/hooks@9.5.0",
       "npm:@mantine/notifications@9.5.0",
       "npm:@openrouter/sdk@1.2.82",
-      "npm:@playwright/test@1.62.1",
+      "npm:@playwright/test@1.63.0",
       "npm:@testing-library/dom@10.4.2",
       "npm:@testing-library/react@16.3.3",
       "npm:@types/big.js@7.0.0",

@@ -103,6 +103,12 @@ export async function openExpense(
   readonly draft: ManualExpenseDraft;
   readonly originalExpense: Expense | null;
 }> {
+  if (request.initialDraft !== undefined) {
+    return {
+      draft: request.initialDraft,
+      originalExpense: null,
+    };
+  }
   if (request.expense !== undefined) {
     const expense = ExpenseSchema.parse(request.expense);
     return {

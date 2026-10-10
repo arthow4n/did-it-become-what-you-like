@@ -189,6 +189,9 @@ export function initialDraftFromRequest(
   request?: ManualExpenseOpenRequest,
 ): ManualExpenseDraft | null {
   if (!request) return null;
+  if (request.initialDraft) {
+    return request.initialDraft;
+  }
   if (request.expense) {
     return draftFromExpense(request.expense);
   }

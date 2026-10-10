@@ -617,6 +617,47 @@ Deno.test("local UI manual expense edit accepts fluent immediate input without b
   });
 });
 
+Deno.test("local UI manual new expense accepts fluent immediate typing without blocking or dropping input", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent }) => {
+    await withAriaDomGlobals(window, () => {
+      const local = createFakeLocalPort();
+      const { service } = createTestService(state);
+      render(
+        createElement(ManualExpenseScreen, {
+          repository: local,
+          service,
+          state,
+          request: { projectId: project.id },
+          onSaved: () => undefined,
+          onClosed: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      const amountInput = view.getByRole("textbox", {
+        name: "Amount",
+      }) as HTMLInputElement;
+      assertEquals(amountInput.value, "");
+
+      fireEvent.input(amountInput, { target: { value: "49.50" } });
+      assertEquals(amountInput.value, "49.50");
+
+      const merchantInput = view.getByRole("searchbox", {
+        name: "Merchant",
+      }) as HTMLInputElement;
+      fireEvent.input(merchantInput, {
+        target: { value: "Quick Espresso Bar" },
+      });
+      assertEquals(merchantInput.value, "Quick Espresso Bar");
+
+      const descInput = view.getByRole("textbox", {
+        name: "Description (optional)",
+      }) as HTMLTextAreaElement;
+      fireEvent.input(descInput, { target: { value: "Morning coffee" } });
+      assertEquals(descInput.value, "Morning coffee");
+    });
+  });
+});
+
 Deno.test("local UI expenses exposes shared filters, empty state, and add event", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let addCount = 0;

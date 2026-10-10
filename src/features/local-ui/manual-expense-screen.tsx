@@ -2,6 +2,7 @@ import { useActor } from "@xstate/react";
 import type { SnapshotFrom } from "xstate";
 import {
   type ChangeEvent,
+  startTransition,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -12,6 +13,8 @@ import {
 import { ReceiptText, X } from "lucide-react";
 import {
   createManualExpenseMachine,
+  currentProject,
+  DEFAULT_EXPENSE_DAY_BOUNDARY,
   isDraftModified,
   type ManualExpenseDraft,
   type ManualExpenseEvent,
@@ -19,7 +22,15 @@ import {
   type ManualExpenseValidationErrors,
 } from "../../actors/manual-expense.ts";
 import type { LocalPort } from "../../adapters/ports/local.ts";
-import { CurrencyCodeSchema, type Expense } from "../../domain/index.ts";
+import {
+  CurrencyCodeSchema,
+  type Expense,
+  UNCATEGORIZED_CATEGORY_ID,
+} from "../../domain/index.ts";
+import {
+  expenseDateForLocalNow,
+  expenseTimeForLocalNow,
+} from "../../domain/queries/calendar.ts";
 import type {
   ProjectCategoryService,
   ProjectCategoryState,
@@ -177,6 +188,32 @@ export function ManualExpenseScreen({
   const persistenceKey = request.expense
     ? `workflow:manual-expense:edit:${request.expense.id}`
     : undefined;
+  const synchronousInitialDraft = useMemo(() => {
+    if (request.expense || request.initialDraft) return null;
+    try {
+      const project = currentProject(state, request.projectId);
+      const boundary = expenseDayBoundary ?? DEFAULT_EXPENSE_DAY_BOUNDARY;
+      const now = new Date();
+      return {
+        projectId: project.id,
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        date: expenseDateForLocalNow(now, boundary),
+        time: expenseTimeForLocalNow(now),
+        amount: "",
+        currency: project.defaultCurrency,
+        description: "",
+        direction: "spent" as const,
+      };
+    } catch {
+      return null;
+    }
+  }, [request, state, expenseDayBoundary]);
+  const effectiveRequest = useMemo(() => {
+    if (synchronousInitialDraft) {
+      return { ...request, initialDraft: synchronousInitialDraft };
+    }
+    return request;
+  }, [request, synchronousInitialDraft]);
   const machine = useMemo(
     () =>
       createManualExpenseMachine({
@@ -187,7 +224,7 @@ export function ManualExpenseScreen({
     [repository, service, expenseDayBoundary, machineKey],
   );
   const [snapshot, send] = useActor(machine, {
-    input: { persistenceKey, request },
+    input: { persistenceKey, request: effectiveRequest },
   });
   const completionHandled = useRef(false);
   const usefulActionHandled = useRef(false);
@@ -223,9 +260,9 @@ export function ManualExpenseScreen({
   }, [state.expenses]);
   useEffect(() => {
     if (snapshot.matches("idle") && !snapshot.context.draft) {
-      send({ type: "expense.open", request });
+      send({ type: "expense.open", request: effectiveRequest });
     }
-  }, [machineKey, request, send, snapshot]);
+  }, [machineKey, effectiveRequest, send, snapshot]);
   useEffect(() => {
     const savedExpense = snapshot.context.result?.expense;
     const completedSave = savedExpense !== undefined &&
@@ -267,11 +304,17 @@ export function ManualExpenseScreen({
   const onDirtyChangeRef = useRef(onDirtyChange);
   onDirtyChangeRef.current = onDirtyChange;
   const lastDirtyRef = useRef<boolean | null>(null);
+  const handleFormDirtyChange = useCallback((formDirty: boolean) => {
+    if (lastDirtyRef.current !== formDirty) {
+      lastDirtyRef.current = formDirty;
+      onDirtyChangeRef.current?.(formDirty);
+    }
+  }, []);
   useLayoutEffect(() => {
     if (snapshot.matches("idle")) return;
-    if (lastDirtyRef.current !== dirty) {
-      lastDirtyRef.current = dirty;
-      onDirtyChangeRef.current?.(dirty);
+    if (lastDirtyRef.current === null && !dirty) {
+      lastDirtyRef.current = false;
+      onDirtyChangeRef.current?.(false);
     }
   }, [dirty, snapshot]);
   useEffect(() => {
@@ -361,6 +404,7 @@ export function ManualExpenseScreen({
       recentCategoryIds={recentCategoryIds}
       recentMerchants={recentMerchants}
       onManualReceipt={onManualReceipt}
+      onDirtyChange={handleFormDirtyChange}
     />
   );
 }
@@ -375,6 +419,7 @@ function ManualExpenseFormContent({
   recentCategoryIds,
   recentMerchants,
   onManualReceipt,
+  onDirtyChange,
 }: {
   snapshot: ManualExpenseSnapshot;
   send: (event: ManualExpenseEvent) => void;
@@ -383,33 +428,57 @@ function ManualExpenseFormContent({
   recentCategoryIds: string[];
   recentMerchants: string[];
   onManualReceipt?: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
+  const [formDraft, setFormDraft] = useState<ManualExpenseDraft>(draft);
+  const formDraftRef = useRef(formDraft);
+  formDraftRef.current = formDraft;
+  const lastCommittedDraftRef = useRef(draft);
+
+  useEffect(() => {
+    if (draft !== lastCommittedDraftRef.current) {
+      lastCommittedDraftRef.current = draft;
+      setFormDraft(draft);
+    }
+  }, [draft]);
+
+  const flushDraft = useCallback(() => {
+    const current = formDraftRef.current;
+    lastCommittedDraftRef.current = current;
+    send({
+      type: "expense.change",
+      draft: current,
+    });
+  }, [send]);
+
   const categories = useMemo(() => {
     return state.categories.filter((category) =>
-      !category.archived || category.id === draft.categoryId
+      !category.archived || category.id === formDraft.categoryId
     ).map((category) => ({ id: category.id, label: category.name }));
-  }, [state.categories, draft.categoryId]);
+  }, [state.categories, formDraft.categoryId]);
   const projects = useMemo(() => {
     return state.projects.filter((project) =>
-      !project.archived || project.id === draft.projectId
+      !project.archived || project.id === formDraft.projectId
     ).map((project) => ({ id: project.id, label: project.name }));
-  }, [state.projects, draft.projectId]);
+  }, [state.projects, formDraft.projectId]);
   const currencyOptions = useMemo(
     () => CURRENCY_OPTIONS.map((code) => ({ id: code, label: code })),
     [],
   );
-  const draftRef = useRef(draft);
-  draftRef.current = draft;
+
   const update = useCallback((changes: Partial<ManualExpenseDraft>) => {
-    if (draftRef.current) {
-      const nextDraft = { ...draftRef.current, ...changes };
-      draftRef.current = nextDraft;
+    const nextDraft = { ...formDraftRef.current, ...changes };
+    formDraftRef.current = nextDraft;
+    setFormDraft(nextDraft);
+    startTransition(() => {
+      lastCommittedDraftRef.current = nextDraft;
       send({
         type: "expense.change",
         draft: nextDraft,
       });
-    }
+    });
   }, [send]);
+
   const handleAmountChange = useCallback((value: string) => {
     update({ amount: value });
   }, [update]);
@@ -444,9 +513,42 @@ function ManualExpenseFormContent({
     update({ direction: selected ? "money-back" : "spent" });
   }, [update]);
   const isModified = isDraftModified(
-    draft,
+    formDraft,
     snapshot.context.originalExpense,
   );
+
+  useEffect(() => {
+    const formDirty = snapshot.hasTag("dirty") && isModified;
+    onDirtyChange?.(formDirty);
+  }, [isModified, snapshot, onDirtyChange]);
+
+  const handleSubmit = useCallback(() => {
+    flushDraft();
+    send({ type: "expense.submit" });
+  }, [flushDraft, send]);
+
+  const handleDiscard = useCallback(() => {
+    flushDraft();
+    send({ type: "expense.discard" });
+  }, [flushDraft, send]);
+
+  const handleBack = useCallback(() => {
+    flushDraft();
+    send({ type: "expense.back" });
+  }, [flushDraft, send]);
+
+  const handleConfirmDiscard = useCallback(() => {
+    send({ type: "expense.confirm-discard" });
+  }, [send]);
+
+  const handleDelete = useCallback(() => {
+    send({ type: "expense.delete" });
+  }, [send]);
+
+  const handleConfirmDelete = useCallback(() => {
+    send({ type: "expense.confirm-delete" });
+  }, [send]);
+
   const validation = snapshot.context
     .validation as ManualExpenseValidationErrors;
   const busy = snapshot.hasTag("saving");
@@ -476,7 +578,7 @@ function ManualExpenseFormContent({
                   aria-label="Close"
                   variant="quiet"
                   isDisabled={formLocked}
-                  onPress={() => send({ type: "expense.back" })}
+                  onPress={handleBack}
                 />
               }
             />
@@ -509,7 +611,7 @@ function ManualExpenseFormContent({
                   <FormActions className="local-ui-delete-actions">
                     <Button
                       variant="danger"
-                      onPress={() => send({ type: "expense.confirm-discard" })}
+                      onPress={handleConfirmDiscard}
                     >
                       Discard changes
                     </Button>
@@ -548,7 +650,7 @@ function ManualExpenseFormContent({
                     ? (
                       <Button
                         variant="quiet"
-                        onPress={() => send({ type: "expense.discard" })}
+                        onPress={handleDiscard}
                       >
                         Discard draft
                       </Button>
@@ -561,7 +663,7 @@ function ManualExpenseFormContent({
               <Button
                 pending={busy}
                 isDisabled={formLocked}
-                onPress={() => send({ type: "expense.submit" })}
+                onPress={handleSubmit}
               >
                 Save expense
               </Button>
@@ -573,36 +675,38 @@ function ManualExpenseFormContent({
                 autoFocus
                 label="Amount"
                 isRequired
-                value={draft.amount}
+                value={formDraft.amount}
                 isDisabled={formLocked}
                 onChange={handleAmountChange}
-                currency={draft.currency}
+                onBlur={flushDraft}
+                currency={formDraft.currency}
                 error={validation.amount}
               />
               <CurrencyPicker
-                value={draft.currency}
+                value={formDraft.currency}
                 options={currencyOptions}
                 onValueChange={handleCurrencyChange}
                 isDisabled={formLocked}
               />
             </div>
             <MerchantPicker
-              value={draft.merchant ?? ""}
+              value={formDraft.merchant ?? ""}
               onValueChange={handleMerchantChange}
               isDisabled={formLocked}
               recentMerchants={recentMerchants}
             />
             <TextField
               label="Description (optional)"
-              value={draft.description}
+              value={formDraft.description}
               onChange={handleDescriptionChange}
+              onBlur={flushDraft}
               error={validation.description}
               isDisabled={formLocked}
             />
             <CategoryPicker
               label=""
               categories={categories}
-              value={draft.categoryId}
+              value={formDraft.categoryId}
               recentCategoryIds={recentCategoryIds}
               onValueChange={handleCategoryChange}
               error={validation.categoryId}
@@ -612,14 +716,14 @@ function ManualExpenseFormContent({
               <NativeDateField
                 label="Date"
                 required
-                value={draft.date}
+                value={formDraft.date}
                 onChange={handleDateChange}
                 error={validation.date}
                 disabled={formLocked}
               />
               <NativeTimeField
                 label="Time (optional)"
-                value={draft.time ?? ""}
+                value={formDraft.time ?? ""}
                 onChange={handleTimeChange}
                 error={validation.time}
                 disabled={formLocked}
@@ -627,12 +731,12 @@ function ManualExpenseFormContent({
             </div>
             <ProjectPicker
               options={projects}
-              value={draft.projectId}
+              value={formDraft.projectId}
               onValueChange={handleProjectChange}
               isDisabled={formLocked}
             />
             <Checkbox
-              isSelected={draft.direction === "money-back"}
+              isSelected={formDraft.direction === "money-back"}
               isDisabled={formLocked}
               onChange={handleDirectionChange}
             >
@@ -660,7 +764,7 @@ function ManualExpenseFormContent({
               <Button
                 variant="quiet"
                 isDisabled={formLocked}
-                onPress={() => send({ type: "expense.delete" })}
+                onPress={handleDelete}
               >
                 Delete this expense
               </Button>
@@ -673,7 +777,7 @@ function ManualExpenseFormContent({
               <FormActions className="local-ui-delete-actions">
                 <Button
                   variant="danger"
-                  onPress={() => send({ type: "expense.confirm-delete" })}
+                  onPress={handleConfirmDelete}
                 >
                   Delete expense
                 </Button>

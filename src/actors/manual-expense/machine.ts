@@ -101,7 +101,8 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
   initial: "idle",
   context: ({ input }) => ({
     persistenceKey: input?.persistenceKey ?? DEFAULT_PERSISTENCE_KEY,
-    draft: initialDraftFromRequest(input?.request),
+    draft: input?.request?.initialDraft ??
+      initialDraftFromRequest(input?.request),
     originalExpense: input?.request?.expense ?? null,
     openRequest: input?.request ?? null,
     validation: {},
@@ -115,7 +116,9 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
       always: [
         {
           target: "editing",
-          guard: ({ context }) => context.originalExpense !== null,
+          guard: ({ context }) =>
+            context.originalExpense !== null ||
+            context.openRequest?.initialDraft !== undefined,
         },
         {
           target: "opening",
@@ -127,11 +130,15 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         "expense.open": [
           {
             target: "editing",
-            guard: ({ event }) => event.request?.expense !== undefined,
+            guard: ({ event }) =>
+              event.request?.expense !== undefined ||
+              event.request?.initialDraft !== undefined,
             actions: assign({
               openRequest: ({ event }) => event.request ?? {},
               draft: ({ context, event }) =>
-                context.draft ?? initialDraftFromRequest(event.request),
+                event.request?.initialDraft ??
+                  context.draft ??
+                  initialDraftFromRequest(event.request),
               originalExpense: ({ context, event }) =>
                 context.originalExpense ?? event.request?.expense ?? null,
               error: () => null,

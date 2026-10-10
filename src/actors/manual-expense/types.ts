@@ -52,6 +52,7 @@ export type ManualExpenseValidation = {
 export type ManualExpenseOpenRequest = {
   readonly expense?: Expense;
   readonly projectId?: string;
+  readonly initialDraft?: ManualExpenseDraft;
 };
 
 export type ManualExpenseEvent =

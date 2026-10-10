@@ -629,6 +629,82 @@ Deno.test("manual-expense: auto-fills current time on new expense, preserves exp
   actorExisting.stop();
 });
 
+Deno.test("manual-expense: edit starts directly in editing and accepts change events without blocking or dropping input", async () => {
+  const harness = await createHarness();
+  const existing = expenseRecord({
+    id: "expense-immediate-edit",
+    amount: "-45.00",
+    merchant: "Initial Merchant",
+  });
+
+  const actor = createActor(
+    createManualExpenseMachine({
+      local: harness.local,
+      organization: harness.service,
+    }),
+    {
+      input: {
+        persistenceKey: "workflow:immediate-edit",
+        request: { expense: existing },
+      },
+    },
+  ).start();
+
+  // The actor must start directly in editing without being blocked in opening
+  assertEquals(actor.getSnapshot().value, "editing");
+  assertEquals(actor.getSnapshot().context.draft?.merchant, "Initial Merchant");
+
+  // Immediate input must be processed without being dropped
+  actor.send({
+    type: "expense.change",
+    draft: draftWith(actor.getSnapshot().context.draft!, {
+      merchant: "Updated Fluently",
+    }),
+  });
+
+  assertEquals(actor.getSnapshot().value, "editing");
+  assertEquals(actor.getSnapshot().context.draft?.merchant, "Updated Fluently");
+  actor.stop();
+});
+
+Deno.test("manual-expense: input during opening state is not dropped and survives completion", async () => {
+  const harness = await createHarness();
+  const actor = createExpenseActor(harness, "workflow:opening-fluent");
+
+  // Open a new expense (enters opening)
+  actor.send({ type: "expense.open" });
+  assertEquals(actor.getSnapshot().value, "opening");
+
+  // Send input changes while opening is in flight
+  actor.send({
+    type: "expense.change",
+    draft: draftWith(
+      actor.getSnapshot().context.draft ?? {
+        projectId: project.id,
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        date: "2026-08-24",
+        amount: "99.00",
+        currency: "SEK",
+        description: "Typed while opening",
+        direction: "spent",
+      },
+      {
+        amount: "99.00",
+        merchant: "Typed During Opening",
+      },
+    ),
+  });
+
+  await settle();
+  assertEquals(actor.getSnapshot().value, "editing");
+  assertEquals(actor.getSnapshot().context.draft?.amount, "99.00");
+  assertEquals(
+    actor.getSnapshot().context.draft?.merchant,
+    "Typed During Opening",
+  );
+  actor.stop();
+});
+
 function asExpenseValue(expense: Expense): JsonValue {
   return expense as unknown as JsonValue;
 }

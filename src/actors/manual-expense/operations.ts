@@ -103,7 +103,6 @@ export async function openExpense(
   readonly draft: ManualExpenseDraft;
   readonly originalExpense: Expense | null;
 }> {
-  const state = await dependencies.organization.getState();
   if (request.expense !== undefined) {
     const expense = ExpenseSchema.parse(request.expense);
     return {
@@ -111,6 +110,7 @@ export async function openExpense(
       originalExpense: expense,
     };
   }
+  const state = await dependencies.organization.getState();
   const project = currentProject(state, request.projectId);
   const boundary = dependencies.expenseDayBoundary ??
     await expenseDayBoundary(dependencies.local);

@@ -114,23 +114,41 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
     idle: {
       always: [
         {
+          target: "editing",
+          guard: ({ context }) => context.originalExpense !== null,
+        },
+        {
           target: "opening",
           guard: ({ context }) => context.openRequest !== null,
         },
       ],
       on: {
         "expense.hydrate": "hydrating",
-        "expense.open": {
-          target: "opening",
-          actions: assign({
-            openRequest: ({ event }) => event.request ?? {},
-            draft: ({ context, event }) =>
-              context.draft ?? initialDraftFromRequest(event.request),
-            originalExpense: ({ context, event }) =>
-              context.originalExpense ?? event.request?.expense ?? null,
-            error: () => null,
-          }),
-        },
+        "expense.open": [
+          {
+            target: "editing",
+            guard: ({ event }) => event.request?.expense !== undefined,
+            actions: assign({
+              openRequest: ({ event }) => event.request ?? {},
+              draft: ({ context, event }) =>
+                context.draft ?? initialDraftFromRequest(event.request),
+              originalExpense: ({ context, event }) =>
+                context.originalExpense ?? event.request?.expense ?? null,
+              error: () => null,
+            }),
+          },
+          {
+            target: "opening",
+            actions: assign({
+              openRequest: ({ event }) => event.request ?? {},
+              draft: ({ context, event }) =>
+                context.draft ?? initialDraftFromRequest(event.request),
+              originalExpense: ({ context, event }) =>
+                context.originalExpense ?? event.request?.expense ?? null,
+              error: () => null,
+            }),
+          },
+        ],
         "expense.cancel": "cancelled",
       },
     },
@@ -167,6 +185,9 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         },
       },
       on: {
+        "expense.change": {
+          actions: "persistDraftChange",
+        },
         "expense.discard": "discarding",
         "expense.open": {
           actions: assign({
@@ -196,14 +217,12 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
                 context.draft &&
                 (context.draft.amount ||
                   context.draft.merchant ||
-                  context.draft.description)
+                  context.draft.description ||
+                  context.draft.time !== undefined)
               ) {
                 return {
                   ...event.output.draft,
-                  amount: context.draft.amount,
-                  merchant: context.draft.merchant,
-                  description: context.draft.description,
-                  direction: context.draft.direction,
+                  ...context.draft,
                   date: context.draft.date || event.output.draft.date,
                   categoryId: context.draft.categoryId ||
                     event.output.draft.categoryId,
@@ -234,6 +253,9 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
         },
       },
       on: {
+        "expense.change": {
+          actions: "persistDraftChange",
+        },
         "expense.cancel": "cancelled",
         "expense.discard": "discarding",
       },
@@ -366,7 +388,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           { target: "hydrating" },
         ],
         "expense.change": {
-          target: "persistingDraft",
+          target: "editing",
           actions: "persistDraftChange",
         },
         "expense.submit": [
@@ -493,7 +515,7 @@ export const manualExpenseMachine = manualExpenseSetup.createMachine({
           { target: "openingAnother", guard: "hasSavedResult" },
         ],
         "expense.change": {
-          target: "persistingDraft",
+          target: "editing",
           guard: "hasDraft",
           actions: "persistDraftChange",
         },

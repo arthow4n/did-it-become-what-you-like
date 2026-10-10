@@ -566,6 +566,57 @@ Deno.test("local UI isolates edit drafts from the new-expense draft key", async 
   });
 });
 
+Deno.test("local UI manual expense edit accepts fluent immediate input without blocking or reverting", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent }) => {
+    await withAriaDomGlobals(window, () => {
+      const local = createFakeLocalPort();
+      const expense: Expense = {
+        schemaVersion: 1,
+        type: "expense",
+        id: "expense-fluent-edit",
+        projectId: project.id,
+        categoryId: category.id,
+        date: "2026-08-30",
+        amount: "-25",
+        currency: "SEK",
+        merchant: "Initial Fluent Merchant",
+        description: "Initial description",
+        source: "manual",
+      };
+      const { service } = createTestService({ ...state, expenses: [expense] });
+      render(
+        createElement(ManualExpenseScreen, {
+          repository: local,
+          service,
+          state: { ...state, expenses: [expense] },
+          request: { expense },
+          onSaved: () => undefined,
+          onClosed: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      const merchantInput = view.getByRole("searchbox", {
+        name: "Merchant",
+      }) as HTMLInputElement;
+      assertEquals(merchantInput.value, "Initial Fluent Merchant");
+
+      // Immediate fluent typing without delay
+      fireEvent.input(merchantInput, {
+        target: { value: "Nordic Corner Store" },
+      });
+      assertEquals(merchantInput.value, "Nordic Corner Store");
+
+      const descriptionInput = view.getByRole("textbox", {
+        name: "Description (optional)",
+      }) as HTMLTextAreaElement;
+      fireEvent.input(descriptionInput, {
+        target: { value: "Updated groceries description" },
+      });
+      assertEquals(descriptionInput.value, "Updated groceries description");
+    });
+  });
+});
+
 Deno.test("local UI expenses exposes shared filters, empty state, and add event", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let addCount = 0;

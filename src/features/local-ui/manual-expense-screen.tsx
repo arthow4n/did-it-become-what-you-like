@@ -402,9 +402,11 @@ function ManualExpenseFormContent({
   draftRef.current = draft;
   const update = useCallback((changes: Partial<ManualExpenseDraft>) => {
     if (draftRef.current) {
+      const nextDraft = { ...draftRef.current, ...changes };
+      draftRef.current = nextDraft;
       send({
         type: "expense.change",
-        draft: { ...draftRef.current, ...changes },
+        draft: nextDraft,
       });
     }
   }, [send]);

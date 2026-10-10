@@ -499,7 +499,6 @@ export function createReceiptReviewMachine(
             target: "clearing",
             actions: assign({
               outcome: () => ({ status: "discarded" } as const),
-              review: () => null,
               error: () => null,
               failureOperation: () => "clear" as const,
             }),
@@ -583,7 +582,6 @@ export function createReceiptReviewMachine(
             target: "clearing",
             actions: assign({
               outcome: () => ({ status: "discarded" } as const),
-              review: () => null,
               error: () => null,
               failureOperation: () => "clear" as const,
             }),
@@ -620,7 +618,6 @@ export function createReceiptReviewMachine(
                 status: "saved",
                 result: event.output,
               }),
-              review: () => null,
               error: () => null,
               failureOperation: () => "clear" as const,
             }),
@@ -751,7 +748,6 @@ export function createReceiptReviewMachine(
             target: "clearing",
             actions: assign({
               outcome: () => ({ status: "discarded" } as const),
-              review: () => null,
               error: () => null,
               failureOperation: () => "clear" as const,
             }),

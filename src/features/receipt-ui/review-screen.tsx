@@ -441,6 +441,15 @@ export function ReceiptReviewScreen({
       </ContentContainer>
     );
   }
+  if (
+    snapshot.matches("clearing") || snapshot.matches("cleared") ||
+    snapshot.matches("saved") || snapshot.matches("discarded") ||
+    snapshot.matches("cancelled")
+  ) {
+    if (!snapshot.context.review) {
+      return null;
+    }
+  }
   const review = snapshot.context.review;
   if (!review) {
     return (
@@ -740,7 +749,8 @@ export function ReceiptReviewScreen({
           : null}
         <StickyActionBar>
           <Button
-            pending={snapshot.matches("saving")}
+            pending={snapshot.matches("saving") ||
+              snapshot.matches("clearing")}
             isDisabled={snapshot.hasTag("saving") ||
               snapshot.matches("failed") || selectedCount === 0}
             onPress={() => send({

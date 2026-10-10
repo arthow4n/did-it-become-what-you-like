@@ -61,6 +61,7 @@ import {
   withAriaGlobals,
   withComponentHarness,
 } from "../test-support/component-harness.tsx";
+import { settle } from "../test-support/async.ts";
 import {
   createFakeImagePreparationPort,
   createFakeLocalPort,
@@ -603,6 +604,89 @@ Deno.test(
         (purchaseLines[0]?.value as Record<string, JsonValue>).lineTotal,
         "-5",
       );
+    });
+  },
+);
+
+Deno.test(
+  "receipt-ui review save with slow clearing does not display a transient invalid draft scene",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      const local = createFakeLocalPort();
+      await local.transaction("readwrite", async (transaction) => {
+        await transaction.put(
+          "records",
+          defaultTestProject.id,
+          defaultTestProject as never,
+        );
+        await transaction.put(
+          "records",
+          defaultTestCategory.id,
+          defaultTestCategory as never,
+        );
+      });
+      let resolveClear: (() => void) | undefined;
+      const clearPromise = new Promise<void>((resolve) => {
+        resolveClear = resolve;
+      });
+      const originalTx = local.transaction;
+      local.transaction = async (mode, work, options) => {
+        return await originalTx(mode, async (tx) => {
+          const originalDelete = tx.delete;
+          tx.delete = async (collection, key, opt) => {
+            if (collection === "workflow-snapshots") {
+              await clearPromise;
+            }
+            return await originalDelete(collection, key, opt);
+          };
+          return await work(tx);
+        }, options);
+      };
+
+      let closed = 0;
+      render(
+        createElement(ReceiptReviewScreen, {
+          local,
+          state: defaultTestState,
+          initialReview: {
+            parent: {
+              projectId: defaultTestProject.id,
+              date: "2026-08-30",
+              currency: "SEK",
+              printedTotal: "-5",
+            },
+            lines: [{
+              type: "purchase",
+              id: "line-save-slow",
+              description: "Coffee",
+              categoryId: defaultTestCategory.id,
+              lineTotal: "-5",
+              selected: true,
+              uncertain: false,
+            }],
+            uncertainty: [],
+            printedTotalMismatch: false,
+          },
+          onClose: () => closed++,
+        }),
+      );
+      const view = within(document.body);
+      const saveButton = await waitFor(() =>
+        view.getByRole("button", { name: "Save 1 selected entry" })
+      );
+      fireEvent.click(saveButton);
+
+      await settle();
+
+      assertEquals(view.queryByText("Receipt review unavailable"), null);
+      assertEquals(
+        view.queryByText("The validated receipt draft could not be opened."),
+        null,
+      );
+      assertEquals(closed, 0);
+
+      resolveClear?.();
+      await waitFor(() => assertEquals(closed, 1));
     });
   },
 );

@@ -5,10 +5,17 @@ import type { BannerProps } from "./notice-alert.tsx";
 
 export type ToastProps = Omit<BannerProps, "title" | "action"> & {
   onDismiss?: () => void;
+  autoClose?: number | boolean;
 };
 
 export function Toast(
-  { children, tone = "positive", onDismiss, className }: ToastProps,
+  {
+    children,
+    tone = "positive",
+    onDismiss,
+    autoClose = 2000,
+    className,
+  }: ToastProps,
 ) {
   const id = `ds-toast-${useId().replaceAll(":", "")}`;
   const dismissRef = useRef(onDismiss);
@@ -22,6 +29,7 @@ export function Toast(
       color: toneColors[tone],
       role: "status" as const,
       "aria-live": "polite" as const,
+      autoClose,
       allowClose: Boolean(onDismiss),
       withCloseButton: Boolean(onDismiss),
       closeButtonProps: { "aria-label": "Dismiss notification" },
@@ -40,7 +48,7 @@ export function Toast(
       notifications.show(data);
       mountedRef.current = true;
     }
-  }, [children, className, id, onDismiss, tone]);
+  }, [autoClose, children, className, id, onDismiss, tone]);
 
   useEffect(() => {
     return () => {

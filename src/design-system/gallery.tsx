@@ -423,7 +423,7 @@ export function DesignSystemGallery() {
                 ? <Button variant="quiet" onPress={save}>Retry</Button>
                 : undefined}
             />
-            <Toast>
+            <Toast autoClose={false}>
               Saved status remains available as a non-critical confirmation.
             </Toast>
           </section>

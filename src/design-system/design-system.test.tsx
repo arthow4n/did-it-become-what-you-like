@@ -891,6 +891,28 @@ Deno.test("design-system: feedback facades preserve live regions and notificatio
   );
 });
 
+Deno.test("design-system: toast auto-dismisses after configured duration", async () => {
+  await withComponentHarness(({ window, render, waitFor }) =>
+    withAriaGlobals(window, async () => {
+      let dismissed = 0;
+      const mounted = render(
+        createElement(Toast, {
+          children: "Auto closing toast",
+          autoClose: 50,
+          onDismiss: () => dismissed++,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => view.getByText("Auto closing toast"));
+      await waitFor(() => {
+        assertEqual(dismissed, 1);
+        assert(!view.queryByText("Auto closing toast"));
+      });
+      mounted.unmount();
+    })
+  );
+});
+
 Deno.test("design-system: remaining feedback facades preserve progress and state contracts", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {

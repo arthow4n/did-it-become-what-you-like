@@ -718,3 +718,36 @@ Deno.test("receipt-actor review: retains every line and parent edit in-memory", 
   assert(actor.getSnapshot().hasTag("dirty"));
   actor.stop();
 });
+
+Deno.test("receipt-actor scan: offline state accepts scan and retry events", async () => {
+  const gemini = createFakeGeminiPort(extractionDraft());
+  const preparation = createFakeImagePreparationPort();
+  const actor = createActor(createScanMachine(gemini, preparation, [])).start();
+  actor.send({ type: "receipt.open" });
+  actor.send({ type: "receipt.network.offline" });
+  assertEquals(actor.getSnapshot().value, "offline");
+
+  // Should transition to requesting on receipt.scan
+  actor.send({ type: "receipt.scan", input: scanInput });
+  await waitForActorState(actor, "reviewReady");
+  assertEquals(actor.getSnapshot().value, "reviewReady");
+  actor.stop();
+
+  // Should transition to requesting on receipt.retry after failure
+  const retryGemini = createFakeGeminiPort(extractionDraft());
+  retryGemini.failNext("offline");
+  const retryActor = createActor(
+    createScanMachine(retryGemini, preparation, []),
+  ).start();
+  retryActor.send({ type: "receipt.open" });
+  retryActor.send({ type: "receipt.image-selected" });
+  retryActor.send({ type: "receipt.scan", input: scanInput });
+  await waitForActorState(retryActor, "failed");
+  retryActor.send({ type: "receipt.network.offline" });
+  assertEquals(retryActor.getSnapshot().value, "offline");
+
+  retryActor.send({ type: "receipt.retry", input: scanInput });
+  await waitForActorState(retryActor, "reviewReady");
+  assertEquals(retryActor.getSnapshot().value, "reviewReady");
+  retryActor.stop();
+});

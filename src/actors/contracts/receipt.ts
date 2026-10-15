@@ -135,6 +135,22 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
     offline: {
       tags: ["offline"],
       on: {
+        "receipt.scan": [
+          { target: "preparing", guard: "prepareImage" },
+          "requesting",
+        ],
+        "receipt.retry": [
+          { target: "preparing", guard: "prepareImage" },
+          "requesting",
+        ],
+        "receipt.replace-image": {
+          target: "selecting",
+          actions: assign({ error: () => null }),
+        },
+        "receipt.image-selected": {
+          target: "selected",
+          actions: assign({ error: () => null }),
+        },
         "receipt.network.online": {
           target: "selecting",
           actions: assign({ error: () => null }),
@@ -317,10 +333,7 @@ export const receiptScanMachine = receiptScanSetup.createMachine({
           target: "selecting",
           actions: assign({ error: () => null }),
         },
-        "receipt.network.offline": {
-          target: "offline",
-          actions: assign({ error: () => null }),
-        },
+        "receipt.network.offline": "offline",
         "receipt.network.online": {},
         "receipt.use-manual": "manualEntry",
         "receipt.cancel": "cancelled",

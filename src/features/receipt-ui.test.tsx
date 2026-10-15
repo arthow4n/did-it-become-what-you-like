@@ -2,6 +2,7 @@ import { within } from "@testing-library/dom";
 import { createElement, useState } from "react";
 import {
   createCachedImagePreparationPort,
+  createDefaultReceiptUiDependencies,
   createImagePreparationPort,
   fileMediaType,
   LineEditorDialog,
@@ -13,6 +14,7 @@ import {
   ReceiptImageStore,
   ReceiptMetadataEditor,
   type ReceiptOpenRouterPort,
+  type ReceiptProviderPort,
   ReceiptReviewScreen,
   ReceiptScanFailureNotice,
   ReceiptScanScreen,
@@ -44,6 +46,7 @@ import {
 } from "../domain/index.ts";
 import type { ReceiptReviewDraft } from "../domain/receipt.ts";
 import {
+  adapterError,
   type ImageInput,
   type JsonValue,
   type PreparedImage,
@@ -3502,6 +3505,166 @@ Deno.test(
           dataTransfer: { files: [dummyFile] },
         });
         assertEquals(droppedFiles.length, 1);
+      });
+    });
+  },
+);
+
+Deno.test(
+  "receipt-ui scan failure notice clarifies unauthorized and offline conditions with direct settings action",
+  async () => {
+    await withComponentHarness(({ render, fireEvent }) => {
+      let settingsOpened = false;
+      let retried = false;
+      const unauthorizedFailure: ContractFailure = {
+        code: "unauthorized",
+        message: "Authorization is required for this operation.",
+        retryable: false,
+        operation: "gemini.extract",
+      };
+      render(
+        createElement(ReceiptScanFailureNotice, {
+          failure: unauthorizedFailure,
+          canRetry: true,
+          activeProviderName: "Gemini",
+          onRetry: () => retried = true,
+          onChooseAnotherImage: () => {},
+          onUseManualEntry: () => {},
+          onOpenSettings: () => settingsOpened = true,
+        }),
+      );
+      const view = within(document.body);
+      const alert = view.getByRole("alert");
+      assert(
+        alert.textContent?.includes("Gemini API key is required or invalid."),
+      );
+      const settingsButton = view.getByRole("button", {
+        name: "Open receipt settings",
+      });
+      fireEvent.click(settingsButton);
+      assert(settingsOpened);
+
+      const offlineFailure: ContractFailure = {
+        code: "offline",
+        message: "This operation is unavailable offline.",
+        retryable: true,
+        operation: "gemini.extract",
+      };
+      render(
+        createElement(ReceiptScanFailureNotice, {
+          failure: offlineFailure,
+          canRetry: true,
+          activeProviderName: "Gemini",
+          onRetry: () => retried = true,
+          onChooseAnotherImage: () => {},
+          onUseManualEntry: () => {},
+        }),
+      );
+      assert(
+        view.getByText("Internet connection is required to scan with Gemini."),
+      );
+      fireEvent.click(view.getAllByRole("button", { name: "Retry" })[0]!);
+      assert(retried);
+    });
+  },
+);
+
+Deno.test(
+  "receipt-ui scan screen preserves selected image and retry action when offline",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      await withAriaGlobals(async () => {
+        const imageStore = new ReceiptImageStore();
+        const state: ProjectCategoryState = {
+          ...defaultTestState,
+          projects: [defaultTestProject],
+        };
+        const settings: DeviceLocalSettings = {
+          ...DEFAULT_DEVICE_LOCAL_SETTINGS,
+          disclosureAccepted: true,
+          selectedGeminiModel: "models/gemini-2.5-flash",
+        };
+        let extractionCount = 0;
+        const fakeAi: ReceiptProviderPort = {
+          getApiKey: () => Promise.resolve(SecretValue.from("test-key")),
+          setApiKey: () => Promise.resolve(),
+          removeApiKey: () => Promise.resolve(),
+          listModels: () =>
+            Promise.resolve([{
+              id: "models/gemini-2.5-flash",
+              displayName: "Gemini 2.5 Flash",
+              lifecycle: "active",
+              capabilities: {
+                "image-input": true,
+                "content-generation": true,
+                "structured-output": true,
+              },
+            }]),
+          extractReceipt: () => {
+            extractionCount += 1;
+            return Promise.reject(adapterError("offline", "gemini.extract"));
+          },
+        };
+        const dependencies: ReceiptUiDependencies = {
+          ...createDefaultReceiptUiDependencies(imageStore).dependencies,
+          ai: fakeAi,
+          gemini: fakeAi,
+        };
+
+        render(
+          createElement(ReceiptScanScreen, {
+            dependencies,
+            imageStore,
+            state,
+            settings,
+            offline: true,
+            onSettingsChange: () => undefined,
+            onReview: () => undefined,
+            onClose: () => undefined,
+            onOpenSettings: () => undefined,
+          }),
+        );
+        const view = within(document.body);
+
+        // Screen displays non-blocking offline warning while keeping file selection available
+        assert(view.getByText("Scanning is unavailable offline"));
+
+        // Select an image while offline
+        const file = new Blob([new Uint8Array([1, 2, 3])], {
+          type: "image/png",
+        }) as unknown as File;
+        fireEvent.change(view.getByLabelText("Receipt image file"), {
+          target: { files: [file] },
+        });
+
+        // The image preview is displayed and NOT wiped
+        await waitFor(() => {
+          assert(view.getByAltText("Selected receipt preview"));
+        });
+
+        // Scan button is enabled and can attempt scan
+        const scanButton = view.getByRole("button", { name: "Scan with AI" });
+        assert(!scanButton.hasAttribute("disabled"));
+        fireEvent.click(scanButton);
+
+        // Failure notice appears with actionable retry and preserved image
+        await waitFor(() => {
+          assert(
+            view.getByText(
+              "Internet connection is required to scan with Gemini.",
+            ),
+          );
+        });
+        assert(view.getByAltText("Selected receipt preview"));
+        assertEquals(extractionCount, 1);
+
+        // Retry button is functional
+        const retryButton = view.getByRole("button", { name: "Retry" });
+        fireEvent.click(retryButton);
+        await waitFor(() => {
+          assertEquals(extractionCount, 2);
+        });
+        assert(view.getByAltText("Selected receipt preview"));
       });
     });
   },

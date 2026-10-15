@@ -105,6 +105,8 @@ export type ReceiptScanFailureNoticeProps = {
   readonly onRetry: () => void;
   readonly onChooseAnotherImage: () => void;
   readonly onUseManualEntry: () => void;
+  readonly onOpenSettings?: () => void;
+  readonly activeProviderName?: string;
 };
 
 /**
@@ -117,10 +119,21 @@ export function ReceiptScanFailureNotice({
   onRetry,
   onChooseAnotherImage,
   onUseManualEntry,
+  onOpenSettings,
+  activeProviderName,
 }: ReceiptScanFailureNoticeProps) {
+  const isUnauthorized = failure.code === "unauthorized";
+  const isOffline = failure.code === "offline";
+  const providerLabel = activeProviderName ?? "Receipt AI";
+  const displayMessage = isUnauthorized
+    ? `${providerLabel} API key is required or invalid.`
+    : isOffline
+    ? `Internet connection is required to scan with ${providerLabel}.`
+    : failure.message;
+
   return (
     <InlineNotice tone="danger" title="Receipt scan failed">
-      {failure.message}
+      {displayMessage}
       {failure.reason
         ? (
           <Text size="caption" tone="secondary">
@@ -140,6 +153,13 @@ export function ReceiptScanFailureNotice({
         >
           Retry
         </Button>
+        {isUnauthorized && onOpenSettings
+          ? (
+            <Button variant="secondary" onPress={onOpenSettings}>
+              Open receipt settings
+            </Button>
+          )
+          : null}
         <Button variant="quiet" onPress={onChooseAnotherImage}>
           Choose another image
         </Button>
@@ -353,18 +373,23 @@ export function ReceiptScanScreen({
     });
   }, [activeProvider, disclosureAccepted, send]);
 
+  const previousOfflineRef = useRef<boolean | undefined>(undefined);
   useEffect(() => {
-    if (
-      offline && snapshot.status === "active" &&
-      !snapshot.matches("offline")
-    ) {
-      send({ type: "receipt.network.offline" });
-      clearSelectedImage();
+    if (previousOfflineRef.current === offline) return;
+    previousOfflineRef.current = offline;
+    if (offline) {
+      if (
+        !snapshot.matches("failed") &&
+        !snapshot.matches("preparing") &&
+        !snapshot.matches("requesting")
+      ) {
+        send({ type: "receipt.network.offline" });
+      }
       setPendingScanState(false);
       setQuickSetupOpen(false);
       setOptionsOpen(false);
       setCaptureMode(false);
-    } else if (!offline && snapshot.matches("offline")) {
+    } else {
       send({ type: "receipt.network.online" });
     }
   }, [offline, send, snapshot]);
@@ -508,12 +533,11 @@ export function ReceiptScanScreen({
       setSelectedImages(nextList);
     }
     reviewSent.current = false;
-    if (needsSelectionReset || snapshot.matches("selecting")) {
+    if (
+      needsSelectionReset || snapshot.matches("selecting") ||
+      snapshot.matches("offline")
+    ) {
       send({ type: "receipt.image-selected" });
-    } else if (snapshot.matches("offline")) {
-      setModelError(
-        "Scanning is unavailable while offline. The image was not queued.",
-      );
     }
   };
 
@@ -817,38 +841,6 @@ export function ReceiptScanScreen({
     );
   }
 
-  if (snapshot.matches("offline")) {
-    return (
-      <ContentContainer size="form">
-        <PageHeader
-          title="Scan receipt"
-          headingLevel={1}
-          leading={
-            <IconButton
-              icon={<X />}
-              aria-label="Close"
-              variant="quiet"
-              onPress={() => send({ type: "receipt.cancel" })}
-            />
-          }
-        />
-        <InlineNotice tone="warning" title="Scanning is unavailable offline">
-          Connect to the internet to send a receipt to{" "}
-          {activeProviderName}. The selected image is not queued for later.
-          <Inline>
-            <Button
-              variant="secondary"
-              onPress={() => send({ type: "receipt.use-manual" })}
-            >
-              Use manual entry
-            </Button>
-            <Button variant="quiet" onPress={onClose}>Close</Button>
-          </Inline>
-        </InlineNotice>
-      </ContentContainer>
-    );
-  }
-
   return (
     <ContentContainer size="form" className="receipt-ui-scan-screen">
       <FileField
@@ -878,6 +870,25 @@ export function ReceiptScanScreen({
             />
           }
         />
+        {(offline || snapshot.matches("offline")) && !actorFailure
+          ? (
+            <InlineNotice
+              tone="warning"
+              title="Scanning is unavailable offline"
+            >
+              Connect to the internet to send a receipt to{" "}
+              {activeProviderName}. The selected image is not queued for later.
+              <Inline>
+                <Button
+                  variant="secondary"
+                  onPress={() => send({ type: "receipt.use-manual" })}
+                >
+                  Use manual entry
+                </Button>
+              </Inline>
+            </InlineNotice>
+          )
+          : null}
         <SegmentedControl
           label="Scan document type"
           value={scanMode}
@@ -1195,6 +1206,8 @@ export function ReceiptScanScreen({
               onRetry={scan}
               onChooseAnotherImage={() => startFilePicker(false)}
               onUseManualEntry={() => send({ type: "receipt.use-manual" })}
+              onOpenSettings={onOpenSettings}
+              activeProviderName={activeProviderName}
             />
           )
           : null}
@@ -1224,7 +1237,7 @@ export function ReceiptScanScreen({
             )
             : (
               <Button
-                isDisabled={selectedImages.length === 0 || offline}
+                isDisabled={selectedImages.length === 0}
                 onPress={scan}
               >
                 {scanMode === "menu" ? "Extract menu items" : "Scan with AI"}

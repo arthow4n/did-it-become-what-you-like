@@ -392,8 +392,10 @@ export function ExpensesScreen({
         {offline
           ? (
             <Banner tone="warning" title="Offline">
-              Local browsing and manual entry are available. AI scanning and
-              Drive sync will resume when you reconnect.
+              Local browsing and manual entry are available. AI scanning
+              {syncStatus?.view.mode === "configured" ? " and Drive sync" : ""}
+              {" "}
+              will resume when you reconnect.
             </Banner>
           )
           : null}

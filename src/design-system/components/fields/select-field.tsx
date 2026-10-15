@@ -1,7 +1,13 @@
+import { memo, useMemo } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { Select as MantineSelect } from "@mantine/core";
 import { cx } from "../shared.ts";
 import { type SelectOption, validationAttributes } from "./shared.ts";
+
+const SELECT_COMBOBOX_PROPS = { withinPortal: false } as const;
+const SELECT_CLASS_NAMES = {
+  input: "ds-field-control ds-select-trigger",
+} as const;
 
 export type SelectFieldProps = {
   label: ReactNode;
@@ -31,7 +37,7 @@ export type SelectFieldProps = {
   className?: string;
 };
 
-export function SelectField({
+export const SelectField = memo(function SelectField({
   label,
   options,
   value,
@@ -62,16 +68,21 @@ export function SelectField({
     (selectedKey == null ? undefined : String(selectedKey));
   const defaultValue = explicitDefaultValue ??
     (defaultSelectedKey == null ? undefined : String(defaultSelectedKey));
+  const data = useMemo(
+    () =>
+      options.map((option) => ({
+        value: option.id,
+        label: option.label,
+        disabled: option.disabled,
+      })),
+    [options],
+  );
   return (
     <MantineSelect
       {...mantineProps}
       {...openState}
       label={label}
-      data={options.map((option) => ({
-        value: option.id,
-        label: option.label,
-        disabled: option.disabled,
-      }))}
+      data={data}
       value={selectedValue}
       defaultValue={defaultValue}
       searchable={searchable}
@@ -104,9 +115,9 @@ export function SelectField({
       onDropdownOpen={onOpenChange ? () => onOpenChange(true) : undefined}
       onDropdownClose={onOpenChange ? () => onOpenChange(false) : undefined}
       slot={slot ?? undefined}
-      comboboxProps={{ withinPortal: false }}
+      comboboxProps={SELECT_COMBOBOX_PROPS}
       className={cx("ds-field", className)}
-      classNames={{ input: "ds-field-control ds-select-trigger" }}
+      classNames={SELECT_CLASS_NAMES}
     />
   );
-}
+});

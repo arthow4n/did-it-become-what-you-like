@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
 import { cx } from "../shared.ts";
 import { Button, Stack } from "../primitives.tsx";
@@ -17,6 +17,35 @@ export type CategoryPickerProps = {
   maxQuickChips?: number;
   className?: string;
 };
+
+const CategoryChip = memo(function CategoryChip({
+  id,
+  label,
+  isSelected,
+  isDisabled,
+  onSelect,
+}: {
+  id: string;
+  label: string;
+  isSelected: boolean;
+  isDisabled?: boolean;
+  onSelect?: (id: string) => void;
+}) {
+  const handlePress = useCallback(() => {
+    onSelect?.(id);
+  }, [id, onSelect]);
+  return (
+    <Button
+      type="button"
+      variant={isSelected ? "primary" : "secondary"}
+      isDisabled={isDisabled}
+      className="ds-category-picker__chip"
+      onPress={handlePress}
+    >
+      {label}
+    </Button>
+  );
+});
 
 export const CategoryPicker = memo(function CategoryPicker({
   label = "Category",
@@ -80,16 +109,14 @@ export const CategoryPicker = memo(function CategoryPicker({
             aria-label="Quick category suggestions"
           >
             {quickOptions.map((opt) => (
-              <Button
+              <CategoryChip
                 key={opt.id}
-                type="button"
-                variant={opt.id === value ? "primary" : "secondary"}
+                id={opt.id}
+                label={opt.label}
+                isSelected={opt.id === value}
                 isDisabled={isDisabled}
-                className="ds-category-picker__chip"
-                onPress={() => onValueChange?.(opt.id)}
-              >
-                {opt.label}
-              </Button>
+                onSelect={onValueChange}
+              />
             ))}
           </div>
         )

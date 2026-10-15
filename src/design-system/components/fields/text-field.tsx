@@ -1,9 +1,12 @@
+import { memo } from "react";
 import type { ComponentProps } from "react";
 import { TextInput as MantineTextInput } from "@mantine/core";
 import { cx } from "../shared.ts";
 import { type SharedTextFieldProps, validationAttributes } from "./shared.ts";
 
-export function TextField({
+const TEXT_FIELD_CLASS_NAMES = { input: "ds-field-control" } as const;
+
+export const TextField = memo(function TextField({
   label,
   placeholder,
   description,
@@ -36,7 +39,7 @@ export function TextField({
       aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
       onChange={(event) => onChange?.(event.currentTarget.value)}
       className={cx("ds-field", className)}
-      classNames={{ input: "ds-field-control" }}
+      classNames={TEXT_FIELD_CLASS_NAMES}
     />
   );
-}
+});

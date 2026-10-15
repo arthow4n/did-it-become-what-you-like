@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import type { ReactNode } from "react";
 import { SelectField, type SelectOption } from "../fields.tsx";
 
@@ -20,26 +21,24 @@ const FALLBACK_ISO_CURRENCY_CODES = [
   "TWD",
 ];
 
-function isoCurrencyOptions(): SelectOption[] {
+const ISO_CURRENCY_OPTIONS: readonly SelectOption[] = (() => {
   const intlWithCurrencyValues = Intl as typeof Intl & {
     supportedValuesOf?: (key: string) => string[];
   };
   const codes = intlWithCurrencyValues.supportedValuesOf?.("currency") ??
     FALLBACK_ISO_CURRENCY_CODES;
   return codes.map((code) => ({ id: code, label: code }));
-}
+})();
 
-function currencyOptionsWithIso(
+function buildBaseCurrencyOptions(
   options: SelectOption[],
-  value?: string,
-): SelectOption[] {
+): { list: SelectOption[]; ids: Set<string> } {
   const byId = new Map<string, SelectOption>();
   for (const option of options) byId.set(option.id, option);
-  if (value && !byId.has(value)) byId.set(value, { id: value, label: value });
-  for (const option of isoCurrencyOptions()) {
+  for (const option of ISO_CURRENCY_OPTIONS) {
     if (!byId.has(option.id)) byId.set(option.id, option);
   }
-  return [...byId.values()];
+  return { list: [...byId.values()], ids: new Set(byId.keys()) };
 }
 
 export type CurrencyPickerProps = {
@@ -50,11 +49,21 @@ export type CurrencyPickerProps = {
   isDisabled?: boolean;
 };
 
-export function CurrencyPicker(
+export const CurrencyPicker = memo(function CurrencyPicker(
   { label = "Currency", options, value, onValueChange, isDisabled }:
     CurrencyPickerProps,
 ) {
-  const currencyOptions = currencyOptionsWithIso(options, value);
+  const base = useMemo(() => buildBaseCurrencyOptions(options), [options]);
+  const currencyOptions = useMemo(() => {
+    if (!value || base.ids.has(value)) return base.list;
+    return [
+      ...options,
+      { id: value, label: value },
+      ...ISO_CURRENCY_OPTIONS.filter((opt) =>
+        opt.id !== value && !options.some((o) => o.id === opt.id)
+      ),
+    ];
+  }, [base, options, value]);
   return (
     <SelectField
       label={label}
@@ -67,4 +76,4 @@ export function CurrencyPicker(
       isDisabled={isDisabled}
     />
   );
-}
+});

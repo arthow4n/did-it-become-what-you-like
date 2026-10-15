@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { SelectField, type SelectOption } from "../fields.tsx";
 
 export type ProjectPickerProps = {
@@ -8,7 +9,7 @@ export type ProjectPickerProps = {
   isDisabled?: boolean;
 };
 
-export function ProjectPicker(
+export const ProjectPicker = memo(function ProjectPicker(
   { options, value, onValueChange, className, isDisabled }: ProjectPickerProps,
 ) {
   return (
@@ -21,4 +22,4 @@ export function ProjectPicker(
       isDisabled={isDisabled}
     />
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import {
   ActionIcon as MantineActionIcon,
@@ -8,6 +8,10 @@ import { X } from "lucide-react";
 import { cx } from "../shared.ts";
 import { Icon } from "../primitives.tsx";
 import { type FieldStateProps, validationAttributes } from "./shared.ts";
+
+const SEARCH_FIELD_CLASS_NAMES = {
+  input: "ds-field-control ds-search-field__input",
+} as const;
 
 export type SearchFieldProps =
   & Omit<
@@ -31,7 +35,7 @@ export type SearchFieldProps =
   }
   & FieldStateProps;
 
-export function SearchField(
+export const SearchField = memo(function SearchField(
   {
     label,
     placeholder,
@@ -77,7 +81,7 @@ export function SearchField(
       aria-invalid={isInvalid ? "true" : undefined}
       className={cx("ds-field", "ds-search-field", className)}
       data-empty={currentValue.length === 0 ? "true" : undefined}
-      classNames={{ input: "ds-field-control ds-search-field__input" }}
+      classNames={SEARCH_FIELD_CLASS_NAMES}
       slot={slot ?? undefined}
       onChange={(event) => handleValueChange(event.currentTarget.value)}
       rightSectionPointerEvents="all"
@@ -98,4 +102,4 @@ export function SearchField(
       }
     />
   );
-}
+});

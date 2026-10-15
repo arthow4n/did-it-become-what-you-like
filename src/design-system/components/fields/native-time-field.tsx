@@ -1,8 +1,10 @@
-import { useId } from "react";
+import { memo, useId } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { TimeInput as MantineTimeInput } from "@mantine/dates";
 import { cx } from "../shared.ts";
 import { inputValue } from "./shared.ts";
+
+const TIME_FIELD_CLASS_NAMES = { input: "ds-field-control" } as const;
 
 export type NativeTimeFieldProps =
   & Omit<ComponentProps<"input">, "type" | "className">
@@ -13,7 +15,7 @@ export type NativeTimeFieldProps =
     className?: string;
   };
 
-export function NativeTimeField(
+export const NativeTimeField = memo(function NativeTimeField(
   {
     label,
     description,
@@ -41,8 +43,8 @@ export function NativeTimeField(
       defaultValue={timeDefaultValue}
       onChange={onChange}
       className={cx("ds-field", className)}
-      classNames={{ input: "ds-field-control" }}
+      classNames={TIME_FIELD_CLASS_NAMES}
       {...(props as unknown as ComponentProps<typeof MantineTimeInput>)}
     />
   );
-}
+});

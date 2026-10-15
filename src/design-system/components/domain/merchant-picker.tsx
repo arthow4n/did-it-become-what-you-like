@@ -1,16 +1,45 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
+import type { FocusEventHandler } from "react";
 import { Button, Stack } from "../primitives.tsx";
 import { SearchField } from "../fields.tsx";
 
 export type MerchantPickerProps = {
   value?: string;
   onValueChange?: (value: string) => void;
+  onBlur?: FocusEventHandler<HTMLInputElement>;
   isDisabled?: boolean;
   recentMerchants?: readonly string[];
 };
 
+const MerchantChip = memo(function MerchantChip({
+  merchant,
+  isSelected,
+  isDisabled,
+  onSelect,
+}: {
+  merchant: string;
+  isSelected: boolean;
+  isDisabled?: boolean;
+  onSelect?: (merchant: string) => void;
+}) {
+  const handlePress = useCallback(() => {
+    onSelect?.(merchant);
+  }, [merchant, onSelect]);
+  return (
+    <Button
+      type="button"
+      variant={isSelected ? "primary" : "secondary"}
+      isDisabled={isDisabled}
+      className="ds-merchant-picker__chip"
+      onPress={handlePress}
+    >
+      {merchant}
+    </Button>
+  );
+});
+
 export const MerchantPicker = memo(function MerchantPicker(
-  { value, onValueChange, isDisabled, recentMerchants = [] }:
+  { value, onValueChange, onBlur, isDisabled, recentMerchants = [] }:
     MerchantPickerProps,
 ) {
   return (
@@ -19,6 +48,7 @@ export const MerchantPicker = memo(function MerchantPicker(
         label="Merchant"
         value={value}
         onValueChange={onValueChange}
+        onBlur={onBlur}
         isDisabled={isDisabled}
       />
       {recentMerchants.length > 0
@@ -29,16 +59,13 @@ export const MerchantPicker = memo(function MerchantPicker(
             aria-label="Recent merchant suggestions"
           >
             {recentMerchants.map((merchant) => (
-              <Button
+              <MerchantChip
                 key={merchant}
-                type="button"
-                variant={merchant === value ? "primary" : "secondary"}
+                merchant={merchant}
+                isSelected={merchant === value}
                 isDisabled={isDisabled}
-                className="ds-merchant-picker__chip"
-                onPress={() => onValueChange?.(merchant)}
-              >
-                {merchant}
-              </Button>
+                onSelect={onValueChange}
+              />
             ))}
           </div>
         )

@@ -1,8 +1,10 @@
-import { useId } from "react";
+import { memo, useId } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { DateInput as MantineDateInput } from "@mantine/dates";
 import { cx } from "../shared.ts";
 import { emitInputChange, inputValue } from "./shared.ts";
+
+const DATE_FIELD_CLASS_NAMES = { input: "ds-field-control" } as const;
 
 export type NativeDateFieldProps =
   & Omit<ComponentProps<"input">, "type" | "className">
@@ -13,7 +15,7 @@ export type NativeDateFieldProps =
     className?: string;
   };
 
-export function NativeDateField(
+export const NativeDateField = memo(function NativeDateField(
   {
     label,
     description,
@@ -42,8 +44,8 @@ export function NativeDateField(
       onChange={(nextValue) => emitInputChange(onChange, nextValue ?? "")}
       valueFormat="YYYY-MM-DD"
       className={cx("ds-field", className)}
-      classNames={{ input: "ds-field-control" }}
+      classNames={DATE_FIELD_CLASS_NAMES}
       {...(props as unknown as ComponentProps<typeof MantineDateInput>)}
     />
   );
-}
+});

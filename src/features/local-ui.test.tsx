@@ -365,51 +365,82 @@ Deno.test("local UI manual deletion reports a deleted completion status", async 
   });
 });
 
-Deno.test("local UI manual form exposes an in-form discard action", async () => {
-  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
-    await withAriaDomGlobals(window, async () => {
-      const local = createFakeLocalPort();
-      const { service } = createTestService(state);
-      let closed = false;
-      let dirty = false;
-      render(
-        createElement(ManualExpenseScreen, {
-          repository: local,
-          service,
-          state,
-          request: { projectId: project.id },
-          onSaved: () => undefined,
-          onDirtyChange: (nextDirty) => dirty = nextDirty,
-          onClosed: () => closed = true,
-        }),
-      );
-      const view = within(document.body);
-      await waitFor(() =>
-        assert(view.getByRole("textbox", { name: "Amount" }))
-      );
-      fireEvent.input(view.getByRole("textbox", { name: "Amount" }), {
-        target: { value: "4" },
-      });
-      await waitFor(() =>
-        assert(view.getByRole("button", { name: "Discard draft" }))
-      );
-      fireEvent.click(view.getByRole("button", { name: "Discard draft" }));
-      await waitFor(() => assert(view.getByText("Discard unsaved changes?")));
-      assert(dirty, "The form must remain guarded while discard is pending");
-      const confirmation = view.getByText("Discard unsaved changes?");
-      const amount = view.getByRole("textbox", { name: "Amount" });
-      assert(
-        Boolean(
-          confirmation.compareDocumentPosition(amount) &
-            Node.DOCUMENT_POSITION_FOLLOWING,
-        ),
-        "Discard confirmation should appear before the form fields",
-      );
-      fireEvent.click(view.getByRole("button", { name: "Discard changes" }));
-      await waitFor(() => assert(closed));
-    });
-  });
-});
+Deno.test(
+  "local UI manual form does not render a draft status banner on input and guards close when modified",
+  async () => {
+    await withComponentHarness(
+      async ({ window, render, fireEvent, waitFor }) => {
+        await withAriaDomGlobals(window, async () => {
+          const expense: Expense = {
+            schemaVersion: 1,
+            type: "expense",
+            id: "expense-close-discard",
+            projectId: project.id,
+            categoryId: category.id,
+            date: "2026-08-30",
+            amount: "-8",
+            currency: "SEK",
+            description: "Original description",
+            source: "manual",
+          };
+          const local = createFakeLocalPort();
+          const editState = { ...state, expenses: [expense] };
+          const { service } = createTestService(editState);
+          let closed = false;
+          let dirty = false;
+          render(
+            createElement(ManualExpenseScreen, {
+              repository: local,
+              service,
+              state: editState,
+              request: { expense },
+              onSaved: () => undefined,
+              onDirtyChange: (nextDirty) => dirty = nextDirty,
+              onClosed: () => closed = true,
+            }),
+          );
+          const view = within(document.body);
+          await waitFor(() =>
+            assert(view.getByRole("textbox", { name: "Amount" }))
+          );
+          fireEvent.input(view.getByRole("textbox", { name: "Amount" }), {
+            target: { value: "14" },
+          });
+          assert(dirty, "Modified form should report dirty state");
+          assertEquals(
+            view.queryByText("Unsaved changes"),
+            null,
+          );
+          assertEquals(
+            view.queryByRole("button", { name: "Discard draft" }),
+            null,
+          );
+          fireEvent.click(view.getByRole("button", { name: "Close" }));
+          await waitFor(() =>
+            assert(view.getByText("Discard unsaved changes?"))
+          );
+          assert(
+            dirty,
+            "The form must remain guarded while discard is pending",
+          );
+          const confirmation = view.getByText("Discard unsaved changes?");
+          const amount = view.getByRole("textbox", { name: "Amount" });
+          assert(
+            Boolean(
+              confirmation.compareDocumentPosition(amount) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+            ),
+            "Discard confirmation should appear before the form fields",
+          );
+          fireEvent.click(
+            view.getByRole("button", { name: "Discard changes" }),
+          );
+          await waitFor(() => assert(closed));
+        });
+      },
+    );
+  },
+);
 
 Deno.test("local UI manual form completes discard requested while opening", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {

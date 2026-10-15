@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { Checkbox as MantineCheckbox } from "@mantine/core";
 import { cx } from "../shared.ts";
@@ -31,7 +32,7 @@ export type CheckboxProps =
     slot?: string;
   };
 
-export function Checkbox({
+export const Checkbox = memo(function Checkbox({
   children,
   className,
   isSelected,
@@ -66,4 +67,4 @@ export function Checkbox({
       className={cx("ds-checkbox", className)}
     />
   );
-}
+});

@@ -3611,6 +3611,7 @@ Deno.test(
           gemini: fakeAi,
         };
 
+        let checkConnectionCount = 0;
         render(
           createElement(ReceiptScanScreen, {
             dependencies,
@@ -3618,6 +3619,7 @@ Deno.test(
             state,
             settings,
             offline: true,
+            onCheckConnection: () => checkConnectionCount++,
             onSettingsChange: () => undefined,
             onReview: () => undefined,
             onClose: () => undefined,
@@ -3628,6 +3630,12 @@ Deno.test(
 
         // Screen displays non-blocking offline warning while keeping file selection available
         assert(view.getByText("Scanning is unavailable offline"));
+        const checkConnectionBtn = view.getByRole("button", {
+          name: "Check connection",
+        });
+        assert(checkConnectionBtn);
+        fireEvent.click(checkConnectionBtn);
+        assertEquals(checkConnectionCount, 1);
 
         // Select an image while offline
         const file = new Blob([new Uint8Array([1, 2, 3])], {

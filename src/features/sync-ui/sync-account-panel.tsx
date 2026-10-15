@@ -267,8 +267,20 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
         {view.network === "offline"
           ? (
             <InlineNotice title="Offline" tone="warning">
-              Locally saved changes remain pending and will sync after the app
-              reconnects.
+              Locally saved changes remain pending and will sync when you are
+              back online.
+              {props.onCheckConnection
+                ? (
+                  <Inline>
+                    <Button
+                      variant="secondary"
+                      onPress={() => props.onCheckConnection?.()}
+                    >
+                      Check connection
+                    </Button>
+                  </Inline>
+                )
+                : null}
             </InlineNotice>
           )
           : null}
@@ -276,6 +288,18 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
           ? (
             <InlineNotice title="Reconnecting" tone="warning">
               Synchronization is waiting for the connection to return.
+              {props.onCheckConnection
+                ? (
+                  <Inline>
+                    <Button
+                      variant="secondary"
+                      onPress={() => props.onCheckConnection?.()}
+                    >
+                      Check connection
+                    </Button>
+                  </Inline>
+                )
+                : null}
             </InlineNotice>
           )
           : null}
@@ -285,12 +309,24 @@ function ConfiguredPanel(props: SyncAccountPanelProps) {
             <ErrorState
               title="Google Drive authorization failed"
               action={
-                <Button
-                  onPress={() => props.onReconnect?.()}
-                  isDisabled={!props.onReconnect}
-                >
-                  Reconnect Google Drive
-                </Button>
+                <Inline gap={2}>
+                  <Button
+                    onPress={() => props.onReconnect?.()}
+                    isDisabled={!props.onReconnect}
+                  >
+                    Reconnect Google Drive
+                  </Button>
+                  {props.onCheckConnection
+                    ? (
+                      <Button
+                        variant="secondary"
+                        onPress={() => props.onCheckConnection?.()}
+                      >
+                        Check connection
+                      </Button>
+                    )
+                    : null}
+                </Inline>
               }
             >
               {view.message ??

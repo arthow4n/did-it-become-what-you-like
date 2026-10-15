@@ -701,6 +701,30 @@ Deno.test("local UI expenses exposes shared filters, empty state, and add event"
   });
 });
 
+Deno.test("local UI expenses renders offline banner with check connection action", async () => {
+  await withComponentHarness(({ render, fireEvent }) => {
+    let checkCount = 0;
+    render(
+      createElement(ExpensesScreen, {
+        state,
+        expenseDayBoundary: "03:00",
+        offline: true,
+        onCheckConnection: () => checkCount++,
+        onAdd: () => undefined,
+        onEdit: () => undefined,
+        onViewReceipt: () => undefined,
+        onProjectChange: () => undefined,
+      }),
+    );
+    const view = within(document.body);
+    assert(view.getByText("Offline"));
+    const checkBtn = view.getByRole("button", { name: "Check connection" });
+    assert(checkBtn);
+    fireEvent.click(checkBtn);
+    assert(checkCount === 1);
+  });
+});
+
 Deno.test("local UI expenses keeps project and sync status compact", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let reconnected = 0;

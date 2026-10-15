@@ -7,6 +7,7 @@ export type SyncStatusContextValue = {
   readonly onOpenSync: () => void;
   readonly onReconnect: () => void;
   readonly notifyLocalMutation: () => void;
+  readonly onCheckConnection?: () => void;
 };
 
 const SyncStatusContext = createContext<SyncStatusContextValue | null>(null);

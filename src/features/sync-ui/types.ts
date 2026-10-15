@@ -77,6 +77,7 @@ export type SyncAccountPanelCallbacks = {
   readonly onConnect: (mode?: "persisted" | "direct") => void;
   readonly onReconnect?: () => void;
   readonly onRetry?: () => void;
+  readonly onCheckConnection?: () => void;
   readonly onRecoverCorruptData?: () => void;
   readonly onSyncNow?: () => void;
   readonly onOpenConflicts?: () => void;

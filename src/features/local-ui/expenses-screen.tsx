@@ -22,6 +22,7 @@ import {
   FilterSheet,
   Heading,
   Icon,
+  Inline,
   List,
   MoneySummary,
   PeriodPicker,
@@ -188,6 +189,7 @@ export function ExpensesScreen({
   state,
   expenseDayBoundary,
   offline,
+  onCheckConnection,
   onAdd,
   onEdit,
   onViewReceipt,
@@ -196,12 +198,14 @@ export function ExpensesScreen({
   state: ProjectCategoryState;
   expenseDayBoundary: string;
   offline: boolean;
+  onCheckConnection?: () => void;
   onAdd: () => void;
   onEdit: (expense: Expense) => void;
   onViewReceipt: (receiptId: string, focusedLineId?: string) => void;
   onProjectChange: (projectId: string) => void;
 }) {
   const syncStatus = useSyncStatus();
+  const checkConnection = onCheckConnection ?? syncStatus?.onCheckConnection;
   const currentProject =
     state.projects.find((project) => project.id === state.selectedProjectId) ??
       state.projects.find((project) => !project.archived);
@@ -395,7 +399,19 @@ export function ExpensesScreen({
               Local browsing and manual entry are available. AI scanning
               {syncStatus?.view.mode === "configured" ? " and Drive sync" : ""}
               {" "}
-              will resume when you reconnect.
+              will resume when your connection is restored.
+              {checkConnection
+                ? (
+                  <Inline>
+                    <Button
+                      variant="secondary"
+                      onPress={checkConnection}
+                    >
+                      Check connection
+                    </Button>
+                  </Inline>
+                )
+                : null}
             </Banner>
           )
           : null}

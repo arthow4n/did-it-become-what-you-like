@@ -50,6 +50,7 @@ export type SyncPortabilityScreenHostProps = {
   readonly sendSync: (event: SyncActorEvent) => void;
   readonly driveAdapter: DriveAdapter | null;
   readonly handleReconnect: () => void;
+  readonly handleCheckConnection?: () => void;
   readonly onNavigate: (path: string) => void;
   readonly onNotice: (message: string) => void;
   readonly syncDependencies: SyncActorDependencies;
@@ -109,6 +110,7 @@ export function SyncPortabilityScreenHost({
   sendSync,
   driveAdapter,
   handleReconnect,
+  handleCheckConnection,
   onNavigate,
   onNotice,
   syncDependencies,
@@ -177,6 +179,7 @@ export function SyncPortabilityScreenHost({
           }).catch(() => onNotice("Google Drive could not be disconnected."));
         }}
         onReconnect={handleReconnect}
+        onCheckConnection={handleCheckConnection}
         onBack={() => onNavigate("/settings")}
       />
     );

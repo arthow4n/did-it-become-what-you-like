@@ -40,6 +40,7 @@ import {
 } from "../actors/destruction.ts";
 import type { ImportEvent } from "../actors/contracts/index.ts";
 import { createImportExportAdapter } from "../adapters/import-export/index.ts";
+import { probeIsOnline } from "../adapters/ports/index.ts";
 import {
   createDriveCausalSyncPort,
   createInMemoryCausalSyncPort,
@@ -522,11 +523,32 @@ export function SyncPortabilityRuntime({
       sendSync({ type: "sync.network.online" });
       sendImport({ type: "import.network.online" });
     };
+    const checkStatus = () => {
+      if (globalThis.navigator?.onLine !== false) {
+        onOnline();
+      }
+    };
+    const onVisibilityChange = () => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible"
+      ) {
+        checkStatus();
+      }
+    };
     globalThis.addEventListener("offline", onOffline);
     globalThis.addEventListener("online", onOnline);
+    globalThis.addEventListener("focus", checkStatus);
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
     return () => {
       globalThis.removeEventListener("offline", onOffline);
       globalThis.removeEventListener("online", onOnline);
+      globalThis.removeEventListener("focus", checkStatus);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
     };
   }, [sendImport, sendSync]);
 
@@ -1247,6 +1269,20 @@ export function SyncPortabilityRuntime({
     setDeleteFinalizationRetry((retry) => retry + 1);
   };
 
+  const handleCheckConnection = useCallback(async () => {
+    const isOnline = await probeIsOnline();
+    if (isOnline) {
+      sendSync({ type: "sync.network.online" });
+      sendImport({ type: "import.network.online" });
+      if (syncView.mode === "configured") {
+        sendSync({ type: "sync.request", request: { reason: "manual" } });
+      }
+      onNotice("Connection restored. You are back online.");
+    } else {
+      onNotice("Still offline. Internet connection could not be reached.");
+    }
+  }, [onNotice, sendImport, sendSync, syncView.mode]);
+
   const content = (
     <SyncPortabilityScreenHost
       screen={screen}
@@ -1261,6 +1297,7 @@ export function SyncPortabilityRuntime({
       sendSync={sendSync}
       driveAdapter={driveAdapter}
       handleReconnect={handleReconnect}
+      handleCheckConnection={handleCheckConnection}
       onNavigate={onNavigate}
       onNotice={onNotice}
       syncDependencies={syncDependencies}
@@ -1320,6 +1357,7 @@ export function SyncPortabilityRuntime({
           view: syncView,
           onOpenSync: () => onNavigate("/settings/sync"),
           onReconnect: handleReconnect,
+          onCheckConnection: handleCheckConnection,
           notifyLocalMutation: () => {
             if (
               syncView.mode === "configured" &&

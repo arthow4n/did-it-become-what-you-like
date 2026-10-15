@@ -670,3 +670,49 @@ Deno.test("sync screen exposes persisted vs direct mode and sync error notices",
     });
   });
 });
+
+Deno.test("syncIndicatorCopy prioritizes offline over authorization-error to avoid reconnect coercion", () => {
+  const copy = syncIndicatorCopy({
+    mode: "configured",
+    accountEmail: "owner@example.com",
+    network: "offline",
+    sync: "authorization-error",
+    lastSyncedAt: null,
+    pendingChangeCount: 0,
+    unresolvedConflictCount: 0,
+  });
+  assert(
+    copy.label === "Local only",
+    `Expected "Local only", got "${copy.label}"`,
+  );
+  assert(copy.action === "details", `Expected "details", got "${copy.action}"`);
+});
+
+Deno.test("SyncAccountPanel renders Check connection button when offline and invokes callback", async () => {
+  await withComponentHarness(async ({ render, fireEvent }) => {
+    await withAriaGlobals(() => {
+      let checkCount = 0;
+      render(
+        createElement(SyncAccountPanel, {
+          view: {
+            mode: "configured",
+            accountEmail: "owner@example.com",
+            network: "offline",
+            sync: "synced",
+            lastSyncedAt: "1 hour ago",
+            pendingChangeCount: 0,
+            unresolvedConflictCount: 0,
+          },
+          knownDeviceCount: 0,
+          ...callbacks(),
+          onCheckConnection: () => checkCount++,
+        }),
+      );
+      const view = within(document.body);
+      const checkBtn = view.getByRole("button", { name: "Check connection" });
+      assert(checkBtn);
+      fireEvent.click(checkBtn);
+      assert(checkCount === 1);
+    });
+  });
+});

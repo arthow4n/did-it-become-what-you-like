@@ -53,7 +53,8 @@ function configuredCopy(
     return {
       label: "Offline",
       tone: "warning",
-      detail: "Local changes stay saved and will sync when you reconnect.",
+      detail:
+        "Local changes stay saved and will sync when you are back online.",
     };
   }
   if (view.network === "reconnecting") {
@@ -151,7 +152,7 @@ export function syncNowDisabledReason(
     return "Manual sync becomes available when you are online.";
   }
   if (view.network === "reconnecting") {
-    return "Manual sync becomes available after reconnecting.";
+    return "Manual sync becomes available when connection is restored.";
   }
   if (view.sync === "syncing" || view.sync === "recovering") {
     return "Synchronization recovery is already in progress.";

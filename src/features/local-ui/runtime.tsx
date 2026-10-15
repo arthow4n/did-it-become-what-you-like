@@ -23,6 +23,7 @@ import {
   readDeviceLocalSettings,
   writeDeviceLocalSettings,
 } from "../../adapters/local/index.ts";
+import { probeIsOnline } from "../../adapters/ports/index.ts";
 import type {} from "../../adapters/ports/local.ts";
 import { hashForRoute } from "../../app/routing.ts";
 import { isSupportedBrowser } from "../../app/pwa.ts";
@@ -240,11 +241,34 @@ export function LocalUiRuntime(
   useEffect(() => {
     const onOffline = () => sendShell({ type: "shell.network.offline" });
     const onOnline = () => sendShell({ type: "shell.network.online" });
+    const checkStatus = () => {
+      void probeIsOnline().then((online) => {
+        if (online) {
+          onOnline();
+        }
+      });
+    };
+    const onVisibilityChange = () => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible"
+      ) {
+        checkStatus();
+      }
+    };
     globalThis.addEventListener("offline", onOffline);
     globalThis.addEventListener("online", onOnline);
+    globalThis.addEventListener("focus", checkStatus);
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
     return () => {
       globalThis.removeEventListener("offline", onOffline);
       globalThis.removeEventListener("online", onOnline);
+      globalThis.removeEventListener("focus", checkStatus);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
     };
   }, [sendShell]);
   useEffect(() => {
@@ -475,6 +499,15 @@ export function LocalUiRuntime(
       );
     }
   };
+  const handleCheckConnection = useCallback(async () => {
+    const online = await probeIsOnline();
+    if (online) {
+      sendShell({ type: "shell.network.online" });
+      setAppNotice("Connection restored. You are back online.");
+    } else {
+      setAppNotice("Still offline. Internet connection could not be reached.");
+    }
+  }, [sendShell]);
   const selectedExpenseId = path.startsWith("/expense/edit/")
     ? path.slice("/expense/edit/".length)
     : undefined;
@@ -609,6 +642,7 @@ export function LocalUiRuntime(
                 state={state}
                 expenseDayBoundary={expenseDayBoundary}
                 offline={shellSnapshot.hasTag("offline")}
+                onCheckConnection={handleCheckConnection}
                 onAdd={() => navigate("/expense/new")}
                 onEdit={(expense) => navigate(`/expense/edit/${expense.id}`)}
                 onViewReceipt={(receiptId, focusedLineId) => {
@@ -660,6 +694,7 @@ export function LocalUiRuntime(
                 state={state}
                 settings={deviceSettings}
                 offline={shellSnapshot.hasTag("offline")}
+                onCheckConnection={handleCheckConnection}
                 onSettingsChange={updateDeviceSettings}
                 onDirtyChange={(dirty) => {
                   setWorkflowDirty(dirty);

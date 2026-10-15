@@ -1,6 +1,9 @@
 import { useActor } from "@xstate/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ReceiptAiModel } from "../../adapters/ports/index.ts";
+import {
+  probeIsOnline,
+  type ReceiptAiModel,
+} from "../../adapters/ports/index.ts";
 import {
   type DeviceLocalSettings,
   type GeminiThinkingLevel,
@@ -202,12 +205,14 @@ export function ReceiptScanScreen({
   onReview,
   onClose,
   onOpenSettings,
+  onCheckConnection,
 }: {
   dependencies: ReceiptUiDependencies;
   imageStore: ReceiptImageStore;
   state: ProjectCategoryState;
   settings: DeviceLocalSettings;
   offline: boolean;
+  onCheckConnection?: () => void;
   onSettingsChange: (settings: DeviceLocalSettings) => void;
   onDirtyChange?: (dirty: boolean) => void;
   onDiscardDisabledChange?: (disabled: boolean) => void;
@@ -330,6 +335,17 @@ export function ReceiptScanScreen({
       setModelError("Failed to rotate the image.");
     }
   };
+
+  const handleCheckConnection = useCallback(async () => {
+    if (onCheckConnection) {
+      onCheckConnection();
+      return;
+    }
+    const online = await probeIsOnline();
+    if (online) {
+      send({ type: "receipt.network.online" });
+    }
+  }, [onCheckConnection, send]);
 
   useEffect(() => {
     if (
@@ -884,6 +900,12 @@ export function ReceiptScanScreen({
                   onPress={() => send({ type: "receipt.use-manual" })}
                 >
                   Use manual entry
+                </Button>
+                <Button
+                  variant="secondary"
+                  onPress={() => void handleCheckConnection()}
+                >
+                  Check connection
                 </Button>
               </Inline>
             </InlineNotice>

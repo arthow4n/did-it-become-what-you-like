@@ -51,6 +51,9 @@ export type SyncIndicatorCopy = {
 export function syncIndicatorCopy(
   view: SyncConnectionViewModel,
 ): SyncIndicatorCopy {
+  if (view.mode === "configured" && view.network !== "online") {
+    return { label: "Local only", tone: "warning", action: "details" };
+  }
   if (
     view.mode === "disconnected" ||
     (view.mode === "configured" && view.sync === "authorization-error")
@@ -75,9 +78,6 @@ export function syncIndicatorCopy(
     view.network === "online"
   ) {
     return { label: "Synced", tone: "positive", action: "details" };
-  }
-  if (view.mode === "configured" && view.network !== "online") {
-    return { label: "Local only", tone: "warning", action: "details" };
   }
   return { label: "Attention", tone: "danger", action: "details" };
 }

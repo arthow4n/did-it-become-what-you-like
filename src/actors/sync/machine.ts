@@ -601,6 +601,9 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
             target: "offline",
             actions: assign({ online: () => false }),
           },
+          "sync.network.online": {
+            actions: assign({ online: () => true }),
+          },
           "sync.connect": {
             target: "idle",
             actions: assign({ online: () => true }),
@@ -612,6 +615,9 @@ export function createSyncMachine(dependencies: SyncActorDependencies) {
       error: {
         tags: ["error"],
         on: {
+          "sync.network.online": {
+            actions: assign({ online: () => true }),
+          },
           "sync.retry": [
             {
               target: "synchronizing",

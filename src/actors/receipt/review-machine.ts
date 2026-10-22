@@ -313,7 +313,7 @@ export function createReceiptReviewMachine(
         },
       },
       persisting: {
-        tags: ["saving", "dirty"],
+        tags: ["draft-saving", "dirty"],
         invoke: {
           src: "persistReview",
           input: ({ context }) => ({
@@ -414,6 +414,28 @@ export function createReceiptReviewMachine(
               error: () => null,
             }),
           },
+          "receipt.review.submit": [
+            { target: "saving", guard: "noMismatch" },
+            {
+              target: "saving",
+              guard: ({ event }) =>
+                event.type === "receipt.review.submit" && event.confirmMismatch,
+            },
+            { target: "mismatch", guard: "hasMismatch" },
+          ],
+          "receipt.review.confirm-mismatch": {
+            target: "saving",
+            guard: "hasMismatch",
+          },
+          "receipt.review.discard": {
+            target: "clearing",
+            actions: assign({
+              outcome: () => ({ status: "discarded" } as const),
+              error: () => null,
+              failureOperation: () => "clear" as const,
+            }),
+          },
+          "receipt.review.cancel": "cancelled",
         },
       },
       persisted: {

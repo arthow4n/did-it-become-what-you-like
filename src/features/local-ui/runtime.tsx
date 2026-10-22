@@ -10,7 +10,10 @@ import {
   type DeviceLocalSettings,
   PortableSettingsSchema,
 } from "../../domain/index.ts";
-import type { ReceiptReviewDraft } from "../../domain/receipt.ts";
+import type {
+  ReceiptCommitResult,
+  ReceiptReviewDraft,
+} from "../../domain/receipt.ts";
 import {
   createLocalShellMachine,
   type LocalShellEvent,
@@ -129,6 +132,7 @@ export function LocalUiRuntime(
   const [projectEditorOpen, setProjectEditorOpen] = useState(false);
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
   const [appNotice, setAppNotice] = useState<string | null>(null);
+  const [expensesInitialDate, setExpensesInitialDate] = useState<string>();
   const [usefulActionVersion, setUsefulActionVersion] = useState(0);
   const [workflowDirty, setWorkflowDirty] = useState(false);
   const [dirtyNavigationWorkflow, setDirtyNavigationWorkflow] = useState(false);
@@ -595,6 +599,44 @@ export function LocalUiRuntime(
       navigate((output.destination ?? "/expenses") as LocalUiPath);
     }
   };
+  const handleReceiptSaved = (result: ReceiptCommitResult) => {
+    setWorkflowDirty(false);
+    setDirtyNavigationWorkflow(false);
+    setUsefulActionVersion((value) => value + 1);
+    setExpensesInitialDate(result.receipt.date);
+    receiptReturnFocusRef.current = {
+      kind: "receipt",
+      receiptId: result.receipt.id,
+    };
+    setState((current) => {
+      if (current === null) return current;
+      const receipts = [
+        ...current.receipts.filter((r) => r.id !== result.receipt.id),
+        result.receipt,
+      ];
+      const receiptPurchaseLines = [
+        ...current.receiptPurchaseLines.filter((l) =>
+          l.receiptId !== result.receipt.id
+        ),
+        ...result.purchaseLines,
+      ];
+      const receiptAdjustments = [
+        ...current.receiptAdjustments.filter((a) =>
+          a.receiptId !== result.receipt.id
+        ),
+        ...result.adjustments,
+      ];
+      return {
+        ...current,
+        receipts,
+        receiptPurchaseLines,
+        receiptAdjustments,
+      };
+    });
+    sendShell({ type: "shell.repository.refresh" });
+    void organization.getState().then(setState);
+    setAppNotice(`${result.receipt.merchant ?? "Receipt"} saved.`);
+  };
   return (
     <AppFrame
       navigation={
@@ -642,6 +684,7 @@ export function LocalUiRuntime(
                 state={state}
                 expenseDayBoundary={expenseDayBoundary}
                 offline={shellSnapshot.hasTag("offline")}
+                initialDate={expensesInitialDate}
                 onCheckConnection={handleCheckConnection}
                 onAdd={() => navigate("/expense/new")}
                 onEdit={(expense) => navigate(`/expense/edit/${expense.id}`)}
@@ -731,6 +774,7 @@ export function LocalUiRuntime(
                 }}
                 onDiscardDisabledChange={setDirtyDiscardDisabled}
                 discardRequest={discardRequest}
+                onSaved={handleReceiptSaved}
                 onClose={() => {
                   sendShell({ type: "shell.repository.refresh" });
                   void organization.getState().then(setState);
@@ -752,6 +796,7 @@ export function LocalUiRuntime(
                 }}
                 onDiscardDisabledChange={setDirtyDiscardDisabled}
                 discardRequest={discardRequest}
+                onSaved={handleReceiptSaved}
                 onClose={() => {
                   sendShell({ type: "shell.repository.refresh" });
                   void organization.getState().then(setState);

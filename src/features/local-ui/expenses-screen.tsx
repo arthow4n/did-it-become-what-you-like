@@ -189,6 +189,7 @@ export function ExpensesScreen({
   state,
   expenseDayBoundary,
   offline,
+  initialDate,
   onCheckConnection,
   onAdd,
   onEdit,
@@ -198,6 +199,7 @@ export function ExpensesScreen({
   state: ProjectCategoryState;
   expenseDayBoundary: string;
   offline: boolean;
+  initialDate?: string;
   onCheckConnection?: () => void;
   onAdd: () => void;
   onEdit: (expense: Expense) => void;
@@ -213,7 +215,20 @@ export function ExpensesScreen({
   const [customPeriodKind, setCustomPeriodKind] = useState<CustomPeriodKind>(
     "day",
   );
-  const [customPeriodDate, setCustomPeriodDate] = useState(localCalendarDate);
+  const [customPeriodDate, setCustomPeriodDate] = useState(() => {
+    const parsed = initialDate
+      ? CalendarDateSchema.safeParse(initialDate)
+      : undefined;
+    return parsed?.success ? parsed.data : localCalendarDate();
+  });
+  useEffect(() => {
+    if (!initialDate) return;
+    const parsed = CalendarDateSchema.safeParse(initialDate);
+    if (parsed.success) {
+      setCustomPeriodDate(parsed.data);
+      setPeriod("today");
+    }
+  }, [initialDate]);
   const [categoryId, setCategoryId] = useState<string>("");
   const [currency, setCurrency] = useState<string>("");
   const [search, setSearch] = useState("");

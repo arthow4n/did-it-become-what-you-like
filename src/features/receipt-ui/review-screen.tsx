@@ -11,6 +11,7 @@ import {
   TimeOfDaySchema,
 } from "../../domain/index.ts";
 import {
+  type ReceiptCommitResult,
   type ReceiptDraftLine,
   receiptMismatchDifference,
   type ReceiptReviewDraft,
@@ -282,6 +283,7 @@ export function ReceiptReviewScreen({
   onDirtyChange,
   onDiscardDisabledChange,
   discardRequest,
+  onSaved,
   onClose,
 }: {
   local: LocalPort;
@@ -292,6 +294,7 @@ export function ReceiptReviewScreen({
   onDirtyChange?: (dirty: boolean) => void;
   onDiscardDisabledChange?: (disabled: boolean) => void;
   discardRequest?: number;
+  onSaved?: (result: ReceiptCommitResult) => void;
   onClose: () => void;
 }) {
   const isManual = mode === "manual";
@@ -318,6 +321,7 @@ export function ReceiptReviewScreen({
   const doneRef = useRef(false);
   const syncMutationHandled = useRef(false);
   const metadataReturnFocusRef = useRef<HTMLElement | null>(null);
+  const mismatchNoticeRef = useRef<HTMLDivElement | null>(null);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
   const syncStatus = useSyncStatus();
 
@@ -375,6 +379,16 @@ export function ReceiptReviewScreen({
   }, [discardRequest, send, snapshot]);
 
   useEffect(() => {
+    if (!snapshot.matches("mismatch")) return;
+    queueMicrotask(() => {
+      const container = mismatchNoticeRef.current;
+      if (!container) return;
+      container.scrollIntoView?.({ block: "nearest" });
+      container.querySelector<HTMLElement>("button")?.focus();
+    });
+  }, [snapshot]);
+
+  useEffect(() => {
     if (doneRef.current) return;
     if (
       snapshot.matches("saved") || snapshot.matches("discarded") ||
@@ -383,11 +397,14 @@ export function ReceiptReviewScreen({
       doneRef.current = true;
       if (snapshot.matches("saved") && !syncMutationHandled.current) {
         syncMutationHandled.current = true;
+        if (snapshot.context.result) {
+          onSaved?.(snapshot.context.result);
+        }
         syncStatus?.notifyLocalMutation();
       }
       onClose();
     }
-  }, [onClose, snapshot, syncStatus]);
+  }, [onClose, onSaved, snapshot, syncStatus]);
 
   if (snapshot.matches("hydrating") && !snapshot.context.review) {
     return (
@@ -604,26 +621,28 @@ export function ReceiptReviewScreen({
           : null}
         {snapshot.matches("mismatch")
           ? (
-            <InlineNotice
-              tone="warning"
-              title={isManual
-                ? "Confirm the total mismatch"
-                : isMenu
-                ? "Confirm the bill-total mismatch"
-                : "Confirm the printed-total mismatch"}
-            >
-              {isManual
-                ? "The item total differs from the total paid. You can go back and edit the items or total, or explicitly confirm this mismatch."
-                : isMenu
-                ? "The selected items differ from the bill total. You can go back and edit them, or explicitly confirm this mismatch."
-                : "The selected entries differ from the printed total. You can go back and edit them, or explicitly confirm this mismatch."}
-              <Button
-                onPress={() =>
-                  send({ type: "receipt.review.confirm-mismatch" })}
+            <div ref={mismatchNoticeRef}>
+              <InlineNotice
+                tone="warning"
+                title={isManual
+                  ? "Confirm the total mismatch"
+                  : isMenu
+                  ? "Confirm the bill-total mismatch"
+                  : "Confirm the printed-total mismatch"}
               >
-                Confirm mismatch and save
-              </Button>
-            </InlineNotice>
+                {isManual
+                  ? "The item total differs from the total paid. You can go back and edit the items or total, or explicitly confirm this mismatch."
+                  : isMenu
+                  ? "The selected items differ from the bill total. You can go back and edit them, or explicitly confirm this mismatch."
+                  : "The selected entries differ from the printed total. You can go back and edit them, or explicitly confirm this mismatch."}
+                <Button
+                  onPress={() =>
+                    send({ type: "receipt.review.confirm-mismatch" })}
+                >
+                  Confirm mismatch and save
+                </Button>
+              </InlineNotice>
+            </div>
           )
           : null}
         {snapshot.matches("failed")

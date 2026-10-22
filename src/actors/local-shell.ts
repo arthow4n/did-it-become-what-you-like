@@ -172,6 +172,19 @@ function makeLocalShellMachine(initialNetwork: OnlineState) {
               },
               refreshing: {
                 tags: ["refreshing"],
+                on: {
+                  "shell.repository.refresh": {
+                    target: "refreshing",
+                    reenter: true,
+                  },
+                  "shell.project.select": {
+                    target: "switching",
+                    actions: assign({
+                      pendingProjectId: ({ event }) => event.projectId,
+                      error: () => null,
+                    }),
+                  },
+                },
                 invoke: {
                   src: "refreshProjectState",
                   input: () => undefined,
@@ -198,6 +211,9 @@ function makeLocalShellMachine(initialNetwork: OnlineState) {
               },
               switching: {
                 tags: ["switching", "saving"],
+                on: {
+                  "shell.repository.refresh": "refreshing",
+                },
                 invoke: {
                   src: "switchProject",
                   input: ({ context }) => context.pendingProjectId!,
@@ -225,6 +241,7 @@ function makeLocalShellMachine(initialNetwork: OnlineState) {
               failed: {
                 tags: ["error"],
                 on: {
+                  "shell.repository.refresh": "refreshing",
                   "shell.project.retry": "switching",
                   "shell.project.select": {
                     target: "switching",

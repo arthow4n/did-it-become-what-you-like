@@ -1146,6 +1146,57 @@ Deno.test("local UI expenses interleaves receipt groups and shows every category
   });
 });
 
+Deno.test(
+  "local UI expenses opens directly to initialDate so newly saved historical receipts are visible",
+  async () => {
+    await withComponentHarness(async ({ render, waitFor }) => {
+      const receiptId = "receipt-past-date";
+      const pastReceiptState: ProjectCategoryState = {
+        ...state,
+        receipts: [{
+          schemaVersion: 1,
+          type: "receipt" as const,
+          id: receiptId,
+          projectId: project.id,
+          date: "2026-08-15",
+          merchant: "Past Date Market",
+          currency: "SEK" as const,
+          printedTotal: "-25",
+        }],
+        receiptPurchaseLines: [{
+          schemaVersion: 1,
+          type: "receipt-purchase-line" as const,
+          id: "line-past-date",
+          receiptId,
+          projectId: project.id,
+          categoryId: category.id,
+          description: "Past receipt item",
+          lineTotal: "-25",
+        }],
+        receiptAdjustments: [],
+      };
+      render(
+        createElement(ExpensesScreen, {
+          state: pastReceiptState,
+          expenseDayBoundary: "03:00",
+          offline: false,
+          initialDate: "2026-08-15",
+          onAdd: () => undefined,
+          onEdit: () => undefined,
+          onViewReceipt: () => undefined,
+          onProjectChange: () => undefined,
+        }),
+      );
+      const view = within(document.body);
+      await waitFor(() => {
+        assert(view.getByText("August 15, 2026"));
+        assert(view.getByRole("button", { name: /Past Date Market/ }));
+        assert(view.getByText("Past receipt item"));
+      });
+    });
+  },
+);
+
 Deno.test("local UI shell navigation routes directly to manual and scan scenes", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaDomGlobals(window, () => {

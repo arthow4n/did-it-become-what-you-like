@@ -168,6 +168,61 @@ Deno.test(
   },
 );
 
+Deno.test(
+  "shell-actor: concurrent repository refresh re-enters refreshing so newer writes are not dropped",
+  async () => {
+    const harness = await createShellHarness();
+    let callCount = 0;
+    let resolveFirst!: (
+      state: Awaited<ReturnType<ProjectCategoryService["getState"]>>,
+    ) => void;
+    const firstRead = new Promise<
+      Awaited<ReturnType<ProjectCategoryService["getState"]>>
+    >((resolve) => {
+      resolveFirst = resolve;
+    });
+    const staleState = await harness.service.getState();
+    const originalGetState = harness.service.getState.bind(harness.service);
+    const wrappedService: ProjectCategoryService = {
+      ...harness.service,
+      getState: () => {
+        callCount += 1;
+        // call 1 is restoreShell on boot, call 2 is first refresh, call 3 is re-entered refresh
+        if (callCount === 2) return firstRead;
+        return originalGetState();
+      },
+    };
+
+    const actor = createActor(
+      createLocalShellMachine({ organization: wrappedService }),
+    ).start();
+    await settle();
+    assert(actor.getSnapshot().hasTag("project-ready"));
+
+    // Start first refresh (pauses on firstRead)
+    actor.send({ type: "shell.repository.refresh" });
+    assert(actor.getSnapshot().hasTag("refreshing"));
+
+    // Commit a new project while first refresh is in flight, then send second refresh
+    await harness.service.commitProject({
+      type: "create",
+      project: projectThree,
+    });
+    actor.send({ type: "shell.repository.refresh" });
+    resolveFirst(staleState);
+    await settle();
+
+    assert(actor.getSnapshot().hasTag("project-ready"));
+    assert(
+      actor.getSnapshot().context.projectState?.projects.some((project) =>
+        project.id === projectThree.id
+      ),
+      "re-entered refresh must adopt the latest repository state instead of stale first read",
+    );
+    actor.stop();
+  },
+);
+
 Deno.test("shell-actor: restoration failure exposes retryable shell error", async () => {
   const local = createFakeLocalPort();
   const service = createProjectCategoryService(local, {

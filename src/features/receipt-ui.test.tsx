@@ -694,6 +694,93 @@ Deno.test(
   },
 );
 
+Deno.test(
+  "receipt-ui review save remains clickable during draft persistence and reports committed result",
+  async () => {
+    await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+      const local = createFakeLocalPort();
+      await local.transaction("readwrite", async (transaction) => {
+        await transaction.put(
+          "records",
+          defaultTestProject.id,
+          defaultTestProject as never,
+        );
+        await transaction.put(
+          "records",
+          defaultTestCategory.id,
+          defaultTestCategory as never,
+        );
+      });
+      let resolvePersist: (() => void) | undefined;
+      const persistPromise = new Promise<void>((resolve) => {
+        resolvePersist = resolve;
+      });
+      const originalTx = local.transaction;
+      let blockPersist = true;
+      local.transaction = async (mode, work, options) => {
+        return await originalTx(mode, async (tx) => {
+          const originalPut = tx.put;
+          tx.put = async (collection, key, value) => {
+            if (blockPersist && collection === "workflow-snapshots") {
+              await persistPromise;
+            }
+            return await originalPut(collection, key, value);
+          };
+          return await work(tx);
+        }, options);
+      };
+
+      let savedResultId: string | undefined;
+      let closed = 0;
+      render(
+        createElement(ReceiptReviewScreen, {
+          local,
+          state: defaultTestState,
+          initialReview: {
+            parent: {
+              projectId: defaultTestProject.id,
+              date: "2026-08-30",
+              merchant: "Immediate Save Market",
+              currency: "SEK",
+              printedTotal: "-5",
+            },
+            lines: [{
+              type: "purchase",
+              id: "line-immediate-save",
+              description: "Tea",
+              categoryId: defaultTestCategory.id,
+              lineTotal: "-5",
+              selected: true,
+              uncertain: false,
+            }],
+            uncertainty: [],
+            printedTotalMismatch: false,
+          },
+          onSaved: (result) => {
+            savedResultId = result.receipt.id;
+          },
+          onClose: () => closed++,
+        }),
+      );
+      const view = within(document.body);
+      const saveButton = await waitFor(() =>
+        view.getByRole("button", {
+          name: "Save 1 selected entry",
+        }) as HTMLButtonElement
+      );
+      // Save button is enabled even while initial draft snapshot is persisting
+      assert(!saveButton.disabled);
+
+      blockPersist = false;
+      fireEvent.click(saveButton);
+      resolvePersist?.();
+
+      await waitFor(() => assertEquals(closed, 1));
+      assert(savedResultId !== undefined);
+    });
+  },
+);
+
 Deno.test("receipt-ui source picker exposes native capture actions and ephemeral removal", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {

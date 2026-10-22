@@ -719,6 +719,77 @@ Deno.test("receipt-actor review: retains every line and parent edit in-memory", 
   actor.stop();
 });
 
+Deno.test(
+  "receipt-actor review: submit and discard during draft persistence do not drop events",
+  async () => {
+    const { local } = await receiptHarness();
+    let releasePersist!: () => void;
+    const persistBarrier = new Promise<void>((resolve) => {
+      releasePersist = resolve;
+    });
+    const originalTx = local.transaction;
+    let blockPersist = true;
+    local.transaction = async (mode, work, options) => {
+      return await originalTx(mode, async (tx) => {
+        const originalPut = tx.put;
+        tx.put = async (collection, key, value) => {
+          if (blockPersist && collection === "workflow-snapshots") {
+            await persistBarrier;
+          }
+          return await originalPut(collection, key, value);
+        };
+        return await work(tx);
+      }, options);
+    };
+
+    const commit = createReceiptCommitService(local, {
+      nextId: (kind) =>
+        kind === "receipt"
+          ? "receipt-persist-submit"
+          : "receipt-persist-submit-line",
+    });
+    const actor = createActor(
+      createReceiptReviewMachine({
+        local,
+        commit,
+        persistenceKey: "workflow:receipt-persist-submit",
+      }),
+      {
+        input: {
+          persistenceKey: "workflow:receipt-persist-submit",
+          initialReview: reviewDraft({
+            parent: {
+              projectId: project.id,
+              date: "2026-08-24",
+              merchant: "Fast Tap Market",
+              currency: "SEK",
+              printedTotal: "-4",
+            },
+          }),
+        },
+      },
+    ).start();
+
+    // Immediately after open, actor is in `persisting` with `draft-saving` tag, NOT `saving` tag
+    assertEquals(actor.getSnapshot().value, "persisting");
+    assert(actor.getSnapshot().hasTag("draft-saving"));
+    assert(!actor.getSnapshot().hasTag("saving"));
+
+    // Submitting while `persisting` is in flight transitions immediately to `saving` -> `saved`
+    blockPersist = false;
+    actor.send({ type: "receipt.review.submit", confirmMismatch: false });
+    releasePersist();
+    await waitForActorState(actor, "saved");
+
+    assertEquals(
+      (await local.query("records", { index: "type", equals: "receipt" }))
+        .length,
+      1,
+    );
+    actor.stop();
+  },
+);
+
 Deno.test("receipt-actor scan: offline state accepts scan and retry events", async () => {
   const gemini = createFakeGeminiPort(extractionDraft());
   const preparation = createFakeImagePreparationPort();

@@ -15,7 +15,7 @@
     "npm:@types/big.js@7.0.0": "7.0.0",
     "npm:@types/react-dom@19.3.0": "19.3.0_@types+react@19.3.0",
     "npm:@types/react@19.3.0": "19.3.0",
-    "npm:@vitejs/plugin-react@6.1.2": "6.1.2_vite@8.2.2",
+    "npm:@vitejs/plugin-react@6.1.2": "6.1.2_vite@8.2.4",
     "npm:@xstate/react@6.1.0": "6.1.0_react@19.3.0_xstate@5.33.2",
     "npm:axe-core@4.14.0": "4.14.0",
     "npm:big.js@7.0.1": "7.0.1",
@@ -25,8 +25,8 @@
     "npm:react-dom@19.3.0": "19.3.0_react@19.3.0",
     "npm:react@19.3.0": "19.3.0",
     "npm:typescript@7.0.2": "7.0.2",
-    "npm:vite-plugin-pwa@2.0.0": "2.0.0_vite@8.2.2_workbox-build@7.4.1_workbox-window@7.4.1",
-    "npm:vite@8.2.2": "8.2.2",
+    "npm:vite-plugin-pwa@2.0.0": "2.0.0_vite@8.2.4",
+    "npm:vite@8.2.4": "8.2.4",
     "npm:xstate@5.33.2": "5.33.2",
     "npm:zod@4.6.5": "4.6.5"
   },
@@ -1447,7 +1447,7 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
-    "@vitejs/plugin-react@6.1.2_vite@8.2.2": {
+    "@vitejs/plugin-react@6.1.2_vite@8.2.4": {
       "integrity": "sha512-fhJNGUdscQa4HkI0xFxwonWyhnVReCPDbXI7FH7jmzpnVCrFQI7PRrhWecO263610vOrs9tr2Y4xcf8uAdFxbw==",
       "dependencies": [
         "@rolldown/pluginutils",
@@ -3252,7 +3252,7 @@
         "react"
       ]
     },
-    "vite-plugin-pwa@2.0.0_vite@8.2.2_workbox-build@7.4.1_workbox-window@7.4.1": {
+    "vite-plugin-pwa@2.0.0_vite@8.2.4": {
       "integrity": "sha512-6G9dsPKT9QKYpeTuTLJM28zZL3HsXUTUM/QUZBEgQk2jbfrPJDq2i8gTewAKqi1c9Mt6MiidrL4SFI+HthiQMg==",
       "dependencies": [
         "debug",
@@ -3263,8 +3263,8 @@
         "workbox-window"
       ]
     },
-    "vite@8.2.2": {
-      "integrity": "sha512-cFKLV/PRgAUlIRm5WjMjJ86jrftzpqcgH+Us+DS8mI3CDNiH30Whrz8uHL3+MOLPAgqbMBAqWdAHAphOAM+z/Q==",
+    "vite@8.2.4": {
+      "integrity": "sha512-lfauXnrf2x0p+UoA+wXh0dgFWnUjCyG6Js95KBkgaCwUU9k0DAHI4W6Q0WCx+h+5g+Alce1y4Zi2QjjK0UvGBw==",
       "dependencies": [
         "lightningcss",
         "picomatch",
@@ -3518,7 +3518,7 @@
       "npm:react-dom@19.3.0",
       "npm:react@19.3.0",
       "npm:vite-plugin-pwa@2.0.0",
-      "npm:vite@8.2.2",
+      "npm:vite@8.2.4",
       "npm:xstate@5.33.2",
       "npm:zod@4.6.5"
     ]

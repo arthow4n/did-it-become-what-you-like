@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import {
   ActionIcon as MantineActionIcon,
@@ -62,11 +62,29 @@ export const SearchField = memo(function SearchField(
     typeof MantineTextInput
   >;
   const validation = validationAttributes(isRequired, validationBehavior);
-  const handleValueChange = (nextValue: string) => {
+  const handleValueChange = useCallback((nextValue: string) => {
     if (value === undefined) setUncontrolledValue(nextValue);
     onChange?.(nextValue);
     onValueChange?.(nextValue);
-  };
+  }, [onChange, onValueChange, value]);
+  const rightSectionNode = useMemo(
+    () => (
+      <MantineActionIcon
+        type="button"
+        variant="subtle"
+        color="accent"
+        size="input-sm"
+        className="ds-search-field__clear"
+        aria-label="Clear search"
+        onClick={() => handleValueChange("")}
+      >
+        <Icon>
+          <X />
+        </Icon>
+      </MantineActionIcon>
+    ),
+    [handleValueChange],
+  );
   return (
     <MantineTextInput
       {...mantineProps}
@@ -85,21 +103,7 @@ export const SearchField = memo(function SearchField(
       slot={slot ?? undefined}
       onChange={(event) => handleValueChange(event.currentTarget.value)}
       rightSectionPointerEvents="all"
-      rightSection={
-        <MantineActionIcon
-          type="button"
-          variant="subtle"
-          color="accent"
-          size="input-sm"
-          className="ds-search-field__clear"
-          aria-label="Clear search"
-          onClick={() => handleValueChange("")}
-        >
-          <Icon>
-            <X />
-          </Icon>
-        </MantineActionIcon>
-      }
+      rightSection={rightSectionNode}
     />
   );
 });

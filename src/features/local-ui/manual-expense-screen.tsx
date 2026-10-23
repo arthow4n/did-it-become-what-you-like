@@ -3,6 +3,7 @@ import type { SnapshotFrom } from "xstate";
 import {
   type ChangeEvent,
   memo,
+  startTransition,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -321,7 +322,9 @@ export const ManualExpenseScreen = memo(function ManualExpenseScreen({
   const handleFormDirtyChange = useCallback((formDirty: boolean) => {
     if (lastDirtyRef.current !== formDirty) {
       lastDirtyRef.current = formDirty;
-      onDirtyChangeRef.current?.(formDirty);
+      startTransition(() => {
+        onDirtyChangeRef.current?.(formDirty);
+      });
     }
   }, []);
   useLayoutEffect(() => {
@@ -497,9 +500,11 @@ function ManualExpenseFormContent({
     latestDraftRef.current = nextDraft;
     setFormDraft(nextDraft);
     if (hasValidationOrErrorRef.current) {
-      send({
-        type: "expense.change",
-        draft: nextDraft,
+      startTransition(() => {
+        send({
+          type: "expense.change",
+          draft: nextDraft,
+        });
       });
     }
   }, [latestDraftRef, send]);

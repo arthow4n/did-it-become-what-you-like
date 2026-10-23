@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { ReactNode } from "react";
 import { Box as MantineBox } from "@mantine/core";
 import { cx } from "../shared.ts";
@@ -8,7 +9,7 @@ export type FormLayoutProps = {
   className?: string;
 };
 
-export function FormLayout(
+export const FormLayout = memo(function FormLayout(
   { children, className }: FormLayoutProps,
 ) {
   return (
@@ -16,4 +17,4 @@ export function FormLayout(
       <Stack gap={5}>{children}</Stack>
     </MantineBox>
   );
-}
+});

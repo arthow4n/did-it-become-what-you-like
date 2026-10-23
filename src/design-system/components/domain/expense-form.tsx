@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { ReactNode } from "react";
 import { FormActions, FormLayout, StickyActionBar } from "../layout.tsx";
 
@@ -8,7 +9,7 @@ export type ExpenseFormProps = {
   stickyActions?: boolean;
 };
 
-export function ExpenseForm(
+export const ExpenseForm = memo(function ExpenseForm(
   { children, status, actions, stickyActions = false }: ExpenseFormProps,
 ) {
   return (
@@ -26,4 +27,4 @@ export function ExpenseForm(
         : null}
     </FormLayout>
   );
-}
+});

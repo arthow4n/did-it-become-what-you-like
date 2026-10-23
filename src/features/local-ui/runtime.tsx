@@ -1,5 +1,12 @@
 import { useActor } from "@xstate/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   createProjectCategoryService,
   type ProjectCategoryState,
@@ -137,8 +144,10 @@ export function LocalUiRuntime(
   const [workflowDirty, setWorkflowDirty] = useState(false);
   const [dirtyNavigationWorkflow, setDirtyNavigationWorkflow] = useState(false);
   const handleWorkflowDirtyChange = useCallback((dirty: boolean) => {
-    setWorkflowDirty(dirty);
-    setDirtyNavigationWorkflow(dirty);
+    startTransition(() => {
+      setWorkflowDirty(dirty);
+      setDirtyNavigationWorkflow(dirty);
+    });
   }, []);
   const [dirtyExitOpen, setDirtyExitOpen] = useState(false);
   const [discardRequest, setDiscardRequest] = useState(0);

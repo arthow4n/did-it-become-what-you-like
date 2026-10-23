@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { ReactNode } from "react";
 import { Box as MantineBox } from "@mantine/core";
 import { cx } from "../shared.ts";
@@ -7,7 +8,7 @@ export type StickyActionBarProps = {
   className?: string;
 };
 
-export function StickyActionBar(
+export const StickyActionBar = memo(function StickyActionBar(
   { children, className }: StickyActionBarProps,
 ) {
   return (
@@ -15,4 +16,4 @@ export function StickyActionBar(
       {children}
     </MantineBox>
   );
-}
+});

@@ -1,33 +1,17 @@
-import { useActor } from "@xstate/react";
-import type { SnapshotFrom } from "xstate";
-import {
-  type ChangeEvent,
-  memo,
-  startTransition,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useActorRef, useSelector } from "@xstate/react";
+import type { ActorRefFrom, SnapshotFrom } from "xstate";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReceiptText, X } from "lucide-react";
 import {
   createManualExpenseMachine,
   currentProject,
   DEFAULT_EXPENSE_DAY_BOUNDARY,
   isDraftModified,
-  type ManualExpenseDraft,
-  type ManualExpenseEvent,
   type ManualExpenseOpenRequest,
   type ManualExpenseValidationErrors,
 } from "../../actors/manual-expense.ts";
 import type { LocalPort } from "../../adapters/ports/local.ts";
-import {
-  CurrencyCodeSchema,
-  type Expense,
-  UNCATEGORIZED_CATEGORY_ID,
-} from "../../domain/index.ts";
+import { type Expense, UNCATEGORIZED_CATEGORY_ID } from "../../domain/index.ts";
 import {
   expenseDateForLocalNow,
   expenseTimeForLocalNow,
@@ -38,10 +22,7 @@ import type {
 } from "../../domain/organization.ts";
 import {
   Button,
-  CategoryPicker,
-  Checkbox,
   ContentContainer,
-  CurrencyPicker,
   DraftStatus,
   ErrorSummary,
   ExpenseForm,
@@ -49,17 +30,11 @@ import {
   IconButton,
   Inline,
   InlineNotice,
-  MerchantPicker,
-  MoneyField,
-  NativeDateField,
-  NativeTimeField,
   PageHeader,
-  ProjectPicker,
   Stack,
-  TextField,
 } from "../../design-system/index.ts";
 import { useSyncStatus } from "../sync-ui/index.ts";
-import { CURRENCY_OPTIONS } from "./types.ts";
+import { ManualExpenseFields } from "./manual-expense-fields.tsx";
 import { LoadingScreen } from "./navigation.tsx";
 export function ManualExpenseRecoveryScreen({
   message,
@@ -224,17 +199,18 @@ export const ManualExpenseScreen = memo(function ManualExpenseScreen({
       }),
     [repository, service, expenseDayBoundary, machineKey],
   );
-  const [snapshot, send] = useActor(machine, {
+  const actor = useActorRef(machine, {
     input: { persistenceKey, request: effectiveRequest },
   });
+  // Field values subscribe below. A keystroke must not rebuild the form host,
+  // status panels, or shell; they only need workflow and feedback changes.
+  const snapshot = useSelector(actor, (value) => value, sameFormStatus);
+  const send = actor.send;
   const completionHandled = useRef(false);
   const usefulActionHandled = useRef(false);
   const notifiedResultId = useRef<string | null>(null);
   const savedResultId = useRef<string | null>(null);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
-  const latestDraftRef = useRef<ManualExpenseDraft | null>(
-    snapshot.context.draft,
-  );
   const syncStatus = useSyncStatus();
   const recentCategoryIds = useMemo(() => {
     const seen = new Set<string>();
@@ -311,38 +287,27 @@ export const ManualExpenseScreen = memo(function ManualExpenseScreen({
       );
     }
   }, [send, snapshot, syncStatus]);
-  const isModified = isDraftModified(
-    snapshot.context.draft,
-    snapshot.context.originalExpense,
-  );
-  const dirty = snapshot.hasTag("dirty") && isModified;
+  const dirty = useSelector(actor, (value) =>
+    value.hasTag("dirty") &&
+    isDraftModified(value.context.draft, value.context.originalExpense));
   const onDirtyChangeRef = useRef(onDirtyChange);
   onDirtyChangeRef.current = onDirtyChange;
-  const lastDirtyRef = useRef<boolean | null>(null);
-  const handleFormDirtyChange = useCallback((formDirty: boolean) => {
-    if (lastDirtyRef.current !== formDirty) {
-      lastDirtyRef.current = formDirty;
-      startTransition(() => {
-        onDirtyChangeRef.current?.(formDirty);
-      });
-    }
-  }, []);
-  useLayoutEffect(() => {
-    if (snapshot.matches("idle")) return;
-    if (lastDirtyRef.current === null && !dirty) {
-      lastDirtyRef.current = false;
-      onDirtyChangeRef.current?.(false);
-    }
-  }, [dirty, snapshot]);
+  useEffect(() => {
+    onDirtyChangeRef.current?.(dirty);
+    if (!dirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    globalThis.addEventListener("beforeunload", onBeforeUnload);
+    return () => globalThis.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
   useEffect(() => {
     if (
       discardRequest === undefined ||
       discardRequest === handledDiscardRequest.current
     ) return;
     handledDiscardRequest.current = discardRequest;
-    if (latestDraftRef.current) {
-      send({ type: "expense.change", draft: latestDraftRef.current });
-    }
     send({ type: "expense.discard" });
     send({ type: "expense.confirm-discard" });
   }, [discardRequest, send]);
@@ -411,12 +376,10 @@ export const ManualExpenseScreen = memo(function ManualExpenseScreen({
       snapshot={snapshot}
       send={send}
       state={state}
-      draft={draft}
-      latestDraftRef={latestDraftRef}
+      actor={actor}
       recentCategoryIds={recentCategoryIds}
       recentMerchants={recentMerchants}
       onManualReceipt={onManualReceipt ? handleManualReceipt : undefined}
-      onDirtyChange={handleFormDirtyChange}
     />
   );
 }, (prev, next) =>
@@ -430,144 +393,43 @@ export const ManualExpenseScreen = memo(function ManualExpenseScreen({
 type ManualExpenseSnapshot = SnapshotFrom<
   ReturnType<typeof createManualExpenseMachine>
 >;
-const STATIC_CURRENCY_OPTIONS = CURRENCY_OPTIONS.map((code) => ({
-  id: code,
-  label: code,
-}));
+export type ManualExpenseActor = ActorRefFrom<
+  ReturnType<typeof createManualExpenseMachine>
+>;
+
+function sameFormStatus(a: ManualExpenseSnapshot, b: ManualExpenseSnapshot) {
+  return a.value === b.value &&
+    a.context.originalExpense === b.context.originalExpense &&
+    a.context.result === b.context.result &&
+    a.context.error === b.context.error &&
+    (a.context.draft === null) === (b.context.draft === null) &&
+    a.context.validation === b.context.validation;
+}
+
 function ManualExpenseFormContent({
   snapshot,
   send,
   state,
-  draft,
-  latestDraftRef,
+  actor,
   recentCategoryIds,
   recentMerchants,
   onManualReceipt,
-  onDirtyChange,
 }: {
   snapshot: ManualExpenseSnapshot;
-  send: (event: ManualExpenseEvent) => void;
+  send: ManualExpenseActor["send"];
   state: ProjectCategoryState;
-  draft: ManualExpenseDraft;
-  latestDraftRef: { current: ManualExpenseDraft | null };
+  actor: ManualExpenseActor;
   recentCategoryIds: string[];
   recentMerchants: string[];
   onManualReceipt?: () => void;
-  onDirtyChange?: (dirty: boolean) => void;
 }) {
-  const [formDraft, setFormDraft] = useState<ManualExpenseDraft>(draft);
-  const formDraftRef = useRef(formDraft);
-  formDraftRef.current = formDraft;
-  latestDraftRef.current = formDraft;
-  const wasOpeningRef = useRef(snapshot.matches("opening"));
-
-  useEffect(() => {
-    const isOpening = snapshot.matches("opening");
-    if (wasOpeningRef.current && !isOpening) {
-      formDraftRef.current = draft;
-      latestDraftRef.current = draft;
-      setFormDraft(draft);
-    }
-    wasOpeningRef.current = isOpening;
-  }, [draft, latestDraftRef, snapshot]);
-
-  const flushDraft = useCallback(() => {
-    send({
-      type: "expense.change",
-      draft: formDraftRef.current,
-    });
+  const handleSubmit = useCallback(() => {
+    send({ type: "expense.submit" });
   }, [send]);
 
-  const categories = useMemo(() => {
-    return state.categories.filter((category) =>
-      !category.archived || category.id === formDraft.categoryId
-    ).map((category) => ({ id: category.id, label: category.name }));
-  }, [state.categories, formDraft.categoryId]);
-  const projects = useMemo(() => {
-    return state.projects.filter((project) =>
-      !project.archived || project.id === formDraft.projectId
-    ).map((project) => ({ id: project.id, label: project.name }));
-  }, [state.projects, formDraft.projectId]);
-
-  const hasValidationOrErrorRef = useRef(false);
-  hasValidationOrErrorRef.current =
-    Object.keys(snapshot.context.validation).length > 0 ||
-    snapshot.hasTag("error");
-
-  const update = useCallback((changes: Partial<ManualExpenseDraft>) => {
-    const nextDraft = { ...formDraftRef.current, ...changes };
-    formDraftRef.current = nextDraft;
-    latestDraftRef.current = nextDraft;
-    setFormDraft(nextDraft);
-    if (hasValidationOrErrorRef.current) {
-      startTransition(() => {
-        send({
-          type: "expense.change",
-          draft: nextDraft,
-        });
-      });
-    }
-  }, [latestDraftRef, send]);
-
-  const handleAmountChange = useCallback((value: string) => {
-    update({ amount: value });
-  }, [update]);
-  const handleCurrencyChange = useCallback((value: string) => {
-    update({ currency: CurrencyCodeSchema.parse(value) });
-  }, [update]);
-  const handleMerchantChange = useCallback((value: string) => {
-    update({ merchant: value });
-  }, [update]);
-  const handleDescriptionChange = useCallback((value: string) => {
-    update({ description: value });
-  }, [update]);
-  const handleCategoryChange = useCallback((value: string) => {
-    update({ categoryId: value });
-  }, [update]);
-  const handleDateChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      update({ date: event.currentTarget.value });
-    },
-    [update],
-  );
-  const handleTimeChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      update({ time: event.currentTarget.value || undefined });
-    },
-    [update],
-  );
-  const handleProjectChange = useCallback((value: string) => {
-    update({ projectId: value });
-  }, [update]);
-  const handleDirectionChange = useCallback((selected: boolean) => {
-    update({ direction: selected ? "money-back" : "spent" });
-  }, [update]);
-  const isModified = isDraftModified(
-    formDraft,
-    snapshot.context.originalExpense,
-  );
-  const formDirty = snapshot.hasTag("dirty") && isModified;
-
-  useEffect(() => {
-    onDirtyChange?.(formDirty);
-    if (!formDirty) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    globalThis.addEventListener("beforeunload", onBeforeUnload);
-    return () => globalThis.removeEventListener("beforeunload", onBeforeUnload);
-  }, [formDirty, onDirtyChange]);
-
-  const handleSubmit = useCallback(() => {
-    flushDraft();
-    send({ type: "expense.submit" });
-  }, [flushDraft, send]);
-
   const handleBack = useCallback(() => {
-    flushDraft();
     send({ type: "expense.back" });
-  }, [flushDraft, send]);
+  }, [send]);
 
   const handleConfirmDiscard = useCallback(() => {
     send({ type: "expense.confirm-discard" });
@@ -722,79 +584,14 @@ function ManualExpenseFormContent({
             actions={actionsNode}
           >
             {errors.length ? <ErrorSummary errors={errors} /> : null}
-            <div className="local-ui-form-row local-ui-form-row--amount-currency">
-              <MoneyField
-                autoFocus
-                label="Amount"
-                isRequired
-                value={formDraft.amount}
-                isDisabled={formLocked}
-                onChange={handleAmountChange}
-                onBlur={flushDraft}
-                currency={formDraft.currency}
-                error={validation.amount}
-              />
-              <CurrencyPicker
-                value={formDraft.currency}
-                options={STATIC_CURRENCY_OPTIONS}
-                onValueChange={handleCurrencyChange}
-                isDisabled={formLocked}
-              />
-            </div>
-            <MerchantPicker
-              value={formDraft.merchant ?? ""}
-              onValueChange={handleMerchantChange}
-              onBlur={flushDraft}
+            <ManualExpenseFields
+              actor={actor}
+              state={state}
+              validation={validation}
               isDisabled={formLocked}
+              recentCategoryIds={recentCategoryIds}
               recentMerchants={recentMerchants}
             />
-            <TextField
-              label="Description (optional)"
-              value={formDraft.description}
-              onChange={handleDescriptionChange}
-              onBlur={flushDraft}
-              error={validation.description}
-              isDisabled={formLocked}
-            />
-            <CategoryPicker
-              label=""
-              categories={categories}
-              value={formDraft.categoryId}
-              recentCategoryIds={recentCategoryIds}
-              onValueChange={handleCategoryChange}
-              error={validation.categoryId}
-              isDisabled={formLocked}
-            />
-            <div className="local-ui-form-row local-ui-form-row--date-time">
-              <NativeDateField
-                label="Date"
-                required
-                value={formDraft.date}
-                onChange={handleDateChange}
-                error={validation.date}
-                disabled={formLocked}
-              />
-              <NativeTimeField
-                label="Time (optional)"
-                value={formDraft.time ?? ""}
-                onChange={handleTimeChange}
-                error={validation.time}
-                disabled={formLocked}
-              />
-            </div>
-            <ProjectPicker
-              options={projects}
-              value={formDraft.projectId}
-              onValueChange={handleProjectChange}
-              isDisabled={formLocked}
-            />
-            <Checkbox
-              isSelected={formDraft.direction === "money-back"}
-              isDisabled={formLocked}
-              onChange={handleDirectionChange}
-            >
-              Money back
-            </Checkbox>
           </ExpenseForm>
         </div>
         {snapshot.matches("discardFailed")

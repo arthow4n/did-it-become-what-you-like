@@ -78,7 +78,8 @@ export const manualExpenseSetup = setup({
         event.type === "expense.change"
           ? draftForEditing(event.draft)
           : context.draft,
-      validation: () => ({}),
+      validation: ({ context }) =>
+        Object.keys(context.validation).length ? {} : context.validation,
       error: () => null,
       persistenceRevision: ({ context }) => context.persistenceRevision + 1,
     }),

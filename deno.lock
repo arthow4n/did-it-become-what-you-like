@@ -20,7 +20,7 @@
     "npm:axe-core@4.14.0": "4.14.0",
     "npm:big.js@7.0.1": "7.0.1",
     "npm:fake-indexeddb@6.2.5": "6.2.5",
-    "npm:happy-dom@20.14.5": "20.14.5",
+    "npm:happy-dom@21.0.4": "21.0.4",
     "npm:lucide-react@1.52.0": "1.52.0_@types+react@19.3.0_react@19.3.0",
     "npm:react-dom@19.3.0": "19.3.0_react@19.3.0",
     "npm:react@19.3.0": "19.3.0",
@@ -28,7 +28,7 @@
     "npm:vite-plugin-pwa@2.0.0": "2.0.0_vite@8.2.4",
     "npm:vite@8.2.4": "8.2.4",
     "npm:xstate@5.33.2": "5.33.2",
-    "npm:zod@4.6.5": "4.6.5"
+    "npm:zod@4.6.7": "4.6.7"
   },
   "npm": {
     "@apideck/better-ajv-errors@0.3.7_ajv@8.20.0": {
@@ -1895,8 +1895,8 @@
     "fast-json-stable-stringify@2.1.0": {
       "integrity": "sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw=="
     },
-    "fast-uri@3.1.8": {
-      "integrity": "sha512-GZMtZUTNRpOVIECoXwLNZS5xUGE+mVNbTB8h/7Rwh2TFWcBQiPzTgyZi05BF9UMZKkLJv8XBRJTlU7zg8+ZfMg=="
+    "fast-uri@3.1.9": {
+      "integrity": "sha512-hS/0Wt3Ya043oKXs0sIxrMpKQITXhMLIrVAKKXi4gozGC9v7YRWVnXIZzjNPTO02M9BdxLCWqK1yRXgNziVyJQ=="
     },
     "fdir@6.5.0_picomatch@4.0.5": {
       "integrity": "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==",
@@ -2077,8 +2077,8 @@
     "graceful-fs@4.2.11": {
       "integrity": "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ=="
     },
-    "happy-dom@20.14.5": {
-      "integrity": "sha512-x/RzkpWO40bTjIoT30iQtt64FLLmH/iRcUCN2X//bLx7H3ifkdfPXyqsro/OYtqzIAhiLMMA7mmiOR9C3NOKjQ==",
+    "happy-dom@21.0.4": {
+      "integrity": "sha512-tFm+GaLBgo6o0awHnvHaNoraVo27qJ+2tZEtZ+cIa08hXbeitrxAJajLI05hsUy/2/YTKcUjQYzHe5mCcraLBw==",
       "dependencies": [
         "@types/node",
         "@types/whatwg-mimetype",
@@ -2888,8 +2888,8 @@
       "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",
       "bin": true
     },
-    "serialize-javascript@7.1.2": {
-      "integrity": "sha512-GL2BWwVa6JydKO6l/ljVgjAZF4QJ3S7dWDWi53s5GZT8PJzD2fNxi67HANQGKAqPrwEpL5ba7gUBGi0Ls/sEoQ=="
+    "serialize-javascript@7.1.4": {
+      "integrity": "sha512-FqlEuoTq/zRmA4Lg6aOqyH3lCHbUtCB0bmHCeFniX2GBdDqMJM3FwdvEhlE5Pim1dlt2FfBdVPmUNNiGhhKqpw=="
     },
     "set-function-length@1.2.2": {
       "integrity": "sha512-pgRc4hJ4/sNjWCSS9AmnS40x3bNMDTknHgL5UaMBTMyJnU90EgWh1Rz+MC9eFu4BuN/UwZjKQuY/1v3rM7HMfg==",
@@ -3488,8 +3488,8 @@
     "yallist@3.1.1": {
       "integrity": "sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g=="
     },
-    "zod@4.6.5": {
-      "integrity": "sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q=="
+    "zod@4.6.7": {
+      "integrity": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg=="
     }
   },
   "workspace": {
@@ -3513,14 +3513,14 @@
       "npm:axe-core@4.14.0",
       "npm:big.js@7.0.1",
       "npm:fake-indexeddb@6.2.5",
-      "npm:happy-dom@20.14.5",
+      "npm:happy-dom@21.0.4",
       "npm:lucide-react@1.52.0",
       "npm:react-dom@19.3.0",
       "npm:react@19.3.0",
       "npm:vite-plugin-pwa@2.0.0",
       "npm:vite@8.2.4",
       "npm:xstate@5.33.2",
-      "npm:zod@4.6.5"
+      "npm:zod@4.6.7"
     ]
   }
 }

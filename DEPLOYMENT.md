@@ -108,6 +108,24 @@ release anything; the CI/CD workflows accept and deploy the pushed commit.
 follow `deno task build` when run by itself. Do not commit `dist/`, browser
 profiles, screenshots, traces, or other generated artifacts.
 
+## Dependency audit
+
+`deno task audit` checks every npm package/version in `deno.lock` against the
+npm bulk advisory API, including build and test dependencies. Registry failures
+and malformed responses fail the gate. It uses the same registry endpoint as
+Deno's audit; the dedicated gate permits a precise advisory exception because
+Deno 2.9.5 only ignores CVEs, and this registry response omits the CVE field.
+
+The sole accepted finding is
+[GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4),
+low severity, for exactly `deepmerge@4.3.1`. No patched version is published.
+Its only dependency path is `vite-plugin-pwa` → `workbox-build` →
+`@rollup/plugin-node-resolve`; that consumer calls `deepMerge({}, defaults)`
+with a fixed internal literal during the service-worker build. User data never
+enters that merge, and the package is absent from the browser runtime.
+Remove the exception when upstream publishes a fix. Other advisories, changed
+versions, or an escalated severity still block deployment.
+
 ## Hosted smoke and rollback
 
 After the integration owner pushes the reviewed commit, confirm the Pages

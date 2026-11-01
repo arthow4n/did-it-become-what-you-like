@@ -515,8 +515,32 @@ Deno.test("local repository serializes the document once per record transaction 
     );
     assert(!operations.includes("local.document.get"));
     assert(!operations.includes("local.document.put"));
+    operations.length = 0;
+    await repository.transaction("readwrite", async (transaction) => {
+      await transaction.put("workflow-snapshots", "draft-1", {
+        step: "review",
+      });
+      await transaction.delete("workflow-snapshots", "draft-1");
+    });
+    assert(!operations.includes("local.document.backup-read"));
+    assert(!operations.includes("local.document.get"));
+    assert(!operations.includes("local.document.put"));
+    assert(!operations.includes("local.projection.list"));
+    operations.length = 0;
+    await repository.transaction("readwrite", async (transaction) => {
+      await transaction.put(
+        "records",
+        "expense-third",
+        expense("expense-third"),
+      );
+      await transaction.put("records", "expense-first", {
+        ...expense("expense-first"),
+        description: "Updated",
+      });
+    });
+    assert(!operations.includes("local.projection.list"));
     const document = await repository.loadDocument();
-    assertEquals(Object.keys(document.records).length, 2);
+    assertEquals(Object.keys(document.records).length, 3);
   }, (operation) => {
     operations.push(operation);
   });

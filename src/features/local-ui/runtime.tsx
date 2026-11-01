@@ -643,7 +643,6 @@ export function LocalUiRuntime(
       };
     });
     sendShell({ type: "shell.repository.refresh" });
-    void organization.getState().then(setState);
     setAppNotice(`${result.receipt.merchant ?? "Receipt"} saved.`);
   };
   return (
@@ -786,7 +785,6 @@ export function LocalUiRuntime(
                 onSaved={handleReceiptSaved}
                 onClose={() => {
                   sendShell({ type: "shell.repository.refresh" });
-                  void organization.getState().then(setState);
                   setWorkflowDirty(false);
                   finishDirtyNavigation("/expenses");
                 }}
@@ -808,7 +806,6 @@ export function LocalUiRuntime(
                 onSaved={handleReceiptSaved}
                 onClose={() => {
                   sendShell({ type: "shell.repository.refresh" });
-                  void organization.getState().then(setState);
                   setReceiptReview(undefined);
                   setReceiptReviewMode("scanned");
                   setWorkflowDirty(false);

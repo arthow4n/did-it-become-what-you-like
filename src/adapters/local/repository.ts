@@ -26,12 +26,13 @@ import {
 } from "../../domain/index.ts";
 import {
   ALL_STORES,
+  applyRecordChanges,
   assertCollection,
   assertKey,
   BACKUP_STORE,
   datasetRecords,
   defaultDeviceId,
-  deleteProjections,
+  deleteProjectionsForValue,
   DOCUMENT_STORE,
   documentBytes,
   documentFromEntries,
@@ -67,7 +68,6 @@ import {
   SYNC_METADATA_STORE,
   toJsonObject,
   tombstoneKey,
-  updateDocument,
   writeProjection,
 } from "./schema.ts";
 
@@ -78,6 +78,42 @@ export class IndexedDbLocalRepository implements LocalRepository {
   private readonly options: LocalRepositoryOptions;
   private closed = false;
   private readonly recordListeners = new Set<() => void>();
+  private cachedDocument:
+    | {
+      readonly bytes: Uint8Array;
+      readonly document: Automerge.Doc<LocalDocument>;
+    }
+    | undefined;
+
+  private resolveAutomergeDocument(
+    bytes: Uint8Array,
+    operation: string,
+  ): Automerge.Doc<LocalDocument> {
+    const cached = this.cachedDocument;
+    if (
+      cached &&
+      cached.bytes.byteLength === bytes.byteLength &&
+      cached.bytes.every((byte, index) => byte === bytes[index])
+    ) {
+      return Automerge.clone(cached.document);
+    }
+    const loaded = loadAutomergeDocument(bytes, operation);
+    this.cachedDocument = {
+      bytes: new Uint8Array(bytes),
+      document: Automerge.clone(loaded),
+    };
+    return loaded;
+  }
+
+  private setCachedDocument(
+    bytes: Uint8Array,
+    document: Automerge.Doc<LocalDocument>,
+  ): void {
+    this.cachedDocument = {
+      bytes: new Uint8Array(bytes),
+      document: Automerge.clone(document),
+    };
+  }
 
   subscribeRecords(listener: () => void): () => void {
     this.recordListeners.add(listener);
@@ -153,7 +189,11 @@ export class IndexedDbLocalRepository implements LocalRepository {
       );
       if (documentEntry) {
         try {
-          loadAutomergeDocument(documentEntry.bytes, "local.document.load");
+          const loaded = loadAutomergeDocument(
+            documentEntry.bytes,
+            "local.document.load",
+          );
+          this.setCachedDocument(documentEntry.bytes, loaded);
         } catch {
           const backups = await request(
             transaction.objectStore(BACKUP_STORE).getAll(),
@@ -221,17 +261,19 @@ export class IndexedDbLocalRepository implements LocalRepository {
         this.options.beforeRequest,
       );
       if (!current) {
+        const bytes = documentBytes(document);
         const value: StoredDocument = {
           key: LOCAL_DOCUMENT_KEY,
           schemaVersion: LOCAL_SCHEMA_VERSION,
           savedAt: this.now(),
-          bytes: documentBytes(document),
+          bytes,
         };
         await request(
           transaction.objectStore(DOCUMENT_STORE).put(value),
           "local.document.initialize",
           this.options.beforeRequest,
         );
+        this.setCachedDocument(bytes, document);
       }
     } catch (error) {
       try {
@@ -257,17 +299,19 @@ export class IndexedDbLocalRepository implements LocalRepository {
     );
     const done = idbDone(transaction);
     try {
+      const bytes = documentBytes(document);
       const value: StoredDocument = {
         key: LOCAL_DOCUMENT_KEY,
         schemaVersion: LOCAL_SCHEMA_VERSION,
         savedAt: this.now(),
-        bytes: documentBytes(document),
+        bytes,
       };
       await request(
         transaction.objectStore(DOCUMENT_STORE).put(value),
         "local.document.recover",
         this.options.beforeRequest,
       );
+      this.setCachedDocument(bytes, document);
       await request(
         transaction.objectStore(RECORD_STORE).clear(),
         "local.records.recover-clear",
@@ -405,13 +449,16 @@ export class IndexedDbLocalRepository implements LocalRepository {
     assertValidRetryPolicy(
       options?.retry ?? { maxAttempts: 1, directive: "never" },
     );
-    await this.backupCurrent(transaction, context);
-    const revision = await readRevision(
-      transaction,
-      collection,
-      key,
-      this.options,
-    );
+    if (collection === RECORD_STORE) {
+      await this.backupCurrent(transaction, context);
+    }
+    const { revision, previousValue: previousRevisionValue } =
+      await readRevision(
+        transaction,
+        collection,
+        key,
+        this.options,
+      );
     const recordedAt = this.now();
     const revisionValue: LocalRevision = {
       type: "local-revision",
@@ -422,13 +469,26 @@ export class IndexedDbLocalRepository implements LocalRepository {
       recordedAt,
     };
     const store = transaction.objectStore(publicStore(collection));
+    const previousEntry = revision > 1
+      ? await request(
+        store.get(key),
+        "local.projection.previous-get",
+        this.options.beforeRequest,
+      ) as StoredEntry | undefined
+      : undefined;
     const entry: StoredEntry = { key, value: cloneJson(value) };
     await request(
       store.put(entry),
       "local.value.put",
       this.options.beforeRequest,
     );
-    await deleteProjections(transaction, collection, key, this.options);
+    await deleteProjectionsForValue(
+      transaction,
+      collection,
+      key,
+      previousEntry?.value,
+      this.options,
+    );
     await writeProjection(transaction, collection, key, value, this.options);
     await request(
       transaction.objectStore(SYNC_METADATA_STORE).put(
@@ -440,10 +500,11 @@ export class IndexedDbLocalRepository implements LocalRepository {
       "local.revision.put",
       this.options.beforeRequest,
     );
-    await deleteProjections(
+    await deleteProjectionsForValue(
       transaction,
       SYNC_METADATA_STORE,
       revisionKey(collection, key),
+      previousRevisionValue,
       this.options,
     );
     await writeProjection(
@@ -453,13 +514,13 @@ export class IndexedDbLocalRepository implements LocalRepository {
       revisionValue,
       this.options,
     );
-    context.document = updateDocument(
-      context.document,
-      collection,
-      key,
-      value,
-      undefined,
-    );
+    if (collection === RECORD_STORE) {
+      context.recordChanges.push({
+        key,
+        value,
+        tombstone: undefined,
+      });
+    }
   }
 
   private async deleteValue(
@@ -473,13 +534,16 @@ export class IndexedDbLocalRepository implements LocalRepository {
     assertValidRetryPolicy(
       options?.retry ?? { maxAttempts: 1, directive: "never" },
     );
-    await this.backupCurrent(transaction, context);
-    const revision = await readRevision(
-      transaction,
-      collection,
-      key,
-      this.options,
-    );
+    if (collection === RECORD_STORE) {
+      await this.backupCurrent(transaction, context);
+    }
+    const { revision, previousValue: previousRevisionValue } =
+      await readRevision(
+        transaction,
+        collection,
+        key,
+        this.options,
+      );
     const deletedAt = this.now();
     const tombstone: LocalTombstone = {
       type: "local-tombstone",
@@ -489,12 +553,26 @@ export class IndexedDbLocalRepository implements LocalRepository {
       deletedBy: this.deviceId,
       deletedAt,
     };
+    const store = transaction.objectStore(publicStore(collection));
+    const previousEntry = revision > 1
+      ? await request(
+        store.get(key),
+        "local.projection.previous-get",
+        this.options.beforeRequest,
+      ) as StoredEntry | undefined
+      : undefined;
     await request(
-      transaction.objectStore(publicStore(collection)).delete(key),
+      store.delete(key),
       "local.value.delete",
       this.options.beforeRequest,
     );
-    await deleteProjections(transaction, collection, key, this.options);
+    await deleteProjectionsForValue(
+      transaction,
+      collection,
+      key,
+      previousEntry?.value,
+      this.options,
+    );
     await request(
       transaction.objectStore(SYNC_METADATA_STORE).put(
         {
@@ -520,10 +598,11 @@ export class IndexedDbLocalRepository implements LocalRepository {
       deviceId: this.deviceId,
       recordedAt: deletedAt,
     };
-    await deleteProjections(
+    await deleteProjectionsForValue(
       transaction,
       SYNC_METADATA_STORE,
       revisionKey(collection, key),
+      previousRevisionValue,
       this.options,
     );
     await writeProjection(
@@ -533,8 +612,16 @@ export class IndexedDbLocalRepository implements LocalRepository {
       revisionValue,
       this.options,
     );
+    const syncStore = transaction.objectStore(SYNC_METADATA_STORE);
+    const previousTombstone = revision > 1
+      ? await request(
+        syncStore.get(tombstoneKey(collection, key)),
+        "local.projection.previous-get",
+        this.options.beforeRequest,
+      ) as StoredEntry | undefined
+      : undefined;
     await request(
-      transaction.objectStore(SYNC_METADATA_STORE).put(
+      syncStore.put(
         {
           key: tombstoneKey(collection, key),
           value: tombstone,
@@ -543,10 +630,11 @@ export class IndexedDbLocalRepository implements LocalRepository {
       "local.tombstone.put",
       this.options.beforeRequest,
     );
-    await deleteProjections(
+    await deleteProjectionsForValue(
       transaction,
       SYNC_METADATA_STORE,
       tombstoneKey(collection, key),
+      previousTombstone?.value,
       this.options,
     );
     await writeProjection(
@@ -556,13 +644,13 @@ export class IndexedDbLocalRepository implements LocalRepository {
       tombstone,
       this.options,
     );
-    context.document = updateDocument(
-      context.document,
-      collection,
-      key,
-      undefined,
-      tombstone,
-    );
+    if (collection === RECORD_STORE) {
+      context.recordChanges.push({
+        key,
+        value: undefined,
+        tombstone,
+      });
+    }
   }
 
   private async makeTransaction(
@@ -583,6 +671,7 @@ export class IndexedDbLocalRepository implements LocalRepository {
     let recordsChanged = false;
     const context: MutableTransactionContext = {
       document: emptyDocument(this.deviceId),
+      recordChanges: [],
       backupWritten: false,
       backupSequence: 0,
     };
@@ -595,7 +684,7 @@ export class IndexedDbLocalRepository implements LocalRepository {
           this.options.beforeRequest,
         ) as StoredDocument | undefined;
         if (current) {
-          context.document = loadAutomergeDocument(
+          context.document = this.resolveAutomergeDocument(
             current.bytes,
             "local.document.load",
           );
@@ -681,14 +770,20 @@ export class IndexedDbLocalRepository implements LocalRepository {
         },
       };
       const result = await work(localTransaction);
+      let committedBytes: Uint8Array | undefined;
       if (recordsChanged) {
+        context.document = applyRecordChanges(
+          context.document,
+          context.recordChanges,
+        );
+        committedBytes = documentBytes(context.document);
         await request(
           idbTransaction.objectStore(DOCUMENT_STORE).put(
             {
               key: LOCAL_DOCUMENT_KEY,
               schemaVersion: LOCAL_SCHEMA_VERSION,
               savedAt: this.now(),
-              bytes: documentBytes(context.document),
+              bytes: committedBytes,
             } satisfies StoredDocument,
           ),
           "local.document.put",
@@ -696,6 +791,9 @@ export class IndexedDbLocalRepository implements LocalRepository {
         );
       }
       await done;
+      if (recordsChanged && committedBytes) {
+        this.setCachedDocument(committedBytes, context.document);
+      }
       if (recordsChanged && options?.origin !== "sync") {
         // A subscriber failure cannot turn an already committed save into a
         // reported transaction failure.
@@ -802,7 +900,7 @@ export class IndexedDbLocalRepository implements LocalRepository {
       ) as StoredDocument | undefined;
       await done;
       return current
-        ? loadAutomergeDocument(current.bytes, "local.document.load")
+        ? this.resolveAutomergeDocument(current.bytes, "local.document.load")
         : emptyDocument(this.deviceId);
     } catch (error) {
       try {
@@ -897,6 +995,7 @@ export class IndexedDbLocalRepository implements LocalRepository {
   close(): void {
     if (this.closed) return;
     this.closed = true;
+    this.cachedDocument = undefined;
     this.recordListeners.clear();
     this.database.close();
   }

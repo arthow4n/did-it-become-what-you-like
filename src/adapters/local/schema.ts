@@ -145,6 +145,11 @@ export type MutableDocument = {
 
 export type MutableTransactionContext = {
   document: Automerge.Doc<LocalDocument>;
+  recordChanges: Array<{
+    readonly key: string;
+    readonly value: JsonValue | undefined;
+    readonly tombstone: LocalTombstone | undefined;
+  }>;
   backupWritten: boolean;
   backupSequence: number;
 };
@@ -422,7 +427,10 @@ export async function readRevision(
   collection: LocalCollection,
   key: string,
   options: LocalRepositoryOptions,
-): Promise<number> {
+): Promise<{
+  readonly revision: number;
+  readonly previousValue: JsonValue | undefined;
+}> {
   const entry = await request(
     transaction.objectStore(SYNC_METADATA_STORE).get(
       revisionKey(collection, key),
@@ -430,7 +438,10 @@ export async function readRevision(
     "local.revision.get",
     options.beforeRequest,
   ) as StoredEntry | undefined;
-  return nextRevision(entry?.value);
+  return {
+    revision: nextRevision(entry?.value),
+    previousValue: entry?.value,
+  };
 }
 
 export async function writeProjection(
@@ -461,6 +472,27 @@ export async function writeProjection(
   }
 }
 
+export async function deleteProjectionsForValue(
+  transaction: IDBTransaction,
+  collection: LocalCollection,
+  key: string,
+  previousValue: JsonValue | undefined,
+  options: LocalRepositoryOptions,
+): Promise<void> {
+  const object = toJsonObject(previousValue);
+  if (!object) return;
+  const store = transaction.objectStore(PROJECTION_STORE);
+  for (const [index] of Object.entries(object)) {
+    const scalar = projectionValue(previousValue as JsonValue, index);
+    if (scalar === undefined) continue;
+    await request(
+      store.delete(projectionId(collection, index, scalar, key)),
+      "local.projection.delete",
+      options.beforeRequest,
+    );
+  }
+}
+
 export async function deleteProjections(
   transaction: IDBTransaction,
   collection: LocalCollection,
@@ -482,6 +514,34 @@ export async function deleteProjections(
       );
     }
   }
+}
+
+export function applyRecordChanges(
+  document: Automerge.Doc<LocalDocument>,
+  changes: ReadonlyArray<{
+    readonly key: string;
+    readonly value: JsonValue | undefined;
+    readonly tombstone: LocalTombstone | undefined;
+  }>,
+): Automerge.Doc<LocalDocument> {
+  if (changes.length === 0) return document;
+  return changeDocument(
+    document,
+    changes.length === 1
+      ? (changes[0]!.value === undefined ? "delete record" : "put record")
+      : "commit records",
+    (draft) => {
+      for (const change of changes) {
+        const recordKey = identity(RECORD_STORE, change.key);
+        if (change.value === undefined) {
+          delete draft.records[recordKey];
+          if (change.tombstone) draft.tombstones[recordKey] = change.tombstone;
+        } else {
+          draft.records[recordKey] = cloneJson(change.value);
+        }
+      }
+    },
+  );
 }
 
 export function updateDocument(

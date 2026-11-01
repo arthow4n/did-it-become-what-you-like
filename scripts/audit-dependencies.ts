@@ -38,14 +38,30 @@ export function classifyAdvisories(
     for (const advisory of findings) {
       const message =
         `${name}: ${advisory.title} (${advisory.severity}) ${advisory.url}`;
-      // No patched release exists. The sole consumer, @rollup/plugin-node-resolve,
-      // calls deepMerge({}, defaults) with its own fixed literal at build time.
-      // Remove this exception when upstream ships a patched release.
-      const acceptedBuildToolFinding = name === "deepmerge" &&
+      // Unpatched build-tool dependencies of vite-plugin-pwa -> workbox-build.
+      // None of these packages enter the browser runtime bundle, and none process
+      // attacker-controlled input at build time. Remove exceptions when upstream ships
+      // patched releases.
+      const isAcceptedDeepmerge = name === "deepmerge" &&
         versions[name]?.length === 1 && versions[name][0] === "4.3.1" &&
         advisory.severity === "low" &&
         advisory.url ===
           "https://github.com/advisories/GHSA-gcqx-w48m-w2h4";
+      const isAcceptedGlob = name === "glob" &&
+        versions[name]?.length === 1 && versions[name][0] === "11.1.0" &&
+        advisory.severity === "moderate" &&
+        advisory.url ===
+          "https://github.com/advisories/GHSA-3g3m-2fjr-6pw4";
+      const isAcceptedMinimatch = name === "minimatch" &&
+        versions[name]?.length === 2 &&
+        versions[name]?.includes("10.2.6") &&
+        versions[name]?.includes("5.1.9") &&
+        advisory.severity === "moderate" &&
+        advisory.url ===
+          "https://github.com/advisories/GHSA-g3hv-75wg-m249";
+      const acceptedBuildToolFinding = isAcceptedDeepmerge ||
+        isAcceptedGlob ||
+        isAcceptedMinimatch;
       (acceptedBuildToolFinding ? accepted : blocked).push(message);
     }
   }

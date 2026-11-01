@@ -116,14 +116,26 @@ and malformed responses fail the gate. It uses the same registry endpoint as
 Deno's audit; the dedicated gate permits a precise advisory exception because
 Deno 2.9.5 only ignores CVEs, and this registry response omits the CVE field.
 
-The sole accepted finding is
-[GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4),
-low severity, for exactly `deepmerge@4.3.1`. No patched version is published.
-Its only dependency path is `vite-plugin-pwa` → `workbox-build` →
-`@rollup/plugin-node-resolve`; that consumer calls `deepMerge({}, defaults)`
-with a fixed internal literal during the service-worker build. User data never
-enters that merge, and the package is absent from the browser runtime.
-Remove the exception when upstream publishes a fix. Other advisories, changed
+The accepted findings are build-tool exceptions for unpatched transitive
+dependencies of `vite-plugin-pwa` → `workbox-build`:
+1. [GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4),
+   low severity, for exactly `deepmerge@4.3.1`. No patched version is published.
+   Its only dependency path is `vite-plugin-pwa` → `workbox-build` →
+   `@rollup/plugin-node-resolve`; that consumer calls `deepMerge({}, defaults)`
+   with a fixed internal literal during the service-worker build. User data never
+   enters that merge, and the package is absent from the browser runtime.
+2. [GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4),
+   moderate severity, for exactly `glob@11.1.0`. No patched version for `glob ^11`
+   exists (`workbox-build@7.4.1` requires `glob ^11.0.1`). It runs during Vite
+   build over local `dist/` assets to generate precache manifests without user
+   input or traversal timeouts, and the package is absent from the browser runtime.
+3. [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249),
+   moderate severity, for exactly `minimatch@10.2.6` (via `glob@11.1.0`) and
+   `minimatch@5.1.9` (via `filelist@1.0.6` in `jake`/`ejs`). No patched version
+   `< 11.0.1` exists. Patterns are fixed build configuration; user data never
+   enters pattern matching, and the package is absent from the browser runtime.
+
+Remove these exceptions when upstream publishes fixes. Other advisories, changed
 versions, or an escalated severity still block deployment.
 
 ## Hosted smoke and rollback

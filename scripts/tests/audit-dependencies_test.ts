@@ -15,6 +15,18 @@ const known = {
   severity: "low",
 };
 
+const knownGlob = {
+  title: "Glob traversal bypass",
+  url: "https://github.com/advisories/GHSA-3g3m-2fjr-6pw4",
+  severity: "moderate",
+};
+
+const knownMinimatch = {
+  title: "minimatch DoS",
+  url: "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+  severity: "moderate",
+};
+
 Deno.test("dependency audit extracts scoped, unscoped, and peer-qualified versions", () => {
   const versions = dependencyVersions({
     npm: {
@@ -33,17 +45,41 @@ Deno.test("dependency audit extracts scoped, unscoped, and peer-qualified versio
 });
 
 Deno.test("dependency audit accepts only the reviewed build-tool advisory and exact version", () => {
-  const result = classifyAdvisories({ deepmerge: ["4.3.1"] }, {
+  const result = classifyAdvisories({
+    deepmerge: ["4.3.1"],
+    glob: ["11.1.0"],
+    minimatch: ["10.2.6", "5.1.9"],
+  }, {
     deepmerge: [known],
+    glob: [knownGlob],
+    minimatch: [knownMinimatch],
     other: [{ ...known, url: "https://github.com/advisories/GHSA-new" }],
   });
-  assert(result.accepted.length === 1, "Known exception must remain visible");
+  assert(result.accepted.length === 3, "Known exceptions must remain visible");
   assert(result.blocked.length === 1, "Other findings must block deployment");
   for (const versions of [["4.3.2"], ["4.3.1", "4.2.2"]]) {
     assert(
       classifyAdvisories({ deepmerge: versions }, { deepmerge: [known] })
         .blocked.length === 1,
-      "Changed dependency versions must trigger review",
+      "Changed deepmerge versions must trigger review",
+    );
+  }
+  for (const versions of [["11.2.0"], ["11.1.0", "11.0.0"]]) {
+    assert(
+      classifyAdvisories({ glob: versions }, { glob: [knownGlob] })
+        .blocked.length === 1,
+      "Changed glob versions must trigger review",
+    );
+  }
+  for (
+    const versions of [["10.2.6"], ["5.1.9"], ["10.2.6", "5.1.9", "6.0.0"]]
+  ) {
+    assert(
+      classifyAdvisories({ minimatch: versions }, {
+        minimatch: [knownMinimatch],
+      })
+        .blocked.length === 1,
+      "Changed minimatch versions must trigger review",
     );
   }
   for (
@@ -58,6 +94,19 @@ Deno.test("dependency audit accepts only the reviewed build-tool advisory and ex
       "New or escalated advisories must block deployment",
     );
   }
+  assert(
+    classifyAdvisories({ glob: ["11.1.0"] }, {
+      glob: [{ ...knownGlob, severity: "high" }],
+    })
+      .blocked.length === 1,
+    "Escalated glob advisory must block deployment",
+  );
+  assert(
+    classifyAdvisories({ minimatch: ["10.2.6", "5.1.9"] }, {
+      minimatch: [{ ...knownMinimatch, severity: "high" }],
+    }).blocked.length === 1,
+    "Escalated minimatch advisory must block deployment",
+  );
 });
 
 Deno.test("dependency audit submits every locked package and fails closed on unavailable or malformed responses", async () => {

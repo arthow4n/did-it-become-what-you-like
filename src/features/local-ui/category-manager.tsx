@@ -124,7 +124,9 @@ export function CategoryManager({
     onEditorOpenChange?.(editor !== null);
   }, [editor, onEditorOpenChange]);
   const submitEditor = () => {
-    if (!name.trim() || !snapshot.matches("ready")) return;
+    if (
+      !name.trim() || !(snapshot.matches("ready") || snapshot.matches("failed"))
+    ) return;
     isSubmittingRef.current = true;
     const trimmedDescription = description.trim() || undefined;
     if (editor?.kind === "create") {
@@ -231,7 +233,8 @@ export function CategoryManager({
                   if (dirty) {
                     onNavigate("/categories");
                   } else {
-                    send({ type: "category.cancel" });
+                    send({ type: "category.open", state });
+                    isSubmittingRef.current = false;
                     setEditor(null);
                     onComplete?.();
                   }
@@ -290,7 +293,8 @@ export function CategoryManager({
                 <Button
                   variant="secondary"
                   onPress={() => {
-                    send({ type: "category.cancel" });
+                    send({ type: "category.open", state });
+                    isSubmittingRef.current = false;
                     setEditor(null);
                     onComplete?.();
                   }}
@@ -380,7 +384,7 @@ export function CategoryManager({
           />
         )
         : (
-          <Inline justify="space-between">
+          <Inline justify="space-between" className="local-ui-category-header">
             <Heading size="sm">Categories</Heading>
             <Button onPress={() => openEditor({ kind: "create" })}>
               Create category
@@ -407,7 +411,7 @@ export function CategoryManager({
               justify="space-between"
               className="local-ui-category-row-inner"
             >
-              <Inline gap={2}>
+              <Inline gap={2} className="local-ui-category-name">
                 {category.color
                   ? (
                     <span
@@ -514,7 +518,10 @@ export function CategoryManager({
         ))}
         {uncategorized && matches(uncategorized)
           ? (
-            <ListRow trailing={<Badge>Built-in</Badge>}>
+            <ListRow
+              className="local-ui-category-builtin"
+              trailing={<Badge>Built-in</Badge>}
+            >
               <strong>{uncategorized.name}</strong>
             </ListRow>
           )

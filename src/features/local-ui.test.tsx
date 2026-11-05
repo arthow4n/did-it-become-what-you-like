@@ -1468,6 +1468,56 @@ Deno.test("local UI unified organize screen toggles between projects and categor
   });
 });
 
+Deno.test("Organize keeps category drafts mounted across create, cancel, edit and save", async () => {
+  await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
+    const { service, categoryCommands } = createTestService(categoryState);
+    await withAriaDomGlobals(window, async () => {
+      render(createElement(OrganizeScreen, {
+        state: categoryState,
+        service,
+        initialSection: "categories",
+      }));
+      const view = within(document.body);
+      const openCreate = async () => {
+        fireEvent.click(view.getByRole("button", { name: "Create category" }));
+        await waitFor(() =>
+          assert(view.getByRole("heading", { name: "Create category" }))
+        );
+        assertEquals(
+          view.queryByRole("radiogroup", { name: "Organize view" }),
+          null,
+        );
+      };
+      await openCreate();
+      fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+      await openCreate();
+      fireEvent.click(view.getByRole("button", { name: "Back" }));
+      await openCreate();
+      fireEvent.change(view.getByRole("textbox", { name: "Category name" }), {
+        target: { value: "Travel supplies" },
+      });
+      fireEvent.click(view.getByRole("button", { name: "Save category" }));
+      await waitFor(() => assertEquals(categoryCommands.length, 1));
+      assertEquals(categoryCommands[0].type, "create");
+      await waitFor(() =>
+        assert(view.getByRole("radiogroup", { name: "Organize view" }))
+      );
+      fireEvent.click(view.getByRole("button", { name: "Edit Food" }));
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Edit category" }))
+      );
+      const input = view.getByRole("textbox", {
+        name: "Category name",
+      }) as HTMLInputElement;
+      assertEquals(input.value, "Food");
+      fireEvent.change(input, { target: { value: "Food and groceries" } });
+      fireEvent.click(view.getByRole("button", { name: "Save category" }));
+      await waitFor(() => assertEquals(categoryCommands.length, 2));
+      assertEquals(categoryCommands[1].type, "rename");
+    });
+  });
+});
+
 Deno.test("local UI project editor and manager expose safe ordering and confirmations", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service, commits } = createTestService(organizedState);
@@ -1691,12 +1741,14 @@ Deno.test("local UI category conflict is anchored to the category name field", a
     const { service } = createTestService(categoryState);
     const conflictService: ProjectCategoryService = {
       ...service,
-      commitCategory: async () => {
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
-        throw new OrganizationError(
-          "conflict",
-          "Active category names must be unique.",
-        );
+      commitCategory: async (command) => {
+        if (command.type === "create" && command.category.name === "Food") {
+          throw new OrganizationError(
+            "conflict",
+            "Active category names must be unique.",
+          );
+        }
+        return await service.commitCategory(command);
       },
     };
     await withAriaDomGlobals(window, async () => {
@@ -1728,6 +1780,11 @@ Deno.test("local UI category conflict is anchored to the category name field", a
       assert(
         view.getAllByText("Active category names must be unique.").length === 2,
         "the conflict should be exposed by both the field and summary",
+      );
+      fireEvent.change(input, { target: { value: "Different category" } });
+      fireEvent.click(view.getByRole("button", { name: "Save category" }));
+      await waitFor(() =>
+        assert(view.getByRole("heading", { name: "Manage categories" }))
       );
     });
   });

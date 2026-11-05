@@ -203,24 +203,22 @@ export function OrganizeScreen({
     />
   );
 
-  if (isEditing) {
-    return section === "projects" ? projectManagerNode : categoryManagerNode;
-  }
-
   return (
     <ContentContainer>
       <Stack gap={5}>
-        <PageHeader title="Organize" headingLevel={1} />
-        <SegmentedControl
-          label="Organize view"
-          options={[
-            { id: "projects", label: "Projects" },
-            { id: "categories", label: "Categories" },
-          ]}
-          value={section}
-          onChange={handleSectionChange}
-          fullWidth
-        />
+        {!isEditing && <PageHeader title="Organize" headingLevel={1} />}
+        {!isEditing && (
+          <SegmentedControl
+            label="Organize view"
+            options={[
+              { id: "projects", label: "Projects" },
+              { id: "categories", label: "Categories" },
+            ]}
+            value={section}
+            onChange={handleSectionChange}
+            fullWidth
+          />
+        )}
         {section === "projects" ? projectManagerNode : categoryManagerNode}
       </Stack>
     </ContentContainer>

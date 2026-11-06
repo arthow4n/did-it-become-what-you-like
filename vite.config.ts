@@ -1,3 +1,4 @@
+import { reactCompiler } from "./scripts/react-compiler.ts";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
@@ -56,6 +57,7 @@ export default defineConfig({
   plugins: [
     developmentCspBypass,
     react(),
+    ...reactCompiler(),
     VitePWA({
       registerType: "prompt",
       injectRegister: null,

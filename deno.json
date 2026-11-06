@@ -15,6 +15,8 @@
     ]
   },
   "imports": {
+    "@babel/core": "npm:@babel/core@7.29.13",
+    "@babel/plugin-transform-react-jsx": "npm:@babel/plugin-transform-react-jsx@7.29.7",
     "@google/genai": "npm:@google/genai@2.27.0",
     "@openrouter/sdk": "npm:@openrouter/sdk@1.2.82",
     "@mantine/core": "npm:@mantine/core@9.5.0",
@@ -22,6 +24,9 @@
     "@mantine/dropzone": "npm:@mantine/dropzone@9.5.0",
     "@mantine/hooks": "npm:@mantine/hooks@9.5.0",
     "@mantine/notifications": "npm:@mantine/notifications@9.5.0",
+    "@rolldown/plugin-babel": "npm:@rolldown/plugin-babel@0.2.4",
+    "@types/babel__core": "npm:@types/babel__core@7.20.5",
+    "babel-plugin-react-compiler": "npm:babel-plugin-react-compiler@1.0.0",
     "react": "npm:react@19.3.0",
     "react-dom": "npm:react-dom@19.3.0",
     "react-dom/client": "npm:react-dom@19.3.0/client",

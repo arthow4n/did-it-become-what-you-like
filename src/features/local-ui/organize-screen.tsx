@@ -139,18 +139,6 @@ export function OrganizeScreen({
   onNewProject,
   onNewCategory,
 }: OrganizeScreenProps) {
-  if (!service) {
-    return (
-      <LegacyOrganizeOverview
-        state={state}
-        onProjects={onProjects}
-        onCategories={onCategories}
-        onNewProject={onNewProject}
-        onNewCategory={onNewCategory}
-      />
-    );
-  }
-
   const [section, setSection] = useState<"projects" | "categories">(
     initialSection,
   );
@@ -163,6 +151,18 @@ export function OrganizeScreen({
       setSection(initialSection);
     }
   }, [initialSection]);
+
+  if (!service) {
+    return (
+      <LegacyOrganizeOverview
+        state={state}
+        onProjects={onProjects}
+        onCategories={onCategories}
+        onNewProject={onNewProject}
+        onNewCategory={onNewCategory}
+      />
+    );
+  }
 
   const handleSectionChange = (val: string) => {
     const nextSection = val as "projects" | "categories";

@@ -16,7 +16,13 @@ quiet rather than like a dense financial dashboard.
 
 ## Foundation Decisions
 
-- **View layer:** React with TypeScript 7 is confirmed.
+- **View layer:** React with TypeScript 7 is confirmed. React Compiler is
+  enabled for project-owned app, feature, and design-system components/hooks in
+  both Vite builds, targeting React 19. Build summaries report compiled
+  functions and safely skipped functions with their reasons. Keep existing
+  manual memoization where it supplies precise control; compiler adoption does
+  not replace narrow actor subscriptions or move expensive work off the UI
+  thread.
 - **Application state:** XState v5 remains the workflow authority; React binds
   to actors through `@xstate/react`.
 - **Accessible behavior:** the repository-owned facade is the only application

@@ -1,5 +1,6 @@
 import { within } from "@testing-library/dom";
 import { createElement } from "react";
+import { usePwaController } from "./settings-pwa/pwa-runtime.tsx";
 import { AboutScreen, PreferencesScreen, PwaRuntime } from "./settings-pwa.tsx";
 import {
   createFakeLocalPort,
@@ -544,3 +545,99 @@ function assert(
 ): asserts condition {
   if (!condition) throw new Error(message);
 }
+
+Deno.test("settings: PWA subscriptions survive actor updates and clean up once", async () => {
+  await withComponentHarness(async ({ render, waitFor, window }) => {
+    const fake = createFakeUpdateInstallPort();
+    let updateSubscriptions = 0;
+    let installSubscriptions = 0;
+    let cleanups = 0;
+    const port = {
+      ...fake,
+      subscribe: (listener: Parameters<typeof fake.subscribe>[0]) => {
+        updateSubscriptions++;
+        const unsubscribe = fake.subscribe(listener);
+        return () => {
+          cleanups++;
+          unsubscribe();
+        };
+      },
+      subscribeInstall: (
+        listener: Parameters<typeof fake.subscribeInstall>[0],
+      ) => {
+        installSubscriptions++;
+        const unsubscribe = fake.subscribeInstall(listener);
+        return () => {
+          cleanups++;
+          unsubscribe();
+        };
+      },
+    };
+    const mounted = render(
+      createElement(PwaRuntime, {
+        port,
+        usefulActionVersion: 0,
+        dirty: false,
+        children: createElement(AboutScreen, {
+          onClose: () => undefined,
+          onPrivacy: () => undefined,
+        }),
+      }),
+    );
+    await waitFor(() => assert(viewText().includes("Up to date")));
+    const baseline = [updateSubscriptions, installSubscriptions, cleanups];
+    fake.setUpdate();
+    await waitFor(() => assert(viewText().includes("Update ready")));
+    window.dispatchEvent(new window.Event("offline"));
+    await waitFor(() =>
+      assert(viewText().includes("Update check unavailable offline"))
+    );
+    assert(
+      updateSubscriptions === baseline[0] &&
+        installSubscriptions === baseline[1] && cleanups === baseline[2],
+      "Actor transitions reattached PWA listeners",
+    );
+    mounted.unmount();
+    assert(cleanups === baseline[2] + 2, "PWA listeners were not cleaned up");
+  });
+});
+
+Deno.test("settings: PWA notice visibility does not broadcast unchanged controller state", async () => {
+  await withComponentHarness(async ({ render, waitFor }) => {
+    const port = createFakeUpdateInstallPort();
+    let renders = 0;
+    function Consumer() {
+      renders++;
+      return createElement("p", null, usePwaController().status);
+    }
+    const child = createElement(Consumer);
+    const mounted = render(
+      createElement(PwaRuntime, {
+        port,
+        usefulActionVersion: 0,
+        dirty: false,
+        suppressed: false,
+        children: child,
+      }),
+    );
+    await waitFor(() => assert(mounted.getByText("current")));
+    const baseline = renders;
+    mounted.rerender(
+      createElement(PwaRuntime, {
+        port,
+        usefulActionVersion: 0,
+        dirty: false,
+        suppressed: true,
+        children: child,
+      }),
+    );
+    assert(
+      renders === baseline,
+      "Notice visibility broadcast unchanged PWA state",
+    );
+    port.setUpdate();
+    await waitFor(() => assert(mounted.getByText("update-ready")));
+    assert(renders > baseline, "PWA controller hid a status update");
+    mounted.unmount();
+  });
+});

@@ -1,13 +1,11 @@
-import { useActor } from "@xstate/react";
+import { useActorRef, useSelector } from "@xstate/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LocalPort } from "../../adapters/ports/local.ts";
 import {
   CalendarDateSchema,
   CanonicalDecimalSchema,
-  type Category,
   CurrencyCodeSchema,
   moneyCompare,
-  StableIdSchema,
   TimeOfDaySchema,
 } from "../../domain/index.ts";
 import {
@@ -18,15 +16,11 @@ import {
   receiptSelectedTotal,
 } from "../../domain/receipt.ts";
 import type { ProjectCategoryState } from "../../domain/organization.ts";
-import {
-  createReceiptReviewMachine,
-  type ReceiptReviewActorEvent,
-} from "../../actors/receipt.ts";
-import { ChevronDown, X } from "lucide-react";
+import { createReceiptReviewMachine } from "../../actors/receipt.ts";
+import { X } from "lucide-react";
 import {
   AdaptiveDialog,
   Button,
-  CategoryPicker,
   ContentContainer,
   ErrorState,
   FormActions,
@@ -40,8 +34,6 @@ import {
   NativeDateField,
   NativeTimeField,
   PageHeader,
-  ReceiptLineCard,
-  ReceiptLineEditor,
   ReceiptMetadata,
   ReceiptReconciliation,
   Stack,
@@ -50,10 +42,15 @@ import {
   Text,
   TextField,
 } from "../../design-system/index.ts";
+import { LineEditorDialog } from "./line-dialogs.tsx";
+export { LineEditorDialog, QuickCategoryDialog } from "./line-dialogs.tsx";
+import {
+  ReceiptReviewLine,
+  sameReviewLinks,
+  selectReviewLinks,
+} from "./review-line.tsx";
 import { useNotifyLocalMutation } from "../sync-ui/index.ts";
 import {
-  categoryOptions,
-  lineViewModel,
   makeLineId,
   type ReceiptReviewMode,
   useDirtyBeforeUnload,
@@ -66,212 +63,6 @@ function unsignedDecimal(value: string): string {
 function outflowDecimal(value: string): string {
   const unsigned = unsignedDecimal(value);
   return unsigned === "0" ? "0" : `-${unsigned}`;
-}
-
-function editorValue(line: ReceiptDraftLine, manual = false): {
-  type: "purchase" | "adjustment";
-  description: string;
-  categoryId: string;
-  amount: string;
-  quantity?: string;
-  unitPrice?: string;
-  lineId?: string;
-} {
-  return line.type === "purchase"
-    ? {
-      type: line.type,
-      description: line.description,
-      categoryId: line.categoryId,
-      amount: manual ? unsignedDecimal(line.lineTotal) : line.lineTotal,
-      quantity: line.quantity,
-      unitPrice: line.unitPrice,
-    }
-    : {
-      type: line.type,
-      description: line.description,
-      categoryId: line.categoryId,
-      amount: line.amount,
-      lineId: line.lineId,
-    };
-}
-
-function updatedLine(
-  line: ReceiptDraftLine,
-  value: ReturnType<typeof editorValue>,
-  manual = false,
-): ReceiptDraftLine | undefined {
-  const amount = CanonicalDecimalSchema.safeParse(value.amount);
-  if (!amount.success) return undefined;
-  if (line.type === "purchase" && value.type === "purchase") {
-    const quantity = value.quantity?.trim();
-    const unitPrice = value.unitPrice?.trim();
-    if (quantity && !CanonicalDecimalSchema.safeParse(quantity).success) {
-      return undefined;
-    }
-    if (unitPrice && !CanonicalDecimalSchema.safeParse(unitPrice).success) {
-      return undefined;
-    }
-    return {
-      ...line,
-      description: value.description,
-      categoryId: StableIdSchema.parse(value.categoryId),
-      lineTotal: manual ? outflowDecimal(amount.data) : amount.data,
-      ...(quantity ? { quantity } : { quantity: undefined }),
-      ...(unitPrice ? { unitPrice } : { unitPrice: undefined }),
-    };
-  }
-  if (line.type === "adjustment" && value.type === "adjustment") {
-    return {
-      ...line,
-      description: value.description,
-      categoryId: StableIdSchema.parse(value.categoryId),
-      amount: amount.data,
-      ...(value.lineId
-        ? { lineId: StableIdSchema.parse(value.lineId) }
-        : { lineId: undefined }),
-    };
-  }
-  return undefined;
-}
-
-export function LineEditorDialog({
-  line,
-  categories,
-  linkOptions,
-  onSave,
-  onClose,
-  triggerLabel,
-  triggerVariant = "quiet",
-  fullWidth,
-  dialogTitle,
-  manual = false,
-}: {
-  line: ReceiptDraftLine;
-  categories: readonly Category[];
-  linkOptions: Array<{ id: string; label: string }>;
-  onSave: (line: ReceiptDraftLine) => void;
-  onClose?: () => void;
-  triggerLabel: string;
-  triggerVariant?: "primary" | "secondary" | "quiet" | "danger";
-  fullWidth?: boolean;
-  dialogTitle?: string;
-  manual?: boolean;
-}) {
-  const [value, setValue] = useState(editorValue(line, manual));
-  const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    setValue(editorValue(line, manual));
-    setError(undefined);
-  }, [line, manual]);
-  return (
-    <AdaptiveDialog
-      trigger={
-        <Button variant={triggerVariant} fullWidth={fullWidth}>
-          {triggerLabel}
-        </Button>
-      }
-      title={dialogTitle ??
-        (line.type === "purchase" ? "Edit receipt line" : "Edit adjustment")}
-    >
-      {(close) => (
-        <Stack gap={4}>
-          <ReceiptLineEditor
-            value={value}
-            categories={categoryOptions(categories)}
-            linkOptions={linkOptions}
-            manual={manual}
-            onChange={(next) => {
-              setValue(next);
-              setError(undefined);
-            }}
-          />
-          {error
-            ? (
-              <InlineNotice tone="danger" title="Check this line">
-                {error}
-              </InlineNotice>
-            )
-            : null}
-          <FormActions>
-            <Button variant="secondary" onPress={close}>
-              Cancel
-            </Button>
-            <Button
-              isDisabled={value.description.trim().length === 0}
-              onPress={() => {
-                const next = updatedLine(line, value, manual);
-                if (!next) {
-                  setError(
-                    "Enter valid decimal values before saving this line.",
-                  );
-                  return;
-                }
-                onSave(next);
-                close();
-                onClose?.();
-              }}
-            >
-              Save line
-            </Button>
-          </FormActions>
-        </Stack>
-      )}
-    </AdaptiveDialog>
-  );
-}
-
-export function QuickCategoryDialog({
-  line,
-  categories,
-  onSelect,
-  isDisabled,
-}: {
-  line: { readonly categoryId: string; readonly description?: string };
-  categories: readonly Category[];
-  onSelect: (categoryId: string) => void;
-  isDisabled?: boolean;
-}) {
-  const currentCategory =
-    categories.find((c) => c.id === line.categoryId)?.name ??
-      line.categoryId;
-  const options = categoryOptions(categories);
-
-  return (
-    <AdaptiveDialog
-      trigger={
-        <Button
-          variant="quiet"
-          isDisabled={isDisabled}
-          className="ds-receipt-line-category-trigger"
-          aria-label={`Category: ${currentCategory}. Tap to change category.`}
-        >
-          <Inline gap={1}>
-            <span>{currentCategory}</span>
-            <ChevronDown size={14} />
-          </Inline>
-        </Button>
-      }
-      title="Change category"
-    >
-      {(close) => (
-        <Stack gap={4}>
-          <Text size="body" tone="secondary">
-            {line.description || "Unclear item"}
-          </Text>
-          <CategoryPicker
-            label="Category"
-            categories={options}
-            value={line.categoryId}
-            onValueChange={(categoryId) => {
-              onSelect(categoryId);
-              close();
-            }}
-          />
-        </Stack>
-      )}
-    </AdaptiveDialog>
-  );
 }
 
 export function ReceiptReviewScreen({
@@ -308,13 +99,23 @@ export function ReceiptReviewScreen({
     () => createReceiptReviewMachine({ local, organization: local }),
     [local],
   );
-  const [snapshot, send] = useActor(machine, {
+  const actor = useActorRef(machine, {
     input: {
       ...(initialReview ? { initialReview } : {}),
       ...(persistenceKey ? { persistenceKey } : {}),
       ...(isManual ? { restoreExisting: true } : {}),
     },
   });
+  const snapshot = useSelector(
+    actor,
+    (value) => value,
+    (a, b) =>
+      a.value === b.value && a.context.review === b.context.review &&
+      a.context.error === b.context.error &&
+      a.context.result === b.context.result,
+  );
+  const send = actor.send;
+  const links = useSelector(actor, selectReviewLinks, sameReviewLinks);
   const [openSent, setOpenSent] = useState(false);
   const [metadataOpen, setMetadataOpen] = useState(false);
   const [metadataError, setMetadataError] = useState<string>();
@@ -484,15 +285,6 @@ export function ReceiptReviewScreen({
   const difference = receiptMismatchDifference(review);
   const selectedCount = review.lines.filter((line) => line.selected).length;
   const categories = state.categories;
-  const links = review.lines.filter((line) =>
-    line.type === "purchase" && line.selected
-  ).map((line) => ({
-    id: line.id,
-    label: line.description || "Unclear purchase",
-  }));
-  const sendReview = (event: ReceiptReviewActorEvent) => {
-    send(event);
-  };
   const updateParent = (parent: ReceiptReviewDraft["parent"]) => {
     if (
       !CalendarDateSchema.safeParse(parent.date).success ||
@@ -506,7 +298,7 @@ export function ReceiptReviewScreen({
       return;
     }
     setMetadataError(undefined);
-    sendReview({ type: "receipt.review.change-parent", parent });
+    send({ type: "receipt.review.change-parent", parent });
     setMetadataOpen(false);
   };
   const newLine = {
@@ -685,7 +477,7 @@ export function ReceiptReviewScreen({
                   dialogTitle="Add receipt item"
                   manual
                   onSave={(line) =>
-                    sendReview({
+                    send({
                       type: "receipt.review.add-line",
                       line: { ...line, selected: true },
                     })}
@@ -694,56 +486,13 @@ export function ReceiptReviewScreen({
             )
             : null}
           {review.lines.map((line) => (
-            <ReceiptLineCard
+            <ReceiptReviewLine
               key={line.id}
-              line={lineViewModel(line, categories)}
-              currency={review.parent.currency}
-              mode={isManual ? "manual" : isMenu ? "menu" : "review"}
-              onSelectedChange={isManual ? undefined : (selected) =>
-                sendReview({
-                  type: "receipt.review.select-line",
-                  lineId: line.id,
-                  selected,
-                })}
-              onQuantityChange={line.type === "purchase"
-                ? (quantity) =>
-                  sendReview({
-                    type: "receipt.review.set-line-quantity",
-                    lineId: line.id,
-                    quantity,
-                  })
-                : undefined}
-              categoryControl={
-                <QuickCategoryDialog
-                  line={line}
-                  categories={categories}
-                  isDisabled={snapshot.hasTag("saving")}
-                  onSelect={(categoryId) =>
-                    sendReview({
-                      type: "receipt.review.edit-line",
-                      line: { ...line, categoryId },
-                    })}
-                />
-              }
-              editControl={
-                <LineEditorDialog
-                  line={line}
-                  categories={categories}
-                  linkOptions={links}
-                  triggerLabel="Edit"
-                  onSave={(next) =>
-                    sendReview({
-                      type: "receipt.review.edit-line",
-                      line: next,
-                    })}
-                  manual={isManual}
-                />
-              }
-              onRemove={() =>
-                sendReview({
-                  type: "receipt.review.remove-line",
-                  lineId: line.id,
-                })}
+              actor={actor}
+              lineId={line.id}
+              categories={categories}
+              links={links}
+              mode={mode}
             />
           ))}
         </Stack>
@@ -756,8 +505,7 @@ export function ReceiptReviewScreen({
               triggerLabel="Add missing line"
               triggerVariant="secondary"
               fullWidth
-              onSave={(line) =>
-                sendReview({ type: "receipt.review.add-line", line })}
+              onSave={(line) => send({ type: "receipt.review.add-line", line })}
             />
           )
           : null}

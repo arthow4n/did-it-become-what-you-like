@@ -70,3 +70,69 @@ Deno.test("sync notifications do not subscribe save-only consumers to status upd
     mounted.unmount();
   });
 });
+
+Deno.test("unchanged sync status ignores runtime callback churn and keeps actions current", async () => {
+  await withComponentHarness(({ render, fireEvent }) => {
+    let renders = 0;
+    let invoked = "";
+    function Consumer() {
+      renders++;
+      const status = useSyncStatus();
+      return (
+        <button type="button" onClick={() => status?.onReconnect()}>
+          Reconnect
+        </button>
+      );
+    }
+    const child = <Consumer />;
+    const value = {
+      view: {
+        mode: "configured",
+        accountEmail: "test@example.com",
+        network: "online",
+        sync: "synced",
+        lastSyncedAt: null,
+        pendingChangeCount: 0,
+        unresolvedConflictCount: 0,
+      },
+      onOpenSync: () => undefined,
+      onReconnect: () => {
+        invoked = "old";
+      },
+      notifyLocalMutation: () => undefined,
+    } satisfies SyncStatusContextValue;
+    const mounted = render(
+      <SyncStatusProvider value={value}>{child}</SyncStatusProvider>,
+    );
+    const baseline = renders;
+    mounted.rerender(
+      <SyncStatusProvider
+        value={{
+          ...value,
+          view: { ...value.view },
+          onReconnect: () => {
+            invoked = "current";
+          },
+        }}
+      >
+        {child}
+      </SyncStatusProvider>,
+    );
+    if (renders !== baseline) {
+      throw new Error("Equivalent sync status rerendered its consumer");
+    }
+    fireEvent.click(mounted.getByRole("button", { name: "Reconnect" }));
+    if (invoked !== "current") {
+      throw new Error("Reconnect used a stale callback");
+    }
+    mounted.rerender(
+      <SyncStatusProvider
+        value={{ ...value, view: { ...value.view, pendingChangeCount: 1 } }}
+      >
+        {child}
+      </SyncStatusProvider>,
+    );
+    if (renders <= baseline) throw new Error("Pending count update was hidden");
+    mounted.unmount();
+  });
+});

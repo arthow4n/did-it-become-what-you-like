@@ -3,9 +3,11 @@ import {
   useCallback,
   useContext,
   useLayoutEffect,
+  useMemo,
   useRef,
 } from "react";
 import type { ReactNode } from "react";
+import { shallowEqual } from "@xstate/react";
 import type { SyncConnectionViewModel } from "./types.ts";
 
 export type SyncStatusContextValue = {
@@ -26,14 +28,44 @@ export function SyncStatusProvider({
   readonly value: SyncStatusContextValue;
   readonly children?: ReactNode;
 }) {
-  const notifyRef = useRef(value.notifyLocalMutation);
+  const actions = useRef(value);
   useLayoutEffect(() => {
-    notifyRef.current = value.notifyLocalMutation;
-  }, [value.notifyLocalMutation]);
-  const notifyLocalMutation = useCallback(() => notifyRef.current(), []);
+    actions.current = value;
+  }, [value]);
+  const notifyLocalMutation = useCallback(
+    () => actions.current.notifyLocalMutation(),
+    [],
+  );
+  const onOpenSync = useCallback(() => actions.current.onOpenSync(), []);
+  const onReconnect = useCallback(() => actions.current.onReconnect(), []);
+  const onCheckConnection = useCallback(
+    () => actions.current.onCheckConnection?.(),
+    [],
+  );
+  // Runtime forms and device projections can update without changing sync status.
+  const previousView = useRef(value.view);
+  if (!shallowEqual(previousView.current, value.view)) {
+    previousView.current = value.view;
+  }
+  const view = previousView.current;
+  const hasCheckConnection = value.onCheckConnection !== undefined;
+  const status = useMemo<SyncStatusContextValue>(() => ({
+    view,
+    onOpenSync,
+    onReconnect,
+    notifyLocalMutation,
+    onCheckConnection: hasCheckConnection ? onCheckConnection : undefined,
+  }), [
+    view,
+    onOpenSync,
+    onReconnect,
+    notifyLocalMutation,
+    hasCheckConnection,
+    onCheckConnection,
+  ]);
   return (
     <SyncMutationContext.Provider value={notifyLocalMutation}>
-      <SyncStatusContext.Provider value={value}>
+      <SyncStatusContext.Provider value={status}>
         {children}
       </SyncStatusContext.Provider>
     </SyncMutationContext.Provider>

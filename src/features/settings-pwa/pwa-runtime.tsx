@@ -3,6 +3,7 @@ import { fromPromise } from "xstate";
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -265,13 +266,14 @@ export function PwaRuntime({
       if (
         available &&
         latestUsefulAction.current > 0 &&
-        (snapshot.matches("idle") || snapshot.matches("dismissed"))
+        (latestSnapshot.current.matches("idle") ||
+          latestSnapshot.current.matches("dismissed"))
       ) {
         send({ type: "install.available" });
       }
     });
     return unsubscribe;
-  }, [port, send, snapshot]);
+  }, [port, send]);
 
   useEffect(() => {
     if (usefulActionVersion <= latestUsefulAction.current) return;
@@ -289,61 +291,81 @@ export function PwaRuntime({
     const unsubscribe = port.subscribe((state) => {
       if (
         state === "update-available" &&
-        !snapshot.matches("checking") &&
-        !snapshot.matches("updateReady") &&
-        !snapshot.matches("blocked")
+        !latestSnapshot.current.matches("checking") &&
+        !latestSnapshot.current.matches("updateReady") &&
+        !latestSnapshot.current.matches("blocked")
       ) {
         send({ type: "update.check" });
       }
     });
     return unsubscribe;
-  }, [port, send, snapshot]);
+  }, [port, send]);
 
   const status = statusFromSnapshot(snapshot, port.state());
   const installKind = installKindFromSnapshot(snapshot, port.state());
-  const requestInstall = () => {
+  const requestInstall = useCallback(() => {
     if (!port.canInstall()) return;
-    if (snapshot.matches("installAvailable")) {
+    if (latestSnapshot.current.matches("installAvailable")) {
       send({ type: "install.request" });
       return;
     }
     setInstallRequested(true);
-    if (snapshot.matches("idle") || snapshot.matches("dismissed")) {
+    if (
+      latestSnapshot.current.matches("idle") ||
+      latestSnapshot.current.matches("dismissed")
+    ) {
       send({ type: "install.available" });
     }
-  };
-  const checkForUpdates = () => {
-    if (snapshot.matches("offline")) {
+  }, [port, send]);
+  const checkForUpdates = useCallback(() => {
+    if (latestSnapshot.current.matches("offline")) {
       send({ type: "update.retry" });
     } else if (
-      !snapshot.matches("checking") &&
-      !snapshot.matches("reloading")
+      !latestSnapshot.current.matches("checking") &&
+      !latestSnapshot.current.matches("reloading")
     ) {
       send({ type: "update.check" });
     }
-  };
-  const reloadToUpdate = () => {
-    if (!snapshot.matches("updateReady") && !snapshot.matches("blocked")) {
+  }, [send]);
+  const reloadToUpdate = useCallback(() => {
+    if (
+      !latestSnapshot.current.matches("updateReady") &&
+      !latestSnapshot.current.matches("blocked")
+    ) {
       return;
     }
     send({
       type: dirty ? "update.blocked-by-dirty" : "update.reload",
     });
-  };
-  const controller: PwaController = {
+  }, [dirty, send]);
+  const version = snapshot.context.version;
+  const error = snapshot.context.error?.message ?? null;
+  const installOfferVisible = snapshot.matches("installAvailable") &&
+    latestUsefulAction.current > 0;
+  const controller = useMemo<PwaController>(() => ({
     status,
     installKind,
-    version: snapshot.context.version,
-    error: snapshot.context.error?.message ?? null,
+    version,
+    error,
     canInstall,
-    installOfferVisible: snapshot.matches("installAvailable") &&
-      latestUsefulAction.current > 0,
+    installOfferVisible,
     install: requestInstall,
     dismissInstall: () => send({ type: "install.dismiss" }),
     laterInstall: () => send({ type: "install.later" }),
     checkForUpdates,
     reloadToUpdate,
-  };
+  }), [
+    status,
+    installKind,
+    version,
+    error,
+    canInstall,
+    installOfferVisible,
+    requestInstall,
+    checkForUpdates,
+    reloadToUpdate,
+    send,
+  ]);
 
   return (
     <PwaContext.Provider value={controller}>

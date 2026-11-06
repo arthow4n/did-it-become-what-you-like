@@ -1,4 +1,4 @@
-import { useActor } from "@xstate/react";
+import { shallowEqual, useActorRef, useSelector } from "@xstate/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { ArrowLeft, Plus, RotateCcw, Trash2 } from "lucide-react";
 import {
@@ -28,21 +28,13 @@ import {
   StatusPanel,
   Text,
 } from "../../design-system/index.ts";
-import {
-  categoryOptions,
-  changesFromEditor,
-  editorValue,
-  editorValueFromChanges,
-  lineDescription,
-  mutationIsLine,
-  type ReceiptDetailScreenProps,
-} from "./types.ts";
+import { lineDescription, type ReceiptDetailScreenProps } from "./types.ts";
 import type {
   ReceiptAdjustment,
   ReceiptPurchaseLine,
 } from "../../domain/schema/records.ts";
-import { ReceiptMetadataEditorDialog } from "./metadata-dialog.tsx";
-import { ReceiptLineEditorDialog } from "./line-editor-dialog.tsx";
+import { ReceiptDetailEditors } from "./editors.tsx";
+import { selectReceiptDetailView } from "./selectors.ts";
 import { QuickCategoryDialog } from "../receipt-ui/review-screen.tsx";
 
 export function ReceiptDetailScreen({
@@ -60,38 +52,26 @@ export function ReceiptDetailScreen({
     () => createSavedReceiptMachine({ service }),
     [service],
   );
-  const [snapshot, send] = useActor(machine, { input: { receiptId } });
+  const actor = useActorRef(machine, { input: { receiptId } });
+  const view = useSelector(actor, selectReceiptDetailView, shallowEqual);
+  const send = actor.send;
   const handledDiscardRequest = useRef(discardRequest ?? 0);
   const completedOutput = useRef<SavedReceiptActorOutput | null>(null);
   const focusedLineRef = useRef<string | undefined>(undefined);
   const pendingAddedLineIds = useRef<Set<string> | null>(null);
   const quickCategoryIdRef = useRef<string | null>(null);
 
-  const pendingMutationKind = snapshot.context.pendingMutation?.kind;
-  const mutationFailure = snapshot.matches("failure") &&
-    snapshot.context.failureOperation === "mutation";
-  const destructiveFailure = snapshot.matches("deleteFailure");
-  const editingMetadata = snapshot.context.metadataDraft !== null &&
-    (snapshot.matches("metadataPristine") ||
-      snapshot.matches("metadataDirty") ||
-      (mutationFailure && pendingMutationKind === "metadata"));
-  const isQuickUpdating = quickCategoryIdRef.current !== null &&
-    !mutationFailure;
-  const editingLine = !isQuickUpdating && snapshot.context.lineDraft !== null &&
-    (snapshot.matches("linePristine") || snapshot.matches("lineDirty") ||
-      (mutationFailure && mutationIsLine(pendingMutationKind)));
-  const editingAddLine = snapshot.context.addLineDraft !== null &&
-    (snapshot.matches("lineAddingPristine") ||
-      snapshot.matches("lineAddingDirty") ||
-      (mutationFailure && pendingMutationKind === "add-line"));
-  const dirty = snapshot.hasTag("dirty");
-  const canRetry = snapshot.can({ type: "receipt.detail.retry" });
+  const {
+    mutationFailure,
+    deleteFailure: destructiveFailure,
+    dirty,
+  } = view;
 
   useEffect(() => {
-    if (snapshot.matches("ready")) {
+    if (view.ready) {
       quickCategoryIdRef.current = null;
     }
-  }, [snapshot]);
+  }, [view.ready]);
 
   const handleQuickCategorySelect = useCallback(
     (line: ReceiptPurchaseLine | ReceiptAdjustment, categoryId: string) => {
@@ -148,7 +128,7 @@ export function ReceiptDetailScreen({
 
   useEffect(() => {
     if (
-      !focusedLineId || !snapshot.context.aggregate ||
+      !focusedLineId || !view.aggregate ||
       focusedLineRef.current === focusedLineId
     ) return;
     const target = Array.from(
@@ -158,12 +138,12 @@ export function ReceiptDetailScreen({
     focusedLineRef.current = focusedLineId;
     target.focus({ preventScroll: true });
     target.scrollIntoView?.({ block: "nearest" });
-  }, [focusedLineId, snapshot.context.aggregate]);
+  }, [focusedLineId, view.aggregate]);
 
   useEffect(() => {
-    const aggregate = snapshot.context.aggregate;
+    const aggregate = view.aggregate;
     const knownIds = pendingAddedLineIds.current;
-    if (!aggregate || !knownIds || snapshot.context.addLineDraft !== null) {
+    if (!aggregate || !knownIds || view.hasAddLineDraft) {
       return;
     }
     const addedLine = [...aggregate.purchaseLines, ...aggregate.adjustments]
@@ -176,16 +156,16 @@ export function ReceiptDetailScreen({
     pendingAddedLineIds.current = null;
     target.focus({ preventScroll: true });
     target.scrollIntoView?.({ block: "nearest" });
-  }, [snapshot.context.addLineDraft, snapshot.context.aggregate]);
+  }, [view.hasAddLineDraft, view.aggregate]);
 
   useEffect(() => {
-    if (snapshot.status !== "done" || !snapshot.output) return;
-    if (completedOutput.current === snapshot.output) return;
-    completedOutput.current = snapshot.output;
-    if (snapshot.output.status !== "not-found") onComplete?.(snapshot.output);
-  }, [onComplete, snapshot.output, snapshot.status]);
+    if (view.status !== "done" || !view.output) return;
+    if (completedOutput.current === view.output) return;
+    completedOutput.current = view.output;
+    if (view.output.status !== "not-found") onComplete?.(view.output);
+  }, [onComplete, view.output, view.status]);
 
-  if (snapshot.matches("loading")) {
+  if (view.loading) {
     return (
       <ContentContainer size="review">
         <Stack gap={5}>
@@ -210,7 +190,7 @@ export function ReceiptDetailScreen({
     );
   }
 
-  if (snapshot.matches("notFound")) {
+  if (view.notFound) {
     return (
       <ContentContainer size="readable">
         <Stack gap={5}>
@@ -250,11 +230,11 @@ export function ReceiptDetailScreen({
   }
 
   if (
-    (snapshot.matches("loadFailure") || destructiveFailure ||
-      snapshot.matches("failure")) &&
-    (!mutationFailure || snapshot.context.aggregate === null)
+    (view.loadFailure || destructiveFailure ||
+      view.failure) &&
+    (!mutationFailure || view.aggregate === null)
   ) {
-    const failure = snapshot.context.error;
+    const failure = view.error;
     return (
       <ContentContainer size="review">
         <Stack gap={5}>
@@ -278,7 +258,7 @@ export function ReceiptDetailScreen({
               : "Receipt unavailable"}
             action={
               <Inline>
-                {snapshot.can({ type: "receipt.detail.retry" })
+                {view.canRetry
                   ? (
                     <Button
                       onPress={() => send({ type: "receipt.detail.retry" })}
@@ -289,7 +269,7 @@ export function ReceiptDetailScreen({
                       Retry
                     </Button>
                   )
-                  : snapshot.can({ type: "receipt.detail.reload" })
+                  : view.canReload
                   ? (
                     <Button
                       variant="secondary"
@@ -300,7 +280,7 @@ export function ReceiptDetailScreen({
                   )
                   : null}
                 {destructiveFailure &&
-                    snapshot.can({ type: "receipt.detail.cancel-delete" })
+                    view.canCancelDelete
                   ? (
                     <Button
                       variant="quiet"
@@ -332,7 +312,7 @@ export function ReceiptDetailScreen({
     );
   }
 
-  const aggregate = snapshot.context.aggregate;
+  const aggregate = view.aggregate;
   if (!aggregate) {
     return (
       <ContentContainer size="readable">
@@ -353,47 +333,16 @@ export function ReceiptDetailScreen({
     id: line.id,
     label: line.description,
   }));
-  const lineDraft = snapshot.context.lineDraft;
-  const addLineDraft = snapshot.context.addLineDraft;
-  const activeLineEditorValue = lineDraft
-    ? editorValue(lineDraft)
-    : addLineDraft
-    ? editorValueFromChanges(addLineDraft)
-    : null;
-  const activeLineCategoryId = lineDraft?.changes.categoryId ??
-    addLineDraft?.categoryId;
-  const canSubmitAddLine = addLineDraft !== null &&
-    addLineDraft.description.trim().length > 0 &&
-    (addLineDraft.type === "purchase"
-      ? addLineDraft.lineTotal.trim().length > 0
-      : addLineDraft.amount.trim().length > 0) &&
-    snapshot.can({ type: "receipt.detail.add-line" });
   const defaultCategoryId = categories.find((category) => !category.archived)
     ?.id ?? categories[0]?.id ?? "category-uncategorized";
-  const pendingLine = snapshot.context.pendingLineId === null
+  const pendingLine = view.pendingLineId === null
     ? undefined
     : [...purchaseLines, ...adjustments].find((line) =>
-      line.id === snapshot.context.pendingLineId
+      line.id === view.pendingLineId
     );
-  const isMutating = snapshot.hasTag("mutating");
+  const isMutating = view.mutating;
   const finalPurchaseLine = pendingLine?.type === "receipt-purchase-line" &&
     purchaseLines.length === 1;
-
-  const closeMetadataEditor = () => {
-    if (mutationFailure && pendingMutationKind === "metadata") {
-      send({ type: "receipt.detail.reload" });
-    } else {
-      send({ type: "receipt.detail.cancel-edit" });
-    }
-  };
-
-  const closeLineEditor = () => {
-    if (mutationFailure && mutationIsLine(pendingMutationKind)) {
-      send({ type: "receipt.detail.reload" });
-    } else {
-      send({ type: "receipt.detail.cancel-edit" });
-    }
-  };
 
   const closeDeleteDialog = () => {
     send({ type: "receipt.detail.cancel-delete" });
@@ -611,9 +560,9 @@ export function ReceiptDetailScreen({
             title="Delete this receipt?"
             description="This will permanently delete this receipt and all its items."
             confirmLabel="Delete receipt"
-            isOpen={snapshot.matches("confirmingReceiptDelete")}
+            isOpen={view.confirmingReceiptDelete}
             onOpenChange={(open) => {
-              if (!open && snapshot.matches("confirmingReceiptDelete")) {
+              if (!open && view.confirmingReceiptDelete) {
                 send({ type: "receipt.detail.cancel-delete" });
               }
             }}
@@ -624,62 +573,12 @@ export function ReceiptDetailScreen({
         </FormActions>
       </Stack>
 
-      <ReceiptMetadataEditorDialog
-        isOpen={editingMetadata}
-        isDismissable={!mutationFailure}
-        metadataDraft={snapshot.context.metadataDraft}
-        currency={receipt.currency}
-        mutationFailure={mutationFailure}
-        errorMessage={snapshot.context.error?.message}
-        canRetry={canRetry}
-        canSave={snapshot.can({ type: "receipt.detail.save-metadata" })}
-        onChange={(changes) =>
-          send({
-            type: "receipt.detail.change-metadata",
-            changes,
-          })}
-        onSave={() => send({ type: "receipt.detail.save-metadata" })}
-        onRetry={() => send({ type: "receipt.detail.retry" })}
-        onReload={() => send({ type: "receipt.detail.reload" })}
-        onClose={closeMetadataEditor}
-      />
-
-      <ReceiptLineEditorDialog
-        isOpen={editingLine || editingAddLine}
-        isDismissable={!mutationFailure}
-        isAdding={editingAddLine}
-        value={activeLineEditorValue}
-        categories={categoryOptions(categories, activeLineCategoryId)}
+      <ReceiptDetailEditors
+        actor={actor}
+        categories={categories}
         linkOptions={links}
-        mutationFailure={mutationFailure}
-        errorMessage={snapshot.context.error?.message}
-        canRetry={canRetry}
-        canSubmit={editingAddLine ? canSubmitAddLine : snapshot.can({
-          type: "receipt.detail.save-line",
-        })}
-        onChange={(value) => {
-          const changes = changesFromEditor(value);
-          send(
-            editingAddLine
-              ? {
-                type: "receipt.detail.change-add-line",
-                changes,
-              }
-              : {
-                type: "receipt.detail.change-line",
-                changes,
-              },
-          );
-        }}
-        onSubmit={() =>
-          send(
-            editingAddLine
-              ? { type: "receipt.detail.add-line" }
-              : { type: "receipt.detail.save-line" },
-          )}
-        onRetry={() => send({ type: "receipt.detail.retry" })}
-        onReload={() => send({ type: "receipt.detail.reload" })}
-        onClose={closeLineEditor}
+        currency={receipt.currency}
+        quickUpdating={quickCategoryIdRef.current !== null}
       />
 
       <ConfirmDialog
@@ -694,7 +593,7 @@ export function ReceiptDetailScreen({
           }”? This removes this adjustment from the receipt.`}
         confirmLabel="Delete line"
         confirmVariant="danger"
-        isOpen={snapshot.matches("confirmingLineDelete")}
+        isOpen={view.confirmingLineDelete}
         onOpenChange={(open) => {
           if (!open) closeDeleteDialog();
         }}
@@ -708,7 +607,7 @@ export function ReceiptDetailScreen({
         description="Discard unsaved receipt changes?"
         confirmLabel="Discard changes"
         confirmVariant="danger"
-        isOpen={snapshot.matches("confirmingDiscard")}
+        isOpen={view.confirmingDiscard}
         isDismissable={false}
         onOpenChange={(open) => {
           if (!open) send({ type: "receipt.detail.cancel-discard" });

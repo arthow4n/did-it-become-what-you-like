@@ -1,4 +1,4 @@
-import { useActor } from "@xstate/react";
+import { shallowEqual, useActorRef, useSelector } from "@xstate/react";
 import {
   startTransition,
   useCallback,
@@ -95,6 +95,7 @@ import { ExpensesScreen } from "./expenses-screen.tsx";
 import { OrganizeScreen } from "./organize-screen.tsx";
 import { SettingsScreen } from "./settings-screen.tsx";
 import { ManualExpenseScreen } from "./manual-expense-screen.tsx";
+import { selectLocalShellView } from "./shell-view.ts";
 function FoundationExpensesPlaceholder() {
   return (
     <ContentContainer size="readable">
@@ -131,7 +132,9 @@ export function LocalUiRuntime(
       }),
     [organization],
   );
-  const [shellSnapshot, sendShell] = useActor(shellMachine);
+  const shellActor = useActorRef(shellMachine);
+  const shellView = useSelector(shellActor, selectLocalShellView, shallowEqual);
+  const sendShell = shellActor.send;
   const [state, setState] = useState<ProjectCategoryState | null>(null);
   const [expenseDayBoundary, setExpenseDayBoundary] = useState("03:00");
   const initialPath = pathFromHash();
@@ -197,7 +200,7 @@ export function LocalUiRuntime(
   );
   const receipt = receiptDependencies ?? defaultReceipt.dependencies;
   const secretStorage = defaultReceipt.secretStorage;
-  const shellReady = shellSnapshot.matches("ready");
+  const shellReady = shellView.ready;
   useEffect(() => {
     void repository.transaction(
       "readonly",
@@ -294,9 +297,9 @@ export function LocalUiRuntime(
     );
   }, [path]);
   useEffect(() => {
-    const nextState = shellSnapshot.context.projectState;
+    const nextState = shellView.projectState;
     if (nextState) setState(nextState);
-  }, [shellSnapshot.context.projectState]);
+  }, [shellView.projectState]);
   useEffect(() => {
     if (!shellReady || state === null || path !== "") {
       return;
@@ -541,14 +544,14 @@ export function LocalUiRuntime(
         : manualReceiptReviewForState(state, expenseDayBoundary),
     [expenseDayBoundary, state],
   );
-  if (shellSnapshot.matches("booting") || state === null) {
+  if (shellView.booting || state === null) {
     return <LoadingScreen />;
   }
-  if (shellSnapshot.matches("error")) {
+  if (shellView.failed) {
     return (
       <ContentContainer size="readable">
         <InlineNotice tone="danger" title="Local data could not be opened">
-          {shellSnapshot.context.error?.message ??
+          {shellView.error?.message ??
             "Try again to reopen local data."}
         </InlineNotice>
       </ContentContainer>
@@ -691,7 +694,7 @@ export function LocalUiRuntime(
               <ExpensesScreen
                 state={state}
                 expenseDayBoundary={expenseDayBoundary}
-                offline={shellSnapshot.hasTag("offline")}
+                offline={shellView.offline}
                 initialDate={expensesInitialDate}
                 onCheckConnection={handleCheckConnection}
                 onAdd={() => navigate("/expense/new")}
@@ -744,7 +747,7 @@ export function LocalUiRuntime(
                 imageStore={imageStore}
                 state={state}
                 settings={deviceSettings}
-                offline={shellSnapshot.hasTag("offline")}
+                offline={shellView.offline}
                 onCheckConnection={handleCheckConnection}
                 onSettingsChange={updateDeviceSettings}
                 onDirtyChange={(dirty) => {

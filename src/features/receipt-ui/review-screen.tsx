@@ -50,7 +50,7 @@ import {
   Text,
   TextField,
 } from "../../design-system/index.ts";
-import { useSyncStatus } from "../sync-ui/index.ts";
+import { useNotifyLocalMutation } from "../sync-ui/index.ts";
 import {
   categoryOptions,
   lineViewModel,
@@ -323,7 +323,7 @@ export function ReceiptReviewScreen({
   const metadataReturnFocusRef = useRef<HTMLElement | null>(null);
   const mismatchNoticeRef = useRef<HTMLDivElement | null>(null);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
-  const syncStatus = useSyncStatus();
+  const notifyLocalMutation = useNotifyLocalMutation();
 
   const openMetadata = () => {
     const activeElement = document.activeElement;
@@ -400,11 +400,11 @@ export function ReceiptReviewScreen({
         if (snapshot.context.result) {
           onSaved?.(snapshot.context.result);
         }
-        syncStatus?.notifyLocalMutation();
+        notifyLocalMutation?.();
       }
       onClose();
     }
-  }, [onClose, onSaved, snapshot, syncStatus]);
+  }, [onClose, onSaved, snapshot, notifyLocalMutation]);
 
   if (snapshot.matches("hydrating") && !snapshot.context.review) {
     return (

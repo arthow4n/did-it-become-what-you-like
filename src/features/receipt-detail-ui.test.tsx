@@ -522,3 +522,98 @@ Deno.test(
     });
   },
 );
+
+Deno.test("receipt detail draft typing does not reproject the saved receipt lines", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    let lineProjections = 0;
+    const purchaseLines = new Proxy(aggregate.purchaseLines, {
+      get(target, property, receiver) {
+        if (property === "map") lineProjections++;
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    const discardEditor = async (dialog: HTMLElement) => {
+      fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+      const confirm = await waitFor(() =>
+        within(document.body).getByRole("dialog", {
+          name: "Discard receipt changes?",
+        })
+      );
+      fireEvent.click(
+        within(confirm).getByRole("button", { name: "Discard changes" }),
+      );
+      await waitFor(() => assert(!within(document.body).queryByRole("dialog")));
+    };
+    const mounted = render(createElement(ReceiptDetailScreen, {
+      receiptId: aggregate.receipt.id,
+      categories: [category],
+      service: createService({
+        get: () => Promise.resolve({ ...aggregate, purchaseLines }),
+      }),
+    }));
+    await waitFor(() =>
+      assert(mounted.getByRole("heading", { name: "Evening Market", level: 1 }))
+    );
+    fireEvent.click(
+      mounted.getAllByRole("button", { name: "Edit" })[1],
+    );
+    const dialog = await waitFor(() =>
+      within(document.body).getByRole("dialog", {
+        name: "Edit receipt line",
+      })
+    );
+    const description = within(dialog).getByRole("textbox", {
+      name: "Description",
+    });
+    fireEvent.input(description, { target: { value: "Coffee beans" } });
+    const before = lineProjections;
+    fireEvent.input(description, { target: { value: "Coffee beans and tea" } });
+    assert((description as HTMLInputElement).value === "Coffee beans and tea");
+    assert(
+      lineProjections === before,
+      "Editing a dialog draft reprojected the unchanged saved lines",
+    );
+    await discardEditor(dialog);
+    fireEvent.click(mounted.getAllByRole("button", { name: "Edit" })[0]);
+    const metadata = await waitFor(() =>
+      within(document.body).getByRole("dialog", {
+        name: "Edit receipt details",
+      })
+    );
+    const merchant = within(metadata).getByRole("textbox", {
+      name: "Merchant",
+    });
+    fireEvent.input(merchant, { target: { value: "New market" } });
+    const beforeMetadata = lineProjections;
+    fireEvent.input(merchant, { target: { value: "New market name" } });
+    assert((merchant as HTMLInputElement).value === "New market name");
+    assert(
+      lineProjections === beforeMetadata,
+      "Metadata typing reprojected saved lines",
+    );
+    await discardEditor(metadata);
+    fireEvent.click(mounted.getByRole("button", { name: "Add purchase line" }));
+    const adding = await waitFor(() =>
+      within(document.body).getByRole("dialog", { name: "Add receipt line" })
+    );
+    const newDescription = within(adding).getByRole("textbox", {
+      name: "Description",
+    });
+    fireEvent.input(newDescription, { target: { value: "Tea" } });
+    const beforeAdding = lineProjections;
+    fireEvent.input(newDescription, { target: { value: "Tea bags" } });
+    fireEvent.input(within(adding).getByLabelText(/Line total/), {
+      target: { value: "-12" },
+    });
+    assert(
+      !(within(adding).getByRole("button", {
+        name: "Add line",
+      }) as HTMLButtonElement).disabled,
+    );
+    assert(
+      lineProjections === beforeAdding,
+      "New line typing reprojected saved lines",
+    );
+    mounted.unmount();
+  });
+});

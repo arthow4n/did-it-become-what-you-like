@@ -1,3 +1,7 @@
+import { shallowEqual, useSelector } from "@xstate/react";
+import { createActor } from "xstate";
+import { createLocalShellMachine } from "../actors/local-shell.ts";
+import { selectLocalShellView } from "./local-ui/shell-view.ts";
 import { within } from "@testing-library/dom";
 import { createElement, useState } from "react";
 import {
@@ -2214,3 +2218,134 @@ for (
     },
   );
 }
+
+Deno.test("expense sync status updates do not render the expense screen data", async () => {
+  await withComponentHarness(({ render }) => {
+    let projectReads = 0;
+    const projects = state.projects.map((project) =>
+      new Proxy(project, {
+        get(target, property, receiver) {
+          if (property === "id") projectReads++;
+          return Reflect.get(target, property, receiver);
+        },
+      })
+    );
+    const value: SyncStatusContextValue = {
+      view: { mode: "disconnected" },
+      onOpenSync: () => undefined,
+      onReconnect: () => undefined,
+      notifyLocalMutation: () => undefined,
+    };
+    const content = createElement(ExpensesScreen, {
+      state: { ...state, projects },
+      expenseDayBoundary: "03:00",
+      offline: false,
+      onAdd: () => undefined,
+      onEdit: () => undefined,
+      onViewReceipt: () => undefined,
+      onProjectChange: () => undefined,
+    });
+    const mounted = render(
+      createElement(SyncStatusProvider, { value }, content),
+    );
+    const before = projectReads;
+    assert(before > 0);
+    mounted.rerender(
+      createElement(SyncStatusProvider, {
+        value: { ...value, view: { mode: "connecting" } },
+      }, content),
+    );
+    assert(
+      projectReads === before,
+      "Sync status rerendered the unrelated expense data",
+    );
+    assert(mounted.getByText("Syncing"));
+    mounted.unmount();
+  });
+});
+
+Deno.test("shell rendering ignores bookkeeping but observes network and repository updates", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    let currentState = state;
+    const { service } = createTestService(
+      state,
+      () => Promise.resolve(currentState),
+    );
+    const actor = createActor(
+      createLocalShellMachine({ organization: service }),
+    ).start();
+    let renders = 0;
+    function ShellConsumer() {
+      const view = useSelector(actor, selectLocalShellView, shallowEqual);
+      renders++;
+      return (
+        <p>
+          {view.ready ? "Ready" : "Loading"}{" "}
+          {view.offline ? "offline" : "online"}{" "}
+          {view.projectState?.projects[0]?.name}
+        </p>
+      );
+    }
+    try {
+      const mounted = render(
+        <>
+          <ShellConsumer />
+          <button
+            type="button"
+            onClick={() =>
+              actor.send({ type: "shell.navigate", route: "settings" })}
+          >
+            Route
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              actor.send({
+                type: "shell.workflow.open",
+                workflow: "receipt-scan",
+              })}
+          >
+            Workflow
+          </button>
+          <button
+            type="button"
+            onClick={() => actor.send({ type: "shell.network.offline" })}
+          >
+            Offline
+          </button>
+          <button
+            type="button"
+            onClick={() => actor.send({ type: "shell.repository.refresh" })}
+          >
+            Refresh
+          </button>
+        </>,
+      );
+      await waitFor(() => assert(mounted.getByText(/Ready online/)));
+      const before = renders;
+      fireEvent.click(mounted.getByRole("button", { name: "Route" }));
+      fireEvent.click(mounted.getByRole("button", { name: "Workflow" }));
+      assert(actor.getSnapshot().context.route === "settings");
+      assert(actor.getSnapshot().context.activeWorkflow === "receipt-scan");
+      assert(
+        renders === before,
+        "Unused shell bookkeeping rerendered the application",
+      );
+      fireEvent.click(mounted.getByRole("button", { name: "Offline" }));
+      assert(mounted.getByText(/Ready offline/));
+      assert(renders > before, "Network change was hidden from the shell");
+      currentState = {
+        ...state,
+        projects: state.projects.map((project) => ({
+          ...project,
+          name: "Refreshed project",
+        })),
+      };
+      fireEvent.click(mounted.getByRole("button", { name: "Refresh" }));
+      await waitFor(() => assert(mounted.getByText(/Refreshed project/)));
+      mounted.unmount();
+    } finally {
+      actor.stop();
+    }
+  });
+});

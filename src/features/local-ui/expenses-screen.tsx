@@ -10,7 +10,6 @@ import { CalendarDateSchema, type Expense } from "../../domain/index.ts";
 import type { ProjectCategoryState } from "../../domain/organization.ts";
 import {
   ActiveFilterChips,
-  Banner,
   Button,
   Card,
   CategoryBreakdown,
@@ -22,7 +21,6 @@ import {
   FilterSheet,
   Heading,
   Icon,
-  Inline,
   List,
   MoneySummary,
   PeriodPicker,
@@ -35,7 +33,10 @@ import {
   Stack,
   TextField,
 } from "../../design-system/index.ts";
-import { SyncStatusIndicator, useSyncStatus } from "../sync-ui/index.ts";
+import {
+  ExpensesOfflineNotice,
+  ExpensesSyncStatus,
+} from "./expenses-sync-status.tsx";
 import { CURRENCY_OPTIONS } from "./types.ts";
 type CustomPeriodKind = "day" | "month" | "year";
 function localCalendarDate(now = new Date()): string {
@@ -206,8 +207,6 @@ export function ExpensesScreen({
   onViewReceipt: (receiptId: string, focusedLineId?: string) => void;
   onProjectChange: (projectId: string) => void;
 }) {
-  const syncStatus = useSyncStatus();
-  const checkConnection = onCheckConnection ?? syncStatus?.onCheckConnection;
   const currentProject =
     state.projects.find((project) => project.id === state.selectedProjectId) ??
       state.projects.find((project) => !project.archived);
@@ -409,26 +408,7 @@ export function ExpensesScreen({
           Expenses
         </Heading>
         {offline
-          ? (
-            <Banner tone="warning" title="Offline">
-              Local browsing and manual entry are available. AI scanning
-              {syncStatus?.view.mode === "configured" ? " and Drive sync" : ""}
-              {" "}
-              will resume when your connection is restored.
-              {checkConnection
-                ? (
-                  <Inline>
-                    <Button
-                      variant="secondary"
-                      onPress={checkConnection}
-                    >
-                      Check connection
-                    </Button>
-                  </Inline>
-                )
-                : null}
-            </Banner>
-          )
+          ? <ExpensesOfflineNotice onCheckConnection={onCheckConnection} />
           : null}
         <div className="local-ui-expenses-toolbar">
           <ProjectPicker
@@ -437,15 +417,7 @@ export function ExpensesScreen({
             options={projectOptions}
             onValueChange={onProjectChange}
           />
-          {syncStatus
-            ? (
-              <SyncStatusIndicator
-                view={syncStatus.view}
-                onOpenSync={syncStatus.onOpenSync}
-                onReconnect={syncStatus.onReconnect}
-              />
-            )
-            : null}
+          <ExpensesSyncStatus />
         </div>
         <ResponsiveGrid
           columns={2}

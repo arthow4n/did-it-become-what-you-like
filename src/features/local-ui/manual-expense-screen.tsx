@@ -33,7 +33,7 @@ import {
   PageHeader,
   Stack,
 } from "../../design-system/index.ts";
-import { useSyncStatus } from "../sync-ui/index.ts";
+import { useNotifyLocalMutation } from "../sync-ui/index.ts";
 import { ManualExpenseFields } from "./manual-expense-fields.tsx";
 import { LoadingScreen } from "./navigation.tsx";
 export function ManualExpenseRecoveryScreen({
@@ -211,7 +211,7 @@ export const ManualExpenseScreen = memo(function ManualExpenseScreen({
   const notifiedResultId = useRef<string | null>(null);
   const savedResultId = useRef<string | null>(null);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
-  const syncStatus = useSyncStatus();
+  const notifyLocalMutation = useNotifyLocalMutation();
   const recentCategoryIds = useMemo(() => {
     const seen = new Set<string>();
     const recents: string[] = [];
@@ -260,7 +260,7 @@ export const ManualExpenseScreen = memo(function ManualExpenseScreen({
       snapshot.matches("saved");
     if (completedSave && notifiedResultId.current !== savedExpense.id) {
       notifiedResultId.current = savedExpense.id;
-      syncStatus?.notifyLocalMutation();
+      notifyLocalMutation?.();
     }
     if (completedSave && savedResultId.current !== savedExpense.id) {
       savedResultId.current = savedExpense.id;
@@ -286,7 +286,7 @@ export const ManualExpenseScreen = memo(function ManualExpenseScreen({
           : undefined,
       );
     }
-  }, [send, snapshot, syncStatus]);
+  }, [send, snapshot, notifyLocalMutation]);
   const dirty = useSelector(actor, (value) =>
     value.hasTag("dirty") &&
     isDraftModified(value.context.draft, value.context.originalExpense));

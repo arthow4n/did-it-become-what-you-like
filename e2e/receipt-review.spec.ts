@@ -127,7 +127,8 @@ test(
     ).toBeVisible();
     await page.getByRole("button", { name: "Continue to scan" }).click();
     const chooseImageDialog = page.waitForEvent("filechooser");
-    await page.getByRole("button", { name: "Choose image" }).click();
+    await page.getByRole("button", { name: "Choose image", exact: true })
+      .click();
     const chooseImage = await chooseImageDialog;
     expect(await chooseImage.element().getAttribute("capture")).toBeNull();
     await chooseImage.setFiles({
@@ -168,12 +169,14 @@ test(
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();
     await page.getByRole("button", { name: "Scan", exact: true }).click();
+    // The provider disclosure was accepted earlier in this journey.
     await expect(
-      page.getByRole("heading", { name: "Before sending this receipt" }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "Continue to scan" }).click();
+      page.getByRole("heading", { name: "Scan receipt", exact: true }),
+    )
+      .toBeVisible();
     const imageAfterDiscardDialog = page.waitForEvent("filechooser");
-    await page.getByRole("button", { name: "Choose image" }).click();
+    await page.getByRole("button", { name: "Choose image", exact: true })
+      .click();
     const imageAfterDiscard = await imageAfterDiscardDialog;
     await imageAfterDiscard.setFiles({
       name: "receipt-after-discard.png",
@@ -193,6 +196,7 @@ test(
     await expect(
       page.getByRole("button", { name: "Hide options" }),
     ).toBeVisible();
+    await modelPicker.click();
     await modelPicker.fill("Fake Gemini Model");
     await expect(
       page.getByRole("option", { name: /Fake Gemini Model/ }),
@@ -334,7 +338,7 @@ test(
       name: "Delete this receipt?",
     });
     await expect(receiptDeleteDialog).toContainText(
-      "every purchase line and adjustment",
+      "all its items",
     );
     await receiptDeleteDialog.getByRole("button", {
       name: "Delete receipt",

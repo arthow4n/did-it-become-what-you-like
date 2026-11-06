@@ -37,7 +37,10 @@ test.describe("local-first-manual journey", () => {
     await page.getByRole("searchbox", { name: "Merchant" }).fill(
       "Local market",
     );
-    await page.getByRole("button", { name: "Save and add another" }).click();
+    await page.getByRole("button", { name: "Save expense" }).click();
+    await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
+      .toBeVisible();
+    await page.getByRole("button", { name: "Manual" }).click();
     await expect(page.getByRole("heading", { name: "New expense", level: 1 }))
       .toBeVisible();
     await expect(page.getByRole("textbox", { name: "Amount" })).toHaveValue("");
@@ -48,13 +51,11 @@ test.describe("local-first-manual journey", () => {
     );
     await page.getByRole("button", { name: "Save expense" }).click();
 
-    await expect(page.getByRole("heading", { name: "Expense saved" }))
-      .toBeVisible();
-    await page.getByRole("button", { name: "Continue to expenses" }).click();
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();
-    await expect(page.getByText("Local market")).toBeVisible();
-    await expect(page.getByText("Second market")).toBeVisible();
+    await expect(page.getByText("Local market", { exact: true })).toBeVisible();
+    await expect(page.getByText("Second market", { exact: true }))
+      .toBeVisible();
     await expect(
       page.getByLabel("Expenses").getByText("SEK -12.50", { exact: true }),
     ).toBeVisible();
@@ -81,7 +82,8 @@ test.describe("local-first-manual journey", () => {
     await page.getByRole("button", { name: "Manual" }).click();
     await expect(page.getByRole("textbox", { name: "Amount" })).toBeVisible();
     await page.getByRole("textbox", { name: "Amount" }).fill("3.00");
-    await expect(page.getByText("Unsaved changes")).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "Unsaved changes" }))
+      .toHaveCount(0);
     await page.getByRole("button", { name: "Expenses" }).click();
     await expect(page.getByRole("dialog", { name: "Unsaved changes" }))
       .toBeVisible();
@@ -92,6 +94,6 @@ test.describe("local-first-manual journey", () => {
     await page.reload();
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();
-    await expect(page.getByText("Local market")).toBeVisible();
+    await expect(page.getByText("Local market", { exact: true })).toBeVisible();
   });
 });

@@ -1,3 +1,4 @@
+import { encodeImageBase64 } from "../receipt-ai/image-encoding.ts";
 import {
   type AdapterError,
   adapterError,
@@ -217,17 +218,6 @@ export function mapOpenRouterError(
   }
 }
 
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  const chunkSize = 0x8_000;
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    binary += String.fromCharCode(
-      ...bytes.subarray(offset, offset + chunkSize),
-    );
-  }
-  return btoa(binary);
-}
-
 function extractionImages(
   request: ReceiptExtractionRequest,
 ): readonly PreparedImage[] {
@@ -292,24 +282,33 @@ function modelPath(
   };
 }
 
-function requestForExtraction(
+async function requestForExtraction(
   request: ReceiptExtractionRequest,
   routing: ReturnType<typeof routingOptions>,
-): OpenRouterChatRequest {
+  signal?: AbortSignal,
+): Promise<OpenRouterChatRequest> {
   const prompt = buildReceiptPrompt(request);
   const images = extractionImages(request);
+  const imageParts = [];
+  for (const image of images) {
+    imageParts.push({
+      type: "image_url" as const,
+      imageUrl: {
+        url: `data:${image.mimeType};base64,${await encodeImageBase64(
+          image.bytes,
+          signal,
+        )}`,
+      },
+    });
+  }
+  throwIfAborted(signal);
   return {
     model: request.modelId,
     messages: [{
       role: "user",
       content: [
         { type: "text", text: prompt },
-        ...images.map((image) => ({
-          type: "image_url" as const,
-          imageUrl: {
-            url: `data:${image.mimeType};base64,${bytesToBase64(image.bytes)}`,
-          },
-        })),
+        ...imageParts,
       ],
     }],
     responseFormat: {
@@ -449,7 +448,7 @@ export class OpenRouterAdapter implements ReceiptAiPort {
           throwIfAborted(options?.signal);
           const routing = routingOptions(this.#getRoutingOptions);
           const response = await client.chat.send(
-            requestForExtraction(request, routing),
+            await requestForExtraction(request, routing, options?.signal),
             options,
           );
           if (typeof response.text !== "string") {

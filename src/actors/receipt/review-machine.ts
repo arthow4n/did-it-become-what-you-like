@@ -169,7 +169,9 @@ export function createReceiptReviewMachine(
         },
       ),
       persistReview: fromPromise(
-        async ({ input }: { input: PersistInput }) => {
+        async (
+          { input, signal }: { input: PersistInput; signal: AbortSignal },
+        ) => {
           const snapshot = toDurableReceiptReview(input.review, input.revision);
           await dependencies.local.transaction(
             "readwrite",
@@ -179,6 +181,7 @@ export function createReceiptReviewMachine(
                 input.key,
                 asJsonValue(snapshot),
               ),
+            { signal },
           );
           return snapshot.revision;
         },

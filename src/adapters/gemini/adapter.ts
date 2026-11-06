@@ -1,3 +1,4 @@
+import { encodeImageBase64 } from "../receipt-ai/image-encoding.ts";
 import {
   type AdapterError,
   adapterError,
@@ -256,17 +257,6 @@ export function mapGeminiError(
   }
 }
 
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  const chunkSize = 0x8_000;
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    binary += String.fromCharCode(
-      ...bytes.subarray(offset, offset + chunkSize),
-    );
-  }
-  return btoa(binary);
-}
-
 function extractionImages(
   request: ReceiptExtractionRequest,
 ): readonly PreparedImage[] {
@@ -416,16 +406,21 @@ export class GeminiAdapter implements ReceiptAiPort {
         async () => {
           const client = await this.#client(options, "gemini.extract");
           throwIfAborted(options?.signal);
+          const imageParts = [];
+          for (const image of images) {
+            imageParts.push({
+              inlineData: {
+                data: await encodeImageBase64(image.bytes, options?.signal),
+                mimeType: image.mimeType,
+              },
+            });
+          }
+          throwIfAborted(options?.signal);
           const response = await client.models.generateContent({
             model: request.modelId,
             contents: [
               { text: prompt },
-              ...images.map((image) => ({
-                inlineData: {
-                  data: bytesToBase64(image.bytes),
-                  mimeType: image.mimeType,
-                },
-              })),
+              ...imageParts,
             ],
             config: {
               responseMimeType: "application/json",

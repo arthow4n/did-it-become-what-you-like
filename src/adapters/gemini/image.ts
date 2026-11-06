@@ -63,7 +63,15 @@ export function stripJpegMetadata(bytes: Uint8Array): Uint8Array {
     throw new Error("image bytes are not a JPEG");
   }
 
-  const kept: number[] = [0xff, 0xd8];
+  // Keep binary data in a typed buffer. A number[] per image byte expands
+  // multi-megabyte photos into large JS heaps and causes long GC pauses.
+  const kept = new Uint8Array(bytes.length);
+  kept.set(bytes.subarray(0, 2));
+  let written = 2;
+  const append = (start: number, end: number) => {
+    kept.set(bytes.subarray(start, end), written);
+    written += end - start;
+  };
   let position = 2;
   while (position < bytes.length) {
     if (bytes[position] !== 0xff) throw new Error("JPEG marker is invalid");
@@ -72,36 +80,32 @@ export function stripJpegMetadata(bytes: Uint8Array): Uint8Array {
     const marker = bytes[position++];
 
     if (marker === 0xd9) {
-      kept.push(0xff, marker);
+      kept[written++] = 0xff;
+      kept[written++] = marker;
       break;
     }
     if (marker === 0xda) {
-      const length = readJpegSegmentLength(bytes, position);
-      for (let index = position - 2; index < position + length; index += 1) {
-        kept.push(bytes[index]);
-      }
-      for (let index = position + length; index < bytes.length; index += 1) {
-        kept.push(bytes[index]);
-      }
+      readJpegSegmentLength(bytes, position);
+      append(position - 2, bytes.length);
       break;
     }
 
     if (marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd7)) {
-      kept.push(0xff, marker);
+      kept[written++] = 0xff;
+      kept[written++] = marker;
       continue;
     }
 
     const length = readJpegSegmentLength(bytes, position);
     if (!isMetadataJpegMarker(marker)) {
-      kept.push(0xff, marker);
-      for (let index = position; index < position + length; index += 1) {
-        kept.push(bytes[index]);
-      }
+      kept[written++] = 0xff;
+      kept[written++] = marker;
+      append(position, position + length);
     }
     position += length;
   }
 
-  return Uint8Array.from(kept);
+  return kept.slice(0, written);
 }
 
 const PNG_SIGNATURE = Uint8Array.from([
@@ -158,7 +162,9 @@ export function stripPngMetadata(bytes: Uint8Array): Uint8Array {
   if (!matchesPrefix(bytes, PNG_SIGNATURE)) {
     throw new Error("image bytes are not a PNG");
   }
-  const kept: number[] = [...PNG_SIGNATURE];
+  const kept = new Uint8Array(bytes.length);
+  kept.set(PNG_SIGNATURE);
+  let written = PNG_SIGNATURE.length;
   let position = PNG_SIGNATURE.length;
   let foundEnd = false;
   while (position + 12 <= bytes.length) {
@@ -167,7 +173,8 @@ export function stripPngMetadata(bytes: Uint8Array): Uint8Array {
     if (end > bytes.length) throw new Error("PNG chunk is invalid");
     const type = ascii(bytes, position + 4, 4);
     if (!PNG_METADATA_CHUNKS.has(type)) {
-      kept.push(...bytes.slice(position, end));
+      kept.set(bytes.subarray(position, end), written);
+      written += end - position;
     }
     position = end;
     if (type === "IEND") {
@@ -176,7 +183,7 @@ export function stripPngMetadata(bytes: Uint8Array): Uint8Array {
     }
   }
   if (!foundEnd) throw new Error("PNG end chunk is missing");
-  return Uint8Array.from(kept);
+  return kept.slice(0, written);
 }
 
 const WEBP_METADATA_CHUNKS = new Set(["EXIF", "XMP ", "ICCP"]);
@@ -189,20 +196,9 @@ export function stripWebpMetadata(bytes: Uint8Array): Uint8Array {
   ) {
     throw new Error("image bytes are not a WebP");
   }
-  const kept: number[] = [
-    0x52,
-    0x49,
-    0x46,
-    0x46,
-    0,
-    0,
-    0,
-    0,
-    0x57,
-    0x45,
-    0x42,
-    0x50,
-  ];
+  const kept = new Uint8Array(bytes.length);
+  kept.set(bytes.subarray(0, 12));
+  let written = 12;
   let position = 12;
   while (position + 8 <= bytes.length) {
     const length = readUint32LittleEndian(bytes, position + 4);
@@ -211,16 +207,17 @@ export function stripWebpMetadata(bytes: Uint8Array): Uint8Array {
     if (end > bytes.length) throw new Error("WebP chunk is invalid");
     const type = ascii(bytes, position, 4);
     if (!WEBP_METADATA_CHUNKS.has(type)) {
-      kept.push(...bytes.slice(position, end));
+      kept.set(bytes.subarray(position, end), written);
+      written += end - position;
     }
     position = end;
   }
   if (position !== bytes.length) {
     throw new Error("WebP chunk boundary is invalid");
   }
-  const size = writeUint32LittleEndian(kept.length - 8);
-  kept.splice(4, 4, ...size);
-  return Uint8Array.from(kept);
+  const size = writeUint32LittleEndian(written - 8);
+  kept.set(size, 4);
+  return kept.slice(0, written);
 }
 
 const PDF_SIGNATURE = Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d]); // "%PDF-"

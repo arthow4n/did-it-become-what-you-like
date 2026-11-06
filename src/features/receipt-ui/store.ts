@@ -4,7 +4,8 @@ import {
   type PreparedImage,
   throwIfAborted,
 } from "../../adapters/ports/index.ts";
-import { fileMediaType, preEncodeImage } from "./image.ts";
+import { fileMediaType } from "./image.ts";
+import { prepareReceiptImage } from "./image-preparation.ts";
 
 export type ReceiptImageEntry = {
   readonly file: File;
@@ -37,7 +38,7 @@ export class ReceiptImageStore {
 
     const promise = (async () => {
       try {
-        const result = await preEncodeImage(
+        const result = await prepareReceiptImage(
           entry.file,
           degrees,
           controller.signal,
@@ -198,7 +199,11 @@ export class ReceiptImageStore {
     }
 
     throwIfAborted(signal);
-    const result = await preEncodeImage(entry.file, entry.rotation, signal);
+    const result = await prepareReceiptImage(
+      entry.file,
+      entry.rotation,
+      signal,
+    );
     entry.prepared = result;
     entry.preparedRotation = entry.rotation;
     const output: ImageInput = {

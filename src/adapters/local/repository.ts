@@ -668,9 +668,17 @@ export class IndexedDbLocalRepository implements LocalRepository {
       mode,
     );
     const done = idbDone(idbTransaction);
+    const abort = () => {
+      try {
+        idbTransaction.abort();
+      } catch {
+        // A completed transaction cannot be aborted.
+      }
+    };
+    options?.signal?.addEventListener("abort", abort, { once: true });
     let recordsChanged = false;
     const context: MutableTransactionContext = {
-      document: emptyDocument(this.deviceId),
+      document: undefined,
       recordChanges: [],
       backupWritten: false,
       backupSequence: 0,
@@ -683,12 +691,9 @@ export class IndexedDbLocalRepository implements LocalRepository {
           "local.document.get",
           this.options.beforeRequest,
         ) as StoredDocument | undefined;
-        if (current) {
-          context.document = this.resolveAutomergeDocument(
-            current.bytes,
-            "local.document.load",
-          );
-        }
+        context.document = current
+          ? this.resolveAutomergeDocument(current.bytes, "local.document.load")
+          : emptyDocument(this.deviceId);
       })();
       return documentLoading;
     };
@@ -770,10 +775,11 @@ export class IndexedDbLocalRepository implements LocalRepository {
         },
       };
       const result = await work(localTransaction);
+      throwIfAborted(options?.signal);
       let committedBytes: Uint8Array | undefined;
       if (recordsChanged) {
         context.document = applyRecordChanges(
-          context.document,
+          context.document!,
           context.recordChanges,
         );
         committedBytes = documentBytes(context.document);
@@ -792,7 +798,7 @@ export class IndexedDbLocalRepository implements LocalRepository {
       }
       await done;
       if (recordsChanged && committedBytes) {
-        this.setCachedDocument(committedBytes, context.document);
+        this.setCachedDocument(committedBytes, context.document!);
       }
       if (recordsChanged && options?.origin !== "sync") {
         // A subscriber failure cannot turn an already committed save into a
@@ -807,9 +813,12 @@ export class IndexedDbLocalRepository implements LocalRepository {
         // The transaction may already have aborted.
       }
       await done.catch(() => undefined);
+      throwIfAborted(options?.signal);
       throw isAdapterError(error)
         ? error
         : mapAdapterError(error, "local.transaction");
+    } finally {
+      options?.signal?.removeEventListener("abort", abort);
     }
   }
 

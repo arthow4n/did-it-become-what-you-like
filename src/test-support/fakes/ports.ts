@@ -11,6 +11,7 @@ import {
   type CausalSyncRecoveryPort,
   type ClockPort,
   cloneJson,
+  throwIfAborted,
 } from "../../adapters/ports/index.ts";
 import {
   type DriveAuthorizationPort,
@@ -269,6 +270,7 @@ export function createFakeLocalPort(): FakeLocalPort {
         );
       }
       const result = await work(makeTransaction(mode, working));
+      throwIfAborted(options?.signal);
       if (mode === "readwrite") {
         for (const [collection, store] of working) {
           stores.set(collection, store);

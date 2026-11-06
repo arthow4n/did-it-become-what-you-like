@@ -144,7 +144,7 @@ export type MutableDocument = {
 };
 
 export type MutableTransactionContext = {
-  document: Automerge.Doc<LocalDocument>;
+  document: Automerge.Doc<LocalDocument> | undefined;
   recordChanges: Array<{
     readonly key: string;
     readonly value: JsonValue | undefined;

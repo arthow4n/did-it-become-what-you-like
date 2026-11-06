@@ -729,11 +729,13 @@ Deno.test(
     });
     const originalTx = local.transaction;
     let blockPersist = true;
+    let persistenceSignal: AbortSignal | undefined;
     local.transaction = async (mode, work, options) => {
       return await originalTx(mode, async (tx) => {
         const originalPut = tx.put;
         tx.put = async (collection, key, value) => {
           if (blockPersist && collection === "workflow-snapshots") {
+            persistenceSignal = options?.signal;
             await persistBarrier;
           }
           return await originalPut(collection, key, value);
@@ -776,8 +778,14 @@ Deno.test(
     assert(!actor.getSnapshot().hasTag("saving"));
 
     // Submitting while `persisting` is in flight transitions immediately to `saving` -> `saved`
+    await settle();
+    assert(persistenceSignal !== undefined);
     blockPersist = false;
     actor.send({ type: "receipt.review.submit", confirmMismatch: false });
+    assert(
+      persistenceSignal.aborted,
+      "Submit must abort the obsolete draft write",
+    );
     releasePersist();
     await waitForActorState(actor, "saved");
 
@@ -786,6 +794,7 @@ Deno.test(
         .length,
       1,
     );
+    assertEquals(await local.query("workflow-snapshots"), []);
     actor.stop();
   },
 );

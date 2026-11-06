@@ -4,7 +4,7 @@ import {
   scaleDimensions,
   stripImageMetadata,
   stripJpegMetadata,
-} from "../../adapters/gemini/index.ts";
+} from "../../adapters/gemini/image.ts";
 import {
   type ImageInput,
   type ImagePreparationOptions,

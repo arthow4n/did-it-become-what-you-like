@@ -545,3 +545,29 @@ Deno.test("local repository serializes the document once per record transaction 
     operations.push(operation);
   });
 });
+
+Deno.test("local-repository: abort rolls back an obsolete draft before discard", async () => {
+  const operations: string[] = [];
+  let controller: AbortController | undefined;
+  await withRepository(async (repository) => {
+    operations.length = 0;
+    controller = new AbortController();
+    await rejectsWithCode(
+      repository.transaction("readwrite", async (tx) => {
+        await tx.put("workflow-snapshots", "cancelled-draft", { revision: 1 });
+      }, { signal: controller.signal }),
+      "aborted",
+    );
+    controller = undefined;
+    assertEquals(await repository.query("workflow-snapshots"), []);
+    await repository.transaction(
+      "readwrite",
+      (tx) => tx.delete("workflow-snapshots", "cancelled-draft"),
+    );
+    assert(!operations.includes("local.document.get"));
+    assert(!operations.includes("local.document.put"));
+  }, (operation) => {
+    operations.push(operation);
+    if (operation === "local.value.put") controller?.abort();
+  });
+});

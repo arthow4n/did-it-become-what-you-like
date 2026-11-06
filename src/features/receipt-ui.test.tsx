@@ -1305,6 +1305,9 @@ Deno.test(
         await waitFor(() =>
           assert(view.getByRole("button", { name: "Cancel scan" }))
         );
+        // The requesting UI appears before image resolution finishes. Wait
+        // for the provider invocation when asserting provider cancellation.
+        await waitFor(() => assert(resolveExtraction !== undefined));
         fireEvent.click(view.getByRole("button", { name: "Close" }));
         await waitFor(() => assert(closed === 1));
         resolveExtraction?.();
@@ -1316,6 +1319,7 @@ Deno.test(
         // A route change or hot update can tear down the screen without the
         // visible Close action. The unmount cleanup must abort the invocation
         // and release the source just as the explicit cancellation path does.
+        resolveExtraction = undefined;
         const remounted = render(
           createElement(ReceiptScanScreen, {
             dependencies,
@@ -1357,6 +1361,7 @@ Deno.test(
         await waitFor(() =>
           assert(remountedView.getByRole("button", { name: "Cancel scan" }))
         );
+        await waitFor(() => assert(resolveExtraction !== undefined));
         remounted.unmount();
         await waitFor(() => assert(abortCount === 2));
         assert(lastImageRef !== undefined);
@@ -1486,6 +1491,7 @@ Deno.test(
           assert(view.getByRole("button", { name: "Cancel scan" }))
         );
 
+        await waitFor(() => assert(resolveExtraction !== undefined));
         // Click "Cancel scan" - this must NOT exit the scan scene
         fireEvent.click(view.getByRole("button", { name: "Cancel scan" }));
         await waitFor(() => assert(abortCount === 1));
@@ -1513,9 +1519,16 @@ Deno.test(
         assert(view.getByAltText("Selected receipt preview"));
 
         // Now trigger scan again and verify it can complete
+        const previousExtraction = resolveExtraction;
         fireEvent.click(view.getByRole("button", { name: "Scan with AI" }));
         await waitFor(() =>
           assert(view.getByRole("button", { name: "Cancel scan" }))
+        );
+        await waitFor(() =>
+          assert(
+            resolveExtraction !== undefined &&
+              resolveExtraction !== previousExtraction,
+          )
         );
         resolveExtraction?.();
         await waitFor(() => assert(reviewed));

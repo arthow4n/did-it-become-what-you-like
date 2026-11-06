@@ -688,6 +688,14 @@
     transition: none !important;
   }
 
+  /* Native scrolling avoids measuring custom scrollbar tracks on every
+     dropdown update. Keep all options available to touch and keyboard users. */
+  .ds-select-options {
+    max-height: min(calc(var(--control-height) * 5), 50dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   .ds-chip,
   .ds-badge,
   .ds-status-dot {

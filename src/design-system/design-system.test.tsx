@@ -561,6 +561,49 @@ Deno.test("design-system selection and progress remain keyboard-addressable", as
   );
 });
 
+Deno.test("design-system select mounts options only while open and uses native scrolling", async () => {
+  await withComponentHarness(({ window, render, fireEvent }) =>
+    withAriaGlobals(window, () => {
+      let renderedOptions = 0;
+      let selected = "";
+      const mounted = render(createElement(SelectField, {
+        label: "Large catalogue",
+        options: Array.from(
+          { length: 160 },
+          (_, index) => ({ id: String(index), label: `Choice ${index}` }),
+        ),
+        value: "159",
+        searchable: true,
+        renderOption: (option) => {
+          renderedOptions += 1;
+          return option.label;
+        },
+        onValueChange: (value) => selected = value,
+      }));
+      const view = within(document.body);
+      const input = view.getByRole("combobox", { name: "Large catalogue" });
+      assertEqual((input as HTMLInputElement).value, "Choice 159");
+      assertEqual(renderedOptions, 0);
+      assertEqual(document.querySelectorAll("[role=option]").length, 0);
+      fireEvent.focus(input);
+      assertEqual(renderedOptions, 0);
+      fireEvent.click(input);
+      assertEqual(view.getAllByRole("option").length, 160);
+      assert(document.querySelector(".ds-select-options"));
+      assertEqual(
+        document.querySelectorAll(".mantine-ScrollArea-root").length,
+        0,
+      );
+      fireEvent.change(input, { target: { value: "Choice 157" } });
+      fireEvent.keyDown(input, { key: "ArrowDown", code: "ArrowDown" });
+      fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
+      assertEqual(selected, "157");
+      assertEqual(document.querySelectorAll("[role=option]").length, 0);
+      mounted.unmount();
+    })
+  );
+});
+
 Deno.test("design-system select preserves controlled open state and callbacks", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {

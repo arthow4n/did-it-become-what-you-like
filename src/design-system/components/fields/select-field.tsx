@@ -1,15 +1,20 @@
-import { memo, useMemo } from "react";
+import { memo, startTransition, useCallback, useMemo } from "react";
 import type { ComponentProps, ReactNode } from "react";
-import { Select as MantineSelect } from "@mantine/core";
+import { defaultOptionsFilter, Select as MantineSelect } from "@mantine/core";
+import { useOpenState } from "../dialogs/shared.ts";
 import { cx } from "../shared.ts";
 import { type SelectOption, validationAttributes } from "./shared.ts";
 
 const SELECT_COMBOBOX_PROPS = {
   withinPortal: false,
+  // Retain the empty listbox so Mantine can establish its ARIA/keyboard target
+  // before opening; the filter below omits its expensive option subtree.
+  keepMounted: true,
   transitionProps: { duration: 0, exitDuration: 0 },
 } as const;
 const SELECT_CLASS_NAMES = {
   input: "ds-field-control ds-select-trigger",
+  options: "ds-select-options",
 } as const;
 
 export type SelectFieldProps = {
@@ -66,7 +71,13 @@ export const SelectField = memo(function SelectField({
 }: SelectFieldProps) {
   const mantineProps = props as unknown as ComponentProps<typeof MantineSelect>;
   const validation = validationAttributes(isRequired, validationBehavior);
-  const openState = isOpen === undefined ? {} : { dropdownOpened: isOpen };
+  const [opened, setOpened] = useOpenState(isOpen, onOpenChange);
+  const filter = useCallback<
+    NonNullable<ComponentProps<typeof MantineSelect>["filter"]>
+  >(
+    (input) => opened ? defaultOptionsFilter(input) : [],
+    [opened],
+  );
   const selectedValue = value ??
     (selectedKey == null ? undefined : String(selectedKey));
   const defaultValue = explicitDefaultValue ??
@@ -83,12 +94,14 @@ export const SelectField = memo(function SelectField({
   return (
     <MantineSelect
       {...mantineProps}
-      {...openState}
+      dropdownOpened={opened}
       label={label}
       data={data}
       value={selectedValue}
       defaultValue={defaultValue}
       searchable={searchable}
+      withScrollArea={false}
+      filter={filter}
       openOnFocus={false}
       renderOption={renderOption
         ? ({ option }) => {
@@ -116,8 +129,8 @@ export const SelectField = memo(function SelectField({
       readOnly={isReadOnly}
       {...validation}
       aria-invalid={Boolean(error) || isInvalid ? "true" : undefined}
-      onDropdownOpen={onOpenChange ? () => onOpenChange(true) : undefined}
-      onDropdownClose={onOpenChange ? () => onOpenChange(false) : undefined}
+      onDropdownOpen={() => startTransition(() => setOpened(true))}
+      onDropdownClose={() => setOpened(false)}
       slot={slot ?? undefined}
       comboboxProps={SELECT_COMBOBOX_PROPS}
       className={cx("ds-field", className)}

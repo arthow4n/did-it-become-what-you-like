@@ -1887,9 +1887,16 @@ Deno.test(
             assert(view.getByRole("heading", {
               name: "OpenRouter receipt scanning",
             }));
-            assert(view.getByText("Provider Alpha"));
             assert(view.getByText("••••••••5678"));
           });
+          const preferredPicker = view.getByRole("combobox", {
+            name: "Preferred provider",
+          });
+          fireEvent.click(preferredPicker);
+          await waitFor(() =>
+            assert(view.getByRole("option", { name: "Provider Alpha" }))
+          );
+          fireEvent.keyDown(preferredPicker, { key: "Escape", code: "Escape" });
           const modelPicker = view.getByRole("combobox", {
             name: "Model",
           }) as HTMLInputElement;

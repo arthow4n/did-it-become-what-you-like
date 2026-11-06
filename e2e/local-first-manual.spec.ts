@@ -33,6 +33,39 @@ test.describe("local-first-manual journey", () => {
     await expect(page.getByRole("heading", { name: "New expense", level: 1 }))
       .toBeVisible();
 
+    // Closed shared pickers must not mount complete hidden catalogues. Opening
+    // still supports the keyboard, search, and all currencies with native scroll.
+    const currency = page.getByRole("combobox", {
+      name: "Currency",
+      exact: true,
+    });
+    await expect(page.getByRole("option", { includeHidden: true })).toHaveCount(
+      0,
+    );
+    await currency.focus();
+    await expect(currency).toHaveAttribute("aria-expanded", "false");
+    await currency.press("ArrowDown");
+    await expect(currency).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByRole("option", { name: "USD", exact: true }))
+      .toBeAttached();
+    const options = page.locator(".ds-select-options:visible");
+    expect(
+      await options.evaluate((element) => getComputedStyle(element).overflowY),
+    ).toBe("auto");
+    await currency.fill("USD");
+    await expect(page.getByRole("option", { name: "USD", exact: true }))
+      .toBeVisible();
+    await currency.press("ArrowDown");
+    await currency.press("Enter");
+    await expect(currency).toHaveValue("USD");
+    await expect(page.getByRole("option", { includeHidden: true })).toHaveCount(
+      0,
+    );
+    await currency.click();
+    await currency.fill("SEK");
+    await page.getByRole("option", { name: "SEK", exact: true }).click();
+    await expect(currency).toHaveValue("SEK");
+
     await page.getByRole("textbox", { name: "Amount" }).fill("12.50");
     await page.getByRole("searchbox", { name: "Merchant" }).fill(
       "Local market",

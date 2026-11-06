@@ -76,6 +76,14 @@ semantic tokens
 - Focusing a `SelectField` with Tab does not open its dropdown. Click, arrow
   keys, or typing in a searchable select opens it explicitly. Opening and
   closing have zero transition duration.
+- Closed `SelectField` menus unmount their option trees. Open menus use bounded
+  native scrolling, retaining the complete searchable catalogue and keyboard
+  navigation without custom scrollbar observers or hidden option rendering. Keep
+  an empty listbox mounted for Mantine's ARIA and keyboard registration. Menu
+  opening and clean application navigation use interruptible React renders;
+  field values, selection events, exit guards, and save completion stay
+  immediate. Do not add timers, delayed field updates, or decorative motion to
+  achieve this.
 - Keep unchanged field siblings and editor feedback outside keystroke renders.
   Controlled values update immediately; do not defer typing or synchronize it
   through blur handlers to compensate for expensive surrounding renders.

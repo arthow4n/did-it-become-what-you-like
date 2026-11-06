@@ -359,7 +359,6 @@ export function LocalUiRuntime(
         hash,
       );
       currentHistoryRef.current = nextEntry;
-      setPath(nextPath);
     }
     setPath(nextPath);
   };
@@ -374,7 +373,11 @@ export function LocalUiRuntime(
       setDirtyExitOpen(true);
       return;
     }
-    navigate(nextPath);
+    // A clean navigation may mount a large control tree. Let React yield
+    // during that render instead of doing it synchronously inside the click.
+    // Guard decisions, field values, history traversal, and save completion
+    // retain their existing immediate ordering.
+    startTransition(() => navigate(nextPath));
   };
   const commitHistoryNavigation = (target: LocalUiHistoryEntry) => {
     const current = currentHistoryRef.current;

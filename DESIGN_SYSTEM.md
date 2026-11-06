@@ -84,6 +84,9 @@ semantic tokens
   field values, selection events, exit guards, and save completion stay
   immediate. Do not add timers, delayed field updates, or decorative motion to
   achieve this.
+- Collapsed `Disclosure` panels unmount their children. Expansion uses an
+  interruptible render; controlled and default-expanded states retain the same
+  facade behavior. Durable input state belongs outside a collapsible list.
 - Keep unchanged field siblings and editor feedback outside keystroke renders.
   Controlled values update immediately; do not defer typing or synchronize it
   through blur handlers to compensate for expensive surrounding renders.

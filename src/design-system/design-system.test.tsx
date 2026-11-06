@@ -3,7 +3,7 @@ declare const Deno: {
 };
 
 import { within } from "@testing-library/dom";
-import { createElement } from "react";
+import { createElement, useEffect } from "react";
 import {
   withAriaGlobals,
   withComponentHarness,
@@ -1714,6 +1714,43 @@ Deno.test("design-system select focus leaves options closed until explicitly ope
     fireEvent.click(mounted.getByRole("option", { name: "EUR" }));
     assertEqual(selected, "EUR");
     assertEqual(field.getAttribute("aria-expanded"), "false");
+    mounted.unmount();
+  });
+});
+
+Deno.test("design-system collapsed disclosures do not render or retain hidden rows", async () => {
+  await withComponentHarness(({ render, fireEvent }) => {
+    let renders = 0;
+    let mounts = 0;
+    let cleanups = 0;
+    function ExpensiveRows() {
+      renders += 1;
+      useEffect(() => {
+        mounts += 1;
+        return () => {
+          cleanups += 1;
+        };
+      }, []);
+      return <p>Archived rows</p>;
+    }
+    const mounted = render(
+      <Disclosure title="Archive">
+        <ExpensiveRows />
+      </Disclosure>,
+    );
+    assertEqual(renders, 0);
+    assertEqual(mounts, 0);
+    assertEqual(mounted.queryByText("Archived rows"), null);
+    const trigger = mounted.getByRole("button", { name: "Archive" });
+    fireEvent.click(trigger);
+    assert(mounted.getByText("Archived rows"));
+    assertEqual(mounts, 1);
+    fireEvent.click(trigger);
+    assertEqual(mounted.queryByText("Archived rows"), null);
+    assertEqual(cleanups, 1);
+    fireEvent.click(trigger);
+    assert(mounted.getByText("Archived rows"));
+    assertEqual(mounts, 2);
     mounted.unmount();
   });
 });

@@ -35,8 +35,9 @@ export function openableTrigger(
 export function useOpenState(
   value: boolean | undefined,
   onChange: ((open: boolean) => void) | undefined,
+  defaultValue = false,
 ): [boolean, (open: boolean) => void] {
-  const [uncontrolled, setUncontrolled] = useState(value ?? false);
+  const [uncontrolled, setUncontrolled] = useState(value ?? defaultValue);
   const open = value ?? uncontrolled;
   const setOpen = (next: boolean) => {
     if (value === undefined) setUncontrolled(next);

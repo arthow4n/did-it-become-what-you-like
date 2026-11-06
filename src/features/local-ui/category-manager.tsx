@@ -80,6 +80,21 @@ export function CategoryManager({
   const isSubmittingRef = useRef(false);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
   const editorIdentity = useRef<string | null>(null);
+  const referenceCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const expense of state.expenses) {
+      counts.set(expense.categoryId, (counts.get(expense.categoryId) ?? 0) + 1);
+    }
+    return counts;
+  }, [state.expenses]);
+  const replacementOptions = useMemo(() => {
+    const uncategorized = state.categories.find((category) => category.system);
+    return state.categories.filter((category) =>
+      !category.archived && category.id !== uncategorized?.id
+    )
+      .concat(uncategorized ? [uncategorized] : [])
+      .map((category) => ({ id: category.id, label: category.name }));
+  }, [state.categories]);
   useEffect(() => {
     if (snapshot.matches("closed")) send({ type: "category.open", state });
   }, [send, snapshot, state]);
@@ -387,11 +402,6 @@ export function CategoryManager({
     });
   };
   const uncategorized = state.categories.find((category) => category.system);
-  const replacementCategories = state.categories
-    .filter((candidate) =>
-      !candidate.archived && candidate.id !== uncategorized?.id
-    )
-    .concat(uncategorized ? [uncategorized] : []);
   const listContent = (
     <Stack gap={5}>
       {!isEmbedded
@@ -522,16 +532,9 @@ export function CategoryManager({
                     }
                     title={`Delete ${category.name}?`}
                     description="Choose the category which should receive every reference to this category."
-                    replacementOptions={replacementCategories.map(
-                      (replacement) => ({
-                        id: replacement.id,
-                        label: replacement.name,
-                      }),
-                    )}
+                    replacementOptions={replacementOptions}
                     defaultReplacementId={uncategorized?.id ?? ""}
-                    affectedCount={state.expenses.filter((expense) =>
-                      expense.categoryId === category.id
-                    ).length}
+                    affectedCount={referenceCounts.get(category.id) ?? 0}
                     onConfirm={(replacementCategoryId) =>
                       send({
                         type: "category.command",

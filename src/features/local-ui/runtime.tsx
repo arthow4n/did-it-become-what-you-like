@@ -845,7 +845,6 @@ export function LocalUiRuntime(
                     return { ...current, expenses };
                   });
                   sendShell({ type: "shell.repository.refresh" });
-                  void organization.getState().then(setState);
                   setAppNotice(`${expense.merchant ?? "Expense"} saved.`);
                 }}
                 onManualReceipt={() => requestNavigation("/receipt/manual")}
@@ -854,8 +853,10 @@ export function LocalUiRuntime(
                 onDirtyChange={handleWorkflowDirtyChange}
                 discardRequest={discardRequest}
                 onClosed={(status) => {
-                  void organization.getState().then(setState);
-                  if (status === "deleted") setAppNotice("deleted.");
+                  if (status === "deleted") {
+                    sendShell({ type: "shell.repository.refresh" });
+                    setAppNotice("deleted.");
+                  }
                   setWorkflowDirty(false);
                   finishDirtyNavigation("/expenses");
                 }}

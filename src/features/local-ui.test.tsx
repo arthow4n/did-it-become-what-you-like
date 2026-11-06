@@ -2349,3 +2349,109 @@ Deno.test("shell rendering ignores bookkeeping but observes network and reposito
     }
   });
 });
+
+Deno.test("category search reuses reference counts instead of rescanning expenses per row", async () => {
+  await withComponentHarness(({ render, fireEvent }) => {
+    let reads = 0;
+    const categories = Array.from({ length: 20 }, (_, index) => ({
+      ...customCategory,
+      id: `category-cost-${index}`,
+      name: `Cost category ${index}`,
+    }));
+    const expenses: Expense[] = Array.from({ length: 80 }, (_, index) => ({
+      ...populatedOrganizedState.expenses[0],
+      id: `expense-cost-${index}`,
+      get categoryId() {
+        reads += 1;
+        return categories[index % categories.length].id;
+      },
+    }));
+    const costState = {
+      ...categoryState,
+      categories: [
+        ...categoryState.categories.filter((entry) => entry.system),
+        ...categories,
+      ],
+      expenses,
+    };
+    const { service } = createTestService(costState);
+    const mounted = render(
+      <CategoryManager
+        service={service}
+        state={costState}
+        onStateChange={() => undefined}
+        onNavigate={() => undefined}
+      />,
+    );
+    assert(
+      reads > 0 && reads <= expenses.length * 2,
+      `Expected one counting pass, observed ${reads} reads`,
+    );
+    const beforeSearch = reads;
+    fireEvent.change(
+      mounted.getByRole("searchbox", { name: "Search categories" }),
+      { target: { value: "Cost category 1" } },
+    );
+    assertEquals(reads, beforeSearch);
+    fireEvent.click(
+      mounted.getByRole("button", {
+        name: "Delete Cost category 1",
+      }),
+    );
+    const dialog = mounted.getByRole("dialog", {
+      name: "Delete Cost category 1?",
+    });
+    assert(dialog.textContent?.includes("4 expenses"));
+    mounted.unmount();
+  });
+});
+
+Deno.test("project list indexes occupancy once instead of rescanning records per project", async () => {
+  await withComponentHarness(({ render, fireEvent }) => {
+    let reads = 0;
+    const projects = Array.from({ length: 20 }, (_, index) => ({
+      ...project,
+      id: `project-cost-${index}`,
+      name: `Project ${index}`,
+    }));
+    const expenses: Expense[] = Array.from({ length: 80 }, (_, index) => ({
+      ...populatedOrganizedState.expenses[0],
+      id: `expense-project-cost-${index}`,
+      get projectId() {
+        reads += 1;
+        return projects[1].id;
+      },
+    }));
+    const costState = {
+      ...state,
+      projects,
+      expenses,
+      projectOrder: projects.map((entry) => entry.id),
+      selectedProjectId: projects[0].id,
+      firstProjectId: projects[0].id,
+      defaultProjectId: projects[0].id,
+    };
+    const { service } = createTestService(costState);
+    const mounted = render(
+      <ProjectManager
+        service={service}
+        state={costState}
+        onStateChange={() => undefined}
+        onNavigate={() => undefined}
+      />,
+    );
+    assert(
+      reads > 0 && reads <= expenses.length,
+      `Expected one occupancy pass, observed ${reads} reads`,
+    );
+    // The 18 empty other projects keep their deletion action; the populated one does not.
+    assertEquals(
+      mounted.getAllByRole("button", { name: "Delete empty" }).length,
+      18,
+    );
+    const beforeEdit = reads;
+    fireEvent.click(mounted.getByRole("button", { name: "Create project" }));
+    assertEquals(reads, beforeEdit);
+    mounted.unmount();
+  });
+});

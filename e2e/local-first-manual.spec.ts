@@ -29,6 +29,24 @@ test.describe("local-first-manual journey", () => {
     await expect(page.getByRole("button", { name: "Settings" }))
       .toBeVisible();
 
+    await page.evaluate(() => {
+      const state = window as unknown as { recordReads: number };
+      state.recordReads = 0;
+      const getAll = IDBObjectStore.prototype.getAll;
+      IDBObjectStore.prototype.getAll = function (...args) {
+        if (this.name === "records") state.recordReads += 1;
+        return getAll.apply(this, args);
+      };
+    });
+    const resetRecordReads = () =>
+      page.evaluate(() => {
+        (window as unknown as { recordReads: number }).recordReads = 0;
+      });
+    const recordReads = () =>
+      page.evaluate(() =>
+        (window as unknown as { recordReads: number }).recordReads
+      );
+
     await page.getByRole("button", { name: "Manual" }).click();
     await expect(page.getByRole("heading", { name: "New expense", level: 1 }))
       .toBeVisible();
@@ -70,9 +88,12 @@ test.describe("local-first-manual journey", () => {
     await page.getByRole("searchbox", { name: "Merchant" }).fill(
       "Local market",
     );
+    await resetRecordReads();
     await page.getByRole("button", { name: "Save expense" }).click();
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
       .toBeVisible();
+    // One read validates the commit; one shell refresh reconciles the saved data.
+    await expect.poll(recordReads).toBe(2);
     await page.getByRole("button", { name: "Manual" }).click();
     await expect(page.getByRole("heading", { name: "New expense", level: 1 }))
       .toBeVisible();
@@ -82,6 +103,7 @@ test.describe("local-first-manual journey", () => {
     await page.getByRole("searchbox", { name: "Merchant" }).fill(
       "Second market",
     );
+    await resetRecordReads();
     await page.getByRole("button", { name: "Save expense" }).click();
 
     await expect(page.getByRole("heading", { name: "Expenses", exact: true }))
@@ -89,6 +111,7 @@ test.describe("local-first-manual journey", () => {
     await expect(page.getByText("Local market", { exact: true })).toBeVisible();
     await expect(page.getByText("Second market", { exact: true }))
       .toBeVisible();
+    await expect.poll(recordReads).toBe(2);
     await expect(
       page.getByLabel("Expenses").getByText("SEK -12.50", { exact: true }),
     ).toBeVisible();
@@ -105,6 +128,7 @@ test.describe("local-first-manual journey", () => {
     await page.getByRole("button", { name: "Manual" }).click();
     await expect(page.getByRole("textbox", { name: "Amount" })).toBeVisible();
     await page.getByRole("textbox", { name: "Amount" }).fill("2.00");
+    await resetRecordReads();
     await page.goBack();
     await expect(page.getByRole("dialog", { name: "Unsaved changes" }))
       .toBeVisible();
@@ -114,6 +138,8 @@ test.describe("local-first-manual journey", () => {
 
     await page.getByRole("button", { name: "Manual" }).click();
     await expect(page.getByRole("textbox", { name: "Amount" })).toBeVisible();
+    // Discard changes only clears the local draft; records did not change.
+    expect(await recordReads()).toBe(0);
     await page.getByRole("textbox", { name: "Amount" }).fill("3.00");
     await expect(page.getByRole("dialog", { name: "Unsaved changes" }))
       .toHaveCount(0);

@@ -571,3 +571,41 @@ Deno.test("local-repository: abort rolls back an obsolete draft before discard",
     if (operation === "local.value.put") controller?.abort();
   });
 });
+
+Deno.test("local-repository: indexed matches are queued together with stable order and isolated values", async () => {
+  let reads = 0;
+  let firstBatchReads: number | undefined;
+  await withRepository(async (repository) => {
+    await repository.transaction("readwrite", async (tx) => {
+      for (const id of ["z-last", "a-first", "m-middle"]) {
+        await tx.put("records", id, expense(id));
+      }
+    });
+    reads = 0;
+    const matches = await repository.query("records", {
+      index: "projectId",
+      equals: "project-1",
+      limit: 2,
+    });
+    assertEquals(firstBatchReads, 3);
+    assertEquals(matches.map((entry) => entry.key), ["a-first", "m-middle"]);
+    (matches[0].value as { description: string }).description =
+      "Mutated result";
+    const fresh = await repository.query("records", {
+      index: "projectId",
+      equals: "project-1",
+    });
+    assertEquals((fresh[0].value as { description: string }).description, "");
+    assertEquals(
+      (await repository.query("records", {
+        index: "projectId",
+        equals: "missing",
+      })).length,
+      0,
+    );
+  }, (operation) => {
+    if (operation !== "local.value.query") return;
+    reads += 1;
+    if (reads === 1) queueMicrotask(() => firstBatchReads = reads);
+  });
+});

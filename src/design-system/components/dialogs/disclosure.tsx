@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { type ReactNode, startTransition } from "react";
+import { useOpenState } from "./shared.ts";
 import { Accordion as MantineAccordion } from "@mantine/core";
 import { ChevronRight } from "lucide-react";
 import { cx } from "../shared.ts";
@@ -23,16 +24,20 @@ export function Disclosure(
     onExpandedChange,
   }: DisclosureProps,
 ) {
+  const [expanded, setExpanded] = useOpenState(
+    isExpanded,
+    onExpandedChange,
+    defaultExpanded,
+  );
   return (
     <MantineAccordion
       className={cx("ds-disclosure", className)}
-      value={isExpanded === undefined
-        ? undefined
-        : isExpanded
-        ? "disclosure"
-        : null}
-      defaultValue={defaultExpanded ? "disclosure" : undefined}
-      onChange={(value) => onExpandedChange?.(value === "disclosure")}
+      value={expanded ? "disclosure" : null}
+      onChange={(value) => {
+        if (value === "disclosure") startTransition(() => setExpanded(true));
+        else setExpanded(false);
+      }}
+      keepMounted={false}
       chevron={
         <Icon>
           <ChevronRight />

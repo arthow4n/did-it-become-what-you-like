@@ -841,16 +841,21 @@ export class IndexedDbLocalRepository implements LocalRepository {
         this.options.beforeRequest,
       ) as ProjectionEntry[];
       const result: LocalEntry<T>[] = [];
-      for (
-        const projection of projections.sort((left, right) =>
+      // Enqueue independent reads in one IndexedDB turn. Awaiting each get
+      // separately adds one database round trip per matching record.
+      const matchingEntries = await Promise.all(
+        projections.sort((left, right) =>
           left.key.localeCompare(right.key, "en")
         )
-      ) {
-        const entry = await request(
-          store.get(projection.key),
-          "local.value.query",
-          this.options.beforeRequest,
-        ) as StoredEntry | undefined;
+          .map((projection) =>
+            request(
+              store.get(projection.key),
+              "local.value.query",
+              this.options.beforeRequest,
+            ) as Promise<StoredEntry | undefined>
+          ),
+      );
+      for (const entry of matchingEntries) {
         if (entry) {
           result.push({ key: entry.key, value: cloneJson(entry.value) as T });
         }

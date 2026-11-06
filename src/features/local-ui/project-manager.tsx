@@ -41,15 +41,6 @@ import {
   idFor,
   type LocalUiPath,
 } from "./types.ts";
-function isProjectEmpty(
-  state: ProjectCategoryState,
-  projectId: string,
-): boolean {
-  return !state.expenses.some((expense) => expense.projectId === projectId) &&
-    !state.receipts.some((receipt) => receipt.projectId === projectId) &&
-    !state.receiptPurchaseLines.some((line) => line.projectId === projectId) &&
-    !state.receiptAdjustments.some((line) => line.projectId === projectId);
-}
 async function saveProjectSafetyExport(json: string): Promise<void> {
   if (
     globalThis.document === undefined ||
@@ -94,17 +85,37 @@ function ProjectDeletionReview({
   const [isOpen, setIsOpen] = useState(false);
   const [openRequested, setOpenRequested] = useState(false);
   const handledResult = useRef(false);
-  const expenses = state.expenses.filter((expense) =>
-    expense.projectId === project.id
+  const expenses = useMemo(
+    () =>
+      isOpen
+        ? state.expenses.filter((expense) => expense.projectId === project.id)
+        : [],
+    [isOpen, state.expenses, project.id],
   );
-  const receipts = state.receipts.filter((receipt) =>
-    receipt.projectId === project.id
+  const receipts = useMemo(
+    () =>
+      isOpen
+        ? state.receipts.filter((receipt) => receipt.projectId === project.id)
+        : [],
+    [isOpen, state.receipts, project.id],
   );
-  const purchaseLines = state.receiptPurchaseLines.filter((line) =>
-    line.projectId === project.id
+  const purchaseLines = useMemo(
+    () =>
+      isOpen
+        ? state.receiptPurchaseLines.filter((line) =>
+          line.projectId === project.id
+        )
+        : [],
+    [isOpen, state.receiptPurchaseLines, project.id],
   );
-  const adjustments = state.receiptAdjustments.filter((adjustment) =>
-    adjustment.projectId === project.id
+  const adjustments = useMemo(
+    () =>
+      isOpen
+        ? state.receiptAdjustments.filter((adjustment) =>
+          adjustment.projectId === project.id
+        )
+        : [],
+    [isOpen, state.receiptAdjustments, project.id],
   );
   const dates = [
     ...expenses.map((expense) => expense.date),
@@ -340,6 +351,25 @@ export function ProjectManager({
   const isSubmittingRef = useRef(false);
   const handledDiscardRequest = useRef(discardRequest ?? 0);
   const editorIdentity = useRef<string | null>(null);
+  const populatedProjectIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (
+      const records of [
+        state.expenses,
+        state.receipts,
+        state.receiptPurchaseLines,
+        state.receiptAdjustments,
+      ]
+    ) {
+      for (const record of records) ids.add(record.projectId);
+    }
+    return ids;
+  }, [
+    state.expenses,
+    state.receipts,
+    state.receiptPurchaseLines,
+    state.receiptAdjustments,
+  ]);
   useEffect(() => {
     if (snapshot.matches("closed")) {
       send({ type: "project.open", state });
@@ -766,7 +796,7 @@ export function ProjectManager({
                           command: { type: "archive", projectId: project.id },
                         })}
                     />
-                    {isProjectEmpty(state, project.id)
+                    {!populatedProjectIds.has(project.id)
                       ? (
                         <ConfirmDialog
                           trigger={
@@ -852,7 +882,7 @@ export function ProjectManager({
                       >
                         Restore
                       </Button>
-                      {isProjectEmpty(state, project.id)
+                      {!populatedProjectIds.has(project.id)
                         ? (
                           <ConfirmDialog
                             trigger={

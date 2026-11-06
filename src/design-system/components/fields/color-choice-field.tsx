@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { ReactNode } from "react";
 import { Field } from "./field.tsx";
 
@@ -10,7 +11,7 @@ export type ColorChoiceFieldProps = {
   isDisabled?: boolean;
 };
 
-export function ColorChoiceField({
+export const ColorChoiceField = memo(function ColorChoiceField({
   label,
   value,
   onValueChange,
@@ -55,4 +56,4 @@ export function ColorChoiceField({
       </div>
     </Field>
   );
-}
+});

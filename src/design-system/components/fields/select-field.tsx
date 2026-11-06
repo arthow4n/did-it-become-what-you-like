@@ -4,7 +4,10 @@ import { Select as MantineSelect } from "@mantine/core";
 import { cx } from "../shared.ts";
 import { type SelectOption, validationAttributes } from "./shared.ts";
 
-const SELECT_COMBOBOX_PROPS = { withinPortal: false } as const;
+const SELECT_COMBOBOX_PROPS = {
+  withinPortal: false,
+  transitionProps: { duration: 0, exitDuration: 0 },
+} as const;
 const SELECT_CLASS_NAMES = {
   input: "ds-field-control ds-select-trigger",
 } as const;
@@ -86,6 +89,7 @@ export const SelectField = memo(function SelectField({
       value={selectedValue}
       defaultValue={defaultValue}
       searchable={searchable}
+      openOnFocus={false}
       renderOption={renderOption
         ? ({ option }) => {
           const selected = options.find((candidate) =>

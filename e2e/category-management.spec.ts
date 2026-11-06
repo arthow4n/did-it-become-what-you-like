@@ -84,3 +84,57 @@ for (
       .toBeVisible();
   });
 }
+
+test("form input keeps keyboard traversal and immediate edits responsive", async ({ isolatedContext }) => {
+  const page = await isolatedContext.newPage();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: /Create first project/ }).click();
+  await page.getByRole("textbox", { name: "Project name" }).fill("Personal");
+  await page.getByRole("button", { name: "Save project" }).click();
+  await page.getByRole("button", { name: "Manual", exact: true }).click();
+  const amount = page.getByRole("textbox", { name: "Amount", exact: true });
+  await amount.pressSequentially("12.50");
+  await amount.press("Tab");
+  const currency = page.getByRole("combobox", { name: "Currency" });
+  await expect(currency).toBeFocused();
+  await expect(currency).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+  await currency.press("ArrowDown");
+  await expect(currency).toHaveAttribute("aria-expanded", "true");
+  await currency.press("Escape");
+  await currency.press("Tab");
+  const merchant = page.getByRole("searchbox", { name: "Merchant" });
+  await expect(merchant).toBeFocused();
+  await merchant.pressSequentially("Corner store ");
+  const description = page.getByRole("textbox", {
+    name: "Description (optional)",
+  });
+  await description.pressSequentially("Weekly groceries");
+  await expect(amount).toHaveValue("12.50");
+  await expect(merchant).toHaveValue("Corner store ");
+  await page.getByRole("button", { name: "Organize", exact: true }).click();
+  await page.getByRole("button", { name: "Discard changes", exact: true })
+    .click();
+  await page.getByText("Categories", { exact: true }).click();
+  await page.getByRole("button", { name: "Create category", exact: true })
+    .click();
+  const name = page.getByRole("textbox", { name: "Category name" });
+  await name.pressSequentially("Food and drinks");
+  const matching = page.getByRole("textbox", {
+    name: "AI matching description (optional)",
+  });
+  await matching.pressSequentially("Coffee, bread and pantry items");
+  await name.focus();
+  await name.press("End");
+  await name.pressSequentially(" weekly");
+  await expect(matching).toHaveValue("Coffee, bread and pantry items");
+  await name.press("Enter");
+  await expect(page.getByText("Food and drinks weekly", { exact: true }))
+    .toBeVisible();
+  await page.getByRole("button", {
+    name: "Edit Food and drinks weekly",
+    exact: true,
+  }).click();
+  await expect(matching).toHaveValue("Coffee, bread and pantry items");
+});

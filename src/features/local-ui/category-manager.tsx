@@ -1,5 +1,5 @@
 import { useActor } from "@xstate/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
   ArrowDown,
@@ -215,113 +215,144 @@ export function CategoryManager({
     setRecordDeleted(false);
     setEditor(nextEditor);
   };
+  const closeEditor = useCallback(() => {
+    send({ type: "category.open", state });
+    isSubmittingRef.current = false;
+    setEditor(null);
+    onComplete?.();
+  }, [send, state, onComplete]);
+  const goBack = useCallback(() => {
+    if (dirty) onNavigate("/categories");
+    else closeEditor();
+  }, [dirty, onNavigate, closeEditor]);
+  const retry = useCallback(() => send({ type: "category.retry" }), [send]);
+  const editorKind = editor?.kind;
+  const canSubmit = Boolean(name.trim());
+  const saving = snapshot.hasTag("saving");
+  const failed = snapshot.matches("failed");
+  const editorError = snapshot.context.error;
+  const editorHeader = useMemo(() => (
+    <PageHeader
+      title={editorKind === "create" ? "Create category" : "Edit category"}
+      headingLevel={1}
+      leading={
+        <IconButton
+          icon={<ArrowLeft />}
+          aria-label="Back"
+          variant="quiet"
+          onPress={goBack}
+        />
+      }
+    />
+  ), [editorKind, goBack]);
+  // The form submit reads the current draft. Its footer depends on validity
+  // and workflow feedback, so another character does not rebuild the actions.
+  const editorFeedbackAndActions = useMemo(() => (
+    <>
+      {recordDeleted
+        ? (
+          <InlineNotice
+            tone="warning"
+            title="Category deleted elsewhere"
+          >
+            This category no longer exists in the current organization. Discard
+            this draft before continuing.
+          </InlineNotice>
+        )
+        : editorError
+        ? (
+          <InlineNotice tone="danger" title="Category was not saved">
+            {editorError.message}
+          </InlineNotice>
+        )
+        : null}
+      <FormActions>
+        <Button
+          type="button"
+          variant="secondary"
+          onPress={closeEditor}
+        >
+          {recordDeleted ? "Discard draft" : "Cancel"}
+        </Button>
+        {failed
+          ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onPress={retry}
+            >
+              Retry
+            </Button>
+          )
+          : null}
+        <Button
+          pending={saving}
+          isDisabled={recordDeleted || saving ||
+            !canSubmit}
+          type="submit"
+        >
+          Save category
+        </Button>
+      </FormActions>
+    </>
+  ), [
+    recordDeleted,
+    editorError,
+    failed,
+    saving,
+    canSubmit,
+    closeEditor,
+    retry,
+  ]);
   if (editor) {
     return (
       <ContentContainer size="form">
         <Stack gap={5}>
-          <PageHeader
-            title={editor.kind === "create"
-              ? "Create category"
-              : "Edit category"}
-            headingLevel={1}
-            leading={
-              <IconButton
-                icon={<ArrowLeft />}
-                aria-label="Back"
-                variant="quiet"
-                onPress={() => {
-                  if (dirty) {
-                    onNavigate("/categories");
-                  } else {
-                    send({ type: "category.open", state });
-                    isSubmittingRef.current = false;
-                    setEditor(null);
-                    onComplete?.();
-                  }
-                }}
-              />
-            }
-          />
-          <Card as="section">
-            <Stack gap={5}>
-              <TextField
-                label="Category name"
-                isRequired
-                value={name}
-                onChange={setName}
-                error={snapshot.context.error?.code === "conflict"
-                  ? snapshot.context.error.message
-                  : undefined}
-              />
-              <ColorChoiceField
-                label="Category color (optional)"
-                value={color}
-                onValueChange={setColor}
-              />
-              {color
-                ? (
-                  <Button variant="quiet" onPress={() => setColor(undefined)}>
-                    Clear color
-                  </Button>
-                )
-                : null}
-              <TextArea
-                label="AI matching description (optional)"
-                placeholder="e.g., Groceries, pantry items, coffee beans, snacks"
-                description="Helps AI match items to this category."
-                value={description}
-                onChange={setDescription}
-              />
-              {recordDeleted
-                ? (
-                  <InlineNotice
-                    tone="warning"
-                    title="Category deleted elsewhere"
-                  >
-                    This category no longer exists in the current organization.
-                    Discard this draft before continuing.
-                  </InlineNotice>
-                )
-                : snapshot.context.error
-                ? (
-                  <InlineNotice tone="danger" title="Category was not saved">
-                    {snapshot.context.error.message}
-                  </InlineNotice>
-                )
-                : null}
-              <FormActions>
-                <Button
-                  variant="secondary"
-                  onPress={() => {
-                    send({ type: "category.open", state });
-                    isSubmittingRef.current = false;
-                    setEditor(null);
-                    onComplete?.();
-                  }}
-                >
-                  {recordDeleted ? "Discard draft" : "Cancel"}
-                </Button>
-                {snapshot.matches("failed")
+          {editorHeader}
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitEditor();
+            }}
+          >
+            <Card as="section">
+              <Stack gap={5}>
+                <TextField
+                  label="Category name"
+                  isRequired
+                  value={name}
+                  onChange={setName}
+                  error={snapshot.context.error?.code === "conflict"
+                    ? snapshot.context.error.message
+                    : undefined}
+                />
+                <ColorChoiceField
+                  label="Category color (optional)"
+                  value={color}
+                  onValueChange={setColor}
+                />
+                {color
                   ? (
                     <Button
-                      variant="secondary"
-                      onPress={() => send({ type: "category.retry" })}
+                      type="button"
+                      variant="quiet"
+                      onPress={() => setColor(undefined)}
                     >
-                      Retry
+                      Clear color
                     </Button>
                   )
                   : null}
-                <Button
-                  pending={snapshot.hasTag("saving")}
-                  isDisabled={recordDeleted || snapshot.hasTag("saving") ||
-                    !name.trim()}
-                  onPress={submitEditor}
-                >
-                  Save category
-                </Button>
-              </FormActions>
-            </Stack>
-          </Card>
+                <TextArea
+                  label="AI matching description (optional)"
+                  placeholder="e.g., Groceries, pantry items, coffee beans, snacks"
+                  description="Helps AI match items to this category."
+                  value={description}
+                  onChange={setDescription}
+                />
+                {editorFeedbackAndActions}
+              </Stack>
+            </Card>
+          </form>
         </Stack>
       </ContentContainer>
     );

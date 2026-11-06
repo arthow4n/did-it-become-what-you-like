@@ -1646,3 +1646,31 @@ Deno.test("design-system expense form renders sticky action bar when requested",
     })
   );
 });
+
+Deno.test("design-system select focus leaves options closed until explicitly opened", async () => {
+  await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
+    let selected = "";
+    const mounted = render(
+      createElement(SelectField, {
+        label: "Currency",
+        searchable: true,
+        options: [
+          { id: "SEK", label: "SEK" },
+          { id: "EUR", label: "EUR" },
+        ],
+        onValueChange: (value) => selected = value,
+      }),
+    );
+    const field = mounted.getByRole("combobox", { name: "Currency" });
+    fireEvent.focus(field);
+    assertEqual(field.getAttribute("aria-expanded"), "false");
+    fireEvent.keyDown(field, { key: "ArrowDown", code: "ArrowDown" });
+    await waitFor(() => {
+      assertEqual(field.getAttribute("aria-expanded"), "true");
+    });
+    fireEvent.click(mounted.getByRole("option", { name: "EUR" }));
+    assertEqual(selected, "EUR");
+    assertEqual(field.getAttribute("aria-expanded"), "false");
+    mounted.unmount();
+  });
+});

@@ -73,6 +73,12 @@ semantic tokens
   receive controlled values, status, and callbacks or typed event dispatchers.
 - Mantine may own ephemeral interaction state such as focus and popover
   mechanics. It must not become a second source of business truth.
+- Focusing a `SelectField` with Tab does not open its dropdown. Click, arrow
+  keys, or typing in a searchable select opens it explicitly. Opening and
+  closing have zero transition duration.
+- Keep unchanged field siblings and editor feedback outside keystroke renders.
+  Controlled values update immediately; do not defer typing or synchronize it
+  through blur handlers to compensate for expensive surrounding renders.
 - **One component per file**: Every design-system component is defined in its
   own dedicated file within
   `src/design-system/components/{primitives,patterns,domain}/<component-name>.tsx`.

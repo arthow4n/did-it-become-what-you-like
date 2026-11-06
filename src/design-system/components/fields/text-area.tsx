@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { Textarea as MantineTextarea } from "@mantine/core";
 import { cx } from "../shared.ts";
@@ -24,7 +25,7 @@ export type TextAreaProps =
   }
   & FieldStateProps;
 
-export function TextArea(
+export const TextArea = memo(function TextArea(
   {
     label,
     placeholder,
@@ -62,4 +63,4 @@ export function TextArea(
       classNames={{ input: "ds-field-control" }}
     />
   );
-}
+});

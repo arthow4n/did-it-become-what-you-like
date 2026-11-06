@@ -87,7 +87,6 @@ Deno.test("sync screen exposes disconnected connect and accessible back events",
       );
       fireEvent.click(view.getByRole("button", { name: "Back to settings" }));
       assert(result.events.join(",") === "connect,back");
-      assert(view.getByText(/hidden application-data folder/));
     });
   });
 });
@@ -659,7 +658,7 @@ Deno.test("sync screen exposes persisted vs direct mode and sync error notices",
       );
       assert(view.queryByRole("textbox", { name: "Sync Server URL" }) === null);
       assert(
-        view.getByText(/Direct mode connects using Google Identity Services/),
+        view.getByText(/Access tokens stay in browser memory/),
       );
 
       // Click connect in direct mode

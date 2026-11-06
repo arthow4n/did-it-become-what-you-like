@@ -59,7 +59,6 @@ export function ReceiptMetadataEditorDialog({
               autoFocus
               label="Merchant"
               placeholder="No merchant entered"
-              description="Store, restaurant, or vendor name (optional)"
               value={metadataDraft.merchant ?? ""}
               onChange={(merchant) =>
                 onChange({ ...metadataDraft, merchant: merchant || null })}

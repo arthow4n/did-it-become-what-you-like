@@ -3,7 +3,6 @@ import {
   ErrorState,
   Heading,
   Inline,
-  InlineNotice,
   Section,
   Stack,
   StatusMessage,
@@ -28,8 +27,7 @@ export function ExportPanel({
         <Stack gap={2}>
           <Heading level={2}>Export</Heading>
           <Text tone="secondary">
-            Create a versioned JSON backup containing all synchronized projects
-            and records.
+            JSON backup of all projects and records.
           </Text>
         </Stack>
         {viewModel.phase === "error"
@@ -65,14 +63,6 @@ export function ExportPanel({
                 <Button variant="quiet" onPress={onCancel}>Cancel</Button>
               }
             />
-          )
-          : null}
-        {viewModel.shareAvailability === "unavailable"
-          ? (
-            <InlineNotice tone="info" title="Download is always available">
-              This browser cannot share files directly. Use the normal download
-              action instead.
-            </InlineNotice>
           )
           : null}
         <Inline gap={3}>

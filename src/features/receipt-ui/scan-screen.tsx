@@ -1078,7 +1078,7 @@ export function ReceiptScanScreen({
             ? "No menu pages selected"
             : "No receipt selected"}
           emptyDescription={scanMode === "menu"
-            ? "Take photos or choose menu images before extracting."
+            ? null
             : "Choose an image, PDF, or take a photo."}
           takePhotoLabel={scanMode === "menu" && selectedImages.length > 0
             ? "Add photo"
@@ -1156,11 +1156,6 @@ export function ReceiptScanScreen({
                     onValueChange={changeProvider}
                     isDisabled={scanBusy}
                   />
-                  <Text tone="secondary">
-                    Receipt scanning requires image input and structured output
-                    constrained by JSON Schema. A listed model is a candidate,
-                    not a user-run test.
-                  </Text>
                   <ModelPicker
                     options={effectiveModelOptions}
                     value={configuredModel}
@@ -1173,8 +1168,8 @@ export function ReceiptScanScreen({
                       <SelectField
                         label="Thinking effort"
                         options={[
-                          { id: "auto", label: "Model default (recommended)" },
-                          { id: "minimal", label: "Minimal (fastest)" },
+                          { id: "auto", label: "Model default" },
+                          { id: "minimal", label: "Minimal" },
                           { id: "low", label: "Low" },
                           { id: "medium", label: "Medium" },
                           { id: "high", label: "High" },

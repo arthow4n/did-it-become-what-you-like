@@ -533,11 +533,6 @@ export function ReceiptReviewScreen({
       <Stack gap={5}>
         <PageHeader
           title={pageTitle}
-          description={isManual
-            ? "Add the items from a restaurant or café purchase, then check the total paid."
-            : isMenu
-            ? "Select the items and quantities you ordered from the menu."
-            : undefined}
           headingLevel={1}
           leading={dirty
             ? (
@@ -865,7 +860,6 @@ export function ReceiptMetadataEditor({
           autoFocus
           label="Merchant"
           placeholder="No merchant entered"
-          description="Store, restaurant, or vendor name (optional)"
           value={merchant}
           onChange={setMerchant}
         />

@@ -47,7 +47,6 @@ export function ConflictDetail({
         ? (
           <InlineNotice tone="warning" title="Delete versus edit">
             One device deleted this record while another device edited it.
-            Choose explicitly which outcome to keep.
           </InlineNotice>
         )
         : null}

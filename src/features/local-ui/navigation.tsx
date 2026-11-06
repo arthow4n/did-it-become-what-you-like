@@ -28,10 +28,6 @@ export function FirstUseScreen({
         <Stack gap={3}>
           <Text size="label" tone="muted">Dibwyl</Text>
           <Heading level={1} size="lg">Start tracking expenses</Heading>
-          <Text tone="secondary">
-            Keep your expense history on this device, with sync and scanning
-            available when you choose them.
-          </Text>
         </Stack>
         <Stack gap={3}>
           <ActionCard

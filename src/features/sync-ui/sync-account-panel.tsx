@@ -54,10 +54,6 @@ function DisconnectedPanel(
           </Icon>
           <Stack gap={1}>
             <Heading level={2} size="sm">Connect Google Drive</Heading>
-            <Text tone="secondary">
-              Synchronize this dataset through Google's hidden application-data
-              folder.
-            </Text>
           </Stack>
         </Inline>
 
@@ -98,7 +94,6 @@ function DisconnectedPanel(
                 value={props.syncServerUrl ?? ""}
                 onChange={(val) => props.onSyncServerUrlChange?.(val)}
                 placeholder="https://did-it-become-what-you-like.arthow4n.deno.net"
-                description="Your Deno Deploy sync server URL."
               />
               <Inline>
                 <Button onPress={() => props.onConnect("persisted")}>
@@ -110,7 +105,6 @@ function DisconnectedPanel(
           : (
             <Stack gap={3}>
               <InlineNotice title="Direct browser connection" tone="info">
-                Direct mode connects using Google Identity Services client-side.
                 Access tokens stay in browser memory and are lost when the app
                 is closed. Synchronization is on-demand only (no automatic
                 background sync).

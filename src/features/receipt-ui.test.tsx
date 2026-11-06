@@ -1852,11 +1852,6 @@ Deno.test(
         const view = within(document.body);
         return waitFor(() => {
           assert(view.getByText("••••••••1234"));
-          assert(
-            view.getByText(
-              /requires a model that accepts image input and supports structured output constrained by JSON Schema/,
-            ),
-          );
           const renderedText = document.body.textContent ?? "";
           for (
             const removedText of [

@@ -21,7 +21,7 @@ export function ImportModeChoice({
         onChange={(next) => onChange(next as ImportMode)}
       />
       <InlineNotice tone="info" title="Recommended: merge">
-        Keeps existing data and resolves any conflicts.
+        Keeps existing data.
       </InlineNotice>
       <InlineNotice tone="danger" title="Replace is destructive">
         Replaces all current data with this backup file.

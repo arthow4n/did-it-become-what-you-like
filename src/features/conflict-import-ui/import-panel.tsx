@@ -10,7 +10,6 @@ import {
   Section,
   Stack,
   StatusMessage,
-  Text,
   WorkflowProgress,
 } from "../../design-system/index.ts";
 import { ImportModeChoice } from "./import-mode-choice.tsx";
@@ -59,19 +58,13 @@ export function ImportPanel({
   return (
     <Section className="conflict-import-import-panel">
       <Stack gap={5}>
-        <Stack gap={2}>
-          <Heading level={2}>Import</Heading>
-          <Text tone="secondary">
-            Choose a versioned JSON backup. It is validated and previewed before
-            any current data changes.
-          </Text>
-        </Stack>
+        <Heading level={2}>Import</Heading>
 
         {viewModel.phase === "idle" || viewModel.phase === "choosing"
           ? (
             <FileField
               label="Choose JSON backup"
-              description="Only the canonical JSON export format is accepted."
+              description="Use a JSON backup exported from this app."
               accept="application/json,.json"
               onChange={handleFileChange}
             />
@@ -142,8 +135,7 @@ export function ImportPanel({
                       tone="danger"
                       title="Replace all current data"
                     >
-                      This destructive action creates a new dataset generation
-                      and removes current records after a safety export. It
+                      This replaces all current records with the backup. It
                       cannot be undone from this screen.
                     </InlineNotice>
                     <SafetyExportStep
@@ -167,11 +159,7 @@ export function ImportPanel({
                       : null}
                   </Stack>
                 )
-                : (
-                  <InlineNotice tone="info" title="Recommended">
-                    Merge is the prominent safe choice and works offline.
-                  </InlineNotice>
-                )}
+                : null}
               {viewModel.mode === null
                 ? (
                   <InlineNotice tone="warning">
@@ -233,10 +221,7 @@ export function ImportPanel({
         {viewModel.phase === "completed"
           ? (
             <StatusMessage tone="positive">
-              {viewModel.generation === undefined
-                ? "Import completed."
-                : "Import completed as dataset generation " +
-                  viewModel.generation + "."}
+              Import completed.
             </StatusMessage>
           )
           : null}

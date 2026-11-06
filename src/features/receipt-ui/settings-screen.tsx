@@ -402,13 +402,6 @@ export function ReceiptSettingsScreen({
           value={activeProvider}
           onValueChange={changeProvider}
         />
-        <Text tone="secondary">
-          Receipt scanning requires a model that accepts image input and
-          supports structured output constrained by JSON Schema. Model lists
-          provide metadata-qualified candidates, not a user-run test; an
-          unsupported model reports an actionable error only when you explicitly
-          scan.
-        </Text>
         {hasKey
           ? (
             <Card as="section">
@@ -471,8 +464,7 @@ export function ReceiptSettingsScreen({
           Prepare image before sending (resize and compress)
         </Switch>
         <Text tone="secondary">
-          Metadata removal remains on for every scan. This preference is stored
-          on this device and affects future scans.
+          Metadata removal remains on for every scan.
         </Text>
         {activeProvider === "openrouter"
           ? (
@@ -531,8 +523,8 @@ export function ReceiptSettingsScreen({
                 <SelectField
                   label="Thinking effort"
                   options={[
-                    { id: "auto", label: "Model default (recommended)" },
-                    { id: "minimal", label: "Minimal (fastest)" },
+                    { id: "auto", label: "Model default" },
+                    { id: "minimal", label: "Minimal" },
                     { id: "low", label: "Low" },
                     { id: "medium", label: "Medium" },
                     { id: "high", label: "High" },
@@ -544,7 +536,6 @@ export function ReceiptSettingsScreen({
                       geminiThinkingLevel: level as GeminiThinkingLevel,
                     });
                   }}
-                  description="Controls Gemini's thinking budget. Model default lets the model choose its native effort (e.g. Medium on Flash-Lite, High on Pro). Minimal turns off or minimizes reasoning for lowest latency."
                 />
               </Stack>
             </Card>

@@ -1,13 +1,8 @@
 import { createActor, fromPromise } from "xstate";
 import {
   categoryMachine,
-  type ClearSnapshotInput,
   conflictMachine,
   deleteEverywhereMachine,
-  durableWorkflowMachine,
-  type ExpenseCommitInput,
-  type ExpenseCommitOutput,
-  expenseFormMachine,
   importMachine,
   type ImportPreview,
   projectDeletionMachine,
@@ -16,12 +11,9 @@ import {
   receiptScanMachine,
   syncMachine,
   updateInstallMachine,
-  workflowHostMachine,
 } from "./index.ts";
 import type {
   DeleteEverywhereProgress,
-  DurableDraft,
-  ExpenseDraft,
   ImportCommitOutput,
   ProjectDeletionOutput,
   ProjectDeletionTarget,
@@ -68,21 +60,6 @@ Deno.test("actor-contract: import diagnostics reject foreign operation text", ()
 
 import { settle } from "../../test-support/index.ts";
 
-const draft: DurableDraft = {
-  workflowId: "expense-form",
-  revision: 1,
-  payload: { amount: "10.9", currency: "SEK" },
-};
-
-const expenseDraft: ExpenseDraft = {
-  projectId: "project-sweden",
-  categoryId: "category-uncategorized",
-  date: "2026-08-24",
-  amount: "10.9",
-  currency: "SEK",
-  description: "",
-};
-
 const review: ReceiptReviewDraft = {
   parent: {
     projectId: "project-sweden",
@@ -118,27 +95,6 @@ const progress: DeleteEverywhereProgress = {
   acknowledgedDeviceCount: 0,
   forcedDeviceCount: 0,
 };
-
-const clearSnapshot = fromPromise(
-  ({ input }: { input: ClearSnapshotInput }) => {
-    void input;
-    return Promise.resolve();
-  },
-);
-
-const durableWorkflowWithClear = durableWorkflowMachine.provide({
-  actors: { clearSnapshot },
-});
-
-Deno.test("actor-contract: expense guard keeps incomplete forms editable", () => {
-  const actor = createActor(expenseFormMachine).start();
-  actor.send({ type: "expense.open", draft: { ...expenseDraft, amount: "" } });
-  actor.send({ type: "expense.submit" });
-
-  assertEquals(actor.getSnapshot().value, "editing");
-  assert(actor.getSnapshot().hasTag("dirty"));
-  actor.stop();
-});
 
 Deno.test("actor-contract: receipt mismatch requires an explicit confirmation", () => {
   const reviewWithPendingCommit = receiptReviewMachine.provide({
@@ -262,55 +218,6 @@ Deno.test("actor-contract: Delete Everywhere requires a second confirmation afte
   actor.send({ type: "delete-everywhere.confirm-decline" });
   actor.send({ type: "delete-everywhere.confirm" });
   assertEquals(actor.getSnapshot().value, "persistingRetirement");
-  actor.stop();
-});
-
-Deno.test("actor-contract: persisted snapshots hydrate and resume the durable mode", async () => {
-  const original = createActor(durableWorkflowWithClear, {
-    input: { persistenceKey: "draft:expense-1", initialDraft: draft },
-  }).start();
-  assertEquals(original.getSnapshot().value, "editing");
-  assert(original.getSnapshot().hasTag("dirty"));
-
-  const persisted = original.getPersistedSnapshot();
-  const restored = createActor(durableWorkflowWithClear, {
-    input: { persistenceKey: "draft:expense-1" },
-    snapshot: persisted,
-  }).start();
-  assertEquals(restored.getSnapshot().value, "editing");
-  assertEquals(restored.getSnapshot().context.draft, draft);
-
-  restored.send({ type: "workflow.complete" });
-  await settle();
-  assertEquals(restored.getSnapshot().value, "completed");
-  assertEquals(restored.getSnapshot().output, {
-    status: "completed",
-    revision: 1,
-  });
-  original.stop();
-  restored.stop();
-});
-
-Deno.test("actor-contract: parent owns child completion", async () => {
-  const workflowHostWithClear = workflowHostMachine.provide({
-    actors: { durableChild: durableWorkflowWithClear },
-  });
-  const actor = createActor(workflowHostWithClear).start();
-  actor.send({ type: "host.open", draft });
-  assertEquals(actor.getSnapshot().value, "active");
-  actor.send({ type: "host.complete" });
-  await settle();
-  assertEquals(actor.getSnapshot().value, "completed");
-  assertEquals(actor.getSnapshot().output?.status, "completed");
-  actor.stop();
-});
-
-Deno.test("actor-contract: parent cancellation stops the durable child", () => {
-  const actor = createActor(workflowHostMachine).start();
-  actor.send({ type: "host.open", draft });
-  actor.send({ type: "host.cancel" });
-  assertEquals(actor.getSnapshot().value, "cancelled");
-  assertEquals(actor.getSnapshot().output, { status: "cancelled" });
   actor.stop();
 });
 
@@ -599,36 +506,6 @@ Deno.test(
   },
 );
 
-Deno.test("actor-contract: expense commit preserves unauthorized failures", async () => {
-  const expenseWithFailure = expenseFormMachine.provide({
-    actors: {
-      commitExpense: fromPromise(
-        ({ input }: { input: ExpenseCommitInput }) => {
-          void input;
-          return Promise.reject({
-            name: "AdapterError",
-            code: "unauthorized",
-            message: "Authorization is required for this operation.",
-            retry: "never",
-          });
-        },
-      ),
-    },
-  });
-  const actor = createActor(expenseWithFailure).start();
-  actor.send({ type: "expense.open", draft: expenseDraft });
-  actor.send({ type: "expense.submit" });
-  await settle();
-
-  assertEquals(actor.getSnapshot().value, "saveFailed");
-  assertEquals(actor.getSnapshot().context.error, {
-    code: "unauthorized",
-    message: "Authorization is required for this operation.",
-    retryable: false,
-  });
-  actor.stop();
-});
-
 Deno.test("actor-contract: import requires a mode and online replace pre-sync", async () => {
   const importWithPorts = importMachine.provide({
     actors: {
@@ -722,34 +599,7 @@ Deno.test("actor-contract: Delete Everywhere reports forced devices truthfully",
   actor.stop();
 });
 
-Deno.test("actor-contract: saved and discarded expense/receipt contexts clear drafts", async () => {
-  const expenseWithCommit = expenseFormMachine.provide({
-    actors: {
-      commitExpense: fromPromise(
-        ({ input }: { input: ExpenseCommitInput }) => {
-          void input;
-          return Promise.resolve({
-            expense: {} as ExpenseCommitOutput["expense"],
-            operation: "created" as "created" | "updated",
-          });
-        },
-      ),
-    },
-  });
-  const savedExpense = createActor(expenseWithCommit).start();
-  savedExpense.send({ type: "expense.open", draft: expenseDraft });
-  savedExpense.send({ type: "expense.submit" });
-  await settle();
-  assertEquals(savedExpense.getSnapshot().value, "saved");
-  assertEquals(savedExpense.getSnapshot().context.draft, null);
-  savedExpense.stop();
-
-  const discardedExpense = createActor(expenseFormMachine).start();
-  discardedExpense.send({ type: "expense.open", draft: expenseDraft });
-  discardedExpense.send({ type: "expense.discard" });
-  assertEquals(discardedExpense.getSnapshot().context.draft, null);
-  discardedExpense.stop();
-
+Deno.test("actor-contract: saved and discarded receipt contexts clear drafts", async () => {
   const receiptWithCommit = receiptReviewMachine.provide({
     actors: {
       commitReceipt: fromPromise(
@@ -782,71 +632,7 @@ Deno.test("actor-contract: saved and discarded expense/receipt contexts clear dr
   discardedReceipt.stop();
 });
 
-Deno.test("actor-contract: durable Save/Discard clears persisted draft before terminal output", async () => {
-  const actor = createActor(durableWorkflowWithClear, {
-    input: { persistenceKey: "draft:expense-2", initialDraft: draft },
-  }).start();
-  actor.send({ type: "workflow.complete" });
-  assertEquals(actor.getSnapshot().value, "clearing");
-  assertEquals(actor.getSnapshot().context.draft, null);
-  const completedSnapshot = actor.getPersistedSnapshot() as unknown as {
-    context: { draft: DurableDraft | null };
-  };
-  assertEquals(completedSnapshot.context.draft, null);
-  await settle();
-  assertEquals(actor.getSnapshot().value, "completed");
-  actor.stop();
-
-  const discarded = createActor(durableWorkflowWithClear, {
-    input: { persistenceKey: "draft:receipt-2", initialDraft: draft },
-  }).start();
-  discarded.send({ type: "workflow.discard" });
-  await settle();
-  assertEquals(discarded.getSnapshot().value, "discarded");
-  const discardedSnapshot = discarded.getPersistedSnapshot() as unknown as {
-    context: { draft: DurableDraft | null };
-  };
-  assertEquals(discardedSnapshot.context.draft, null);
-  discarded.stop();
-});
-
-Deno.test("actor-contract: durable clear preserves retired failure without draft leakage", async () => {
-  const durableWithRetiredClear = durableWorkflowMachine.provide({
-    actors: {
-      clearSnapshot: fromPromise(
-        ({ input }: { input: ClearSnapshotInput }) => {
-          void input;
-          return Promise.reject({
-            name: "AdapterError",
-            code: "retired",
-            message: "This dataset has been retired.",
-            retry: "never",
-          });
-        },
-      ),
-    },
-  });
-  const actor = createActor(durableWithRetiredClear, {
-    input: { persistenceKey: "draft:retired", initialDraft: draft },
-  }).start();
-  actor.send({ type: "workflow.complete" });
-  await settle();
-
-  assertEquals(actor.getSnapshot().value, "failed");
-  assertEquals(actor.getSnapshot().context.draft, null);
-  assertEquals(actor.getSnapshot().context.lastError, {
-    code: "retired",
-    message: "This dataset has been retired.",
-    retryable: false,
-  });
-  actor.stop();
-});
-
 Deno.test("actor-contract: forbidden workflow events are no-ops outside their owner states", () => {
-  const expense = createActor(expenseFormMachine).start();
-  expense.send({ type: "expense.submit" });
-  assertEquals(expense.getSnapshot().value, "closed");
-
   const receipt = createActor(receiptScanMachine).start();
   receipt.send({ type: "receipt.use-manual" });
   assertEquals(receipt.getSnapshot().value, "idle");
@@ -886,7 +672,6 @@ Deno.test("actor-contract: forbidden workflow events are no-ops outside their ow
   update.send({ type: "update.reload" });
   assertEquals(update.getSnapshot().value, "idle");
 
-  expense.stop();
   receipt.stop();
   project.stop();
   category.stop();

@@ -1,7 +1,4 @@
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
+import { test } from "vitest";
 import {
   canonicalDecimal,
   canonicalizeDataset,
@@ -80,7 +77,7 @@ function datasetWith(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-Deno.test("domain: canonical decimals normalize and reject unsafe representations", () => {
+test("domain: canonical decimals normalize and reject unsafe representations", () => {
   assertEquals(canonicalDecimal("00010.9000"), "10.9");
   assertEquals(canonicalDecimal("-0.000"), "0");
   assertEquals(moneyAdd("0.1", "0.2"), "0.3");
@@ -98,7 +95,7 @@ Deno.test("domain: canonical decimals normalize and reject unsafe representation
   }
 });
 
-Deno.test("domain: record schemas preserve stable relationships and receipt semantics", () => {
+test("domain: record schemas preserve stable relationships and receipt semantics", () => {
   const renamed = ProjectSchema.parse({ ...project, name: "Former Sweden" });
   assertEquals(renamed.id, project.id);
   assertEquals(CategorySchema.parse(category).id, UNCATEGORIZED_CATEGORY_ID);
@@ -140,7 +137,7 @@ Deno.test("domain: record schemas preserve stable relationships and receipt sema
   assertEquals(adjustment.amount, "1");
 });
 
-Deno.test("domain: dataset rejects invalid references and category invariants", () => {
+test("domain: dataset rejects invalid references and category invariants", () => {
   let result = PortableDatasetSchema.safeParse(datasetWith({
     expenses: [{
       schemaVersion: 1,
@@ -189,7 +186,7 @@ Deno.test("domain: dataset rejects invalid references and category invariants", 
   );
 });
 
-Deno.test("domain: expense receipt-line references validate both line variants", () => {
+test("domain: expense receipt-line references validate both line variants", () => {
   const receipt = {
     schemaVersion: 1 as const,
     type: "receipt" as const,
@@ -257,7 +254,7 @@ Deno.test("domain: expense receipt-line references validate both line variants",
   assert(result.success, "purchase and adjustment line references are valid");
 });
 
-Deno.test(
+test(
   "domain: adjustment links accept purchase lines and reject adjustment lines",
   () => {
     const receipt = {
@@ -327,7 +324,7 @@ Deno.test(
   },
 );
 
-Deno.test("domain: expense receipt-line references reject precise relationship errors", () => {
+test("domain: expense receipt-line references reject precise relationship errors", () => {
   const receipt = {
     schemaVersion: 1 as const,
     type: "receipt" as const,
@@ -422,7 +419,7 @@ Deno.test("domain: expense receipt-line references reject precise relationship e
   }
 });
 
-Deno.test("domain: dataset accepts every portable record variant", () => {
+test("domain: dataset accepts every portable record variant", () => {
   const receipt = {
     schemaVersion: 1 as const,
     type: "receipt" as const,
@@ -517,7 +514,7 @@ Deno.test("domain: dataset accepts every portable record variant", () => {
   assertEquals(parsed.revisions[0]?.targetId, project.id);
 });
 
-Deno.test("domain: version dispatch, migration policy, and deterministic round trip", () => {
+test("domain: version dispatch, migration policy, and deterministic round trip", () => {
   const first = datasetWith({
     expenses: [{
       schemaVersion: 1,
@@ -557,7 +554,7 @@ Deno.test("domain: version dispatch, migration policy, and deterministic round t
   assert(rejected, "down migrations must be explicit and unsupported");
 });
 
-Deno.test("domain: export ordering is locale-independent for mixed-case punctuation IDs", () => {
+test("domain: export ordering is locale-independent for mixed-case punctuation IDs", () => {
   const ids = ["a_id", "A-id", "a~id", "a.id", "a-id"];
   const projects = ids.map((id, index) => ({
     ...project,

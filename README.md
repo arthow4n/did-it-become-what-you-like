@@ -41,11 +41,17 @@ unsupported compiler syntax; the compiler keeps their original behavior. The
 Organize screen's conditional-hook diagnostic has been fixed. Compiler coverage
 is not a claim that storage, subscriptions, or first-mount work has become free.
 
-`deno task test` includes a compiler integration test that transforms real UI
+`npm test` includes a compiler integration test that transforms real UI
 source and executes a compiled component to verify actor updates and reuse of
-unchanged child JSX. Ordinary Deno component tests run source code directly;
+unchanged child JSX. Ordinary component tests run source code directly;
 compiled app behavior is additionally checked in the gallery and browser
 journeys.
+
+## Development
+
+Use the Node.js version in `.node-version`. Run `npm ci` and `npm run dev` for
+the frontend. Run `npm run verify` for the CI quality gate. The Worker and its
+local D1 database are described in [Deployment](DEPLOYMENT.md).
 
 ## Release operations
 

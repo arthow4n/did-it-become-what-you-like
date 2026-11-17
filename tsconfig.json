@@ -10,12 +10,17 @@
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["react", "react-dom", "vite/client"]
+    "types": ["react", "react-dom", "vite/client", "node"]
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.d.ts",
+    ".cloudflare/types/index.d.ts",
+    "scripts/**/*.ts",
+    "server/**/*.ts",
+    "e2e/**/*.ts",
+    "vitest.config.ts",
     "vite.config.ts",
     "vite.gallery.config.ts"
   ]

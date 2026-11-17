@@ -48,8 +48,8 @@ text, instruction version, semantic output schema, local Zod validation,
 parser, normalization, and draft mapping. Adapters translate only provider
 wire formats.
 
-Exact dependencies are npm:@google/genai@2.19.0 and
-npm:@openrouter/sdk@1.2.82. Pinned SDK types remain final authority for request
+Exact dependencies are `@google/genai@2.19.0` and
+`@openrouter/sdk@1.2.82`. Pinned SDK types remain final authority for request
 field spelling; no substitute SDK or version was introduced.
 
 ### Discovery and routing

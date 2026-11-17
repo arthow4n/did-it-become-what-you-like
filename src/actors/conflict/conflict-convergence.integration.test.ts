@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { ConflictStore } from "./store.ts";
 import type {
   ConflictJsonObject,
@@ -8,10 +9,6 @@ import {
   createFakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
 import { createTestClock } from "../../test-support/clock.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -87,7 +84,7 @@ function dependencies(prefix: string) {
   };
 }
 
-Deno.test("conflict-convergence: concurrent explicit resolutions converge to one durable result", async () => {
+test("conflict-convergence: concurrent explicit resolutions converge to one durable result", async () => {
   const alpha = dependencies("alpha");
   const beta = dependencies("beta");
   await seed(alpha.local);

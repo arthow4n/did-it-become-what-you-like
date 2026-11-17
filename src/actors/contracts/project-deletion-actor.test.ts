@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createActor } from "xstate";
 import { createProjectDeletionMachine } from "../project-deletion.ts";
 import type {
@@ -5,10 +6,6 @@ import type {
   ProjectDeletionTarget,
 } from "../../domain/project-deletion.ts";
 import { settle } from "../../test-support/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -49,7 +46,7 @@ function start(service: ProjectDeletionService) {
   return actor;
 }
 
-Deno.test(
+test(
   "project-deletion actor keeps wrong name invalid and does not commit",
   async () => {
     let commits = 0;
@@ -73,7 +70,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "project-deletion actor retries an export failure before confirming",
   async () => {
     let exports = 0;
@@ -98,7 +95,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "project-deletion actor retries a commit failure and reaches completed",
   async () => {
     let commits = 0;
@@ -124,7 +121,7 @@ Deno.test(
   },
 );
 
-Deno.test("project-deletion actor cancellation reaches a terminal handoff", () => {
+test("project-deletion actor cancellation reaches a terminal handoff", () => {
   const actor = start(createService());
   actor.send({ type: "project-delete.cancel" });
   assert(actor.getSnapshot().matches("cancelled"));

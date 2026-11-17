@@ -1,13 +1,10 @@
+import { test } from "vitest";
 import { createActor } from "xstate";
 import { createPreferencesMachine } from "./preferences.ts";
 import { createFakeLocalPort } from "../test-support/fakes/ports.ts";
 import { waitFor } from "../test-support/index.ts";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
-Deno.test("preference actor loads, changes, and persists the day boundary", async () => {
+test("preference actor loads, changes, and persists the day boundary", async () => {
   const local = createFakeLocalPort();
   const actor = createActor(createPreferencesMachine({ local })).start();
 
@@ -38,7 +35,7 @@ Deno.test("preference actor loads, changes, and persists the day boundary", asyn
   actor.stop();
 });
 
-Deno.test("preference actor discards an unsaved boundary back to the saved value", async () => {
+test("preference actor discards an unsaved boundary back to the saved value", async () => {
   const local = createFakeLocalPort();
   const actor = createActor(createPreferencesMachine({ local })).start();
 
@@ -68,7 +65,7 @@ Deno.test("preference actor discards an unsaved boundary back to the saved value
   actor.stop();
 });
 
-Deno.test(
+test(
   "preference actor retries a failed save without reloading over the draft",
   async () => {
     const local = createFakeLocalPort();

@@ -1,8 +1,5 @@
+import { test } from "vitest";
 import { hashForRoute, hashRouteUrl, routeFromHash } from "./routing.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assertEquals<T>(actual: T, expected: T): void {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -12,7 +9,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-Deno.test("hash routing survives a nested Pages refresh URL", () => {
+test("hash routing survives a nested Pages refresh URL", () => {
   const url = hashRouteUrl(
     "https://owner.github.io",
     "/settings/nested",
@@ -27,7 +24,7 @@ Deno.test("hash routing survives a nested Pages refresh URL", () => {
   assertEquals(hashForRoute("settings/nested"), "#/settings/nested");
 });
 
-Deno.test("hash routing preserves a dynamic expense edit route", () => {
+test("hash routing preserves a dynamic expense edit route", () => {
   const route = "/expense/edit/expense-123";
 
   assertEquals(routeFromHash(hashForRoute(route)), route);

@@ -137,8 +137,8 @@ Every task must use this invariant 6-part contract block:
   usage, accessibility requirements.>
 - **Tests:** <Pure unit, actor, component, or adapter tests required to prove
   correctness.>
-- **Verification:** `<exact fast commands>`, e.g.: `deno fmt <changed>`,
-  `deno lint <changed>`, `deno task test:affected`, `git diff --check`.
+- **Verification:** `<exact fast commands>`, e.g.: `npm run fmt -- <changed>`,
+  `npm run lint -- <changed>`, `npm run test:affected`, `git diff --check`.
 ```
 
 ---
@@ -244,8 +244,8 @@ run the `repo-hygiene-pruning` skill (`.agents/skills/repo-hygiene-pruning/SKILL
 3. **Audit Cross-References:** Verify zero dangling `.md` links across the entire
    codebase.
 4. **Environment-Scoped Verification:** Run only syntax, typecheck, lint, and
-   formatting validation (`deno task typecheck`, `deno task fmt:check`,
-   `deno task lint`, `git diff --check`). Do not launch heavy browser tests or
+   formatting validation (`npm run typecheck`, `npm run fmt:check`,
+   `npm run lint`, `git diff --check`). Do not launch heavy browser tests or
    long test suites during doc pruning.
 
 ### How to Structure the Archived Baseline

@@ -1,7 +1,9 @@
-/// <reference path="./deno.d.ts" />
-
-import { mkdir, readFile, stat } from "node:fs/promises";
-import { join } from "node:path";
+import { execFile } from "node:child_process";
+import { build, preview } from "vite";
+import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { promisify } from "node:util";
 import {
   AGENT_BROWSER_VERSION,
   CHROME_FOR_TESTING_VERSION,
@@ -10,10 +12,10 @@ import {
 import { installAgentBrowser } from "./browser/installer.ts";
 import { redactText } from "../src/test-support/redaction.ts";
 
-const ARTIFACT_ROOT = join(Deno.cwd(), ".agent-browser", "artifacts");
-const PROFILE = join(Deno.cwd(), ".agent-browser", "profiles", "gallery");
-const GALLERY_ROOT = join(Deno.cwd(), "dist-gallery");
-const SESSION = "design-system-gallery";
+const ARTIFACT_ROOT = join(process.cwd(), ".agent-browser", "artifacts");
+const PROFILE = await mkdtemp(join(tmpdir(), "dibwyl-gallery-"));
+const exec = promisify(execFile);
+const SESSION = `design-system-gallery-${process.pid}`;
 const BASE_PATH = "/did-it-become-what-you-like/";
 const VIEWPORTS = [
   [320, 568, "narrow"],
@@ -24,35 +26,30 @@ const VIEWPORTS = [
 type CommandResult = { code: number; output: string };
 
 async function run(command: string, args: string[]): Promise<string> {
-  const result = await new Deno.Command(command, {
-    args,
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  const output = redactText(
-    new TextDecoder().decode(result.stdout) +
-      new TextDecoder().decode(result.stderr),
-  );
-  if (result.code !== 0) {
-    throw new Error(
-      `${command} ${args.join(" ")} exited ${result.code}: ${output}`,
-    );
+  try {
+    const { stdout, stderr } = await exec(command, args, { encoding: "utf8" });
+    return redactText(stdout + stderr);
+  } catch (error) {
+    const output = error as { stdout?: string; stderr?: string };
+    throw new Error(redactText(`${String(error)}
+${(output.stdout ?? "").slice(0, 2048)}${
+      (output.stderr ?? "").slice(0, 2048)
+    }`));
   }
-  return output;
 }
 
 async function runAgent(
   installed: { agentBrowserPath: string; chromeExecutablePath: string },
   args: string[],
 ): Promise<CommandResult> {
-  const output = await run(installed.agentBrowserPath, [
+  const output = await run(resolve(installed.agentBrowserPath), [
     "--native",
     "--session",
     SESSION,
     "--profile",
     PROFILE,
     "--executable-path",
-    installed.chromeExecutablePath,
+    resolve(installed.chromeExecutablePath),
     "--json",
     ...args,
   ]);
@@ -60,47 +57,24 @@ async function runAgent(
 }
 
 async function buildGallery(): Promise<void> {
-  await run(Deno.execPath(), ["task", "gallery:build"]);
+  await build({ configFile: "vite.gallery.config.ts" });
 }
 
 async function serveGallery(): Promise<{ url: string; close(): void }> {
-  const controller = new AbortController();
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0, signal: controller.signal },
-    async (request) => {
-      const pathname = new URL(request.url).pathname;
-      const path =
-        (pathname.startsWith(BASE_PATH)
-          ? pathname.slice(BASE_PATH.length)
-          : pathname.replace(/^\/+/, "")) || "gallery.html";
-      const safePath = path === "gallery.html" || path.startsWith("assets/")
-        ? path
-        : "gallery.html";
-      try {
-        const bytes = await readFile(join(GALLERY_ROOT, safePath));
-        const contentType = safePath.endsWith(".html")
-          ? "text/html"
-          : safePath.endsWith(".css")
-          ? "text/css"
-          : safePath.endsWith(".js")
-          ? "text/javascript"
-          : "application/octet-stream";
-        return new Response(new Uint8Array(bytes), {
-          headers: { "content-type": contentType },
-        });
-      } catch {
-        return new Response("Not found", { status: 404 });
-      }
-    },
-  );
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  const address = server.addr;
-  if (typeof address === "string") {
+  const server = await preview({
+    configFile: "vite.gallery.config.ts",
+    preview: { host: "127.0.0.1", port: 0, strictPort: true },
+  });
+  const address = server.httpServer.address();
+  if (!address || typeof address === "string") {
+    server.httpServer.close();
     throw new Error("Gallery server did not bind TCP");
   }
   return {
     url: `http://127.0.0.1:${address.port}${BASE_PATH}gallery.html`,
-    close: () => controller.abort(),
+    close: () => {
+      server.httpServer.close();
+    },
   };
 }
 
@@ -148,7 +122,7 @@ async function main(): Promise<void> {
       }
       await runAgent(installed, [
         "eval",
-        "axe.run(document).then(r => { window.__galleryAxe = JSON.stringify(r) })",
+        "axe.run(document, { resultTypes: ['violations'] }).then(({ violations }) => { window.__galleryAxe = JSON.stringify({ violations }) })",
       ]);
       await runAgent(installed, ["wait", "250"]);
       const axe = parseJsonResult(
@@ -173,7 +147,7 @@ async function main(): Promise<void> {
         ]);
         await runAgent(installed, [
           "eval",
-          "axe.run(document).then(r => { window.__galleryMenuAxe = JSON.stringify(r) })",
+          "axe.run(document, { resultTypes: ['violations'] }).then(({ violations }) => { window.__galleryMenuAxe = JSON.stringify({ violations }) })",
         ]);
         await runAgent(installed, ["wait", "250"]);
         const menuAxe = parseJsonResult(
@@ -221,5 +195,7 @@ try {
   console.error(
     `UNAVAILABLE/FAILED: gallery inspection could not complete on ${platformDescription()}; no success is reported.`,
   );
-  Deno.exit(1);
+  process.exitCode = 1;
+} finally {
+  await rm(PROFILE, { recursive: true, force: true });
 }

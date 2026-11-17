@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   CANONICAL_EXPORT_FORMAT,
   createCanonicalExport,
@@ -15,10 +16,6 @@ import {
   parseCurrentDataset,
   UNCATEGORIZED_CATEGORY_ID,
 } from "../schema/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -167,7 +164,7 @@ function receiptDataset(): PortableDataset {
   };
 }
 
-Deno.test(
+test(
   "import-export domain: canonical export restores exact dataset and history",
   () => {
     const first = createCanonicalExport({
@@ -186,7 +183,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "import-export domain: receipt aggregates and deletion history round-trip without dangling references",
   () => {
     const document = createCanonicalExport({ dataset: receiptDataset() });
@@ -207,7 +204,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "import-export domain: legacy schema migrates and future schema is refused",
   () => {
     const legacy = { ...dataset(), schemaVersion: 0, format: undefined };
@@ -248,7 +245,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "import-export domain: diagnostics distinguish schema, record, and migration failures",
   () => {
     let missingSchema: unknown;
@@ -295,7 +292,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "import-export domain: unknown future envelope and local secrets are rejected",
   () => {
     let rejected: unknown;
@@ -324,7 +321,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "import-export domain: stable history duplicates are idempotent and collisions fail",
   () => {
     const first = change("change-a");
@@ -353,7 +350,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "import-export domain: replacement advances generation and protects old packets",
   () => {
     assertEquals(replacementGeneration(3, 1).nextGeneration, 4);

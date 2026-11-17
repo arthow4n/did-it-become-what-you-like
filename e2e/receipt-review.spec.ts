@@ -405,7 +405,7 @@ test(
     expect(requestBody.systemInstruction.parts[0].text).toContain("SEK");
     expect(JSON.stringify(requestBody)).not.toContain("e2e-test-placeholder");
     expect(JSON.stringify(requestBody)).not.toContain("Receipt project");
-    expect(await page.locator('input[type="file"]').count()).toBe(0);
+    expect(await page.locator("input[type=\"file\"]").count()).toBe(0);
     const localStorageKeys = await page.evaluate(() =>
       Object.keys(localStorage)
     );

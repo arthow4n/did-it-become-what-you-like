@@ -1,6 +1,5 @@
 // Deterministic fakes resolve most operations synchronously while preserving
 // the asynchronous port contracts; require-await would add no behavior here.
-// deno-lint-ignore-file require-await
 
 import {
   adapterError,

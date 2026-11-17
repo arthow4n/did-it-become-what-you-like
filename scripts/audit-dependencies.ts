@@ -1,4 +1,4 @@
-/// <reference path="./deno.d.ts" />
+import { readFile } from "node:fs/promises";
 import { z } from "zod";
 
 const responseSchema = z.record(
@@ -12,17 +12,21 @@ const responseSchema = z.record(
 
 type AdvisoryResponse = z.infer<typeof responseSchema>;
 
-export function dependencyVersions(lock: { npm: Record<string, unknown> }) {
-  const versions: Record<string, string[]> = {};
-  for (const key of Object.keys(lock.npm)) {
-    const split = key.indexOf("@", 1);
-    if (split <= 0) throw new Error(`Invalid npm lock entry: ${key}`);
-    const name = key.slice(0, split);
-    const version = key.slice(split + 1).split("_")[0];
-    (versions[name] ??= []).push(version);
-  }
-  for (const name of Object.keys(versions)) {
-    versions[name] = [...new Set(versions[name])];
+type PackageLock = {
+  packages: Record<string, { version?: string; name?: string }>;
+};
+
+export function dependencyVersions(lock: PackageLock) {
+  const versions: Record<string, string[]> = Object.create(null);
+  for (const [path, entry] of Object.entries(lock.packages)) {
+    if (!path) continue;
+    const name = entry.name ??
+      path.slice(path.lastIndexOf("node_modules/") + "node_modules/".length);
+    if (!entry.version) {
+      throw new Error(`Missing version in npm lock entry: ${path}`);
+    }
+    const known = versions[name] ??= [];
+    if (!known.includes(entry.version)) known.push(entry.version);
   }
   return versions;
 }
@@ -59,9 +63,15 @@ export function classifyAdvisories(
         advisory.severity === "moderate" &&
         advisory.url ===
           "https://github.com/advisories/GHSA-g3hv-75wg-m249";
+      // All callers use project-owned glob patterns during build and testing.
+      const isAcceptedPicomatch = name === "picomatch" &&
+        versions[name]?.length === 1 && versions[name][0] === "4.0.7" &&
+        advisory.severity === "high" &&
+        advisory.url === "https://github.com/advisories/GHSA-fc5q-39xc-vjpf";
       const acceptedBuildToolFinding = isAcceptedDeepmerge ||
         isAcceptedGlob ||
-        isAcceptedMinimatch;
+        isAcceptedMinimatch ||
+        isAcceptedPicomatch;
       (acceptedBuildToolFinding ? accepted : blocked).push(message);
     }
   }
@@ -69,7 +79,7 @@ export function classifyAdvisories(
 }
 
 export async function auditDependencies(
-  lock: { npm: Record<string, unknown> },
+  lock: PackageLock,
   request: typeof fetch = fetch,
 ) {
   const versions = dependencyVersions(lock);
@@ -91,7 +101,7 @@ export async function auditDependencies(
 }
 
 if (import.meta.main) {
-  const lock = JSON.parse(await Deno.readTextFile("deno.lock"));
+  const lock = JSON.parse(await readFile("package-lock.json", "utf8"));
   const { blocked, accepted } = await auditDependencies(lock);
   for (const finding of accepted) {
     console.log(`Accepted build-tool exception: ${finding}`);
@@ -99,7 +109,7 @@ if (import.meta.main) {
   for (const finding of blocked) console.error(finding);
   if (blocked.length) {
     console.error(`Dependency audit failed: ${blocked.length} advisories.`);
-    Deno.exit(1);
+    process.exit(1);
   }
   console.log("Dependency audit passed; no unaccepted advisories.");
 }

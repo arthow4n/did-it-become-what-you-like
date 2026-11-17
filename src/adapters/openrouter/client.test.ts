@@ -1,12 +1,9 @@
+import { test } from "vitest";
 import {
   createOpenRouterClient,
   type OpenRouterChatRequest,
   type OpenRouterSdk,
 } from "./client.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -75,10 +72,10 @@ function chatRequest(): OpenRouterChatRequest {
     model: model.id,
     messages: [{
       role: "user",
-      content: [{ type: "text", text: "shared prompt" }, {
-        type: "image_url",
-        imageUrl: { url: "data:image/jpeg;base64,AQID" },
-      }],
+      content: [
+        { type: "text", text: "shared prompt" },
+        { type: "image_url", imageUrl: { url: "data:image/jpeg;base64,AQID" } },
+      ],
     }],
     responseFormat: {
       type: "json_schema",
@@ -97,7 +94,7 @@ function chatRequest(): OpenRouterChatRequest {
   };
 }
 
-Deno.test("OpenRouter client constructs the pinned SDK with only the API key", () => {
+test("OpenRouter client constructs the pinned SDK with only the API key", () => {
   let constructedKey = "";
   const sdk = {} as OpenRouterSdk;
   const client = createOpenRouterClient("sk-or-v1.synthetic", (key) => {
@@ -108,7 +105,7 @@ Deno.test("OpenRouter client constructs the pinned SDK with only the API key", (
   assertEquals(constructedKey, "sk-or-v1.synthetic");
 });
 
-Deno.test("OpenRouter client translates model, endpoint, ZDR, and chat wire types", async () => {
+test("OpenRouter client translates model, endpoint, ZDR, and chat wire types", async () => {
   let modelRequest: unknown;
   let endpointRequest: unknown;
   let zdrRequest: unknown;

@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   buildReceiptPrompt,
   mapReceiptOutputToDraft,
@@ -12,10 +13,6 @@ import {
 } from "./schema.ts";
 
 import { assertRejects } from "../../test-support/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -57,13 +54,13 @@ const validOutput = {
   uncertainty: [],
 } as const;
 
-Deno.test("shared receipt prompt has one stable instruction identity and version", () => {
+test("shared receipt prompt has one stable instruction identity and version", () => {
   const prompt = buildReceiptPrompt(promptRequest);
   assert(
     prompt.includes(`Instruction version: ${RECEIPT_INSTRUCTION_VERSION}.`),
   );
   assert(prompt.includes(`exactly schema ${RECEIPT_SCHEMA_VERSION}`));
-  assert(prompt.includes('"id":"category-groceries"'));
+  assert(prompt.includes("\"id\":\"category-groceries\""));
   assert(prompt.includes("Device locale: sv-SE."));
   assert(prompt.includes("Project default currency: SEK."));
   assertEquals(
@@ -75,7 +72,7 @@ Deno.test("shared receipt prompt has one stable instruction identity and version
   );
 });
 
-Deno.test("shared receipt prompt attaches category description when present and omits when absent", () => {
+test("shared receipt prompt attaches category description when present and omits when absent", () => {
   const promptWithDesc = buildReceiptPrompt({
     ...promptRequest,
     categories: [
@@ -92,22 +89,22 @@ Deno.test("shared receipt prompt attaches category description when present and 
   });
   assert(
     promptWithDesc.includes(
-      '{"id":"category-food","name":"Food","description":"Supermarket, snacks, coffee"}',
+      "{\"id\":\"category-food\",\"name\":\"Food\",\"description\":\"Supermarket, snacks, coffee\"}",
     ),
   );
   assert(
     promptWithDesc.includes(
-      '{"id":"category-rent","name":"Rent"}',
+      "{\"id\":\"category-rent\",\"name\":\"Rent\"}",
     ),
   );
   assert(
     !promptWithDesc.includes(
-      '"id":"category-rent","name":"Rent","description"',
+      "\"id\":\"category-rent\",\"name\":\"Rent\",\"description\"",
     ),
   );
 });
 
-Deno.test("shared schema and parser normalize and validate provider output", async () => {
+test("shared schema and parser normalize and validate provider output", async () => {
   const localized = {
     ...validOutput,
     lines: [{
@@ -141,7 +138,7 @@ Deno.test("shared schema and parser normalize and validate provider output", asy
   assert(ReceiptOutputSchema.safeParse(validOutput).success);
 });
 
-Deno.test("shared mapper preserves receipt semantics and flags unavailable categories", () => {
+test("shared mapper preserves receipt semantics and flags unavailable categories", () => {
   const output = ReceiptOutputSchema.parse({
     ...validOutput,
     lines: [{
@@ -163,7 +160,7 @@ Deno.test("shared mapper preserves receipt semantics and flags unavailable categ
   assertEquals(draft.mismatches, []);
 });
 
-Deno.test("shared schema and parser normalize time and map it to draft", () => {
+test("shared schema and parser normalize time and map it to draft", () => {
   const withTime = {
     ...validOutput,
     time: "14:35",
@@ -192,7 +189,7 @@ Deno.test("shared schema and parser normalize time and map it to draft", () => {
   }
 });
 
-Deno.test("buildReceiptPrompt tailors instructions when documentType is menu", () => {
+test("buildReceiptPrompt tailors instructions when documentType is menu", () => {
   const prompt = buildReceiptPrompt({
     ...promptRequest,
     documentType: "menu",
@@ -203,7 +200,7 @@ Deno.test("buildReceiptPrompt tailors instructions when documentType is menu", (
   assert(prompt.includes("set unitPrice to the printed price"));
 });
 
-Deno.test("shared schema and parser accept null in optional line fields and capture detailed errors", () => {
+test("shared schema and parser accept null in optional line fields and capture detailed errors", () => {
   const outputWithNulls = {
     ...validOutput,
     time: "N/A",
@@ -247,7 +244,7 @@ Deno.test("shared schema and parser accept null in optional line fields and capt
   }
 });
 
-Deno.test("shared schema and parser accept empty or null merchant and normalize alternative date formats", () => {
+test("shared schema and parser accept empty or null merchant and normalize alternative date formats", () => {
   // Empty merchant string and European date format DD/MM/YYYY
   const outputEmptyMerchantDmy = {
     ...validOutput,

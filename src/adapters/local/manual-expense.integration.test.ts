@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { createActor } from "xstate";
 import { createManualExpenseMachine } from "../../actors/manual-expense.ts";
@@ -7,10 +8,6 @@ import {
   type ProjectCategoryService,
 } from "../../domain/organization.ts";
 import { deleteLocalRepositoryDatabase, openLocalRepository } from "./index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -90,7 +87,7 @@ function createActorFor(
   ).start();
 }
 
-Deno.test("manual-save integration: local commit is atomic and clears durable draft", async () => {
+test("manual-save integration: local commit is atomic and clears durable draft", async () => {
   await withRepository(async (repository, service) => {
     await service.commitProject({ type: "create", project });
     const actor = createActorFor(
@@ -130,7 +127,7 @@ Deno.test("manual-save integration: local commit is atomic and clears durable dr
   });
 });
 
-Deno.test("manual-save integration: repository failure retains draft and retry commits", async () => {
+test("manual-save integration: repository failure retains draft and retry commits", async () => {
   let failWrites = false;
   await withRepository(async (repository, service) => {
     await service.commitProject({ type: "create", project });

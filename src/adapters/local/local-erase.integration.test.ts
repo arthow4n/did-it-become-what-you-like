@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { createActor } from "xstate";
 import {
@@ -11,10 +12,6 @@ import {
   createMemoryStorage as memoryStorage,
   settle,
 } from "../../test-support/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -30,7 +27,7 @@ function databaseName(): string {
   return `did-it-become-what-you-like-r600-local-erase-${sequence}`;
 }
 
-Deno.test(
+test(
   "local-erase integration: reload between database erasure and key removal resumes safely",
   async () => {
     const name = databaseName();

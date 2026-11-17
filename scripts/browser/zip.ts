@@ -1,5 +1,4 @@
-/// <reference path="../deno.d.ts" />
-
+import { mkdir, writeFile } from "node:fs/promises";
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_SIGNATURE = 0x02014b50;
 const LOCAL_SIGNATURE = 0x04034b50;
@@ -29,6 +28,9 @@ export async function extractZipArchive(
         `Chrome archive has an invalid entry at offset ${cursor}.`,
       );
     }
+    const unixMode = view.getUint8(cursor + 5) === 3
+      ? view.getUint32(cursor + 38, true) >>> 16
+      : 0;
     const compression = view.getUint16(cursor + 10, true);
     const compressedSize = view.getUint32(cursor + 20, true);
     const uncompressedSize = view.getUint32(cursor + 24, true);
@@ -76,8 +78,10 @@ export async function extractZipArchive(
       throw new Error(`Chrome archive size mismatch for ${name}.`);
     }
     const outputPath = `${destination}/${safeName}`;
-    await Deno.mkdir(parentDirectory(outputPath), { recursive: true });
-    await Deno.writeFile(outputPath, content);
+    await mkdir(parentDirectory(outputPath), { recursive: true });
+    await writeFile(outputPath, content, {
+      mode: (unixMode & 0o111) ? 0o755 : 0o644,
+    });
   }
 }
 

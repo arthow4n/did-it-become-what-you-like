@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   createOpenRouterAdapter,
   mapOpenRouterError,
@@ -29,10 +30,6 @@ import {
   createMemoryStorage as memoryStorage,
   type MemoryStorage,
 } from "../../test-support/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -225,7 +222,7 @@ function endpoint(
   return { modelId, providerName, tag, supportedParameters };
 }
 
-Deno.test("OpenRouter secrets use the existing namespaced SecretStoragePort", async () => {
+test("OpenRouter secrets use the existing namespaced SecretStoragePort", async () => {
   const memory = memoryStorage();
   const storage = createLocalStorageSecretStorage(memory.storage);
   const adapter = createOpenRouterAdapter({
@@ -247,7 +244,7 @@ Deno.test("OpenRouter secrets use the existing namespaced SecretStoragePort", as
   assertEquals(memory.values.has(OPENROUTER_API_KEY_STORAGE_KEY), false);
 });
 
-Deno.test("model refresh uses exact metadata filters, consumes pagination, and never extracts", async () => {
+test("model refresh uses exact metadata filters, consumes pagination, and never extracts", async () => {
   const requests: unknown[] = [];
   let chatCalls = 0;
   const fixture = createFixture({
@@ -283,7 +280,7 @@ Deno.test("model refresh uses exact metadata filters, consumes pagination, and n
   assertEquals(chatCalls, 0);
 });
 
-Deno.test("model refresh consumes every SDK page", async () => {
+test("model refresh consumes every SDK page", async () => {
   const fixture = createFixture({
     modelPages: [[QUALIFIED_MODEL], [SECOND_QUALIFIED_MODEL]],
   });
@@ -295,7 +292,7 @@ Deno.test("model refresh consumes every SDK page", async () => {
   );
 });
 
-Deno.test("ZDR model discovery adds the exact pinned SDK filter", async () => {
+test("ZDR model discovery adds the exact pinned SDK filter", async () => {
   const requests: unknown[] = [];
   const fixture = createFixture({
     routing: { requireZdr: true },
@@ -311,7 +308,7 @@ Deno.test("ZDR model discovery adds the exact pinned SDK filter", async () => {
   }]);
 });
 
-Deno.test("endpoint discovery filters schema support and intersects ZDR by modelId plus tag", async () => {
+test("endpoint discovery filters schema support and intersects ZDR by modelId plus tag", async () => {
   const modelEndpoints = [
     endpoint("provider-a", "Provider A"),
     endpoint("provider-b", "Provider B"),
@@ -338,7 +335,7 @@ Deno.test("endpoint discovery filters schema support and intersects ZDR by model
   assertEquals(zdrCalls, 1);
 });
 
-Deno.test("extraction sends shared prompt first, one base64 image second, strict schema, and privacy routing", async () => {
+test("extraction sends shared prompt first, one base64 image second, strict schema, and privacy routing", async () => {
   let captured: OpenRouterChatRequest | undefined;
   const bytes = Uint8Array.from([1, 2, 3]);
   const fixture = createFixture({
@@ -382,7 +379,7 @@ Deno.test("extraction sends shared prompt first, one base64 image second, strict
   assertEquals(bytes.every((byte) => byte === 0), true);
 });
 
-Deno.test("extraction omits optional privacy fields and keeps same-model fallback enabled by default", async () => {
+test("extraction omits optional privacy fields and keeps same-model fallback enabled by default", async () => {
   let captured: OpenRouterChatRequest | undefined;
   const fixture = createFixture({ onChat: (request) => captured = request });
   await fixture.adapter.setApiKey("sk-or-v1.synthetic-defaults");
@@ -399,7 +396,7 @@ Deno.test("extraction omits optional privacy fields and keeps same-model fallbac
   );
 });
 
-Deno.test("invalid output is rejected through the shared parser and redacted", async () => {
+test("invalid output is rejected through the shared parser and redacted", async () => {
   const hostile = "credential=sk-or-v1.hostile";
   const fixture = createFixture({
     responseText: JSON.stringify({ hostile }),
@@ -415,7 +412,7 @@ Deno.test("invalid output is rejected through the shared parser and redacted", a
   assert(!JSON.stringify(error).includes(hostile));
 });
 
-Deno.test("provider failures, offline state, abort, and cleanup use safe adapter errors", async () => {
+test("provider failures, offline state, abort, and cleanup use safe adapter errors", async () => {
   const providerSecret = "sk-or-v1.provider-secret";
   const fixture = createFixture({
     chatFailure: {
@@ -465,7 +462,7 @@ Deno.test("provider failures, offline state, abort, and cleanup use safe adapter
   );
 });
 
-Deno.test("invalid requests never call the provider", async () => {
+test("invalid requests never call the provider", async () => {
   let calls = 0;
   const fixture = createFixture({ onChat: () => calls++ });
   await fixture.adapter.setApiKey("sk-or-v1.synthetic-invalid-request");
@@ -492,7 +489,7 @@ Deno.test("invalid requests never call the provider", async () => {
   assertEquals(calls, 0);
 });
 
-Deno.test("OpenRouter error mapping preserves only safe status taxonomy", () => {
+test("OpenRouter error mapping preserves only safe status taxonomy", () => {
   const secret = "sk-or-v1.raw-provider-payload";
   const error = mapOpenRouterError({
     statusCode: 429,
@@ -510,7 +507,7 @@ Deno.test("OpenRouter error mapping preserves only safe status taxonomy", () => 
   );
 });
 
-Deno.test("model discovery maps provider failures without retaining raw payloads", async () => {
+test("model discovery maps provider failures without retaining raw payloads", async () => {
   const secret = "sk-or-v1.list-models-provider-payload";
   const fixture = createFixture({
     modelsFailure: { statusCode: 503, body: secret, message: secret },
@@ -525,7 +522,7 @@ Deno.test("model discovery maps provider failures without retaining raw payloads
   assert(!JSON.stringify(error).includes(secret));
 });
 
-Deno.test("OpenRouter extractReceipt supports application/pdf and rejects unsupported MIME types", async () => {
+test("OpenRouter extractReceipt supports application/pdf and rejects unsupported MIME types", async () => {
   let captured: OpenRouterChatRequest | undefined;
   const fixture = createFixture({
     onChat: (request) => {

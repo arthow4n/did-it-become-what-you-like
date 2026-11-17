@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { Profiler } from "react";
 import { createActor } from "xstate";
 import { createReceiptReviewMachine } from "../../actors/receipt.ts";
@@ -12,9 +13,7 @@ import {
   selectReviewLinks,
 } from "./review-line.tsx";
 
-declare const Deno: { test(name: string, fn: () => Promise<void>): void };
-
-Deno.test("receipt rows ignore sibling quantity and persistence updates but observe currency and saving", async () => {
+test("receipt rows ignore sibling quantity and persistence updates but observe currency and saving", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     const local = createFakeLocalPort();
     const review: ReceiptReviewDraft = {

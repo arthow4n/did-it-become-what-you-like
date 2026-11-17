@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createActor } from "xstate";
 import {
   type ImagePreparationPort,
@@ -23,10 +24,6 @@ import {
   createReceiptReviewMachine,
   createReceiptScanMachine,
 } from "../receipt.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -116,7 +113,7 @@ function createScanMachine(
   });
 }
 
-Deno.test("receipt-actor scan: disclosure, preparation, validation, and unreadable lines", async () => {
+test("receipt-actor scan: disclosure, preparation, validation, and unreadable lines", async () => {
   const gemini = createFakeGeminiPort(extractionDraft({
     lines: [
       {
@@ -169,7 +166,7 @@ Deno.test("receipt-actor scan: disclosure, preparation, validation, and unreadab
   actor.stop();
 });
 
-Deno.test("receipt-actor scan: offline/model loss failure can retry without retaining image", async () => {
+test("receipt-actor scan: offline/model loss failure can retry without retaining image", async () => {
   const gemini = createFakeGeminiPort(extractionDraft());
   const preparation = createFakeImagePreparationPort();
   const released: string[] = [];
@@ -248,7 +245,7 @@ Deno.test("receipt-actor scan: offline/model loss failure can retry without reta
   resetFailure.stop();
 });
 
-Deno.test(
+test(
   "receipt-actor scan: resolver failures are typed and cleanup cannot mask extraction errors",
   async () => {
     const preparation = createFakeImagePreparationPort();
@@ -338,7 +335,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-actor scan: repeated extracted lines are consolidated before review", async () => {
+test("receipt-actor scan: repeated extracted lines are consolidated before review", async () => {
   const gemini = createFakeGeminiPort(extractionDraft({
     printedTotal: "-5",
     lines: [{
@@ -391,7 +388,7 @@ Deno.test("receipt-actor scan: repeated extracted lines are consolidated before 
   actor.stop();
 });
 
-Deno.test("receipt-actor scan: cancellation aborts the request and releases the image", async () => {
+test("receipt-actor scan: cancellation aborts the request and releases the image", async () => {
   const gemini = createFakeGeminiPort(extractionDraft());
   const preparation = createFakeImagePreparationPort();
   const released: string[] = [];
@@ -408,7 +405,7 @@ Deno.test("receipt-actor scan: cancellation aborts the request and releases the 
   actor.stop();
 });
 
-Deno.test("receipt-actor scan: cancelling an ongoing scan returns to selected state without exiting", async () => {
+test("receipt-actor scan: cancelling an ongoing scan returns to selected state without exiting", async () => {
   const gemini = createFakeGeminiPort(extractionDraft());
   const preparation = createFakeImagePreparationPort();
   const released: string[] = [];
@@ -436,7 +433,7 @@ Deno.test("receipt-actor scan: cancelling an ongoing scan returns to selected st
   actor.stop();
 });
 
-Deno.test("receipt-actor scan: reset aborts an active attempt and clears transient failure state", async () => {
+test("receipt-actor scan: reset aborts an active attempt and clears transient failure state", async () => {
   const gemini = createFakeGeminiPort(extractionDraft());
   const preparation = createFakeImagePreparationPort();
   const released: string[] = [];
@@ -455,7 +452,7 @@ Deno.test("receipt-actor scan: reset aborts an active attempt and clears transie
   actor.stop();
 });
 
-Deno.test("receipt-actor scan: replacing an image cancels an active attempt before selection", async () => {
+test("receipt-actor scan: replacing an image cancels an active attempt before selection", async () => {
   const gemini = createFakeGeminiPort(extractionDraft());
   const preparation = createFakeImagePreparationPort();
   const released: string[] = [];
@@ -524,7 +521,7 @@ async function receiptHarness(): Promise<{
   return { local, organization };
 }
 
-Deno.test("receipt-actor review: validated draft saves atomically", async () => {
+test("receipt-actor review: validated draft saves atomically", async () => {
   const { local, organization } = await receiptHarness();
   const commit = createReceiptCommitService(local, {
     nextId: (kind) =>
@@ -568,7 +565,7 @@ Deno.test("receipt-actor review: validated draft saves atomically", async () => 
   void organization;
 });
 
-Deno.test(
+test(
   "receipt-actor review: manual seeds restore existing drafts before defaults",
   async () => {
     const { local } = await receiptHarness();
@@ -627,7 +624,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-actor review: commit failure retries and explicit discard clears", async () => {
+test("receipt-actor review: commit failure retries and explicit discard clears", async () => {
   const { local, organization } = await receiptHarness();
   const commit = createReceiptCommitService(local, {
     nextId: (kind) =>
@@ -654,7 +651,7 @@ Deno.test("receipt-actor review: commit failure retries and explicit discard cle
   void organization;
 });
 
-Deno.test("receipt-actor review: retains every line and parent edit in-memory", async () => {
+test("receipt-actor review: retains every line and parent edit in-memory", async () => {
   const { local } = await receiptHarness();
   const actor = createActor(
     createReceiptReviewMachine({
@@ -719,7 +716,7 @@ Deno.test("receipt-actor review: retains every line and parent edit in-memory", 
   actor.stop();
 });
 
-Deno.test(
+test(
   "receipt-actor review: submit and discard during draft persistence do not drop events",
   async () => {
     const { local } = await receiptHarness();
@@ -799,7 +796,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-actor scan: offline state accepts scan and retry events", async () => {
+test("receipt-actor scan: offline state accepts scan and retry events", async () => {
   const gemini = createFakeGeminiPort(extractionDraft());
   const preparation = createFakeImagePreparationPort();
   const actor = createActor(createScanMachine(gemini, preparation, [])).start();

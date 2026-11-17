@@ -1,7 +1,4 @@
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
+import { test } from "vitest";
 import { within } from "@testing-library/dom";
 import { createElement, useEffect } from "react";
 import {
@@ -99,7 +96,7 @@ function assertEqual<T>(
   }
 }
 
-Deno.test("design-system formats signed large values without numeric coercion", () => {
+test("design-system formats signed large values without numeric coercion", () => {
   assertEqual(
     formatMoney("-999999999999999999999.99", "SEK"),
     "SEK -999,999,999,999,999,999,999.99",
@@ -107,7 +104,7 @@ Deno.test("design-system formats signed large values without numeric coercion", 
   assertEqual(formatMoney("+24.00", "SEK"), "SEK +24.00");
 });
 
-Deno.test("design-system button exposes accessible pending and disabled states", async () => {
+test("design-system button exposes accessible pending and disabled states", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -131,7 +128,7 @@ Deno.test("design-system button exposes accessible pending and disabled states",
   );
 });
 
-Deno.test("design-system fields expose names, descriptions, and invalid semantics", async () => {
+test("design-system fields expose names, descriptions, and invalid semantics", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -155,7 +152,7 @@ Deno.test("design-system fields expose names, descriptions, and invalid semantic
   );
 });
 
-Deno.test("design-system native fields and definition lists expose valid semantics", async () => {
+test("design-system native fields and definition lists expose valid semantics", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -209,7 +206,7 @@ Deno.test("design-system native fields and definition lists expose valid semanti
   );
 });
 
-Deno.test("design-system field facades translate Mantine value and file events", async () => {
+test("design-system field facades translate Mantine value and file events", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       let merchant = "";
@@ -284,7 +281,7 @@ Deno.test("design-system field facades translate Mantine value and file events",
   );
 });
 
-Deno.test("design-system search facade owns uncontrolled clear state", async () => {
+test("design-system search facade owns uncontrolled clear state", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       const changes: string[] = [];
@@ -311,7 +308,7 @@ Deno.test("design-system search facade owns uncontrolled clear state", async () 
   );
 });
 
-Deno.test("design-system file facade reports rejected files", async () => {
+test("design-system file facade reports rejected files", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       let rejected: File[] = [];
@@ -339,7 +336,7 @@ Deno.test("design-system file facade reports rejected files", async () => {
   );
 });
 
-Deno.test("design-system secret facade keeps reveal control keyboard reachable", async () => {
+test("design-system secret facade keeps reveal control keyboard reachable", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       const mounted = render(
@@ -364,7 +361,7 @@ Deno.test("design-system secret facade keeps reveal control keyboard reachable",
   );
 });
 
-Deno.test("design-system color and delete-reassign composites expose controlled choices", async () => {
+test("design-system color and delete-reassign composites expose controlled choices", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, async () => {
       let color = "#78DCCA";
@@ -425,7 +422,7 @@ Deno.test("design-system color and delete-reassign composites expose controlled 
   );
 });
 
-Deno.test("design-system confirmation facade exposes an explicit cancel action", async () => {
+test("design-system confirmation facade exposes an explicit cancel action", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {
       let confirmed = false;
@@ -451,7 +448,7 @@ Deno.test("design-system confirmation facade exposes an explicit cancel action",
   );
 });
 
-Deno.test("design-system danger confirmation resets its phrase after cancel and reopen", async () => {
+test("design-system danger confirmation resets its phrase after cancel and reopen", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       const mounted = render(
@@ -492,7 +489,7 @@ Deno.test("design-system danger confirmation resets its phrase after cancel and 
   );
 });
 
-Deno.test("design-system selection and progress remain keyboard-addressable", async () => {
+test("design-system selection and progress remain keyboard-addressable", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {
       let direction = "spent";
@@ -505,10 +502,10 @@ Deno.test("design-system selection and progress remain keyboard-addressable", as
           null,
           createElement(SegmentedControl, {
             label: "Direction",
-            options: [{ id: "spent", label: "Spent" }, {
-              id: "back",
-              label: "Money back",
-            }],
+            options: [
+              { id: "spent", label: "Spent" },
+              { id: "back", label: "Money back" },
+            ],
             defaultValue: "spent",
             onChange: (value) => direction = value,
           }),
@@ -561,7 +558,7 @@ Deno.test("design-system selection and progress remain keyboard-addressable", as
   );
 });
 
-Deno.test("design-system select mounts options only while open and uses native scrolling", async () => {
+test("design-system select mounts options only while open and uses native scrolling", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {
       let renderedOptions = 0;
@@ -604,7 +601,7 @@ Deno.test("design-system select mounts options only while open and uses native s
   );
 });
 
-Deno.test("design-system select preserves controlled open state and callbacks", async () => {
+test("design-system select preserves controlled open state and callbacks", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {
       let nextOpen: boolean | undefined;
@@ -627,7 +624,7 @@ Deno.test("design-system select preserves controlled open state and callbacks", 
   );
 });
 
-Deno.test("design-system: provider maps semantic tokens and locks the dark scheme", async () => {
+test("design-system: provider maps semantic tokens and locks the dark scheme", async () => {
   await withComponentHarness(({ window, renderBare }) =>
     withAriaGlobals(window, () => {
       const mounted = renderBare(
@@ -658,7 +655,7 @@ Deno.test("design-system: provider maps semantic tokens and locks the dark schem
   );
 });
 
-Deno.test("design-system: structural facade wrappers retain semantic roots over Mantine", async () => {
+test("design-system: structural facade wrappers retain semantic roots over Mantine", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       let inlineRef: HTMLDivElement | null = null;
@@ -774,7 +771,7 @@ Deno.test("design-system: structural facade wrappers retain semantic roots over 
   );
 });
 
-Deno.test("design-system dialog uses a named overlay and returns a useful trigger", async () => {
+test("design-system dialog uses a named overlay and returns a useful trigger", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       const mounted = render(
@@ -789,7 +786,7 @@ Deno.test("design-system dialog uses a named overlay and returns a useful trigge
       );
       const view = within(document.body);
       const dialogRoot = document.querySelector(
-        '[data-dialog-layout="adaptive"]',
+        "[data-dialog-layout=\"adaptive\"]",
       );
       assertEqual(dialogRoot?.getAttribute("aria-hidden"), "true");
       const trigger = view.getByRole("button", { name: "Open details" });
@@ -799,14 +796,14 @@ Deno.test("design-system dialog uses a named overlay and returns a useful trigge
         assert(view.getByRole("dialog", { name: "Details" }))
       );
       assertEqual(dialogRoot?.getAttribute("aria-hidden"), "false");
-      assert(document.querySelector('[data-dialog-layout="adaptive"]'));
+      assert(document.querySelector("[data-dialog-layout=\"adaptive\"]"));
       assert(view.getByText("Dialog content"));
       mounted.unmount();
     })
   );
 });
 
-Deno.test("design-system: overlay facades preserve disclosure and menu contracts", async () => {
+test("design-system: overlay facades preserve disclosure and menu contracts", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       let expanded = false;
@@ -854,7 +851,7 @@ Deno.test("design-system: overlay facades preserve disclosure and menu contracts
       fireEvent.click(view.getByRole("button", { name: "Open actions" }));
       const menu = view.getByRole("menu", { name: "Open actions" });
       assert(
-        !menu.querySelector('[role="presentation"]'),
+        !menu.querySelector("[role=\"presentation\"]"),
         "menus must not contain Mantine's presentation focus placeholder",
       );
       const item = await waitFor(() =>
@@ -869,7 +866,7 @@ Deno.test("design-system: overlay facades preserve disclosure and menu contracts
   );
 });
 
-Deno.test("design-system: feedback facades preserve live regions and notification dismissal", async () => {
+test("design-system: feedback facades preserve live regions and notification dismissal", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       let dismissed = 0;
@@ -899,7 +896,7 @@ Deno.test("design-system: feedback facades preserve live regions and notificatio
       const view = within(document.body);
       assert(
         document.querySelector(
-          '.ds-notifications[data-position="bottom-right"]',
+          ".ds-notifications[data-position=\"bottom-right\"]",
         ),
       );
       assertEqual(
@@ -934,7 +931,7 @@ Deno.test("design-system: feedback facades preserve live regions and notificatio
   );
 });
 
-Deno.test("design-system: toast auto-dismisses after configured duration", async () => {
+test("design-system: toast auto-dismisses after configured duration", async () => {
   await withComponentHarness(({ window, render, waitFor }) =>
     withAriaGlobals(window, async () => {
       let dismissed = 0;
@@ -956,7 +953,7 @@ Deno.test("design-system: toast auto-dismisses after configured duration", async
   );
 });
 
-Deno.test("design-system: remaining feedback facades preserve progress and state contracts", async () => {
+test("design-system: remaining feedback facades preserve progress and state contracts", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -998,7 +995,7 @@ Deno.test("design-system: remaining feedback facades preserve progress and state
       });
       assert(!indeterminate.hasAttribute("aria-valuenow"));
       assert(view.getByText("In progress"));
-      assert(document.querySelector('.ds-skeleton[aria-hidden="true"]'));
+      assert(document.querySelector(".ds-skeleton[aria-hidden=\"true\"]"));
       assert(document.querySelector("section.ds-empty-state"));
       assert(view.getByRole("heading", { name: "No receipts" }));
       assert(view.getByRole("alert"));
@@ -1008,7 +1005,7 @@ Deno.test("design-system: remaining feedback facades preserve progress and state
   );
 });
 
-Deno.test("design-system: shell facades preserve landmarks and navigation state", async () => {
+test("design-system: shell facades preserve landmarks and navigation state", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let selected = "";
     const mounted = render(
@@ -1046,7 +1043,7 @@ Deno.test("design-system: shell facades preserve landmarks and navigation state"
   });
 });
 
-Deno.test("design-system: list and form facades preserve native structures", async () => {
+test("design-system: list and form facades preserve native structures", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -1109,7 +1106,7 @@ Deno.test("design-system: list and form facades preserve native structures", asy
   );
 });
 
-Deno.test("design-system: filter and status facades preserve grouping and workflow state", async () => {
+test("design-system: filter and status facades preserve grouping and workflow state", async () => {
   await withComponentHarness(({ window, render, fireEvent, waitFor }) =>
     withAriaGlobals(window, async () => {
       let removed = 0;
@@ -1200,7 +1197,7 @@ Deno.test("design-system: filter and status facades preserve grouping and workfl
   );
 });
 
-Deno.test("design-system page headers can provide the application heading", async () => {
+test("design-system page headers can provide the application heading", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -1220,7 +1217,7 @@ Deno.test("design-system page headers can provide the application heading", asyn
   );
 });
 
-Deno.test("design-system money summary exposes a valid labeled group", async () => {
+test("design-system money summary exposes a valid labeled group", async () => {
   await withComponentHarness(({ render }) => {
     const mounted = render(
       createElement(MoneySummary, {
@@ -1235,7 +1232,7 @@ Deno.test("design-system money summary exposes a valid labeled group", async () 
   });
 });
 
-Deno.test("design-system category totals preserve long identity and signed money", async () => {
+test("design-system category totals preserve long identity and signed money", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {
       let selected = "";
@@ -1264,7 +1261,7 @@ Deno.test("design-system category totals preserve long identity and signed money
   );
 });
 
-Deno.test("design-system money component keeps sign and currency in accessible text", async () => {
+test("design-system money component keeps sign and currency in accessible text", async () => {
   await withComponentHarness(({ render }) => {
     const mounted = render(
       createElement(MoneyText, { amount: "+24.00", currency: "SEK" }),
@@ -1274,7 +1271,7 @@ Deno.test("design-system money component keeps sign and currency in accessible t
   });
 });
 
-Deno.test("design-system positive money rows always expose an explicit plus", async () => {
+test("design-system positive money rows always expose an explicit plus", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -1303,7 +1300,7 @@ Deno.test("design-system positive money rows always expose an explicit plus", as
   );
 });
 
-Deno.test("design-system expense row renders description as primary text with subtle merchant text and date in separate row", async () => {
+test("design-system expense row renders description as primary text with subtle merchant text and date in separate row", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -1330,7 +1327,7 @@ Deno.test("design-system expense row renders description as primary text with su
   );
 });
 
-Deno.test("design-system expense row omits date when showDate is false", async () => {
+test("design-system expense row omits date when showDate is false", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -1354,7 +1351,7 @@ Deno.test("design-system expense row omits date when showDate is false", async (
   );
 });
 
-Deno.test("design-system receipt groups show line descriptions and omit line date", async () => {
+test("design-system receipt groups show line descriptions and omit line date", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {
       let viewed = false;
@@ -1400,7 +1397,7 @@ Deno.test("design-system receipt groups show line descriptions and omit line dat
   );
 });
 
-Deno.test("design-system receipt metadata displays merchant name or clearly shows unfilled state", async () => {
+test("design-system receipt metadata displays merchant name or clearly shows unfilled state", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       // 1. With merchant name
@@ -1456,7 +1453,7 @@ Deno.test("design-system receipt metadata displays merchant name or clearly show
   );
 });
 
-Deno.test("design-system receipt line management variant removes review selection", async () => {
+test("design-system receipt line management variant removes review selection", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -1484,7 +1481,7 @@ Deno.test("design-system receipt line management variant removes review selectio
   );
 });
 
-Deno.test("design-system currency search and merchant clearing remain functional", async () => {
+test("design-system currency search and merchant clearing remain functional", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {
       let selectedCurrency = "SEK";
@@ -1522,7 +1519,7 @@ Deno.test("design-system currency search and merchant clearing remain functional
   );
 });
 
-Deno.test("design-system period picker exposes a controlled custom calendar period", async () => {
+test("design-system period picker exposes a controlled custom calendar period", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, () => {
       let kind = "day";
@@ -1573,7 +1570,7 @@ Deno.test("design-system period picker exposes a controlled custom calendar peri
   );
 });
 
-Deno.test("design-system category picker prioritizes recents and handles chip selection", async () => {
+test("design-system category picker prioritizes recents and handles chip selection", async () => {
   await withComponentHarness(({ window, render, fireEvent }) =>
     withAriaGlobals(window, async () => {
       let selectedCategory = "groceries";
@@ -1615,7 +1612,7 @@ Deno.test("design-system category picker prioritizes recents and handles chip se
   );
 });
 
-Deno.test("design-system category picker renders up to 15 quick chips", async () => {
+test("design-system category picker renders up to 15 quick chips", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const categories = Array.from({ length: 20 }, (_, i) => ({
@@ -1641,7 +1638,7 @@ Deno.test("design-system category picker renders up to 15 quick chips", async ()
   );
 });
 
-Deno.test("design-system receipt line card renders categoryControl when provided", async () => {
+test("design-system receipt line card renders categoryControl when provided", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -1671,7 +1668,7 @@ Deno.test("design-system receipt line card renders categoryControl when provided
   );
 });
 
-Deno.test("design-system expense form renders sticky action bar when requested", async () => {
+test("design-system expense form renders sticky action bar when requested", async () => {
   await withComponentHarness(({ window, render }) =>
     withAriaGlobals(window, () => {
       const mounted = render(
@@ -1690,7 +1687,7 @@ Deno.test("design-system expense form renders sticky action bar when requested",
   );
 });
 
-Deno.test("design-system select focus leaves options closed until explicitly opened", async () => {
+test("design-system select focus leaves options closed until explicitly opened", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     let selected = "";
     const mounted = render(
@@ -1718,7 +1715,7 @@ Deno.test("design-system select focus leaves options closed until explicitly ope
   });
 });
 
-Deno.test("design-system collapsed disclosures do not render or retain hidden rows", async () => {
+test("design-system collapsed disclosures do not render or retain hidden rows", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let renders = 0;
     let mounts = 0;

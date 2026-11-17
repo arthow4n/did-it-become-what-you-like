@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createActor } from "xstate";
 import type { CausalSyncPort } from "../../adapters/ports/index.ts";
 import {
@@ -17,10 +18,6 @@ import {
 } from "./index.ts";
 import { createSyncMachine, type SyncActorContext } from "./machine.ts";
 import { waitFor } from "../../test-support/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -85,7 +82,7 @@ async function configuredActor(
   return actor;
 }
 
-Deno.test("sync-actor: explicit configure/connect/request/reconnect/disconnect modes are local-first", async () => {
+test("sync-actor: explicit configure/connect/request/reconnect/disconnect modes are local-first", async () => {
   const actor = await configuredActor();
   actor.send({ type: "sync.network.offline" });
   assertEquals(actor.getSnapshot().value, "offline");
@@ -103,7 +100,7 @@ Deno.test("sync-actor: explicit configure/connect/request/reconnect/disconnect m
   actor.stop();
 });
 
-Deno.test("sync-actor: account switch is confirmed and restart hydration restores durable snapshot", async () => {
+test("sync-actor: account switch is confirmed and restart hydration restores durable snapshot", async () => {
   const actor = await configuredActor();
   actor.send({
     type: "sync.configure",
@@ -135,7 +132,7 @@ Deno.test("sync-actor: account switch is confirmed and restart hydration restore
   restarted.stop();
 });
 
-Deno.test("sync-actor: offline, token expiry, quota, and retirement failures stay honest", async () => {
+test("sync-actor: offline, token expiry, quota, and retirement failures stay honest", async () => {
   const offline = await configuredActor(failingPort("offline"));
   offline.send({ type: "sync.request", request: { reason: "manual" } });
   await waitFor(
@@ -176,7 +173,7 @@ Deno.test("sync-actor: offline, token expiry, quota, and retirement failures sta
   retired.stop();
 });
 
-Deno.test(
+test(
   "sync-actor: generic sync failure retries online without dropping the pending request",
   async () => {
     const causal = createFakeCausalSyncPort(initialCausalSnapshot());
@@ -213,7 +210,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "sync-actor: explicit corrupt-data recovery resets the remote file before syncing",
   async () => {
     const causal = createFakeCausalSyncPort(initialCausalSnapshot());
@@ -248,7 +245,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "sync-actor: ordinary failures never invoke corrupt-data recovery",
   async () => {
     const causal = createFakeCausalSyncPort(initialCausalSnapshot());
@@ -267,7 +264,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "sync-actor: generic error retry stays offline when the actor is offline",
   async () => {
     const actor = createSyncActor({
@@ -299,7 +296,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "sync-actor: conflict resolution clears only the resolved conflict ids",
   () => {
     const machine = createSyncMachine(dependencies());
@@ -364,7 +361,7 @@ Deno.test(
   },
 );
 
-Deno.test("sync-actor: concurrent triggers coalesce into a second causal exchange", async () => {
+test("sync-actor: concurrent triggers coalesce into a second causal exchange", async () => {
   let readCount = 0;
   let release!: () => void;
   const gate = new Promise<void>((resolve) => release = resolve);
@@ -393,7 +390,7 @@ Deno.test("sync-actor: concurrent triggers coalesce into a second causal exchang
   actor.stop();
 });
 
-Deno.test("sync-actor: known devices travel through causal data without entering ordinary projections", async () => {
+test("sync-actor: known devices travel through causal data without entering ordinary projections", async () => {
   const causal = createInMemoryCausalSyncPort({
     initialSnapshot: initialCausalSnapshot(),
   });
@@ -428,7 +425,7 @@ Deno.test("sync-actor: known devices travel through causal data without entering
   second.stop();
 });
 
-Deno.test("sync-actor: last-seen is throttled and uploaded in the current exchange", async () => {
+test("sync-actor: last-seen is throttled and uploaded in the current exchange", async () => {
   let now = Date.parse("2026-08-24T10:00:00.000Z");
   const remote = createInMemoryCausalSyncPort();
   const deps = createDefaultSyncDependencies({

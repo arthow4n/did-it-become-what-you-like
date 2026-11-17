@@ -1,4 +1,4 @@
-/// <reference path="../deno.d.ts" />
+import { test } from "vitest";
 import {
   auditDependencies,
   classifyAdvisories,
@@ -27,13 +27,14 @@ const knownMinimatch = {
   severity: "moderate",
 };
 
-Deno.test("dependency audit extracts scoped, unscoped, and peer-qualified versions", () => {
+test("dependency audit extracts scoped, unscoped, and nested versions", () => {
   const versions = dependencyVersions({
-    npm: {
-      "@scope/library@1.2.3_react@19.3.0": {},
-      "library@4.5.6": {},
-      "under_score@1.0.0": {},
-      "library@4.5.6_react@19.3.0": {},
+    packages: {
+      "": {},
+      "node_modules/@scope/library": { version: "1.2.3" },
+      "node_modules/library": { version: "4.5.6" },
+      "node_modules/under_score": { version: "1.0.0" },
+      "node_modules/under_score/node_modules/library": { version: "4.5.6" },
     },
   });
   assert(versions["@scope/library"]?.[0] === "1.2.3", "Scoped version missing");
@@ -44,7 +45,7 @@ Deno.test("dependency audit extracts scoped, unscoped, and peer-qualified versio
   assert(versions.library?.join() === "4.5.6", "Versions must be deduplicated");
 });
 
-Deno.test("dependency audit accepts only the reviewed build-tool advisory and exact version", () => {
+test("dependency audit accepts only the reviewed build-tool advisory and exact version", () => {
   const result = classifyAdvisories({
     deepmerge: ["4.3.1"],
     glob: ["11.1.0"],
@@ -75,9 +76,10 @@ Deno.test("dependency audit accepts only the reviewed build-tool advisory and ex
     const versions of [["10.2.6"], ["5.1.9"], ["10.2.6", "5.1.9", "6.0.0"]]
   ) {
     assert(
-      classifyAdvisories({ minimatch: versions }, {
-        minimatch: [knownMinimatch],
-      })
+      classifyAdvisories(
+        { minimatch: versions },
+        { minimatch: [knownMinimatch] },
+      )
         .blocked.length === 1,
       "Changed minimatch versions must trigger review",
     );
@@ -95,22 +97,29 @@ Deno.test("dependency audit accepts only the reviewed build-tool advisory and ex
     );
   }
   assert(
-    classifyAdvisories({ glob: ["11.1.0"] }, {
-      glob: [{ ...knownGlob, severity: "high" }],
-    })
+    classifyAdvisories(
+      { glob: ["11.1.0"] },
+      { glob: [{ ...knownGlob, severity: "high" }] },
+    )
       .blocked.length === 1,
     "Escalated glob advisory must block deployment",
   );
   assert(
-    classifyAdvisories({ minimatch: ["10.2.6", "5.1.9"] }, {
-      minimatch: [{ ...knownMinimatch, severity: "high" }],
-    }).blocked.length === 1,
+    classifyAdvisories(
+      { minimatch: ["10.2.6", "5.1.9"] },
+      { minimatch: [{ ...knownMinimatch, severity: "high" }] },
+    ).blocked.length === 1,
     "Escalated minimatch advisory must block deployment",
   );
 });
 
-Deno.test("dependency audit submits every locked package and fails closed on unavailable or malformed responses", async () => {
-  const lock = { npm: { "deepmerge@4.3.1": {}, "zod@4.6.7": {} } };
+test("dependency audit submits every locked package and fails closed on unavailable or malformed responses", async () => {
+  const lock = {
+    packages: {
+      "node_modules/deepmerge": { version: "4.3.1" },
+      "node_modules/zod": { version: "4.6.7" },
+    },
+  };
   const result = await auditDependencies(lock, (_url, init) => {
     const body = JSON.parse(String(init?.body));
     assert(body.zod[0] === "4.6.7", "Audit must include runtime dependencies");

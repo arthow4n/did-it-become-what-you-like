@@ -1,10 +1,9 @@
-/// <reference path="../deno.d.ts" />
-
 import {
   chmod,
   mkdir,
   readFile,
   rename,
+  rm,
   stat,
   writeFile,
 } from "node:fs/promises";
@@ -78,16 +77,12 @@ export async function downloadVerified(
 }
 
 async function removeIfExists(path: string): Promise<void> {
-  try {
-    await Deno.remove(path);
-  } catch (error) {
-    if (!(error instanceof Deno.errors.NotFound)) throw error;
-  }
+  await rm(path, { force: true });
 }
 
 export async function installAgentBrowser(
-  os = Deno.build.os,
-  arch = Deno.build.arch,
+  os = process.platform,
+  arch = process.arch,
 ): Promise<InstalledBrowser> {
   const platform = detectBrowserPlatform(os, arch);
   if (!platform) {
@@ -130,7 +125,7 @@ export async function installAgentBrowser(
       artifacts.agentBrowser.sha256,
       agentBrowserPath,
     );
-    if (os !== "windows") await chmod(agentBrowserPath, 0o755);
+    if (os !== "win32") await chmod(agentBrowserPath, 0o755);
   }
   if (await isFile(chromeArchivePath)) {
     await assertChecksum(
@@ -150,7 +145,15 @@ export async function installAgentBrowser(
       new Uint8Array(await readFile(chromeArchivePath)),
       chromeDirectory,
     );
-    if (os !== "windows") await chmod(chromeExecutablePath, 0o755);
+    if (os !== "win32") await chmod(chromeExecutablePath, 0o755);
+  }
+
+  if (platform === "linux-x64") {
+    // Repair the executable bit on cached installs made by older extractors.
+    await chmod(
+      join(dirname(chromeExecutablePath), "chrome_crashpad_handler"),
+      0o755,
+    );
   }
 
   if (

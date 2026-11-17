@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { reactCompiler } from "./scripts/react-compiler.ts";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
@@ -5,29 +6,12 @@ import { VitePWA } from "vite-plugin-pwa";
 
 export const REPOSITORY_BASE_PATH = "/did-it-become-what-you-like/";
 
-type CommandOutput = { readonly stdout: Uint8Array };
-type DenoLike = {
-  readonly Command: new (
-    command: string,
-    options: {
-      readonly args: readonly string[];
-      readonly stdout: "piped";
-      readonly stderr: "null";
-    },
-  ) => { readonly outputSync: () => CommandOutput };
-};
-
 function buildCommit(): string {
   try {
-    const deno = (globalThis as unknown as { readonly Deno?: DenoLike }).Deno;
-    if (!deno) return "development";
-    const output = new deno.Command("git", {
-      args: ["rev-parse", "--short", "HEAD"],
-      stdout: "piped",
-      stderr: "null",
-    }).outputSync();
-    const commit = new TextDecoder().decode(output.stdout).trim();
-    return commit || "development";
+    return execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim() || "development";
   } catch {
     return "development";
   }

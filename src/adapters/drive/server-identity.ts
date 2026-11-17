@@ -13,7 +13,7 @@ export type ServerIdentityOptions = {
 
 /**
  * Adapter that provides Google Drive access tokens dispensed by the
- * Deno Deploy backend server using an HttpOnly session cookie.
+ * sync backend using an HttpOnly session cookie.
  */
 export function createServerIdentityProvider(
   options: ServerIdentityOptions,
@@ -37,7 +37,9 @@ export function createServerIdentityProvider(
               });
 
               if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
+                const errData = await res.json<
+                  { error?: string; message?: string }
+                >().catch(() => ({} as { error?: string; message?: string }));
                 console.error(
                   `[Sync Server] /api/google-drive-token failed (${res.status}):`,
                   errData,
@@ -49,7 +51,9 @@ export function createServerIdentityProvider(
                 return;
               }
 
-              const data = await res.json();
+              const data = await res.json<
+                { accessToken: string; expiresIn?: number }
+              >();
               config.callback({
                 access_token: data.accessToken,
                 expires_in: data.expiresIn ?? 3600,
@@ -85,7 +89,7 @@ export function createServerIdentityProvider(
           credentials: "include",
           signal: opOptions?.signal,
         });
-      } catch (_err) {
+      } catch {
         if (opOptions?.signal?.aborted) {
           throw new DOMException("Aborted", "AbortError");
         }

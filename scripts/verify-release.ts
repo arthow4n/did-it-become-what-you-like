@@ -1,5 +1,5 @@
-/// <reference path="./deno.d.ts" />
-
+import { execFileSync } from "node:child_process";
+import { readdir, readFile, stat } from "node:fs/promises";
 import {
   APP_VERSION,
   LICENSE_NAME,
@@ -25,6 +25,7 @@ export const CSP_DIRECTIVES = {
     "https://www.googleapis.com",
     "https://generativelanguage.googleapis.com",
     "https://did-it-become-what-you-like.arthow4n.deno.net",
+    "https://did-it-become-what-you-like.arthow4n.workers.dev",
   ],
   "default-src": ["'self'"],
   "font-src": ["'self'"],
@@ -92,29 +93,25 @@ function assert(
 }
 
 async function readText(path: string): Promise<string> {
-  return await Deno.readTextFile(path);
+  return await readFile(path, "utf8");
 }
 
 async function readBytes(path: string): Promise<Uint8Array> {
-  return await Deno.readFile(path);
+  return await readFile(path);
 }
 
 async function assertFile(path: string): Promise<void> {
   try {
-    await Deno.stat(path);
+    await stat(path);
   } catch {
     throw new Error(`Expected production artifact: ${path}`);
   }
 }
 
-async function gitCommit(): Promise<string> {
-  const result = await new Deno.Command("git", {
-    args: ["rev-parse", "--short", "HEAD"],
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  assert(result.code === 0, "Unable to determine the reviewed Git commit.");
-  const commit = new TextDecoder().decode(result.stdout).trim();
+function gitCommit(): string {
+  const commit = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+    encoding: "utf8",
+  }).trim();
   assert(
     /^[0-9a-f]+$/.test(commit),
     "The reviewed Git commit must be a hexadecimal short hash.",
@@ -127,12 +124,12 @@ async function collectArtifacts(
   prefix = "",
 ): Promise<ArtifactFile[]> {
   const files: ArtifactFile[] = [];
-  for await (const entry of Deno.readDir(directory)) {
+  for await (const entry of await readdir(directory, { withFileTypes: true })) {
     const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
     const path = `${directory}/${entry.name}`;
-    if (entry.isDirectory) {
+    if (entry.isDirectory()) {
       files.push(...await collectArtifacts(path, relative));
-    } else if (entry.isFile) {
+    } else if (entry.isFile()) {
       files.push({ path: relative, bytes: await readBytes(path) });
     }
   }
@@ -156,7 +153,7 @@ async function sha256(bytes: Uint8Array): Promise<string> {
   ).join("");
 }
 
-const commit = await gitCommit();
+const commit = gitCommit();
 const sourceIndex = await readText("index.html");
 const index = await readText(`${DIST}/index.html`);
 const manifest = JSON.parse(await readText(`${DIST}/manifest.webmanifest`)) as {
@@ -206,12 +203,12 @@ assert(
 );
 assert(
   index.includes(
-    '<script src="https://accounts.google.com/gsi/client" defer></script>',
+    "<script src=\"https://accounts.google.com/gsi/client\" defer></script>",
   ),
   "The deployed index must load Google Identity Services before the app.",
 );
 assert(
-  !index.includes('src="/assets/') && !index.includes('href="/assets/'),
+  !index.includes("src=\"/assets/") && !index.includes("href=\"/assets/"),
   "The deployed index must not contain origin-root asset URLs.",
 );
 

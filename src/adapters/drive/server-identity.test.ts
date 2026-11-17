@@ -1,10 +1,7 @@
+import { test } from "vitest";
 import { createServerIdentityProvider } from "./server-identity.ts";
 import { DRIVE_APP_DATA_SCOPE } from "./browser.ts";
 import { settle } from "../../test-support/async.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assertEquals<T>(actual: T, expected: T): void {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -14,7 +11,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-Deno.test("server-identity: successful token request invokes callback", async () => {
+test("server-identity: successful token request invokes callback", async () => {
   const mockFetch: typeof fetch = (input, init) => {
     assertEquals(
       input.toString(),
@@ -60,7 +57,7 @@ Deno.test("server-identity: successful token request invokes callback", async ()
   });
 });
 
-Deno.test("server-identity: unauthorized response invokes error_callback", async () => {
+test("server-identity: unauthorized response invokes error_callback", async () => {
   const mockFetch: typeof fetch = () => {
     return Promise.resolve(
       new Response(
@@ -98,7 +95,7 @@ Deno.test("server-identity: unauthorized response invokes error_callback", async
   });
 });
 
-Deno.test("server-identity: revoke calls logout endpoint", async () => {
+test("server-identity: revoke calls logout endpoint", async () => {
   let logoutCalled = false;
   const mockFetch: typeof fetch = (input, init) => {
     assertEquals(

@@ -117,7 +117,7 @@ and multi-device synchronization according to the agreed sync design.
   appropriate presentation.
 - All arithmetic over persisted decimal values must use a pinned
   arbitrary-precision decimal library. `big.js` in strict mode is the
-  provisional default because it is small, browser/Deno compatible, and can
+  provisional default because it is small, browser/Node compatible, and can
   reject accidental primitive-number inputs. Native JavaScript Decimal may
   replace it only after that proposal is standardized and supported by the
   agreed browser baseline.
@@ -484,7 +484,7 @@ and multi-device synchronization according to the agreed sync design.
   detail in IndexedDB and hidden Drive sync data. User-controlled interchange in
   the initial release remains versioned JSON.
 - Before implementation commits to Automerge, a focused compatibility check must
-  verify its current release with Deno 2, the production browser build,
+  verify its current release with Node.js, the production browser build,
   repository-namespaced IndexedDB, conflict inspection/resolution, and a Google
   Drive round trip.
 - That gate must exercise every critical agreed synchronization primitive,
@@ -729,24 +729,14 @@ and multi-device synchronization according to the agreed sync design.
 - The service worker must be registered with scope restricted to this
   repository's GitHub Pages base path. It must not intercept or cache requests
   belonging to another repository on the same owner origin.
-- The project must use Deno 2 to execute all development and build tooling,
-  including the frontend toolchain.
-- Application and test source code must use TypeScript 7 with strict type
-  checking. The project must pin the official stable `typescript@7` package, and
-  the canonical `deno task typecheck` workflow must invoke that package's `tsc`
-  executable through Deno 2. Deno's separate experimental `--unstable-tsgo`
-  integration is neither required nor a substitute for this dependency. Silently
-  falling back to an older TypeScript checker is not acceptable for the required
-  type-checking gate.
-- `deno task` must be the canonical interface for project-owned development,
-  formatting, linting, testing, building, and maintenance commands.
-- Development, testing, and deployment must not require a Node.js, npm, pnpm,
-  Yarn, or Bun project toolchain. Dependencies and tools must be compatible with
-  Deno 2 and reproducibly pinned or locked.
-- A backend should be avoided unless an agreed product requirement cannot be met
-  reasonably and safely in the client.
-- If a backend becomes necessary, it must be designed for and deployed on Deno
-  Deploy.
+- Use Node.js and npm for development and build tooling. Pin Node.js in
+  `.node-version` and install dependencies with `npm ci`.
+- Application and test source use TypeScript 7 with strict type checking.
+  `npm run typecheck` invokes the pinned stable TypeScript compiler.
+- Project-owned development, formatting, linting, testing, building, and
+  maintenance commands are npm scripts.
+- Google Drive Persisted mode uses a Cloudflare Worker and D1 to secure Google
+  OAuth refresh tokens. Direct mode uses Google Identity Services in the browser.
 - Prefer a local-first, static architecture. Any proposal to introduce a backend
   must identify the requirement it serves, explain why a browser-only solution
   is insufficient, and be agreed upon before implementation.
@@ -895,7 +885,7 @@ and multi-device synchronization according to the agreed sync design.
 - The frontend must minimize this accepted risk with a restrictive Content
   Security Policy, no runtime CDN dependencies or unrelated third-party scripts,
   safe rendering of user/LLM text, and a deliberately small dependency surface.
-- This accepted key design does not currently justify a Deno Deploy backend. It
+- This accepted key design does not currently justify a backend. It
   may be revisited if the threat model or deployment scope changes.
 - A custom domain is not required. Deployment uses the repository's standard
   GitHub Pages URL, with explicit acceptance that other projects on the same
@@ -918,14 +908,9 @@ and multi-device synchronization according to the agreed sync design.
 - The application must have unit tests.
 - The application must have end-to-end tests covering its critical user
   journeys.
-- Deno's built-in `deno test` runner with `@std/assert` is the default for pure
-  domain, XState actor, adapter integration, and component suites. React
-  component tests use React Testing Library with `happy-dom`, subject to the
-  foundation compatibility gate; Jest and Vitest are not introduced without a
-  demonstrated compatibility need.
-- Browser E2E uses a proper test dependency which produces deterministic
-  assertions, failures, traces, and nonzero exits. Playwright is the provisional
-  choice and must pass the Deno-only compatibility gate before it is pinned.
+- Use Vitest for domain, XState actor, adapter integration, and component
+  suites. React component tests use React Testing Library with `happy-dom`.
+- Browser E2E uses Playwright for deterministic assertions, failures, and traces.
   `agent-browser` is deliberately not the E2E assertion framework; it remains
   the coding agent's separate visual, interaction, accessibility-tree, and axe
   inspection tool.
@@ -977,8 +962,7 @@ and multi-device synchronization according to the agreed sync design.
   not only automated DOM assertions.
 - Browser checks should include screenshots and accessibility-tree inspection
   where useful, and should exercise offline and error states when applicable.
-- `agent-browser` is installed reproducibly through a Deno-run installer which
+- `agent-browser` is installed reproducibly through an npm script that
   downloads a pinned native release for the current platform, verifies a
   repository-pinned SHA-256, and installs the corresponding Chrome for Testing.
-  Exact implementation-time versions and hashes are recorded build inputs;
-  Node/npm is not a project toolchain.
+  Exact implementation-time versions and hashes are recorded build inputs.

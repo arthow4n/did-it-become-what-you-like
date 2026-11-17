@@ -1,12 +1,12 @@
-/// <reference path="../deno.d.ts" />
-
+import { readFile } from "node:fs/promises";
+import { test } from "vitest";
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-Deno.test("CI and Pages workflows follow reviewed security and task policies", async () => {
-  const ci = await Deno.readTextFile(".github/workflows/ci.yml");
-  const pages = await Deno.readTextFile(".github/workflows/pages.yml");
+test("CI and Pages workflows follow reviewed security and task policies", async () => {
+  const ci = await readFile(".github/workflows/ci.yml", "utf8");
+  const pages = await readFile(".github/workflows/pages.yml", "utf8");
   const workflows = [ci, pages];
 
   for (const [index, workflow] of workflows.entries()) {
@@ -19,8 +19,11 @@ Deno.test("CI and Pages workflows follow reviewed security and task policies", a
       );
     }
     assert(
-      !/\b(?:npm|pnpm|yarn|bun)\b/i.test(workflow),
-      `workflow ${index + 1} must not invoke a Node package-manager toolchain`,
+      workflow.includes("node-version-file: .node-version") &&
+        workflow.includes("run: npm ci"),
+      `workflow ${
+        index + 1
+      } must install dependencies with the pinned Node runtime and npm lockfile`,
     );
     assert(
       !/\b(?:secrets\.|GITHUB_TOKEN|GOOGLE_|GEMINI_|API_KEY|CLIENT_SECRET)\b/i
@@ -35,8 +38,8 @@ Deno.test("CI and Pages workflows follow reviewed security and task policies", a
     )
   ) {
     assert(
-      runLine.includes("deno task"),
-      `every workflow run step must use a Deno task: ${runLine.trim()}`,
+      /^run: npm (ci|run verify)$/.test(runLine.trim()),
+      `every workflow run step must use the npm quality workflow: ${runLine.trim()}`,
     );
   }
 
@@ -50,7 +53,7 @@ Deno.test("CI and Pages workflows follow reviewed security and task policies", a
   );
   for (const [index, workflow] of workflows.entries()) {
     assert(
-      workflow.includes("deno task verify"),
+      workflow.includes("npm run verify"),
       `workflow ${index + 1} must run the canonical CI quality gate`,
     );
   }
@@ -59,7 +62,7 @@ Deno.test("CI and Pages workflows follow reviewed security and task policies", a
     "Pages must pass the non-secret Google OAuth client ID to the production build",
   );
   const qualityGatePosition = pages.indexOf(
-    "run: deno task verify",
+    "run: npm run verify",
   );
   const uploadPosition = pages.indexOf("actions/upload-pages-artifact@");
   assert(

@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { createElement } from "react";
 import { within } from "@testing-library/dom";
@@ -9,7 +10,6 @@ import {
 import { createInMemoryCausalSyncPort } from "../adapters/sync/causal.ts";
 import { createDeviceRegistry } from "../adapters/sync/device-registry.ts";
 import {
-  AUTOMATIC_SYNC_STATE_KEY,
   deleteEverywhereProgressForDevices,
   SyncPortabilityRuntime,
 } from "./sync-portability-runtime.tsx";
@@ -23,10 +23,6 @@ import {
   createFakeSecretStoragePort,
 } from "../test-support/fakes/ports.ts";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
 function assert(
   condition: unknown,
   message = "Expected condition",
@@ -34,7 +30,7 @@ function assert(
   if (!condition) throw new Error(message);
 }
 
-Deno.test(
+test(
   "sync runtime renders devices and holds local changes during cooldown",
   async () => {
     const databaseName =
@@ -68,10 +64,6 @@ Deno.test(
     const boundaryKey = "__DID_IT_BECAME_WHAT_YOU_LIKE_SYNC_BOUNDARY__";
     const globalRecord = globalThis as unknown as Record<string, unknown>;
     const previousBoundary = globalRecord[boundaryKey];
-    const previousAutomaticSyncState = globalThis.localStorage.getItem(
-      AUTOMATIC_SYNC_STATE_KEY,
-    );
-    globalThis.localStorage.removeItem(AUTOMATIC_SYNC_STATE_KEY);
     globalRecord[boundaryKey] = { drive, causal };
     try {
       await withComponentHarness(
@@ -142,14 +134,6 @@ Deno.test(
       await deleteLocalRepositoryDatabase(databaseName, indexedDB);
       if (previousBoundary === undefined) delete globalRecord[boundaryKey];
       else globalRecord[boundaryKey] = previousBoundary;
-      if (previousAutomaticSyncState === null) {
-        globalThis.localStorage.removeItem(AUTOMATIC_SYNC_STATE_KEY);
-      } else {
-        globalThis.localStorage.setItem(
-          AUTOMATIC_SYNC_STATE_KEY,
-          previousAutomaticSyncState,
-        );
-      }
     }
   },
 );

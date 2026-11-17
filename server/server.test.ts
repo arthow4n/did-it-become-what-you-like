@@ -1,434 +1,327 @@
-/// <reference lib="deno.unstable" />
-/// <reference lib="deno.ns" />
-
-import { decryptToken, encryptToken, hashSessionToken } from "./crypto.ts";
+import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import {
-  handleRequest,
-  isEmailAllowed,
-  parseAllowedOrigins,
-  parseCookies,
-  type ServerEnv,
-} from "./server.ts";
+  decryptToken,
+  encryptToken,
+  hashSessionToken,
+  oauthChallenge,
+  randomToken,
+} from "./crypto.ts";
+import { handleRequest } from "./server.ts";
+import type { SessionStore } from "./store.ts";
+import { createTestDatabase } from "./test-database.ts";
 
-function assertEquals<T>(actual: T, expected: T): void {
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    throw new Error(
-      `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
-    );
-  }
+const env = {
+  FRONTEND_URL: "https://example.github.io/app/",
+  SERVER_ORIGIN: "https://sync.example.workers.dev",
+  GOOGLE_CLIENT_ID: "fixture-client",
+  GOOGLE_CLIENT_SECRET: "fixture-secret",
+  ALLOWED_GOOGLE_EMAILS: " Owner@example.test ",
+  ENCRYPTION_SECRET: "fixture-encryption-key".repeat(3),
+};
+const origin = new URL(env.FRONTEND_URL).origin;
+const tokenPath = "/api/google-drive-token";
+const sessionPath = "/auth/google-drive/session";
+const logoutPath = "/auth/google-drive/logout";
+let dispose: () => Promise<void>;
+let db: D1Database;
+let store: SessionStore;
+
+beforeAll(async () => {
+  ({ db, store, dispose } = await createTestDatabase());
+});
+
+afterAll(async () => await dispose?.());
+
+function request(path: string, init?: RequestInit, google?: typeof fetch) {
+  return handleRequest(
+    new Request(env.SERVER_ORIGIN + path, init),
+    env,
+    store,
+    google,
+  );
 }
 
-function assertNotEquals<T>(actual: T, expected: T): void {
-  if (JSON.stringify(actual) === JSON.stringify(expected)) {
-    throw new Error(
-      `Expected values to differ, but both were ${JSON.stringify(actual)}`,
-    );
-  }
+function firstCookie(response: Response): string {
+  return response.headers.get("Set-Cookie")?.split(";")[0] ?? "";
 }
 
-async function assertRejects(fn: () => Promise<unknown>): Promise<void> {
-  try {
-    await fn();
-  } catch {
-    return;
-  }
-  throw new Error("Expected function to reject, but it resolved");
+async function start(
+  verifier: string,
+  returnTo = env.FRONTEND_URL + "#/settings",
+) {
+  return request(
+    "/auth/google-drive/login?" + new URLSearchParams({
+      return_to: returnTo,
+      handoff_challenge: await oauthChallenge(verifier),
+    }),
+  );
 }
 
-Deno.test("crypto: encrypt and decrypt round trip", async () => {
-  const secret = "test-secret-key-12345678901234567890";
-  const plaintext = "refresh-token-value-xyz";
+function callback(state: string, browserCookie: string, google: typeof fetch) {
+  return request(
+    `/auth/google-drive/callback?state=${state}&code=fixture-code`,
+    {
+      headers: { Cookie: browserCookie },
+    },
+    google,
+  );
+}
 
-  const encrypted = await encryptToken(plaintext, secret);
-  assertEquals(typeof encrypted.ciphertext, "string");
-  assertEquals(typeof encrypted.iv, "string");
-
-  const decrypted = await decryptToken(encrypted, secret);
-  assertEquals(decrypted, plaintext);
-});
-
-Deno.test("crypto: encryption generates unique IVs", async () => {
-  const secret = "test-secret-key-12345678901234567890";
-  const plaintext = "same-token";
-
-  const enc1 = await encryptToken(plaintext, secret);
-  const enc2 = await encryptToken(plaintext, secret);
-
-  assertNotEquals(enc1.iv, enc2.iv);
-  assertNotEquals(enc1.ciphertext, enc2.ciphertext);
-});
-
-Deno.test("crypto: decrypt with wrong secret fails", async () => {
-  const secret = "correct-secret-1234567890";
-  const wrongSecret = "wrong-secret-0987654321";
-  const plaintext = "secret-token";
-
-  const encrypted = await encryptToken(plaintext, secret);
-  await assertRejects(async () => {
-    await decryptToken(encrypted, wrongSecret);
+function redeem(ticket: string, verifier: string, requestOrigin = origin) {
+  const body = JSON.stringify({ ticket, verifier });
+  return request(sessionPath, {
+    method: "POST",
+    headers: {
+      Origin: requestOrigin,
+      "Content-Type": "application/json",
+      "Content-Length": String(body.length),
+    },
+    body,
   });
-});
+}
 
-Deno.test("crypto: hashSessionToken produces consistent SHA-256 hex string", async () => {
-  const token = "session-id-12345";
-  const hash1 = await hashSessionToken(token);
-  const hash2 = await hashSessionToken(token);
-
-  assertEquals(hash1, hash2);
-  assertEquals(hash1.length, 64);
-});
-
-Deno.test("server: parseCookies", () => {
-  assertEquals(parseCookies(null), {});
-  assertEquals(parseCookies(""), {});
-  assertEquals(parseCookies("session_id=abc; other=xyz"), {
-    session_id: "abc",
-    other: "xyz",
-  });
-});
-
-Deno.test("server: isEmailAllowed", () => {
-  // Empty allow-list allows all
-  assertEquals(isEmailAllowed("user@example.com", []), true);
-
-  // Non-empty allow-list enforces case-insensitive match
-  const allowed = ["Owner@Example.com", "friend@test.org"];
-  assertEquals(isEmailAllowed("owner@example.com", allowed), true);
-  assertEquals(isEmailAllowed("OWNER@EXAMPLE.COM", allowed), true);
-  assertEquals(isEmailAllowed("friend@test.org", allowed), true);
-  assertEquals(isEmailAllowed("stranger@example.com", allowed), false);
-});
-
-Deno.test("server: health check returns ok", async () => {
-  const kv = await Deno.openKv(":memory:");
-  const env: ServerEnv = {
-    googleClientId: "test-client-id",
-    googleClientSecret: "test-client-secret",
-    allowedEmails: [],
-    encryptionSecret: "test-encryption-secret-32-chars",
-    frontendOrigin: "https://example.com",
-  };
-
-  const req = new Request("https://sync.example.com/health");
-  const res = await handleRequest(req, kv, env);
-
-  assertEquals(res.status, 200);
-  const data = await res.json();
-  assertEquals(data.status, "ok");
-  assertEquals(
-    res.headers.get("Access-Control-Allow-Origin"),
-    "https://example.com",
-  );
-  assertEquals(res.headers.get("Access-Control-Allow-Credentials"), "true");
-  await kv.close();
-});
-
-Deno.test("server: options preflight returns 204", async () => {
-  const kv = await Deno.openKv(":memory:");
-  const env: ServerEnv = {
-    googleClientId: "test-client-id",
-    googleClientSecret: "test-client-secret",
-    allowedEmails: [],
-    encryptionSecret: "test-encryption-secret",
-    frontendOrigin: "https://example.com",
-  };
-
-  const req = new Request("https://sync.example.com/api/google-drive-token", {
-    method: "OPTIONS",
-  });
-  const res = await handleRequest(req, kv, env);
-
-  assertEquals(res.status, 204);
-  assertEquals(
-    res.headers.get("Access-Control-Allow-Origin"),
-    "https://example.com",
-  );
-  await kv.close();
-});
-
-Deno.test("server: login redirects to google auth url and saves state", async () => {
-  const kv = await Deno.openKv(":memory:");
-  const env: ServerEnv = {
-    googleClientId: "google-cid-123",
-    googleClientSecret: "google-secret-456",
-    allowedEmails: ["owner@example.com"],
-    encryptionSecret: "test-encryption-secret",
-    frontendOrigin: "https://example.com",
-    serverOrigin: "https://sync.example.com",
-  };
-
-  const req = new Request(
-    "https://sync.example.com/auth/google-drive/login?return_to=https://example.com/app",
-  );
-  const res = await handleRequest(req, kv, env);
-
-  assertEquals(res.status, 302);
-  const location = res.headers.get("Location");
-  assertEquals(typeof location, "string");
-
-  const targetUrl = new URL(location!);
-  assertEquals(targetUrl.hostname, "accounts.google.com");
-  assertEquals(targetUrl.searchParams.get("client_id"), "google-cid-123");
-  assertEquals(
-    targetUrl.searchParams.get("redirect_uri"),
-    "https://sync.example.com/auth/google-drive/callback",
-  );
-  assertEquals(targetUrl.searchParams.get("access_type"), "offline");
-  assertEquals(targetUrl.searchParams.get("prompt"), "consent");
-
-  const state = targetUrl.searchParams.get("state");
-  assertEquals(typeof state, "string");
-
-  // Verify state is stored in kv
-  const stored = await kv.get(["oauth_state", state!]);
-  assertEquals(
-    (stored.value as { returnTo: string }).returnTo,
-    "https://example.com/app",
-  );
-  await kv.close();
-});
-
-Deno.test("server: callback handles unauthorized email with 403 Access Denied", async () => {
-  const kv = await Deno.openKv(":memory:");
-  const state = "test-state-123";
-  await kv.set(["oauth_state", state], {
-    returnTo: "https://example.com/app",
-    createdAt: Date.now(),
-  });
-
-  const mockFetch: typeof fetch = (input) => {
-    const url = input.toString();
-    if (url === "https://oauth2.googleapis.com/token") {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            access_token: "mock-access-token",
-            refresh_token: "mock-refresh-token",
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
-      );
-    }
-    if (url === "https://www.googleapis.com/oauth2/v2/userinfo") {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            email: "unauthorized@stranger.com",
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
-      );
-    }
-    return Promise.reject(new Error(`Unhandled fetch: ${url}`));
-  };
-
-  const env: ServerEnv = {
-    googleClientId: "google-cid-123",
-    googleClientSecret: "google-secret-456",
-    allowedEmails: ["allowed@owner.com"],
-    encryptionSecret: "test-encryption-secret-32-bytes",
-    frontendOrigin: "https://example.com",
-    serverOrigin: "https://sync.example.com",
-    fetch: mockFetch,
-  };
-
-  const req = new Request(
-    `https://sync.example.com/auth/google-drive/callback?code=mock-code&state=${state}`,
-  );
-  const res = await handleRequest(req, kv, env);
-
-  assertEquals(res.status, 403);
-  const body = await res.text();
-  assertEquals(body.includes("Access Denied"), true);
-  assertEquals(body.includes("unauthorized@stranger.com"), true);
-
-  await kv.close();
-});
-
-Deno.test("server: callback success sets cookie and redirects to frontend", async () => {
-  const kv = await Deno.openKv(":memory:");
-  const state = "test-state-valid";
-  await kv.set(["oauth_state", state], {
-    returnTo: "https://example.com/app",
-    createdAt: Date.now(),
-  });
-
-  const mockFetch: typeof fetch = (input) => {
-    const url = input.toString();
-    if (url === "https://oauth2.googleapis.com/token") {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            access_token: "mock-access-token",
-            refresh_token: "mock-refresh-token",
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
-      );
-    }
-    if (url === "https://www.googleapis.com/oauth2/v2/userinfo") {
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            email: "allowed@owner.com",
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
-      );
-    }
-    return Promise.reject(new Error(`Unhandled fetch: ${url}`));
-  };
-
-  const env: ServerEnv = {
-    googleClientId: "google-cid-123",
-    googleClientSecret: "google-secret-456",
-    allowedEmails: ["allowed@owner.com"],
-    encryptionSecret: "test-encryption-secret-32-bytes",
-    frontendOrigin: "https://example.com",
-    serverOrigin: "https://sync.example.com",
-    fetch: mockFetch,
-  };
-
-  const req = new Request(
-    `https://sync.example.com/auth/google-drive/callback?code=mock-code&state=${state}`,
-  );
-  const res = await handleRequest(req, kv, env);
-
-  assertEquals(res.status, 302);
-  const location = res.headers.get("Location");
-  assertEquals(typeof location, "string");
-  const locUrl = new URL(location!);
-  assertEquals(locUrl.searchParams.get("sync_connected"), "persisted");
-  assertEquals(locUrl.searchParams.get("email"), "allowed@owner.com");
-
-  const setCookie = res.headers.get("Set-Cookie");
-  assertEquals(typeof setCookie, "string");
-  assertEquals(setCookie!.includes("session_id="), true);
-  assertEquals(setCookie!.includes("HttpOnly"), true);
-  assertEquals(setCookie!.includes("SameSite=None"), true);
-
-  await kv.close();
-});
-
-Deno.test("server: api google-drive-token dispenses access token with valid session", async () => {
-  const kv = await Deno.openKv(":memory:");
-  const encryptionSecret = "test-encryption-secret-32-bytes";
-  const sessionId = "valid-session-123";
-  const sessionHash = await hashSessionToken(sessionId);
-  const encryptedRefreshToken = await encryptToken(
-    "saved-refresh-token",
-    encryptionSecret,
-  );
-
-  await kv.set(["sessions", sessionHash], {
-    encryptedRefreshToken,
-    email: "owner@example.com",
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  });
-
-  const mockFetch: typeof fetch = (input, init) => {
-    const url = input.toString();
-    if (url === "https://oauth2.googleapis.com/token") {
-      const body = init?.body?.toString() ?? "";
-      if (body.includes("refresh_token=saved-refresh-token")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              access_token: "new-access-token-999",
-              expires_in: 3600,
-            }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
+test("Google callback uses PKCE and browser state; the Drive session can be redeemed once, refreshed and logged out", async () => {
+  const verifier = randomToken();
+  const login = await start(verifier);
+  expect(login.status).toBe(302);
+  expect(login.headers.get("Set-Cookie")).toContain("SameSite=Lax");
+  const googleAuth = new URL(login.headers.get("Location")!);
+  expect(googleAuth.origin).toBe("https://accounts.google.com");
+  expect(googleAuth.searchParams.get("code_challenge_method")).toBe("S256");
+  const state = googleAuth.searchParams.get("state")!;
+  const google = vi.fn<typeof fetch>(async (input, init) => {
+    const url = String(input);
+    if (url.includes("oauth2.googleapis.com")) {
+      const body = new URLSearchParams(String(init?.body));
+      if (body.get("grant_type") === "authorization_code") {
+        expect(await oauthChallenge(body.get("code_verifier")!)).toBe(
+          googleAuth.searchParams.get("code_challenge"),
         );
+        return Response.json({
+          access_token: "fixture-access",
+          refresh_token: "fixture-refresh",
+        });
       }
+      expect(body.get("refresh_token")).toBe("fixture-refresh");
+      return Response.json({
+        access_token: "fixture-refreshed",
+        expires_in: 42,
+      });
     }
-    return Promise.reject(new Error(`Unhandled fetch: ${url}`));
-  };
+    expect(url).toBe("https://www.googleapis.com/oauth2/v2/userinfo");
+    return Response.json({ email: "owner@example.test", verified_email: true });
+  });
 
-  const env: ServerEnv = {
-    googleClientId: "google-cid-123",
-    googleClientSecret: "google-secret-456",
-    allowedEmails: ["owner@example.com"],
-    encryptionSecret,
-    frontendOrigin: "https://example.com",
-    serverOrigin: "https://sync.example.com",
-    fetch: mockFetch,
-  };
+  expect(
+    (await callback(state, "__Host-drive_oauth=" + randomToken(), google))
+      .status,
+  ).toBe(400);
+  expect(google).not.toHaveBeenCalled();
+  const callbacks = await Promise.all([
+    callback(state, firstCookie(login), google),
+    callback(state, firstCookie(login), google),
+  ]);
+  expect(callbacks.map((response) => response.status).sort()).toEqual([
+    302,
+    400,
+  ]);
+  const accepted = callbacks.find((response) => response.status === 302)!;
+  const target = new URL(accepted.headers.get("Location")!);
+  expect(target.searchParams.get("sync_connected")).toBe("persisted");
+  expect(target.searchParams.has("email")).toBe(false);
+  expect(target.hash).toMatch(/^#\/settings\|sync_handoff=/);
+  const ticket = target.hash.split("=").at(-1)!;
 
-  // Test 1: No cookie -> 401
-  const noCookieReq = new Request(
-    "https://sync.example.com/api/google-drive-token",
+  expect((await redeem(ticket, verifier, "https://other.example")).status).toBe(
+    403,
   );
-  const noCookieRes = await handleRequest(noCookieReq, kv, env);
-  assertEquals(noCookieRes.status, 401);
-
-  // Test 2: Valid cookie -> 200 with access token
-  const validReq = new Request(
-    "https://sync.example.com/api/google-drive-token",
-    {
-      headers: {
-        Cookie: `session_id=${sessionId}`,
-      },
-    },
+  expect((await redeem(ticket, randomToken())).status).toBe(401);
+  const redemptions = await Promise.all([
+    redeem(ticket, verifier),
+    redeem(ticket, verifier),
+  ]);
+  expect(redemptions.map((response) => response.status).sort()).toEqual([
+    204,
+    401,
+  ]);
+  const established = redemptions.find((response) => response.status === 204)!;
+  expect(established.headers.get("Set-Cookie")).toMatch(
+    /HttpOnly; Secure; .*SameSite=None; Partitioned/,
   );
-  const validRes = await handleRequest(validReq, kv, env);
-  assertEquals(validRes.status, 200);
-  const tokenData = await validRes.json();
-  assertEquals(tokenData.accessToken, "new-access-token-999");
-  assertEquals(tokenData.email, "owner@example.com");
-
-  // Test 3: Logout
-  const logoutReq = new Request(
-    "https://sync.example.com/auth/google-drive/logout",
-    {
-      method: "POST",
-      headers: {
-        Cookie: `session_id=${sessionId}`,
-      },
-    },
+  const Cookie = firstCookie(established);
+  const sessionHash = await hashSessionToken(Cookie.split("=")[1]);
+  const row = await store.getSession(sessionHash, Date.now());
+  expect(row?.ciphertext).not.toContain("fixture-refresh");
+  expect(await decryptToken(row!, env.ENCRYPTION_SECRET)).toBe(
+    "fixture-refresh",
   );
-  const logoutRes = await handleRequest(logoutReq, kv, env);
-  assertEquals(logoutRes.status, 200);
-  const logoutCookie = logoutRes.headers.get("Set-Cookie");
-  assertEquals(logoutCookie!.includes("Max-Age=0"), true);
 
-  // After logout, token request is 401
-  const afterLogoutRes = await handleRequest(validReq, kv, env);
-  assertEquals(afterLogoutRes.status, 401);
+  const response = await request(tokenPath, {
+    headers: { Origin: origin, Cookie },
+  }, google);
+  expect(response.headers.get("Cache-Control")).toBe("no-store");
+  expect(response.headers.get("Access-Control-Allow-Credentials")).toBe("true");
+  expect(await response.json()).toEqual({
+    accessToken: "fixture-refreshed",
+    expiresIn: 42,
+    email: "owner@example.test",
+  });
 
-  await kv.close();
+  expect(
+    (await request(logoutPath, { headers: { Origin: origin, Cookie } })).status,
+  ).toBe(405);
+  expect(
+    (await request(logoutPath, { method: "POST", headers: { Cookie } })).status,
+  ).toBe(403);
+  const logout = await request(logoutPath, {
+    method: "POST",
+    headers: { Origin: origin, Cookie },
+  });
+  expect(logout.headers.get("Set-Cookie")).toMatch(
+    /Max-Age=0; SameSite=None; Partitioned/,
+  );
+  expect(
+    (await request(tokenPath, { headers: { Origin: origin, Cookie } })).status,
+  ).toBe(401);
 });
 
-Deno.test("server: parseAllowedOrigins and CORS headers", async () => {
-  const parsed = parseAllowedOrigins(
-    "https://arthow4n.github.io/did-it-become-what-you-like, http://localhost:5173/",
-  );
-  assertEquals(parsed, [
-    "https://arthow4n.github.io",
-    "http://localhost:5173",
-  ]);
-
-  const kv = await Deno.openKv(":memory:");
-  const env: ServerEnv = {
-    googleClientId: "id",
-    googleClientSecret: "sec",
-    allowedEmails: [],
-    encryptionSecret: "sec",
-    frontendOrigin:
-      "https://arthow4n.github.io/did-it-become-what-you-like, http://localhost:5173",
+test("expiry takes effect before scheduled pruning and live rows survive cleanup", async () => {
+  const now = Date.now();
+  const state = {
+    pkce_verifier: randomToken(),
+    handoff_challenge: randomToken(),
+    return_to: env.FRONTEND_URL,
   };
+  const session = {
+    ...await encryptToken("refresh", env.ENCRYPTION_SECRET),
+    email: "owner@example.test",
+  };
+  const expired = randomToken();
+  const live = randomToken();
+  await store.saveState(expired, "browser", state, now);
+  await store.saveState(live, "browser", state, now + 10_000);
+  await store.saveHandoff(expired, "challenge", session, now);
+  await store.saveHandoff(live, "challenge", session, now + 10_000);
+  expect(await store.consumeState(expired, "browser", now)).toBeNull();
+  expect(
+    await store.establishSession(
+      expired,
+      "challenge",
+      "unused",
+      now,
+      now + 100,
+    ),
+  ).toBe(false);
 
-  const req = new Request("https://sync.example.com/health", {
-    headers: { Origin: "https://arthow4n.github.io" },
+  const staleSession = randomToken();
+  const staleTicket = randomToken();
+  await store.saveHandoff(staleTicket, "challenge", session, now + 1);
+  expect(
+    await store.establishSession(
+      staleTicket,
+      "challenge",
+      staleSession,
+      now,
+      now + 1,
+    ),
+  ).toBe(true);
+  expect(await store.getSession(staleSession, now + 1)).toBeNull();
+
+  await store.removeExpired(now + 1);
+  for (
+    const [table, key, value] of [
+      ["oauth_states", "state_hash", expired],
+      ["session_handoffs", "ticket_hash", expired],
+      ["sessions", "session_hash", staleSession],
+    ]
+  ) {
+    const found = await db.prepare(`SELECT 1 FROM ${table} WHERE ${key} = ?`)
+      .bind(value).first();
+    expect(found).toBeNull();
+  }
+  expect(await store.consumeState(live, "browser", now)).toEqual(state);
+  expect(
+    await store.establishSession(
+      live,
+      "challenge",
+      randomToken(),
+      now,
+      now + 100,
+    ),
+  ).toBe(true);
+});
+
+test("redirects, CORS and upstream failures keep credentials off untrusted origins and out of responses", async () => {
+  for (
+    const target of [
+      "https://untrusted.example/app/",
+      "https://example.github.io/other/",
+      "https://example.github.io/app/../../other/",
+    ]
+  ) {
+    expect((await start(randomToken(), target)).status).toBe(400);
+  }
+  const blocked = await request(tokenPath, { headers: { Origin: "null" } });
+  expect(blocked.status).toBe(403);
+  expect(blocked.headers.has("Access-Control-Allow-Origin")).toBe(false);
+  const preflight = await request(sessionPath, {
+    method: "OPTIONS",
+    headers: { Origin: origin },
   });
-  const res = await handleRequest(req, kv, env);
-  assertEquals(
-    res.headers.get("Access-Control-Allow-Origin"),
-    "https://arthow4n.github.io",
-  );
-  assertEquals(res.headers.get("Access-Control-Allow-Credentials"), "true");
-  assertEquals(res.headers.get("Vary"), "Origin");
+  expect(preflight.status).toBe(204);
+  expect(preflight.headers.get("Access-Control-Allow-Methods")).toBe("POST");
+  expect(
+    (await request(tokenPath, {
+      headers: { Origin: origin, Cookie: "__Host-drive_session=%ZZ" },
+    })).status,
+  ).toBe(401);
 
-  await kv.close();
+  for (
+    const [google, expectedError] of [
+      [
+        vi.fn<typeof fetch>(async () =>
+          new Response("private upstream body", { status: 400 })
+        ),
+        "token_exchange_failed",
+      ],
+      [
+        vi.fn<typeof fetch>(async (url) =>
+          String(url).includes("userinfo")
+            ? Response.json({
+              email: "UNLISTED@example.test",
+              verified_email: true,
+            })
+            : Response.json({
+              access_token: "access",
+              refresh_token: "refresh",
+            })
+        ),
+        "unauthorized_account",
+      ],
+      [
+        vi.fn<typeof fetch>(async (url) =>
+          String(url).includes("userinfo")
+            ? Response.json({
+              email: "owner@example.test",
+              verified_email: false,
+            })
+            : Response.json({
+              access_token: "access",
+              refresh_token: "refresh",
+            })
+        ),
+        "profile_fetch_failed",
+      ],
+    ] as const
+  ) {
+    const login = await start(randomToken());
+    const state = new URL(login.headers.get("Location")!).searchParams.get(
+      "state",
+    )!;
+    const response = await callback(state, firstCookie(login), google);
+    expect(response.headers.get("Location")).toBe(
+      env.FRONTEND_URL + `?sync_error=${expectedError}#/settings`,
+    );
+    expect(await response.text()).toBe("");
+  }
 });

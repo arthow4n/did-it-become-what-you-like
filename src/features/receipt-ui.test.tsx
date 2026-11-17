@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { within } from "@testing-library/dom";
 import { createElement, useState } from "react";
 import {
@@ -70,10 +71,6 @@ import {
   createFakeLocalPort,
   createFakeSecretStoragePort,
 } from "../test-support/fakes/ports.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -173,7 +170,7 @@ function makeTestModel(
   };
 }
 
-Deno.test("receipt-ui disclosure states the exact permitted and excluded data", async () => {
+test("receipt-ui disclosure states the exact permitted and excluded data", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let accepted = false;
     let declined = false;
@@ -201,7 +198,7 @@ Deno.test("receipt-ui disclosure states the exact permitted and excluded data", 
   });
 });
 
-Deno.test(
+test(
   "receipt-ui OpenRouter disclosure names the routed endpoint and excludes broad history",
   async () => {
     await withComponentHarness(({ render }) => {
@@ -226,7 +223,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-ui device settings migrate legacy values and round-trip new values", async () => {
+test("receipt-ui device settings migrate legacy values and round-trip new values", async () => {
   const local = createFakeLocalPort();
   await local.transaction(
     "readwrite",
@@ -282,7 +279,7 @@ Deno.test("receipt-ui device settings migrate legacy values and round-trip new v
   assert(!("geminiCompatibilityEvidence" in stored));
 });
 
-Deno.test("receipt-ui scan failure notice exposes a safe reportable code", async () => {
+test("receipt-ui scan failure notice exposes a safe reportable code", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     const failure: ContractFailure = {
       code: "invalid-request",
@@ -317,7 +314,7 @@ Deno.test("receipt-ui scan failure notice exposes a safe reportable code", async
   });
 });
 
-Deno.test("receipt-ui scan failure notice exposes safe error details when present", async () => {
+test("receipt-ui scan failure notice exposes safe error details when present", async () => {
   await withComponentHarness(({ render }) => {
     const failure: ContractFailure = {
       code: "invalid-output",
@@ -385,7 +382,7 @@ const defaultTestState: ProjectCategoryState = {
   defaultProjectId: defaultTestProject.id,
 };
 
-Deno.test("receipt-ui empty review state keeps a level-one heading", async () => {
+test("receipt-ui empty review state keeps a level-one heading", async () => {
   await withComponentHarness(async ({ render, waitFor }) => {
     const local = createFakeLocalPort();
     render(
@@ -403,7 +400,7 @@ Deno.test("receipt-ui empty review state keeps a level-one heading", async () =>
   });
 });
 
-Deno.test(
+test(
   "receipt-ui exposes recovery controls when review hydration fails",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -429,7 +426,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui disables review save while the durable commit is failed",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -477,7 +474,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-ui review reports its actor-owned dirty state", async () => {
+test("receipt-ui review reports its actor-owned dirty state", async () => {
   await withComponentHarness(async ({ render, waitFor }) => {
     const local = createFakeLocalPort();
     const dirtyStates: boolean[] = [];
@@ -504,7 +501,7 @@ Deno.test("receipt-ui review reports its actor-owned dirty state", async () => {
   });
 });
 
-Deno.test(
+test(
   "receipt-ui manual mode adds items without selection review and saves atomically",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -611,7 +608,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui review save with slow clearing does not display a transient invalid draft scene",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -694,7 +691,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui review save remains clickable during draft persistence and reports committed result",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -781,7 +778,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-ui source picker exposes native capture actions and ephemeral removal", async () => {
+test("receipt-ui source picker exposes native capture actions and ephemeral removal", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let tookPhoto = false;
@@ -805,7 +802,7 @@ Deno.test("receipt-ui source picker exposes native capture actions and ephemeral
   });
 });
 
-Deno.test("receipt-ui line card exposes uncertainty, selection, edit, and remove actions", async () => {
+test("receipt-ui line card exposes uncertainty, selection, edit, and remove actions", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let selected: boolean | undefined;
@@ -849,7 +846,7 @@ Deno.test("receipt-ui line card exposes uncertainty, selection, edit, and remove
   });
 });
 
-Deno.test("receipt-ui deselecting a purchase unlinks its adjustment", async () => {
+test("receipt-ui deselecting a purchase unlinks its adjustment", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(async () => {
       const local = createFakeLocalPort();
@@ -928,7 +925,7 @@ Deno.test("receipt-ui deselecting a purchase unlinks its adjustment", async () =
   });
 });
 
-Deno.test(
+test(
   "receipt-ui review screen enables fast category picking directly on line cards",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -1030,7 +1027,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-ui line editor cancel leaves the review line unchanged", async () => {
+test("receipt-ui line editor cancel leaves the review line unchanged", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(async () => {
       let saves = 0;
@@ -1064,7 +1061,7 @@ Deno.test("receipt-ui line editor cancel leaves the review line unchanged", asyn
   });
 });
 
-Deno.test("receipt-ui metadata editor cancel preserves the parent draft", async () => {
+test("receipt-ui metadata editor cancel preserves the parent draft", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(async () => {
       let saves = 0;
@@ -1094,7 +1091,7 @@ Deno.test("receipt-ui metadata editor cancel preserves the parent draft", async 
   });
 });
 
-Deno.test("receipt-ui metadata editor edits and saves receipt time", async () => {
+test("receipt-ui metadata editor edits and saves receipt time", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(async () => {
       let savedParent: unknown;
@@ -1129,7 +1126,7 @@ Deno.test("receipt-ui metadata editor edits and saves receipt time", async () =>
   });
 });
 
-Deno.test("receipt-ui provider quick setup masks the key and keeps validation visible", async () => {
+test("receipt-ui provider quick setup masks the key and keeps validation visible", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let saved = false;
@@ -1156,7 +1153,7 @@ Deno.test("receipt-ui provider quick setup masks the key and keeps validation vi
   });
 });
 
-Deno.test("receipt-ui releases file, byte, and object URL state on terminal cleanup", async () => {
+test("receipt-ui releases file, byte, and object URL state on terminal cleanup", async () => {
   const store = new ReceiptImageStore();
   const file = new File([new Uint8Array([1, 2, 3])], "receipt.png", {
     type: "image/png",
@@ -1173,7 +1170,7 @@ Deno.test("receipt-ui releases file, byte, and object URL state on terminal clea
   assert(rejected, "Released image bytes must not remain resolvable");
 });
 
-Deno.test("receipt-ui retains an ephemeral source for an in-session retry", async () => {
+test("receipt-ui retains an ephemeral source for an in-session retry", async () => {
   const store = new ReceiptImageStore();
   const file = new File([new Uint8Array([1, 2, 3])], "receipt.png", {
     type: "image/png",
@@ -1186,7 +1183,7 @@ Deno.test("receipt-ui retains an ephemeral source for an in-session retry", asyn
   store.release(image);
 });
 
-Deno.test(
+test(
   "receipt-ui cancels an active scan before close cleanup removes its image",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -1289,7 +1286,7 @@ Deno.test(
           assert(view.getByRole("button", { name: "Continue to scan" }))
         );
         fireEvent.click(view.getByRole("button", { name: "Continue to scan" }));
-        // Use the runtime Blob so the Deno URL implementation accepts it
+        // Use the runtime Blob so the runtime URL implementation accepts it
         // while the component harness swaps the DOM File constructor.
         const file = new Blob([new Uint8Array([1, 2, 3])], {
           type: "image/png",
@@ -1377,7 +1374,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui cancelling an ongoing scan does not exit the scan scene and allows re-scanning",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -1540,7 +1537,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui routes an explicit OpenRouter scan through the shared review flow",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -1711,7 +1708,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-ui keeps metadata-unproven models selectable", async () => {
+test("receipt-ui keeps metadata-unproven models selectable", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(() => {
       let selected: string | undefined;
@@ -1753,7 +1750,7 @@ Deno.test("receipt-ui keeps metadata-unproven models selectable", async () => {
   assert(option.disabled !== true);
 });
 
-Deno.test("receipt-ui retains a remembered key when refreshing models fails", async () => {
+test("receipt-ui retains a remembered key when refreshing models fails", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(() => {
       let stored = false;
@@ -1815,7 +1812,7 @@ Deno.test("receipt-ui retains a remembered key when refreshing models fails", as
   });
 });
 
-Deno.test(
+test(
   "receipt-ui switches providers while restoring each provider's model and key",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -1920,7 +1917,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui ignores an older settings model refresh after switching providers",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -2009,7 +2006,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui ignores an older scan model refresh after switching providers",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -2113,7 +2110,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui ignores a settings refresh that resolves after unmount",
   async () => {
     await withComponentHarness(async ({ render, waitFor }) => {
@@ -2161,7 +2158,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui OpenRouter privacy changes refresh metadata and reset an invalid provider preference",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -2251,7 +2248,7 @@ Deno.test(
   },
 );
 
-Deno.test("fileMediaType detects application/pdf from type or extension", () => {
+test("fileMediaType detects application/pdf from type or extension", () => {
   const pdfBlob = new Blob([], { type: "application/pdf" }) as unknown as File;
   assertEquals(fileMediaType(pdfBlob), "application/pdf");
 
@@ -2265,7 +2262,7 @@ Deno.test("fileMediaType detects application/pdf from type or extension", () => 
   assertEquals(fileMediaType(unknownFile), "");
 });
 
-Deno.test("ReceiptImageStore stores and resolves PDF documents as application/pdf", async () => {
+test("ReceiptImageStore stores and resolves PDF documents as application/pdf", async () => {
   const store = new ReceiptImageStore();
   const pdfBytes = new TextEncoder().encode("%PDF-1.4 synthetic pdf receipt");
   const pdfFile = new Blob([pdfBytes], {
@@ -2285,7 +2282,7 @@ Deno.test("ReceiptImageStore stores and resolves PDF documents as application/pd
   store.clear();
 });
 
-Deno.test("receipt-ui supports selecting and scanning PDF receipts, and rejects unsupported files", async () => {
+test("receipt-ui supports selecting and scanning PDF receipts, and rejects unsupported files", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(async () => {
       const model: ReceiptAiModel = {
@@ -2411,7 +2408,7 @@ Deno.test("receipt-ui supports selecting and scanning PDF receipts, and rejects 
   });
 });
 
-Deno.test("receipt scan attaches category descriptions in AI extraction request", async () => {
+test("receipt scan attaches category descriptions in AI extraction request", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const model: ReceiptAiModel = {
@@ -2573,7 +2570,7 @@ Deno.test("receipt scan attaches category descriptions in AI extraction request"
   });
 });
 
-Deno.test(
+test(
   "receipt-ui menu scan mode extracts unselected items, allows quantity adjustment, and commits cleanly",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -2807,7 +2804,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui menu scan mode normalizes extraction draft and saves selected items via checkbox",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -3017,7 +3014,7 @@ Deno.test(
   },
 );
 
-Deno.test("preferredDefaultModel prioritizes flash-lite for Gemini and first active for others", () => {
+test("preferredDefaultModel prioritizes flash-lite for Gemini and first active for others", () => {
   const models = [
     {
       id: "models/gemini-2.5-pro",
@@ -3068,7 +3065,7 @@ Deno.test("preferredDefaultModel prioritizes flash-lite for Gemini and first act
   assertEquals(preferredDefaultModel([], "gemini"), undefined);
 });
 
-Deno.test("ReceiptSettingsScreen displays Gemini reasoning settings when provider is Gemini", async () => {
+test("ReceiptSettingsScreen displays Gemini reasoning settings when provider is Gemini", async () => {
   await withComponentHarness(async ({ render, waitFor }) => {
     let currentSettings: DeviceLocalSettings = {
       ...DEFAULT_DEVICE_LOCAL_SETTINGS,
@@ -3125,7 +3122,7 @@ Deno.test("ReceiptSettingsScreen displays Gemini reasoning settings when provide
   });
 });
 
-Deno.test("rotateImageFile ignores PDF documents and rotates bitmap files with canvas", async () => {
+test("rotateImageFile ignores PDF documents and rotates bitmap files with canvas", async () => {
   const pdf = new File(["pdf-content"], "menu.pdf", {
     type: "application/pdf",
   });
@@ -3189,7 +3186,7 @@ Deno.test("rotateImageFile ignores PDF documents and rotates bitmap files with c
   }
 });
 
-Deno.test("ReceiptImageStore rotates image in place, preserves preview URL, and clears cached bytes", async () => {
+test("ReceiptImageStore rotates image in place, preserves preview URL, and clears cached bytes", async () => {
   const store = new ReceiptImageStore();
   const file = new File([new Uint8Array([1, 2, 3])], "receipt.png", {
     type: "image/png",
@@ -3213,7 +3210,7 @@ Deno.test("ReceiptImageStore rotates image in place, preserves preview URL, and 
   store.clear();
 });
 
-Deno.test("ReceiptImageStore pre-converts in background, strips metadata, and caches prepared input", async () => {
+test("ReceiptImageStore pre-converts in background, strips metadata, and caches prepared input", async () => {
   const store = new ReceiptImageStore();
   const cache = new WeakMap<ImageInput, PreparedImage>();
   store.setPreparationCache(cache);
@@ -3287,7 +3284,7 @@ Deno.test("ReceiptImageStore pre-converts in background, strips metadata, and ca
   store.clear();
 });
 
-Deno.test("ReceiptScanScreen supports in-place rotation for receipt and menu images", async () => {
+test("ReceiptScanScreen supports in-place rotation for receipt and menu images", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(async () => {
       const model = {
@@ -3465,7 +3462,7 @@ Deno.test("ReceiptScanScreen supports in-place rotation for receipt and menu ima
   });
 });
 
-Deno.test(
+test(
   "receipt-ui skips disclosure screen when disclosureAccepted is true in device settings",
   async () => {
     await withComponentHarness(async ({ render }) => {
@@ -3521,7 +3518,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "ReceiptScanScreen shows selected model name even before model list is loaded",
   async () => {
     await withComponentHarness(async ({ render, waitFor }) => {
@@ -3580,7 +3577,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "ReceiptSourcePicker dropzone supports click and drag-drop selection",
   async () => {
     await withComponentHarness(async ({ render, fireEvent }) => {
@@ -3612,7 +3609,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui scan failure notice clarifies unauthorized and offline conditions with direct settings action",
   async () => {
     await withComponentHarness(({ render, fireEvent }) => {
@@ -3671,7 +3668,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-ui scan screen preserves selected image and retry action when offline",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {

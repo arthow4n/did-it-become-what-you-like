@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { ConflictStore, createConflictActor } from "./index.ts";
 import type {
   ConflictJsonObject,
@@ -12,10 +13,6 @@ import {
   createTestClock,
   settle,
 } from "../../test-support/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -98,7 +95,7 @@ async function settleActor(
   assert(actor.getSnapshot().status !== "error");
 }
 
-Deno.test("conflict: local commit is authoritative and preserves every parent reference", async () => {
+test("conflict: local commit is authoritative and preserves every parent reference", async () => {
   const deps = dependencies();
   await seed(deps.local);
   const store = new ConflictStore(deps);
@@ -123,7 +120,7 @@ Deno.test("conflict: local commit is authoritative and preserves every parent re
   assertEquals((await store.load()).state.progress.unresolvedCount, 0);
 });
 
-Deno.test("conflict: failed local commit leaves the group and durable count untouched", async () => {
+test("conflict: failed local commit leaves the group and durable count untouched", async () => {
   const deps = dependencies();
   await seed(deps.local);
   const store = new ConflictStore(deps);
@@ -143,7 +140,7 @@ Deno.test("conflict: failed local commit leaves the group and durable count unto
   assertEquals(state.state.progress.unresolvedCount, 1);
 });
 
-Deno.test("conflict: workflow selection and candidates survive reload while offline", async () => {
+test("conflict: workflow selection and candidates survive reload while offline", async () => {
   const deps = dependencies();
   await seed(deps.local);
   const actor = createConflictActor(deps, { observations: [observation()] });
@@ -171,7 +168,7 @@ Deno.test("conflict: workflow selection and candidates survive reload while offl
   reloaded.stop();
 });
 
-Deno.test("conflict: actor failure enters retryable state without clearing unresolved work", async () => {
+test("conflict: actor failure enters retryable state without clearing unresolved work", async () => {
   const deps = dependencies();
   await seed(deps.local);
   const actor = createConflictActor(deps, { observations: [observation()] });
@@ -191,7 +188,7 @@ Deno.test("conflict: actor failure enters retryable state without clearing unres
   assertEquals(state.state.progress.unresolvedCount, 1);
 });
 
-Deno.test("conflict: resolved groups stay hidden after refresh and causal resync", async () => {
+test("conflict: resolved groups stay hidden after refresh and causal resync", async () => {
   const deps = dependencies();
   await seed(deps.local);
   const store = new ConflictStore(deps);

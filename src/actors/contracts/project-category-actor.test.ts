@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createActor } from "xstate";
 import {
   createCategoryActorMachine,
@@ -16,10 +17,6 @@ import {
   type Category,
   UNCATEGORIZED_CATEGORY_ID,
 } from "../../domain/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -65,7 +62,7 @@ function createService(
   };
 }
 
-Deno.test("project-category actor: locked project command actor commits reorder", async () => {
+test("project-category actor: locked project command actor commits reorder", async () => {
   const { service } = createService();
   await service.commitProject({ type: "create", project: projectOne });
   await service.commitProject({ type: "create", project: projectTwo });
@@ -92,7 +89,7 @@ Deno.test("project-category actor: locked project command actor commits reorder"
   actor.stop();
 });
 
-Deno.test("project-category actor: organization snapshot exposes guard-valid actions and exact errors", async () => {
+test("project-category actor: organization snapshot exposes guard-valid actions and exact errors", async () => {
   const { service } = createService();
   await service.commitProject({ type: "create", project: projectOne });
   await service.commitProject({ type: "create", project: projectTwo });
@@ -133,7 +130,7 @@ Deno.test("project-category actor: organization snapshot exposes guard-valid act
   actor.stop();
 });
 
-Deno.test(
+test(
   "project-category organization selectors tolerate an unopened actor",
   () => {
     const context = {
@@ -161,7 +158,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "project-category organization actors accept fresh state while ready",
   async () => {
     const { service } = createService();
@@ -185,7 +182,7 @@ Deno.test(
   },
 );
 
-Deno.test("project-category actor: offline failure retains retryable state and retries locally", async () => {
+test("project-category actor: offline failure retains retryable state and retries locally", async () => {
   const { local, service } = createService();
   await service.commitProject({ type: "create", project: projectOne });
   const state = await service.getState();
@@ -212,7 +209,7 @@ Deno.test("project-category actor: offline failure retains retryable state and r
   actor.stop();
 });
 
-Deno.test("project-category actor: category actor protects Uncategorized", async () => {
+test("project-category actor: category actor protects Uncategorized", async () => {
   const { service } = createService();
   const state = await service.getState();
   const actor = createActor(createCategoryOrganizationMachine(service)).start();
@@ -231,7 +228,7 @@ Deno.test("project-category actor: category actor protects Uncategorized", async
   actor.stop();
 });
 
-Deno.test("project-category actor: locked category actor remains injectable", async () => {
+test("project-category actor: locked category actor remains injectable", async () => {
   const { service } = createService();
   const actor = createActor(createCategoryActorMachine(service)).start();
   actor.send({ type: "category.open", categories: [] });
@@ -247,7 +244,7 @@ Deno.test("project-category actor: locked category actor remains injectable", as
   actor.stop();
 });
 
-Deno.test("project-category actor: category color mutation is committed", async () => {
+test("project-category actor: category color mutation is committed", async () => {
   const { service } = createService();
   const category: Category = {
     schemaVersion: 1,
@@ -282,7 +279,7 @@ Deno.test("project-category actor: category color mutation is committed", async 
   actor.stop();
 });
 
-Deno.test("project-category actor: category description mutation is committed", async () => {
+test("project-category actor: category description mutation is committed", async () => {
   const { service } = createService();
   const category: Category = {
     schemaVersion: 1,

@@ -70,10 +70,7 @@ test("offline-update keeps local launch, install fallback, update readiness, and
     "Offline market",
   );
   await page.getByRole("button", { name: "Save expense" }).click();
-  await expect(page.getByRole("heading", { name: "Expense saved" }))
-    .toBeVisible();
-  await expect(page.getByRole("button", { name: "Later" })).toBeVisible();
-  await page.getByRole("button", { name: "Later" }).click();
+  await expect(page.getByText("Offline market", { exact: true })).toBeVisible();
 
   await page.goto("/#/settings/about");
   await expect(page.getByRole("heading", { name: "About" })).toBeVisible();

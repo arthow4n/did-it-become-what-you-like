@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { within } from "@testing-library/dom";
 import { createElement, useState } from "react";
 import {
@@ -8,10 +9,6 @@ import {
   withAriaGlobals,
   withComponentHarness,
 } from "../test-support/component-harness.tsx";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -85,7 +82,7 @@ function LocalEraseFocusHarness() {
   );
 }
 
-Deno.test(
+test(
   "destructive-flow component separates keep-local, local-only, and everywhere scopes",
   async () => {
     await withComponentHarness(
@@ -144,7 +141,7 @@ Deno.test(
   },
 );
 
-Deno.test("destructive-flow component keeps focus in the local erase dialog", async () => {
+test("destructive-flow component keeps focus in the local erase dialog", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       render(createElement(LocalEraseFocusHarness));
@@ -176,7 +173,7 @@ Deno.test("destructive-flow component keeps focus in the local erase dialog", as
   });
 });
 
-Deno.test("destructive-flow component exposes partial local erase honestly", async () => {
+test("destructive-flow component exposes partial local erase honestly", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaGlobals(window, () => {
       const result = callbacks();
@@ -203,7 +200,7 @@ Deno.test("destructive-flow component exposes partial local erase honestly", asy
   });
 });
 
-Deno.test("destructive-flow component requires the separate decline confirmation", async () => {
+test("destructive-flow component requires the separate decline confirmation", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaGlobals(window, () => {
       const result = callbacks();
@@ -243,7 +240,7 @@ Deno.test("destructive-flow component requires the separate decline confirmation
   });
 });
 
-Deno.test("destructive-flow component explains inaccessible devices and exposes per-device acknowledgement state", async () => {
+test("destructive-flow component explains inaccessible devices and exposes per-device acknowledgement state", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaGlobals(window, () => {
       const result = callbacks();
@@ -304,7 +301,7 @@ Deno.test("destructive-flow component explains inaccessible devices and exposes 
   });
 });
 
-Deno.test("destructive-flow forced finalization exposes a pause action", async () => {
+test("destructive-flow forced finalization exposes a pause action", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaGlobals(window, () => {
       const result = callbacks();
@@ -342,7 +339,7 @@ Deno.test("destructive-flow forced finalization exposes a pause action", async (
   });
 });
 
-Deno.test("destructive-flow component exposes finalization failure and retry", async () => {
+test("destructive-flow component exposes finalization failure and retry", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaGlobals(window, () => {
       const result = callbacks();

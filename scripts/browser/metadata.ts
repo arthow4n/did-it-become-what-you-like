@@ -1,5 +1,3 @@
-/// <reference path="../deno.d.ts" />
-
 export const AGENT_BROWSER_VERSION = "0.16.2";
 export const CHROME_FOR_TESTING_VERSION = "152.0.7977.54";
 
@@ -96,19 +94,19 @@ export const PLATFORM_ARTIFACTS: Record<BrowserPlatform, {
 };
 
 export function detectBrowserPlatform(
-  os: string = Deno.build.os,
-  arch: string = Deno.build.arch,
+  os: string = process.platform,
+  arch: string = process.arch,
 ): BrowserPlatform | undefined {
-  if (os === "linux" && arch === "x86_64") return "linux-x64";
-  if (os === "darwin" && arch === "aarch64") return "darwin-arm64";
-  if (os === "darwin" && arch === "x86_64") return "darwin-x64";
-  if (os === "windows" && arch === "x86_64") return "win32-x64";
+  if (os === "linux" && arch === "x64") return "linux-x64";
+  if (os === "darwin" && arch === "arm64") return "darwin-arm64";
+  if (os === "darwin" && arch === "x64") return "darwin-x64";
+  if (os === "win32" && arch === "x64") return "win32-x64";
   return undefined;
 }
 
 export function platformDescription(
-  os = Deno.build.os,
-  arch = Deno.build.arch,
+  os = process.platform,
+  arch = process.arch,
 ): string {
   return `${os}/${arch}`;
 }

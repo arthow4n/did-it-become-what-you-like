@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { within } from "@testing-library/dom";
 import {
   ConflictCandidateCard,
@@ -16,10 +17,6 @@ import {
   withAriaGlobals,
   withComponentHarness,
 } from "../../test-support/component-harness.tsx";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -135,7 +132,7 @@ const exportModel: ExportViewModel = {
   shareAvailability: "available",
 };
 
-Deno.test("conflict review exposes list-to-detail progress and candidate neutrality", async () => {
+test("conflict review exposes list-to-detail progress and candidate neutrality", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       const chosen: string[] = [];
@@ -205,7 +202,7 @@ Deno.test("conflict review exposes list-to-detail progress and candidate neutral
   });
 });
 
-Deno.test("conflict review supports custom validation and keyboard-addressable actions", async () => {
+test("conflict review supports custom validation and keyboard-addressable actions", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let customValue = "";
@@ -249,7 +246,7 @@ Deno.test("conflict review supports custom validation and keyboard-addressable a
   });
 });
 
-Deno.test("conflict delete-versus-edit has explicit outcomes and discarded-edit summary", async () => {
+test("conflict delete-versus-edit has explicit outcomes and discarded-edit summary", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let kept = false;
@@ -298,7 +295,7 @@ Deno.test("conflict delete-versus-edit has explicit outcomes and discarded-edit 
   });
 });
 
-Deno.test("conflict saving, offline, error retry, and technical details remain explicit", async () => {
+test("conflict saving, offline, error retry, and technical details remain explicit", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let retried = false;
@@ -367,7 +364,7 @@ Deno.test("conflict saving, offline, error retry, and technical details remain e
   });
 });
 
-Deno.test("conflict review handles narrow and long strings without exposing identifiers", async () => {
+test("conflict review handles narrow and long strings without exposing identifiers", async () => {
   await withComponentHarness(async ({ render }) => {
     await withAriaGlobals(() => {
       const longLabel =
@@ -392,7 +389,7 @@ Deno.test("conflict review handles narrow and long strings without exposing iden
   });
 });
 
-Deno.test("import preview exposes schema, migration, counts, warnings, and blocking errors", async () => {
+test("import preview exposes schema, migration, counts, warnings, and blocking errors", async () => {
   await withComponentHarness(async ({ render }) => {
     await withAriaGlobals(() => {
       render(
@@ -429,7 +426,7 @@ Deno.test("import preview exposes schema, migration, counts, warnings, and block
   });
 });
 
-Deno.test("import merge selection and JSON file selection dispatch controlled callbacks", async () => {
+test("import merge selection and JSON file selection dispatch controlled callbacks", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(async () => {
       let selectedFile: File | undefined;
@@ -454,9 +451,13 @@ Deno.test("import merge selection and JSON file selection dispatch controlled ca
           onCancel={() => undefined}
         />,
       );
-      const file = new File(['{"schemaVersion":2}'], "long-backup-name.json", {
-        type: "application/json",
-      });
+      const file = new File(
+        ["{\"schemaVersion\":2}"],
+        "long-backup-name.json",
+        {
+          type: "application/json",
+        },
+      );
       fireEvent.change(
         within(document.body).getByLabelText("Choose JSON backup"),
         {
@@ -510,7 +511,7 @@ Deno.test("import merge selection and JSON file selection dispatch controlled ca
   });
 });
 
-Deno.test("import replacement is visually separate, safety-gated, and warns offline pre-sync", async () => {
+test("import replacement is visually separate, safety-gated, and warns offline pre-sync", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let safetyExported = false;
@@ -552,7 +553,7 @@ Deno.test("import replacement is visually separate, safety-gated, and warns offl
   });
 });
 
-Deno.test("safety export has pending, failure/retry, and confirmation states", async () => {
+test("safety export has pending, failure/retry, and confirmation states", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let retried = false;
@@ -606,7 +607,7 @@ Deno.test("safety export has pending, failure/retry, and confirmation states", a
   });
 });
 
-Deno.test("export panel exposes canonical download/share actions and retryable status", async () => {
+test("export panel exposes canonical download/share actions and retryable status", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       const deliveries: string[] = [];

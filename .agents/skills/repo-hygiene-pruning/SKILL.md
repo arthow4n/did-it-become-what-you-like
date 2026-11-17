@@ -60,8 +60,8 @@ test cases, redundant E2E specs, and inaccurate task definitions.
      pure unit code changed).
    - Match checks to their required environment and impact boundary. During
      hygiene and doc pruning audits, run only syntax, typecheck, lint, and
-     format checks (`deno task typecheck`, `deno task fmt:check`,
-     `deno task lint`, `git diff --check`). Do not run heavy test suites or
+     format checks (`npm run typecheck`, `npm run fmt:check`,
+     `npm run lint`, `git diff --check`). Do not run heavy test suites or
      long-running browser tasks.
 
 ---
@@ -89,7 +89,7 @@ an **Orchestrator** dispatching two specialized subagents:
 │                                      │      │ • Parallel / redundant fake ports    │
 │                                      │      │ • Repetitive intra-suite test blocks │
 │                                      │      │ • Component mount & UI test bloat    │
-│                                      │      │ • deno.json task target flaws        │
+│                                      │      │ • package.json task target flaws        │
 │                                      │      │ • Monolithic files & barrel sprawl   │
 └──────────────────────────────────────┘      └──────────────────────────────────────┘
                                       │
@@ -155,7 +155,7 @@ doc-level verification scripts against these dimensions:
   - Once the feature/library is integrated into production with real component,
     boundary, and browser tests, completely delete the `spikes/` directory with
     `git rm -r`.
-  - Clean up `deno.json`, `tsconfig.app.json`, and boundary scripts.
+  - Clean up `package.json`, `tsconfig.json`, and boundary scripts.
 
 ### Dimension 1E: Brittle String & Marketing Matchers in Verification Scripts
 
@@ -181,24 +181,24 @@ and tooling task definitions against these dimensions:
 - **What to look for:**
   - Tests statically defining compile-time boolean tuples (e.g.
     `const contractChecks: ContractChecks = [true, true, ...]`) and running
-    `contractChecks.every(Boolean)` inside a `Deno.test`.
+    `contractChecks.every(Boolean)` inside a `Vitest test`.
   - Tests asserting `typeof Component !== 'undefined'` for statically imported
-    symbols already validated by `tsc` / `deno check`.
+    symbols already validated by `tsc`.
 - **Remediation:**
-  - Prune no-op runtime test cases. Rely on `deno task typecheck` / `tsc` for
+  - Prune no-op runtime test cases. Rely on `npm run typecheck` / `tsc` for
     type-level contract validation.
 
 ### Dimension 2B: Source-Code Text & AST-Scraping Regex Matchers
 
 - **What to look for:**
-  - Tests reading `.ts` / `.tsx` source code via `Deno.readTextFile` to
+  - Tests reading `.ts` / `.tsx` source code via `Node.js readFile` to
     regex-match JSX tags (e.g. `renderSource.includes("<ColorChoiceField")`)
     rather than rendering components in a harness.
   - Fragile custom regex parsers attempting to emulate TypeScript AST type
     visibility checks.
 - **Remediation:**
   - Replace source-text scraping with standard component harness tests or
-    multi-viewport gallery verification (`deno task gallery:verify`).
+    multi-viewport gallery verification (`npm run gallery:verify`).
 
 ### Dimension 2C: Milestone-Named & Proof Subprocess Tooling Tests
 
@@ -234,7 +234,7 @@ and tooling task definitions against these dimensions:
 ### Dimension 2E: Stale Migration Proof Assertions in Boundary Tests
 
 - **What to look for:**
-  - Boundary tests reading `deno.lock` or `deno.json` as text to check that a
+  - Boundary tests reading `package-lock.json` or `package.json` as text to check that a
     superseded library (e.g. `react-aria-components` from Milestone 8) is
     absent.
 - **Remediation:**
@@ -244,13 +244,13 @@ and tooling task definitions against these dimensions:
 ### Dimension 2F: Task Target Flaws, Redundant Sub-Commands & Task Fragmentation
 
 - **What to look for:**
-  - Fragmented or overlapping subsystem slice tasks in `deno.json` (e.g.
+  - Fragmented or overlapping subsystem slice tasks in `package.json` (e.g.
     `test:unit`, `test:domain`, `test:actor`, `test:integration`,
     `test:component`) that duplicate `test` and `test:affected`.
   - Redundant sub-step installer tasks (e.g. `playwright:install`) that
     duplicate composite multi-browser setup commands (`browser:install`).
   - Tasks hardcoding brittle lists of 20+ individual script/e2e files in
-    `deno check`.
+    `npm run typecheck`.
 - **Remediation:**
   - Prune redundant subsystem slice and sub-installer tasks. Standardize on
     `test:affected` (for targeted graph-based changed tests) and `test` (for
@@ -389,7 +389,7 @@ and tooling task definitions against these dimensions:
    audit reports, living doc tables, spikes, and doc matchers against Dimensions
    1A–1E.
 2. **Dispatch Section 2 Subagent:** Task with evaluating all test files, test
-   support fixtures, E2E specs, and `deno.json` task targets against Dimensions
+   support fixtures, E2E specs, and `package.json` task targets against Dimensions
    2A–2K.
 
 ### Phase 3: Orchestrator Reconciliation & Coordinated File Pruning
@@ -404,7 +404,7 @@ and tooling task definitions against these dimensions:
 
 ### Phase 4: Living Doc, Config & Task Synchronization
 
-1. **Update `deno.json`:**
+1. **Update `package.json`:**
    - Remove redundant slice tasks (`test:unit`, `test:domain`, `test:actor`,
      `test:integration`, `test:component`) and standardize on `test` and
      `test:affected`.
@@ -424,9 +424,9 @@ and tooling task definitions against these dimensions:
 1. Format and check syntax on changed files (do NOT run heavy test suites for
    hygiene/pruning changes):
    ```bash
-   deno task fmt:check
-   deno task lint
-   deno task typecheck
+   npm run fmt:check
+   npm run lint
+   npm run typecheck
    git diff --check
    ```
 2. Review staged changes:
@@ -471,7 +471,7 @@ Before closing a pruning audit, confirm:
       parameterized table tests.
 - [ ] Component & feature test suites avoid copy-pasted mount boilerplate and
       consolidate repetitive UI scenarios into table-driven tests.
-- [ ] Redundant subsystem test slice and sub-installer tasks in `deno.json` are
+- [ ] Redundant subsystem test slice and sub-installer tasks in `package.json` are
       pruned in favor of `test`, `test:affected`, and composite installers.
 - [ ] Visual audit screenshot capture scripts remain isolated in `e2e/audit/` /
       `scripts/audit-capture.ts`.

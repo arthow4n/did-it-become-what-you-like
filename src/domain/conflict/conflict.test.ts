@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   emptyConflictState,
   groupConflictObservations,
@@ -14,10 +15,6 @@ import type {
   ConflictResolutionRecord,
   ConflictState,
 } from "./index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -109,7 +106,7 @@ function stateWith(
   };
 }
 
-Deno.test("conflict: independent field edits auto-merge without a conflict", () => {
+test("conflict: independent field edits auto-merge without a conflict", () => {
   const local = { ...baseExpense, amount: "-11" };
   const remote = { ...baseExpense, description: "Dinner" };
   const result = mergeConcurrentRecords({
@@ -127,7 +124,7 @@ Deno.test("conflict: independent field edits auto-merge without a conflict", () 
   });
 });
 
-Deno.test("conflict: an absent field versus an edited field is delete-versus-edit", () => {
+test("conflict: an absent field versus an edited field is delete-versus-edit", () => {
   const base = { ...baseExpense, merchant: "Cafe" };
   const local: ConflictJsonObject = { ...base };
   delete (local as Record<string, unknown>).merchant;
@@ -179,7 +176,7 @@ Deno.test("conflict: an absent field versus an edited field is delete-versus-edi
   assertEquals(keepEdited.record?.merchant, "Diner");
 });
 
-Deno.test("conflict: S-402 complete-record observations retain field deletion candidates", () => {
+test("conflict: S-402 complete-record observations retain field deletion candidates", () => {
   const local: ConflictJsonObject = { ...baseExpense };
   const remote = { ...baseExpense, merchant: "Diner" };
   const observations = observationsFromSyncConflicts([{
@@ -212,7 +209,7 @@ Deno.test("conflict: S-402 complete-record observations retain field deletion ca
   assertEquals(resolved.tombstone, undefined);
 });
 
-Deno.test("conflict: same-field observations group neutrally with device and time context", () => {
+test("conflict: same-field observations group neutrally with device and time context", () => {
   const first = sameFieldObservation();
   const second: ConflictObservation = {
     ...first,
@@ -246,7 +243,7 @@ Deno.test("conflict: same-field observations group neutrally with device and tim
   assert(groups[0].parentRevisionIds.includes("revision-d"));
 });
 
-Deno.test("conflict: candidate and custom choices validate the complete record", () => {
+test("conflict: candidate and custom choices validate the complete record", () => {
   const group = groupConflictObservations([sameFieldObservation()])[0];
   const candidate = resolveConflict({
     group,
@@ -266,7 +263,7 @@ Deno.test("conflict: candidate and custom choices validate the complete record",
   assertEquals(custom.record?.amount, "-25");
 });
 
-Deno.test("conflict: delete-versus-edit exposes both explicit outcomes", () => {
+test("conflict: delete-versus-edit exposes both explicit outcomes", () => {
   const edited = { ...baseExpense, amount: "-12" };
   const merge = mergeConcurrentRecords({
     recordType: "expense",
@@ -309,7 +306,7 @@ Deno.test("conflict: delete-versus-edit exposes both explicit outcomes", () => {
   assertEquals(remove.tombstone?.parentRevisionIds, group.parentRevisionIds);
 });
 
-Deno.test("conflict: receipt-line fields use the same explicit workflow", () => {
+test("conflict: receipt-line fields use the same explicit workflow", () => {
   const line: ConflictJsonObject = {
     schemaVersion: 1,
     type: "receipt-purchase-line",
@@ -353,7 +350,7 @@ Deno.test("conflict: receipt-line fields use the same explicit workflow", () => 
   assertEquals(result.record?.description, "Green tea");
 });
 
-Deno.test("conflict: projections omit opaque IDs and timestamps do not select a winner", () => {
+test("conflict: projections omit opaque IDs and timestamps do not select a winner", () => {
   const group = groupConflictObservations([sameFieldObservation()])[0];
   const state = stateWith(group);
   const projection = projectConflictState(state);
@@ -370,7 +367,7 @@ Deno.test("conflict: projections omit opaque IDs and timestamps do not select a 
   );
 });
 
-Deno.test("conflict: concurrent explicit resolutions converge without timestamp ordering", () => {
+test("conflict: concurrent explicit resolutions converge without timestamp ordering", () => {
   const group = groupConflictObservations([sameFieldObservation()])[0];
   const first = resolveConflict({
     group,

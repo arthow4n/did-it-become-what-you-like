@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { within } from "@testing-library/dom";
 import { createElement } from "react";
 import {
@@ -16,10 +17,6 @@ import {
   withAriaGlobals,
   withComponentHarness,
 } from "../../test-support/component-harness.tsx";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -65,7 +62,7 @@ const device = (overrides: Partial<KnownDeviceViewModel> = {}) => ({
   ...overrides,
 });
 
-Deno.test("sync screen exposes disconnected connect and accessible back events", async () => {
+test("sync screen exposes disconnected connect and accessible back events", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       const result = callbacks();
@@ -91,7 +88,7 @@ Deno.test("sync screen exposes disconnected connect and accessible back events",
   });
 });
 
-Deno.test("sync screen exposes the connecting mode with labeled progress", async () => {
+test("sync screen exposes the connecting mode with labeled progress", async () => {
   await withComponentHarness(async ({ render }) => {
     await withAriaGlobals(() => {
       render(
@@ -110,7 +107,7 @@ Deno.test("sync screen exposes the connecting mode with labeled progress", async
   });
 });
 
-Deno.test("sync screen exposes connected identity, sync summary, and navigation events", async () => {
+test("sync screen exposes connected identity, sync summary, and navigation events", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       const result = callbacks();
@@ -142,7 +139,7 @@ Deno.test("sync screen exposes connected identity, sync summary, and navigation 
   });
 });
 
-Deno.test("sync screen covers offline, reconnecting, and pending synchronization modes", async () => {
+test("sync screen covers offline, reconnecting, and pending synchronization modes", async () => {
   await withComponentHarness(async ({ render }) => {
     await withAriaGlobals(() => {
       const { rerender } = render(
@@ -192,7 +189,7 @@ Deno.test("sync screen covers offline, reconnecting, and pending synchronization
   });
 });
 
-Deno.test("sync screen covers authorization, retryable, generic error, retired, and conflict states", async () => {
+test("sync screen covers authorization, retryable, generic error, retired, and conflict states", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       const result = callbacks();
@@ -277,7 +274,7 @@ Deno.test("sync screen covers authorization, retryable, generic error, retired, 
   });
 });
 
-Deno.test("sync screen explains that reload requires a fresh authorization gesture", async () => {
+test("sync screen explains that reload requires a fresh authorization gesture", async () => {
   await withComponentHarness(async ({ render }) => {
     await withAriaGlobals(() => {
       render(
@@ -297,7 +294,7 @@ Deno.test("sync screen explains that reload requires a fresh authorization gestu
   });
 });
 
-Deno.test(
+test(
   "sync screen exposes explicit corrupt-data recovery confirmation only for corrupt data",
   async () => {
     await withComponentHarness(async ({ render, fireEvent }) => {
@@ -353,7 +350,7 @@ Deno.test(
   },
 );
 
-Deno.test("sync account switch confirmation requires explicit confirm or cancel callbacks", async () => {
+test("sync account switch confirmation requires explicit confirm or cancel callbacks", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       const result = callbacks();
@@ -376,7 +373,7 @@ Deno.test("sync account switch confirmation requires explicit confirm or cancel 
   });
 });
 
-Deno.test("sync GlobalStatus exposes compact labels and shell navigation", async () => {
+test("sync GlobalStatus exposes compact labels and shell navigation", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let opened = false;
@@ -397,7 +394,7 @@ Deno.test("sync GlobalStatus exposes compact labels and shell navigation", async
   });
 });
 
-Deno.test("sync status indicator keeps reconnect and detail actions compact", async () => {
+test("sync status indicator keeps reconnect and detail actions compact", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let reconnected = 0;
@@ -425,7 +422,7 @@ Deno.test("sync status indicator keeps reconnect and detail actions compact", as
   );
 });
 
-Deno.test("isGlobalStatusActionable identifies quiet steady-states and actionable events", () => {
+test("isGlobalStatusActionable identifies quiet steady-states and actionable events", () => {
   assert(
     !isGlobalStatusActionable({ mode: "disconnected" }),
     "Disconnected local use should remain quiet",
@@ -476,7 +473,7 @@ Deno.test("isGlobalStatusActionable identifies quiet steady-states and actionabl
   );
 });
 
-Deno.test("known devices render current, last-seen, retirement, rename, and acknowledge events", async () => {
+test("known devices render current, last-seen, retirement, rename, and acknowledge events", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       const renamed: string[] = [];
@@ -523,7 +520,7 @@ Deno.test("known devices render current, last-seen, retirement, rename, and ackn
   });
 });
 
-Deno.test("known devices keep opaque IDs out of ordinary rendering and expose them only after disclosure", async () => {
+test("known devices keep opaque IDs out of ordinary rendering and expose them only after disclosure", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     await withAriaGlobals(async () => {
       const opaqueId = "device-opaque-id-7f3a";
@@ -557,7 +554,7 @@ Deno.test("known devices keep opaque IDs out of ordinary rendering and expose th
   });
 });
 
-Deno.test("known devices keep rename controls ordered after activation", async () => {
+test("known devices keep rename controls ordered after activation", async () => {
   await withComponentHarness(async ({ render }) => {
     await withAriaGlobals(() => {
       render(createElement(KnownDeviceList, { devices: [] }));
@@ -605,7 +602,7 @@ Deno.test("known devices keep rename controls ordered after activation", async (
   });
 });
 
-Deno.test("sync screen exposes persisted vs direct mode and sync error notices", async () => {
+test("sync screen exposes persisted vs direct mode and sync error notices", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let selectedMode: "persisted" | "direct" = "persisted";
@@ -670,7 +667,7 @@ Deno.test("sync screen exposes persisted vs direct mode and sync error notices",
   });
 });
 
-Deno.test("syncIndicatorCopy prioritizes offline over authorization-error to avoid reconnect coercion", () => {
+test("syncIndicatorCopy prioritizes offline over authorization-error to avoid reconnect coercion", () => {
   const copy = syncIndicatorCopy({
     mode: "configured",
     accountEmail: "owner@example.com",
@@ -687,7 +684,7 @@ Deno.test("syncIndicatorCopy prioritizes offline over authorization-error to avo
   assert(copy.action === "details", `Expected "details", got "${copy.action}"`);
 });
 
-Deno.test("SyncAccountPanel renders Check connection button when offline and invokes callback", async () => {
+test("SyncAccountPanel renders Check connection button when offline and invokes callback", async () => {
   await withComponentHarness(async ({ render, fireEvent }) => {
     await withAriaGlobals(() => {
       let checkCount = 0;

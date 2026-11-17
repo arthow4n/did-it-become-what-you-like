@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { within } from "@testing-library/dom";
 import { createElement } from "react";
 import type {
@@ -10,10 +11,6 @@ import {
   withComponentHarness,
 } from "../test-support/component-harness.tsx";
 import { settle } from "../test-support/async.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -130,7 +127,7 @@ function createService(options?: {
   };
 }
 
-Deno.test("receipt detail renders saved management and stages metadata changes", async () => {
+test("receipt detail renders saved management and stages metadata changes", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     let output: unknown;
     await withAriaGlobals(async () => {
@@ -171,7 +168,7 @@ Deno.test("receipt detail renders saved management and stages metadata changes",
       );
       assert(!view.queryByRole("checkbox"));
       const focused = document.querySelector<HTMLElement>(
-        '[data-receipt-line-id="line-bread"]',
+        "[data-receipt-line-id=\"line-bread\"]",
       );
       assert(focused && document.activeElement === focused);
 
@@ -212,7 +209,7 @@ Deno.test("receipt detail renders saved management and stages metadata changes",
   });
 });
 
-Deno.test("receipt detail exposes scoped line and whole-receipt confirmations", async () => {
+test("receipt detail exposes scoped line and whole-receipt confirmations", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     let output: { status: string } | undefined;
     await withAriaGlobals(async () => {
@@ -257,7 +254,7 @@ Deno.test("receipt detail exposes scoped line and whole-receipt confirmations", 
   });
 });
 
-Deno.test("receipt detail adds purchase lines and adjustments with focus return", async () => {
+test("receipt detail adds purchase lines and adjustments with focus return", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     let current = aggregate;
     let nextLine = 0;
@@ -318,7 +315,7 @@ Deno.test("receipt detail adds purchase lines and adjustments with focus return"
       fireEvent.click(view.getByRole("button", { name: "Add line" }));
       await waitFor(() => assert(view.getByText("Tea")));
       const addedPurchase = document.querySelector<HTMLElement>(
-        '[data-receipt-line-id="line-added-ui-1"]',
+        "[data-receipt-line-id=\"line-added-ui-1\"]",
       );
       assert(addedPurchase && document.activeElement === addedPurchase);
 
@@ -338,7 +335,7 @@ Deno.test("receipt detail adds purchase lines and adjustments with focus return"
   });
 });
 
-Deno.test(
+test(
   "receipt detail disables line management while an atomic change is pending",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -369,7 +366,7 @@ Deno.test(
         fireEvent.click(view.getByRole("button", { name: "Save changes" }));
         await waitFor(() => assert(view.getByText("Saving receipt change")));
         const coffeeLine = document.querySelector<HTMLElement>(
-          '[data-receipt-line-id="line-coffee"]',
+          "[data-receipt-line-id=\"line-coffee\"]",
         );
         assert(coffeeLine);
         assert(
@@ -387,7 +384,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt detail exposes missing-receipt recovery without a dirty prompt",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -416,7 +413,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt detail exposes reload and keep actions for non-retryable deletion failures",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -453,7 +450,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt detail quickly changes a line category without opening full editor dialog",
   async () => {
     await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
@@ -493,7 +490,7 @@ Deno.test(
         const view = within(document.body);
         await waitFor(() => assert(view.getByText("Coffee")));
         const coffeeLine = document.querySelector<HTMLElement>(
-          '[data-receipt-line-id="line-coffee"]',
+          "[data-receipt-line-id=\"line-coffee\"]",
         );
         assert(coffeeLine);
         const categoryTrigger = within(coffeeLine).getByRole("button", {
@@ -523,7 +520,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt detail draft typing does not reproject the saved receipt lines", async () => {
+test("receipt detail draft typing does not reproject the saved receipt lines", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     let lineProjections = 0;
     const purchaseLines = new Proxy(aggregate.purchaseLines, {

@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import {
   deleteLocalRepositoryDatabase,
@@ -10,10 +11,6 @@ import {
   DATASET_FORMAT,
   UNCATEGORIZED_CATEGORY_ID,
 } from "../../domain/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -180,7 +177,7 @@ async function clearProjectionStore(name: string): Promise<void> {
   database.close();
 }
 
-Deno.test("local-repository: fresh open, indexed query, Automerge load, and restart", async () => {
+test("local-repository: fresh open, indexed query, Automerge load, and restart", async () => {
   await withRepository(async (repository, name) => {
     assertEquals(repository.databaseName, name);
     assertEquals((await repository.query("records")).length, 0);
@@ -193,7 +190,7 @@ Deno.test("local-repository: fresh open, indexed query, Automerge load, and rest
     });
     assertEquals(indexed.map((entry) => entry.key), ["expense-1"]);
     const document = await repository.loadDocument();
-    assert(document.records['["records","expense-1"]'] !== undefined);
+    assert(document.records["[\"records\",\"expense-1\"]"] !== undefined);
     repository.close();
     const restarted = await openLocalRepository({
       databaseName: name,
@@ -204,7 +201,8 @@ Deno.test("local-repository: fresh open, indexed query, Automerge load, and rest
     try {
       assertEquals((await restarted.query("records")).length, 1);
       assert(
-        (await restarted.loadDocument()).records['["records","expense-1"]'] !==
+        (await restarted.loadDocument())
+          .records["[\"records\",\"expense-1\"]"] !==
           undefined,
         "restart must hydrate the Automerge document",
       );
@@ -214,7 +212,7 @@ Deno.test("local-repository: fresh open, indexed query, Automerge load, and rest
   });
 });
 
-Deno.test("local-repository: multi-record transactions roll back without leaking errors", async () => {
+test("local-repository: multi-record transactions roll back without leaking errors", async () => {
   await withRepository(async (repository) => {
     const secret = "receipt-api-key-should-not-escape";
     await rejectsWithCode(
@@ -242,7 +240,7 @@ Deno.test("local-repository: multi-record transactions roll back without leaking
   });
 });
 
-Deno.test("local-repository: concurrent offline commits converge locally", async () => {
+test("local-repository: concurrent offline commits converge locally", async () => {
   await withRepository(async (repository) => {
     await Promise.all([
       repository.transaction("readwrite", async (transaction) => {
@@ -263,7 +261,7 @@ Deno.test("local-repository: concurrent offline commits converge locally", async
   });
 });
 
-Deno.test("local-repository: every supported dataset migration fixture is atomic", async () => {
+test("local-repository: every supported dataset migration fixture is atomic", async () => {
   await withRepository(async (repository) => {
     const current = datasetFixture();
     const legacy = { ...current, schemaVersion: 0, format: undefined };
@@ -287,7 +285,7 @@ Deno.test("local-repository: every supported dataset migration fixture is atomic
   });
 });
 
-Deno.test("local-repository: corruption restores the latest valid backup and projections", async () => {
+test("local-repository: corruption restores the latest valid backup and projections", async () => {
   const name = databaseName();
   await deleteLocalRepositoryDatabase(name, indexedDB).catch(() => undefined);
   const repository = await openLocalRepository({
@@ -328,7 +326,7 @@ Deno.test("local-repository: corruption restores the latest valid backup and pro
   }
 });
 
-Deno.test("local-repository: quota/failure injection leaves prior records intact", async () => {
+test("local-repository: quota/failure injection leaves prior records intact", async () => {
   const name = databaseName();
   await deleteLocalRepositoryDatabase(name, indexedDB).catch(() => undefined);
   let fail = false;
@@ -365,7 +363,7 @@ Deno.test("local-repository: quota/failure injection leaves prior records intact
   }
 });
 
-Deno.test("local-repository: native quota errors expose a bounded diagnostic", async () => {
+test("local-repository: native quota errors expose a bounded diagnostic", async () => {
   const name = databaseName();
   await deleteLocalRepositoryDatabase(name, indexedDB).catch(() => undefined);
   const repository = await openLocalRepository({
@@ -393,7 +391,7 @@ Deno.test("local-repository: native quota errors expose a bounded diagnostic", a
   }
 });
 
-Deno.test("local-repository: revisions and tombstones survive restart", async () => {
+test("local-repository: revisions and tombstones survive restart", async () => {
   await withRepository(async (repository) => {
     await repository.transaction("readwrite", async (transaction) => {
       await transaction.put("records", "deletable", expense("deletable"));
@@ -408,11 +406,11 @@ Deno.test("local-repository: revisions and tombstones survive restart", async ()
       "tombstone:records:deletable",
     ]);
     const document = await repository.loadDocument();
-    assert(document.tombstones['["records","deletable"]'] !== undefined);
+    assert(document.tombstones["[\"records\",\"deletable\"]"] !== undefined);
   });
 });
 
-Deno.test("local-repository: projection rebuild is deterministic", async () => {
+test("local-repository: projection rebuild is deterministic", async () => {
   await withRepository(async (repository, name) => {
     await repository.transaction("readwrite", async (transaction) => {
       await transaction.put("records", "expense-b", expense("expense-b"));
@@ -437,7 +435,7 @@ Deno.test("local-repository: projection rebuild is deterministic", async () => {
   });
 });
 
-Deno.test("local repository notifies record commits only after success and excludes sync writes", async () => {
+test("local repository notifies record commits only after success and excludes sync writes", async () => {
   await withRepository(async (repository) => {
     let commits = 0;
     const unsubscribe = repository.subscribeRecords!(() => {
@@ -482,7 +480,7 @@ Deno.test("local repository notifies record commits only after success and exclu
   });
 });
 
-Deno.test("local repository serializes the document once per record transaction and skips metadata reads", async () => {
+test("local repository serializes the document once per record transaction and skips metadata reads", async () => {
   const operations: string[] = [];
   await withRepository(async (repository) => {
     operations.length = 0;
@@ -546,7 +544,7 @@ Deno.test("local repository serializes the document once per record transaction 
   });
 });
 
-Deno.test("local-repository: abort rolls back an obsolete draft before discard", async () => {
+test("local-repository: abort rolls back an obsolete draft before discard", async () => {
   const operations: string[] = [];
   let controller: AbortController | undefined;
   await withRepository(async (repository) => {
@@ -572,7 +570,7 @@ Deno.test("local-repository: abort rolls back an obsolete draft before discard",
   });
 });
 
-Deno.test("local-repository: indexed matches are queued together with stable order and isolated values", async () => {
+test("local-repository: indexed matches are queued together with stable order and isolated values", async () => {
   let reads = 0;
   let firstBatchReads: number | undefined;
   await withRepository(async (repository) => {

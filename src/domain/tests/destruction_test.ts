@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   clearDeleteEverywhereProgress,
   clearLocalEraseProgress,
@@ -12,10 +13,6 @@ import {
 import { isAdapterError } from "../../adapters/ports/index.ts";
 import { createMemoryStorage as memoryStorage } from "../../test-support/index.ts";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
 function assert(
   condition: unknown,
   message = "Expected condition",
@@ -23,7 +20,7 @@ function assert(
   if (!condition) throw new Error(message);
 }
 
-Deno.test(
+test(
   "delete-everywhere progress persists only generation/count/phase data and reloads",
   () => {
     const storage = memoryStorage();
@@ -39,7 +36,7 @@ Deno.test(
       updatedAt: "2026-08-24T18:00:00.000Z",
     }, storage);
     const raw = [...storage.values.values()][0] ?? "";
-    assert(raw.includes('"generation":7'));
+    assert(raw.includes("\"generation\":7"));
     assert(!raw.includes("expense-sensitive"));
     assert(!raw.includes("AIza"));
     assert(
@@ -62,7 +59,7 @@ Deno.test(
   },
 );
 
-Deno.test("delete-everywhere rejects corrupt or inconsistent durable progress", () => {
+test("delete-everywhere rejects corrupt or inconsistent durable progress", () => {
   const storage = memoryStorage();
   storage.setItem(
     "did-it-become-what-you-like:delete-everywhere-progress",
@@ -88,7 +85,7 @@ Deno.test("delete-everywhere rejects corrupt or inconsistent durable progress", 
   assert(rejected, "invalid progress must fail closed");
 });
 
-Deno.test("delete-everywhere persists a retryable failed operation for reload", () => {
+test("delete-everywhere persists a retryable failed operation for reload", () => {
   const storage = memoryStorage();
   writeDeleteEverywhereProgress({
     generation: 3,
@@ -111,7 +108,7 @@ Deno.test("delete-everywhere persists a retryable failed operation for reload", 
   );
 });
 
-Deno.test("local erase receipt-AI key choice defaults checked and persists unchecked", () => {
+test("local erase receipt-AI key choice defaults checked and persists unchecked", () => {
   const storage = memoryStorage();
   assert(readLocalEraseReceiptAiKeysChoice(storage));
   writeLocalEraseReceiptAiKeysChoice(false, storage);
@@ -120,7 +117,7 @@ Deno.test("local erase receipt-AI key choice defaults checked and persists unche
   assert(readLocalEraseReceiptAiKeysChoice(storage));
 });
 
-Deno.test(
+test(
   "local erase progress persists only redacted phase and choice metadata",
   () => {
     const storage = memoryStorage();
@@ -131,8 +128,8 @@ Deno.test(
       updatedAt: "2026-08-24T18:30:00.000Z",
     }, storage);
     const raw = storage.values.get(LOCAL_ERASE_PROGRESS_KEY) ?? "";
-    assert(raw.includes('"phase":"removing-key"'));
-    assert(raw.includes('"removeReceiptAiKeys":true'));
+    assert(raw.includes("\"phase\":\"removing-key\""));
+    assert(raw.includes("\"removeReceiptAiKeys\":true"));
     assert(!raw.includes("AIza"));
     assert(!raw.includes("expense-sensitive"));
     assert(
@@ -150,7 +147,7 @@ Deno.test(
   },
 );
 
-Deno.test("local erase progress rejects a phase with the wrong retry operation", () => {
+test("local erase progress rejects a phase with the wrong retry operation", () => {
   const storage = memoryStorage();
   storage.setItem(
     LOCAL_ERASE_PROGRESS_KEY,

@@ -1,7 +1,9 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { build, preview } from "vite";
-import { mkdir, stat } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { promisify } from "node:util";
 import {
   AGENT_BROWSER_VERSION,
   CHROME_FOR_TESTING_VERSION,
@@ -11,8 +13,9 @@ import { installAgentBrowser } from "./browser/installer.ts";
 import { redactText } from "../src/test-support/redaction.ts";
 
 const ARTIFACT_ROOT = join(process.cwd(), ".agent-browser", "artifacts");
-const PROFILE = join(process.cwd(), ".agent-browser", "profiles", "gallery");
-const SESSION = "design-system-gallery";
+const PROFILE = await mkdtemp(join(tmpdir(), "dibwyl-gallery-"));
+const exec = promisify(execFile);
+const SESSION = `design-system-gallery-${process.pid}`;
 const BASE_PATH = "/did-it-become-what-you-like/";
 const VIEWPORTS = [
   [320, 568, "narrow"],
@@ -24,9 +27,12 @@ type CommandResult = { code: number; output: string };
 
 async function run(command: string, args: string[]): Promise<string> {
   try {
-    return redactText(execFileSync(command, args, { encoding: "utf8" }));
+    const { stdout, stderr } = await exec(command, args, { encoding: "utf8" });
+    return redactText(stdout + stderr);
   } catch (error) {
-    throw new Error(redactText(String(error)));
+    const output = error as { stdout?: string; stderr?: string };
+    throw new Error(redactText(`${String(error)}
+${output.stdout ?? ""}${output.stderr ?? ""}`));
   }
 }
 
@@ -34,14 +40,14 @@ async function runAgent(
   installed: { agentBrowserPath: string; chromeExecutablePath: string },
   args: string[],
 ): Promise<CommandResult> {
-  const output = await run(installed.agentBrowserPath, [
+  const output = await run(resolve(installed.agentBrowserPath), [
     "--native",
     "--session",
     SESSION,
     "--profile",
     PROFILE,
     "--executable-path",
-    installed.chromeExecutablePath,
+    resolve(installed.chromeExecutablePath),
     "--json",
     ...args,
   ]);
@@ -187,5 +193,7 @@ try {
   console.error(
     `UNAVAILABLE/FAILED: gallery inspection could not complete on ${platformDescription()}; no success is reported.`,
   );
-  process.exit(1);
+  process.exitCode = 1;
+} finally {
+  await rm(PROFILE, { recursive: true, force: true });
 }

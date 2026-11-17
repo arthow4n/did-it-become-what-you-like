@@ -28,6 +28,9 @@ export async function extractZipArchive(
         `Chrome archive has an invalid entry at offset ${cursor}.`,
       );
     }
+    const unixMode = view.getUint8(cursor + 5) === 3
+      ? view.getUint32(cursor + 38, true) >>> 16
+      : 0;
     const compression = view.getUint16(cursor + 10, true);
     const compressedSize = view.getUint32(cursor + 20, true);
     const uncompressedSize = view.getUint32(cursor + 24, true);
@@ -76,7 +79,9 @@ export async function extractZipArchive(
     }
     const outputPath = `${destination}/${safeName}`;
     await mkdir(parentDirectory(outputPath), { recursive: true });
-    await writeFile(outputPath, content);
+    await writeFile(outputPath, content, {
+      mode: (unixMode & 0o111) ? 0o755 : 0o644,
+    });
   }
 }
 

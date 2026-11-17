@@ -148,6 +148,14 @@ export async function installAgentBrowser(
     if (os !== "win32") await chmod(chromeExecutablePath, 0o755);
   }
 
+  if (platform === "linux-x64") {
+    // Repair the executable bit on cached installs made by older extractors.
+    await chmod(
+      join(dirname(chromeExecutablePath), "chrome_crashpad_handler"),
+      0o755,
+    );
+  }
+
   if (
     !(await isFile(agentBrowserPath)) || !(await isFile(chromeExecutablePath))
   ) {

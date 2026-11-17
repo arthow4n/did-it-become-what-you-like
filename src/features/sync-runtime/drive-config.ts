@@ -66,7 +66,7 @@ export const WORKER_SYNC_SERVER_URL =
   "https://did-it-become-what-you-like.arthow4n.workers.dev";
 export const DEFAULT_SYNC_SERVER_URL = WORKER_SYNC_SERVER_URL;
 
-export function syncServerForStoredPreference(
+export function syncServerForPreference(
   saved: string | null,
   defaultUrl = browserConfiguredSyncServerUrl(),
 ): string {
@@ -80,13 +80,8 @@ export function syncServerForStoredPreference(
 }
 
 export function browserConfiguredSyncServerUrl(): string {
-  const env = (import.meta as unknown as {
-    readonly env?: { readonly VITE_SYNC_SERVER_URL?: unknown };
-  }).env;
-  return typeof env?.VITE_SYNC_SERVER_URL === "string" &&
-      env.VITE_SYNC_SERVER_URL.trim().length > 0
-    ? env.VITE_SYNC_SERVER_URL.trim()
-    : DEFAULT_SYNC_SERVER_URL;
+  const configured = import.meta.env.VITE_SYNC_SERVER_URL?.trim();
+  return syncServerForPreference(configured ?? null, DEFAULT_SYNC_SERVER_URL);
 }
 
 export function createConfiguredDriveAdapter(

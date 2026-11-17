@@ -101,7 +101,7 @@ import {
   saveDestructionSafetyExport,
   settingsSyncSummary,
   SyncPortabilityScreenHost,
-  syncServerForStoredPreference,
+  syncServerForPreference,
   syncViewFromSnapshot,
   useRestartableActor,
   writeAutomaticSyncState,
@@ -162,7 +162,7 @@ export function SyncPortabilityRuntime({
     if (typeof globalThis.localStorage !== "undefined") {
       try {
         const saved = globalThis.localStorage.getItem("did_it_sync_server_url");
-        return syncServerForStoredPreference(saved);
+        return syncServerForPreference(saved);
       } catch {
         // ignore
       }

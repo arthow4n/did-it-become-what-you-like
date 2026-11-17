@@ -94,7 +94,8 @@ Keep the current Pages sync endpoint while completing these steps.
    `src/features/sync-runtime/drive-config.ts`. The existing Pages workflow
    publishes the app from `master`. Verify the hosted PWA, the service-worker
    update, and both sync modes. The standard deployment uses the application
-   default. An explicit build-time URL override takes precedence.
+   default. An override containing the previous built-in URL follows the new
+   default. Custom build-time URLs take precedence.
 
 The Worker uses a different hostname, so a session cookie issued by the
 previous backend cannot accompany requests to the Worker. No sessions or
@@ -106,7 +107,8 @@ browser-storage reset or Drive data deletion.
 
 Leave the old backend and database intact through verification and the
 rollback window. If the release must be rolled back, restore the previous
-Pages commit and previous URL override and redeploy through the Pages workflow.
+Pages commit and previous URL override and redeploy through the Pages workflow. If the original backend is unavailable, restore its last healthy
+deployment before pointing Pages back to it.
 Any auto-deployment attached to the old backend should be detached or pinned
 before publishing the migration to `master`, so the old URL remains available
 for rollback. Decommission the old deployment separately after a successful

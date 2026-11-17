@@ -32,7 +32,9 @@ async function run(command: string, args: string[]): Promise<string> {
   } catch (error) {
     const output = error as { stdout?: string; stderr?: string };
     throw new Error(redactText(`${String(error)}
-${output.stdout ?? ""}${output.stderr ?? ""}`));
+${(output.stdout ?? "").slice(0, 2048)}${
+      (output.stderr ?? "").slice(0, 2048)
+    }`));
   }
 }
 
@@ -120,7 +122,7 @@ async function main(): Promise<void> {
       }
       await runAgent(installed, [
         "eval",
-        "axe.run(document).then(r => { window.__galleryAxe = JSON.stringify(r) })",
+        "axe.run(document, { resultTypes: ['violations'] }).then(({ violations }) => { window.__galleryAxe = JSON.stringify({ violations }) })",
       ]);
       await runAgent(installed, ["wait", "250"]);
       const axe = parseJsonResult(
@@ -145,7 +147,7 @@ async function main(): Promise<void> {
         ]);
         await runAgent(installed, [
           "eval",
-          "axe.run(document).then(r => { window.__galleryMenuAxe = JSON.stringify(r) })",
+          "axe.run(document, { resultTypes: ['violations'] }).then(({ violations }) => { window.__galleryMenuAxe = JSON.stringify({ violations }) })",
         ]);
         await runAgent(installed, ["wait", "250"]);
         const menuAxe = parseJsonResult(

@@ -5,7 +5,7 @@
   "main": "server/main.ts",
   "compatibility_date": "2026-11-17",
   "workers_dev": true,
-  "preview_urls": false,
+  "preview_urls": true,
   "minify": true,
   "vars": {
     "FRONTEND_URL": "https://arthow4n.github.io/did-it-become-what-you-like/",

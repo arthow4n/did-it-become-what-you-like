@@ -1,5 +1,5 @@
 /**
- * Cryptographic helpers for the Deno Deploy sync server.
+ * Cryptographic helpers for the sync Worker.
  * Implements OWASP recommendations: AES-GCM with unique 12-byte IV per encryption,
  * and SHA-256 for session token hashing.
  */
@@ -66,7 +66,7 @@ export async function decryptToken(
 }
 
 /**
- * Hash a session token using SHA-256 for storage in Deno KV.
+ * Hash a session token using SHA-256 for storage in D1.
  */
 export async function hashSessionToken(token: string): Promise<string> {
   const encoded = new TextEncoder().encode(token);
@@ -74,4 +74,21 @@ export async function hashSessionToken(token: string): Promise<string> {
   return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+export function base64Url(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes)).replaceAll("+", "-")
+    .replaceAll("/", "_").replace(/=+$/, "");
+}
+
+export function randomToken(): string {
+  return base64Url(crypto.getRandomValues(new Uint8Array(32)));
+}
+
+export async function oauthChallenge(verifier: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(verifier),
+  );
+  return base64Url(new Uint8Array(digest));
 }

@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createActor } from "xstate";
 import {
   createManualExpenseMachine,
@@ -14,10 +15,6 @@ import {
   createFakeLocalPort,
   type FakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -101,7 +98,7 @@ function draftWith(
   return { ...draft, ...overrides };
 }
 
-Deno.test("manual-expense: defaults, canonical signs, create, edit, and duplicate submit", async () => {
+test("manual-expense: defaults, canonical signs, create, edit, and duplicate submit", async () => {
   const harness = await createHarness();
   const actor = createExpenseActor(harness, "workflow:create-edit");
   actor.send({ type: "expense.open" });
@@ -169,7 +166,7 @@ Deno.test("manual-expense: defaults, canonical signs, create, edit, and duplicat
   editActor.stop();
 });
 
-Deno.test("manual-expense: required and invalid decimals stay editable at the 03:00 boundary", async () => {
+test("manual-expense: required and invalid decimals stay editable at the 03:00 boundary", async () => {
   const beforeBoundary = await createHarness(new Date(2026, 7, 24, 2, 59, 59));
   const beforeActor = createExpenseActor(beforeBoundary, "workflow:before");
   beforeActor.send({ type: "expense.open" });
@@ -232,7 +229,7 @@ Deno.test("manual-expense: required and invalid decimals stay editable at the 03
   atActor.stop();
 });
 
-Deno.test("manual-expense: editing preserves trailing decimal zeros", async () => {
+test("manual-expense: editing preserves trailing decimal zeros", async () => {
   const harness = await createHarness();
   const actor = createExpenseActor(harness, "workflow:decimal-editing");
   actor.send({ type: "expense.open" });
@@ -258,7 +255,7 @@ Deno.test("manual-expense: editing preserves trailing decimal zeros", async () =
   actor.stop();
 });
 
-Deno.test("manual-expense: typed save completion supports add-another and saved undo", async () => {
+test("manual-expense: typed save completion supports add-another and saved undo", async () => {
   const harness = await createHarness();
   const addAnother = createExpenseActor(harness, "workflow:add-another");
   addAnother.send({ type: "expense.open" });
@@ -333,7 +330,7 @@ Deno.test("manual-expense: typed save completion supports add-another and saved 
   finish.stop();
 });
 
-Deno.test("manual-expense: null-draft hydration and open failures retry safely", async () => {
+test("manual-expense: null-draft hydration and open failures retry safely", async () => {
   const harness = await createHarness();
   harness.local.setScenario({ offline: true });
 
@@ -364,7 +361,7 @@ Deno.test("manual-expense: null-draft hydration and open failures retry safely",
   open.stop();
 });
 
-Deno.test("manual-expense: queued open starts after empty draft hydration", async () => {
+test("manual-expense: queued open starts after empty draft hydration", async () => {
   const harness = await createHarness();
   const actor = createExpenseActor(harness, "workflow:queued-open");
   actor.send({ type: "expense.hydrate" });
@@ -375,7 +372,7 @@ Deno.test("manual-expense: queued open starts after empty draft hydration", asyn
   actor.stop();
 });
 
-Deno.test("manual-expense: transient and failed edits retain delete and field changes", async () => {
+test("manual-expense: transient and failed edits retain delete and field changes", async () => {
   const harness = await createHarness();
   const expense = expenseRecord({ id: "expense-transient-actions" });
   await harness.local.transaction(
@@ -434,7 +431,7 @@ Deno.test("manual-expense: transient and failed edits retain delete and field ch
   saveFailure.stop();
 });
 
-Deno.test("manual-expense: failed save-and-add-another keeps the draft editable", async () => {
+test("manual-expense: failed save-and-add-another keeps the draft editable", async () => {
   const harness = await createHarness();
   const actor = createExpenseActor(harness, "workflow:save-another-failure");
   actor.send({ type: "expense.open" });
@@ -466,7 +463,7 @@ Deno.test("manual-expense: failed save-and-add-another keeps the draft editable"
   actor.stop();
 });
 
-Deno.test(
+test(
   "manual-expense: preserves spaces while editing and normalizes only on save",
   async () => {
     const harness = await createHarness();
@@ -512,7 +509,7 @@ Deno.test(
   },
 );
 
-Deno.test("manual-expense: in-memory draft discard confirmation clears it", async () => {
+test("manual-expense: in-memory draft discard confirmation clears it", async () => {
   const harness = await createHarness();
   const actor = createExpenseActor(harness, "workflow:discard");
   actor.send({ type: "expense.open" });
@@ -537,7 +534,7 @@ Deno.test("manual-expense: in-memory draft discard confirmation clears it", asyn
   actor.stop();
 });
 
-Deno.test("manual-expense: repository failure retains input and retry saves", async () => {
+test("manual-expense: repository failure retains input and retry saves", async () => {
   const harness = await createHarness();
   const actor = createExpenseActor(harness, "workflow:retry");
   actor.send({ type: "expense.open" });
@@ -562,7 +559,7 @@ Deno.test("manual-expense: repository failure retains input and retry saves", as
   actor.stop();
 });
 
-Deno.test("manual-expense: delete and undo restore the local record", async () => {
+test("manual-expense: delete and undo restore the local record", async () => {
   const harness = await createHarness();
   const expense = expenseRecord({ id: "expense-delete" });
   await harness.local.transaction(
@@ -595,7 +592,7 @@ Deno.test("manual-expense: delete and undo restore the local record", async () =
   actor.stop();
 });
 
-Deno.test("manual-expense: auto-fills current time on new expense, preserves explicit time on edit, and detects time modification", async () => {
+test("manual-expense: auto-fills current time on new expense, preserves explicit time on edit, and detects time modification", async () => {
   const harness = await createHarness(new Date(2026, 7, 24, 15, 30, 0));
   const actor = createExpenseActor(harness, "workflow:time-defaults");
   actor.send({ type: "expense.open" });
@@ -629,7 +626,7 @@ Deno.test("manual-expense: auto-fills current time on new expense, preserves exp
   actorExisting.stop();
 });
 
-Deno.test("manual-expense: edit starts directly in editing and accepts change events without blocking or dropping input", async () => {
+test("manual-expense: edit starts directly in editing and accepts change events without blocking or dropping input", async () => {
   const harness = await createHarness();
   const existing = expenseRecord({
     id: "expense-immediate-edit",
@@ -667,7 +664,7 @@ Deno.test("manual-expense: edit starts directly in editing and accepts change ev
   actor.stop();
 });
 
-Deno.test("manual-expense: input during opening state is not dropped and survives completion", async () => {
+test("manual-expense: input during opening state is not dropped and survives completion", async () => {
   const harness = await createHarness();
   const actor = createExpenseActor(harness, "workflow:opening-fluent");
 

@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: "..",
   testMatch: ["e2e/audit/**/*.spec.ts"],
   webServer: {
-    command: "deno task dev --host 127.0.0.1",
+    command: "npm run dev",
     url: "http://127.0.0.1:5173/did-it-become-what-you-like/",
     reuseExistingServer: true,
     timeout: 30_000,

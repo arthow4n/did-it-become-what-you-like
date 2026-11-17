@@ -1,471 +1,409 @@
-/// <reference lib="deno.unstable" />
-/// <reference lib="deno.ns" />
 import {
   decryptToken,
-  type EncryptedData,
   encryptToken,
   hashSessionToken,
+  oauthChallenge,
+  randomToken,
 } from "./crypto.ts";
+import type { SessionStore } from "./store.ts";
 
-export type ServerEnv = {
-  readonly googleClientId: string;
-  readonly googleClientSecret: string;
-  readonly allowedEmails: readonly string[];
-  readonly encryptionSecret: string;
-  readonly frontendOrigin: string;
-  readonly serverOrigin?: string;
-  readonly fetch?: typeof fetch;
+type ServerEnv = {
+  FRONTEND_URL: string;
+  SERVER_ORIGIN: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  ALLOWED_GOOGLE_EMAILS?: string;
+  ENCRYPTION_SECRET?: string;
 };
 
-export type SessionRecord = {
-  readonly encryptedRefreshToken: EncryptedData;
-  readonly email: string;
-  readonly createdAt: number;
-  readonly updatedAt: number;
-};
-
-export type OAuthStateRecord = {
-  readonly returnTo: string;
-  readonly createdAt: number;
-};
-
-const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
-const USERINFO_EMAIL_SCOPE = "https://www.googleapis.com/auth/userinfo.email";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+const STATE_COOKIE = "__Host-drive_oauth";
+const SESSION_COOKIE = "__Host-drive_session";
+const SESSION_SECONDS = 180 * 24 * 60 * 60;
+const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+const CORS_PATHS = new Map([
+  ["/api/google-drive-token", "GET"],
+  ["/auth/google-drive/session", "POST"],
+  ["/auth/google-drive/logout", "POST"],
+]);
 
-export function parseCookies(
-  cookieHeader: string | null,
-): Record<string, string> {
-  if (!cookieHeader) return {};
-  const cookies: Record<string, string> = {};
-  for (const part of cookieHeader.split(";")) {
-    const [name, ...valueParts] = part.trim().split("=");
-    if (name) {
-      cookies[name] = decodeURIComponent(valueParts.join("="));
-    }
-  }
-  return cookies;
+function cookie(req: Request, name: string): string | undefined {
+  const entry = req.headers.get("Cookie")?.split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${name}=`));
+  const value = entry?.slice(name.length + 1);
+  return value && TOKEN_PATTERN.test(value) ? value : undefined;
 }
 
-export function isEmailAllowed(
-  email: string,
-  allowedEmails: readonly string[],
-): boolean {
-  if (allowedEmails.length === 0) return true;
-  const normalized = email.trim().toLowerCase();
-  return allowedEmails.some((allowed) =>
-    allowed.trim().toLowerCase() === normalized
+function cookieHeader(
+  name: string,
+  value: string,
+  maxAge: number,
+  attributes: string,
+): string {
+  return `${name}=${value}; Path=/; HttpOnly; Secure; Max-Age=${maxAge}; ${attributes}`;
+}
+
+function allowEmail(email: string, allowlist: string): boolean {
+  return allowlist.split(",").some((entry) =>
+    entry.trim().toLowerCase() === email.trim().toLowerCase()
   );
 }
 
-export function parseAllowedOrigins(frontendOrigin: string): string[] {
-  return frontendOrigin
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean)
-    .map((o) => {
-      if (o === "*") return "*";
-      try {
-        return new URL(o).origin;
-      } catch {
-        return o.replace(/\/+$/, "");
-      }
-    });
+function resolveReturnTo(value: string | null, frontend: URL): URL | undefined {
+  if (!value) return new URL(frontend);
+  try {
+    const candidate = new URL(value);
+    if (
+      candidate.origin === frontend.origin &&
+      (candidate.pathname === frontend.pathname ||
+        candidate.pathname === `${frontend.pathname}index.html`) &&
+      !candidate.username && !candidate.password
+    ) {
+      return candidate;
+    }
+  } catch {
+    // Invalid return destinations never leave the Worker.
+  }
 }
 
-function corsHeaders(env: ServerEnv, req: Request): Headers {
-  const headers = new Headers();
-  const origin = req.headers.get("origin");
-  const allowedOrigins = parseAllowedOrigins(env.frontendOrigin);
+function redirect(url: URL, headers: Headers, setCookie?: string): Response {
+  headers.set("Location", url.href);
+  if (setCookie) headers.append("Set-Cookie", setCookie);
+  return new Response(null, { status: 302, headers });
+}
 
-  let allowOrigin = "";
-  if (allowedOrigins.includes("*")) {
-    allowOrigin = origin ?? "*";
-  } else if (origin) {
-    const isAllowed = allowedOrigins.some((allowed) => {
-      if (allowed === origin) return true;
-      try {
-        return new URL(allowed).origin === new URL(origin).origin;
-      } catch {
-        return false;
-      }
-    });
-    if (isAllowed) {
-      allowOrigin = origin;
-    }
-  } else if (allowedOrigins.length > 0 && allowedOrigins[0] !== "*") {
-    allowOrigin = allowedOrigins[0];
-  }
-
-  if (allowOrigin) {
-    headers.set("Access-Control-Allow-Origin", allowOrigin);
-    if (allowOrigin !== "*") {
-      headers.set("Access-Control-Allow-Credentials", "true");
-    }
-  }
-  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  headers.set(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, Cookie",
-  );
-  headers.set("Access-Control-Max-Age", "86400");
-  headers.set("Vary", "Origin");
-  return headers;
+function callbackError(url: URL, error: string, headers: Headers): Response {
+  url.searchParams.set("sync_error", error);
+  return redirect(url, headers);
 }
 
 export async function handleRequest(
   req: Request,
-  kv: Deno.Kv,
   env: ServerEnv,
+  store: SessionStore | undefined,
+  fetcher = fetch,
 ): Promise<Response> {
   const url = new URL(req.url);
-  const path = url.pathname;
-  const method = req.method;
-  const fetcher = env.fetch ?? globalThis.fetch;
-  const serverOrigin = (env.serverOrigin ?? url.origin).replace(/\/+$/, "");
+  const { pathname: path } = url;
+  const headers = new Headers({
+    "Cache-Control": "no-store",
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    Vary: "Origin",
+  });
+  const fail = (status: number, error: string, message: string) =>
+    Response.json({ error, message }, { status, headers });
 
-  // Handle CORS Preflight
-  if (method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders(env, req),
-    });
-  }
+  try {
+    const frontend = new URL(env.FRONTEND_URL);
+    const origin = req.headers.get("Origin");
+    const method = CORS_PATHS.get(path);
+    if (origin === frontend.origin) {
+      headers.set("Access-Control-Allow-Origin", origin);
+      headers.set("Access-Control-Allow-Credentials", "true");
+    }
 
-  // Health check
-  if (path === "/" || path === "/health") {
-    return new Response(
-      JSON.stringify({ status: "ok", service: "google-drive-sync-auth" }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...Object.fromEntries(corsHeaders(env, req)),
+    if ((path === "/" || path === "/health") && req.method === "GET") {
+      if (store) await store.ready();
+      const oauthConfigured = Boolean(
+        env.GOOGLE_CLIENT_ID?.trim() && env.GOOGLE_CLIENT_SECRET?.trim() &&
+          env.ALLOWED_GOOGLE_EMAILS?.split(",").some((email) => email.trim()) &&
+          env.ENCRYPTION_SECRET && env.ENCRYPTION_SECRET.length >= 32,
+      );
+      return Response.json(
+        {
+          status: store ? "ok" : "preview",
+          oauthConfigured: Boolean(
+            store && env.SERVER_ORIGIN && oauthConfigured,
+          ),
         },
-      },
-    );
-  }
-
-  // Step 1: Initiate OAuth Login
-  if (path === "/auth/google-drive/login" && method === "GET") {
-    const returnTo = url.searchParams.get("return_to") ?? env.frontendOrigin;
-    const state = crypto.randomUUID();
-    const stateRecord: OAuthStateRecord = {
-      returnTo,
-      createdAt: Date.now(),
-    };
-    await kv.set(["oauth_state", state], stateRecord, { expireIn: 600_000 }); // 10 mins
-
-    const redirectUri = `${serverOrigin}/auth/google-drive/callback`;
-    const cleanClientId = env.googleClientId.trim().replace(
-      /^["']|["']$/g,
-      "",
-    );
-    if (!cleanClientId) {
-      return new Response(
-        "Missing GOOGLE_CLIENT_ID environment variable on server.",
-        { status: 500, headers: { "Content-Type": "text/plain" } },
+        { headers },
       );
     }
-    const googleAuthUrl = new URL(GOOGLE_AUTH_URL);
-    googleAuthUrl.searchParams.set("client_id", cleanClientId);
-    googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
-    googleAuthUrl.searchParams.set("response_type", "code");
-    googleAuthUrl.searchParams.set(
-      "scope",
-      `${DRIVE_APPDATA_SCOPE} ${USERINFO_EMAIL_SCOPE}`,
-    );
-    googleAuthUrl.searchParams.set("access_type", "offline");
-    googleAuthUrl.searchParams.set("prompt", "consent");
-    googleAuthUrl.searchParams.set("state", state);
 
-    return Response.redirect(googleAuthUrl.toString(), 302);
-  }
-
-  // Step 2: OAuth Callback
-  if (path === "/auth/google-drive/callback" && method === "GET") {
-    const code = url.searchParams.get("code");
-    const state = url.searchParams.get("state");
-    const oauthError = url.searchParams.get("error");
-
-    if (oauthError) {
-      if (state) {
-        const stateEntry = await kv.get<OAuthStateRecord>([
-          "oauth_state",
-          state,
-        ]);
-        if (stateEntry.value?.returnTo) {
-          await kv.delete(["oauth_state", state]);
-          const errorUrl = new URL(stateEntry.value.returnTo);
-          errorUrl.searchParams.set("sync_error", oauthError);
-          return new Response(
-            `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=${errorUrl}"></head><body><h2>Authorization Error</h2><p>${oauthError}</p><p><a href="${errorUrl}">Return to app</a></p></body></html>`,
-            {
-              status: 400,
-              headers: { "Content-Type": "text/html; charset=utf-8" },
-            },
-          );
-        }
+    if (method) {
+      if (origin !== frontend.origin) {
+        return fail(403, "forbidden", "Origin is not allowed");
       }
-      return new Response(
-        `Google authorization error: ${oauthError}`,
-        { status: 400, headers: { "Content-Type": "text/plain" } },
+      if (req.method === "OPTIONS") {
+        headers.set("Access-Control-Allow-Methods", method);
+        headers.set("Access-Control-Allow-Headers", "Content-Type");
+        headers.set("Access-Control-Max-Age", "600");
+        return new Response(null, { status: 204, headers });
+      }
+      if (req.method !== method) {
+        return fail(405, "method_not_allowed", "Method not allowed");
+      }
+    } else if (
+      req.method !== "GET" ||
+      (path !== "/auth/google-drive/login" &&
+        path !== "/auth/google-drive/callback")
+    ) {
+      return fail(404, "not_found", "Not found");
+    }
+
+    const clientId = env.GOOGLE_CLIENT_ID?.trim();
+    const clientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
+    const allowlist = env.ALLOWED_GOOGLE_EMAILS;
+    const encryptionSecret = env.ENCRYPTION_SECRET;
+    if (
+      !store || !env.SERVER_ORIGIN || !clientId || !clientSecret ||
+      !allowlist?.split(",").some((email) => email.trim()) ||
+      !encryptionSecret || encryptionSecret.length < 32
+    ) {
+      return fail(503, "unavailable", "Google Drive sign-in is not configured");
+    }
+    if (url.origin !== new URL(env.SERVER_ORIGIN).origin) {
+      return fail(404, "not_found", "Not found");
+    }
+    const redirectUri =
+      new URL("/auth/google-drive/callback", env.SERVER_ORIGIN).href;
+
+    if (path === "/auth/google-drive/login") {
+      const returnTo = resolveReturnTo(
+        url.searchParams.get("return_to"),
+        frontend,
+      );
+      const challenge = url.searchParams.get("handoff_challenge");
+      if (!returnTo || !challenge || !TOKEN_PATTERN.test(challenge)) {
+        return fail(
+          400,
+          "invalid_request",
+          "Invalid return destination or missing browser challenge",
+        );
+      }
+      const state = randomToken();
+      const browser = randomToken();
+      const verifier = randomToken();
+      await store.saveState(
+        await hashSessionToken(state),
+        await hashSessionToken(browser),
+        {
+          return_to: returnTo.href,
+          pkce_verifier: verifier,
+          handoff_challenge: challenge,
+        },
+        Date.now() + 600_000,
+      );
+
+      const google = new URL(GOOGLE_AUTH_URL);
+      google.search = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: "code",
+        scope:
+          "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email",
+        access_type: "offline",
+        prompt: "consent",
+        state,
+        code_challenge: await oauthChallenge(verifier),
+        code_challenge_method: "S256",
+      }).toString();
+      return redirect(
+        google,
+        headers,
+        cookieHeader(STATE_COOKIE, browser, 600, "SameSite=Lax"),
       );
     }
 
-    if (!code || !state) {
-      return new Response("Missing code or state parameter", { status: 400 });
-    }
-
-    const stateEntry = await kv.get<OAuthStateRecord>(["oauth_state", state]);
-    if (!stateEntry.value) {
-      return new Response("Invalid or expired OAuth state parameter", {
-        status: 400,
+    const requestGoogleToken = (params: Record<string, string>) =>
+      fetcher(GOOGLE_TOKEN_URL, {
+        method: "POST",
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          ...params,
+        }),
+        signal: AbortSignal.timeout(15_000),
       });
-    }
-    await kv.delete(["oauth_state", state]);
-    const returnTo = stateEntry.value.returnTo;
 
-    // Exchange code for tokens
-    const redirectUri = `${serverOrigin}/auth/google-drive/callback`;
-    const tokenResponse = await fetcher(GOOGLE_TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
+    if (path === "/auth/google-drive/callback") {
+      const state = url.searchParams.get("state");
+      const browser = cookie(req, STATE_COOKIE);
+      if (!state || !TOKEN_PATTERN.test(state) || !browser) {
+        return fail(
+          400,
+          "invalid_state",
+          "Invalid or expired sign-in. Start again from the app.",
+        );
+      }
+      const saved = await store.consumeState(
+        await hashSessionToken(state),
+        await hashSessionToken(browser),
+        Date.now(),
+      );
+      if (!saved) {
+        return fail(
+          400,
+          "invalid_state",
+          "Invalid or expired sign-in. Start again from the app.",
+        );
+      }
+
+      const target = new URL(saved.return_to);
+      headers.append(
+        "Set-Cookie",
+        cookieHeader(STATE_COOKIE, "", 0, "SameSite=Lax"),
+      );
+      const code = url.searchParams.get("code");
+      if (!code || url.searchParams.has("error")) {
+        return callbackError(target, "authorization_failed", headers);
+      }
+
+      const token = await requestGoogleToken({
         code,
-        client_id: env.googleClientId.trim().replace(/^["']|["']$/g, ""),
-        client_secret: env.googleClientSecret.trim().replace(
-          /^["']|["']$/g,
-          "",
-        ),
         redirect_uri: redirectUri,
         grant_type: "authorization_code",
-      }).toString(),
-    });
+        code_verifier: saved.pkce_verifier,
+      }).catch(() => undefined);
+      if (!token?.ok) {
+        return callbackError(target, "token_exchange_failed", headers);
+      }
+      const credentials = await token.json<{
+        access_token?: string;
+        refresh_token?: string;
+      }>().catch(() => null);
+      if (!credentials?.access_token) {
+        return callbackError(target, "token_exchange_failed", headers);
+      }
+      if (!credentials.refresh_token) {
+        return callbackError(target, "missing_refresh_token", headers);
+      }
 
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      const errorUrl = new URL(returnTo);
-      errorUrl.searchParams.set("sync_error", "token_exchange_failed");
-      return new Response(
-        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=${errorUrl}"></head><body><h2>Authorization Failed</h2><p>Failed to exchange authorization code with Google: ${errorText}</p><p><a href="${errorUrl}">Return to app</a></p></body></html>`,
+      const profile = await fetcher(GOOGLE_USERINFO_URL, {
+        headers: { Authorization: `Bearer ${credentials.access_token}` },
+        signal: AbortSignal.timeout(15_000),
+      }).catch(() => undefined);
+      if (!profile?.ok) {
+        return callbackError(target, "profile_fetch_failed", headers);
+      }
+      const user = await profile.json<
+        { email?: string; verified_email?: boolean }
+      >()
+        .catch(() => null);
+      if (typeof user?.email !== "string" || user.verified_email !== true) {
+        return callbackError(target, "profile_fetch_failed", headers);
+      }
+      if (!allowEmail(user.email, allowlist)) {
+        return callbackError(target, "unauthorized_account", headers);
+      }
+
+      const ticket = randomToken();
+      await store.saveHandoff(
+        await hashSessionToken(ticket),
+        saved.handoff_challenge,
         {
-          status: 502,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
+          ...await encryptToken(credentials.refresh_token, encryptionSecret),
+          email: user.email,
         },
+        Date.now() + 120_000,
       );
+
+      target.searchParams.set("sync_connected", "persisted");
+      target.hash += `|sync_handoff=${ticket}`;
+      return redirect(target, headers);
     }
 
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
-    const refreshToken = tokenData.refresh_token;
-
-    if (!refreshToken) {
-      const errorUrl = new URL(returnTo);
-      errorUrl.searchParams.set("sync_error", "missing_refresh_token");
-      return new Response(
-        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=${errorUrl}"></head><body><h2>Refresh Token Missing</h2><p>Google did not return a refresh token. Please revoke access in your Google Account and try again with prompt=consent.</p><p><a href="${errorUrl}">Return to app</a></p></body></html>`,
-        {
-          status: 400,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        },
+    if (path === "/auth/google-drive/session") {
+      // Keep the handoff proof out of URLs and bound its size before reading.
+      const json = req.headers.get("Content-Type")?.split(";")[0]?.trim() ===
+        "application/json";
+      const bytes = Number(req.headers.get("Content-Length"));
+      if (!json || !Number.isInteger(bytes) || bytes < 1 || bytes > 256) {
+        return fail(400, "invalid_request", "Invalid session handoff");
+      }
+      const proof = await req.json<{ ticket?: unknown; verifier?: unknown }>()
+        .catch(() => null);
+      if (
+        typeof proof?.ticket !== "string" ||
+        !TOKEN_PATTERN.test(proof.ticket) ||
+        typeof proof.verifier !== "string" ||
+        !TOKEN_PATTERN.test(proof.verifier)
+      ) {
+        return fail(400, "invalid_request", "Invalid session handoff");
+      }
+      const session = randomToken();
+      const now = Date.now();
+      const established = await store.establishSession(
+        await hashSessionToken(proof.ticket),
+        await oauthChallenge(proof.verifier),
+        await hashSessionToken(session),
+        now,
+        now + SESSION_SECONDS * 1000,
       );
+      if (!established) {
+        return fail(
+          401,
+          "unauthorized",
+          "Sign-in expired or already used. Reconnect to Google Drive.",
+        );
+      }
+      headers.append(
+        "Set-Cookie",
+        cookieHeader(
+          SESSION_COOKIE,
+          session,
+          SESSION_SECONDS,
+          "SameSite=None; Partitioned",
+        ),
+      );
+      return new Response(null, { status: 204, headers });
     }
 
-    // Retrieve user email to verify against allow-list
-    const userinfoResponse = await fetcher(GOOGLE_USERINFO_URL, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    if (!userinfoResponse.ok) {
-      const errorUrl = new URL(returnTo);
-      errorUrl.searchParams.set("sync_error", "profile_fetch_failed");
-      return new Response(
-        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=${errorUrl}"></head><body><h2>Profile Error</h2><p>Failed to fetch Google user profile.</p><p><a href="${errorUrl}">Return to app</a></p></body></html>`,
-        {
-          status: 502,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        },
+    const session = cookie(req, SESSION_COOKIE);
+    const sessionHash = session ? await hashSessionToken(session) : undefined;
+    if (path === "/auth/google-drive/logout") {
+      if (sessionHash) await store.deleteSession(sessionHash);
+      headers.append(
+        "Set-Cookie",
+        cookieHeader(SESSION_COOKIE, "", 0, "SameSite=None; Partitioned"),
       );
+      return Response.json({ status: "logged_out" }, { headers });
     }
 
-    const userData = await userinfoResponse.json();
-    const userEmail = userData.email;
-
-    if (!userEmail) {
-      const errorUrl = new URL(returnTo);
-      errorUrl.searchParams.set("sync_error", "profile_fetch_failed");
-      return new Response(
-        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=${errorUrl}"></head><body><h2>Profile Error</h2><p>Unable to determine Google account email.</p><p><a href="${errorUrl}">Return to app</a></p></body></html>`,
-        {
-          status: 400,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        },
+    if (!sessionHash) {
+      return fail(401, "unauthorized", "No active session cookie");
+    }
+    const saved = await store.getSession(sessionHash, Date.now());
+    if (!saved || !allowEmail(saved.email, allowlist)) {
+      return fail(401, "unauthorized", "Session expired or invalid");
+    }
+    const refreshToken = await decryptToken(saved, encryptionSecret);
+    const token = await requestGoogleToken({
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }).catch(() => undefined);
+    const data = await token?.json<{
+      access_token?: string;
+      expires_in?: number;
+      error?: string;
+    }>().catch(() => null);
+    if (data?.error === "invalid_grant") {
+      await store.deleteSession(sessionHash);
+      return fail(
+        401,
+        "unauthorized",
+        "Google authorization expired. Reconnect to Google Drive.",
       );
     }
-
-    // Verify Allow-List
-    if (!isEmailAllowed(userEmail, env.allowedEmails)) {
-      const errorUrl = new URL(returnTo);
-      errorUrl.searchParams.set("sync_error", "unauthorized_account");
-      errorUrl.searchParams.set("email", userEmail);
-      return new Response(
-        `<!DOCTYPE html>
-<html>
-<head><title>Access Denied</title><meta http-equiv="refresh" content="2;url=${errorUrl}"><style>body{font-family:system-ui,sans-serif;padding:2rem;max-width:500px;margin:auto;line-height:1.5;}</style></head>
-<body>
-  <h2>Access Denied</h2>
-  <p>Google account <strong>${userEmail}</strong> is not authorized to use this sync server.</p>
-  <p><a href="${errorUrl}">Return to app</a></p>
-</body>
-</html>`,
-        {
-          status: 403,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        },
-      );
+    if (
+      !token?.ok || typeof data?.access_token !== "string" || !data.access_token
+    ) {
+      return fail(502, "upstream_error", "Google Drive token refresh failed");
     }
-
-    // Encrypt and save refresh token
-    const encryptedRefreshToken = await encryptToken(
-      refreshToken,
-      env.encryptionSecret,
-    );
-    const sessionId = crypto.randomUUID();
-    const sessionHash = await hashSessionToken(sessionId);
-    const sessionRecord: SessionRecord = {
-      encryptedRefreshToken,
-      email: userEmail,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-
-    // Store session in Deno KV for 180 days
-    await kv.set(["sessions", sessionHash], sessionRecord, {
-      expireIn: 180 * 24 * 3600 * 1000,
-    });
-
-    const cookieValue =
-      `session_id=${sessionId}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=15552000`;
-    const redirectTarget = new URL(returnTo);
-    redirectTarget.searchParams.set("sync_connected", "persisted");
-    redirectTarget.searchParams.set("email", userEmail);
-
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: redirectTarget.toString(),
-        "Set-Cookie": cookieValue,
+    return Response.json(
+      {
+        accessToken: data.access_token,
+        expiresIn: data.expires_in ?? 3600,
+        email: saved.email,
       },
-    });
-  }
-
-  // Step 3: Dispense fresh Google Drive Access Token
-  if (path === "/api/google-drive-token" && method === "GET") {
-    const cookies = parseCookies(req.headers.get("cookie"));
-    const sessionId = cookies["session_id"];
-    const headers = corsHeaders(env, req);
-    headers.set("Content-Type", "application/json");
-
-    if (!sessionId) {
-      return new Response(
-        JSON.stringify({
-          error: "unauthorized",
-          message: "No active session cookie",
-        }),
-        { status: 401, headers },
-      );
-    }
-
-    const sessionHash = await hashSessionToken(sessionId);
-    const sessionEntry = await kv.get<SessionRecord>(["sessions", sessionHash]);
-    if (!sessionEntry.value) {
-      return new Response(
-        JSON.stringify({
-          error: "unauthorized",
-          message: "Session expired or invalid",
-        }),
-        { status: 401, headers },
-      );
-    }
-
-    let refreshToken: string;
-    try {
-      refreshToken = await decryptToken(
-        sessionEntry.value.encryptedRefreshToken,
-        env.encryptionSecret,
-      );
-    } catch {
-      return new Response(
-        JSON.stringify({
-          error: "server_error",
-          message: "Failed to decrypt token",
-        }),
-        { status: 500, headers },
-      );
-    }
-
-    // Refresh the access token with Google
-    const tokenResponse = await fetcher(GOOGLE_TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: env.googleClientId,
-        client_secret: env.googleClientSecret,
-        refresh_token: refreshToken,
-        grant_type: "refresh_token",
-      }).toString(),
-    });
-
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      return new Response(
-        JSON.stringify({ error: "upstream_error", message: errorText }),
-        { status: 502, headers },
-      );
-    }
-
-    const tokenData = await tokenResponse.json();
-    return new Response(
-      JSON.stringify({
-        accessToken: tokenData.access_token,
-        expiresIn: tokenData.expires_in ?? 3600,
-        email: sessionEntry.value.email,
-      }),
-      { status: 200, headers },
+      { headers },
     );
+  } catch {
+    // Requests may include OAuth codes and cookies. Keep diagnostics out of responses and logs.
+    return fail(500, "server_error", "Google Drive sync server request failed");
   }
-
-  // Step 4: Logout / Revoke
-  if (
-    path === "/auth/google-drive/logout" &&
-    (method === "POST" || method === "GET")
-  ) {
-    const cookies = parseCookies(req.headers.get("cookie"));
-    const sessionId = cookies["session_id"];
-    const headers = corsHeaders(env, req);
-    headers.set("Content-Type", "application/json");
-
-    if (sessionId) {
-      const sessionHash = await hashSessionToken(sessionId);
-      await kv.delete(["sessions", sessionHash]);
-    }
-
-    headers.append(
-      "Set-Cookie",
-      "session_id=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0",
-    );
-
-    return new Response(JSON.stringify({ status: "logged_out" }), {
-      status: 200,
-      headers,
-    });
-  }
-
-  return new Response("Not Found", {
-    status: 404,
-    headers: corsHeaders(env, req),
-  });
 }

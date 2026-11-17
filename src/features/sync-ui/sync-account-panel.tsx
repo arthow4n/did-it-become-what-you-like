@@ -86,14 +86,14 @@ function DisconnectedPanel(
           ? (
             <Stack gap={3}>
               <InlineNotice title="Persisted connection" tone="info">
-                Syncs automatically in the background via your Deno Deploy sync
+                Syncs automatically in the background via your Google Drive sync
                 server.
               </InlineNotice>
               <TextField
                 label="Sync Server URL"
                 value={props.syncServerUrl ?? ""}
                 onChange={(val) => props.onSyncServerUrlChange?.(val)}
-                placeholder="https://did-it-become-what-you-like.arthow4n.deno.net"
+                placeholder="https://did-it-become-what-you-like.arthow4n.workers.dev"
               />
               <Inline>
                 <Button onPress={() => props.onConnect("persisted")}>

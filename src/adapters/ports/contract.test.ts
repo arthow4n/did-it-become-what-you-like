@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   ADAPTER_DIAGNOSTIC_OPERATIONS,
   ADAPTER_ERROR_CODES,
@@ -8,10 +9,6 @@ import {
   RETIRED_DATASET_ERROR_ALIASES,
   RETRY_BY_ERROR_CODE,
 } from "./index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -28,7 +25,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-Deno.test("adapter-contract error mapping is exhaustive and retry-explicit", () => {
+test("adapter-contract error mapping is exhaustive and retry-explicit", () => {
   assert(!isAdapterErrorCode("invalid-code"));
   for (const code of ADAPTER_ERROR_CODES) {
     const error = new AdapterError(code, { operation: "contract-test" });
@@ -64,14 +61,14 @@ Deno.test("adapter-contract error mapping is exhaustive and retry-explicit", () 
   );
 });
 
-Deno.test("adapter-contract validates diagnostic operation vocabulary", () => {
+test("adapter-contract validates diagnostic operation vocabulary", () => {
   for (const operation of Object.values(ADAPTER_DIAGNOSTIC_OPERATIONS)) {
     assert(isAdapterDiagnosticOperation(operation));
   }
   assert(!isAdapterDiagnosticOperation("AIza-direct-credential-response-text"));
 });
 
-Deno.test("adapter-contract errors do not copy foreign error messages", () => {
+test("adapter-contract errors do not copy foreign error messages", () => {
   const mapped = mapAdapterError(
     new Error("AIzaSECRET-should-not-leak"),
     "test",
@@ -89,7 +86,7 @@ Deno.test("adapter-contract errors do not copy foreign error messages", () => {
   );
 });
 
-Deno.test("adapter-contract direct errors retain only safe allowlisted data", () => {
+test("adapter-contract direct errors retain only safe allowlisted data", () => {
   const credential = "AIza-direct-credential-response-text";
   const direct = new AdapterError("unknown", {
     operation: "drive.read",
@@ -120,7 +117,7 @@ Deno.test("adapter-contract direct errors retain only safe allowlisted data", ()
   });
 });
 
-Deno.test("adapter-contract mapped errors discard foreign messages and details", () => {
+test("adapter-contract mapped errors discard foreign messages and details", () => {
   const credential = "AIza-mapped-credential-response-text";
   const mapped = mapAdapterError(
     {

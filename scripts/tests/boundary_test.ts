@@ -1,5 +1,5 @@
-/// <reference path="../deno.d.ts" />
-
+import { readdir, readFile } from "node:fs/promises";
+import { test } from "vitest";
 const sourceRoots = ["src"];
 const approvedLibraryRoot = "src/design-system/";
 const mantineSpecifier = /^@mantine\//;
@@ -12,17 +12,17 @@ async function collectSourceFiles(
   directory: string,
   files: string[],
 ): Promise<void> {
-  for await (const entry of Deno.readDir(directory)) {
+  for await (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = `${directory}/${entry.name}`;
-    if (entry.isDirectory) {
+    if (entry.isDirectory()) {
       await collectSourceFiles(path, files);
-    } else if (entry.isFile && /\.(?:ts|tsx)$/.test(entry.name)) {
+    } else if (entry.isFile() && /\.(?:ts|tsx)$/.test(entry.name)) {
       files.push(path);
     }
   }
 }
 
-Deno.test("design-system facade boundary isolation and type privacy", async () => {
+test("design-system facade boundary isolation and type privacy", async () => {
   const sourceFiles: string[] = [];
   for (const sourceRoot of sourceRoots) {
     await collectSourceFiles(sourceRoot, sourceFiles);
@@ -30,7 +30,7 @@ Deno.test("design-system facade boundary isolation and type privacy", async () =
 
   const violations: string[] = [];
   for (const path of sourceFiles.sort()) {
-    const source = await Deno.readTextFile(path);
+    const source = await readFile(path, "utf8");
     for (
       const match of source.matchAll(
         /\b(?:from|import)\s*(?:\(\s*)?["']([^"']+)["']/g,
@@ -46,7 +46,7 @@ Deno.test("design-system facade boundary isolation and type privacy", async () =
     }
   }
 
-  const publicBarrel = await Deno.readTextFile("src/design-system/index.ts");
+  const publicBarrel = await readFile("src/design-system/index.ts", "utf8");
   assert(
     !/@mantine\//.test(publicBarrel),
     "the public design-system barrel must not import or export a library module",

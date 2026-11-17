@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { isAdapterError, SecretValue } from "../../adapters/ports/index.ts";
 import {
   createFakeCausalSyncPort,
@@ -10,10 +11,6 @@ import {
   createFakeOnlineStatusPort,
   createFakeSecretStoragePort,
 } from "./index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -44,7 +41,7 @@ async function rejectsWithCode(
   throw new Error(`Expected ${code} rejection`);
 }
 
-Deno.test("adapter-contract fakes are deterministic for clock, IDs, and local transactions", async () => {
+test("adapter-contract fakes are deterministic for clock, IDs, and local transactions", async () => {
   const run = async (): Promise<unknown> => {
     const clock = createFakeClockPort();
     const ids = createFakeIdPort("fixture");
@@ -58,7 +55,7 @@ Deno.test("adapter-contract fakes are deterministic for clock, IDs, and local tr
   assertEquals(await run(), await run());
 });
 
-Deno.test("adapter-contract fakes model offline, quota, corruption, partial transport, and conflicts", async () => {
+test("adapter-contract fakes model offline, quota, corruption, partial transport, and conflicts", async () => {
   const local = createFakeLocalPort();
   local.setScenario({ offline: true });
   await rejectsWithCode(local.query("records"), "offline");
@@ -84,32 +81,35 @@ Deno.test("adapter-contract fakes model offline, quota, corruption, partial tran
   assertEquals(result.conflicts.length, 1);
 });
 
-Deno.test("adapter-contract fakes honor AbortSignal during an in-flight Gemini request", async () => {
+test("adapter-contract fakes honor AbortSignal during an in-flight Gemini request", async () => {
   const gemini = createFakeGeminiPort();
   gemini.pauseNext();
   const controller = new AbortController();
-  const request = gemini.extractReceipt({
-    modelId: "fake-gemini-model",
-    image: {
-      bytes: new Uint8Array([1, 2]),
-      mimeType: "image/jpeg",
-      width: 1,
-      height: 1,
-      metadataSanitized: true,
-      preparationApplied: false,
+  const request = gemini.extractReceipt(
+    {
+      modelId: "fake-gemini-model",
+      image: {
+        bytes: new Uint8Array([1, 2]),
+        mimeType: "image/jpeg",
+        width: 1,
+        height: 1,
+        metadataSanitized: true,
+        preparationApplied: false,
+      },
+      schemaVersion: 1,
+      instructionVersion: "receipt-v1",
+      categories: [],
+      locale: "sv-SE",
+      currency: "SEK",
     },
-    schemaVersion: 1,
-    instructionVersion: "receipt-v1",
-    categories: [],
-    locale: "sv-SE",
-    currency: "SEK",
-  }, { signal: controller.signal });
+    { signal: controller.signal },
+  );
   controller.abort();
   await rejectsWithCode(request, "aborted");
   gemini.releasePaused();
 });
 
-Deno.test("adapter-contract fakes keep secret values and request traces redacted", async () => {
+test("adapter-contract fakes keep secret values and request traces redacted", async () => {
   const secret = SecretValue.from("AIza-test-secret-value");
   const storage = createFakeSecretStoragePort();
   await storage.set("gemini-api-key", secret);
@@ -125,20 +125,23 @@ Deno.test("adapter-contract fakes keep secret values and request traces redacted
   assert(!JSON.stringify(drive.requests).includes(secret.reveal()));
 });
 
-Deno.test("adapter-contract image fake sanitizes metadata while preserving disabled preparation", async () => {
+test("adapter-contract image fake sanitizes metadata while preserving disabled preparation", async () => {
   const image = createFakeImagePreparationPort();
-  const prepared = await image.prepare({
-    bytes: new Uint8Array([1, 2, 3]),
-    mimeType: "image/jpeg",
-    width: 100,
-    height: 80,
-  }, { enabled: false });
+  const prepared = await image.prepare(
+    {
+      bytes: new Uint8Array([1, 2, 3]),
+      mimeType: "image/jpeg",
+      width: 100,
+      height: 80,
+    },
+    { enabled: false },
+  );
   assertEquals(prepared.preparationApplied, false);
   assertEquals(prepared.metadataSanitized, true);
   assertEquals(image.calls, [{ enabled: false, byteLength: 3 }]);
 });
 
-Deno.test("adapter-contract online fake emits deterministic state transitions", () => {
+test("adapter-contract online fake emits deterministic state transitions", () => {
   const online = createFakeOnlineStatusPort("offline");
   const states: string[] = [];
   const unsubscribe = online.subscribe((state) => states.push(state));

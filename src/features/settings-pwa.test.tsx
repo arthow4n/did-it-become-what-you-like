@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { within } from "@testing-library/dom";
 import { createElement } from "react";
 import { usePwaController } from "./settings-pwa/pwa-runtime.tsx";
@@ -11,11 +12,7 @@ import {
   withComponentHarness,
 } from "../test-support/component-harness.tsx";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
-Deno.test("settings: preference screen shows a live day-boundary example", async () => {
+test("settings: preference screen shows a live day-boundary example", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -47,7 +44,7 @@ Deno.test("settings: preference screen shows a live day-boundary example", async
   });
 });
 
-Deno.test("settings: preferences discard restores the saved boundary", async () => {
+test("settings: preferences discard restores the saved boundary", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -96,7 +93,7 @@ Deno.test("settings: preferences discard restores the saved boundary", async () 
   });
 });
 
-Deno.test("settings: preferences retry preserves a failed save draft", async () => {
+test("settings: preferences retry preserves a failed save draft", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -132,7 +129,7 @@ Deno.test("settings: preferences retry preserves a failed save draft", async () 
   });
 });
 
-Deno.test(
+test(
   "settings: failed preference saves remain dirty and support discard",
   async () => {
     await withComponentHarness(
@@ -193,7 +190,7 @@ Deno.test(
   },
 );
 
-Deno.test("settings: preferences reset CTA restores and saves 03:00", async () => {
+test("settings: preferences reset CTA restores and saves 03:00", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -233,7 +230,7 @@ Deno.test("settings: preferences reset CTA restores and saves 03:00", async () =
   });
 });
 
-Deno.test("settings: About exposes build metadata and license links", async () => {
+test("settings: About exposes build metadata and license links", async () => {
   await withComponentHarness(({ render }) => {
     render(
       createElement(AboutScreen, {
@@ -269,7 +266,7 @@ Deno.test("settings: About exposes build metadata and license links", async () =
   });
 });
 
-Deno.test("settings: install offer defers startup checks and supports later", async () => {
+test("settings: install offer defers startup checks and supports later", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const basePort = createFakeUpdateInstallPort();
@@ -323,7 +320,7 @@ for (
     },
   ]
 ) {
-  Deno.test(`settings: ${description}`, async () => {
+  test(`settings: ${description}`, async () => {
     await withComponentHarness(async ({ window, render, waitFor }) => {
       await withAriaGlobals(window, async () => {
         render(
@@ -346,7 +343,7 @@ for (
   });
 }
 
-Deno.test("settings: labels native app installation separately", async () => {
+test("settings: labels native app installation separately", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const port = createFakeUpdateInstallPort();
@@ -384,7 +381,7 @@ Deno.test("settings: labels native app installation separately", async () => {
   });
 });
 
-Deno.test("settings: update protects dirty input and exposes offline status", async () => {
+test("settings: update protects dirty input and exposes offline status", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const port = createFakeUpdateInstallPort();
@@ -421,7 +418,7 @@ Deno.test("settings: update protects dirty input and exposes offline status", as
   });
 });
 
-Deno.test("settings: checks for updates when the app becomes active", async () => {
+test("settings: checks for updates when the app becomes active", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const basePort = createFakeUpdateInstallPort();
@@ -451,7 +448,7 @@ Deno.test("settings: checks for updates when the app becomes active", async () =
   });
 });
 
-Deno.test("settings: startup check exposes a waiting update", async () => {
+test("settings: startup check exposes a waiting update", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaGlobals(window, async () => {
       const port = createFakeUpdateInstallPort();
@@ -481,7 +478,7 @@ Deno.test("settings: startup check exposes a waiting update", async () => {
   });
 });
 
-Deno.test("settings: update notice is suppressed when suppressed prop is true", async () => {
+test("settings: update notice is suppressed when suppressed prop is true", async () => {
   await withComponentHarness(async ({ window, render }) => {
     await withAriaGlobals(window, () => {
       const port = createFakeUpdateInstallPort();
@@ -506,7 +503,7 @@ Deno.test("settings: update notice is suppressed when suppressed prop is true", 
   });
 });
 
-Deno.test("settings: offline update status explains reconnecting", async () => {
+test("settings: offline update status explains reconnecting", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaGlobals(window, async () => {
       Object.defineProperty(window.navigator, "onLine", {
@@ -546,7 +543,7 @@ function assert(
   if (!condition) throw new Error(message);
 }
 
-Deno.test("settings: PWA subscriptions survive actor updates and clean up once", async () => {
+test("settings: PWA subscriptions survive actor updates and clean up once", async () => {
   await withComponentHarness(async ({ render, waitFor, window }) => {
     const fake = createFakeUpdateInstallPort();
     let updateSubscriptions = 0;
@@ -602,7 +599,7 @@ Deno.test("settings: PWA subscriptions survive actor updates and clean up once",
   });
 });
 
-Deno.test("settings: PWA notice visibility does not broadcast unchanged controller state", async () => {
+test("settings: PWA notice visibility does not broadcast unchanged controller state", async () => {
   await withComponentHarness(async ({ render, waitFor }) => {
     const port = createFakeUpdateInstallPort();
     let renders = 0;

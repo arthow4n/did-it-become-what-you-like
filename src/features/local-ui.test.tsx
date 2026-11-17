@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { shallowEqual, useSelector } from "@xstate/react";
 import { createActor } from "xstate";
 import { createLocalShellMachine } from "../actors/local-shell.ts";
@@ -42,10 +43,6 @@ import {
   SyncStatusProvider,
 } from "./sync-ui/index.ts";
 import { DefaultNavigation } from "../design-system/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -250,7 +247,7 @@ const categoryState: ProjectCategoryState = {
   categories: [category, customCategory],
 };
 
-Deno.test("local UI first-use screen exposes the three approved entry paths", async () => {
+test("local UI first-use screen exposes the three approved entry paths", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaDomGlobals(window, () => {
       render(createElement(FirstUseRestoreHarness));
@@ -268,14 +265,14 @@ Deno.test("local UI first-use screen exposes the three approved entry paths", as
   });
 });
 
-Deno.test("local UI first-use route redirects once a project exists", () => {
+test("local UI first-use route redirects once a project exists", () => {
   assertEquals(firstUseRedirectPath("/first-use", 0), undefined);
   assertEquals(firstUseRedirectPath("/first-use", 1), "/expenses");
   assertEquals(firstUseRedirectPath("/expenses", 1), undefined);
 });
 
 for (const workflow of ["manual", "receipt"] as const) {
-  Deno.test(
+  test(
     `local UI ${workflow} dirty navigation offers keep or discard`,
     async () => {
       await withComponentHarness(
@@ -311,7 +308,7 @@ for (const workflow of ["manual", "receipt"] as const) {
   );
 }
 
-Deno.test("local UI manual deletion reports a deleted completion status", async () => {
+test("local UI manual deletion reports a deleted completion status", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const expense: Expense = {
@@ -369,7 +366,7 @@ Deno.test("local UI manual deletion reports a deleted completion status", async 
   });
 });
 
-Deno.test(
+test(
   "local UI manual form does not render a draft status banner on input and guards close when modified",
   async () => {
     await withComponentHarness(
@@ -446,7 +443,7 @@ Deno.test(
   },
 );
 
-Deno.test("local UI manual form completes discard requested while opening", async () => {
+test("local UI manual form completes discard requested while opening", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -484,7 +481,7 @@ Deno.test("local UI manual form completes discard requested while opening", asyn
   });
 });
 
-Deno.test("local UI opens a blank manual form after empty draft hydration", async () => {
+test("local UI opens a blank manual form after empty draft hydration", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -507,7 +504,7 @@ Deno.test("local UI opens a blank manual form after empty draft hydration", asyn
   });
 });
 
-Deno.test("local UI manual form offers manual receipt entry", async () => {
+test("local UI manual form offers manual receipt entry", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -536,7 +533,7 @@ Deno.test("local UI manual form offers manual receipt entry", async () => {
   });
 });
 
-Deno.test("local UI isolates edit drafts from the new-expense draft key", async () => {
+test("local UI isolates edit drafts from the new-expense draft key", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -601,7 +598,7 @@ Deno.test("local UI isolates edit drafts from the new-expense draft key", async 
   });
 });
 
-Deno.test("local UI manual expense edit accepts fluent immediate input without blocking or reverting", async () => {
+test("local UI manual expense edit accepts fluent immediate input without blocking or reverting", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaDomGlobals(window, () => {
       const local = createFakeLocalPort();
@@ -652,7 +649,7 @@ Deno.test("local UI manual expense edit accepts fluent immediate input without b
   });
 });
 
-Deno.test("local UI manual new expense accepts fluent immediate typing without blocking or dropping input", async () => {
+test("local UI manual new expense accepts fluent immediate typing without blocking or dropping input", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaDomGlobals(window, () => {
       const local = createFakeLocalPort();
@@ -693,7 +690,7 @@ Deno.test("local UI manual new expense accepts fluent immediate typing without b
   });
 });
 
-Deno.test("local UI expenses exposes shared filters, empty state, and add event", async () => {
+test("local UI expenses exposes shared filters, empty state, and add event", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let addCount = 0;
     render(
@@ -736,7 +733,7 @@ Deno.test("local UI expenses exposes shared filters, empty state, and add event"
   });
 });
 
-Deno.test("local UI expenses renders offline banner with check connection action", async () => {
+test("local UI expenses renders offline banner with check connection action", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let checkCount = 0;
     render(
@@ -760,7 +757,7 @@ Deno.test("local UI expenses renders offline banner with check connection action
   });
 });
 
-Deno.test("local UI expenses keeps project and sync status compact", async () => {
+test("local UI expenses keeps project and sync status compact", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let reconnected = 0;
     const syncStatus: SyncStatusContextValue = {
@@ -805,7 +802,7 @@ Deno.test("local UI expenses keeps project and sync status compact", async () =>
   });
 });
 
-Deno.test("local UI manual saves notify when Drive authorization has expired", async () => {
+test("local UI manual saves notify when Drive authorization has expired", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -856,7 +853,7 @@ Deno.test("local UI manual saves notify when Drive authorization has expired", a
   });
 });
 
-Deno.test("local UI locks manual controls while a save is in flight", async () => {
+test("local UI locks manual controls while a save is in flight", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -911,7 +908,7 @@ Deno.test("local UI locks manual controls while a save is in flight", async () =
   });
 });
 
-Deno.test("local UI exposes save failure retry without discarding input", async () => {
+test("local UI exposes save failure retry without discarding input", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -946,7 +943,7 @@ Deno.test("local UI exposes save failure retry without discarding input", async 
   });
 });
 
-Deno.test("local UI keeps money back optional and exposes one save action", async () => {
+test("local UI keeps money back optional and exposes one save action", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     await withAriaDomGlobals(window, async () => {
       const local = createFakeLocalPort();
@@ -1015,7 +1012,7 @@ Deno.test("local UI keeps money back optional and exposes one save action", asyn
   });
 });
 
-Deno.test("local UI expenses interleaves receipt groups and shows every category", async () => {
+test("local UI expenses interleaves receipt groups and shows every category", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     const categories = [
       category,
@@ -1118,7 +1115,7 @@ Deno.test("local UI expenses interleaves receipt groups and shows every category
       assert(view.getByRole("button", { name: /Receipt after manual/ }))
     );
     const feed = document.querySelector<HTMLElement>(
-      '[data-expenses-feed="true"]',
+      "[data-expenses-feed=\"true\"]",
     );
     assert(feed);
     const feedText = feed.textContent ?? "";
@@ -1150,7 +1147,7 @@ Deno.test("local UI expenses interleaves receipt groups and shows every category
   });
 });
 
-Deno.test(
+test(
   "local UI expenses opens directly to initialDate so newly saved historical receipts are visible",
   async () => {
     await withComponentHarness(async ({ render, waitFor }) => {
@@ -1201,7 +1198,7 @@ Deno.test(
   },
 );
 
-Deno.test("local UI shell navigation routes directly to manual and scan scenes", async () => {
+test("local UI shell navigation routes directly to manual and scan scenes", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaDomGlobals(window, () => {
       let selectedTab: string = "";
@@ -1227,7 +1224,7 @@ Deno.test("local UI shell navigation routes directly to manual and scan scenes",
   });
 });
 
-Deno.test("local UI associates receipt detail with expenses navigation", () => {
+test("local UI associates receipt detail with expenses navigation", () => {
   const editPath: LocalUiPath = "/expense/edit/expense-typed";
   assertEquals(selectedNavigationForPath(editPath), "manual");
   assertEquals(selectedNavigationForPath("/receipt/manual"), "manual");
@@ -1237,7 +1234,7 @@ Deno.test("local UI associates receipt detail with expenses navigation", () => {
   );
 });
 
-Deno.test("local UI scrolls to the top when the main navigation tab changes", () => {
+test("local UI scrolls to the top when the main navigation tab changes", () => {
   const calls: ScrollToOptions[] = [];
   const viewport = {
     scrollTo: (options: ScrollToOptions) => calls.push(options),
@@ -1259,7 +1256,7 @@ Deno.test("local UI scrolls to the top when the main navigation tab changes", ()
   assertEquals(calls.length, 1);
 });
 
-Deno.test("local UI null-draft recovery exposes retry and back actions", async () => {
+test("local UI null-draft recovery exposes retry and back actions", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaDomGlobals(window, () => {
       let retries = 0;
@@ -1283,7 +1280,7 @@ Deno.test("local UI null-draft recovery exposes retry and back actions", async (
   });
 });
 
-Deno.test("local UI expense loading state exposes a level-one heading", async () => {
+test("local UI expense loading state exposes a level-one heading", async () => {
   await withComponentHarness(({ render }) => {
     render(createElement(LoadingScreen));
     const view = within(document.body);
@@ -1291,7 +1288,7 @@ Deno.test("local UI expense loading state exposes a level-one heading", async ()
   });
 });
 
-Deno.test("local UI saved completion exposes undo and continue actions", async () => {
+test("local UI saved completion exposes undo and continue actions", async () => {
   await withComponentHarness(async ({ window, render, fireEvent }) => {
     await withAriaDomGlobals(window, () => {
       let undoCount = 0;
@@ -1330,7 +1327,7 @@ Deno.test("local UI saved completion exposes undo and continue actions", async (
   });
 });
 
-Deno.test("local UI organize and settings screens expose labeled destinations", async () => {
+test("local UI organize and settings screens expose labeled destinations", async () => {
   await withComponentHarness(({ render }) => {
     render(
       createElement(
@@ -1372,7 +1369,7 @@ Deno.test("local UI organize and settings screens expose labeled destinations", 
   });
 });
 
-Deno.test("local UI organize screen displays all active categories and projects without truncation", async () => {
+test("local UI organize screen displays all active categories and projects without truncation", async () => {
   await withComponentHarness(({ render }) => {
     const p1 = {
       ...project,
@@ -1429,7 +1426,7 @@ Deno.test("local UI organize screen displays all active categories and projects 
   });
 });
 
-Deno.test("local UI unified organize screen toggles between projects and categories via segmented control", async () => {
+test("local UI unified organize screen toggles between projects and categories via segmented control", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service } = createTestService(populatedOrganizedState);
     const repository = {
@@ -1472,7 +1469,7 @@ Deno.test("local UI unified organize screen toggles between projects and categor
   });
 });
 
-Deno.test("Organize keeps category drafts mounted across create, cancel, edit and save", async () => {
+test("Organize keeps category drafts mounted across create, cancel, edit and save", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service, categoryCommands } = createTestService(categoryState);
     await withAriaDomGlobals(window, async () => {
@@ -1522,7 +1519,7 @@ Deno.test("Organize keeps category drafts mounted across create, cancel, edit an
   });
 });
 
-Deno.test("local UI project editor and manager expose safe ordering and confirmations", async () => {
+test("local UI project editor and manager expose safe ordering and confirmations", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service, commits } = createTestService(organizedState);
     await withAriaDomGlobals(window, async () => {
@@ -1599,7 +1596,7 @@ Deno.test("local UI project editor and manager expose safe ordering and confirma
   });
 });
 
-Deno.test("local UI archived empty projects can be deleted directly", async () => {
+test("local UI archived empty projects can be deleted directly", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service, commits } = createTestService(organizedState);
     await withAriaDomGlobals(window, async () => {
@@ -1631,7 +1628,7 @@ Deno.test("local UI archived empty projects can be deleted directly", async () =
   });
 });
 
-Deno.test("local UI category editor keeps built-in Uncategorized protected", async () => {
+test("local UI category editor keeps built-in Uncategorized protected", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     const { service } = createTestService(categoryState);
     await withAriaDomGlobals(window, async () => {
@@ -1663,7 +1660,7 @@ Deno.test("local UI category editor keeps built-in Uncategorized protected", asy
   });
 });
 
-Deno.test("local UI category manager creates and updates category with AI matching description", async () => {
+test("local UI category manager creates and updates category with AI matching description", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     let committedCommand: CategoryOrganizationCommand | null = null;
     let completed = false;
@@ -1740,7 +1737,7 @@ Deno.test("local UI category manager creates and updates category with AI matchi
   });
 });
 
-Deno.test("local UI category conflict is anchored to the category name field", async () => {
+test("local UI category conflict is anchored to the category name field", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service } = createTestService(categoryState);
     const conflictService: ProjectCategoryService = {
@@ -1794,7 +1791,7 @@ Deno.test("local UI category conflict is anchored to the category name field", a
   });
 });
 
-Deno.test("local UI category manager exposes a level-one page heading", async () => {
+test("local UI category manager exposes a level-one page heading", async () => {
   await withComponentHarness(async ({ window, render, waitFor }) => {
     const { service } = createTestService(categoryState);
     await withAriaDomGlobals(window, async () => {
@@ -1831,7 +1828,7 @@ Deno.test("local UI category manager exposes a level-one page heading", async ()
   });
 });
 
-Deno.test("local UI project editor uses level-one heading and ISO currency picker", async () => {
+test("local UI project editor uses level-one heading and ISO currency picker", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service } = createTestService(organizedState);
     await withAriaDomGlobals(window, async () => {
@@ -1867,7 +1864,7 @@ Deno.test("local UI project editor uses level-one heading and ISO currency picke
   });
 });
 
-Deno.test("local UI project editor reports unsaved changes", async () => {
+test("local UI project editor reports unsaved changes", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service } = createTestService(organizedState);
     const dirtyStates: boolean[] = [];
@@ -1974,7 +1971,7 @@ for (
     },
   ]
 ) {
-  Deno.test(
+  test(
     `local UI ${entityName} editor reconciles an external refresh without losing drafts`,
     async () => {
       await withComponentHarness(
@@ -2035,7 +2032,7 @@ for (
     },
   ]
 ) {
-  Deno.test(
+  test(
     `local UI category editor ${description}`,
     async () => {
       await withComponentHarness(
@@ -2071,7 +2068,7 @@ for (
   );
 }
 
-Deno.test("local UI category editor submits the selected replacement color", async () => {
+test("local UI category editor submits the selected replacement color", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const editableCategory = { ...customCategory, color: "#78DCCA" };
     const editableState = {
@@ -2109,7 +2106,7 @@ Deno.test("local UI category editor submits the selected replacement color", asy
   });
 });
 
-Deno.test("local UI category deletion exposes replacement selection and affected count", async () => {
+test("local UI category deletion exposes replacement selection and affected count", async () => {
   await withComponentHarness(async ({ window, render, fireEvent, waitFor }) => {
     const { service, commits } = createTestService(categoryState);
     await withAriaDomGlobals(window, async () => {
@@ -2179,7 +2176,7 @@ for (
     },
   ]
 ) {
-  Deno.test(
+  test(
     `local UI ${name} opens the actor-driven Screen 7A review`,
     async () => {
       await withComponentHarness(
@@ -2219,7 +2216,7 @@ for (
   );
 }
 
-Deno.test("expense sync status updates do not render the expense screen data", async () => {
+test("expense sync status updates do not render the expense screen data", async () => {
   await withComponentHarness(({ render }) => {
     let projectReads = 0;
     const projects = state.projects.map((project) =>
@@ -2264,7 +2261,7 @@ Deno.test("expense sync status updates do not render the expense screen data", a
   });
 });
 
-Deno.test("shell rendering ignores bookkeeping but observes network and repository updates", async () => {
+test("shell rendering ignores bookkeeping but observes network and repository updates", async () => {
   await withComponentHarness(async ({ render, fireEvent, waitFor }) => {
     let currentState = state;
     const { service } = createTestService(
@@ -2350,7 +2347,7 @@ Deno.test("shell rendering ignores bookkeeping but observes network and reposito
   });
 });
 
-Deno.test("category search reuses reference counts instead of rescanning expenses per row", async () => {
+test("category search reuses reference counts instead of rescanning expenses per row", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let reads = 0;
     const categories = Array.from({ length: 20 }, (_, index) => ({
@@ -2406,7 +2403,7 @@ Deno.test("category search reuses reference counts instead of rescanning expense
   });
 });
 
-Deno.test("project list indexes occupancy once instead of rescanning records per project", async () => {
+test("project list indexes occupancy once instead of rescanning records per project", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let reads = 0;
     const projects = Array.from({ length: 20 }, (_, index) => ({

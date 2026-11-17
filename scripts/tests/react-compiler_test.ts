@@ -1,5 +1,5 @@
-/// <reference path="../deno.d.ts" />
-// @deno-types="@types/babel__core"
+import { readFile } from "node:fs/promises";
+import { test } from "vitest";
 import { transformSync } from "@babel/core";
 import compiler from "babel-plugin-react-compiler";
 import jsx from "@babel/plugin-transform-react-jsx";
@@ -14,9 +14,12 @@ function compile(source: string, filename: string): string {
     configFile: false,
     babelrc: false,
     parserOpts: { plugins: ["typescript", "jsx"] },
-    plugins: [[compiler, reactCompilerOptions], [jsx, {
-      runtime: "automatic",
-    }]],
+    plugins: [
+      [compiler, reactCompilerOptions],
+      [jsx, {
+        runtime: "automatic",
+      }],
+    ],
   });
   if (!result?.code) {
     throw new Error(`Compiler produced no code for ${filename}`);
@@ -24,15 +27,15 @@ function compile(source: string, filename: string): string {
   return result.code;
 }
 
-Deno.test("React Compiler transforms a real shared expense component for React 19", async () => {
+test("React Compiler transforms a real shared expense component for React 19", async () => {
   const path = "src/design-system/components/domain/expense-row.tsx";
-  const result = compile(await Deno.readTextFile(path), path);
+  const result = compile(await readFile(path, "utf8"), path);
   if (!result.includes("react/compiler-runtime")) {
     throw new Error("ExpenseRow did not receive automatic memoization");
   }
 });
 
-Deno.test("compiled components preserve actor updates while reusing unchanged child JSX", async () => {
+test("compiled components preserve actor updates while reusing unchanged child JSX", async () => {
   const source = `
     import { useSelector } from "@xstate/react";
     let renders = 0;
@@ -51,8 +54,13 @@ Deno.test("compiled components preserve actor updates while reusing unchanged ch
   if (!compiled.includes("react/compiler-runtime")) {
     throw new Error("Probe was not compiled");
   }
+  const linked = compiled.replace(
+    /from "([^"]+)"/g,
+    (_match, specifier: string) =>
+      `from ${JSON.stringify(import.meta.resolve(specifier))}`,
+  );
   const probe = await import(
-    `data:text/javascript;charset=utf-8,${encodeURIComponent(compiled)}`
+    `data:text/javascript;charset=utf-8,${encodeURIComponent(linked)}`
   );
   const actor = createActor(
     fromTransition(

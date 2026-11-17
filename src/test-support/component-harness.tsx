@@ -26,11 +26,15 @@ export async function withComponentHarness<T>(
 ): Promise<T> {
   const release = await acquireHarnessTurn();
   const testWindow = new Window({ url: "http://component.test/" });
-  const previous = new Map<PropertyKey, unknown>();
+  const previous = new Map<string, PropertyDescriptor | undefined>();
   const globals: Record<string, unknown> = {
     window: testWindow,
     document: testWindow.document,
     navigator: testWindow.navigator,
+    localStorage: testWindow.localStorage,
+    addEventListener: testWindow.addEventListener.bind(testWindow),
+    removeEventListener: testWindow.removeEventListener.bind(testWindow),
+    dispatchEvent: testWindow.dispatchEvent.bind(testWindow),
     Document: testWindow.Document,
     Element: testWindow.Element,
     File: testWindow.File,
@@ -58,8 +62,12 @@ export async function withComponentHarness<T>(
     getComputedStyle: testWindow.getComputedStyle.bind(testWindow),
   };
   for (const [key, value] of Object.entries(globals)) {
-    previous.set(key, globalThis[key as keyof typeof globalThis]);
-    Object.assign(globalThis, { [key]: value });
+    previous.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
+    Object.defineProperty(globalThis, key, {
+      configurable: true,
+      writable: true,
+      value,
+    });
   }
 
   try {
@@ -87,8 +95,9 @@ export async function withComponentHarness<T>(
     await new Promise<void>((resolve) => setTimeout(resolve, 100));
     return result;
   } finally {
-    for (const [key, value] of previous) {
-      Object.assign(globalThis, { [key]: value });
+    for (const [key, descriptor] of previous) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else Reflect.deleteProperty(globalThis, key);
     }
     testWindow.close();
     release();

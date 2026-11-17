@@ -533,7 +533,8 @@ export function createDeleteEverywhereMachine(
 
 function deleteEverywherePhase(value: unknown):
   | DeleteEverywhereProgressPhase
-  | undefined {
+  | undefined
+{
   switch (value) {
     case "reviewing":
       return "reviewing";

@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createActor, fromPromise } from "xstate";
 import {
   categoryMachine,
@@ -25,10 +26,6 @@ import type {
 } from "./index.ts";
 import { contractFailureFromError } from "./types.ts";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
 function assert(
   condition: unknown,
   message = "Expected condition",
@@ -44,7 +41,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-Deno.test("actor-contract: import diagnostics reject foreign operation text", () => {
+test("actor-contract: import diagnostics reject foreign operation text", () => {
   const secret = "AIza-direct-credential-response-text";
   const failure = contractFailureFromError(
     { code: "invalid-request", operation: secret },
@@ -96,7 +93,7 @@ const progress: DeleteEverywhereProgress = {
   forcedDeviceCount: 0,
 };
 
-Deno.test("actor-contract: receipt mismatch requires an explicit confirmation", () => {
+test("actor-contract: receipt mismatch requires an explicit confirmation", () => {
   const reviewWithPendingCommit = receiptReviewMachine.provide({
     actors: {
       commitReceipt: fromPromise(
@@ -117,7 +114,7 @@ Deno.test("actor-contract: receipt mismatch requires an explicit confirmation", 
   actor.stop();
 });
 
-Deno.test("actor-contract: project deletion requires exact confirmation text", () => {
+test("actor-contract: project deletion requires exact confirmation text", () => {
   const deletionWithPendingCommit = projectDeletionMachine.provide({
     actors: {
       commitProjectDeletion: fromPromise(
@@ -144,7 +141,7 @@ Deno.test("actor-contract: project deletion requires exact confirmation text", (
   actor.stop();
 });
 
-Deno.test(
+test(
   "actor-contract: project deletion gates confirmation on required safety export",
   async () => {
     let exportCalls = 0;
@@ -193,7 +190,7 @@ Deno.test(
   },
 );
 
-Deno.test("actor-contract: Delete Everywhere requires a second confirmation after declining export", () => {
+test("actor-contract: Delete Everywhere requires a second confirmation after declining export", () => {
   const deleteEverywhereWithPendingRetirement = deleteEverywhereMachine.provide(
     {
       actors: {
@@ -221,7 +218,7 @@ Deno.test("actor-contract: Delete Everywhere requires a second confirmation afte
   actor.stop();
 });
 
-Deno.test("actor-contract: sync exposes conflict as a mode after its port completes", async () => {
+test("actor-contract: sync exposes conflict as a mode after its port completes", async () => {
   const syncWithFake = syncMachine.provide({
     actors: {
       syncTransport: fromPromise(({ input }: { input: SyncRequest }) =>
@@ -247,7 +244,7 @@ Deno.test("actor-contract: sync exposes conflict as a mode after its port comple
   actor.stop();
 });
 
-Deno.test("actor-contract: sync exposes retryability from typed failures", async () => {
+test("actor-contract: sync exposes retryability from typed failures", async () => {
   const secret = "test-gemini-api-key-D102-credential-shaped-error";
   const syncWithFailure = syncMachine.provide({
     actors: {
@@ -285,7 +282,7 @@ Deno.test("actor-contract: sync exposes retryability from typed failures", async
   actor.stop();
 });
 
-Deno.test("actor-contract: sync rejects non-retryable shaped failures without secret retention", async () => {
+test("actor-contract: sync rejects non-retryable shaped failures without secret retention", async () => {
   const secret = "test-gemini-api-key-D102-unauthorized-secret";
   const syncWithFailure = syncMachine.provide({
     actors: {
@@ -322,7 +319,7 @@ Deno.test("actor-contract: sync rejects non-retryable shaped failures without se
   actor.stop();
 });
 
-Deno.test(
+test(
   "actor-contract: sync keeps retired failures non-retryable despite hostile retry metadata",
   async () => {
     const secret = "test-gemini-api-key-D102-retired-secret";
@@ -363,7 +360,7 @@ Deno.test(
   },
 );
 
-Deno.test("actor-contract: receipt scan preserves typed quota failures", async () => {
+test("actor-contract: receipt scan preserves typed quota failures", async () => {
   const scanInput: ReceiptScanInput = {
     image: {
       ephemeralId: "image-quota",
@@ -406,7 +403,7 @@ Deno.test("actor-contract: receipt scan preserves typed quota failures", async (
   actor.stop();
 });
 
-Deno.test(
+test(
   "actor-contract: receipt scan exposes safe typed and unknown diagnostics",
   async () => {
     const scanInput: ReceiptScanInput = {
@@ -506,7 +503,7 @@ Deno.test(
   },
 );
 
-Deno.test("actor-contract: import requires a mode and online replace pre-sync", async () => {
+test("actor-contract: import requires a mode and online replace pre-sync", async () => {
   const importWithPorts = importMachine.provide({
     actors: {
       validateImport: fromPromise(({ input }: { input: string }) => {
@@ -561,7 +558,7 @@ Deno.test("actor-contract: import requires a mode and online replace pre-sync", 
   onlineReplace.stop();
 });
 
-Deno.test("actor-contract: Delete Everywhere reports forced devices truthfully", async () => {
+test("actor-contract: Delete Everywhere reports forced devices truthfully", async () => {
   const deleteWithPorts = deleteEverywhereMachine.provide({
     actors: {
       persistProgress: fromPromise(() => Promise.resolve()),
@@ -599,7 +596,7 @@ Deno.test("actor-contract: Delete Everywhere reports forced devices truthfully",
   actor.stop();
 });
 
-Deno.test("actor-contract: saved and discarded receipt contexts clear drafts", async () => {
+test("actor-contract: saved and discarded receipt contexts clear drafts", async () => {
   const receiptWithCommit = receiptReviewMachine.provide({
     actors: {
       commitReceipt: fromPromise(
@@ -632,7 +629,7 @@ Deno.test("actor-contract: saved and discarded receipt contexts clear drafts", a
   discardedReceipt.stop();
 });
 
-Deno.test("actor-contract: forbidden workflow events are no-ops outside their owner states", () => {
+test("actor-contract: forbidden workflow events are no-ops outside their owner states", () => {
   const receipt = createActor(receiptScanMachine).start();
   receipt.send({ type: "receipt.use-manual" });
   assertEquals(receipt.getSnapshot().value, "idle");

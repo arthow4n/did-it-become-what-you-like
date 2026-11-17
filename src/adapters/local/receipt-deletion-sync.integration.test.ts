@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import type { CausalSnapshot } from "../ports/sync.ts";
 import { createDatasetChange, mergeCausalSnapshots } from "../sync/causal.ts";
@@ -9,10 +10,6 @@ import {
   type PortableDataset,
   UNCATEGORIZED_CATEGORY_ID,
 } from "../../domain/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -139,7 +136,7 @@ async function withRepository<T>(
   }
 }
 
-Deno.test(
+test(
   "receipt-delete-sync: whole-receipt deletion removes aggregate records and writes complete tombstones",
   async () => {
     await withRepository(async (repository) => {
@@ -169,7 +166,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-delete-sync: stale replay cannot resurrect a deleted receipt aggregate",
   async () => {
     await withRepository(async (repository) => {
@@ -243,7 +240,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-delete-sync: concurrent child edit remains a reviewable conflict",
   () => {
     const before = receiptDataset();

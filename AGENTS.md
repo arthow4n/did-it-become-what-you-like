@@ -85,34 +85,23 @@
   copy-paste inline window/DOM shims, or reimplement custom async event polling
   loops in individual test files.
 - Validation task vocabulary:
-  - `fmt:check` and `lint` check applicable source and configuration files.
-  - `typecheck` is the static type gate: TypeScript's compiler checks the app
-    and Vite configuration; Deno checks scripts and E2E entry points.
-  - `test` is the full Deno test suite; `test:affected` selects tests affected
-    by uncommitted Git changes.
-  - `release:verify` checks an already built `dist/` artifact.
-  - `verify` is the CI quality gate: formatting, linting, type checking, Deno
-    tests, production build, built-artifact verification, and dependency audit.
-    It does not run browser E2E or gallery verification.
-  - `gallery:build` produces the development-only gallery; `test:e2e` and
-    `gallery:verify` are separate browser checks selected when their
-    browser-integration or visual coverage is required.
-- Use risk-based validation. For an ordinary change, format and lint applicable
-  changed source/configuration files, run `deno task test:affected`, run the
-  narrowest additional check for effects Deno's import graph cannot see, and run
-  `git diff --check`. Use `deno test --related=<path>` when validating a known
-  source file directly.
-- `deno test --changed` and `--related` select tests through the transitive
-  module graph. They do not prove CSS, HTML, generated assets, service-worker
-  behavior, build configuration, deployment configuration, or external browser
-  journeys. Add only the explicit build, gallery, browser, integration, schema,
-  Pages, CI, or E2E check which can detect the changed non-import behavior.
-- Run `deno task verify` locally only as a final preflight, after a
-  cross-cutting dependency/toolchain/configuration change whose impact cannot be
-  bounded, or when diagnosing a broader CI failure. CI/CD runs the same quality
-  gate and is the authority for merge and deployment acceptance; local success
-  is not a release. Do not run an umbrella command and then rerun its
-  constituent suites against the same commit.
+  - `npm run fmt:check` and `npm run lint` check source and configuration.
+  - `npm run typecheck` generates Worker types and checks app, Worker, scripts,
+    and E2E code with TypeScript.
+  - `npm test` runs the Vitest suite. `npm run test:affected` checks the Vitest
+    import graph for changes relative to HEAD.
+  - `npm run release:verify` checks an already built `dist/` artifact.
+  - `npm run verify` is the CI gate for formatting, lint, type checking,
+    tests, the Pages build, artifact verification, and dependency audit.
+  - `npm run build` additionally packages the Worker for Workers Builds.
+  - Browser E2E and gallery checks run through `npm run test:e2e` and
+    `npm run gallery:verify`.
+- Use risk-based validation. For an ordinary change, format and lint the
+  applicable files, run `npm run test:affected` or select a suite with
+  `npm test -- <path>`, and run `git diff --check`. Select a separate build,
+  browser, Pages, or CI check when the import graph cannot cover the change.
+- Run `npm run verify` locally as a final preflight for cross-cutting changes
+  or to diagnose CI failures. CI/CD is the authority for merge and deployment.
 - Batch visual validation at the next named UI review checkpoint. Individual UI
   tasks run affected tests; perform an earlier targeted gallery or
   `agent-browser` check only when the task introduces or changes focus,

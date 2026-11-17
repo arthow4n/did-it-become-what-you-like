@@ -90,10 +90,10 @@ const progressSteps = [
 
 function focusDialogFirstAction(label: string): boolean {
   const dialog = Array.from(
-    document.querySelectorAll<HTMLElement>('[role="dialog"]'),
+    document.querySelectorAll<HTMLElement>("[role=\"dialog\"]"),
   ).find((candidate) => candidate.getAttribute("aria-label") === label);
   const action = dialog?.querySelector<HTMLElement>(
-    'button:not([disabled]), input:not([disabled]), [tabindex="0"]',
+    "button:not([disabled]), input:not([disabled]), [tabindex=\"0\"]",
   );
   if (!action) return false;
   action.focus();

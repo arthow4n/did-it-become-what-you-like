@@ -128,7 +128,8 @@ function routingOptions(
   & Required<
     Pick<OpenRouterRoutingOptions, "requireZdr" | "denyProviderDataCollection">
   >
-  & Pick<OpenRouterRoutingOptions, "preferredProviderTag"> {
+  & Pick<OpenRouterRoutingOptions, "preferredProviderTag">
+{
   const configured = getRoutingOptions?.() ?? {};
   const preferredProviderTag =
     typeof configured.preferredProviderTag === "string" &&

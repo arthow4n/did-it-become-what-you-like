@@ -1,5 +1,6 @@
-/// <reference path="../deno.d.ts" />
-
+import { mkdtemp, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { test } from "vitest";
 import { join } from "node:path";
 import {
   assertChecksum,
@@ -43,8 +44,8 @@ async function assertRejects(
   }
 }
 
-Deno.test("checksum failure aborts before an artifact is installed", async () => {
-  const directory = await Deno.makeTempDir({ prefix: "browser-checksum-" });
+test("checksum failure aborts before an artifact is installed", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "browser-checksum-"));
   const destination = join(directory, "artifact");
   const bytes = new TextEncoder().encode("known fixture bytes");
   await assertRejects(() => assertChecksum(bytes, "0".repeat(64), "fixture"));
@@ -57,26 +58,26 @@ Deno.test("checksum failure aborts before an artifact is installed", async () =>
     )
   );
   try {
-    await Deno.stat(destination);
+    await stat(destination);
     throw new Error("checksum failure must not leave an installed destination");
   } catch (error) {
-    assert(error instanceof Deno.errors.NotFound);
+    assert((error as NodeJS.ErrnoException).code === "ENOENT");
   }
-  await Deno.remove(directory, { recursive: true });
+  await rm(directory, { recursive: true });
 });
 
-Deno.test("browser metadata maps only reviewed native platform pairs", () => {
-  assertEquals(detectBrowserPlatform("linux", "x86_64"), "linux-x64");
-  assertEquals(detectBrowserPlatform("linux", "aarch64"), undefined);
-  assertEquals(detectBrowserPlatform("darwin", "aarch64"), "darwin-arm64");
-  assertEquals(detectBrowserPlatform("windows", "aarch64"), undefined);
+test("browser metadata maps only reviewed native platform pairs", () => {
+  assertEquals(detectBrowserPlatform("linux", "x64"), "linux-x64");
+  assertEquals(detectBrowserPlatform("linux", "arm64"), undefined);
+  assertEquals(detectBrowserPlatform("darwin", "arm64"), "darwin-arm64");
+  assertEquals(detectBrowserPlatform("win32", "arm64"), undefined);
   assertEquals(Object.keys(PLATFORM_ARTIFACTS).length, 4);
   for (const artifact of Object.values(PLATFORM_ARTIFACTS)) {
     assert(/^[a-f0-9]{64}$/.test(artifact.agentBrowser.sha256));
     assert(/^[a-f0-9]{64}$/.test(artifact.chrome.sha256));
   }
   return assertRejects(
-    () => installAgentBrowser("linux", "aarch64"),
-    "UNAVAILABLE: no pinned agent-browser/Chrome for Testing pair for linux/aarch64",
+    () => installAgentBrowser("linux", "arm64"),
+    "UNAVAILABLE: no pinned agent-browser/Chrome for Testing pair for linux/arm64",
   );
 });

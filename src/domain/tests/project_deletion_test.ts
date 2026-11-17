@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import {
   deleteLocalRepositoryDatabase,
@@ -5,10 +6,6 @@ import {
 } from "../../adapters/local/index.ts";
 import { createProjectDeletionService } from "../project-deletion.ts";
 import { DATASET_FORMAT, UNCATEGORIZED_CATEGORY_ID } from "../index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -187,7 +184,7 @@ async function withRepository<T>(
   }
 }
 
-Deno.test(
+test(
   "project-deletion domain preview includes every related count and affected range",
   async () => {
     await withRepository(async (repository) => {
@@ -211,7 +208,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "project-deletion domain safety export is canonical and contains unrelated invariants",
   async () => {
     await withRepository(async (repository) => {
@@ -262,7 +259,7 @@ Deno.test(
   },
 );
 
-Deno.test("project-deletion domain rejects the current project", async () => {
+test("project-deletion domain rejects the current project", async () => {
   await withRepository(async (repository) => {
     const service = createProjectDeletionService(repository);
     try {

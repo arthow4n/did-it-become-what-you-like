@@ -1,16 +1,8 @@
-# Deno
-# https://deno.com/
-
-# Cache directory (when using project-local DENO_DIR)
-# https://docs.deno.com/runtime/fundamentals/setup/#deno_dir
-.deno/
-
 # Coverage reports
-# https://docs.deno.com/runtime/reference/cli/coverage/
 coverage/
 *.lcov
 
-# Deno-managed npm links and disposable build output
+# Package cache and disposable build output
 /node_modules/
 /dist/
 /dist-gallery/
@@ -20,3 +12,10 @@ coverage/
 /.agent-browser/
 /.e2e-artifacts/
 /ui-audit-*/
+
+/dist-worker/
+/.cloudflare/
+/.wrangler/
+.dev.vars*
+!.dev.vars.example
+.env*

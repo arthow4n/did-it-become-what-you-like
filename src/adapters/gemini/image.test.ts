@@ -1,14 +1,11 @@
+import { test } from "vitest";
 import {
   stripJpegMetadata,
   stripPngMetadata,
   stripWebpMetadata,
 } from "./image.ts";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
-Deno.test("JPEG metadata stripping preserves a large scan as binary data", () => {
+test("JPEG metadata stripping preserves a large scan as binary data", () => {
   const scan = new Uint8Array(8_000_000).fill(0x71);
   const header = new Uint8Array([
     0xff,
@@ -47,7 +44,7 @@ Deno.test("JPEG metadata stripping preserves a large scan as binary data", () =>
   if (input[3] !== 0xe1) throw new Error("Source was modified");
 });
 
-Deno.test("PNG and WebP preserve multi-megabyte chunks without argument spreading", () => {
+test("PNG and WebP preserve multi-megabyte chunks without argument spreading", () => {
   const payloadLength = 2_000_000;
   const png = new Uint8Array(8 + 12 + payloadLength + 12);
   png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);

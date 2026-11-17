@@ -1,154 +1,119 @@
-# GitHub Pages deployment operations
+# Deployment
 
-This repository publishes a static PWA from `master` to the standard Pages URL:
+GitHub Pages publishes the PWA from `master` at
+<https://arthow4n.github.io/did-it-become-what-you-like/>. That URL, the
+manifest ID and scope, the service-worker scope, and the IndexedDB database
+remain the same. Pages builds the checked-out commit with `npm ci` and
+`npm run verify`, then deploys the verified `dist/` artifact. The Pages
+workflow uses the existing public `VITE_GOOGLE_CLIENT_ID` for Direct GIS.
+Leave it set to the existing OAuth client so Google Drive app data remains
+available to the same app. Direct tokens remain in browser memory.
 
-<https://arthow4n.github.io/did-it-become-what-you-like/>
+## Local development and verification
 
-## CI/CD deployment boundary
+Use the Node.js version in `.node-version`.
 
-CI is the automated quality authority for every push and pull request. The Pages
-workflow is the deployment authority for pushes to `master`: it checks out the
-exact pushed commit, runs `deno task verify`, and uploads the resulting `dist/`
-artifact before the separate deploy job runs. There is no separate local release
-gate or manual artifact handoff.
+```sh
+npm ci
+npm run dev
+npm run verify
+npm run build
+```
 
-The CI quality gate is `deno task verify`, defined in `AGENTS.md`. Browser E2E
-and gallery verification are separate, risk-selected checks; they are not
-implied by that command.
+`npm run verify` checks formatting, lint, types, tests, the Pages artifact,
+and dependencies. `npm run build` adds a Wrangler dry run. Run
+`npx playwright install chromium` and `npm run test:e2e` for browser coverage.
+`npm run browser:install` installs the additional pinned visual-check pair used
+by `npm run gallery:verify`. Do not commit generated artifacts or browser
+profiles.
 
-The deploy job has only Pages write and OIDC token permissions; it does not
-rebuild source or accept a local directory. No credentials are required by CI.
+To test the Worker locally, copy `.dev.vars.example` to `.dev.vars`. Use an
+OAuth test client and add the exact local callback listed in the example
+(`http://localhost:8787/auth/google-drive/callback`). Register
+`http://127.0.0.1:5173` as a JavaScript origin if testing Direct mode locally.
+Run the following and load the repository base path in the Vite app.
 
-`deno task release:verify` must run after `deno task build`. It verifies the
-repository-relative artifact paths, hash-route shell fallback, CSP allowlist,
-manifest and service-worker scope, dark metadata, injected version and short
-commit, source and notice links, license files, SHA-256 provenance lines, and
-secret-like content absence.
+```sh
+npx wrangler d1 migrations apply did-it-become-what-you-like --local
+npm run worker:dev
+```
 
-The About screen is the user-facing provenance surface: it shows version
-`0.1.0`, the short Git commit, the exact generative-AI disclosure, license and
-third-party notice links, and the repository source link.
+Use `VITE_SYNC_SERVER_URL=http://localhost:8787` to point a local frontend at
+Wrangler. Integration tests use a disposable D1 database and stub Google.
 
-## Google Drive synchronization modes
+## Workers Builds and D1
 
-The application supports two independent Google Drive connection flows:
+The Worker is deployed at
+<https://did-it-become-what-you-like.arthow4n.workers.dev/health>.
+The `DB` binding targets the dedicated `did-it-become-what-you-like` database.
+Migration `0001_sessions.sql` has been applied and registered with Wrangler's
+migration ledger. Apply future migrations with
+`npx wrangler d1 migrations apply did-it-become-what-you-like --remote` before
+deploying code that requires them. Keep migrations compatible with the previous
+Worker version until rollback is unnecessary. A Worker rollback does not roll
+back D1 data.
 
-1. **Persisted connection (Server-backed)**:
-   - Uses a Deno Deploy backend server (`server/main.ts`) backed by Deno KV.
-   - Securely stores AES-GCM encrypted OAuth refresh tokens on the server and issues `HttpOnly; Secure; SameSite=None; Partitioned` session cookies to the browser.
-   - Persists connection across app and browser restarts without requiring reconnect clicks.
-   - **Enables automatic background synchronization**: Automatically triggers sync when the app is launched/foregrounded (`visibilitychange` to visible) and minimized/closed (`visibilitychange` to hidden).
-   - Enforces an **authorized user allow-list** (`ALLOWED_GOOGLE_EMAILS`); unlisted accounts receive a clear "Access Denied" error notice.
+Workers Builds watches `arthow4n/did-it-become-what-you-like` on `master`. It
+uses the repository root, `npm run build`, `npx wrangler deploy` for production,
+and `npx wrangler preview` for branch previews. Build caching is off so a clean
+build must create the generated types directory before running TypeScript.
+Previews expose a public health endpoint and run without production secrets,
+OAuth, or a production D1 binding. Runtime secrets belong in the Worker's
+**Settings → Variables and Secrets**.
 
-2. **Direct connection (In-browser GIS)**:
-   - Uses Google Identity Services directly in the browser client.
-   - Access tokens are held in browser memory only and discarded when the tab or PWA closes.
-   - Manual, on-demand synchronization only (no automatic lifecycle-based sync).
-   - Requires clicking Reconnect when returning after app closure.
+The Worker restricts OAuth return targets to the Pages application, binds
+OAuth state to the browser, uses PKCE, and requires a verified email on the
+allow-list. A one-time handoff creates a partitioned HttpOnly cookie from the
+Pages site after the redirect. Older browsers that block cross-site cookies
+and lack partitioned-cookie support can use Direct mode. D1 enforces per-row
+expiry at read or redemption, and the scheduled Worker prunes expired rows.
+OAuth request traces and invocation logs are disabled to keep callback
+parameters out of telemetry.
 
----
+## OAuth handoff and production cutover
 
-## Google Cloud Console OAuth setup
+Keep the current Pages sync endpoint while completing these steps.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/), create or select your project.
-2. Under **APIs & Services → Library**, enable the **Google Drive API**.
-3. Under **APIs & Services → OAuth consent screen**:
-   - Set user type (e.g. External or Internal).
-   - Configure app name and developer contact email.
-   - Add scopes:
-     - `https://www.googleapis.com/auth/drive.appdata` (access to app's private configuration folder)
-     - `https://www.googleapis.com/auth/userinfo.email` (read user's email for allow-list verification)
-   - If the publishing status is "Testing", add your authorized Google account(s) under **Test users**.
-4. Under **APIs & Services → Credentials**, create credentials of type **OAuth client ID**:
-   - Application type: **Web application**.
-   - **Authorized JavaScript origins**:
-     - `https://arthow4n.github.io` (your production frontend origin)
-     - `http://localhost:5173` (optional, for local Vite development)
-   - **Authorized redirect URIs**:
-     - `https://<your-sync-project>.deno.dev/auth/google-drive/callback` (your Deno Deploy server callback URL)
-     - `http://localhost:8000/auth/google-drive/callback` (optional, for local Deno server development)
-5. Save the generated **Client ID** and **Client Secret**.
+1. In Google Cloud Console, add
+   `https://did-it-become-what-you-like.arthow4n.workers.dev/auth/google-drive/callback`
+   to the authorized redirect URIs of the **existing Web OAuth client**. Keep the
+   Pages JavaScript origin and the old redirect URI during the rollback window.
+2. In the Cloudflare Worker, add `GOOGLE_CLIENT_SECRET` from the same OAuth
+   client and `ALLOWED_GOOGLE_EMAILS` with the approved comma-separated account
+   list. The Worker already has the existing public `GOOGLE_CLIENT_ID` and a
+   randomly generated `ENCRYPTION_SECRET`. Keep the encryption key stable.
+   `/health` should return `oauthConfigured: true` once the bindings are present.
+3. Verify a real Google sign-in and sync from a clean browser profile before
+   switching production. Use a local test build configured for the Worker and
+   routed at the existing Pages origin in a disposable browser profile, or
+   use the candidate Pages artifact at that origin through browser interception.
+   Complete consent in the same tab. Check token refresh after reload, a
+   pull/push against a designated test Drive account, logout, and rejection of
+   an unapproved account. Check Direct mode with the existing client ID.
+4. Once verified, set the frontend default in
+   `src/features/sync-runtime/drive-config.ts` to `WORKER_SYNC_SERVER_URL`.
+   Set the Pages Actions variable `VITE_SYNC_SERVER_URL` to that same Worker
+   URL, or remove the override so the repo default is used. If the integration
+   cannot edit Actions variables, remove only the URL override from the Pages
+   workflow in the cutover change. Publish through the normal Pages workflow
+   and verify the hosted PWA, the service worker update, and both sync modes.
 
----
+The Worker uses a different hostname, so a session cookie issued by the
+previous backend cannot accompany requests to the Worker. No sessions or
+refresh tokens were copied from the old store. After cutover, each Persisted
+user reconnects once. The app recognizes the old built-in URL in saved
+settings and selects the new default when production is switched. Custom
+server settings and Direct mode are preserved. Reconnecting requires no
+browser-storage reset or Drive data deletion.
 
-## Deno Deploy backend setup (for Persisted mode)
+Leave the old backend and database intact through verification and the
+rollback window. If the release must be rolled back, restore the previous
+Pages commit and previous URL override and redeploy through the Pages workflow.
+Any auto-deployment attached to the old backend should be detached or pinned
+before publishing the migration to `master`, so the old URL remains available
+for rollback. Decommission the old deployment separately after a successful
+cutover.
 
-1. Sign in to [Deno Deploy](https://dash.deno.com/) and create a new project.
-2. Link your GitHub repository and select `server/main.ts` as the entrypoint.
-3. Under your project settings, ensure **Deno KV** is enabled (Deno Deploy includes built-in KV storage).
-4. Configure the following **Environment Variables** in the Deno Deploy dashboard:
-   - `GOOGLE_CLIENT_ID`: The Google OAuth Client ID created above.
-   - `GOOGLE_CLIENT_SECRET`: The Google OAuth Client Secret created above.
-   - `ALLOWED_GOOGLE_EMAILS`: Comma-separated list of allowed Google account emails (e.g. `owner@example.com,spouse@example.com`). If an unlisted user attempts to log in, authorization is blocked with an explicit 403 "Access Denied" message.
-   - `ENCRYPTION_SECRET`: A high-entropy random string (at least 32 characters) used for AES-GCM 256-bit refresh token encryption.
-   - `FRONTEND_ORIGIN`: The origin of your frontend app (e.g. `https://arthow4n.github.io` or `*`).
-   - `SERVER_ORIGIN` *(optional)*: The public origin of your Deno Deploy project (e.g. `https://<your-sync-project>.deno.dev`). If omitted, it is inferred from incoming request URLs.
-
----
-
-## Frontend build and deployment configuration
-
-1. In your GitHub repository, open **Settings → Secrets and variables → Actions → Variables**:
-   - `VITE_GOOGLE_CLIENT_ID`: The Google OAuth Client ID (used for Direct GIS connection).
-   - `VITE_SYNC_SERVER_URL`: The URL of your Deno Deploy project, e.g. `https://<your-sync-project>.deno.dev` (used as the default server URL for Persisted connection).
-2. Trigger the GitHub Pages deployment workflow.
-3. In the deployed app:
-   - Open **Settings → Google Drive and sync**.
-   - Choose your preferred connection mode (**Persisted** or **Direct**).
-   - If using **Persisted**, verify or customize the Sync Server URL and click **Connect Google Drive**.
-   - If using **Direct**, click **Connect Google Drive** to initiate in-browser GIS consent.
-
-## Local preflight
-
-`deno task verify` is an optional local mirror of the CI quality gate, useful
-before a final push or while diagnosing a CI failure. Passing it does not
-release anything; the CI/CD workflows accept and deploy the pushed commit.
-
-`deno task release:verify` is the built-artifact portion of that gate and must
-follow `deno task build` when run by itself. Do not commit `dist/`, browser
-profiles, screenshots, traces, or other generated artifacts.
-
-## Dependency audit
-
-`deno task audit` checks every npm package/version in `deno.lock` against the
-npm bulk advisory API, including build and test dependencies. Registry failures
-and malformed responses fail the gate. It uses the same registry endpoint as
-Deno's audit; the dedicated gate permits a precise advisory exception because
-Deno 2.9.5 only ignores CVEs, and this registry response omits the CVE field.
-
-The accepted findings are build-tool exceptions for unpatched transitive
-dependencies of `vite-plugin-pwa` → `workbox-build`:
-1. [GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4),
-   low severity, for exactly `deepmerge@4.3.1`. No patched version is published.
-   Its only dependency path is `vite-plugin-pwa` → `workbox-build` →
-   `@rollup/plugin-node-resolve`; that consumer calls `deepMerge({}, defaults)`
-   with a fixed internal literal during the service-worker build. User data never
-   enters that merge, and the package is absent from the browser runtime.
-2. [GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4),
-   moderate severity, for exactly `glob@11.1.0`. No patched version for `glob ^11`
-   exists (`workbox-build@7.4.1` requires `glob ^11.0.1`). It runs during Vite
-   build over local `dist/` assets to generate precache manifests without user
-   input or traversal timeouts, and the package is absent from the browser runtime.
-3. [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249),
-   moderate severity, for exactly `minimatch@10.2.6` (via `glob@11.1.0`) and
-   `minimatch@5.1.9` (via `filelist@1.0.6` in `jake`/`ejs`). No patched version
-   `< 11.0.1` exists. Patterns are fixed build configuration; user data never
-   enters pattern matching, and the package is absent from the browser runtime.
-
-Remove these exceptions when upstream publishes fixes. Other advisories, changed
-versions, or an escalated severity still block deployment.
-
-## Hosted smoke and rollback
-
-After the integration owner pushes the reviewed commit, confirm the Pages
-workflow succeeds and record its deployed commit. Smoke the hosted base path and
-a nested hash route refresh, then check manifest/service-worker scope, offline
-relaunch, and an update-ready reload with no unsaved form. These are live checks
-and cannot be claimed from a local build.
-
-If a published release is defective, stop further release pushes, identify the
-last known-good commit and its successful Pages run, then revert the faulty
-release on `master` and push the revert through the normal workflow. The
-workflow rebuilds and re-verifies the reverted commit before publication. Do not
-manually edit the Pages artifact or change the repository base path; the short
-commit shown in About and the workflow run provide the rollback audit trail.
+[Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) ·
+[D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/) ·
+[Workers Previews](https://developers.cloudflare.com/workers/previews/configuration/)

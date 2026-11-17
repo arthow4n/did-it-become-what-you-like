@@ -1,3 +1,7 @@
+import {
+  driveHandoffChallenge,
+  redeemDriveHandoff,
+} from "../adapters/drive/session-handoff.ts";
 import { useActor } from "@xstate/react";
 import {
   type ReactNode,
@@ -97,6 +101,7 @@ import {
   saveDestructionSafetyExport,
   settingsSyncSummary,
   SyncPortabilityScreenHost,
+  syncServerForStoredPreference,
   syncViewFromSnapshot,
   useRestartableActor,
   writeAutomaticSyncState,
@@ -126,6 +131,7 @@ export function SyncPortabilityRuntime({
   const ids = useMemo(createRuntimeIds, []);
   const runtimeBoundary = useMemo(configuredRuntimeBoundary, []);
 
+  const finishingPersistedAuth = useRef(false);
   const returnedFromPersistedAuth = useRef(
     typeof globalThis.location !== "undefined" &&
       new URL(globalThis.location.href).searchParams.get("sync_connected") ===
@@ -156,12 +162,12 @@ export function SyncPortabilityRuntime({
     if (typeof globalThis.localStorage !== "undefined") {
       try {
         const saved = globalThis.localStorage.getItem("did_it_sync_server_url");
-        if (saved) return saved;
+        return syncServerForStoredPreference(saved);
       } catch {
         // ignore
       }
     }
-    return browserConfiguredSyncServerUrl() ?? "";
+    return browserConfiguredSyncServerUrl();
   });
 
   const [syncError, setSyncError] = useState<string | null>(() => {
@@ -170,8 +176,7 @@ export function SyncPortabilityRuntime({
       const err = url.searchParams.get("sync_error");
       if (err) {
         if (err === "unauthorized_account") {
-          const email = url.searchParams.get("email") ?? "Unknown";
-          return `Access Denied: Google account "${email}" is not authorized on this sync server. Add this email to ALLOWED_GOOGLE_EMAILS on the server to permit synchronization.`;
+          return "Access denied. This Google account is not authorized on the sync server.";
         }
         if (err === "missing_refresh_token") {
           return "Google did not return a refresh token. Please remove this app from https://myaccount.google.com/permissions and reconnect.";
@@ -1116,10 +1121,24 @@ export function SyncPortabilityRuntime({
         }
         const returnTo = globalThis.location?.href ?? "";
         if (globalThis.location) {
-          globalThis.location.href =
-            `${serverUrl}/auth/google-drive/login?return_to=${
-              encodeURIComponent(returnTo)
-            }`;
+          let target: URL;
+          try {
+            target = new URL(`${serverUrl}/auth/google-drive/login`);
+          } catch {
+            onNotice(
+              "Please specify a valid Sync Server URL before connecting.",
+            );
+            return;
+          }
+          target.searchParams.set("return_to", returnTo);
+          void driveHandoffChallenge(serverUrl).then((challenge) => {
+            target.searchParams.set("handoff_challenge", challenge);
+            globalThis.location.href = target.href;
+          }).catch(() => {
+            onNotice(
+              "Google Drive sign-in needs browser session storage. Use the same tab to connect.",
+            );
+          });
         }
       } else {
         setConnectionMode("direct");
@@ -1149,16 +1168,34 @@ export function SyncPortabilityRuntime({
     if (connectionMode !== "persisted" || driveAdapter === null) return;
     if (returnedFromPersistedAuth.current) {
       returnedFromPersistedAuth.current = false;
-      authorizeDrive(false, false);
+      finishingPersistedAuth.current = true;
+      void redeemDriveHandoff(syncServerUrl.trim().replace(/\/+$/, "")).then(
+        () => {
+          finishingPersistedAuth.current = false;
+          authorizeDrive(false, false);
+        },
+      ).catch((error: unknown) => {
+        finishingPersistedAuth.current = false;
+        setSyncError(
+          error instanceof Error ? error.message : "Reconnect to Google Drive.",
+        );
+      });
       return;
     }
     if (
+      !finishingPersistedAuth.current &&
       syncView.mode === "configured" &&
       driveAdapter.status() !== "authorized"
     ) {
       authorizeDrive(true, true);
     }
-  }, [connectionMode, driveAdapter, syncView.mode, authorizeDrive]);
+  }, [
+    connectionMode,
+    driveAdapter,
+    syncView.mode,
+    authorizeDrive,
+    syncServerUrl,
+  ]);
 
   const requestExport = (delivery: "download" | "share") => {
     const event: ExportEvent = {

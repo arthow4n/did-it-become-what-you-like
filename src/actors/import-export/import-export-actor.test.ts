@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createExportActor, createImportActor } from "./index.ts";
 import {
   createFakeCausalSyncPort,
@@ -14,10 +15,6 @@ import {
   UNCATEGORIZED_CATEGORY_ID,
 } from "../../domain/index.ts";
 import { waitFor } from "../../test-support/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -87,7 +84,7 @@ function setupAdapter(options: {
   return { adapter, local, causal };
 }
 
-Deno.test("import actor: validates, previews, and commits merge through v5 states", async () => {
+test("import actor: validates, previews, and commits merge through v5 states", async () => {
   const { adapter } = setupAdapter();
   const source = await adapter.exportDocument();
   const expectedPreview = adapter.previewImport(source.json);
@@ -124,7 +121,7 @@ Deno.test("import actor: validates, previews, and commits merge through v5 state
   actor.stop();
 });
 
-Deno.test("import actor: configured Drive offline blocks replace without commit", async () => {
+test("import actor: configured Drive offline blocks replace without commit", async () => {
   const { adapter } = setupAdapter();
   const source = await adapter.exportDocument();
   const actor = createImportActor({ adapter }).start();
@@ -138,7 +135,7 @@ Deno.test("import actor: configured Drive offline blocks replace without commit"
   actor.stop();
 });
 
-Deno.test("import actor: preview tracks online and offline transitions", async () => {
+test("import actor: preview tracks online and offline transitions", async () => {
   const { adapter } = setupAdapter({ preSync: () => Promise.resolve() });
   const source = await adapter.exportDocument();
   const actor = createImportActor({ adapter }).start();
@@ -161,7 +158,7 @@ Deno.test("import actor: preview tracks online and offline transitions", async (
   actor.stop();
 });
 
-Deno.test(
+test(
   "import actor: an offline replacement failure can recover when the network returns",
   async () => {
     const { adapter } = setupAdapter({ preSync: () => Promise.resolve() });
@@ -196,7 +193,7 @@ Deno.test(
   },
 );
 
-Deno.test("import actor: validation failures retain bounded diagnostics", async () => {
+test("import actor: validation failures retain bounded diagnostics", async () => {
   const { adapter } = setupAdapter();
   const actor = createImportActor({ adapter }).start();
   actor.send({
@@ -213,7 +210,7 @@ Deno.test("import actor: validation failures retain bounded diagnostics", async 
   actor.stop();
 });
 
-Deno.test("import actor: successful online pre-sync is immediately followed by synchronized replacement", async () => {
+test("import actor: successful online pre-sync is immediately followed by synchronized replacement", async () => {
   const order: string[] = [];
   const { adapter, causal } = setupAdapter({
     preSync: async () => {
@@ -241,7 +238,7 @@ Deno.test("import actor: successful online pre-sync is immediately followed by s
   actor.stop();
 });
 
-Deno.test("import actor: replace cancellation aborts the pre-sync workflow", async () => {
+test("import actor: replace cancellation aborts the pre-sync workflow", async () => {
   const { adapter } = setupAdapter({
     preSync: () => new Promise<void>(() => {}),
   });
@@ -265,7 +262,7 @@ Deno.test("import actor: replace cancellation aborts the pre-sync workflow", asy
   actor.stop();
 });
 
-Deno.test("export actor: share delivery uses adapter fallback and returns completed", async () => {
+test("export actor: share delivery uses adapter fallback and returns completed", async () => {
   let saved = 0;
   const fileShare: FileSharePort = {
     save: async () => {

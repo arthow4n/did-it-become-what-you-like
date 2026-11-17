@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createActor } from "xstate";
 import { adapterError, SecretValue } from "../../adapters/ports/index.ts";
 import {
@@ -20,10 +21,6 @@ import {
 } from "../../test-support/index.ts";
 import { createFakeSecretStoragePort } from "../../test-support/fakes/ports.ts";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
 function assert(
   condition: unknown,
   message = "Expected condition",
@@ -43,7 +40,7 @@ function deleteDependencies(options: {
       options.persistProgress?.(progress.phase),
     createSafetyExport: () => {
       options.calls.push("export");
-      return Promise.resolve('{"safe":true}');
+      return Promise.resolve("{\"safe\":true}");
     },
     publishRetirement: () => {
       options.calls.push("publish-retirement");
@@ -63,7 +60,7 @@ function deleteDependencies(options: {
   };
 }
 
-Deno.test("delete-everywhere actor accepts safety export before retirement", async () => {
+test("delete-everywhere actor accepts safety export before retirement", async () => {
   const calls: string[] = [];
   const machine = createDeleteEverywhereMachine(deleteDependencies({ calls }));
   const actor = createActor(machine).start();
@@ -93,7 +90,7 @@ Deno.test("delete-everywhere actor accepts safety export before retirement", asy
   actor.stop();
 });
 
-Deno.test("delete-everywhere actor requires a distinct second confirmation after export decline", async () => {
+test("delete-everywhere actor requires a distinct second confirmation after export decline", async () => {
   const calls: string[] = [];
   const actor = createActor(
     createDeleteEverywhereMachine(deleteDependencies({ calls })),
@@ -119,7 +116,7 @@ Deno.test("delete-everywhere actor requires a distinct second confirmation after
   actor.stop();
 });
 
-Deno.test("delete-everywhere reports a failed safety export before any retirement", async () => {
+test("delete-everywhere reports a failed safety export before any retirement", async () => {
   const calls: string[] = [];
   const actor = createActor(
     createDeleteEverywhereMachine({
@@ -144,7 +141,7 @@ Deno.test("delete-everywhere reports a failed safety export before any retiremen
   actor.stop();
 });
 
-Deno.test(
+test(
   "delete-everywhere fails closed when progress cannot be written before each destructive phase",
   async () => {
     const cases = [
@@ -201,7 +198,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "delete-everywhere retries after a durable progress write failure without skipping the gate",
   async () => {
     const calls: string[] = [];
@@ -253,7 +250,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "delete-everywhere persists the interrupted phase and requires explicit reinitialize after restart",
   async () => {
     const storage = memoryStorage();
@@ -325,7 +322,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "delete-everywhere fails closed before forced finalization when its progress write fails",
   async () => {
     const calls: string[] = [];
@@ -376,7 +373,7 @@ Deno.test(
   },
 );
 
-Deno.test("delete-everywhere cancellation after local erasure remains retryable", async () => {
+test("delete-everywhere cancellation after local erasure remains retryable", async () => {
   const actor = createActor(
     createDeleteEverywhereMachine(deleteDependencies({ calls: [] })),
   ).start();
@@ -408,7 +405,7 @@ Deno.test("delete-everywhere cancellation after local erasure remains retryable"
   actor.stop();
 });
 
-Deno.test("delete-everywhere actor keeps failed Drive deletion retryable without erasing local data", async () => {
+test("delete-everywhere actor keeps failed Drive deletion retryable without erasing local data", async () => {
   const calls: string[] = [];
   let fail = true;
   const actor = createActor(
@@ -438,7 +435,7 @@ Deno.test("delete-everywhere actor keeps failed Drive deletion retryable without
   actor.stop();
 });
 
-Deno.test("delete-everywhere actor tracks multiple acknowledgements and forced finalization honestly", async () => {
+test("delete-everywhere actor tracks multiple acknowledgements and forced finalization honestly", async () => {
   const calls: string[] = [];
   const storage = memoryStorage();
   const actor = createActor(
@@ -464,7 +461,7 @@ Deno.test("delete-everywhere actor tracks multiple acknowledgements and forced f
     storage,
   );
   const saved = [...storage.values.values()][0] ?? "";
-  assert(saved.includes('"phase":"awaiting-devices"'));
+  assert(saved.includes("\"phase\":\"awaiting-devices\""));
   assert(!saved.includes("expense"));
   actor.send({ type: "delete-everywhere.device-ack", count: 2 });
   await settle();
@@ -479,7 +476,7 @@ Deno.test("delete-everywhere actor tracks multiple acknowledgements and forced f
   actor.stop();
 });
 
-Deno.test("delete-everywhere actor has no financial payload or API key in persisted snapshot", () => {
+test("delete-everywhere actor has no financial payload or API key in persisted snapshot", () => {
   const actor = createActor(
     createDeleteEverywhereMachine(deleteDependencies({ calls: [] })),
   ).start();
@@ -498,7 +495,7 @@ Deno.test("delete-everywhere actor has no financial payload or API key in persis
   actor.stop();
 });
 
-Deno.test("delete-everywhere rehydrates redacted progress at the saved state", async () => {
+test("delete-everywhere rehydrates redacted progress at the saved state", async () => {
   const calls: string[] = [];
   const machine = createDeleteEverywhereMachine(deleteDependencies({ calls }));
   const recovered = recoverDeleteEverywhereSnapshot(machine, {
@@ -521,7 +518,7 @@ Deno.test("delete-everywhere rehydrates redacted progress at the saved state", a
   actor.stop();
 });
 
-Deno.test("delete-everywhere reload preserves a failed retry operation", async () => {
+test("delete-everywhere reload preserves a failed retry operation", async () => {
   const machine = createDeleteEverywhereMachine(
     deleteDependencies({ calls: [] }),
   );
@@ -545,7 +542,7 @@ Deno.test("delete-everywhere reload preserves a failed retry operation", async (
   actor.stop();
 });
 
-Deno.test("delete-everywhere reload reopens legacy failures behind confirmation", async () => {
+test("delete-everywhere reload reopens legacy failures behind confirmation", async () => {
   const machine = createDeleteEverywhereMachine(
     deleteDependencies({ calls: [] }),
   );
@@ -570,7 +567,7 @@ Deno.test("delete-everywhere reload reopens legacy failures behind confirmation"
   actor.stop();
 });
 
-Deno.test("delete-everywhere marks an interrupted invocation for safe reinitialize", async () => {
+test("delete-everywhere marks an interrupted invocation for safe reinitialize", async () => {
   const calls: string[] = [];
   const machine = createDeleteEverywhereMachine(deleteDependencies({ calls }));
   const recovered = recoverDeleteEverywhereSnapshot(machine, {
@@ -604,11 +601,12 @@ for (
     { removeReceiptAiKeys: false, expectedCalls: ["choice:false", "erase"] },
   ]
 ) {
-  Deno.test(
+  test(
     `local erase actor persists choice before erasure (keys: ${removeReceiptAiKeys})`,
     async () => {
       const calls: string[] = [];
       const actor = createActor(createLocalEraseMachine({
+        storage: memoryStorage(),
         persistChoice: (value) => {
           calls.push(`choice:${value}`);
         },
@@ -630,7 +628,7 @@ for (
   );
 }
 
-Deno.test("local erase actor retries a local failure and supports reload-safe choice", async () => {
+test("local erase actor retries a local failure and supports reload-safe choice", async () => {
   const storage = memoryStorage();
   let fail = true;
   const actor = createActor(createLocalEraseMachine({
@@ -655,7 +653,7 @@ Deno.test("local erase actor retries a local failure and supports reload-safe ch
   actor.stop();
 });
 
-Deno.test(
+test(
   "local erase removes both provider keys only when receipt-AI key removal is selected",
   async () => {
     const storage = createFakeSecretStoragePort();
@@ -665,6 +663,7 @@ Deno.test(
       SecretValue.from("sk-or-v1.test"),
     );
     const actor = createActor(createLocalEraseMachine({
+      storage: memoryStorage(),
       eraseLocalDataset: () => Promise.resolve(),
       removeReceiptAiKeys: async () => {
         await storage.remove("gemini-api-key");
@@ -680,18 +679,18 @@ Deno.test(
       JSON.stringify(
         storage.audit.map(({ operation, name }) => [operation, name]),
       )
-        .includes('"remove","gemini-api-key"') &&
+        .includes("\"remove\",\"gemini-api-key\"") &&
         JSON.stringify(
           storage.audit.map(({ operation, name }) => [operation, name]),
         )
-          .includes('"remove","openrouter-api-key"'),
+          .includes("\"remove\",\"openrouter-api-key\""),
       "both device-local provider key slots must be removed",
     );
     actor.stop();
   },
 );
 
-Deno.test(
+test(
   "local erase persists the key-removal phase before a crash and resumes it",
   async () => {
     const storage = memoryStorage();
@@ -765,7 +764,7 @@ Deno.test(
   },
 );
 
-Deno.test("local erase retries only the failed key removal after reload-safe failure", async () => {
+test("local erase retries only the failed key removal after reload-safe failure", async () => {
   const storage = memoryStorage();
   let fail = true;
   const calls: string[] = [];
@@ -802,11 +801,12 @@ Deno.test("local erase retries only the failed key removal after reload-safe fai
   actor.stop();
 });
 
-Deno.test(
+test(
   "local erase cancellation after key failure reports partial completion",
   async () => {
     const calls: string[] = [];
     const actor = createActor(createLocalEraseMachine({
+      storage: memoryStorage(),
       eraseLocalDataset: () => {
         calls.push("erase");
         return Promise.resolve();
@@ -836,7 +836,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "local erase cancellation after database failure preserves reload recovery",
   async () => {
     const storage = memoryStorage();
@@ -863,7 +863,7 @@ Deno.test(
   },
 );
 
-Deno.test("delete-everywhere revokes authorization only after acknowledgements or forced finalization", async () => {
+test("delete-everywhere revokes authorization only after acknowledgements or forced finalization", async () => {
   const storage = memoryStorage();
   const order: string[] = [];
   await finalizeDeleteEverywhere({
@@ -884,7 +884,7 @@ Deno.test("delete-everywhere revokes authorization only after acknowledgements o
   );
 });
 
-Deno.test(
+test(
   "delete-everywhere finalization does not revoke when its final progress write fails",
   async () => {
     const storage = memoryStorage();

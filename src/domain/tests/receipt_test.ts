@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   addReceiptLine,
   createReceiptCommitService,
@@ -28,10 +29,6 @@ import {
   createFakeLocalPort,
   type FakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -204,7 +201,7 @@ function tombstoneFingerprint(value: string): string {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
-Deno.test(
+test(
   "saved receipt management: tombstone IDs are bounded, collision-safe, and never reusable",
   async () => {
     const collisionId = `tombstone-receipt-${
@@ -400,7 +397,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved receipt management: metadata and line edits preserve IDs and projections",
   async () => {
     const derivedExpense = {
@@ -517,7 +514,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved receipt management: add-line creates atomic line and expense projections",
   async () => {
     let sequence = 0;
@@ -668,7 +665,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved receipt management: archived categories remain valid but cannot be newly assigned",
   async () => {
     const archived = {
@@ -762,7 +759,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved receipt management: line deletion unlinks adjustments and final-line deletion removes the aggregate",
   async () => {
     const secondPurchase = {
@@ -864,7 +861,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt commit tolerates optional metadata cleared by the review form",
   async () => {
     const local = createFakeLocalPort();
@@ -933,7 +930,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-actor domain: signs, totals, selection, editing, adding, and removing are deterministic", () => {
+test("receipt-actor domain: signs, totals, selection, editing, adding, and removing are deterministic", () => {
   const normalized = validateReceiptReviewDraft(review({
     lines: [{
       type: "purchase",
@@ -995,7 +992,7 @@ Deno.test("receipt-actor domain: signs, totals, selection, editing, adding, and 
   );
 });
 
-Deno.test("receipt-actor domain: receipt totals follow selected line direction", () => {
+test("receipt-actor domain: receipt totals follow selected line direction", () => {
   const normalized = normalizeReceiptExtractionDraft({
     merchant: "Shop",
     currency: "SEK",
@@ -1063,7 +1060,7 @@ Deno.test("receipt-actor domain: receipt totals follow selected line direction",
   assertEquals(receiptMismatchDifference(rawPositivePurchase), "0");
 });
 
-Deno.test("receipt-actor domain: raw printed signs normalize by direction", () => {
+test("receipt-actor domain: raw printed signs normalize by direction", () => {
   let sequence = 0;
   const normalized = normalizeReceiptExtractionDraft({
     merchant: "Coop",
@@ -1122,7 +1119,7 @@ Deno.test("receipt-actor domain: raw printed signs normalize by direction", () =
   assertEquals(receiptMismatchDifference(normalized), "0");
 });
 
-Deno.test(
+test(
   "receipt-actor domain: positive bottle-deposit charges are outflows while returns remain inflows",
   () => {
     let sequence = 0;
@@ -1199,7 +1196,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-actor domain: repeated confident purchases become quantity lines",
   () => {
     let sequence = 0;
@@ -1326,7 +1323,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-actor domain: explicit extracted quantity and unit price are preserved",
   () => {
     let sequence = 0;
@@ -1376,7 +1373,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-actor domain: same-name bottle charge and printed return stay separate",
   () => {
     let sequence = 0;
@@ -1433,7 +1430,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-actor domain: repeated non-deposit adjustments remain independent",
   () => {
     let sequence = 0;
@@ -1489,7 +1486,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "receipt-actor domain: Coop bottle deposits reconcile the printed total",
   () => {
     let sequence = 0;
@@ -1568,7 +1565,7 @@ Deno.test(
   },
 );
 
-Deno.test("receipt-actor domain: contradictory purchase direction fails closed", () => {
+test("receipt-actor domain: contradictory purchase direction fails closed", () => {
   const normalized = normalizeReceiptExtractionDraft({
     merchant: "Shop",
     currency: "SEK",
@@ -1604,7 +1601,7 @@ Deno.test("receipt-actor domain: contradictory purchase direction fails closed",
   );
 });
 
-Deno.test("receipt-actor domain: missing classification rationale fails closed", () => {
+test("receipt-actor domain: missing classification rationale fails closed", () => {
   const normalized = normalizeReceiptExtractionDraft({
     merchant: "Shop",
     currency: "SEK",
@@ -1634,7 +1631,7 @@ Deno.test("receipt-actor domain: missing classification rationale fails closed",
   assertEquals(normalized.lines[0]?.classificationReason, undefined);
 });
 
-Deno.test("receipt-actor domain: printed charges become negative adjustments", () => {
+test("receipt-actor domain: printed charges become negative adjustments", () => {
   const normalized = normalizeReceiptExtractionDraft({
     merchant: "Shop",
     currency: "SEK",
@@ -1671,7 +1668,7 @@ Deno.test("receipt-actor domain: printed charges become negative adjustments", (
   assertEquals(receiptMismatchDifference(normalized), "0");
 });
 
-Deno.test("receipt-actor domain: hostile extraction remains reviewable but invalid lines start unselected", () => {
+test("receipt-actor domain: hostile extraction remains reviewable but invalid lines start unselected", () => {
   let sequence = 0;
   const normalized = normalizeReceiptExtractionDraft({
     merchant: "Shop",
@@ -1731,7 +1728,7 @@ Deno.test("receipt-actor domain: hostile extraction remains reviewable but inval
   );
 });
 
-Deno.test("receipt-actor domain: receipt extraction preserves time and rejects invalid time", () => {
+test("receipt-actor domain: receipt extraction preserves time and rejects invalid time", () => {
   const normalized = normalizeReceiptExtractionDraft({
     merchant: "Shop",
     currency: "SEK",
@@ -1779,7 +1776,7 @@ Deno.test("receipt-actor domain: receipt extraction preserves time and rejects i
   );
 });
 
-Deno.test("setReceiptLineQuantity adjusts item quantity, line total, and selection state", () => {
+test("setReceiptLineQuantity adjusts item quantity, line total, and selection state", () => {
   const draft: ReceiptReviewDraft = {
     parent: {
       projectId: "project-1",

@@ -5,7 +5,7 @@ import { expect, test } from "../playwright.ts";
 import { ONE_PIXEL_PNG } from "../support/fixtures.ts";
 
 const AUDIT_DIR = process.env.AUDIT_OUTPUT_DIR ||
-  join(Deno.cwd(), "ui-audit", "screenshots");
+  join(process.cwd(), "ui-audit", "screenshots");
 mkdirSync(AUDIT_DIR, { recursive: true });
 
 const VIEWPORTS = [

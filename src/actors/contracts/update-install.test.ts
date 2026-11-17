@@ -1,13 +1,10 @@
+import { test } from "vitest";
 import { createActor, fromPromise } from "xstate";
 import { updateInstallMachine } from "./update-install.ts";
 import type { UpdateCheckOutput } from "../../adapters/ports/update-install.ts";
 import { waitFor } from "../../test-support/index.ts";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
-Deno.test("update actor exposes update-ready and blocks reload for dirty input", async () => {
+test("update actor exposes update-ready and blocks reload for dirty input", async () => {
   let reloads = 0;
   const machine = updateInstallMachine.provide({
     actors: {
@@ -43,7 +40,7 @@ Deno.test("update actor exposes update-ready and blocks reload for dirty input",
   actor.stop();
 });
 
-Deno.test("install actor supports a later choice without installing", () => {
+test("install actor supports a later choice without installing", () => {
   const actor = createActor(updateInstallMachine).start();
   actor.send({ type: "install.available" });
   actor.send({ type: "install.later" });
@@ -53,7 +50,7 @@ Deno.test("install actor supports a later choice without installing", () => {
   actor.stop();
 });
 
-Deno.test("update actor treats unsupported checks as a quiet up-to-date state", async () => {
+test("update actor treats unsupported checks as a quiet up-to-date state", async () => {
   const actor = createActor(
     updateInstallMachine.provide({
       actors: {
@@ -74,7 +71,7 @@ Deno.test("update actor treats unsupported checks as a quiet up-to-date state", 
   actor.stop();
 });
 
-Deno.test("install actor remains reusable for offline updates after install", async () => {
+test("install actor remains reusable for offline updates after install", async () => {
   const actor = createActor(
     updateInstallMachine.provide({
       actors: {

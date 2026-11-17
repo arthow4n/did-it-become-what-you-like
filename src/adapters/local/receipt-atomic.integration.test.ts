@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { adapterError, isAdapterError } from "../ports/errors.ts";
 import { UNCATEGORIZED_CATEGORY_ID } from "../../domain/index.ts";
@@ -8,10 +9,6 @@ import {
 } from "../../domain/receipt.ts";
 import { createProjectCategoryService } from "../../domain/organization.ts";
 import { deleteLocalRepositoryDatabase, openLocalRepository } from "./index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -105,7 +102,7 @@ async function withRepository<T>(
   }
 }
 
-Deno.test("receipt-atomic integration: parent, signed lines, links, and parent-only time survive restart", async () => {
+test("receipt-atomic integration: parent, signed lines, links, and parent-only time survive restart", async () => {
   await withRepository(async (repository, organization) => {
     await organization.commitProject({ type: "create", project });
     const commit = createReceiptCommitService(repository, {
@@ -140,7 +137,7 @@ Deno.test("receipt-atomic integration: parent, signed lines, links, and parent-o
   });
 });
 
-Deno.test("receipt-atomic integration: a write failure aborts the whole receipt transaction", async () => {
+test("receipt-atomic integration: a write failure aborts the whole receipt transaction", async () => {
   let lineWrites = 0;
   let injectFailure = false;
   await withRepository(async (repository, organization) => {
@@ -192,7 +189,7 @@ Deno.test("receipt-atomic integration: a write failure aborts the whole receipt 
   });
 });
 
-Deno.test(
+test(
   "receipt-atomic integration: management deletion rolls back parent and children together",
   async () => {
     let injectFailure = false;

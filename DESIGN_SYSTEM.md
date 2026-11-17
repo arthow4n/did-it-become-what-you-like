@@ -43,9 +43,9 @@ quiet rather than like a dense financial dashboard.
   the product's string values, keyboard behavior, accessibility, and file/camera
   capture. Keep a native control as the explicit fallback when a Mantine wrapper
   cannot preserve useful platform behavior.
-- **Dependencies:** declare and pin browser dependencies through the Deno 2
-  dependency configuration. The selected stable Mantine packages, React 19.2,
-  Lucide, XState, TypeScript 7, Deno npm resolution, Vite, happy-dom, and
+- **Dependencies:** declare and pin browser dependencies through the npm lockfile.
+  The selected stable Mantine packages, React 19, Lucide, XState, TypeScript 7,
+  Vite, happy-dom, and
   Chromium work together across the repository facade. No `@mantine/form`
   dependency is used.
 
@@ -411,7 +411,7 @@ pending control keeps its label or an equally descriptive accessible name.
 ## Component Verification Contract
 
 Before application screens consume the system, implementation must provide a
-development-only component gallery reachable through the Deno-run dev workflow.
+development-only component gallery reachable through the npm development workflow.
 It must render:
 
 - every primitive and pattern state on the dark canvas and each surface;

@@ -1,5 +1,4 @@
-/// <reference path="../deno.d.ts" />
-
+import { mkdir, writeFile } from "node:fs/promises";
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_SIGNATURE = 0x02014b50;
 const LOCAL_SIGNATURE = 0x04034b50;
@@ -76,8 +75,8 @@ export async function extractZipArchive(
       throw new Error(`Chrome archive size mismatch for ${name}.`);
     }
     const outputPath = `${destination}/${safeName}`;
-    await Deno.mkdir(parentDirectory(outputPath), { recursive: true });
-    await Deno.writeFile(outputPath, content);
+    await mkdir(parentDirectory(outputPath), { recursive: true });
+    await writeFile(outputPath, content);
   }
 }
 

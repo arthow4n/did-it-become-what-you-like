@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { deleteLocalRepositoryDatabase, openLocalRepository } from "./index.ts";
 import { createDatasetChange, mergeCausalSnapshots } from "../sync/causal.ts";
@@ -11,10 +12,6 @@ import {
   UNCATEGORIZED_CATEGORY_ID,
 } from "../../domain/index.ts";
 import { createFakeSecretStoragePort } from "../../test-support/fakes/ports.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -177,7 +174,7 @@ async function withRepository<T>(
   }
 }
 
-Deno.test(
+test(
   "project-delete-sync atomically tombstones the complete populated project scope and preserves unrelated data",
   async () => {
     await withRepository(async (repository, name) => {
@@ -253,7 +250,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "project-delete-sync offline deletion converges and late-device replay cannot resurrect the project",
   async () => {
     await withRepository(async (repository) => {
@@ -329,7 +326,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "project deletion leaves both receipt-AI keys intact",
   async () => {
     await withRepository(async (repository) => {

@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   AUTOMATIC_SYNC_COOLDOWN_MS,
   automaticSyncDelay,
@@ -12,10 +13,6 @@ import {
   requiresDriveAuthorization,
 } from "./sync-portability-runtime.tsx";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
 function assert(
   condition: unknown,
   message = "Expected condition",
@@ -23,7 +20,7 @@ function assert(
   if (!condition) throw new Error(message);
 }
 
-Deno.test("automatic sync waits one hour after the last successful exchange", () => {
+test("automatic sync waits one hour after the last successful exchange", () => {
   const lastSuccessful = "2026-09-21T10:00:00.000Z";
   const halfway = Date.parse("2026-09-21T10:30:00.000Z");
   assert(
@@ -38,12 +35,12 @@ Deno.test("automatic sync waits one hour after the last successful exchange", ()
   );
 });
 
-Deno.test("automatic sync is immediately eligible without a valid history", () => {
+test("automatic sync is immediately eligible without a valid history", () => {
   assert(automaticSyncDelay(null, 0) === 0);
   assert(automaticSyncDelay("not-a-date", 0) === 0);
 });
 
-Deno.test("sync runtime expands complete conflicts into field observations", () => {
+test("sync runtime expands complete conflicts into field observations", () => {
   const observations = observationsFromSyncConflicts([{
     id: "conflict-expense",
     recordType: "expense",
@@ -69,7 +66,7 @@ Deno.test("sync runtime expands complete conflicts into field observations", () 
   assert(observations[0].remote === "Remote market");
 });
 
-Deno.test(
+test(
   "sync runtime scopes a resolution to the causal conflict parents it observed",
   () => {
     const conflicts = [
@@ -106,7 +103,7 @@ Deno.test(
   },
 );
 
-Deno.test("sync runtime accumulates all conflict groups before acknowledging sync", () => {
+test("sync runtime accumulates all conflict groups before acknowledging sync", () => {
   const conflicts = [
     {
       id: "conflict-a",
@@ -150,7 +147,7 @@ Deno.test("sync runtime accumulates all conflict groups before acknowledging syn
   );
 });
 
-Deno.test("sync runtime preserves delete-versus-edit metadata", () => {
+test("sync runtime preserves delete-versus-edit metadata", () => {
   const observations = observationsFromSyncConflicts([{
     id: "conflict-delete-edit",
     recordType: "expense",
@@ -176,7 +173,7 @@ Deno.test("sync runtime preserves delete-versus-edit metadata", () => {
   );
 });
 
-Deno.test("sync runtime carries registry identity through reordered projections", () => {
+test("sync runtime carries registry identity through reordered projections", () => {
   const result = deviceViewModels(
     [
       {
@@ -220,7 +217,7 @@ Deno.test("sync runtime carries registry identity through reordered projections"
   assert(result.technical[0].exactLastSeenAt === "2026-08-24T16:01:00.000Z");
 });
 
-Deno.test("sync runtime formats ordinary last-seen values approximately", () => {
+test("sync runtime formats ordinary last-seen values approximately", () => {
   const now = Date.parse("2026-08-24T17:00:00.000Z");
   assert(
     formatApproximateLastSeen("2026-08-24T16:58:00.000Z", now) ===
@@ -232,18 +229,18 @@ Deno.test("sync runtime formats ordinary last-seen values approximately", () => 
   assert(formatApproximateLastSeen("not-a-date", now) === "recently");
 });
 
-Deno.test("sync runtime remains unavailable without OAuth configuration", () => {
+test("sync runtime remains unavailable without OAuth configuration", () => {
   assert(createConfiguredDriveAdapter({}) === null);
 });
 
-Deno.test("sync runtime marks a configured account as authorization-needed after reload", () => {
+test("sync runtime marks a configured account as authorization-needed after reload", () => {
   assert(requiresDriveAuthorization("owner@example.com", "signed-out"));
   assert(requiresDriveAuthorization("owner@example.com", null));
   assert(!requiresDriveAuthorization("owner@example.com", "authorized"));
   assert(!requiresDriveAuthorization(null, "signed-out"));
 });
 
-Deno.test("sync runtime reconnect options reuse the configured account hint", () => {
+test("sync runtime reconnect options reuse the configured account hint", () => {
   const options = reconnectAuthorizationOptions({
     mode: "configured",
     accountEmail: "owner@example.com",
@@ -261,7 +258,7 @@ Deno.test("sync runtime reconnect options reuse the configured account hint", ()
   );
 });
 
-Deno.test(
+test(
   "sync runtime requests one local-shell refresh after a successful exchange",
   () => {
     const handled = { current: null as string | null };
@@ -287,7 +284,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "createConfiguredDriveAdapter creates server-backed adapter when persisted mode has serverUrl",
   () => {
     // 1. Without serverUrl in persisted mode -> null

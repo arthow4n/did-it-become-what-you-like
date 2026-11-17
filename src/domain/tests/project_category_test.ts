@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { isAdapterError } from "../../adapters/ports/errors.ts";
 import {
   createProjectCategoryService,
@@ -16,10 +17,6 @@ import {
   type FakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
 import { CategorySchema, UNCATEGORIZED_CATEGORY_ID } from "../index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -128,7 +125,7 @@ function projectIds(state: ProjectCategoryState): readonly string[] {
   return state.projects.map((project) => project.id);
 }
 
-Deno.test("organization: first/default/last-selected project and stable reorder", async () => {
+test("organization: first/default/last-selected project and stable reorder", async () => {
   const { service } = createService();
   let state = await service.getState();
   assertEquals(state.categories.map((category) => category.id), [
@@ -178,7 +175,7 @@ Deno.test("organization: first/default/last-selected project and stable reorder"
   assertEquals(state.projects[0]?.id, projectTwo.id);
 });
 
-Deno.test("organization: current-project archive guard, restore, active invariant, and currency", async () => {
+test("organization: current-project archive guard, restore, active invariant, and currency", async () => {
   const { service } = createService();
   await service.commitProject({ type: "create", project: projectOne });
   await service.commitProject({ type: "create", project: projectTwo });
@@ -220,7 +217,7 @@ Deno.test("organization: current-project archive guard, restore, active invarian
   assert(rejected, "the selected project cannot be archived");
 });
 
-Deno.test("organization: confirmed empty deletion preserves at least one project", async () => {
+test("organization: confirmed empty deletion preserves at least one project", async () => {
   const { service } = createService();
   await service.commitProject({ type: "create", project: projectOne });
   await service.commitProject({ type: "create", project: projectTwo });
@@ -272,7 +269,7 @@ Deno.test("organization: confirmed empty deletion preserves at least one project
   assert(rejected, "the last active project cannot be deleted");
 });
 
-Deno.test("organization: category uniqueness, order, archive, and Uncategorized protection", async () => {
+test("organization: category uniqueness, order, archive, and Uncategorized protection", async () => {
   const { service } = createService();
   await service.commitCategory({ type: "create", category: food });
   await service.commitCategory({ type: "create", category: travel });
@@ -334,7 +331,7 @@ Deno.test("organization: category uniqueness, order, archive, and Uncategorized 
   );
 });
 
-Deno.test("organization: category rename updates, preserves, and clears color", async () => {
+test("organization: category rename updates, preserves, and clears color", async () => {
   const { service } = createService();
   await service.commitCategory({
     type: "create",
@@ -380,7 +377,7 @@ Deno.test("organization: category rename updates, preserves, and clears color", 
   );
 });
 
-Deno.test("organization: category create and rename updates, preserves, and clears description", async () => {
+test("organization: category create and rename updates, preserves, and clears description", async () => {
   const { service } = createService();
   await service.commitCategory({
     type: "create",
@@ -438,7 +435,7 @@ Deno.test("organization: category create and rename updates, preserves, and clea
   );
 });
 
-Deno.test("organization: delete-and-reassign atomically updates every category reference", async () => {
+test("organization: delete-and-reassign atomically updates every category reference", async () => {
   const { local, service } = createService();
   await seed(local, [projectOne, food, travel, expense("expense-food")]);
   const receipt = {
@@ -494,7 +491,7 @@ Deno.test("organization: delete-and-reassign atomically updates every category r
   );
 });
 
-Deno.test("organization: late tombstone chains redirect deterministically", () => {
+test("organization: late tombstone chains redirect deterministically", () => {
   const replacement = CategorySchema.parse({
     schemaVersion: 1,
     type: "category",
@@ -527,7 +524,7 @@ Deno.test("organization: late tombstone chains redirect deterministically", () =
   );
 });
 
-Deno.test("organization: invalid order, offline failure, and retry preserve local state", async () => {
+test("organization: invalid order, offline failure, and retry preserve local state", async () => {
   const { local, service } = createService();
   await service.commitProject({ type: "create", project: projectOne });
   await service.commitProject({ type: "create", project: projectTwo });
@@ -578,7 +575,7 @@ Deno.test("organization: invalid order, offline failure, and retry preserve loca
   );
 });
 
-Deno.test("organization: selectors expose only domain-valid actions", async () => {
+test("organization: selectors expose only domain-valid actions", async () => {
   const { service } = createService();
   await service.commitProject({ type: "create", project: projectOne });
   const state = await service.getState();

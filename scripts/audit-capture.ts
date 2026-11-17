@@ -1,32 +1,23 @@
-/// <reference path="./deno.d.ts" />
+import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 
-const targetDir = Deno.args[0] ||
+const targetDir = process.argv[2] ||
   `ui-audit-${new Date().toISOString().slice(0, 10)}/screenshots`;
+const playwright = createRequire(import.meta.url).resolve(
+  "@playwright/test/cli",
+);
 
 console.log(`[UI/UX Audit] Starting visual capture into: ${targetDir}`);
-
-const command = new Deno.Command(Deno.execPath(), {
-  args: [
-    "x",
-    "-p",
-    "npm:@playwright/test@1.62.1",
-    "playwright",
-    "test",
-    "--config=e2e/playwright.audit.config.ts",
-  ],
-  env: {
-    AUDIT_OUTPUT_DIR: targetDir,
-  },
-  stdout: "inherit",
-  stderr: "inherit",
+const result = spawnSync(process.execPath, [
+  playwright,
+  "test",
+  "--config=e2e/playwright.audit.config.ts",
+], {
+  env: { ...process.env, AUDIT_OUTPUT_DIR: targetDir },
+  stdio: "inherit",
 });
-
-const result = await command.output();
-if (result.code !== 0) {
-  console.error(`[UI/UX Audit] Visual capture failed with code ${result.code}`);
-  Deno.exit(result.code);
-}
-
+if (result.error) throw result.error;
+if (result.status !== 0) process.exit(result.status ?? 1);
 console.log(
   `[UI/UX Audit] Visual capture completed successfully: ${targetDir}`,
 );

@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   createBrowserUpdateInstallPort,
   isWithinRepositoryServiceWorkerScope,
@@ -5,11 +6,7 @@ import {
   serviceWorkerRegistrationTarget,
 } from "./pwa.ts";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
-Deno.test("offline PWA paths remain inside the repository service-worker scope", () => {
+test("offline PWA paths remain inside the repository service-worker scope", () => {
   const target = serviceWorkerRegistrationTarget();
   if (target.scriptUrl !== "/did-it-become-what-you-like/sw.js") {
     throw new Error("service worker script must use the repository base path");
@@ -35,7 +32,7 @@ Deno.test("offline PWA paths remain inside the repository service-worker scope",
   }
 });
 
-Deno.test("unsafe asset paths are rejected", () => {
+test("unsafe asset paths are rejected", () => {
   let threw = 0;
   try {
     repositoryAssetPath("/root.js");
@@ -52,7 +49,7 @@ Deno.test("unsafe asset paths are rejected", () => {
   }
 });
 
-Deno.test("non-production browser update checks settle as unsupported and current", async () => {
+test("non-production browser update checks settle as unsupported and current", async () => {
   const port = createBrowserUpdateInstallPort();
   const result = await port.check();
   if (result.status !== "up-to-date") {

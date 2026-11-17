@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createActor } from "xstate";
 import { createLocalShellMachine } from "../local-shell.ts";
 import {
@@ -8,10 +9,6 @@ import {
   createFakeLocalPort,
   type FakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -65,7 +62,7 @@ async function createShellHarness(): Promise<{
   return { local, service };
 }
 
-Deno.test("shell-actor: restores route, exposes offline modes, and switches projects", async () => {
+test("shell-actor: restores route, exposes offline modes, and switches projects", async () => {
   const harness = await createShellHarness();
   const actor = createActor(
     createLocalShellMachine({
@@ -106,7 +103,7 @@ Deno.test("shell-actor: restores route, exposes offline modes, and switches proj
   actor.stop();
 });
 
-Deno.test("shell-actor: project failure retains retry and offline shell recovers", async () => {
+test("shell-actor: project failure retains retry and offline shell recovers", async () => {
   const harness = await createShellHarness();
   const actor = createActor(
     createLocalShellMachine({ organization: harness.service }),
@@ -137,7 +134,7 @@ Deno.test("shell-actor: project failure retains retry and offline shell recovers
   actor.stop();
 });
 
-Deno.test(
+test(
   "shell-actor: repository refresh adopts external changes without resetting route or workflow",
   async () => {
     const harness = await createShellHarness();
@@ -168,7 +165,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "shell-actor: concurrent repository refresh re-enters refreshing so newer writes are not dropped",
   async () => {
     const harness = await createShellHarness();
@@ -223,7 +220,7 @@ Deno.test(
   },
 );
 
-Deno.test("shell-actor: restoration failure exposes retryable shell error", async () => {
+test("shell-actor: restoration failure exposes retryable shell error", async () => {
   const local = createFakeLocalPort();
   const service = createProjectCategoryService(local, {
     deviceId: "device-shell-failure",

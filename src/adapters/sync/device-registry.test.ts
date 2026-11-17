@@ -1,13 +1,10 @@
+import { test } from "vitest";
 import { createTestClock } from "../../test-support/clock.ts";
 import {
   createFakeIdPort,
   createFakeLocalPort,
 } from "../../test-support/fakes/ports.ts";
 import { createDeviceRegistry } from "./device-registry.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -24,7 +21,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-Deno.test("sync-device-registry: labels, last-seen, acknowledgements, and ordinary projections persist", async () => {
+test("sync-device-registry: labels, last-seen, acknowledgements, and ordinary projections persist", async () => {
   const local = createFakeLocalPort();
   const clock = createTestClock("2026-08-24T10:00:00.000Z");
   const ids = createFakeIdPort("registry");
@@ -76,7 +73,7 @@ Deno.test("sync-device-registry: labels, last-seen, acknowledgements, and ordina
   );
 });
 
-Deno.test("sync-device-registry: account switching requires explicit confirmation", async () => {
+test("sync-device-registry: account switching requires explicit confirmation", async () => {
   const local = createFakeLocalPort();
   const clock = createTestClock();
   const registry = createDeviceRegistry({
@@ -100,7 +97,7 @@ Deno.test("sync-device-registry: account switching requires explicit confirmatio
   assertEquals(registry.state().accountEmail, "other@example.test");
 });
 
-Deno.test("sync-device-registry: projection subscribers observe hydration and updates", async () => {
+test("sync-device-registry: projection subscribers observe hydration and updates", async () => {
   const local = createFakeLocalPort();
   const clock = createTestClock("2026-08-24T10:00:00.000Z");
   const first = createDeviceRegistry({

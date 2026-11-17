@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { deleteLocalRepositoryDatabase, openLocalRepository } from "./index.ts";
 import {
@@ -5,10 +6,6 @@ import {
   type ProjectCategoryService,
 } from "../../domain/organization.ts";
 import { UNCATEGORIZED_CATEGORY_ID } from "../../domain/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -99,7 +96,7 @@ const expense = {
   source: "manual" as const,
 };
 
-Deno.test("organize integration: atomic category reassignment and tombstone survive restart", async () => {
+test("organize integration: atomic category reassignment and tombstone survive restart", async () => {
   await withRepository(async (repository, service, name) => {
     await service.commitProject({ type: "create", project });
     await service.commitCategory({ type: "create", category: oldCategory });
@@ -147,7 +144,7 @@ Deno.test("organize integration: atomic category reassignment and tombstone surv
   });
 });
 
-Deno.test("organize integration: local transaction failure leaves organization unchanged for retry", async () => {
+test("organize integration: local transaction failure leaves organization unchanged for retry", async () => {
   let fail = false;
   const name = databaseName();
   await deleteLocalRepositoryDatabase(name, indexedDB).catch(() => undefined);
@@ -205,7 +202,7 @@ Deno.test("organize integration: local transaction failure leaves organization u
   }
 });
 
-Deno.test("organize integration: first project initializes protected Uncategorized", async () => {
+test("organize integration: first project initializes protected Uncategorized", async () => {
   await withRepository(async (_repository, service) => {
     const state = await service.getState();
     assertEquals(state.projects.length, 0);

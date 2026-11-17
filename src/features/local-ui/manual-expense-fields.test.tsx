@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createElement } from "react";
 import { createActor } from "xstate";
 import { createManualExpenseMachine } from "../../actors/manual-expense.ts";
@@ -6,11 +7,7 @@ import { withComponentHarness } from "../../test-support/component-harness.tsx";
 import type { ProjectCategoryService } from "../../domain/organization.ts";
 import { ExpenseDraftField } from "./manual-expense-fields.tsx";
 
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
-Deno.test("manual draft fields update the actor immediately without rendering unrelated fields", async () => {
+test("manual draft fields update the actor immediately without rendering unrelated fields", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     // Opening with a supplied draft requires no organization I/O.
     const actor = createActor(

@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { adapterError, type CausalSyncPort } from "../ports/index.ts";
 import type { PortableDataset } from "../../domain/index.ts";
 import { assertRejects, createTestClock } from "../../test-support/index.ts";
@@ -21,10 +22,6 @@ import {
   runCausalExchange,
 } from "./coordinator.ts";
 import { CAUSAL_STATE_KEY } from "./causal.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -116,7 +113,7 @@ async function exchange(
   });
 }
 
-Deno.test("sync-schedules: two and three devices converge across local-first schedules", async () => {
+test("sync-schedules: two and three devices converge across local-first schedules", async () => {
   const remote = createInMemoryCausalSyncPort({
     initialSnapshot: initialCausalSnapshot(),
   });
@@ -147,7 +144,7 @@ Deno.test("sync-schedules: two and three devices converge across local-first sch
   assert(expected.expenses.some((expense) => expense.id === "expense-beta"));
 });
 
-Deno.test(
+test(
   "sync-schedules: higher-generation replacement adopts without re-uploading stale local records",
   async () => {
     const replacement = createDatasetChange({
@@ -185,7 +182,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "sync-schedules: higher-generation packets adopt their replacement payload in memory and Drive",
   async () => {
     const oldDataset = datasetWithExpense(
@@ -246,7 +243,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "sync-schedules: drive causal port reuses snapshot from preceding read without duplicate download in applyPacket",
   async () => {
     const fakeDrive = createFakeDrivePorts();
@@ -286,7 +283,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "sync-schedules: coordinator reports same-record same-field conflicts with record identity",
   async () => {
     const baseline = datasetWithExpense(
@@ -334,7 +331,7 @@ Deno.test(
   },
 );
 
-Deno.test("sync-schedules: duplicate and out-of-order causal changes are deterministic", () => {
+test("sync-schedules: duplicate and out-of-order causal changes are deterministic", () => {
   const base = initialCausalSnapshot();
   const first = createDatasetChange({
     id: "change-first",
@@ -374,7 +371,7 @@ Deno.test("sync-schedules: duplicate and out-of-order causal changes are determi
   );
 });
 
-Deno.test("sync-schedules: a failed upload after pull keeps local merged data dirty for retry", async () => {
+test("sync-schedules: a failed upload after pull keeps local merged data dirty for retry", async () => {
   let failUploads = 0;
   const remote = createInMemoryCausalSyncPort({
     initialSnapshot: initialCausalSnapshot(),
@@ -407,7 +404,7 @@ Deno.test("sync-schedules: a failed upload after pull keeps local merged data di
   );
 });
 
-Deno.test("sync-schedules: local commit during pending pull is retained", async () => {
+test("sync-schedules: local commit during pending pull is retained", async () => {
   const local = createFakeLocalPort();
   await writeLocalDataset(local, datasetWithProject("project-alpha"));
   let committed = false;
@@ -442,7 +439,7 @@ Deno.test("sync-schedules: local commit during pending pull is retained", async 
   );
 });
 
-Deno.test(
+test(
   "sync-schedules: malformed remote envelope can be explicitly reset and resynced",
   async () => {
     const baseDrive = createFakeDrivePorts();
@@ -471,11 +468,11 @@ Deno.test(
       "__did-it-become-what-you-like.sync.json",
     );
     assert(repaired !== undefined);
-    assert(repaired.body.includes('"type":"causal-sync-envelope"'));
+    assert(repaired.body.includes("\"type\":\"causal-sync-envelope\""));
   },
 );
 
-Deno.test(
+test(
   "sync-schedules: corrupt local causal metadata can be rebuilt without losing records",
   async () => {
     const current = await client(
@@ -513,7 +510,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "sync-schedules: explicit recovery deletes every duplicate remote sync file",
   async () => {
     const syncName = "__did-it-become-what-you-like.sync.json";
@@ -535,7 +532,7 @@ Deno.test(
       {
         id: "unrelated-file",
         name: "unrelated.json",
-        body: '{"keep":true}',
+        body: "{\"keep\":true}",
         etag: "etag-unrelated",
         updatedAt: "2026-08-24T10:02:00.000Z",
       },
@@ -569,7 +566,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "sync-schedules: remote reset rejects a stale ETag without deleting the newer file",
   async () => {
     const baseDrive = createFakeDrivePorts();
@@ -614,7 +611,7 @@ Deno.test(
   },
 );
 
-Deno.test("sync-schedules: offline, authorization, retirement, and registry restart are explicit", async () => {
+test("sync-schedules: offline, authorization, retirement, and registry restart are explicit", async () => {
   const offline: CausalSyncPort = {
     read: () => Promise.reject(adapterError("offline", "sync.offline")),
     exportPacket: () => Promise.reject(adapterError("offline", "sync.offline")),
@@ -630,7 +627,7 @@ Deno.test("sync-schedules: offline, authorization, retirement, and registry rest
   await assertRejects(() => exchange(current, retired), "retired");
 });
 
-Deno.test("sync-schedules: unchanged exchanges write neither Drive nor local records", async () => {
+test("sync-schedules: unchanged exchanges write neither Drive nor local records", async () => {
   const fakeDrive = createFakeDrivePorts();
   await fakeDrive.authorize();
   const remote = createDriveCausalSyncPort({
@@ -660,7 +657,7 @@ Deno.test("sync-schedules: unchanged exchanges write neither Drive nor local rec
   );
 });
 
-Deno.test("sync-schedules: compact history retains ancestry and shares unchanged record versions", async () => {
+test("sync-schedules: compact history retains ancestry and shares unchanged record versions", async () => {
   const { compactCausalSnapshot, expandCausalSnapshot } = await import(
     "./causal.ts"
   );
@@ -709,7 +706,7 @@ Deno.test("sync-schedules: compact history retains ancestry and shares unchanged
   );
 });
 
-Deno.test("sync-schedules: legacy Drive state migrates on edit and survives a new client", async () => {
+test("sync-schedules: legacy Drive state migrates on edit and survives a new client", async () => {
   const fakeDrive = createFakeDrivePorts();
   await fakeDrive.authorize();
   const dataset = datasetWithProject("project-legacy");
@@ -764,7 +761,7 @@ Deno.test("sync-schedules: legacy Drive state migrates on edit and survives a ne
   );
 });
 
-Deno.test("sync-schedules: local edit during upload stays pending for the next exchange", async () => {
+test("sync-schedules: local edit during upload stays pending for the next exchange", async () => {
   const current = await client(
     "device-upload",
     datasetWithProject("project-upload"),

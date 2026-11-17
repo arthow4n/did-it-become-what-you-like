@@ -1,8 +1,5 @@
+import { test } from "vitest";
 import { createGoogleGenAiClient, type GoogleGenAiSdk } from "./client.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assertEquals<T>(actual: T, expected: T): void {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -16,7 +13,7 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-Deno.test("Google Gen AI wrapper owns SDK request translation", async () => {
+test("Google Gen AI wrapper owns SDK request translation", async () => {
   const observations: unknown[] = [];
   const controller = new AbortController();
   const models = [{
@@ -44,7 +41,7 @@ Deno.test("Google Gen AI wrapper owns SDK request translation", async () => {
           "Expected generation AbortSignal forwarding",
         );
         observations.push({ operation: "generate", parameters });
-        return Promise.resolve({ text: '{"schemaVersion":"receipt.v2"}' });
+        return Promise.resolve({ text: "{\"schemaVersion\":\"receipt.v2\"}" });
       },
     },
   };
@@ -78,7 +75,7 @@ Deno.test("Google Gen AI wrapper owns SDK request translation", async () => {
     },
     { signal: controller.signal },
   );
-  assertEquals(response.text, '{"schemaVersion":"receipt.v2"}');
+  assertEquals(response.text, "{\"schemaVersion\":\"receipt.v2\"}");
   assertEquals(observations, [
     {
       operation: "list",
@@ -105,7 +102,7 @@ Deno.test("Google Gen AI wrapper owns SDK request translation", async () => {
   ]);
 });
 
-Deno.test("Google Gen AI wrapper forwards thinkingLevel in thinkingConfig", async () => {
+test("Google Gen AI wrapper forwards thinkingLevel in thinkingConfig", async () => {
   let observedParameters: unknown;
   const sdk: GoogleGenAiSdk = {
     models: {

@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   createGenerationProtectedCausalSyncPort,
   createImportExportAdapter,
@@ -25,10 +26,6 @@ import {
   UNCATEGORIZED_CATEGORY_ID,
 } from "../../domain/index.ts";
 import { createCanonicalExport } from "../../domain/import-export/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -183,7 +180,7 @@ async function seed(
   });
 }
 
-Deno.test("import-export adapter: merge is causal and duplicate import is idempotent", async () => {
+test("import-export adapter: merge is causal and duplicate import is idempotent", async () => {
   const first = dependencies();
   const adapter = createImportExportAdapter(first);
   const source = createImportExportAdapter(dependencies()).exportDocument;
@@ -205,7 +202,7 @@ Deno.test("import-export adapter: merge is causal and duplicate import is idempo
   assertEquals(repeated.duplicateChangeCount, exported.document.changes.length);
 });
 
-Deno.test(
+test(
   "import-export adapter: receipt aggregates and tombstones survive a local round trip",
   async () => {
     const source = dependencies();
@@ -234,7 +231,7 @@ Deno.test(
   },
 );
 
-Deno.test("import-export adapter: merge reports same-record conflicts without overwriting local data", async () => {
+test("import-export adapter: merge reports same-record conflicts without overwriting local data", async () => {
   const deps = dependencies();
   const localDataset = expenseDataset("-10");
   await seed(deps.local, localDataset);
@@ -251,7 +248,7 @@ Deno.test("import-export adapter: merge reports same-record conflicts without ov
   assertEquals(after.document.dataset.expenses[0]?.amount, "-10");
 });
 
-Deno.test("import-export adapter: configured Drive pre-sync failure does not mutate local data", async () => {
+test("import-export adapter: configured Drive pre-sync failure does not mutate local data", async () => {
   let preSyncCalls = 0;
   const deps = {
     ...dependencies(),
@@ -275,7 +272,7 @@ Deno.test("import-export adapter: configured Drive pre-sync failure does not mut
   assertEquals(preSyncCalls, 1);
 });
 
-Deno.test("import-export adapter: direct configured replacement performs pre-sync before any mutation", async () => {
+test("import-export adapter: direct configured replacement performs pre-sync before any mutation", async () => {
   let preSyncCalls = 0;
   const deps = {
     ...dependencies(),
@@ -306,7 +303,7 @@ Deno.test("import-export adapter: direct configured replacement performs pre-syn
   );
 });
 
-Deno.test("import-export adapter: local transaction failure is atomic", async () => {
+test("import-export adapter: local transaction failure is atomic", async () => {
   const deps = dependencies();
   const adapter = createImportExportAdapter(deps);
   const before = await adapter.exportDocument();
@@ -329,7 +326,7 @@ Deno.test("import-export adapter: local transaction failure is atomic", async ()
   );
 });
 
-Deno.test("import-export adapter: replacement failure leaves durable recovery and restart completes it", async () => {
+test("import-export adapter: replacement failure leaves durable recovery and restart completes it", async () => {
   const base = createFakeCausalSyncPort(initialCausalSnapshot(emptyDataset()));
   let failApply = true;
   const causal: CausalSyncPort = {
@@ -370,7 +367,7 @@ Deno.test("import-export adapter: replacement failure leaves durable recovery an
   assertEquals((await deps.local.query("records")).length > 0, true);
 });
 
-Deno.test("import-export adapter: unconfigured offline replacement is local and advances generation", async () => {
+test("import-export adapter: unconfigured offline replacement is local and advances generation", async () => {
   const deps = dependencies();
   await seed(deps.local, expenseDataset("-10"));
   const adapter = createImportExportAdapter(deps);
@@ -388,7 +385,7 @@ Deno.test("import-export adapter: unconfigured offline replacement is local and 
   assertEquals(exported.document.changes.length, 1);
 });
 
-Deno.test(
+test(
   "import-export adapter: higher-generation replacement adopts and retires stale history",
   async () => {
     const oldDataset = expenseDataset("-10");
@@ -438,7 +435,7 @@ Deno.test(
   },
 );
 
-Deno.test("import-export adapter: old generation packets cannot undo a replacement", async () => {
+test("import-export adapter: old generation packets cannot undo a replacement", async () => {
   const base = createFakeCausalSyncPort(initialCausalSnapshot(emptyDataset()));
   const protectedPort = createGenerationProtectedCausalSyncPort(base);
   const current = await base.read();
@@ -468,7 +465,7 @@ Deno.test("import-export adapter: old generation packets cannot undo a replaceme
   assertEquals(stale.snapshot.generation, 2);
 });
 
-Deno.test("import-export adapter: share unavailable falls back to saving the same JSON bytes", async () => {
+test("import-export adapter: share unavailable falls back to saving the same JSON bytes", async () => {
   const saved: Uint8Array[] = [];
   const fileShare: FileSharePort = {
     save: async (payload) => {

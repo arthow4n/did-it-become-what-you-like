@@ -1,7 +1,4 @@
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
+import { test } from "vitest";
 import { withComponentHarness } from "./component-harness.tsx";
 
 function assert(
@@ -11,7 +8,7 @@ function assert(
   if (!condition) throw new Error(message);
 }
 
-Deno.test("component harness supplies isolated accessible DOM primitives", async () => {
+test("component harness supplies isolated accessible DOM primitives", async () => {
   await withComponentHarness(async ({ render, screen, fireEvent, waitFor }) => {
     const { createElement, useState } = await import("react");
     function HarnessFixture() {

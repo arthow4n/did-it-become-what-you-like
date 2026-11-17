@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import {
   adapterError,
   isAdapterError,
@@ -15,10 +16,6 @@ import {
   type DriveTokenClientConfig,
 } from "./browser.ts";
 import { createTestClock } from "../../test-support/clock.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -478,7 +475,7 @@ async function authorized(
   assertEquals(session.scopes, ["appDataFolder"]);
 }
 
-Deno.test("drive-adapter: authorization is least-scope, one-account, and revocable", async () => {
+test("drive-adapter: authorization is least-scope, one-account, and revocable", async () => {
   const { adapter, identity, endpoint } = fixture();
   const session = await adapter.authorize();
   assertEquals(session.accountId, "synthetic-owner@example.test");
@@ -496,14 +493,14 @@ Deno.test("drive-adapter: authorization is least-scope, one-account, and revocab
   assertEquals(adapter.status(), "signed-out");
 });
 
-Deno.test("drive-adapter: permission ID remains the account-binding identity", async () => {
+test("drive-adapter: permission ID remains the account-binding identity", async () => {
   const { adapter, endpoint } = fixture();
   endpoint.setAboutPermissionId("stable-drive-permission-id");
   const session = await adapter.authorize();
   assertEquals(session.accountId, "stable-drive-permission-id");
 });
 
-Deno.test(
+test(
   "drive-adapter: reconnect uses an email hint and empty GIS prompt without persisting a token",
   async () => {
     const { adapter, identity } = fixture();
@@ -531,7 +528,7 @@ Deno.test(
   },
 );
 
-Deno.test("drive-adapter: cancellation and account mismatch never install a token", async () => {
+test("drive-adapter: cancellation and account mismatch never install a token", async () => {
   const cancelled = fixture();
   cancelled.identity.cancel = true;
   const cancelledError = await rejectsWithCode(
@@ -557,7 +554,7 @@ Deno.test("drive-adapter: cancellation and account mismatch never install a toke
   assertEquals(mismatch.adapter.status(), "signed-out");
 });
 
-Deno.test("drive-adapter: upload failures expose transport diagnostics", async () => {
+test("drive-adapter: upload failures expose transport diagnostics", async () => {
   const failed = fixture();
   await authorized(failed.adapter);
   await failed.adapter.readRetirementMarker();
@@ -566,9 +563,10 @@ Deno.test("drive-adapter: upload failures expose transport diagnostics", async (
   await failed.adapter.readRetirementMarker();
   failed.endpoint.failNextUpload(503);
   const uploadError = await rejectsWithCode(
-    failed.adapter.writeAppData({ name: "upload.json", body: "{}" }, {
-      retry: { maxAttempts: 1, directive: "never" },
-    }),
+    failed.adapter.writeAppData(
+      { name: "upload.json", body: "{}" },
+      { retry: { maxAttempts: 1, directive: "never" } },
+    ),
     "unavailable",
   ) as { readonly operation?: string };
   assertEquals(uploadError.operation, "drive.transport.upload_failed");
@@ -581,15 +579,16 @@ Deno.test("drive-adapter: upload failures expose transport diagnostics", async (
   await quota.adapter.readRetirementMarker();
   quota.endpoint.failNextUpload(413);
   const quotaError = await rejectsWithCode(
-    quota.adapter.writeAppData({ name: "quota.json", body: "{}" }, {
-      retry: { maxAttempts: 1, directive: "never" },
-    }),
+    quota.adapter.writeAppData(
+      { name: "quota.json", body: "{}" },
+      { retry: { maxAttempts: 1, directive: "never" } },
+    ),
     "quota",
   ) as { readonly operation?: string };
   assertEquals(quotaError.operation, "drive.transport.quota_exceeded");
 });
 
-Deno.test("drive-adapter: token expiry requires a new user authorization", async () => {
+test("drive-adapter: token expiry requires a new user authorization", async () => {
   const { adapter, clock, identity } = fixture();
   await authorized(adapter);
   clock.clock.advance(3_600_001);
@@ -598,11 +597,11 @@ Deno.test("drive-adapter: token expiry requires a new user authorization", async
   assertEquals(identity.requestCount, 1);
 });
 
-Deno.test("drive-adapter: app-data pagination, body reads, and path isolation are enforced", async () => {
+test("drive-adapter: app-data pagination, body reads, and path isolation are enforced", async () => {
   const { adapter, endpoint } = fixture({ pageSize: 2 });
-  endpoint.seed("one.json", '{"one":1}');
-  endpoint.seed("two.json", '{"two":2}');
-  endpoint.seed("three.json", '{"three":3}');
+  endpoint.seed("one.json", "{\"one\":1}");
+  endpoint.seed("two.json", "{\"two\":2}");
+  endpoint.seed("three.json", "{\"three\":3}");
   await authorized(adapter);
   const files = await adapter.listAppData();
   assertEquals(files.map((file) => file.name), [
@@ -630,11 +629,11 @@ Deno.test("drive-adapter: app-data pagination, body reads, and path isolation ar
   );
 });
 
-Deno.test(
+test(
   "drive-adapter: v3 projections use version tokens without ETag headers",
   async () => {
     const { adapter, endpoint } = fixture({ pageSize: 2 });
-    const seeded = endpoint.seed("sync.json", '{"v":0}');
+    const seeded = endpoint.seed("sync.json", "{\"v\":0}");
     await authorized(adapter);
 
     const listed = await adapter.readAppData("sync.json");
@@ -642,11 +641,11 @@ Deno.test(
 
     const created = await adapter.writeAppData({
       name: "conditional.json",
-      body: '{"v":1}',
+      body: "{\"v\":1}",
     });
     const updated = await adapter.writeAppData({
       name: "conditional.json",
-      body: '{"v":2}',
+      body: "{\"v\":2}",
       expectedEtag: created.etag,
     });
     await rejectsWithCode(
@@ -693,7 +692,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "drive-adapter: first local sync uploads through the v3 upload endpoint and retries transient failures",
   async () => {
     const { adapter, endpoint } = fixture();
@@ -703,7 +702,7 @@ Deno.test(
     endpoint.failNext(503);
     const created = await adapter.writeAppData({
       name: "local-expense-sync.json",
-      body: '{"expenses":[{"id":"expense-1"}]}',
+      body: "{\"expenses\":[{\"id\":\"expense-1\"}]}",
     });
 
     assertEquals(
@@ -727,19 +726,19 @@ Deno.test(
   },
 );
 
-Deno.test("drive-adapter: writes and deletes reject stale version tokens", async () => {
+test("drive-adapter: writes and deletes reject stale version tokens", async () => {
   const { adapter } = fixture();
   await authorized(adapter);
   const first = await adapter.writeAppData({
     name: "sync.json",
-    body: '{"v":1}',
+    body: "{\"v\":1}",
   });
   const second = await adapter.writeAppData({
     name: "sync.json",
-    body: '{"v":2}',
+    body: "{\"v\":2}",
     expectedEtag: first.etag,
   });
-  assertEquals((await adapter.readAppData("sync.json"))?.body, '{"v":2}');
+  assertEquals((await adapter.readAppData("sync.json"))?.body, "{\"v\":2}");
   const staleWriteError = await rejectsWithCode(
     adapter.writeAppData({
       name: "sync.json",
@@ -758,13 +757,13 @@ Deno.test("drive-adapter: writes and deletes reject stale version tokens", async
   await rejectsWithCode(adapter.deleteAppData("sync.json"), "not-found");
 });
 
-Deno.test(
+test(
   "drive-adapter: duplicate names remain individually conditionally deletable",
   async () => {
     const { adapter, endpoint } = fixture();
     endpoint.seed("duplicate-sync.json", "first malformed copy");
     endpoint.seed("duplicate-sync.json", "second malformed copy");
-    endpoint.seed("unrelated.json", '{"keep":true}');
+    endpoint.seed("unrelated.json", "{\"keep\":true}");
     await authorized(adapter);
 
     const listed = await adapter.listAppData();
@@ -784,32 +783,35 @@ Deno.test(
     assertEquals(endpoint.names(), ["unrelated.json"]);
     assertEquals(
       (await adapter.readAppData("unrelated.json"))?.body,
-      '{"keep":true}',
+      "{\"keep\":true}",
     );
   },
 );
 
-Deno.test("drive-adapter: retries remain idempotent after a lost mutation response", async () => {
+test("drive-adapter: retries remain idempotent after a lost mutation response", async () => {
   const { adapter, endpoint } = fixture();
   await authorized(adapter);
   const first = await adapter.writeAppData({
     name: "idempotent.json",
-    body: '{"v":1}',
+    body: "{\"v\":1}",
   });
   endpoint.failAfterMutation();
   const updated = await adapter.writeAppData({
     name: "idempotent.json",
-    body: '{"v":2}',
+    body: "{\"v\":2}",
     expectedEtag: first.etag,
   });
-  assertEquals((await adapter.readAppData("idempotent.json"))?.body, '{"v":2}');
-  assertEquals(updated.body, '{"v":2}');
+  assertEquals(
+    (await adapter.readAppData("idempotent.json"))?.body,
+    "{\"v\":2}",
+  );
+  assertEquals(updated.body, "{\"v\":2}");
   endpoint.failAfterMutation();
   await adapter.deleteAppData("idempotent.json", updated.etag);
   assertEquals(await adapter.readAppData("idempotent.json"), undefined);
 });
 
-Deno.test("drive-adapter: bounded retry/backoff uses the injectable clock", async () => {
+test("drive-adapter: bounded retry/backoff uses the injectable clock", async () => {
   const { adapter, endpoint, clock } = fixture();
   await authorized(adapter);
   endpoint.failNext(429, "1");
@@ -830,7 +832,7 @@ Deno.test("drive-adapter: bounded retry/backoff uses the injectable clock", asyn
   );
 });
 
-Deno.test("drive-adapter: HTTP, offline, partial, and corrupt failures are typed and redacted", async () => {
+test("drive-adapter: HTTP, offline, partial, and corrupt failures are typed and redacted", async () => {
   const statuses: Array<[number, string]> = [
     [401, "unauthorized"],
     [403, "forbidden"],
@@ -879,7 +881,7 @@ Deno.test("drive-adapter: HTTP, offline, partial, and corrupt failures are typed
   await rejectsWithCode(corrupt.adapter.listAppData(), "corrupt-data");
 });
 
-Deno.test("drive-adapter: retirement marker is minimal and blocks uploads before transport", async () => {
+test("drive-adapter: retirement marker is minimal and blocks uploads before transport", async () => {
   const marker: DriveRetirementMarker = {
     schemaVersion: 1,
     type: "retirement-marker",
@@ -910,7 +912,7 @@ Deno.test("drive-adapter: retirement marker is minimal and blocks uploads before
   );
 });
 
-Deno.test("drive-adapter: delete everywhere publishes retirement before erasing and revoking", async () => {
+test("drive-adapter: delete everywhere publishes retirement before erasing and revoking", async () => {
   const marker: DriveRetirementMarker = {
     schemaVersion: 1,
     type: "retirement-marker",
@@ -920,7 +922,7 @@ Deno.test("drive-adapter: delete everywhere publishes retirement before erasing 
   await authorized(adapter);
   await adapter.writeAppData({
     name: "payload.json",
-    body: '{"financial":true}',
+    body: "{\"financial\":true}",
   });
   await adapter.deleteEverywhere();
   assertEquals(endpoint.names(), [DRIVE_RETIREMENT_MARKER_NAME]);
@@ -932,7 +934,7 @@ Deno.test("drive-adapter: delete everywhere publishes retirement before erasing 
   assertEquals(adapter.status(), "signed-out");
 });
 
-Deno.test("drive-adapter: abort signals stop operations and retry delays", async () => {
+test("drive-adapter: abort signals stop operations and retry delays", async () => {
   const { adapter, endpoint } = fixture();
   await authorized(adapter);
   endpoint.failNext(503);
@@ -944,7 +946,7 @@ Deno.test("drive-adapter: abort signals stop operations and retry delays", async
   );
 });
 
-Deno.test("drive-adapter: listAppData avoids N+1 metadata calls and memoizes retirement reads", async () => {
+test("drive-adapter: listAppData avoids N+1 metadata calls and memoizes retirement reads", async () => {
   const { adapter, endpoint } = fixture();
   endpoint.seed("a.json", "{}");
   endpoint.seed("b.json", "{}");
@@ -985,9 +987,9 @@ Deno.test("drive-adapter: listAppData avoids N+1 metadata calls and memoizes ret
   );
 });
 
-Deno.test("drive-adapter: fresh versions reuse bodies and invalidation downloads updated data", async () => {
+test("drive-adapter: fresh versions reuse bodies and invalidation downloads updated data", async () => {
   const { adapter, endpoint } = fixture();
-  endpoint.seed("cached.json", '{"version":1}');
+  endpoint.seed("cached.json", "{\"version\":1}");
   await adapter.authorize();
   const first = await adapter.readAppData("cached.json");
   assert(
@@ -1001,10 +1003,10 @@ Deno.test("drive-adapter: fresh versions reuse bodies and invalidation downloads
   assertEquals(await adapter.readAppData("cached.json"), first);
   assertEquals(mediaCount(), before);
   await adapter.deleteAppData("cached.json", first!.etag);
-  endpoint.seed("cached.json", '{"version":2}');
+  endpoint.seed("cached.json", "{\"version\":2}");
   assertEquals(
     (await adapter.readAppData("cached.json"))!.body,
-    '{"version":2}',
+    "{\"version\":2}",
   );
   assertEquals(mediaCount(), before + 1);
   await adapter.disconnect();

@@ -1,12 +1,9 @@
+import { test } from "vitest";
 import {
   DEFAULT_DEVICE_LOCAL_SETTINGS,
   DeviceLocalSettingsSchema,
   parseDeviceLocalSettings,
 } from "../index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -23,7 +20,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-Deno.test("device-local settings provide provider-aware defaults", () => {
+test("device-local settings provide provider-aware defaults", () => {
   assertEquals(
     DeviceLocalSettingsSchema.parse({}),
     DEFAULT_DEVICE_LOCAL_SETTINGS,
@@ -37,7 +34,7 @@ Deno.test("device-local settings provide provider-aware defaults", () => {
   );
 });
 
-Deno.test("device-local settings round-trip provider and OpenRouter preferences", () => {
+test("device-local settings round-trip provider and OpenRouter preferences", () => {
   const settings = DeviceLocalSettingsSchema.parse({
     activeProvider: "openrouter",
     selectedGeminiModel: "gemini-2.5-flash",
@@ -51,7 +48,7 @@ Deno.test("device-local settings round-trip provider and OpenRouter preferences"
   assertEquals(parseDeviceLocalSettings(settings), settings);
 });
 
-Deno.test("device-local settings reject invalid providers and preferences", () => {
+test("device-local settings reject invalid providers and preferences", () => {
   assert(
     !DeviceLocalSettingsSchema.safeParse({ activeProvider: "google" }).success,
   );
@@ -69,7 +66,7 @@ Deno.test("device-local settings reject invalid providers and preferences", () =
   );
 });
 
-Deno.test("device-local settings migration drops old compatibility state and secrets", () => {
+test("device-local settings migration drops old compatibility state and secrets", () => {
   const migrated = parseDeviceLocalSettings({
     imagePreparationEnabled: false,
     selectedGeminiModel: "gemini-2.0-flash",

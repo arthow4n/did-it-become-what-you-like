@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import {
   adapterError,
@@ -13,10 +14,6 @@ import {
   deleteLocalRepositoryDatabase,
   openLocalRepository,
 } from "../local/index.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -86,7 +83,7 @@ function driveFixture() {
   return { calls, files, drive };
 }
 
-Deno.test("retirement publication precedes Drive generation deletion and leaves only the minimal marker", async () => {
+test("retirement publication precedes Drive generation deletion and leaves only the minimal marker", async () => {
   const fixture = driveFixture();
   await publishDriveRetirement(fixture.drive, 12);
   await deleteDriveGeneration(fixture.drive, 12);
@@ -100,7 +97,7 @@ Deno.test("retirement publication precedes Drive generation deletion and leaves 
   assert(JSON.stringify(fixture.drive).indexOf("financial") === -1);
 });
 
-Deno.test("retirement failure can be retried without re-publishing a different generation", async () => {
+test("retirement failure can be retried without re-publishing a different generation", async () => {
   const fixture = driveFixture();
   await publishDriveRetirement(fixture.drive, 13);
   let failed = true;
@@ -128,7 +125,7 @@ Deno.test("retirement failure can be retried without re-publishing a different g
   );
 });
 
-Deno.test("retirement marker blocks an old-device reconnect before upload", async () => {
+test("retirement marker blocks an old-device reconnect before upload", async () => {
   const fixture = driveFixture();
   await publishDriveRetirement(fixture.drive, 14);
   const causal = createDriveCausalSyncPort({ drive: fixture.drive });
@@ -142,7 +139,7 @@ Deno.test("retirement marker blocks an old-device reconnect before upload", asyn
   assert(!fixture.calls.some((call) => call.startsWith("delete:")));
 });
 
-Deno.test("retirement local erasure removes the IndexedDB database and allows explicit reinitialization", async () => {
+test("retirement local erasure removes the IndexedDB database and allows explicit reinitialization", async () => {
   const databaseName = "did-it-become-what-you-like-x502-recovery";
   await deleteLocalRepositoryDatabase(databaseName, indexedDB).catch(() =>
     undefined

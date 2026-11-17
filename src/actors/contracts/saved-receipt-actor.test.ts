@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createActor } from "xstate";
 import {
   type ReceiptAggregate,
@@ -5,10 +6,6 @@ import {
 } from "../../domain/receipt.ts";
 import { UNCATEGORIZED_CATEGORY_ID } from "../../domain/index.ts";
 import { createSavedReceiptMachine } from "../saved-receipt.ts";
-
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
 
 function assert(
   condition: unknown,
@@ -89,7 +86,7 @@ function start(service: ReceiptManagementService = createService()) {
   }).start();
 }
 
-Deno.test(
+test(
   "saved-receipt actor loads success and not-found outcomes and resets drafts on reload",
   async () => {
     const actor = start();
@@ -140,7 +137,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved-receipt actor stages metadata and line edits until explicit save",
   async () => {
     let metadataSaves = 0;
@@ -203,7 +200,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved-receipt actor stages and commits a new purchase line",
   async () => {
     let addedChanges: unknown;
@@ -266,7 +263,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved-receipt actor keeps failed add-line drafts behind discard protection",
   async () => {
     const actor = start(createService({
@@ -307,7 +304,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved-receipt actor confirms line and whole-receipt deletion with final outcomes",
   async () => {
     const actor = start(createService({
@@ -367,7 +364,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved-receipt actor preserves retry targets, rejects stale lines, and cancels late mutations",
   async () => {
     let loads = 0;
@@ -421,7 +418,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved-receipt actor guards dirty back and browser navigation with discard intent",
   async () => {
     const actor = start();
@@ -512,7 +509,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+test(
   "saved-receipt actor does not mark failed destructive mutations as dirty",
   async () => {
     const actor = start(createService({

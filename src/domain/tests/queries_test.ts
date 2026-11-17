@@ -1,7 +1,4 @@
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
+import { test } from "vitest";
 import {
   canonicalDecimal,
   type Category,
@@ -170,7 +167,7 @@ function filter(
   };
 }
 
-Deno.test("query: local expense-day boundary resolves before and at 03:00", () => {
+test("query: local expense-day boundary resolves before and at 03:00", () => {
   const before = expenseDateForLocalNow(
     new Date(2026, 7, 24, 2, 59, 59),
     "03:00",
@@ -195,7 +192,7 @@ Deno.test("query: local expense-day boundary resolves before and at 03:00", () =
   assertEquals(result.expenses.map(({ id }) => id), ["month"]);
 });
 
-Deno.test("query: custom periods use stored calendar dates without timezone reinterpretation", () => {
+test("query: custom periods use stored calendar dates without timezone reinterpretation", () => {
   const result = queryExpenses(
     source({
       expenses: [
@@ -209,7 +206,7 @@ Deno.test("query: custom periods use stored calendar dates without timezone rein
   assertEquals(result.expenses.map(({ id }) => id), ["month", "day"]);
 });
 
-Deno.test("query: selected project, category, currency, search, and signed range combine", () => {
+test("query: selected project, category, currency, search, and signed range combine", () => {
   const result = queryExpenses(
     source({
       expenses: [
@@ -262,7 +259,7 @@ Deno.test("query: selected project, category, currency, search, and signed range
   }]);
 });
 
-Deno.test("query: ordering uses inherited receipt time and stable IDs", () => {
+test("query: ordering uses inherited receipt time and stable IDs", () => {
   const result = queryExpenses(
     source({
       expenses: [
@@ -295,7 +292,7 @@ Deno.test("query: ordering uses inherited receipt time and stable IDs", () => {
   assertEquals(oldest.map(({ id }) => id), ["a", "b"]);
 });
 
-Deno.test("query: timeline ties keep stable IDs in both sort directions", () => {
+test("query: timeline ties keep stable IDs in both sort directions", () => {
   const receiptEntry = {
     date: "2026-08-30",
     time: "20:00",
@@ -324,7 +321,7 @@ Deno.test("query: timeline ties keep stable IDs in both sort directions", () => 
   );
 });
 
-Deno.test("query: expenseTimeForLocalNow formats local time as HH:mm and rejects invalid date", () => {
+test("query: expenseTimeForLocalNow formats local time as HH:mm and rejects invalid date", () => {
   const time = expenseTimeForLocalNow(new Date(2026, 7, 24, 9, 5, 0));
   assertEquals(time, "09:05");
   const pmTime = expenseTimeForLocalNow(new Date(2026, 7, 24, 14, 35, 0));
@@ -338,7 +335,7 @@ Deno.test("query: expenseTimeForLocalNow formats local time as HH:mm and rejects
   assert(failed, "invalid date must be rejected");
 });
 
-Deno.test("query: timeline ties break alphabetically by merchant or description before stable ID", () => {
+test("query: timeline ties break alphabetically by merchant or description before stable ID", () => {
   const bakery = {
     date: "2026-08-30",
     time: "10:00",
@@ -391,7 +388,7 @@ Deno.test("query: timeline ties break alphabetically by merchant or description 
   );
 });
 
-Deno.test("query: receipt lines expand once, inherit parent fields, and group filtered lines", () => {
+test("query: receipt lines expand once, inherit parent fields, and group filtered lines", () => {
   const parent = receipt("receipt-1", {
     merchant: "ICA Maxi Solna",
     time: "21:05",
@@ -432,7 +429,7 @@ Deno.test("query: receipt lines expand once, inherit parent fields, and group fi
   assertEquals(result.receiptGroups[0]?.lines.length, 2);
 });
 
-Deno.test("query: totals stay separate by currency and preserve signed semantics", () => {
+test("query: totals stay separate by currency and preserve signed semantics", () => {
   const result = queryExpenses(
     source({
       expenses: [
@@ -456,7 +453,7 @@ Deno.test("query: totals stay separate by currency and preserve signed semantics
   }
 });
 
-Deno.test("query: property-style totals preserve outflow plus money-back invariant", () => {
+test("query: property-style totals preserve outflow plus money-back invariant", () => {
   const amounts = [
     "-999999999999999999.125",
     "-999.99",
@@ -486,7 +483,7 @@ Deno.test("query: property-style totals preserve outflow plus money-back invaria
   assertEquals(totals.net, moneyAdd(expectedOutflow, expectedMoneyBack));
 });
 
-Deno.test("query: category breakdown uses the same filtered items as totals", () => {
+test("query: category breakdown uses the same filtered items as totals", () => {
   const result = queryExpenses(
     source({
       expenses: [
@@ -522,7 +519,7 @@ Deno.test("query: category breakdown uses the same filtered items as totals", ()
   }]);
 });
 
-Deno.test("query: empty and large decimals remain exact, including formatting", () => {
+test("query: empty and large decimals remain exact, including formatting", () => {
   const empty = queryExpenses(source(), filter());
   assertEquals(empty.expenses, []);
   assertEquals(empty.totals, []);
@@ -544,7 +541,7 @@ Deno.test("query: empty and large decimals remain exact, including formatting", 
   assertEquals(formatStoredCalendarDate("2026-08-24"), "Aug 24, 2026");
 });
 
-Deno.test("query: signed range is inclusive and rejects an inverted range", () => {
+test("query: signed range is inclusive and rejects an inverted range", () => {
   const result = queryExpenses(
     source({
       expenses: [

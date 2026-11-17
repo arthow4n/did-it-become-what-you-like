@@ -1,7 +1,4 @@
-declare const Deno: {
-  test(name: string, fn: () => void | Promise<void>): void;
-};
-
+import { test } from "vitest";
 import { createTestClock, redactLogLine, redactValue } from "./index.ts";
 
 function assert(
@@ -19,7 +16,7 @@ function assertEquals<T>(actual: T, expected: T): void {
   }
 }
 
-Deno.test("deterministic clock is reproducible", async () => {
+test("deterministic clock is reproducible", async () => {
   const clock = createTestClock("2026-08-24T10:00:00.000Z");
 
   assertEquals(clock.nowIso(), "2026-08-24T10:00:00.000Z");
@@ -27,7 +24,7 @@ Deno.test("deterministic clock is reproducible", async () => {
   assertEquals(clock.nowIso(), "2026-08-24T10:00:01.000Z");
 });
 
-Deno.test("redaction removes credentials from traces and structured logs", () => {
+test("redaction removes credentials from traces and structured logs", () => {
   const secret = "test-secret-value";
   const redacted = redactValue(
     { apiKey: secret, message: `Bearer ${secret}` },

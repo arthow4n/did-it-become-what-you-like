@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import { createElement } from "react";
 import { withComponentHarness } from "../../test-support/component-harness.tsx";
 import {
@@ -7,9 +8,7 @@ import {
   useSyncStatus,
 } from "./sync-status-context.tsx";
 
-declare const Deno: { test(name: string, fn: () => Promise<void>): void };
-
-Deno.test("sync notifications do not subscribe save-only consumers to status updates", async () => {
+test("sync notifications do not subscribe save-only consumers to status updates", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let mutationRenders = 0;
     let statusRenders = 0;
@@ -71,7 +70,7 @@ Deno.test("sync notifications do not subscribe save-only consumers to status upd
   });
 });
 
-Deno.test("unchanged sync status ignores runtime callback churn and keeps actions current", async () => {
+test("unchanged sync status ignores runtime callback churn and keeps actions current", async () => {
   await withComponentHarness(({ render, fireEvent }) => {
     let renders = 0;
     let invoked = "";

@@ -1,6 +1,6 @@
-/// <reference path="./deno.d.ts" />
-
-import { mkdir, readFile, stat } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { build, preview } from "vite";
+import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import {
   AGENT_BROWSER_VERSION,
@@ -10,9 +10,8 @@ import {
 import { installAgentBrowser } from "./browser/installer.ts";
 import { redactText } from "../src/test-support/redaction.ts";
 
-const ARTIFACT_ROOT = join(Deno.cwd(), ".agent-browser", "artifacts");
-const PROFILE = join(Deno.cwd(), ".agent-browser", "profiles", "gallery");
-const GALLERY_ROOT = join(Deno.cwd(), "dist-gallery");
+const ARTIFACT_ROOT = join(process.cwd(), ".agent-browser", "artifacts");
+const PROFILE = join(process.cwd(), ".agent-browser", "profiles", "gallery");
 const SESSION = "design-system-gallery";
 const BASE_PATH = "/did-it-become-what-you-like/";
 const VIEWPORTS = [
@@ -24,21 +23,11 @@ const VIEWPORTS = [
 type CommandResult = { code: number; output: string };
 
 async function run(command: string, args: string[]): Promise<string> {
-  const result = await new Deno.Command(command, {
-    args,
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  const output = redactText(
-    new TextDecoder().decode(result.stdout) +
-      new TextDecoder().decode(result.stderr),
-  );
-  if (result.code !== 0) {
-    throw new Error(
-      `${command} ${args.join(" ")} exited ${result.code}: ${output}`,
-    );
+  try {
+    return redactText(execFileSync(command, args, { encoding: "utf8" }));
+  } catch (error) {
+    throw new Error(redactText(String(error)));
   }
-  return output;
 }
 
 async function runAgent(
@@ -60,47 +49,24 @@ async function runAgent(
 }
 
 async function buildGallery(): Promise<void> {
-  await run(Deno.execPath(), ["task", "gallery:build"]);
+  await build({ configFile: "vite.gallery.config.ts" });
 }
 
 async function serveGallery(): Promise<{ url: string; close(): void }> {
-  const controller = new AbortController();
-  const server = Deno.serve(
-    { hostname: "127.0.0.1", port: 0, signal: controller.signal },
-    async (request) => {
-      const pathname = new URL(request.url).pathname;
-      const path =
-        (pathname.startsWith(BASE_PATH)
-          ? pathname.slice(BASE_PATH.length)
-          : pathname.replace(/^\/+/, "")) || "gallery.html";
-      const safePath = path === "gallery.html" || path.startsWith("assets/")
-        ? path
-        : "gallery.html";
-      try {
-        const bytes = await readFile(join(GALLERY_ROOT, safePath));
-        const contentType = safePath.endsWith(".html")
-          ? "text/html"
-          : safePath.endsWith(".css")
-          ? "text/css"
-          : safePath.endsWith(".js")
-          ? "text/javascript"
-          : "application/octet-stream";
-        return new Response(new Uint8Array(bytes), {
-          headers: { "content-type": contentType },
-        });
-      } catch {
-        return new Response("Not found", { status: 404 });
-      }
-    },
-  );
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  const address = server.addr;
-  if (typeof address === "string") {
+  const server = await preview({
+    configFile: "vite.gallery.config.ts",
+    preview: { host: "127.0.0.1", port: 0, strictPort: true },
+  });
+  const address = server.httpServer.address();
+  if (!address || typeof address === "string") {
+    server.httpServer.close();
     throw new Error("Gallery server did not bind TCP");
   }
   return {
     url: `http://127.0.0.1:${address.port}${BASE_PATH}gallery.html`,
-    close: () => controller.abort(),
+    close: () => {
+      server.httpServer.close();
+    },
   };
 }
 
@@ -221,5 +187,5 @@ try {
   console.error(
     `UNAVAILABLE/FAILED: gallery inspection could not complete on ${platformDescription()}; no success is reported.`,
   );
-  Deno.exit(1);
+  process.exit(1);
 }

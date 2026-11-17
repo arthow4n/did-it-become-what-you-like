@@ -254,7 +254,7 @@ When conducting an audit, follow this standard journey order:
    journeys across Desktop (`1280×800`), Mobile (`390×844`), and Narrow
    (`320×568`):
    ```bash
-   deno task audit:capture ui-audit-YYYY-MM-DD/round-1-screenshots
+   npm run audit:capture -- ui-audit-YYYY-MM-DD/round-1-screenshots
    ```
 2. The capture script automatically navigates through first-use, modal/drawer
    states, filled drafts, receipt scans, review dialogs, and settings screens.
@@ -291,9 +291,9 @@ Execute checklist items sequentially following this exact per-step loop:
    checks. Add a targeted browser check only when the step changes behavior that
    the module graph cannot observe:
    ```bash
-   deno fmt <changed-files>
-   deno lint <changed-ts-or-tsx-files>
-   deno task test:affected
+   npm run fmt -- <changed-files>
+   npm run lint -- <changed-ts-or-tsx-files>
+   npm run test:affected
    git diff --check
    ```
    Do not run full component, E2E, build, gallery, or repository verification
@@ -312,22 +312,21 @@ Once all checklist items are checked off:
 
 1. **Run Tests Affected by the Complete Audit Batch:**
    ```bash
-   deno test --allow-read --allow-write --allow-run --allow-env \
-     --changed=<audit-base-commit>
+   npm test -- --changed=<audit-base-commit>
    ```
 2. **Run Design System Accessibility Check:**
    ```bash
-   deno task gallery:verify
+   npm run gallery:verify
    ```
 3. **Run Production Build:**
    ```bash
-   deno task build
+   npm run pages:build
    ```
 4. **Run Only Affected Approved End-to-End Journeys:**
    ```bash
-   deno task test:e2e --grep <affected-journey>
+   npm run test:e2e -- --grep <affected-journey>
    ```
-   Run `deno task verify` only as a final local preflight or when the audit
+   Run `npm run verify` only as a final local preflight or when the audit
    changed cross-cutting dependency, toolchain, or configuration behavior whose
    impact cannot be bounded reliably. CI/CD remains the release authority.
 5. If any test expectation requires precision updating (e.g. formatted money
@@ -337,7 +336,7 @@ Once all checklist items are checked off:
 
 1. Re-run visual capture into the post-fix round directory:
    ```bash
-   deno task audit:capture ui-audit-YYYY-MM-DD/round-2-screenshots
+   npm run audit:capture -- ui-audit-YYYY-MM-DD/round-2-screenshots
    ```
 2. Inspect key screenshots to confirm visual perfection across all breakpoints.
 3. **Artifact Cleanup (Preserved in Git History):** After visual verification is

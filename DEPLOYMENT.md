@@ -90,13 +90,11 @@ Keep the current Pages sync endpoint while completing these steps.
    Complete consent in the same tab. Check token refresh after reload, a
    pull/push against a designated test Drive account, logout, and rejection of
    an unapproved account. Check Direct mode with the existing client ID.
-4. Once verified, set the frontend default in
-   `src/features/sync-runtime/drive-config.ts` to `WORKER_SYNC_SERVER_URL`.
-   Set the Pages Actions variable `VITE_SYNC_SERVER_URL` to that same Worker
-   URL, or remove the override so the repo default is used. If the integration
-   cannot edit Actions variables, remove only the URL override from the Pages
-   workflow in the cutover change. Publish through the normal Pages workflow
-   and verify the hosted PWA, the service worker update, and both sync modes.
+4. Publish the application with `WORKER_SYNC_SERVER_URL` as its default in
+   `src/features/sync-runtime/drive-config.ts`. The existing Pages workflow
+   publishes the app from `master`. Verify the hosted PWA, the service-worker
+   update, and both sync modes. The standard deployment uses the application
+   default. An explicit build-time URL override takes precedence.
 
 The Worker uses a different hostname, so a session cookie issued by the
 previous backend cannot accompany requests to the Worker. No sessions or

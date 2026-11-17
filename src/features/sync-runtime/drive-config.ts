@@ -64,7 +64,7 @@ export const LEGACY_SYNC_SERVER_URL =
   "https://did-it-become-what-you-like.arthow4n.deno.net";
 export const WORKER_SYNC_SERVER_URL =
   "https://did-it-become-what-you-like.arthow4n.workers.dev";
-export const DEFAULT_SYNC_SERVER_URL = LEGACY_SYNC_SERVER_URL;
+export const DEFAULT_SYNC_SERVER_URL = WORKER_SYNC_SERVER_URL;
 
 export function syncServerForStoredPreference(
   saved: string | null,
